@@ -155,8 +155,8 @@ class ControlledQubitUnitary(ControlledOp):
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        wires = () if wires is None else Wires(wires)
-        work_wires = () if work_wires is None else Wires(work_wires)
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
         control_wires = Wires(control_wires)
 
         if hasattr(base, "wires") and len(wires) != 0:
@@ -169,8 +169,8 @@ class ControlledQubitUnitary(ControlledOp):
             if len(wires) == 0:
                 if len(Wires(control_wires)) > 1:
                     num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
-                    wires = Wires(control_wires)[-num_base_wires:]
-                    control_wires = Wires(control_wires)[:-num_base_wires]
+                    wires = control_wires[-num_base_wires:]
+                    control_wires = control_wires[:-num_base_wires]
                 else:
                     raise TypeError(
                         "Must specify a set of wires. None is not a valid `wires` label."
