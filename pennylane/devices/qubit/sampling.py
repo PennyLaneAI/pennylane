@@ -78,36 +78,23 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
             mp_other_obs.append([mp])
             mp_other_obs_indices.append([i])
     if mp_pauli_obs:
-        print(f"mp_pauli_obs: {mp_pauli_obs}")
-        # mp_pauli_obs: [(1, expval(Z(0) @ X(1)))]
         i_to_pauli_mp = dict(mp_pauli_obs)
-        print(f"i_to_pauli_mp: {i_to_pauli_mp}")
-        # i_to_pauli_mp: {1: expval(Z(0) @ X(1))}
-        # _, group_indices = qml.pauli.group_observables(
-        #    [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
-        # )
-        alternative_indices = qml.pauli.compute_partition_indices(
-            observables=[mp.obs for mp in i_to_pauli_mp.values()], method="lf"
+        part_indices = qml.pauli.compute_partition_indices(
+            [mp.obs for mp in i_to_pauli_mp.values()]
         )
-        # print(f"group_indices: {group_indices}")
-        print(f"alternative_indices: {alternative_indices}")
-        coeff = list(i_to_pauli_mp.keys())
-        grouped_coeffs = [[coeff[idx] for idx in group] for group in alternative_indices]
-        print(f"grouped_coeffs: {grouped_coeffs}")
+        coeffs = list(i_to_pauli_mp.keys())
+        group_indices = [[coeffs[idx] for idx in group] for group in part_indices]
         mp_pauli_groups = []
-        # for indices in group_indices:
-        #    mp_group = [i_to_pauli_mp[i] for i in indices]
-        #    mp_pauli_groups.append(mp_group)
-        for indices in grouped_coeffs:
+        for indices in group_indices:
             mp_group = [i_to_pauli_mp[i] for i in indices]
             mp_pauli_groups.append(mp_group)
     else:
-        mp_pauli_groups, grouped_coeffs = [], []
+        mp_pauli_groups, group_indices = [], []
 
     mp_no_obs_indices = [mp_no_obs_indices] if mp_no_obs else []
     mp_no_obs = [mp_no_obs] if mp_no_obs else []
     all_mp_groups = mp_pauli_groups + mp_no_obs + mp_other_obs
-    all_indices = grouped_coeffs + mp_no_obs_indices + mp_other_obs_indices
+    all_indices = group_indices + mp_no_obs_indices + mp_other_obs_indices
 
     return all_mp_groups, all_indices
 
