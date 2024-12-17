@@ -47,47 +47,6 @@ def _apply_diagonalizing_gates(
     return state
 
 
-def _process_samples(
-    mp,
-    samples,
-    wire_order,
-):
-    """Processes samples like SampleMP.process_samples, but different in need of some special cases e.g. CountsMP"""
-    wire_map = dict(zip(wire_order, range(len(wire_order))))
-    mapped_wires = [wire_map[w] for w in mp.wires]
-
-    if mapped_wires:
-        # if wires are provided, then we only return samples from those wires
-        samples = samples[..., mapped_wires]
-
-    num_wires = samples.shape[-1]  # wires is the last dimension
-
-    if mp.obs is None:
-        # if no observable was provided then return the raw samples
-        return samples
-
-    # Replace the basis state in the computational basis with the correct eigenvalue.
-    # Extract only the columns of the basis samples required based on ``wires``.
-    # This step converts e.g. 110 -> 6
-    powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]  # e.g. [1, 2, 4, ...]
-    indices = qml.math.array(samples @ powers_of_two)
-    return mp.eigvals()[indices]
-
-
-def _process_expval_samples(processed_sample):
-    """Processes a set of samples and returns the expectation value of an observable."""
-    eigvals, counts = math.unique(processed_sample, return_counts=True)
-    probs = counts / math.sum(counts)
-    return math.dot(probs, eigvals)
-
-
-def _process_variance_samples(processed_sample):
-    """Processes a set of samples and returns the variance of an observable."""
-    eigvals, counts = math.unique(processed_sample, return_counts=True)
-    probs = counts / math.sum(counts)
-    return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
-
-
 # pylint:disable = too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
     mps: list[SampleMeasurement],
@@ -129,7 +88,7 @@ def _measure_with_samples_diagonalizing_gates(
         for mp in mps:
             res = mp.process_samples(samples, wires)
             if not isinstance(mp, CountsMP):
-                res = qml.math.squeeze(res)
+                res = math.squeeze(res)
 
             processed.append(res)
 
@@ -149,7 +108,7 @@ def _measure_with_samples_diagonalizing_gates(
     except ValueError as e:
         if str(e) != "probabilities contain NaN":
             raise e
-        samples = qml.math.full((shots.total_shots, len(wires)), 0)
+        samples = math.full((shots.total_shots, len(wires)), 0)
 
     processed_samples = []
     for lower, upper in shots.bins():
