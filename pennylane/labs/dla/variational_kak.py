@@ -227,10 +227,8 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     adj_cropped = adj[-dim_m:, :dim_k, -dim_m:]
 
     ## creating the gamma vector expanded on the whole m
-    gammas = [np.pi**i for i in range(dim_h)]
-    gammavec = np.zeros(dim_m)
-    gammavec[-dim_h:] = gammas
-    gammavec = jnp.array(gammavec)
+    gammavec = jnp.zeros(dim_m)
+    gammavec = gammavec.at[-dim_h:].set([np.pi**i for i in range(dim_h)])
 
     def loss(theta, vec_H, adj):
         # this is different to Appendix F 1 in https://arxiv.org/pdf/2104.00728
@@ -266,10 +264,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         plt.yscale("log")
         plt.show()
 
-    if pick_min:
-        idx = np.argmin(energy)
-    else:
-        idx = -1
+    idx = np.argmin(energy) if pick_min else -1
 
     if verbose:
         n_epochs = opt_kwargs.get("n_epochs", 500)
@@ -300,7 +295,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     else:
         a_elem_m = a_elem
 
-    assert np.allclose(a_elem_m, a_elem_m.conj().T), "CSA element a not Hermitian"
+    assert np.allclose(a_elem_m, a_elem_m.conj().T), "CSA element `a` not Hermitian"
 
     # validate K_c a K_c^† reproduces H
     # Compute the ansatz K_c = K(theta_c) = K_1(theta_1) .. K_|k|(theta_|k|)
@@ -359,9 +354,7 @@ def run_opt(
     optimizer = optax.adam(learning_rate=lr, b1=b1, b2=b2)
     opt_state = optimizer.init(theta)
 
-    energy = []
-    gradients = []
-    thetas = []
+    energy, gradients, thetas = [], [], []
 
     @jax.jit
     def step(opt_state, theta):
