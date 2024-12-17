@@ -19,7 +19,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultMixedLegacy
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
 from pennylane.measurements import DensityMatrixMP, State, StateMP, density_matrix, expval, state
@@ -372,22 +371,6 @@ class TestState:
             ),
         ):
             d_func(pnp.array(0.1, requires_grad=True))
-
-    def test_no_state_capability(self, monkeypatch):
-        """Test if an error is raised for devices that are not capable of returning the state.
-        This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.mixed.legacy", wires=1)
-        capabilities = dev.target_device.capabilities().copy()
-        capabilities["returns_state"] = False
-
-        @qml.qnode(dev)
-        def func():
-            return state()
-
-        with monkeypatch.context() as m:
-            m.setattr(DefaultMixedLegacy, "capabilities", lambda *args, **kwargs: capabilities)
-            with pytest.raises(qml.QuantumFunctionError, match="The current device is not capable"):
-                func()
 
     def test_state_not_supported(self):
         """Test if an error is raised for devices inheriting from the base Device class,
@@ -1003,25 +986,6 @@ class TestDensityMatrix:
         assert isinstance(res, tuple)
         assert np.allclose(res[0], np.ones((2, 2)) / 2)
         assert np.isclose(res[1], 1)
-
-    def test_no_state_capability(self, monkeypatch):
-        """Test if an error is raised for devices that are not capable of returning
-        the density matrix. This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.mixed.legacy", wires=2)
-        capabilities = dev.target_device.capabilities().copy()
-        capabilities["returns_state"] = False
-
-        @qml.qnode(dev)
-        def func():
-            return density_matrix(0)
-
-        with monkeypatch.context() as m:
-            m.setattr(DefaultMixedLegacy, "capabilities", lambda *args, **kwargs: capabilities)
-            with pytest.raises(
-                qml.QuantumFunctionError,
-                match="The current device is not capable" " of returning the state",
-            ):
-                func()
 
     def test_density_matrix_not_supported(self):
         """Test if an error is raised for devices inheriting from the base Device class,

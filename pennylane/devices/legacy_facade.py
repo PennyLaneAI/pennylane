@@ -137,8 +137,8 @@ class LegacyDeviceFacade(Device):
     Args:
         device (qml.device.LegacyDevice): a device that follows the legacy device interface.
 
-    >>> from pennylane.devices import DefaultMixedLegacy, LegacyDeviceFacade
-    >>> legacy_dev = DefaultMixedLegacy(wires=2)
+    >>> from pennylane.devices import DefaultQutrit, LegacyDeviceFacade
+    >>> legacy_dev = DefaultQutrit(wires=2)
     >>> new_dev = LegacyDeviceFacade(legacy_dev)
     >>> new_dev.preprocess()
     (TransformProgram(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
