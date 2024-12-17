@@ -370,7 +370,7 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Breaking changes 💔</h3>
 
-* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` was changed 
+* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` for grouping observables was changed 
   from `"rlf"` to `"lf"`. Internally, `qml.pauli.group_observables` has been replaced with `qml.pauli.compute_partition_indices`
   in several places to improve efficiency.
   [(#6706)](https://github.com/PennyLaneAI/pennylane/pull/6706)

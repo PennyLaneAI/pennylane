@@ -48,7 +48,7 @@ def optimize_measurements(
         grouping (str): the binary symmetric relation to use for operator partitioning,
             passed to :func:`~.pennylane.pauli.compute_partition_indices`.
         colouring_method (str): the graph-colouring heuristic to use in obtaining the operator
-            partitions, passed to :func:`~.pennylane.pauli.compute_partition_indices`.
+            partitions, passed to :func:`~pennylane.pauli.compute_partition_indices`.
 
     Returns:
         tuple:
