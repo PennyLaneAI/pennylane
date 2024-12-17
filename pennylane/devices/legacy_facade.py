@@ -143,13 +143,13 @@ class LegacyDeviceFacade(Device):
     >>> new_dev.preprocess()
     (TransformProgram(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
     ExecutionConfig(grad_on_execution=None, use_device_gradient=None, use_device_jacobian_product=None,
-    gradient_method=None, gradient_keyword_arguments={}, device_options={}, interface=None,
+    gradient_method=None, gradient_keyword_arguments={}, device_options={}, interface=<Interface.NUMPY: 'numpy'>,
     derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None)))
     >>> new_dev.shots
-    Shots(total_shots=None, shot_vector=())
+    Shots(total=None)
     >>> tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
     >>> new_dev.execute(tape)
-    array([0., 0., 0., 0., 0.])
+    array([0 0 0 0 0])
 
     """
 
