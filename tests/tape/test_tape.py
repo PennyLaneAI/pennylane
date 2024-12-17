@@ -912,42 +912,6 @@ class TestExpand:
         assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
         assert new_tape.shots is tape.shots
 
-    def test_nested_tape(self):
-        """Test that a nested tape properly expands"""
-        with QuantumTape() as tape1:
-            with QuantumTape() as tape2:
-                qml.RX(0.543, wires=0)
-                qml.RY(0.1, wires=0)
-
-        assert tape1.num_params == 2
-        assert tape1.operations == [tape2]
-
-        new_tape = tape1.expand()
-        assert new_tape.num_params == 2
-        assert len(new_tape.operations) == 2
-        assert isinstance(new_tape.operations[0], qml.RX)
-        assert isinstance(new_tape.operations[1], qml.RY)
-        assert new_tape.shots is tape1.shots
-
-    def test_nesting_and_decomposition(self):
-        """Test an example that contains nested tapes and operation decompositions."""
-
-        with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 1]), wires=[0, "a"])
-
-            with QuantumTape():
-                qml.Rot(0.543, 0.1, 0.4, wires=0)
-
-            qml.CNOT(wires=[0, "a"])
-            qml.RY(0.2, wires="a")
-            qml.probs(wires=0)
-            qml.probs(wires="a")
-
-        new_tape = tape.expand()
-
-        assert len(new_tape.operations) == 5
-        assert new_tape.shots is tape.shots
-
     def test_stopping_criterion(self):
         """Test that gates specified in the stop_at
         argument are not expanded."""
@@ -1846,7 +1810,7 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         res = qml.execute(
             [tape], dev, diff_method=qml.gradients.param_shift, transform_program=program
         )[0]
@@ -2002,7 +1966,7 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         assert tape.shape(dev) == expected.shape
 
@@ -2030,7 +1994,7 @@ class TestOutputShape:
                 qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         expected = tuple(i.shape for i in expected)
         assert tape.shape(dev) == expected

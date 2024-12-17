@@ -63,7 +63,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
 
 def lie_closure_dense(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
+    generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
     n: int = None,
     max_iterations: int = 10000,
     verbose: bool = False,
@@ -81,9 +81,10 @@ def lie_closure_dense(
         `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
 
     Args:
-        generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
+        generators (Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]): generating set for which to compute the
             Lie closure.
         n (int): The number of qubits involved. If ``None`` is provided, it is automatically deduced from the generators.
+            Ignored when the inputs are ``np.ndarray`` instances.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure
             calculation. Default is ``False``.
@@ -104,16 +105,32 @@ def lie_closure_dense(
 
     >>> g_ops = [qml.pauli_decompose(op) for op in g]
 
+    **Internal representation**
+
+    The input operators are converted to Hermitian matrices internally. This means
+    that we compute the operators :math:`G_\alpha` in the algebra :math:`\{iG_\alpha\}_\alpha`,
+    which itself consists of skew-Hermitian objects (commutators produce skew-Hermitian objects,
+    so Hermitian operators alone can not form an algebra with the standard commutator).
     """
 
-    if n is None:
-        all_wires = qml.wires.Wires.all_wires([_.wires for _ in generators])
-        n = len(all_wires)
-        assert all_wires.toset() == set(range(n))
+    dense_in = isinstance(generators, np.ndarray) or all(
+        isinstance(op, np.ndarray) for op in generators
+    )
 
-    gens = np.array([qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex)
-    chi = 2**n
-    assert gens.shape == (len(generators), chi, chi)
+    if not dense_in:
+        if n is None:
+            all_wires = qml.wires.Wires.all_wires([_.wires for _ in generators])
+            n = len(all_wires)
+            assert all_wires.toset() == set(range(n))
+
+        gens = np.array([qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex)
+        chi = 2**n
+        assert gens.shape == (len(generators), chi, chi)
+
+    else:
+        gens = np.array(generators)
+        chi = generators[0].shape[0]
+        assert gens.shape == (len(generators), chi, chi)
 
     epoch = 0
     old_length = 0

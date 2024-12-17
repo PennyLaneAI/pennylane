@@ -44,6 +44,7 @@ from pennylane.bose import (
     BoseWord,
     binary_mapping,
     unary_mapping,
+    christiansen_mapping,
 )
 from pennylane.qchem import (
     taper,
@@ -59,7 +60,6 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.registers import registers
 from pennylane.io import *
@@ -140,6 +140,7 @@ import pennylane.pulse
 import pennylane.fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
+from pennylane.drawer import draw, draw_mpl
 
 # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order

@@ -35,12 +35,12 @@
 
 <p align="center">
   The definitive open-source framework for quantum programming. Built by researchers, for research.
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png#gh-light-mode-only" width="700px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/pl-logo-lightmode.png#gh-light-mode-only" width="700px">
     <!--
     Use a relative import for the dark mode image. When loading on PyPI, this
     will fail automatically and show nothing.
     -->
-    <img src="./doc/_static/header-dark-mode.png#gh-dark-mode-only" width="700px" onerror="this.style.display='none'" alt=""/>
+    <img src="./doc/_static/readme/pl-logo-darkmode.png#gh-dark-mode-only" width="700px" onerror="this.style.display='none'" alt=""/>
 </p>
 
 ## Key Features
