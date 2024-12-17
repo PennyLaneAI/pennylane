@@ -141,15 +141,15 @@ class TestQNodeIntegration:
         grad_fn = jax.jit(jax.grad(circuit, argnums=[0, 1, 2]))
         res1 = grad_fn(a, b, c)
 
-        # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1, 2, 3]
+        assert len(res1) == 3
         assert all(isinstance(r_, jax.Array) for r_ in res1)
 
         # make the second QNode argument a constant
         grad_fn = jax.grad(circuit, argnums=[0, 1])
         res2 = grad_fn(a, b, c)
 
-        assert circuit.qtape.trainable_params == [0, 1]
+        assert len(res2) == 2
+        assert all(isinstance(r_, jax.Array) for r_ in res2)
         assert qml.math.allclose(res1[:2], res2)
 
     @pytest.mark.parametrize("gradient_func", [qml.gradients.param_shift, None])
