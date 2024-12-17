@@ -227,8 +227,8 @@ class LinearCombination(Sum):
                 the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
                 Defaults to ``'qwc'``.
             method (str): The graph colouring heuristic to use in solving minimum clique cover for
-                grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-                First). Defaults to ``'lf'``.
+                grouping, which can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
+                ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
 
         **Example**
 
@@ -557,7 +557,8 @@ class Hamiltonian:
             Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
             Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
-            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
+            can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
+            or ``'gis'`` (Greedy Independent Set). Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this Hamiltonian instance
 
     **Example:**
