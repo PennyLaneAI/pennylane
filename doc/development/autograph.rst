@@ -470,6 +470,7 @@ AutoGraph:
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.1)
 [Array(9., dtype=float64, weak_type=True)]
 
+
 Indexing within a loop
 ~~~~~~~~~~~~~~~~~~~~~~
 
