@@ -220,11 +220,11 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
     .. details::
         :title: Transforms with experimental program capture
 
-        To define a transform that can be applied directly to plxpr without the need to create ``QuantumScript`\ s,
+        To define a transform that can be applied directly to plxpr without the need to create ``QuantumScript``\ s,
         users must provide the ``plxpr_transform`` argument. If this argument is not provided, executing transformed
-        functions will raise a ``NotImplementedError``. ``plxpr_transform`` should be a function that accepts
-        ``jax.core.Jaxpr`` as input and returns ``jax.core.ClosedJaxpr`` that has been transformed. An example of the
-        exact signature is shown below:
+        functions will raise a ``NotImplementedError``. The ``plxpr_transform`` argument should be a function that
+        accepts ``jax.core.Jaxpr`` as input and returns ``jax.core.ClosedJaxpr`` that has been transformed. The exact
+        expected signature of ``plxpr_transform`` is shown below:
 
         .. code-block:: python
 
@@ -269,7 +269,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
 
         As shown, the transform gets applied as a higher-order primitive, with the jaxpr
         representation of the function being transformed stored in the ``inner_jaxpr``
-        parameter.
+        parameter of the transform's primitive.
 
         To apply the transform, the :func:`pennylane.capture.expand_plxpr_transforms` function
         should be used. This function accepts a function to which transforms have been applied
@@ -281,6 +281,12 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
             a:AbstractOperator() = PauliZ[n_wires=1] 1
             b:AbstractMeasurement(n_wires=None) = expval_obs a
           in (b,) }
+
+        .. warning::
+
+            Calling a function to which transforms have been applied with program capture enabled
+            will raise a ``NotImplementedError``. To use a transformed function as you would normally,
+            it *must* first be decorated with :func:`pennylane.capture.expand_plxpr_transforms`.
     """
     # 1: Checks for the transform
     if not callable(quantum_transform):
