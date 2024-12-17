@@ -267,7 +267,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # Introduce a small epsilon to avoid sqrt(0) to ensure absolute positivity.
         prob = qml.math.real(prob)
         prob = qml.math.where(prob < 0, -prob, prob)
-        prob = qml.math.where(prob == 0, prob + 1e-14, prob)
+        prob = qml.math.where(prob == 0, prob + np.finfo(float).eps, prob)
         p_state = qml.math.sqrt(prob)
         return self.process_state(p_state, wire_order)
 
