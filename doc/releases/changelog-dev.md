@@ -373,6 +373,7 @@ such as `shots`, `rng` and `prng_key`.
 * The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` was changed 
   from `"rlf"` to `"lf"`. Internally, `qml.pauli.group_observables` has been replaced with `qml.pauli.compute_partition_indices`
   in several places to improve efficiency.
+  [(#6706)](https://github.com/PennyLaneAI/pennylane/pull/6706)
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
   Autograd framework. As the function uses automatic differentiation for validation, parameters

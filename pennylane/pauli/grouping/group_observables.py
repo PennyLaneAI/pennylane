@@ -397,8 +397,8 @@ def compute_partition_indices(
         grouping_type (str): The type of binary relation between Pauli observables.
             It can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Defaults to ``'qwc'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover.
-            It can be ``'lf'`` (Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
-            Defaults to ``'lf'``.
+            It can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
+            or ``'gis'`` (Greedy Independent Set). Defaults to ``'lf'``.
 
     Returns:
         tuple[tuple[int]]: A tuple of tuples where each inner tuple contains the indices of

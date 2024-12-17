@@ -50,8 +50,9 @@ def dot(
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Note that if
             ``pauli=True``, the grouping will be ignored.
         method (str): The graph colouring heuristic to use in solving minimum clique cover for
-            grouping, which can be ``'lf'`` (Largest First), ``'dsatur'`` (Degree of Saturation),
-            or ``'gis'`` (Greedy Independent Set). This keyword argument is ignored if ``grouping_type`` is ``None``.
+            grouping, which can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
+            ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
+            This keyword argument is ignored if ``grouping_type`` is ``None``.
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty
@@ -129,7 +130,8 @@ def dot(
         ((2,), (0, 1))
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
-        ``method`` can be ``'lf'`` (Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
+        ``method`` can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
+        ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
         To see more details about how these affect grouping, see :ref:`Pauli Graph Colouring<graph_colouring>` and
         :func:`~pennylane.pauli.compute_partition_indices`.
     """
