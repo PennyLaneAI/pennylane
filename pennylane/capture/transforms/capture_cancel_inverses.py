@@ -106,9 +106,8 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
         return res
 
     def interpret_all_previous_ops(self) -> None:
-        """Interpret all ops in ``previous_ops``. This is done whenever any
-        operators that haven't been interpreted that are saved to be cancelled
-        no longer need to be saved."""
+        """Interpret all operators in ``previous_ops``. This is done when any previously
+        uninterpreted operators, saved for cancellation, no longer need to be stored."""
         ops_remaining = set(self.previous_ops.values())
         for op in ops_remaining:
             super().interpret_operation(op)
