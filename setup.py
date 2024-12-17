@@ -26,7 +26,7 @@ requirements = [
     "networkx",
     "rustworkx>=0.14.0",
     "autograd",
-    "toml",
+    "tomlkit",
     "appdirs",
     "autoray>=0.6.11",
     "cachetools",
@@ -34,6 +34,7 @@ requirements = [
     "requests",
     "typing_extensions",
     "packaging",
+    "diastatic-malt",
 ]
 
 info = {

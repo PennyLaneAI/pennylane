@@ -465,18 +465,12 @@ jobs:
       pytest_markers: external
       pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
-        pyzx matplotlib stim quimb==1.8.4 mitiq ply
+        pyzx matplotlib stim quimb==1.8.4 mitiq ply optax scipy-openblas32>=0.3.26
         git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
-        ${{ inputs.additional_python_packages }}
-      
-      # This is required during the release process when the latest released version of
-      # catalyst requires the latest version of pennylane that is about to be released.
-      # Installing catalyst after pennylane to make sure that the latest catalyst is used.
-      additional_pip_packages_post: |
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
-        ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+        ${{ inputs.additional_python_packages }}
 
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
 
@@ -548,13 +542,12 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
       python_version: ${{ matrix.python-version }}
-      
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
       pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
-        openfermionpyscf basis-set-exchange
+        openfermionpyscf basis-set-exchange geometric scikit-learn
         ${{ inputs.additional_python_packages }}
 
   gradients-tests:

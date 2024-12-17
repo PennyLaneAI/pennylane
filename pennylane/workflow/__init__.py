@@ -44,8 +44,15 @@ Jacobian Product Calculation
 """
 from .construct_batch import construct_batch, get_transform_program
 from .construct_tape import construct_tape
-from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, execute
+from .execution import execute
 from .get_best_diff_method import get_best_diff_method
 from .qnode import QNode, qnode
+from .resolution import (
+    _resolve_execution_config,
+    _resolve_mcm_config,
+    _resolve_diff_method,
+    _resolve_interface,
+)
 from ._cache_transform import _cache_transform
-from ._resolve_diff_method import _resolve_diff_method
+from ._setup_transform_program import _setup_transform_program
+from .run import run

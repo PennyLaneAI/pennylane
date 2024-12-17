@@ -826,13 +826,13 @@ class TestScriptCopying:
         )
 
         assert tape.num_params == 1
-        assert qml.equal(tape.get_operation(0)[0], qml.RY(2.3, 1))
+        qml.assert_equal(tape.get_operation(0)[0], qml.RY(2.3, 1))
 
         new_tape = tape.copy(trainable_params=None)
 
         assert new_tape.num_params == 2
-        assert qml.equal(new_tape.get_operation(0)[0], qml.RX(1.2, 0))
-        assert qml.equal(new_tape.get_operation(1)[0], qml.RY(2.3, 1))
+        qml.assert_equal(new_tape.get_operation(0)[0], qml.RX(1.2, 0))
+        qml.assert_equal(new_tape.get_operation(1)[0], qml.RY(2.3, 1))
 
     def test_setting_measurements_and_trainable_params(self):
         """Test that when explicitly setting both measurements and trainable params, the
@@ -1275,7 +1275,7 @@ class TestOutputShape:
 
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
         qs = QuantumScript(ops, [measurement], shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         # TODO: test diff_method is not None when the interface `execute` functions are implemented
         res = qml.execute([qs], dev, diff_method=None, transform_program=program)[0]
 
@@ -1394,7 +1394,7 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         expected_shape = qml.execute([tape], dev, diff_method=None, transform_program=program)[
             0
         ].shape
@@ -1425,7 +1425,7 @@ class TestOutputShape:
                 qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         actual = tape.shape(dev)
 
@@ -1476,7 +1476,7 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         expected = qml.execute([qs], dev, diff_method=None, transform_program=program)[0]
         expected_shape = tuple(tuple(e_.shape for e_ in e) for e in expected)
 

@@ -21,6 +21,7 @@ from dataclasses import replace
 from numbers import Number
 from typing import Optional, Union, overload
 
+import pennylane as qml
 from pennylane import Tracker
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
@@ -29,8 +30,18 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
-from .capabilities import DeviceCapabilities
+from .capabilities import (
+    DeviceCapabilities,
+    observable_stopping_condition_factory,
+    validate_mcm_method,
+)
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .preprocess import (
+    decompose,
+    validate_device_wires,
+    validate_measurements,
+    validate_observables,
+)
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -120,6 +131,8 @@ class Device(abc.ABC):
 
         * ``derivative_order``: Relevant for requested device derivatives.
 
+        * ``mcm_config``: Options for methods of handling mid-circuit-measures.
+
     """
 
     config_filepath: Optional[str] = None
@@ -133,6 +146,14 @@ class Device(abc.ABC):
     def __init_subclass__(cls, **kwargs):
         if cls.config_filepath is not None:
             cls.capabilities = DeviceCapabilities.from_toml_file(cls.config_filepath)
+        if cls.preprocess is not Device.preprocess and (
+            cls.setup_execution_config is not Device.setup_execution_config
+            or cls.preprocess_transforms is not Device.preprocess_transforms
+        ):
+            raise ValueError(
+                "A device should implement either `preprocess` or `setup_execution_config` "
+                "and `preprocess_transforms`, but not both."
+            )
         super().__init_subclass__(**kwargs)
 
     @property
@@ -229,7 +250,7 @@ class Device(abc.ABC):
 
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """Device preprocessing function.
 
@@ -323,12 +344,239 @@ class Device(abc.ABC):
             Only then is the classical postprocessing called on the result object.
 
         """
-        if self.supports_derivatives(execution_config) and execution_config.gradient_method in {
-            "best",
-            None,
-        }:
-            return TransformProgram(), replace(execution_config, gradient_method="device")
-        return TransformProgram(), execution_config
+        execution_config = self.setup_execution_config(execution_config)
+        transform_program = self.preprocess_transforms(execution_config)
+        return transform_program, execution_config
+
+    def setup_execution_config(
+        self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
+    ) -> ExecutionConfig:
+        """Sets up an ``ExecutionConfig`` that configures the execution behaviour.
+
+        The execution config stores information on how the device should perform the execution,
+        as well as how PennyLane should interact with the device. See :class:`ExecutionConfig`
+        for all available options and what they mean.
+
+        An ``ExecutionConfig`` is constructed from arguments passed to the ``QNode``, and this
+        method allows the device to update the config object based on device-specific requirements
+        or preferences. See :ref:`execution_config` for more details.
+
+        Args:
+            config (ExecutionConfig): The initial ExecutionConfig object that describes the
+                parameters needed to configure the execution behaviour.
+            circuit (QuantumScript): The quantum circuit to customize the execution config for.
+
+        Returns:
+            ExecutionConfig: The updated ExecutionConfig object
+
+        """
+
+        if self.__class__.preprocess is not Device.preprocess:
+            if config:
+                return self.preprocess(config)[1]
+            return self.preprocess()[1]
+
+        if config is None:
+            config = ExecutionConfig()
+
+        if self.supports_derivatives(config) and config.gradient_method in ("best", None):
+            return replace(config, gradient_method="device")
+
+        shots_present = circuit and bool(circuit.shots)
+        validate_mcm_method(self.capabilities, config.mcm_config.mcm_method, shots_present)
+        if config.mcm_config.mcm_method is None and self.capabilities is not None:
+            # This is a sensible default strategy for resolving the MCM method based on declared
+            # capabilities of a device, but if a device wishes to do this differently, it should
+            # override the ``setup_execution_config`` method itself.
+            default_mcm_method = _default_mcm_method(self.capabilities, shots_present)
+            new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
+            config = replace(config, mcm_config=new_mcm_config)
+
+        return config
+
+    def preprocess_transforms(
+        self, execution_config: Optional[ExecutionConfig] = None
+    ) -> TransformProgram:
+        """Returns the transform program to preprocess a circuit for execution.
+
+        Args:
+            execution_config (ExecutionConfig): The execution configuration object
+
+        Returns:
+            TransformProgram: A transform program that is called before execution
+
+        The transform program is composed of a list of individual transforms, which may include:
+
+        * Decomposition of operations and measurements to what is supported by the device.
+        * Splitting a circuit with measurements of non-commuting observables or Hamiltonians into multiple executions.
+        * Splitting a circuit with batched parameters into multiple executions.
+        * Validation of wires, measurements, and observables.
+        * Gradient specific preprocessing, such as making sure trainable operators have generators.
+
+        **Example**
+
+        All transforms that are part of the preprocessing transform program need to respect the
+        transform contract defined in :func:`pennylane.transform`.
+
+        .. code-block:: python
+
+            from pennylane.tape import QuantumScriptBatch
+            from pennylane.typing import PostprocessingFn
+
+            @qml.transform
+            def my_preprocessing_transform(tape: qml.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+                # e.g. valid the measurements, expand the tape for the hardware execution, ...
+
+                def blank_processing_fn(results):
+                    return results[0]
+
+                return [tape], processing_fn
+
+        A transform program can hold an arbitrary number of individual transforms:
+
+        .. code-block:: python
+
+            def preprocess(self, config):
+                program = TransformProgram()
+                program.add_transform(my_preprocessing_transform)
+                return program
+
+        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
+
+        .. details::
+            :title: Post processing function and derivatives
+
+            Derivatives and Jacobian products will be bound to the machine learning library before
+            the postprocessing function is called on the results. Therefore, the machine learning
+            library will be responsible for combining and post-processing derivatives returned from
+            the device.
+
+            .. code-block:: python
+
+                from pennylane.interfaces.jax import execute as jax_boundary
+
+                def f(x):
+                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
+                    config = ExecutionConfig(gradient_method="adjoint")
+                    config = dev.setup_execution_config(config)
+                    program = dev.preprocess_transforms(config)
+                    circuit_batch, postprocessing = program((circuit, ))
+
+                    def execute_fn(tapes):
+                        return dev.execute_and_compute_derivatives(tapes, config)
+
+                    results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
+                    return postprocessing(results)
+
+                x = jax.numpy.array([1.0, 2.0, 3.0])
+                jax.grad(f)(x)
+
+            In the above code, the quantum derivatives are registered with jax in the ``jax_boundary``
+            function. Only then is the classical postprocessing called on the result object.
+
+        """
+
+        # TODO: this is obviously not pretty but it's a temporary solution to ensure backwards
+        #       compatibility. Basically there are three scenarios:
+        #       1. The device does not override anything, then this method returns the default
+        #          transform program, and preprocess calls this method, all good.
+        #       2. The device overrides preprocess, but not this method, then this method will
+        #          return what is returned from the overridden preprocess method.
+        #       3. The device overrides this method and not preprocess (recommended and what we
+        #          are ultimately aiming for), then preprocess calls the overridden method.
+        if self.__class__.preprocess is not Device.preprocess:
+            if execution_config:
+                return self.preprocess(execution_config)[0]
+            return self.preprocess()[0]
+
+        if not self.capabilities:
+            # The capabilities are required to construct a default transform program.
+            return TransformProgram()
+
+        if not execution_config:
+            execution_config = ExecutionConfig()
+
+        program = TransformProgram()
+
+        # First handle mid-circuit measurements because it may add wires. At this point we
+        # should assume that the mcm method is already validated and resolved.
+        if execution_config.mcm_config.mcm_method == "deferred":
+            program.add_transform(
+                qml.transforms.defer_measurements,
+                allow_postselect=self.capabilities.supports_operation("Projector"),
+            )
+        elif execution_config.mcm_config.mcm_method == "one-shot":
+            program.add_transform(
+                qml.transforms.dynamic_one_shot,
+                postselect_mode=execution_config.mcm_config.postselect_mode,
+            )
+
+        capabilities_analytic = self.capabilities.filter(finite_shots=False)
+        capabilities_shots = self.capabilities.filter(finite_shots=True)
+
+        needs_diagonalization = False
+        base_obs = {"PauliZ": qml.Z, "PauliX": qml.X, "PauliY": qml.Y, "Hadamard": qml.H}
+        if (
+            not all(obs in self.capabilities.observables for obs in base_obs)
+            # This check is to confirm that `split_non_commuting` has been applied, since
+            # `diagonalize_measurements` does not work with non-commuting measurements. If
+            # a device is flexible enough to support non-commuting observables but for some
+            # reason does not support all of `PauliZ`, `PauliX`, `PauliY`, and `Hadamard`,
+            # we consider it enough of an edge case that the device should just implement
+            # its own preprocessing transform.
+            and not self.capabilities.non_commuting_observables
+        ):
+            needs_diagonalization = True
+        else:
+            # If the circuit does not need diagonalization, we decompose the circuit before
+            # potentially applying `split_non_commuting` that produces multiple tapes with
+            # duplicated operations. Otherwise, `decompose` has to be applied last because
+            # `diagonalize_measurements` may add additional gates that are not supported.
+            program.add_transform(
+                decompose,
+                stopping_condition=capabilities_analytic.supports_operation,
+                stopping_condition_shots=capabilities_shots.supports_operation,
+                name=self.name,
+            )
+
+        if not self.capabilities.overlapping_observables:
+            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="wires")
+        elif not self.capabilities.non_commuting_observables:
+            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="qwc")
+        elif not self.capabilities.supports_observable("Sum"):
+            program.add_transform(qml.transforms.split_to_single_terms)
+
+        if needs_diagonalization:
+            obs_names = base_obs.keys() & self.capabilities.observables.keys()
+            obs = {base_obs[obs] for obs in obs_names}
+            program.add_transform(qml.transforms.diagonalize_measurements, supported_base_obs=obs)
+            program.add_transform(
+                decompose,
+                stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
+                stopping_condition_shots=lambda o: capabilities_shots.supports_operation(o.name),
+                name=self.name,
+            )
+
+        program.add_transform(qml.transforms.broadcast_expand)
+
+        # Handle validations
+        program.add_transform(validate_device_wires, self.wires, name=self.name)
+        program.add_transform(
+            validate_measurements,
+            analytic_measurements=lambda mp: type(mp).__name__
+            in capabilities_analytic.measurement_processes,
+            sample_measurements=lambda mp: type(mp).__name__
+            in capabilities_shots.measurement_processes,
+            name=self.name,
+        )
+        program.add_transform(
+            validate_observables,
+            stopping_condition=observable_stopping_condition_factory(capabilities_analytic),
+            stopping_condition_shots=observable_stopping_condition_factory(capabilities_shots),
+            name=self.name,
+        )
+
+        return program
 
     @abc.abstractmethod
     @overload
@@ -736,3 +984,20 @@ class Device(abc.ABC):
 
         """
         raise NotImplementedError
+
+
+def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -> str:
+    """Simple strategy to find the best match for the default mcm method."""
+
+    supports_one_shot = "one-shot" in capabilities.supported_mcm_methods
+    has_device_support = "device" in capabilities.supported_mcm_methods
+
+    # In finite shots mode, the one-shot method is the default even if there is device support.
+    # This is to ensure consistency with old behaviour. Although I'm not too sure about this.
+    if supports_one_shot and shots_present:
+        return "one-shot"
+
+    if has_device_support:
+        return "device"
+
+    return "deferred"

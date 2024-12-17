@@ -163,7 +163,7 @@ def test_legacy_device_expand_fn():
         [qml.X(0), qml.CNOT((0, 1)), qml.RX(0.5, 0), qml.CNOT((0, 1))], [qml.state()]
     )
     (new_tape,), fn = legacy_device_expand_fn(tape, device=DummyDevice())
-    assert qml.equal(new_tape, expected)
+    qml.assert_equal(new_tape, expected)
     assert fn(("A",)) == "A"
 
 
@@ -173,8 +173,8 @@ def test_legacy_device_batch_transform():
     tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0) + qml.Y(0))])
     (tape1, tape2), fn = legacy_device_batch_transform(tape, device=DummyDevice())
 
-    assert qml.equal(tape1, qml.tape.QuantumScript([], [qml.expval(qml.X(0))]))
-    assert qml.equal(tape2, qml.tape.QuantumScript([], [qml.expval(qml.Y(0))]))
+    qml.assert_equal(tape1, qml.tape.QuantumScript([], [qml.expval(qml.X(0))]))
+    qml.assert_equal(tape2, qml.tape.QuantumScript([], [qml.expval(qml.Y(0))]))
     assert fn((1.0, 2.0)) == np.array(3.0)
 
 
@@ -215,7 +215,7 @@ def test_preprocessing_program():
     """Test the population of the preprocessing program."""
 
     dev = DummyDevice(wires=(0, 1))
-    program, _ = LegacyDeviceFacade(dev).preprocess()
+    program = LegacyDeviceFacade(dev).preprocess_transforms()
 
     assert (
         program[0].transform == legacy_device_batch_transform.transform
@@ -252,7 +252,7 @@ def test_preprocessing_program_supports_mid_measure():
         _capabilities = {"supports_mid_measure": True}
 
     dev = MidMeasureDev()
-    program, _ = LegacyDeviceFacade(dev).preprocess()
+    program = LegacyDeviceFacade(dev).preprocess_transforms()
     assert qml.defer_measurements not in program
 
 
@@ -372,7 +372,7 @@ class TestGradientSupport:
         assert dev._validate_device_method(qml.tape.QuantumScript())
 
         config = qml.devices.ExecutionConfig(gradient_method="best")
-        _, processed_config = dev.preprocess(config)
+        processed_config = dev.setup_execution_config(config)
         assert processed_config.use_device_gradient is True
         assert processed_config.grad_on_execution is True
 
@@ -404,4 +404,4 @@ class TestGradientSupport:
         assert dev.supports_derivatives(qml.devices.ExecutionConfig(gradient_method="backprop"))
 
         config = qml.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
-        assert dev.preprocess(config)[1] is config  # unchanged
+        assert dev.setup_execution_config(config) is config  # unchanged

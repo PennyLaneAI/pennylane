@@ -800,15 +800,15 @@ class TestCreateCustomDecompExpandFn:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "CNOT"
 
-        assert dev.preprocess()[0][2].transform.__name__ == "decompose"
-        assert dev.preprocess()[0][2].kwargs.get("decomposer", None) is None
+        assert dev.preprocess_transforms()[2].transform.__name__ == "decompose"
+        assert dev.preprocess_transforms()[2].kwargs.get("decomposer", None) is None
 
         # Test within the context manager
         with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev):
             _ = circuit()
 
-            assert dev.preprocess()[0][2].transform.__name__ == "decompose"
-            assert dev.preprocess()[0][2].kwargs.get("decomposer", None) is not None
+            assert dev.preprocess_transforms()[2].transform.__name__ == "decompose"
+            assert dev.preprocess_transforms()[2].kwargs.get("decomposer", None) is not None
 
         tape = spy.call_args_list[1][0][0][0]
         ops_in_context = tape.operations
@@ -824,8 +824,8 @@ class TestCreateCustomDecompExpandFn:
         ops_in_context = tape.operations
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "CNOT"
-        assert dev.preprocess()[0][2].transform.__name__ == "decompose"
-        assert dev.preprocess()[0][2].kwargs.get("decomposer", None) is None
+        assert dev.preprocess_transforms()[2].transform.__name__ == "decompose"
+        assert dev.preprocess_transforms()[2].kwargs.get("decomposer", None) is None
 
     # pylint: disable=cell-var-from-loop
 

@@ -19,6 +19,7 @@ import pytest
 
 from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.gradients import param_shift
+from pennylane.math import Interface
 
 
 def test_default_values():
@@ -26,7 +27,7 @@ def test_default_values():
     config = ExecutionConfig()
     assert config.derivative_order == 1
     assert config.device_options == {}
-    assert config.interface is None
+    assert config.interface == Interface.NUMPY
     assert config.gradient_method is None
     assert config.gradient_keyword_arguments == {}
     assert config.grad_on_execution is None
@@ -43,7 +44,7 @@ def test_mcm_config_default_values():
 
 def test_invalid_interface():
     """Tests that unknown frameworks raise a ValueError."""
-    with pytest.raises(ValueError, match="interface must be in"):
+    with pytest.raises(ValueError, match="Interface must be one of"):
         _ = ExecutionConfig(interface="nonsense")
 
 
@@ -77,13 +78,6 @@ def test_invalid_execution_config_mcm_config():
     option = "foo"
     with pytest.raises(ValueError, match="Got invalid type"):
         _ = ExecutionConfig(mcm_config=option)
-
-
-def test_mcm_config_invalid_mcm_method():
-    """Test that an error is raised if creating MCMConfig with invalid mcm_method"""
-    option = "foo"
-    with pytest.raises(ValueError, match="Invalid mid-circuit measurements method"):
-        _ = MCMConfig(mcm_method=option)
 
 
 def test_mcm_config_invalid_postselect_mode():

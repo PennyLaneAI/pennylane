@@ -72,7 +72,7 @@ def test_supports_operator_without_decomp(shots):
     tape = qml.tape.QuantumScript([MyOp(wires=(0, 1))], [qml.expval(qml.Z(0))], shots=shots)
     dev = NullQubit()
 
-    program, _ = dev.preprocess()
+    program = dev.preprocess_transforms()
     batch, _ = program((tape,))
 
     assert isinstance(batch[0][0], MyOp)
@@ -167,7 +167,7 @@ class TestSupportsDerivatives:
         """Test that null.qubit interprets 'adjoint' as device derivatives."""
         dev = NullQubit()
         config = ExecutionConfig(gradient_method="adjoint")
-        _, config = dev.preprocess(config)
+        config = dev.setup_execution_config(config)
         assert config.gradient_method == "device"
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
@@ -409,7 +409,7 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("shots", shots_data)
     def test_multi_measurement_shot_vector(self, shots):
         """Test a simple circuit containing multiple measurements for shot vectors"""
-        # TODO: resume from here
+
         x, y = np.array(0.732), np.array(0.488)
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript(
@@ -755,7 +755,7 @@ class TestDeviceDifferentiation:
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
         assert actual_grad.shape == ()  # pylint: disable=no-member
@@ -771,7 +771,8 @@ class TestDeviceDifferentiation:
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        transform_program = dev.preprocess_transforms(config)
+        [qs], _ = transform_program((qs,))
         actual_grad = dev.compute_derivatives([qs], self.ec)
         assert actual_grad == (np.array(0.0),)
 
@@ -817,7 +818,7 @@ class TestDeviceDifferentiation:
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
         actual_grad = dev.compute_jvp(qs, tangent, self.ec)
         assert isinstance(actual_grad, np.ndarray)
@@ -836,7 +837,7 @@ class TestDeviceDifferentiation:
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
         actual_grad = dev.compute_jvp([qs], [tangent], self.ec)
         assert actual_grad == (np.array(0.0),)
@@ -891,7 +892,7 @@ class TestDeviceDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
         actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
         assert actual_grad == (0.0,)
@@ -907,7 +908,7 @@ class TestDeviceDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
         actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
         assert actual_grad == ((0.0,),)
