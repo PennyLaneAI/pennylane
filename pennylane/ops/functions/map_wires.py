@@ -48,14 +48,15 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
         .. code-block:: python
 
             import jax
-            from pennylane.capture.transforms import MapWiresInterpreter
+            from pennylane.ops.functions.map_wires import MapWiresInterpreter
+            
+            qml.capture.enable()
 
             @MapWiresInterpreter(wire_map={0: 1})
             def circuit():
                 qml.Hadamard(wires=0)
                 return qml.expval(qml.PauliZ(0))
 
-        >>> qml.capture.enable()
         >>> jaxpr = jax.make_jaxpr(circuit)()
         >>> jaxpr
         { lambda ; . let
