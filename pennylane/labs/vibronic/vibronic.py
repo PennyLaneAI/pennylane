@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Dict, Tuple
 
+import itertools
 import numpy as np
+import scipy as sp
 
 
 class VibronicWord:
@@ -51,6 +53,7 @@ class VibronicWord:
         return VibronicWord(operator=new_operator)
 
     def get_op(self, op: Tuple[str]):
+        """Return the operator indexed by op"""
         return self.operator[op]
 
     __rmul__ = __mul__
@@ -63,13 +66,7 @@ class VibronicWord:
         for l_key, l_value in self.operator.items():
             for r_key, r_value in other.operator.items():
                 new_value = np.multiply.outer(l_value, r_value)
-
-                if l_key == ("I",):
-                    new_key = r_key
-                elif r_key == ("I",):
-                    new_key = l_key
-                else:
-                    new_key = l_key + r_key
+                new_key = l_key + r_key
 
                 _add_coeffs(new_operator, new_key, new_value)
 
@@ -176,6 +173,23 @@ class VibronicHamiltonian:
         self.lambdas = lambdas
         self.omegas = omegas
 
+    def __add__(self, other: VibronicHamiltonian):
+        if not isinstance(other, VibronicHamiltonian):
+            raise TypeError(f"Cannot add VibronicHamiltonian with type {type(other)}.")
+
+        if self.states != other.states:
+            raise ValueError(f"Cannot add VibronicHamiltonian on {self.states} with VibronicHamiltonian on {other.states}.")
+
+        if self.modes != other.modes:
+            raise ValueError(f"Cannot add VibronicHamiltonian on {self.modes} with VibronicHamiltonian on {other.modes}.")
+
+        return VibronicHamiltonian(self.states, self.modes, self.alphas + other.alphas, self.betas + other.betas, self.lambdas + other.lambdas, self.omegas + other.omegas)
+
+    def __mul__(self, scalar):
+        return VibronicHamiltonian(self.states, self.modes, scalar*self.alphas, scalar*self.betas, scalar*self.lambdas, scalar*self.omegas)
+
+    __rmul__ = __mul__
+
     def fragment(self, index) -> VibronicBlockMatrix:
         """Get the fragment at the specified index"""
 
@@ -194,7 +208,7 @@ class VibronicHamiltonian:
                 f"Dimension out of bounds. Got ({i}, {j}) but V is dimension ({self.states}, {self.states})."
             )
         word = VibronicWord()
-        word.add_op(("I",), self.lambdas[i, j])
+        word.add_op((), self.lambdas[i, j])
         word.add_op(("Q",), self.alphas[i, j])
         word.add_op(("Q", "Q"), self.betas[i, j])
         return word
@@ -223,6 +237,7 @@ class VibronicHamiltonian:
 
     def epsilon(self, delta: float) -> VibronicBlockMatrix:
         """Return the error matrix"""
+        # pylint: disable=arguments-out-of-order
 
         scalar = -(delta**2) / 24
         epsilon = VibronicBlockMatrix(dim=self.states)
@@ -233,7 +248,7 @@ class VibronicHamiltonian:
                 for k in range(i + 1, self.states + 1):
                     epsilon += 2 * self.commute_fragments(
                         k, i, j
-                    )  # pylint: disable=arguments-out-of-order
+                    )
 
         return scalar * epsilon
 
@@ -254,8 +269,27 @@ class VibronicHamiltonian:
 
         return 2 * block_matrix
 
+    def matrix(self, gridpoints: int) -> sp.sparse.csr_matrix:
+        """Return a matrix representation of the Hamiltonian"""
+        block_dim = gridpoints**self.modes
+        dim = self.states*block_dim
+        operator = self.block_operator()
+
+        final_matrix = sp.sparse.csr_matrix((dim, dim))
+        for key, value in operator.blocks.items():
+            data = np.array([1])
+            indices = (np.array([key[0]]), np.array([key[1]]))
+            shape = (self.states, self.states)
+            indicator = sp.sparse.csr_matrix((data, indices), shape=shape)
+            for word, coeffs in value.operator.items():
+                block = _matrix_from_op(word, coeffs, self.modes, gridpoints)
+                final_matrix += sp.sparse.kron(indicator, block)
+
+        return final_matrix
+
 
 def commutator(a: VibronicBlockMatrix, b: VibronicBlockMatrix) -> VibronicBlockMatrix:
+    """Return the commutator [a, b]"""
     return a @ b - b @ a
 
 
@@ -273,7 +307,6 @@ def _add_dicts(d1: dict, d2: dict):
 
     return new_dict
 
-
 def _add_coeffs(d: dict, key: Tuple[str], coeffs: np.ndarray) -> None:
     try:
         d[key] += coeffs
@@ -281,8 +314,78 @@ def _add_coeffs(d: dict, key: Tuple[str], coeffs: np.ndarray) -> None:
         d[key] = coeffs
 
 
-def _simplify_word(word: str) -> str:
-    if set(word) == {"I"}:
-        return "I"
+def position_operator(gridpoints: int, power: int) -> np.ndarray:
+    """Returns a discretization of the position operator"""
 
-    return word.replace("I", "")
+    values = ((np.arange(gridpoints) - gridpoints / 2) * (np.sqrt(2 * np.pi / gridpoints))) ** power
+    return sp.sparse.diags(values, 0, format='csr')
+
+def momentum_operator(gridpoints: int, power: int) -> np.ndarray:
+    """Returns a discretization of the momentum operator"""
+
+    values = np.arange(gridpoints)
+    values[gridpoints // 2:] -= gridpoints
+    values = (values * (np.sqrt(2 * np.pi / gridpoints))) ** power
+    dft = sp.linalg.dft(gridpoints, scale='sqrtn')
+    matrix = dft @ np.diag(values) @ dft.conj().T
+
+    return sp.sparse.csr_matrix(matrix)
+
+def _tensor_with_id(op: np.ndarray, base_dimension: int, length: int, position: int):
+    if length < 1:
+        raise ValueError("Length must be greater than 0")
+
+    if position > length:
+        raise ValueError("Position must be less than or equal to length")
+
+    if length == 1:
+        return op
+
+    id = sp.sparse.identity(base_dimension, format='csr')
+
+    if position == 1:
+        mat = op
+    else:
+        mat = sp.sparse.identity(base_dimension, format='csr')
+
+    for i in range(2, length+1):
+        if i == position:
+            mat = sp.sparse.kron(mat, op)
+        else:
+            mat = sp.sparse.kron(mat, id)
+
+    return mat
+
+def _matrix_from_op(op: Tuple[str], coeffs: np.ndarray, modes: int, gridpoints: int):
+    if op == ():
+        return sp.sparse.identity(gridpoints**modes, format='csr')*coeffs
+
+    matrices = [_term_to_matrix(term, gridpoints) for term in op]
+
+    final_matrix = sp.sparse.csr_matrix((gridpoints**modes, gridpoints**modes))
+    for index in itertools.product(range(modes), repeat=len(op)):
+        term = sp.sparse.identity(gridpoints**modes, format='csr')
+        for count, i in enumerate(index):
+            term = term @ _tensor_with_id(matrices[count], gridpoints, modes, i+1)
+
+        final_matrix += coeffs[index] * term
+
+    return final_matrix
+
+def _term_to_matrix(term: str, gridpoints: int) -> np.ndarray:
+    mat = sp.sparse.identity(gridpoints, format='csr')
+    p = momentum_operator(gridpoints, 1)
+    q = position_operator(gridpoints, 1)
+
+    for char in term:
+        if char == "P":
+            mat = mat @ p
+            continue
+
+        if char == "Q":
+            mat = mat @ q
+            continue
+
+        raise ValueError(f"Operator terms must only contain P and Q. Got {char}.")
+
+    return mat

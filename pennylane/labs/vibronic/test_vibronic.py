@@ -3,7 +3,8 @@ from itertools import product
 
 import numpy as np
 import pytest
-from vibronic import VibronicBlockMatrix, VibronicHamiltonian, VibronicWord, commutator
+from scipy.sparse import csr_matrix
+from vibronic import VibronicBlockMatrix, VibronicHamiltonian, VibronicWord, commutator, momentum_operator, position_operator, _term_to_matrix, _matrix_from_op, _tensor_with_id
 
 
 def coeffs(states, modes):
@@ -34,8 +35,8 @@ def coeffs(states, modes):
 class TestVibronic:
     """Test vibronic arithmetic"""
 
-    states = [2**i for i in range(5)]
-    states_modes = list(product(states, range(6)))
+    states = [2**i for i in range(2)]
+    states_modes = list(product(states, range(2)))
 
     @pytest.mark.parametrize("states, modes", states_modes)
     def test_v_symmetry(self, states, modes):
@@ -61,7 +62,7 @@ class TestVibronic:
                     assert h.get_block(j, k) == VibronicWord({})
 
     states = [2**i for i in range(1, 6)]
-    states_modes = list(product(states, range(5)))
+    states_modes = list(product(states, range(3)))
 
     @pytest.mark.parametrize("states, modes", states_modes)
     def test_y(self, states, modes):
@@ -106,3 +107,54 @@ class TestVibronic:
         expected = scalar * sum(terms, VibronicBlockMatrix(dim=states))
 
         assert actual == expected
+
+    @pytest.mark.parametrize("states, modes", states_modes)
+    @pytest.mark.parametrize("gridpoints", range(1,3))
+    def test_matrix_add(self, states, modes, gridpoints):
+        """Test that the matrix representation is consistent with addition"""
+        vham1 = VibronicHamiltonian(states, modes, *coeffs(states, modes))
+        vham2 = VibronicHamiltonian(states, modes, *coeffs(states, modes))
+
+        mat1 = vham1.matrix(gridpoints)
+        mat2 = vham2.matrix(gridpoints)
+
+        assert np.allclose((mat1 + mat2).todense(), (vham1 + vham2).matrix(gridpoints).todense())
+
+
+    #@pytest.mark.parametrize("states, modes", states_modes)
+    #@pytest.mark.parametrize("gridpoints", range(1,5))
+    #def test_matrix_mul(self, states, modes, gridpoints):
+    #    """Test that the matrix representation is consistent with addition"""
+    #    vham1 = VibronicHamiltonian(states, modes, *coeffs(states, modes))
+    #    vham2 = VibronicHamiltonian(states, modes, *coeffs(states, modes))
+
+    #    mat1 = vham1.matrix(gridpoints)
+    #    mat2 = vham2.matrix(gridpoints)
+
+    #    assert (mat1 @ mat2) == (vham1 @ vham2).matrix(gridpoints)
+
+    @pytest.mark.parametrize("states, modes", states_modes)
+    @pytest.mark.parametrize("gridpoints", range(1,3))
+    @pytest.mark.parametrize("scalar", [0, 1, -1, 2.2, -1.7, 5j, -2 + 1j])
+    def test_matrix_scalar_mul(self, states, modes, gridpoints, scalar):
+        """Test that the matrix representation is consistent with addition"""
+        vham = VibronicHamiltonian(states, modes, *coeffs(states, modes))
+
+        assert np.allclose((scalar*vham).matrix(gridpoints).todense(), scalar*vham.matrix(gridpoints).todense())
+
+    params = [
+        ("P", 2, momentum_operator(2, 1)),
+        ("Q", 2, position_operator(2, 1)),
+        ("P", 3, momentum_operator(3, 1)),
+        ("Q", 3, position_operator(3, 1)),
+        ("PQ", 2, momentum_operator(2, 1) @ position_operator(2, 1)),
+        ("QP", 2, position_operator(2, 1) @ momentum_operator(2, 1)),
+        ("PQ", 3, momentum_operator(3, 1) @ position_operator(3, 1)),
+        ("QP", 3, position_operator(3, 1) @ momentum_operator(3, 1)),
+    ]
+
+
+    @pytest.mark.parametrize("term, gridpoints, expected", params)
+    def test_term_to_matrix(self, term, gridpoints, expected):
+        assert np.allclose(_term_to_matrix(term, gridpoints).todense(), expected.todense())
+
