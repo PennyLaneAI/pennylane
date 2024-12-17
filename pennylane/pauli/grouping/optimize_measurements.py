@@ -41,7 +41,7 @@ def optimize_measurements(
     fully-commuting measurement-partitioning approaches respectively.
 
     Args:
-        observables (list[Observable]): a list of Pauli words (Pauli operation instances and Hamiltonian
+        observables (list[Observable]): a list of Pauli words (Pauli operation instances and tensors
             instances thereof)
         coefficients (list[float]): a list of float coefficients, for instance the weights of
             the Pauli words comprising a Hamiltonian
