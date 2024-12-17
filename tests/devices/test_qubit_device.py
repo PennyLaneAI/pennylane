@@ -1266,13 +1266,12 @@ class TestExecution:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.mixed.legacy", wires=2)
+        dev_1 = qml.device("default.qutrit", wires=2)
 
         def circuit_1(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.TRX(x, wires=[0])
+            qml.TRY(y, wires=[1])
+            return qml.expval(qml.GellMann(0) @ qml.GellMann(1))
 
         node_1 = qml.QNode(circuit_1, dev_1)
         num_evals_1 = 10
@@ -1282,12 +1281,11 @@ class TestExecution:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.mixed.legacy", wires=2)
+        dev_2 = qml.device("default.qutrit", wires=2)
 
         def circuit_2(x):
-            qml.RX(x, wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.TRX(x, wires=[0])
+            return qml.expval(qml.GellMann(0) @ qml.GellMann(1))
 
         node_2 = qml.QNode(circuit_2, dev_2)
         num_evals_2 = 5
@@ -1298,9 +1296,8 @@ class TestExecution:
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(y):
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.TRY(y, wires=[1])
+            return qml.expval(qml.GellMann(0) @ qml.GellMann(1))
 
         node_3 = qml.QNode(circuit_3, dev_1)
         num_evals_3 = 7
@@ -1327,13 +1324,12 @@ class TestExecutionBroadcasted:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.mixed.legacy", wires=2)
+        dev_1 = qml.device("default.qutrit", wires=2)
 
         def circuit_1(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.TRX(x, wires=[0])
+            qml.TRY(y, wires=[1])
+            return qml.expval(qml.GellMann(0) @ qml.GellMann(1))
 
         node_1 = qml.QNode(circuit_1, dev_1)
         num_evals_1 = 10
@@ -1343,14 +1339,13 @@ class TestExecutionBroadcasted:
         assert dev_1.num_executions == num_evals_1 * 3
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.mixed.legacy", wires=2)
+        dev_2 = qml.device("default.qutrit", wires=2)
 
         assert dev_2.num_executions == 0
 
         def circuit_2(x, y):
-            qml.RX(x, wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.TRX(x, wires=[0])
+            return qml.expval(qml.GellMann(0) @ qml.GellMann(1))
 
         node_2 = qml.QNode(circuit_2, dev_2)
         num_evals_2 = 5
@@ -1361,9 +1356,8 @@ class TestExecutionBroadcasted:
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(x, y):
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.TRY(y, wires=[1])
+            return qml.expval(qml.GellMann(0) @ qml.GellMann(1))
 
         node_3 = qml.QNode(circuit_3, dev_1)
         num_evals_3 = 7
@@ -1588,9 +1582,9 @@ class TestSamplesToCounts:
         """Test that the counts function disregards failed measurements (samples including
         NaN values) when totalling counts"""
         # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
-        device = qml.device("default.mixed.legacy", wires=2, shots=1000)
-        sv = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
-        device.target_device._state = np.outer(sv, sv)
+        device = qml.device("default.qutrit", wires=2, shots=1000)
+        sv = np.array([1 / 3] * 3**2)
+        device.target_device._state = sv
         device.target_device._samples = device.generate_samples()
         samples = device.sample(qml.measurements.CountsMP())
 
@@ -1603,8 +1597,8 @@ class TestSamplesToCounts:
         result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
 
         # no keys with NaNs
-        assert len(result) == 4
-        assert set(result.keys()) == {"00", "01", "10", "11"}
+        assert len(result) == 9
+        assert set(result.keys()) == {f"{a}{b}" for a in "012" for b in "012"}
 
         # # NaNs were not converted into "0", but were excluded from the counts
         total_counts = sum(result.values())
@@ -1617,12 +1611,12 @@ class TestSamplesToCounts:
         # generate 1000 samples for 10 wires, randomly distributed between 0 and 1
         n_wires = 10
         shots = 100
-        device = qml.device("default.mixed.legacy", wires=n_wires, shots=shots)
+        device = qml.device("default.qutrit", wires=n_wires, shots=shots)
 
-        sv = np.random.rand(*([2] * n_wires))
+        sv = np.random.rand(*([3] * n_wires))
         state = sv / np.linalg.norm(sv)
 
-        device.target_device._state = np.outer(state, state)
+        device.target_device._state = state
         device.target_device._samples = device.generate_samples()
         samples = device.sample(qml.measurements.CountsMP(all_outcomes=all_outcomes))
 
@@ -1631,7 +1625,7 @@ class TestSamplesToCounts:
         )
 
         # Check that keys are correct binary strings
-        assert all(0 <= int(sample, 2) <= 2**n_wires for sample in result.keys())
+        assert all(0 <= int(sample, 3) <= 3**n_wires for sample in result.keys())
 
         # # NaNs were not converted into "0", but were excluded from the counts
         total_counts = sum(result.values())

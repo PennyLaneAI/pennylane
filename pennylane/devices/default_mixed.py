@@ -216,7 +216,6 @@ class DefaultMixed(Device):
         wires=None,
         shots=None,
         seed="global",
-        # The following parameters are inherited from DefaultMixedLegacy
         readout_prob=None,
     ) -> None:
 
