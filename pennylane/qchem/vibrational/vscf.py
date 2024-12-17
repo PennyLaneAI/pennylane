@@ -15,7 +15,7 @@
 
 import numpy as np
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 
 
 def _build_fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):
