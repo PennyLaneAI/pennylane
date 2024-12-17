@@ -224,7 +224,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         users must provide the ``plxpr_transform`` argument. If this argument is not provided, executing transformed
         functions will raise a ``NotImplementedError``. The ``plxpr_transform`` argument should be a function that
         accepts ``jax.core.Jaxpr`` as input and returns ``jax.core.ClosedJaxpr`` that has been transformed. The exact
-        expected signature of ``plxpr_transform`` is shown below:
+        expected signature of ``plxpr_transform`` is shown in the example below:
 
         .. code-block:: python
 
@@ -233,8 +233,8 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
             ) -> jax.core.ClosedJaxpr:
                 ...
 
-        Once ``plxpr_transform`` has been provided, the transform can be easily used with program capture enabled!
-        To do so, apply the transform as you normally would:
+        Once the ``plxpr_transform`` argument is provided, the transform can be easily used with program capture
+        enabled! To do so, apply the transform as you normally would:
 
         .. code-block:: python
 
@@ -271,6 +271,12 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         representation of the function being transformed stored in the ``inner_jaxpr``
         parameter of the transform's primitive.
 
+        .. warning::
+
+            Currently, executing a function to which a transform has been applied will raise a
+            ``NotImplementedError``. See below for details on how to use functions that are
+            transformed.
+
         To apply the transform, the :func:`pennylane.capture.expand_plxpr_transforms` function
         should be used. This function accepts a function to which transforms have been applied
         as an input, and returns a new function that has been transformed:
@@ -281,12 +287,6 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
             a:AbstractOperator() = PauliZ[n_wires=1] 1
             b:AbstractMeasurement(n_wires=None) = expval_obs a
           in (b,) }
-
-        .. warning::
-
-            Calling a function to which transforms have been applied with program capture enabled
-            will raise a ``NotImplementedError``. To use a transformed function as you would normally,
-            it *must* first be decorated with :func:`pennylane.capture.expand_plxpr_transforms`.
     """
     # 1: Checks for the transform
     if not callable(quantum_transform):
