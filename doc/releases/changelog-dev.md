@@ -203,7 +203,7 @@ such as `shots`, `rng` and `prng_key`.
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
-  * Implemented functions for generating the vibrational Hamiltonian in vscf basis
+  * Implemented functions for generating the vibrational Hamiltonian in VSCF basis
     [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
 
 <h3>Improvements 🛠</h3>
