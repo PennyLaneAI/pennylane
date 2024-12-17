@@ -65,11 +65,11 @@ def expand_plxpr_transforms(f: Callable) -> Callable:
             _:AbstractOperator() = CRY[n_wires=2] e 1 2
             f:AbstractOperator() = PauliZ[n_wires=1] 2
             g:AbstractMeasurement(n_wires=None) = expval_obs f
-            in (g,) }
+          in (g,) }
         targs_slice=slice(2, None, None)
         tkwargs={'wire_map': {0: 3, 1: 6, 2: 9}, 'queue': False}
         ] a b
-    in (c,) }
+      in (c,) }
 
     >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
     >>> jax.make_jaxpr(transformed_circuit)(1.2, 3.4)
@@ -79,7 +79,7 @@ def expand_plxpr_transforms(f: Callable) -> Callable:
         _:AbstractOperator() = CRY[n_wires=2] b 6 9
         c:AbstractOperator() = PauliZ[n_wires=1] 9
         d:AbstractMeasurement(n_wires=None) = expval_obs c
-    in (d,) }
+      in (d,) }
 
     Args:
         f (Callable): The callable for which we want to expand transforms.

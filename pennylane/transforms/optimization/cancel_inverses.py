@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 # pylint: disable=too-many-branches
-from functools import lru_cache
+from functools import lru_cache, partial
 
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
@@ -256,7 +256,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
 CancelInversesInterpreter, cancel_inverses_plxpr_to_plxpr = _get_plxpr_cancel_inverses()
 
 
-@transform
+@partial(transform, plxpr_transform=cancel_inverses_plxpr_to_plxpr)
 def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform to remove any operations that are applied next to their
     (self-)inverses or adjoint.
