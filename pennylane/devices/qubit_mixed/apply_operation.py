@@ -261,7 +261,10 @@ def apply_operation_tensordot(
         kraus = [mat]
     kraus = [math.reshape(k, kraus_shape) for k in kraus]
     kraus = math.array(kraus)  # Necessary for Jax
-    # Small trick: here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
+    # Small trick: following the same logic as in the legacy DefaultMixedLegacy.
+    # _apply_channel_tensordot, here for the contraction on the right side we
+    # also directly contract the column indices of the channel instead of rows
+    # for simplicity. This can also save a step when transposing the Kraus operators.
     row_wires_list = [w + is_state_batched for w in channel_wires.tolist()]
     col_wires_list = [w + num_wires for w in row_wires_list]
     channel_col_ids = list(range(-num_ch_wires, 0))
