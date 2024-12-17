@@ -19,19 +19,19 @@ Unit tests for the ParametrizedHamiltonian class
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.wires import Wires
 
 
 def f1(p, t):
     """Compute the function p * sin(t) * (t - 1)."""
-    return p * np.sin(t) * (t - 1)
+    return p * pnp.sin(t) * (t - 1)
 
 
 def f2(p, t):
     """Compute the function p * cos(t**2)."""
-    return p * np.cos(t**2)
+    return p * pnp.cos(t**2)
 
 
 param = [1.2, 2.3]
@@ -236,9 +236,9 @@ class TestCall:
         assert (
             repr(H([2], t=4)) == "(\n    2 * GellMann2(wires=[0])\n  + 10 * GellMann1(wires=[0])\n)"
         )
-        assert np.all(
+        assert pnp.all(
             qml.matrix(H([2], 4))
-            == np.array(
+            == pnp.array(
                 [
                     [0.0 + 0.0j, 10.0 - 2.0j, 0.0 + 0.0j],
                     [10.0 + 2.0j, 0.0 + 0.0j, 0.0 + 0.0j],

@@ -22,7 +22,7 @@ import sys
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem
 
 openfermion = pytest.importorskip("openfermion")
@@ -403,7 +403,7 @@ def test_operation_conversion(pl_op, of_op, wire_order):
 
     assert all(isinstance(term, pauli_ops_and_prod) for term in converted_of_op_terms)
 
-    assert np.allclose(
+    assert pnp.allclose(
         qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
         qml.matrix(qml.dot(*converted_of_op), wire_order=wire_order),
     )
@@ -439,7 +439,7 @@ def test_not_xyz_pennylane_to_openfermion(op):
     _match = "Expected a Pennylane operator with a valid Pauli word representation,"
     with pytest.raises(ValueError, match=_match):
         qml.qchem.convert._pennylane_to_openfermion(
-            np.array([0.1 + 0.0j, 0.0]),
+            pnp.array([0.1 + 0.0j, 0.0]),
             [
                 qml.prod(qml.PauliX(0)),
                 op,
@@ -454,7 +454,7 @@ def test_wires_not_covered_pennylane_to_openfermion():
         match="Supplied `wires` does not cover all wires defined in `ops`.",
     ):
         qml.qchem.convert._pennylane_to_openfermion(
-            np.array([0.1, 0.2]),
+            pnp.array([0.1, 0.2]),
             [
                 qml.prod(qml.PauliX(wires=["w0"])),
                 qml.prod(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
@@ -536,7 +536,7 @@ def test_import_operator(of_op, pl_h, pl_op, wires):
             isinstance(term, qml.ops.SProd) and isinstance(term.base, pauli_ops_and_prod)
             for term in of_h.operands
         )
-    assert np.allclose(qml.matrix(of_h, wire_order=wires), qml.matrix(pl_op, wire_order=wires))
+    assert pnp.allclose(qml.matrix(of_h, wire_order=wires), qml.matrix(pl_op, wire_order=wires))
 
 
 op_1 = (
@@ -593,7 +593,7 @@ def test_singlewire_pennylane_to_openfermion():
     """Test that _pennylane_to_openfermion function returns the correct Hamiltonian for a
     single-wire case.
     """
-    coeffs = np.array([0.5])
+    coeffs = pnp.array([0.5])
     obs_list = [qml.PauliZ(wires=[0])]
 
     op_str = str(qml.qchem.convert._pennylane_to_openfermion(coeffs, obs_list))
@@ -605,7 +605,7 @@ def test_singlewire_pennylane_to_openfermion():
 
 def test_pennylane_to_openfermion_no_decomp():
     """Test the _pennylane_to_openfermion function with custom wires."""
-    coeffs = np.array([0.1, 0.2])
+    coeffs = pnp.array([0.1, 0.2])
     ops = [
         qml.prod(qml.PauliX(wires=["w0"])),
         qml.prod(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
@@ -679,7 +679,7 @@ def test_integration_observable_to_vqe_cost(
     params = [0.1 * i for i in range(num_qubits)]
     res = dummy_cost(params)
 
-    assert np.allclose(res, expected_cost, **tol)
+    assert pnp.allclose(res, expected_cost, **tol)
 
 
 @pytest.mark.parametrize("n_wires", [None, 6])
@@ -727,7 +727,7 @@ def test_fail_import_openfermion(monkeypatch):
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
             qml.qchem.convert._pennylane_to_openfermion(
-                np.array([0.1 + 0.0j, 0.0]),
+                pnp.array([0.1 + 0.0j, 0.0]),
                 [
                     qml.prod(qml.PauliX(0)),
                     qml.prod(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
@@ -776,7 +776,7 @@ def test_integration_mol_file_to_vqe_cost(
         wires = custom_wires[:num_qubits]
 
     dev = qml.device("default.qubit", wires=wires)
-    phis = np.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
+    phis = pnp.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
 
     @qml.qnode(dev)
     def dummy_cost(params):
@@ -786,7 +786,7 @@ def test_integration_mol_file_to_vqe_cost(
 
     res = dummy_cost(phis)
 
-    assert np.abs(res - expected_cost) < tol["atol"]
+    assert pnp.abs(res - expected_cost) < tol["atol"]
 
 
 @pytest.mark.parametrize(
@@ -814,23 +814,23 @@ def test_excitations(electrons, orbitals, singles_ref, doubles_ref):
             3,
             8,
             1,
-            np.array([14, 22, 38, 70, 134, 13, 21, 37, 69, 133, 11, 19, 35, 67, 131]),
-            np.array([1, 1, 1, 1, 1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1]),
+            pnp.array([14, 22, 38, 70, 134, 13, 21, 37, 69, 133, 11, 19, 35, 67, 131]),
+            pnp.array([1, 1, 1, 1, 1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1]),
         ),
         (
             3,
             6,
             2,
-            np.array([28, 44, 52, 26, 42, 50, 25, 41, 49]),
-            np.array([1, 1, 1, -1, -1, -1, 1, 1, 1]),
+            pnp.array([28, 44, 52, 26, 42, 50, 25, 41, 49]),
+            pnp.array([1, 1, 1, -1, -1, -1, 1, 1, 1]),
         ),
     ],
 )
 def test_excited_configurations(electrons, orbitals, excitation, states_ref, signs_ref):
     r"""Test if the _excited_configurations function returns correct states and signs."""
     states, signs = qchem.convert._excited_configurations(electrons, orbitals, excitation)
-    assert np.allclose(states, states_ref)
-    assert np.allclose(signs, signs_ref)
+    assert pnp.allclose(states, states_ref)
+    assert pnp.allclose(signs, signs_ref)
 
 
 @pytest.mark.parametrize(
@@ -852,13 +852,13 @@ def test_excited_configurations(electrons, orbitals, excitation, states_ref, sig
 )
 def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
     r"""Test that _wfdict_to_statevector returns the correct state vector."""
-    wf_ref = np.zeros(2 ** (n_orbitals * 2))
+    wf_ref = pnp.zeros(2 ** (n_orbitals * 2))
     idx_nonzero = [int(s, 2) for s in string_ref]
     wf_ref[idx_nonzero] = coeff_ref
 
     wf_comp = qchem.convert._wfdict_to_statevector(wf_dict, n_orbitals)
 
-    assert np.allclose(wf_comp, wf_ref)
+    assert pnp.allclose(wf_comp, wf_ref)
 
 
 @pytest.mark.parametrize(
@@ -868,7 +868,7 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
             [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
             "sto6g",
             "d2h",
-            np.array(
+            pnp.array(
                 [
                     0.0,
                     0.0,
@@ -913,7 +913,7 @@ def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
     wf_comp = qchem.convert.import_state(solver)
 
     # overall sign could be different in each PySCF run
-    assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+    assert pnp.allclose(wf_comp, wf_ref) or pnp.allclose(wf_comp, -wf_ref)
 
 
 @pytest.mark.parametrize(
@@ -921,8 +921,8 @@ def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
     [
         (
             # dmrg
-            ([[0, 3], [3, 0]], np.array([-0.10660077, 0.9943019])),
-            np.array(
+            ([[0, 3], [3, 0]], pnp.array([-0.10660077, 0.9943019])),
+            pnp.array(
                 [
                     0.0,
                     0.0,
@@ -945,8 +945,8 @@ def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
         ),
         (
             # shci
-            (["02", "20"], np.array([-0.1066467, 0.99429698])),
-            np.array(
+            (["02", "20"], pnp.array([-0.1066467, 0.99429698])),
+            pnp.array(
                 [
                     0.0,
                     0.0,
@@ -975,7 +975,7 @@ def test_import_state_nonpyscf(detscoeffs, wf_ref):
     wf_comp = qchem.convert.import_state(detscoeffs)
 
     # overall sign could be different in each PySCF run
-    assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+    assert pnp.allclose(wf_comp, wf_ref) or pnp.allclose(wf_comp, -wf_ref)
 
 
 def test_import_state_error():
@@ -986,7 +986,7 @@ def test_import_state_error():
     with pytest.raises(ValueError, match="The supported objects"):
         qchem.convert.import_state(myci)
 
-    mytuple = (np.array([[3, 0], [0, 3]]), np.array([0]))
+    mytuple = (pnp.array([[3, 0], [0, 3]]), pnp.array([0]))
 
     with pytest.raises(ValueError, match="For tuple input"):
         qchem.convert.import_state(mytuple)
@@ -1032,7 +1032,7 @@ li2_wf_sto6g = {  # tol = 1e-1
 # shci
 h3p_shci_dets_coeffs = (
     ["200", "020", "002", "b0a", "a0b"],
-    np.array([0.9389761486, -0.278704004, -0.1838389711, -0.0585282123, -0.0585282123]),
+    pnp.array([0.9389761486, -0.278704004, -0.1838389711, -0.0585282123, -0.0585282123]),
 )
 h3p_shci_e = -1.0862426041366735
 lihpp_shci_dets_coeffs = (
@@ -1050,7 +1050,7 @@ lihpp_shci_dets_coeffs = (
         "0000ba",
         "0000ab",
     ],
-    np.array(
+    pnp.array(
         [
             0.9999782547,
             -0.0035481253,
@@ -1070,7 +1070,7 @@ lihpp_shci_dets_coeffs = (
 lihpp_shci_e = -6.781988968692473
 h3_shci_dets_coeffs = (
     ["2a0", "aba", "0a2", "aab", "baa"],
-    np.array([0.8614786698, 0.322024811, 0.319505036, 0.1715258542, 0.1504989567]),
+    pnp.array([0.8614786698, 0.322024811, 0.319505036, 0.1715258542, 0.1504989567]),
 )
 h3_shci_e = -1.454861277373169
 lih_shci_dets_coeffs = (
@@ -1110,7 +1110,7 @@ lih_shci_dets_coeffs = (
         "0ba002",
         "0ab002",
     ],
-    np.array(
+    pnp.array(
         [
             -0.9911126427,
             0.0971352826,
@@ -1197,7 +1197,7 @@ behp_shci_dets_coeffs = (
         "0ba002",
         "0ab002",
     ],
-    np.array(
+    pnp.array(
         [
             0.9916223775,
             -0.0701573082,
@@ -1303,7 +1303,7 @@ beh_shci_dets_coeffs = (
         "aa020b",
         "aa002b",
     ],
-    np.array(
+    pnp.array(
         [
             -0.9884697344,
             -0.0746546627,
@@ -1366,7 +1366,7 @@ beh_shci_e = -15.11001775498381
 # dmrg
 h3p_dmrg_dets_coeffs = (
     [[0, 0, 3], [0, 3, 0], [1, 0, 2], [2, 0, 1], [3, 0, 0]],
-    np.array(
+    pnp.array(
         [
             0.1838436556640729,
             0.27869890041510864,
@@ -1398,7 +1398,7 @@ lihpp_dmrg_dets_coeffs = (
         [0, 0, 0, 3, 0, 0],
         [0, 0, 3, 0, 0, 0],
     ],
-    np.array(
+    pnp.array(
         [
             -0.0007085379968001104,
             -0.0025498996125903938,
@@ -1424,7 +1424,7 @@ lihpp_dmrg_dets_coeffs = (
 lihpp_dmrg_e = -6.781990152954243
 h3_dmrg_dets_coeffs = (
     [[0, 1, 3], [1, 1, 2], [1, 2, 1], [2, 1, 1], [3, 1, 0]],
-    np.array(
+    pnp.array(
         [
             -0.319505629799915,
             -0.1715263012109641,
@@ -1517,7 +1517,7 @@ lih_dmrg_dets_coeffs = (
         [0, 0, 1, 0, 3, 2],
         [0, 0, 1, 3, 0, 2],
     ],
-    np.array(
+    pnp.array(
         [
             -0.044171641132296,
             3.1795384687324654e-06,
@@ -1676,7 +1676,7 @@ behp_dmrg_dets_coeffs = (
         [0, 0, 0, 3, 0, 3],
         [0, 0, 0, 3, 3, 0],
     ],
-    np.array(
+    pnp.array(
         [
             -0.04574644026032889,
             0.04574537386192611,
@@ -1832,7 +1832,7 @@ beh_dmrg_dets_coeffs = (
         [0, 0, 1, 3, 3, 0],
         [0, 0, 3, 0, 3, 1],
     ],
-    np.array(
+    pnp.array(
         [
             -0.024715466767529778,
             0.06840073088385241,
@@ -1936,22 +1936,22 @@ def test_rcisd_state_energy(molecule, basis, symm, charge, spin, tol):
     myci = pyscf.ci.CISD(myhf).run(verbose=0)
     wf_cisd = qchem.convert.import_state(myci, tol=tol)
 
-    core_constant = np.array([mol.energy_nuc()])
+    core_constant = pnp.array([mol.energy_nuc()])
     # molecular integrals in AO basis
     one_ao = mol.intor_symmetric("int1e_kin") + mol.intor_symmetric("int1e_nuc")
     two_ao = mol.intor("int2e_sph")
     # rotate to MO basis
-    one_mo = np.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
+    one_mo = pnp.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
     two_mo = pyscf.ao2mo.incore.full(two_ao, myhf.mo_coeff)
     # physicist ordering convention
-    two_mo = np.swapaxes(two_mo, 1, 3)
+    two_mo = pnp.swapaxes(two_mo, 1, 3)
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
     H_mat = H.sparse_matrix().toarray()
-    energy_pl = np.conj(wf_cisd.T).dot(H_mat.dot(wf_cisd))
+    energy_pl = pnp.conj(wf_cisd.T).dot(H_mat.dot(wf_cisd))
 
-    assert np.allclose(energy_pl, myci.e_tot, atol=1e-6)
+    assert pnp.allclose(energy_pl, myci.e_tot, atol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -1973,22 +1973,22 @@ def test_ucisd_state_energy(molecule, basis, symm, charge, spin, tol):
     myci = pyscf.ci.UCISD(myhf).run(verbose=0)
     wf_cisd = qchem.convert.import_state(myci, tol=tol)
 
-    core_constant = np.array([mol.energy_nuc()])
+    core_constant = pnp.array([mol.energy_nuc()])
     # molecular integrals in AO basis
     one_ao = mol.intor_symmetric("int1e_kin") + mol.intor_symmetric("int1e_nuc")
     two_ao = mol.intor("int2e_sph")
     # rotate to MO basis
-    one_mo = np.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
+    one_mo = pnp.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
     two_mo = pyscf.ao2mo.incore.full(two_ao, myhf.mo_coeff)
     # physicist ordering convention
-    two_mo = np.swapaxes(two_mo, 1, 3)
+    two_mo = pnp.swapaxes(two_mo, 1, 3)
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
     H_mat = H.sparse_matrix().toarray()
-    energy_pl = np.conj(wf_cisd.T).dot(H_mat.dot(wf_cisd))
+    energy_pl = pnp.conj(wf_cisd.T).dot(H_mat.dot(wf_cisd))
 
-    assert np.allclose(energy_pl, myci.e_tot, atol=1e-6)
+    assert pnp.allclose(energy_pl, myci.e_tot, atol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -2011,22 +2011,22 @@ def test_rccsd_state_energy(molecule, basis, symm, charge, spin, tol):
     mycc = pyscf.cc.CCSD(myhf).run(verbose=0)
     wf_ccsd = qchem.convert.import_state(mycc, tol=tol)
 
-    core_constant = np.array([mol.energy_nuc()])
+    core_constant = pnp.array([mol.energy_nuc()])
     # molecular integrals in AO basis
     one_ao = mol.intor_symmetric("int1e_kin") + mol.intor_symmetric("int1e_nuc")
     two_ao = mol.intor("int2e_sph")
     # rotate to MO basis
-    one_mo = np.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
+    one_mo = pnp.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
     two_mo = pyscf.ao2mo.incore.full(two_ao, myhf.mo_coeff)
     # physicist ordering convention
-    two_mo = np.swapaxes(two_mo, 1, 3)
+    two_mo = pnp.swapaxes(two_mo, 1, 3)
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
     H_mat = H.sparse_matrix().toarray()
-    energy_pl = np.conj(wf_ccsd.T).dot(H_mat.dot(wf_ccsd))
+    energy_pl = pnp.conj(wf_ccsd.T).dot(H_mat.dot(wf_ccsd))
 
-    assert np.allclose(energy_pl, mycc.e_tot, atol=1e-4)
+    assert pnp.allclose(energy_pl, mycc.e_tot, atol=1e-4)
 
 
 @pytest.mark.parametrize(
@@ -2048,22 +2048,22 @@ def test_uccsd_state_energy(molecule, basis, symm, charge, spin, tol):
     mycc = pyscf.cc.UCCSD(myhf).run(verbose=0)
     wf_ccsd = qchem.convert.import_state(mycc, tol=tol)
 
-    core_constant = np.array([mol.energy_nuc()])
+    core_constant = pnp.array([mol.energy_nuc()])
     # molecular integrals in AO basis
     one_ao = mol.intor_symmetric("int1e_kin") + mol.intor_symmetric("int1e_nuc")
     two_ao = mol.intor("int2e_sph")
     # rotate to MO basis
-    one_mo = np.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
+    one_mo = pnp.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
     two_mo = pyscf.ao2mo.incore.full(two_ao, myhf.mo_coeff)
     # physicist ordering convention
-    two_mo = np.swapaxes(two_mo, 1, 3)
+    two_mo = pnp.swapaxes(two_mo, 1, 3)
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
     H_mat = H.sparse_matrix().toarray()
-    energy_pl = np.conj(wf_ccsd.T).dot(H_mat.dot(wf_ccsd))
+    energy_pl = pnp.conj(wf_ccsd.T).dot(H_mat.dot(wf_ccsd))
 
-    assert np.allclose(energy_pl, mycc.e_tot, atol=1e-2)
+    assert pnp.allclose(energy_pl, mycc.e_tot, atol=1e-2)
 
 
 @pytest.mark.parametrize(
@@ -2086,22 +2086,22 @@ def test_dmrg_state_energy(molecule, basis, charge, spin, dmrg_dets_coeffs, dmrg
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, charge=charge, spin=spin, symmetry=None)
     myhf = pyscf.scf.ROHF(mol).run(verbose=0)
-    core_constant = np.array([mol.energy_nuc()])
+    core_constant = pnp.array([mol.energy_nuc()])
     # molecular integrals in AO basis
     one_ao = mol.intor_symmetric("int1e_kin") + mol.intor_symmetric("int1e_nuc")
     two_ao = mol.intor("int2e_sph")
     # rotate to MO basis
-    one_mo = np.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
+    one_mo = pnp.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
     two_mo = pyscf.ao2mo.incore.full(two_ao, myhf.mo_coeff)
     # physicist ordering convention
-    two_mo = np.swapaxes(two_mo, 1, 3)
+    two_mo = pnp.swapaxes(two_mo, 1, 3)
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
     H_mat = H.sparse_matrix().toarray()
-    energy_pl = np.conj(wf_dmrg.T).dot(H_mat.dot(wf_dmrg))
+    energy_pl = pnp.conj(wf_dmrg.T).dot(H_mat.dot(wf_dmrg))
 
-    assert np.allclose(energy_pl, dmrg_e, atol=1e-6)
+    assert pnp.allclose(energy_pl, dmrg_e, atol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -2125,22 +2125,22 @@ def test_shci_state_energy(molecule, basis, charge, spin, shci_dets_coeffs, shci
     mol = pyscf.gto.M(atom=molecule, basis=basis, charge=charge, spin=spin, symmetry=None)
     myhf = pyscf.scf.ROHF(mol).run(verbose=0)
 
-    core_constant = np.array([mol.energy_nuc()])
+    core_constant = pnp.array([mol.energy_nuc()])
     # molecular integrals in AO basis
     one_ao = mol.intor_symmetric("int1e_kin") + mol.intor_symmetric("int1e_nuc")
     two_ao = mol.intor("int2e_sph")
     # rotate to MO basis
-    one_mo = np.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
+    one_mo = pnp.einsum("pi,pq,qj->ij", myhf.mo_coeff, one_ao, myhf.mo_coeff)
     two_mo = pyscf.ao2mo.incore.full(two_ao, myhf.mo_coeff)
     # physicist ordering convention
-    two_mo = np.swapaxes(two_mo, 1, 3)
+    two_mo = pnp.swapaxes(two_mo, 1, 3)
 
     h_ferm = qchem.fermionic_observable(core_constant, one_mo, two_mo)
     H = qchem.qubit_observable(h_ferm)
     H_mat = H.sparse_matrix().toarray()
-    energy_pl = np.conj(wf_shci.T).dot(H_mat.dot(wf_shci))
+    energy_pl = pnp.conj(wf_shci.T).dot(H_mat.dot(wf_shci))
 
-    assert np.allclose(energy_pl, shci_e, atol=1e-6)
+    assert pnp.allclose(energy_pl, shci_e, atol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -2160,7 +2160,7 @@ def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
     wf_cisd = qchem.convert._ucisd_state(myci, tol=tol)
 
     assert wf_cisd.keys() == wf_ref.keys()
-    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
+    assert pnp.allclose(abs(pnp.array(list(wf_cisd.values()))), abs(pnp.array(list(wf_ref.values()))))
 
 
 @pytest.mark.parametrize(
@@ -2198,7 +2198,7 @@ def test_rcisd_state(molecule, basis, symm, tol, wf_ref):
     wf_cisd = qchem.convert._rcisd_state(myci, tol=tol)
 
     assert wf_cisd.keys() == wf_ref.keys()
-    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
+    assert pnp.allclose(abs(pnp.array(list(wf_cisd.values()))), abs(pnp.array(list(wf_ref.values()))))
 
 
 @pytest.mark.parametrize(
@@ -2218,7 +2218,7 @@ def test_uccsd_state(molecule, basis, symm, tol, wf_ref):
     wf_ccsd = qchem.convert._uccsd_state(mycc, tol=tol)
 
     assert wf_ccsd.keys() == wf_ref.keys()
-    assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+    assert pnp.allclose(abs(pnp.array(list(wf_ccsd.values()))), abs(pnp.array(list(wf_ref.values()))))
 
 
 @pytest.mark.parametrize(
@@ -2238,7 +2238,7 @@ def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
     wf_ccsd = qchem.convert._rccsd_state(mycc, tol=tol)
 
     assert wf_ccsd.keys() == wf_ref.keys()
-    assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+    assert pnp.allclose(abs(pnp.array(list(wf_ccsd.values()))), abs(pnp.array(list(wf_ref.values()))))
 
 
 @pytest.mark.parametrize(
@@ -2246,8 +2246,8 @@ def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
     [
         # h2
         (
-            ([[0, 3], [3, 0]], np.array([-0.10660077, 0.9943019])),
-            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+            ([[0, 3], [3, 0]], pnp.array([-0.10660077, 0.9943019])),
+            {(2, 2): pnp.array([-0.10660077]), (1, 1): pnp.array([0.9943019])},
         ),
         # li2
         (
@@ -2258,15 +2258,15 @@ def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
                     [3, 3, 0, 0, 3, 0, 0, 0, 0, 0],
                     [3, 3, 0, 0, 0, 3, 0, 0, 0, 0],
                 ],
-                np.array(
+                pnp.array(
                     [-0.887277400314367, 0.308001203411555, 0.307470727263604, 0.145118175734375]
                 ),
             ),
             {
-                (7, 7): np.array([-0.887277400314367]),
-                (11, 11): np.array([0.308001203411555]),
-                (19, 19): np.array([0.307470727263604]),
-                (35, 35): np.array([0.145118175734375]),
+                (7, 7): pnp.array([-0.887277400314367]),
+                (11, 11): pnp.array([0.308001203411555]),
+                (19, 19): pnp.array([0.307470727263604]),
+                (35, 35): pnp.array([0.145118175734375]),
             },
         ),
     ],
@@ -2285,16 +2285,16 @@ def test_dmrg_state(wavefunction, state_ref):
         (
             (
                 ["02", "20"],
-                np.array([-0.10660077, 0.9943019]),
+                pnp.array([-0.10660077, 0.9943019]),
             ),
-            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+            {(2, 2): pnp.array([-0.10660077]), (1, 1): pnp.array([0.9943019])},
         ),
         (
-            (["02", "ab", "20"], np.array([0.69958765, 0.70211014, 0.1327346])),
+            (["02", "ab", "20"], pnp.array([0.69958765, 0.70211014, 0.1327346])),
             {
-                (2, 2): np.array([0.69958765]),
-                (1, 2): np.array([0.70211014]),
-                (1, 1): np.array([0.1327346]),
+                (2, 2): pnp.array([0.69958765]),
+                (1, 2): pnp.array([0.70211014]),
+                (1, 1): pnp.array([0.1327346]),
             },
         ),
         (
@@ -2307,7 +2307,7 @@ def test_dmrg_state(wavefunction, state_ref):
                     "22b00000a0",
                     "22a00000b0",
                 ],
-                np.array(
+                pnp.array(
                     [
                         0.8874197325,
                         -0.3075732772,
@@ -2319,12 +2319,12 @@ def test_dmrg_state(wavefunction, state_ref):
                 ),
             ),
             {
-                (7, 7): np.array([-0.8874197325]),
-                (11, 11): np.array([0.3075732772]),
-                (19, 19): np.array([0.3075732772]),
-                (35, 35): np.array([0.1450493028]),
-                (259, 7): np.array([-0.0226602105]),
-                (7, 259): np.array([0.0226602105]),
+                (7, 7): pnp.array([-0.8874197325]),
+                (11, 11): pnp.array([0.3075732772]),
+                (19, 19): pnp.array([0.3075732772]),
+                (35, 35): pnp.array([0.1450493028]),
+                (259, 7): pnp.array([-0.0226602105]),
+                (7, 259): pnp.array([0.0226602105]),
             },
         ),
     ],

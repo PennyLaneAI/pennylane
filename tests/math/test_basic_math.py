@@ -17,7 +17,7 @@ import numpy as onp
 import pytest
 
 from pennylane import math as fn
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -49,14 +49,14 @@ class TestFrobeniusInnerProduct:
                 -0.7381450594,
             ),
             (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
+                pnp.array([[1.0, 2.3], [-1.3, 2.4]]),
+                pnp.array([[0.7, -7.3], [-1.0, -2.9]]),
                 False,
                 -21.75,
             ),
             (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
+                pnp.array([[1.0, 2.3], [-1.3, 2.4]]),
+                pnp.array([[0.7, -7.3], [-1.0, -2.9]]),
                 True,
                 -0.7381450594,
             ),
@@ -122,4 +122,4 @@ class TestFrobeniusInnerProduct:
         result.backward()
         grad = B.grad
 
-        assert np.allclose(grad, A)
+        assert pnp.allclose(grad, A)

@@ -18,7 +18,7 @@ import numpy as onp
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -35,21 +35,21 @@ class TestTraceDistanceMath:
         (
             (
                 [[1, 0], [0, 0]],
-                qml.math.reduce_statevector([x, np.sqrt(1 - x**2)], indices=[0]),
+                qml.math.reduce_statevector([x, pnp.sqrt(1 - x**2)], indices=[0]),
             ),
-            np.sqrt(1 - x**2),
+            pnp.sqrt(1 - x**2),
         )
-        for x in np.linspace(0, 1, 10)
+        for x in pnp.linspace(0, 1, 10)
     ]
     state0_state1_td += [
         (
             (
                 [[0.5, 0.5], [0.5, 0.5]],
-                qml.math.reduce_statevector([x, np.sqrt(1 - x**2) * 1j], indices=[0]),
+                qml.math.reduce_statevector([x, pnp.sqrt(1 - x**2) * 1j], indices=[0]),
             ),
-            np.sqrt(2) / 2,
+            pnp.sqrt(2) / 2,
         )
-        for x in np.linspace(0, 1, 10)
+        for x in pnp.linspace(0, 1, 10)
     ]
     state0_state1_td.append(
         (
@@ -62,14 +62,14 @@ class TestTraceDistanceMath:
                     [0.25, 0.25, 0.25, 0.25],
                 ],
             ),
-            np.sqrt(2) / 2,
+            pnp.sqrt(2) / 2,
         )
     )
 
     array_funcs = [
         lambda x: x,
         onp.array,
-        np.array,
+        pnp.array,
         jnp.array,
         torch.tensor,
         tf.Variable,
@@ -102,7 +102,7 @@ class TestTraceDistanceMath:
                 ],
                 [[0.5, 0.5], [0.5, 0.5]],
             ),
-            [np.sqrt(2) / 2, 0.5, 1, 0],
+            [pnp.sqrt(2) / 2, 0.5, 1, 0],
         ),
         (
             (
@@ -123,7 +123,7 @@ class TestTraceDistanceMath:
                     [0.25, 0.25, 0.25, 0.25],
                 ],
             ),
-            [np.sqrt(2) / 2, 0, 0.75],
+            [pnp.sqrt(2) / 2, 0, 0.75],
         ),
         # Batch-Batch-TD
         (
@@ -161,7 +161,7 @@ class TestTraceDistanceMath:
                     [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]],
                 ],
             ),
-            [np.sqrt(2) / 2, np.sqrt(3) / 2, 1],
+            [pnp.sqrt(2) / 2, pnp.sqrt(3) / 2, 1],
         ),
     ]
 

@@ -18,7 +18,7 @@ import numpy as onp
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -34,7 +34,7 @@ class TestExpectationValueMath:
     ops_vs_vecstates = [
         ([[1, 0], [0, 0]], [1, 0], 1),
         ([[0, 1], [1, 0]], [0, 1], 0),
-        ([[0.5, 0.5], [0.5, 0.5]], [1, 1] / np.sqrt(2), 1),
+        ([[0.5, 0.5], [0.5, 0.5]], [1, 1] / pnp.sqrt(2), 1),
         (
             [[0.40975111, 0.40751457], [0.40751457, 0.59024889]],
             [0.8660254, 0.5],
@@ -42,7 +42,7 @@ class TestExpectationValueMath:
         ),
         (
             [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]],
-            [1, 0, 1, 0] / np.sqrt(2),
+            [1, 0, 1, 0] / pnp.sqrt(2),
             0,
         ),
     ]
@@ -50,7 +50,7 @@ class TestExpectationValueMath:
     array_funcs = [
         lambda x: x,
         onp.array,
-        np.array,
+        pnp.array,
         jnp.array,
         torch.tensor,
         tf.Variable,
@@ -133,7 +133,7 @@ class TestExpectationValueMath:
 
     def test_same_number_wires_dm(self):
         """Test that the two states must act on the same number of wires"""
-        ops = np.diag([0, 1, 0, 0])
+        ops = pnp.diag([0, 1, 0, 0])
         state_vectors = [1, 0]
         with pytest.raises(
             qml.QuantumFunctionError,
@@ -156,7 +156,7 @@ class TestExpectationValueMath:
             [
                 func([0, 1]),
                 func([1, 0]),
-                func([1, 1] / np.sqrt(2)),
+                func([1, 1] / pnp.sqrt(2)),
                 func([0.8660254, 0.5]),
             ]
         )
@@ -173,7 +173,7 @@ class TestExpectationValueMath:
             [
                 func([0, 1]),
                 func([1, 0]),
-                func([1, 1] / np.sqrt(2)),
+                func([1, 1] / pnp.sqrt(2)),
                 func([0.8660254, 0.5]),
             ]
         )

@@ -19,11 +19,11 @@ import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem
 
 h2 = ["H", "H"]
-x_h2 = np.array([0.0, 0.0, -0.661, 0.0, 0.0, 0.661])
+x_h2 = pnp.array([0.0, 0.0, -0.661, 0.0, 0.0, 0.661])
 # Reference dipole operator
 coeffs_h2 = []
 coeffs_h2.append([0.0])
@@ -70,7 +70,7 @@ eig_h2.append([-1.81780062, -0.90890031, -0.90890031])
 
 
 h3p = ["H", "H", "H"]
-x_h3p = np.array([[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]])
+x_h3p = pnp.array([[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]])
 # Reference dipole operator
 coeffs_h3p = []
 coeffs_h3p.append(
@@ -174,7 +174,7 @@ eig_h3p.append([0.0, 0.0])
 
 
 h2o = ["H", "H", "O"]
-x_h2o = np.array([0.0, 1.431, -0.887, 0.0, -1.431, -0.887, 0.0, 0.0, 0.222])
+x_h2o = pnp.array([0.0, 1.431, -0.887, 0.0, -1.431, -0.887, 0.0, 0.0, 0.222])
 
 # Reference dipole operator
 coeffs_h2o = []
@@ -246,9 +246,9 @@ def test_openfermion_molecular_dipole(
 
     for i, _dip in enumerate(dip):
         d_coeffs, d_ops = _dip.terms()
-        calc_coeffs = np.array(d_coeffs)
-        exp_coeffs = np.array(coeffs[i])
-        assert np.allclose(calc_coeffs, exp_coeffs, **tol)
+        calc_coeffs = pnp.array(d_coeffs)
+        exp_coeffs = pnp.array(coeffs[i])
+        assert pnp.allclose(calc_coeffs, exp_coeffs, **tol)
 
         r_ops = ops[i]
 
@@ -295,7 +295,7 @@ def test_differentiable_molecular_dipole(
             eig = [0, 0]
         else:
             eig = qml.eigvals(qml.SparseHamiltonian(dip.sparse_matrix(), wires=wires), k=3)
-        assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
+        assert pnp.allclose(pnp.sort(eig), pnp.sort(eig_ref[idx]))
 
 
 @pytest.mark.parametrize(
@@ -310,7 +310,7 @@ def test_custom_wiremap_dipole(wiremap, tmpdir):
     r"""Test that the generated dipole operator has the correct wire labels given by a custom wiremap."""
 
     symbols = ["H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
+    geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
     method = "dhf"
 
     mol = qchem.Molecule(symbols, geometry)
@@ -337,7 +337,7 @@ def test_molecular_dipole_error():
     r"""Test that molecular_dipole raises an error with unsupported backend and open-shell systems."""
 
     symbols = ["H", "H"]
-    geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+    geometry = pnp.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
     molecule = qchem.Molecule(symbols, geometry)
     with pytest.raises(ValueError, match="Only 'dhf', and 'openfermion' backends are supported"):
         qchem.molecular_dipole(molecule, method="psi4")
@@ -363,7 +363,7 @@ def test_molecular_dipole_error():
         ),
         (
             "dhf",
-            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
+            [pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
 )
@@ -372,7 +372,7 @@ def test_real_dipole(method, args, tmpdir):
     r"""Test that the generated operator has real coefficients."""
 
     symbols = ["H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
+    geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
     molecule = qchem.Molecule(symbols, geometry)
 
     dipole = qchem.molecular_dipole(
@@ -382,7 +382,7 @@ def test_real_dipole(method, args, tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    assert all(np.isrealobj(op.terms()[0]) for op in dipole)
+    assert all(pnp.isrealobj(op.terms()[0]) for op in dipole)
 
 
 @pytest.mark.parametrize(
@@ -396,8 +396,8 @@ def test_coordinate_units_for_molecular_dipole(method, tmpdir):
     r"""Test that molecular_dipole generates correct operator for both Bohr and Angstrom units."""
 
     symbols = ["H", "H"]
-    geometry_bohr = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-    geometry_ang = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.529177210903]])
+    geometry_bohr = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    geometry_ang = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.529177210903]])
 
     molecule_bohr = qchem.Molecule(symbols, geometry_bohr, unit="bohr")
     dipole_bohr = qchem.molecular_dipole(

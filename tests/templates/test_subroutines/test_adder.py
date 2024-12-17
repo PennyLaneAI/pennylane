@@ -18,7 +18,7 @@ Tests for the Adder template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def test_standard_validity_Adder():
@@ -120,7 +120,7 @@ class TestAdder:
 
         # pylint: disable=bad-reversed-sequence
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x))))
-        assert np.allclose(result, (x + k) % mod)
+        assert pnp.allclose(result, (x + k) % mod)
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "msg_match"),

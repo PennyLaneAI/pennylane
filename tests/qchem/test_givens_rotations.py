@@ -19,7 +19,7 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.qchem.givens_decomposition import (
     _givens_matrix,
     _set_unitary_matrix,
@@ -43,16 +43,16 @@ def test_givens_matrix(a, b, left):
     r"""Test that `_givens_matrix` builds the correct Givens rotation matrices."""
 
     grot_mat = _givens_matrix(a, b, left)
-    assert np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])
+    assert pnp.isreal(grot_mat[0, 1]) and pnp.isreal(grot_mat[1, 1])
 
-    rotated_vector = grot_mat @ np.array([a, b]).T
-    result_element = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
-    rvec = np.array([0.0, result_element]).T if left else np.array([result_element, 0.0]).T
-    assert np.allclose(rotated_vector, rvec)
+    rotated_vector = grot_mat @ pnp.array([a, b]).T
+    result_element = b / pnp.abs(b) * pnp.hypot(pnp.abs(a), pnp.abs(b)) if b else 1.0
+    rvec = pnp.array([0.0, result_element]).T if left else pnp.array([result_element, 0.0]).T
+    assert pnp.allclose(rotated_vector, rvec)
 
-    res1 = np.round(grot_mat @ grot_mat.conj().T, 5)
-    res2 = np.round(grot_mat.conj().T @ grot_mat, 5)
-    assert np.all(res1 == res2) and np.all(res1 == np.eye(2))
+    res1 = pnp.round(grot_mat @ grot_mat.conj().T, 5)
+    res2 = pnp.round(grot_mat.conj().T @ grot_mat, 5)
+    assert pnp.all(res1 == res2) and pnp.all(res1 == pnp.eye(2))
 
 
 @pytest.mark.parametrize("left", [True, False])
@@ -61,26 +61,26 @@ def test_givens_matrix(a, b, left):
 @pytest.mark.parametrize("shape", [(5, 5), (6, 6)])
 def test_givens_rotate(shape, indices, row, left):
     r"""Test that Givens rotation is performed correctly for matrices built via `_givens_matrix`."""
-    matrix = np.random.rand(*shape) * 1j + np.random.rand(*shape)
+    matrix = pnp.random.rand(*shape) * 1j + pnp.random.rand(*shape)
     unitary, (i, j) = matrix.copy(), indices
     if row:
         a, b = matrix[indices, j - 1]
         grot_mat = _givens_matrix(a, b, left)
         unitary[indices] = grot_mat @ unitary[indices]
-        res = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
+        res = b / pnp.abs(b) * pnp.hypot(pnp.abs(a), pnp.abs(b)) if b else 1.0
         if left:
-            assert np.isclose(unitary[i, j - 1], 0.0) and np.isclose(unitary[j, j - 1], res)
+            assert pnp.isclose(unitary[i, j - 1], 0.0) and pnp.isclose(unitary[j, j - 1], res)
         else:
-            assert np.isclose(unitary[i, j - 1], res) and np.isclose(unitary[j, j - 1], 0.0)
+            assert pnp.isclose(unitary[i, j - 1], res) and pnp.isclose(unitary[j, j - 1], 0.0)
     else:
         a, b = matrix[j - 1, indices].T
         grot_mat = _givens_matrix(a, b, left)
         unitary[:, indices] = unitary[:, indices] @ grot_mat.T
-        res = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
+        res = b / pnp.abs(b) * pnp.hypot(pnp.abs(a), pnp.abs(b)) if b else 1.0
         if left:
-            assert np.isclose(unitary[j - 1, i], 0.0) and np.isclose(unitary[j - 1, j], res)
+            assert pnp.isclose(unitary[j - 1, i], 0.0) and pnp.isclose(unitary[j - 1, j], res)
         else:
-            assert np.isclose(unitary[j - 1, indices[0]], res) and np.isclose(
+            assert pnp.isclose(unitary[j - 1, indices[0]], res) and pnp.isclose(
                 unitary[j - 1, indices[1]], 0.0
             )
 
@@ -92,22 +92,22 @@ def test_givens_decomposition(shape):
     matrix = unitary_group.rvs(shape)
 
     phase_mat, ordered_rotations = givens_decomposition(matrix)
-    decomposed_matrix = np.diag(phase_mat)
+    decomposed_matrix = pnp.diag(phase_mat)
     for grot_mat, (i, j) in ordered_rotations:
-        rotation_matrix = np.eye(shape, dtype=complex)
+        rotation_matrix = pnp.eye(shape, dtype=complex)
         rotation_matrix[i, i], rotation_matrix[j, j] = grot_mat[0, 0], grot_mat[1, 1]
         rotation_matrix[i, j], rotation_matrix[j, i] = grot_mat[0, 1], grot_mat[1, 0]
         decomposed_matrix = decomposed_matrix @ rotation_matrix
 
     # check if U = D x Π T_{m, n}
-    assert np.allclose(matrix, decomposed_matrix)
+    assert pnp.allclose(matrix, decomposed_matrix)
 
 
 @pytest.mark.parametrize(
     ("unitary_matrix", "msg_match"),
     [
         (
-            np.array(
+            pnp.array(
                 [
                     [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
                     [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
@@ -116,7 +116,7 @@ def test_givens_decomposition(shape):
             "The unitary matrix should be of shape NxN",
         ),
         (
-            np.array(
+            pnp.array(
                 [
                     [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
                     [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
@@ -138,7 +138,7 @@ def test_givens_matrix_exceptions():
     """Test that _givens_matrix throws an exception if the parameters have different interface."""
     import jax.numpy as jnp
 
-    a = np.array(1.2)
+    a = pnp.array(1.2)
     b = jnp.array(2.3)
 
     with pytest.raises(TypeError, match="The interfaces of 'a' and 'b' do not match."):
@@ -149,32 +149,32 @@ def test_givens_matrix_exceptions():
 @pytest.mark.parametrize(
     ("jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
     [
-        (False, np.array([[1, 0], [0, 1]]), (0, 0), 5, None, np.array([[5, 0], [0, 1]])),
-        (False, np.array([[1, 0], [0, 1]]), (0, 0), 5, "numpy", np.array([[5, 0], [0, 1]])),
+        (False, pnp.array([[1, 0], [0, 1]]), (0, 0), 5, None, pnp.array([[5, 0], [0, 1]])),
+        (False, pnp.array([[1, 0], [0, 1]]), (0, 0), 5, "numpy", pnp.array([[5, 0], [0, 1]])),
         (
             False,
-            np.array([[1, 0], [0, 1]]),
+            pnp.array([[1, 0], [0, 1]]),
             (0, Ellipsis),
             [1, 2],
             None,
-            np.array([[1, 2], [0, 1]]),
+            pnp.array([[1, 2], [0, 1]]),
         ),
         (
             False,
-            np.array([[1, 0], [0, 1]]),
+            pnp.array([[1, 0], [0, 1]]),
             (0, Ellipsis),
             [1, 2],
             "numpy",
-            np.array([[1, 2], [0, 1]]),
+            pnp.array([[1, 2], [0, 1]]),
         ),
-        (False, np.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], None, np.array([[1, 0], [1, 2]])),
+        (False, pnp.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], None, pnp.array([[1, 0], [1, 2]])),
         (
             False,
-            np.array([[1, 0], [0, 1]]),
+            pnp.array([[1, 0], [0, 1]]),
             (1, [0, 1]),
             [1, 2],
             "numpy",
-            np.array([[1, 0], [1, 2]]),
+            pnp.array([[1, 0], [1, 2]]),
         ),
         (True, [[1, 0], [0, 1]], (0, 0), 5, None, [[5, 0], [0, 1]]),
         (True, [[1, 0], [0, 1]], (0, 0), 5, "jax", [[5, 0], [0, 1]]),

@@ -20,7 +20,7 @@ import warnings
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.tape import QuantumScript
 
 
@@ -45,11 +45,11 @@ def build_op():
 
 
 simplified_op = qml.prod(
-    qml.RX(4 * np.pi - 1, 0),
-    qml.RZ(4 * np.pi - 1, 0),
+    qml.RX(4 * pnp.pi - 1, 0),
+    qml.RZ(4 * pnp.pi - 1, 0),
     qml.PauliX(0),
-    qml.RY(4 * np.pi - 1, 0),
-    qml.RX(4 * np.pi - 1, 0),
+    qml.RY(4 * pnp.pi - 1, 0),
+    qml.RX(4 * pnp.pi - 1, 0),
 )
 
 

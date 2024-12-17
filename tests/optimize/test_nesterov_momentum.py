@@ -17,7 +17,7 @@ Unit tests for the ``NesterovMomentumOptimizer``.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.optimize import NesterovMomentumOptimizer
 
 
@@ -38,22 +38,22 @@ class TestNesterovMomentumOptimizer:
             return qml.expval(qml.PauliZ(0))
 
         inputs = [
-            np.array((0.2, 0.3), requires_grad=True),
-            np.array([0.4, 0.2, 0.4], requires_grad=True),
-            np.array(0.1, requires_grad=True),
+            pnp.array((0.2, 0.3), requires_grad=True),
+            pnp.array([0.4, 0.2, 0.4], requires_grad=True),
+            pnp.array(0.1, requires_grad=True),
         ]
 
         _, res = nesmom_opt.step_and_cost(quant_fun, *inputs)
         expected = quant_fun(*inputs)
 
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
     def test_step_and_cost_autograd_nesterov_multid_array(self):
         """Test that the correct cost is returned via the step_and_cost method for the
         Nesterov momentum optimizer"""
         stepsize, gamma = 0.1, 0.5
         nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
-        multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
+        multid_array = pnp.array([[0.1, 0.2], [-0.1, -0.4]])
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def quant_fun_mdarr(var):
@@ -65,30 +65,30 @@ class TestNesterovMomentumOptimizer:
         _, res = nesmom_opt.step_and_cost(quant_fun_mdarr, multid_array)
         expected = quant_fun_mdarr(multid_array)
 
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
-    @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
+    @pytest.mark.parametrize("x_start", pnp.linspace(-10, 10, 16, endpoint=False))
     def test_nesterovmomentum_optimizer_univar(self, x_start, tol):
         """Tests that nesterov momentum optimizer takes one and two steps correctly
         for univariate functions."""
         stepsize, gamma = 0.1, 0.5
         nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
-        grad_uni_fns = [np.cos, lambda x: np.exp(x / 10.0) / 10.0, lambda x: 2 * x]
+        univariate_funcs = [pnp.sin, lambda x: pnp.exp(x / 10.0), lambda x: x**2]
+        grad_uni_fns = [pnp.cos, lambda x: pnp.exp(x / 10.0) / 10.0, lambda x: 2 * x]
 
         for gradf, f in zip(grad_uni_fns, univariate_funcs):
             nesmom_opt.reset()
 
             x_onestep = nesmom_opt.step(f, x_start)
             x_onestep_target = x_start - gradf(x_start) * stepsize
-            assert np.allclose(x_onestep, x_onestep_target, atol=tol)
+            assert pnp.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = nesmom_opt.step(f, x_onestep)
             momentum_term = gamma * gradf(x_start)
             shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
             x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
-            assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+            assert pnp.allclose(x_twosteps, x_twosteps_target, atol=tol)
 
     def test_nesterovmomentum_optimizer_multivar(self, tol):
         """Tests that nesterov momentum optimizer takes one and two steps correctly
@@ -97,24 +97,24 @@ class TestNesterovMomentumOptimizer:
         nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
 
         multivariate_funcs = [
-            lambda x: np.sin(x[0]) + np.cos(x[1]),
-            lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_**2 for x_ in x]),
+            lambda x: pnp.sin(x[0]) + pnp.cos(x[1]),
+            lambda x: pnp.exp(x[0] / 3) * pnp.tanh(x[1]),
+            lambda x: pnp.sum([x_**2 for x_ in x]),
         ]
         grad_multi_funcs = [
-            lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
+            lambda x: (pnp.array([pnp.cos(x[0]), -pnp.sin(x[1])]),),
             lambda x: (
-                np.array(
+                pnp.array(
                     [
-                        np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
+                        pnp.exp(x[0] / 3) / 3 * pnp.tanh(x[1]),
+                        pnp.exp(x[0] / 3) * (1 - pnp.tanh(x[1]) ** 2),
                     ]
                 ),
             ),
-            lambda x: (np.array([2 * x_ for x_ in x]),),
+            lambda x: (pnp.array([2 * x_ for x_ in x]),),
         ]
 
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = pnp.linspace(-10, 10, 16, endpoint=False)
 
         for gradf, f in zip(grad_multi_funcs, multivariate_funcs):
             for jdx in range(len(x_vals[:-1])):
@@ -123,33 +123,33 @@ class TestNesterovMomentumOptimizer:
                 x_vec = x_vals[jdx : jdx + 2]
                 x_onestep = nesmom_opt.step(f, x_vec)
                 x_onestep_target = x_vec - gradf(x_vec)[0] * stepsize
-                assert np.allclose(x_onestep, x_onestep_target, atol=tol)
+                assert pnp.allclose(x_onestep, x_onestep_target, atol=tol)
 
                 x_twosteps = nesmom_opt.step(f, x_onestep)
                 momentum_term = gamma * gradf(x_vec)[0]
                 shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)[0]
                 x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
-                assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+                assert pnp.allclose(x_twosteps, x_twosteps_target, atol=tol)
 
-    @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
+    @pytest.mark.parametrize("x_start", pnp.linspace(-10, 10, 16, endpoint=False))
     def test_nesterovmomentum_optimizer_usergrad(self, x_start, tol):
         """Tests that nesterov momentum optimizer takes gradient-descent steps correctly
         using user-provided gradients."""
         stepsize, gamma = 0.1, 0.5
         nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
-        grad_uni_fns = [np.cos, lambda x: np.exp(x / 10.0) / 10.0, lambda x: 2 * x]
+        univariate_funcs = [pnp.sin, lambda x: pnp.exp(x / 10.0), lambda x: x**2]
+        grad_uni_fns = [pnp.cos, lambda x: pnp.exp(x / 10.0) / 10.0, lambda x: 2 * x]
 
         for gradf, f in zip(grad_uni_fns[::-1], univariate_funcs):
             nesmom_opt.reset()
 
             x_onestep = nesmom_opt.step(f, x_start, grad_fn=gradf)
             x_onestep_target = x_start - gradf(x_start) * stepsize
-            assert np.allclose(x_onestep, x_onestep_target, atol=tol)
+            assert pnp.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = nesmom_opt.step(f, x_onestep, grad_fn=gradf)
             momentum_term = gamma * gradf(x_start)
             shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
             x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
-            assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+            assert pnp.allclose(x_twosteps, x_twosteps_target, atol=tol)

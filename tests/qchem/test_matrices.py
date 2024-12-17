@@ -18,7 +18,7 @@ Unit tests for functions needed for computing matrices.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem
 
 
@@ -30,16 +30,16 @@ class TestMoldensMat:
         [
             (
                 2,
-                np.array([[-0.54828771, 1.21848441], [-0.54828771, -1.21848441]]),
+                pnp.array([[-0.54828771, 1.21848441], [-0.54828771, -1.21848441]]),
                 # all P elements are computed as 0.54828771**2 = 0.3006194129370441
-                np.array([[0.30061941, 0.30061941], [0.30061941, 0.30061941]]),
+                pnp.array([[0.30061941, 0.30061941], [0.30061941, 0.30061941]]),
             ),
         ],
     )
     def test_molecular_density_matrix(self, n_electron, c, p_ref):
         r"""Test that molecular_density_matrix returns the correct matrix."""
         p = qchem.mol_density_matrix(n_electron, c)
-        assert np.allclose(p, p_ref)
+        assert pnp.allclose(p, p_ref)
 
 
 class TestOverlapMat:
@@ -50,12 +50,12 @@ class TestOverlapMat:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
-                np.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]]),
+                pnp.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]]),
             )
         ],
     )
@@ -64,15 +64,15 @@ class TestOverlapMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
         s = qchem.overlap_matrix(mol.basis_set)(*args)
-        assert np.allclose(s, s_ref)
+        assert pnp.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "s_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]]),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]]),
             )
         ],
     )
@@ -81,24 +81,24 @@ class TestOverlapMat:
         used."""
         mol = qchem.Molecule(symbols, geometry)
         s = qchem.overlap_matrix(mol.basis_set)()
-        assert np.allclose(s, s_ref)
+        assert pnp.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "g_alpha_ref", "g_coeff_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
-                np.array(
+                pnp.array(
                     [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                     requires_grad=True,
                 ),
                 # Jacobian matrix contains gradient of S11, S12, S21, S22 wrt arg_1, arg_2.
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -116,7 +116,7 @@ class TestOverlapMat:
                         ],
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -145,8 +145,8 @@ class TestOverlapMat:
         args = [mol.alpha, mol.coeff]
         g_alpha = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=[0])(*args)
         g_coeff = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=[1])(*args)
-        assert np.allclose(g_alpha, g_alpha_ref)
-        assert np.allclose(g_coeff, g_coeff_ref)
+        assert pnp.allclose(g_alpha, g_alpha_ref)
+        assert pnp.allclose(g_coeff, g_coeff_ref)
 
 
 class TestMomentMat:
@@ -157,14 +157,14 @@ class TestMomentMat:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
                 1,
                 0,
-                np.array([[0.0, 0.4627777], [0.4627777, 2.0]]),
+                pnp.array([[0.0, 0.4627777], [0.4627777, 2.0]]),
             )
         ],
     )
@@ -173,17 +173,17 @@ class TestMomentMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
         s = qchem.moment_matrix(mol.basis_set, e, idx)(*args)
-        assert np.allclose(s, s_ref)
+        assert pnp.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "e", "idx", "s_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+                pnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
                 1,
                 0,
-                np.array([[0.0, 0.4627777], [0.4627777, 2.0]]),
+                pnp.array([[0.0, 0.4627777], [0.4627777, 2.0]]),
             )
         ],
     )
@@ -192,19 +192,19 @@ class TestMomentMat:
         used."""
         mol = qchem.Molecule(symbols, geometry)
         s = qchem.moment_matrix(mol.basis_set, e, idx)()
-        assert np.allclose(s, s_ref)
+        assert pnp.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "e", "idx", "g_alpha_ref", "g_coeff_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
-                np.array(
+                pnp.array(
                     [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                     requires_grad=True,
                 ),
@@ -212,7 +212,7 @@ class TestMomentMat:
                 0,
                 # Jacobian matrix contains gradient of S11, S12, S21, S22 wrt arg_1, arg_2, computed
                 # with finite difference.
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -230,7 +230,7 @@ class TestMomentMat:
                         ],
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -260,8 +260,8 @@ class TestMomentMat:
         g_alpha = qml.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnum=[0])(*args)
         g_coeff = qml.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnum=[1])(*args)
 
-        assert np.allclose(g_alpha, g_alpha_ref)
-        assert np.allclose(g_coeff, g_coeff_ref)
+        assert pnp.allclose(g_alpha, g_alpha_ref)
+        assert pnp.allclose(g_coeff, g_coeff_ref)
 
 
 class TestKineticMat:
@@ -272,12 +272,12 @@ class TestKineticMat:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
-                np.array(
+                pnp.array(
                     [
                         [0.7600318862777408, 0.38325367405372557],
                         [0.38325367405372557, 0.7600318862777408],
@@ -291,15 +291,15 @@ class TestKineticMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
         t = qchem.kinetic_matrix(mol.basis_set)(*args)
-        assert np.allclose(t, t_ref)
+        assert pnp.allclose(t, t_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "t_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [
                         [0.7600318862777408, 0.38325367405372557],
                         [0.38325367405372557, 0.7600318862777408],
@@ -313,24 +313,24 @@ class TestKineticMat:
         used."""
         mol = qchem.Molecule(symbols, geometry)
         t = qchem.kinetic_matrix(mol.basis_set)()
-        assert np.allclose(t, t_ref)
+        assert pnp.allclose(t, t_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "g_alpha_ref", "g_coeff_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
-                np.array(
+                pnp.array(
                     [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                     requires_grad=True,
                 ),
                 # Jacobian matrix contains gradient of T11, T12, T21, T22 wrt arg_1, arg_2.
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.03263157, 0.85287851, 0.68779528], [0.0, 0.0, 0.0]],
@@ -348,7 +348,7 @@ class TestKineticMat:
                         ],
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         [
                             [[1.824217, 0.10606991, -0.76087597], [0.0, 0.0, 0.0]],
@@ -377,8 +377,8 @@ class TestKineticMat:
         args = [mol.alpha, mol.coeff]
         g_alpha = qml.jacobian(qchem.kinetic_matrix(mol.basis_set), argnum=[0])(*args)
         g_coeff = qml.jacobian(qchem.kinetic_matrix(mol.basis_set), argnum=[1])(*args)
-        assert np.allclose(g_alpha, g_alpha_ref)
-        assert np.allclose(g_coeff, g_coeff_ref)
+        assert pnp.allclose(g_alpha, g_alpha_ref)
+        assert pnp.allclose(g_coeff, g_coeff_ref)
 
 
 class TestAttractionMat:
@@ -389,13 +389,13 @@ class TestAttractionMat:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
                 # attraction matrix obtained from pyscf using mol.intor('int1e_nuc')
-                np.array(
+                pnp.array(
                     [
                         [-2.03852075, -1.6024171],
                         [-1.6024171, -2.03852075],
@@ -409,20 +409,20 @@ class TestAttractionMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [mol.alpha]
         v = qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
-        assert np.allclose(v, v_ref)
+        assert pnp.allclose(v, v_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "v_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
                 # attraction matrix obtained from pyscf using mol.intor('int1e_nuc')
-                np.array(
+                pnp.array(
                     [
                         [-2.03852075, -1.6024171],
                         [-1.6024171, -2.03852075],
@@ -438,16 +438,16 @@ class TestAttractionMat:
         r_basis = mol.coordinates
         args = [mol.coordinates, mol.alpha, r_basis]
         v = qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
-        assert np.allclose(v, v_ref)
+        assert pnp.allclose(v, v_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "v_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
                 # attraction matrix obtained from pyscf using mol.intor('int1e_nuc')
-                np.array(
+                pnp.array(
                     [
                         [-2.03852075, -1.6024171],
                         [-1.6024171, -2.03852075],
@@ -460,23 +460,23 @@ class TestAttractionMat:
         r"""Test that attraction_matrix returns the correct matrix."""
         mol = qchem.Molecule(symbols, geometry)
         v = qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
-        assert np.allclose(v, v_ref)
+        assert pnp.allclose(v, v_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "g_r_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
-                np.array(
+                pnp.array(
                     [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                     requires_grad=True,
                 ),
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.44900112]],
@@ -506,7 +506,7 @@ class TestAttractionMat:
         g_r = qml.jacobian(
             qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=[0]
         )(*args)
-        assert np.allclose(g_r, g_r_ref)
+        assert pnp.allclose(g_r, g_r_ref)
 
 
 class TestRepulsionMat:
@@ -517,13 +517,13 @@ class TestRepulsionMat:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
                 # electron repulsion tensor obtained from pyscf with mol.intor('int2e')
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.77460594, 0.56886157], [0.56886157, 0.65017755]],
@@ -543,16 +543,16 @@ class TestRepulsionMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [mol.alpha]
         e = qchem.repulsion_tensor(mol.basis_set)(*args)
-        assert np.allclose(e, e_ref)
+        assert pnp.allclose(e, e_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "e_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
                 # electron repulsion tensor obtained from pyscf with mol.intor('int2e')
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.77460594, 0.56886157], [0.56886157, 0.65017755]],
@@ -572,7 +572,7 @@ class TestRepulsionMat:
         is used."""
         mol = qchem.Molecule(symbols, geometry)
         e = qchem.repulsion_tensor(mol.basis_set)()
-        assert np.allclose(e, e_ref)
+        assert pnp.allclose(e, e_ref)
 
 
 class TestCoreMat:
@@ -583,13 +583,13 @@ class TestCoreMat:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
                 # core matrix obtained from pyscf using scf.RHF(mol).get_hcore()
-                np.array(
+                pnp.array(
                     [
                         [-1.27848886, -1.21916326],
                         [-1.21916326, -1.27848886],
@@ -603,16 +603,16 @@ class TestCoreMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [mol.alpha]
         c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
-        assert np.allclose(c, c_ref)
+        assert pnp.allclose(c, c_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "c_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
                 # core matrix obtained from pyscf using scf.RHF(mol).get_hcore()
-                np.array(
+                pnp.array(
                     [
                         [-1.27848886, -1.21916326],
                         [-1.21916326, -1.27848886],
@@ -626,20 +626,20 @@ class TestCoreMat:
         used."""
         mol = qchem.Molecule(symbols, geometry)
         c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
-        assert np.allclose(c, c_ref)
+        assert pnp.allclose(c, c_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "c_ref"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
                 # core matrix obtained from pyscf using scf.RHF(mol).get_hcore()
-                np.array(
+                pnp.array(
                     [
                         [-1.27848886, -1.21916326],
                         [-1.21916326, -1.27848886],
@@ -654,7 +654,7 @@ class TestCoreMat:
         r_basis = mol.coordinates
         args = [mol.coordinates, mol.alpha, r_basis]
         c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
-        assert np.allclose(c, c_ref)
+        assert pnp.allclose(c, c_ref)
 
 
 def generate_symbols_geometry_alpha():
@@ -672,7 +672,7 @@ def generate_symbols_geometry_alpha():
 class TestJax:
     def test_overlap_matrix_jax(self):
         r"""Test that overlap_matrix returns the correct matrix when using jax."""
-        s_ref = np.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
+        s_ref = pnp.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
@@ -685,17 +685,17 @@ class TestJax:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
-                np.array(
+                pnp.array(
                     [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                     requires_grad=True,
                 ),
                 # Jacobian matrix contains gradient of S11, S12, S21, S22 wrt arg_1, arg_2.
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -713,7 +713,7 @@ class TestJax:
                         ],
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -758,7 +758,7 @@ class TestJax:
         geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], like="jax")
         e = 1
         idx = 0
-        s_ref = np.array([[0.0, 0.4627777], [0.4627777, 2.0]])
+        s_ref = pnp.array([[0.0, 0.4627777], [0.4627777, 2.0]])
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
@@ -770,12 +770,12 @@ class TestJax:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
-                np.array(
+                pnp.array(
                     [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                     requires_grad=True,
                 ),
@@ -783,7 +783,7 @@ class TestJax:
                 0,
                 # Jacobian matrix contains gradient of S11, S12, S21, S22 wrt arg_1, arg_2, computed
                 # with finite difference.
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -801,7 +801,7 @@ class TestJax:
                         ],
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -844,7 +844,7 @@ class TestJax:
     def test_kinetic_matrix_jax(self):
         r"""Test that kinetic_matrix returns the correct matrix when using jax."""
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
-        t_ref = np.array(
+        t_ref = pnp.array(
             [
                 [0.7600318862777408, 0.38325367405372557],
                 [0.38325367405372557, 0.7600318862777408],
@@ -861,17 +861,17 @@ class TestJax:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                     requires_grad=True,
                 ),
-                np.array(
+                pnp.array(
                     [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                     requires_grad=True,
                 ),
                 # Jacobian matrix contains gradient of T11, T12, T21, T22 wrt arg_1, arg_2.
-                np.array(
+                pnp.array(
                     [
                         [
                             [[0.03263157, 0.85287851, 0.68779528], [0.0, 0.0, 0.0]],
@@ -889,7 +889,7 @@ class TestJax:
                         ],
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         [
                             [[1.824217, 0.10606991, -0.76087597], [0.0, 0.0, 0.0]],
@@ -931,7 +931,7 @@ class TestJax:
         r"""Test that core_matrix returns the correct matrix when positions are differentiable
         when using jax."""
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
-        c_ref = np.array(
+        c_ref = pnp.array(
             [
                 [-1.27848886, -1.21916326],
                 [-1.21916326, -1.27848886],
@@ -946,7 +946,7 @@ class TestJax:
     def test_repulsion_tensor_jax(self):
         r"""Test that repulsion_tensor returns the correct matrix when using jax."""
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
-        e_ref = np.array(
+        e_ref = pnp.array(
             [
                 [
                     [[0.77460594, 0.56886157], [0.56886157, 0.65017755]],
@@ -968,7 +968,7 @@ class TestJax:
         r"""Test that attraction_matrix returns the correct matrix when positions are
         differentiable when using jax."""
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
-        v_ref = np.array(
+        v_ref = pnp.array(
             [
                 [-2.03852075, -1.6024171],
                 [-1.6024171, -2.03852075],
@@ -984,8 +984,8 @@ class TestJax:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+                pnp.array(
                     [
                         [
                             [[0.0, 0.0, 0.0], [0.0, 0.0, 0.44900112]],

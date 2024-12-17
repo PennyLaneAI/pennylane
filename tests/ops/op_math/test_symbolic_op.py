@@ -17,7 +17,7 @@ from copy import copy
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.operation import Operator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
@@ -95,7 +95,7 @@ class TestProperties:
     def test_data(self):
         """Test that the data property for symbolic ops allows for the getting
         and setting of the base operator's data."""
-        x = np.array(1.234)
+        x = pnp.array(1.234)
 
         base = Operator(x, "a")
         op = SymbolicOp(base)
@@ -103,19 +103,19 @@ class TestProperties:
         assert op.data == (x,)
 
         # update parameters through op
-        x_new = np.array(2.345)
+        x_new = pnp.array(2.345)
         op.data = (x_new,)
         assert base.data == (x_new,)
         assert op.data == (x_new,)
 
         # update base data updates symbolic data
-        x_new2 = np.array(3.45)
+        x_new2 = pnp.array(3.45)
         base.data = (x_new2,)
         assert op.data == (x_new2,)
 
     def test_parameters(self):
         """Test parameter property is a list of the base's trainable parameters."""
-        x = np.array(9.876)
+        x = pnp.array(9.876)
         base = Operator(x, "b")
         op = SymbolicOp(base)
         assert op.parameters == [x]
@@ -229,9 +229,9 @@ class TestScalarSymbolicOp:
         base = Operator(1.1, wires=[0])
         scalar = [2.2, 3.3]
         op = TempScalar(base, scalar)
-        assert isinstance(op.scalar, np.ndarray)
-        assert np.all(op.scalar == [2.2, 3.3])
-        assert np.all(op.data[0] == op.scalar)
+        assert isinstance(op.scalar, pnp.ndarray)
+        assert pnp.all(op.scalar == [2.2, 3.3])
+        assert pnp.all(op.data[0] == op.scalar)
         assert op.data[1] == 1.1
 
     def test_data(self):

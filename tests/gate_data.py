@@ -2,7 +2,7 @@
 
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 # ========================================================
 #  fixed gates
@@ -17,9 +17,9 @@ Z = math.array([[1, 0], [0, -1]])  #: Pauli-Z matrix
 
 H = math.array([[1, 1], [1, -1]]) / math.sqrt(2)  #: Hadamard gate
 
-II = math.eye(4, dtype=np.complex128) + 0j
-XX = math.array(math.kron(X, X), dtype=np.complex128)
-YY = math.array(math.kron(Y, Y), dtype=np.complex128)
+II = math.eye(4, dtype=pnp.complex128) + 0j
+XX = math.array(math.kron(X, X), dtype=pnp.complex128)
+YY = math.array(math.kron(Y, Y), dtype=pnp.complex128)
 
 # Single-qubit projectors
 StateZeroProjector = math.array([[1, 0], [0, 0]])
@@ -40,7 +40,7 @@ SISWAP = math.array(
 CZ = math.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])  #: CZ gate
 CY = math.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])  #: CY gate
 S = math.array([[1, 0], [0, 1j]])  #: Phase Gate
-T = math.array([[1, 0], [0, math.exp(1j * np.pi / 4)]])  #: T Gate
+T = math.array([[1, 0], [0, math.exp(1j * pnp.pi / 4)]])  #: T Gate
 SX = 0.5 * math.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])  #: SX Gate
 ECR = math.array(
     [
@@ -78,7 +78,7 @@ Toffoli[6:8, 6:8] = math.array([[0, 1], [1, 0]])
 
 CCZ = math.diag([1] * 7 + [-1])
 
-w = math.exp(2 * np.pi * 1j / 8)
+w = math.exp(2 * pnp.pi * 1j / 8)
 QFT = math.array(
     [
         [1, 1, 1, 1, 1, 1, 1, 1],
@@ -93,17 +93,17 @@ QFT = math.array(
 ) / math.sqrt(8)
 
 # Qutrit gates
-OMEGA = np.exp(2 * np.pi * 1j / 3)
+OMEGA = pnp.exp(2 * pnp.pi * 1j / 3)
 
-TSHIFT = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Qutrit right-shift gate
+TSHIFT = pnp.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Qutrit right-shift gate
 
-TCLOCK = np.array([[1, 0, 0], [0, OMEGA, 0], [0, 0, OMEGA**2]])  # Qutrit clock gate
+TCLOCK = pnp.array([[1, 0, 0], [0, OMEGA, 0], [0, 0, OMEGA**2]])  # Qutrit clock gate
 
-TH = (-1j / np.sqrt(3)) * np.array(
+TH = (-1j / pnp.sqrt(3)) * pnp.array(
     [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
 )  # hadamard gate
 
-TSWAP = np.array(
+TSWAP = pnp.array(
     [
         [1, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 1, 0, 0, 0, 0, 0],
@@ -115,10 +115,10 @@ TSWAP = np.array(
         [0, 0, 0, 0, 0, 1, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 1],
     ],
-    dtype=np.complex128,
+    dtype=pnp.complex128,
 )  # Ternary swap gate
 
-TADD = np.array(
+TADD = pnp.array(
     [
         [1, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -130,18 +130,18 @@ TADD = np.array(
         [0, 0, 0, 0, 0, 0, 0, 0, 1],
         [0, 0, 0, 0, 0, 0, 1, 0, 0],
     ],
-    dtype=np.complex128,
+    dtype=pnp.complex128,
 )  # Ternary add gate
 
-GELL_MANN = np.zeros((8, 3, 3), dtype=np.complex128)
-GELL_MANN[0] = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
-GELL_MANN[1] = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
-GELL_MANN[2] = np.diag([1, -1, 0])
-GELL_MANN[3] = np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
-GELL_MANN[4] = np.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]])
-GELL_MANN[5] = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
-GELL_MANN[6] = np.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]])
-GELL_MANN[7] = np.diag([1, 1, -2]) / np.sqrt(3)
+GELL_MANN = pnp.zeros((8, 3, 3), dtype=pnp.complex128)
+GELL_MANN[0] = pnp.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+GELL_MANN[1] = pnp.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
+GELL_MANN[2] = pnp.diag([1, -1, 0])
+GELL_MANN[3] = pnp.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
+GELL_MANN[4] = pnp.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]])
+GELL_MANN[5] = pnp.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+GELL_MANN[6] = pnp.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]])
+GELL_MANN[7] = pnp.diag([1, 1, -2]) / pnp.sqrt(3)
 
 
 # ========================================================
@@ -498,7 +498,7 @@ def CPhaseShift00(phi):
     Returns:
         array: the two-wire controlled-phase matrix
     """
-    return np.diag([np.exp(1j * phi), 1, 1, 1])
+    return pnp.diag([pnp.exp(1j * phi), 1, 1, 1])
 
 
 def CPhaseShift01(phi):
@@ -510,7 +510,7 @@ def CPhaseShift01(phi):
     Returns:
         array: the two-wire controlled-phase matrix
     """
-    return np.diag([1, np.exp(1j * phi), 1, 1])
+    return pnp.diag([1, pnp.exp(1j * phi), 1, 1])
 
 
 def CPhaseShift10(phi):
@@ -522,7 +522,7 @@ def CPhaseShift10(phi):
     Returns:
         array: the two-wire controlled-phase matrix
     """
-    return np.diag([1, 1, np.exp(1j * phi), 1])
+    return pnp.diag([1, 1, pnp.exp(1j * phi), 1])
 
 
 def SingleExcitation(phi):
@@ -620,7 +620,7 @@ def DoubleExcitationPlus(phi):
     s = math.sin(phi / 2)
     e = math.exp(1j * phi / 2)
 
-    U = e * math.eye(16, dtype=np.complex128)
+    U = e * math.eye(16, dtype=pnp.complex128)
     U[3, 3] = c  # 3 (dec) = 0011 (bin)
     U[3, 12] = -s  # 12 (dec) = 1100 (bin)
     U[12, 3] = s
@@ -642,7 +642,7 @@ def DoubleExcitationMinus(phi):
     s = math.sin(phi / 2)
     e = math.exp(-1j * phi / 2)
 
-    U = e * math.eye(16, dtype=np.complex128)
+    U = e * math.eye(16, dtype=pnp.complex128)
     U[3, 3] = c  # 3 (dec) = 0011 (bin)
     U[3, 12] = -s  # 12 (dec) = 1100 (bin)
     U[12, 3] = s

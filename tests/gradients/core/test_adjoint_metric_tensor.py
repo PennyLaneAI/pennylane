@@ -22,7 +22,7 @@ import numpy as onp
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 @pytest.fixture(autouse=True)
@@ -156,7 +156,7 @@ def fubini_ansatz10(weights, wires=None):
     qml.templates.BasicEntanglerLayers(weights, wires=[wires[0], wires[1]])
 
 
-B = np.array(
+B = pnp.array(
     [
         [
             [0.73, 0.49, 0.04],
@@ -173,9 +173,9 @@ B = np.array(
 )
 fubini_ansatze_tape = [fubini_ansatz0, fubini_ansatz1, fubini_ansatz8]
 fubini_params_tape = [
-    (np.array([0.3434, -0.7245345], requires_grad=True),),
+    (pnp.array([0.3434, -0.7245345], requires_grad=True),),
     (B,),
-    (np.array(-0.1735, requires_grad=True),),
+    (pnp.array(-0.1735, requires_grad=True),),
 ]
 
 fubini_ansatze = [
@@ -193,23 +193,23 @@ fubini_ansatze = [
 ]
 
 fubini_params = [
-    (np.array([0.3434, -0.7245345], requires_grad=True),),
+    (pnp.array([0.3434, -0.7245345], requires_grad=True),),
     (B,),
-    (np.array([-0.1111, -0.2222], requires_grad=True),),
-    (np.array([-0.1111, -0.2222, 0.4554], requires_grad=True),),
+    (pnp.array([-0.1111, -0.2222], requires_grad=True),),
+    (pnp.array([-0.1111, -0.2222, 0.4554], requires_grad=True),),
     (
-        np.array(-0.1735, requires_grad=True),
-        np.array([-0.1735, -0.2846, -0.2846], requires_grad=True),
+        pnp.array(-0.1735, requires_grad=True),
+        pnp.array([-0.1735, -0.2846, -0.2846], requires_grad=True),
     ),
-    (np.array([-0.1735, -0.2846], requires_grad=True),),
-    (np.array([-0.1735, -0.2846], requires_grad=True),),
+    (pnp.array([-0.1735, -0.2846], requires_grad=True),),
+    (pnp.array([-0.1735, -0.2846], requires_grad=True),),
     (
-        np.array([-0.1735, -0.2846], requires_grad=True),
-        np.array([0.9812, -0.1492], requires_grad=True),
+        pnp.array([-0.1735, -0.2846], requires_grad=True),
+        pnp.array([0.9812, -0.1492], requires_grad=True),
     ),
-    (np.array(-0.1735, requires_grad=True),),
-    (np.array([-0.1111, 0.3333], requires_grad=True),),
-    (np.array([[0.21, 9.29], [-0.2, 0.12], [0.3, -2.1]], requires_grad=True),),
+    (pnp.array(-0.1735, requires_grad=True),),
+    (pnp.array([-0.1111, 0.3333], requires_grad=True),),
+    (pnp.array([[0.21, 9.29], [-0.2, 0.12], [0.3, -2.1]], requires_grad=True),),
 ]
 
 
@@ -227,10 +227,10 @@ def autodiff_metric_tensor(ansatz, num_wires):
         state = qnode(*params)
 
         def rqnode(*params):
-            return np.real(qnode(*params))
+            return pnp.real(qnode(*params))
 
         def iqnode(*params):
-            return np.imag(qnode(*params))
+            return pnp.imag(qnode(*params))
 
         rjac = qml.jacobian(rqnode)(*params)
         ijac = qml.jacobian(iqnode)(*params)
@@ -239,20 +239,20 @@ def autodiff_metric_tensor(ansatz, num_wires):
             out = []
             for rc, ic in zip(rjac, ijac):
                 c = rc + 1j * ic
-                psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
+                psidpsi = pnp.tensordot(pnp.conj(state), c, axes=([0], [0]))
                 out.append(
-                    np.real(
-                        np.tensordot(np.conj(c), c, axes=([0], [0]))
-                        - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+                    pnp.real(
+                        pnp.tensordot(pnp.conj(c), c, axes=([0], [0]))
+                        - pnp.tensordot(pnp.conj(psidpsi), psidpsi, axes=0)
                     )
                 )
             return tuple(out)
 
         jac = rjac + 1j * ijac
-        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
-        return np.real(
-            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
-            - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+        psidpsi = pnp.tensordot(pnp.conj(state), jac, axes=([0], [0]))
+        return pnp.real(
+            pnp.tensordot(pnp.conj(jac), jac, axes=([0], [0]))
+            - pnp.tensordot(pnp.conj(psidpsi), psidpsi, axes=0)
         )
 
     return mt
@@ -647,7 +647,7 @@ def test_works_with_state_prep():
         ansatz(angles, wires=[0, 1])
         return qml.expval(qml.Z(0) @ qml.X(1))
 
-    angles = np.random.uniform(size=(2,), requires_grad=True)
+    angles = pnp.random.uniform(size=(2,), requires_grad=True)
     qfim = qml.adjoint_metric_tensor(circuit)(angles)
     autodiff_qfim = autodiff_metric_tensor(ansatz, 2)(angles)
     assert onp.allclose(qfim, autodiff_qfim)

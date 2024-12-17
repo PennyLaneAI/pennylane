@@ -20,7 +20,7 @@ import copy
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 @pytest.mark.parametrize(
@@ -54,15 +54,15 @@ def test_operator_definition_qpe(hamiltonian):
 
         return qml.probs(op=measurements)
 
-    theta = np.array([0.1, 0.2, 0.3, 0.4, 0.5]) * 100
+    theta = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5]) * 100
 
     peaks, _ = find_peaks(circuit(theta))
 
     # Calculates the eigenvalues from the obtained output
     lamb = sum(abs(c) for c in hamiltonian.terms()[0])
-    estimated_eigenvalues = lamb * np.cos(2 * np.pi * peaks / 2**8)
+    estimated_eigenvalues = lamb * pnp.cos(2 * pnp.pi * peaks / 2**8)
 
-    assert np.allclose(np.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
+    assert pnp.allclose(pnp.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
 
 
 @pytest.mark.parametrize(
@@ -83,22 +83,22 @@ def test_standard_validity(lcu, control, skip_diff):
     "hamiltonian, expected_decomposition",
     (
         (
-            qml.ops.LinearCombination(np.array([1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
+            qml.ops.LinearCombination(pnp.array([1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
             [
                 qml.Reflection(qml.I([1]), 3.141592653589793),
                 qml.PrepSelPrep(
-                    qml.ops.LinearCombination(np.array([1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
+                    qml.ops.LinearCombination(pnp.array([1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
                     control=[1],
                 ),
             ],
         ),
         (
-            qml.ops.LinearCombination(np.array([-1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
+            qml.ops.LinearCombination(pnp.array([-1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
             [
                 qml.Reflection(qml.I(1), 3.141592653589793),
                 qml.PrepSelPrep(
                     qml.ops.LinearCombination(
-                        np.array([-1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]
+                        pnp.array([-1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]
                     ),
                     control=[1],
                 ),
@@ -129,7 +129,7 @@ def test_lightning_qubit():
         qml.Qubitization(H, control=[3, 4])
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(4))
 
-    assert np.allclose(circuit_lightning(), circuit_default())
+    assert pnp.allclose(circuit_lightning(), circuit_default())
 
 
 class TestDifferentiability:
@@ -144,9 +144,9 @@ class TestDifferentiability:
         return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
     # calculated numerically with finite diff method (h = 1e-4)
-    exp_grad = np.array([0.41177729, -0.21262358, 1.64370464, -0.74256522])
+    exp_grad = pnp.array([0.41177729, -0.21262358, 1.64370464, -0.74256522])
 
-    params = np.array([0.4, 0.5, 0.1, 0.3])
+    params = pnp.array([0.4, 0.5, 0.1, 0.3])
 
     @pytest.mark.autograd
     def test_qnode_autograd(self):
@@ -158,7 +158,7 @@ class TestDifferentiability:
         params = qml.numpy.array(self.params, requires_grad=True)
         res = qml.grad(qnode)(params)
         assert qml.math.shape(res) == (4,)
-        assert np.allclose(res, self.exp_grad, atol=1e-5)
+        assert pnp.allclose(res, self.exp_grad, atol=1e-5)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (False, True))
@@ -185,7 +185,7 @@ class TestDifferentiability:
 
         jac = jac_fn(params)
         assert jac.shape == (4,)
-        assert np.allclose(jac, self.exp_grad, atol=0.05)
+        assert pnp.allclose(jac, self.exp_grad, atol=0.05)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])

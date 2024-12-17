@@ -21,13 +21,13 @@ import pytest
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
-matI = np.eye(2)
-matX = np.array([[0, 1], [1, 0]])
-matY = np.array([[0, -1j], [1j, 0]])
-matZ = np.array([[1, 0], [0, -1]])
+matI = pnp.eye(2)
+matX = pnp.array([[0, 1], [1, 0]])
+matY = pnp.array([[0, -1j], [1j, 0]])
+matZ = pnp.array([[1, 0], [0, -1]])
 
 sparse_matI = sparse.eye(2, format="csr")
 sparse_matX = sparse.csr_matrix([[0, 1], [1, 0]])
@@ -302,7 +302,7 @@ class TestPauliWord:
         assert copy_pw2 == word2
 
     @pytest.mark.parametrize("pw", words)
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0, np.int64(1), np.float32(0.5)])
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0, pnp.int64(1), pnp.float32(0.5)])
     def test_mul(self, pw, scalar):
         """Test scalar multiplication"""
         res1 = scalar * pw
@@ -342,16 +342,16 @@ class TestPauliWord:
             _ = pw1 / "0.5"
 
     tup_pws_mat_wire = (
-        (pw1, [2, 0, 1], np.kron(np.kron(matY, matI), matX)),
-        (pw1, [2, 1, 0], np.kron(np.kron(matY, matX), matI)),
-        (pw2, ["c", "b", "a"], np.kron(np.kron(matZ, matX), matX)),
-        (pw3, [0, "b", "c"], np.kron(np.kron(matZ, matZ), matZ)),
+        (pw1, [2, 0, 1], pnp.kron(pnp.kron(matY, matI), matX)),
+        (pw1, [2, 1, 0], pnp.kron(pnp.kron(matY, matX), matI)),
+        (pw2, ["c", "b", "a"], pnp.kron(pnp.kron(matZ, matX), matX)),
+        (pw3, [0, "b", "c"], pnp.kron(pnp.kron(matZ, matZ), matZ)),
     )
 
     def test_to_mat_empty(self):
         """Test that an empty PauliWord is turned to the trivial 1 matrix"""
         res = pw4.to_mat(wire_order=[])
-        assert res == np.ones((1, 1))
+        assert res == pnp.ones((1, 1))
 
     pw_wire_order = ((pw1, [0, 1]), (pw1, [0, 1, 3]), (pw2, [0]))
 
@@ -365,7 +365,7 @@ class TestPauliWord:
 
     def test_to_mat_identity(self):
         """Test that an identity matrix is return if wire_order is provided."""
-        assert np.allclose(pw4.to_mat(wire_order=[0, 1]), np.eye(4))
+        assert pnp.allclose(pw4.to_mat(wire_order=[0, 1]), pnp.eye(4))
         assert sparse.issparse(pw4.to_mat(wire_order=[0, 1], format="csr"))
         assert not (pw4.to_mat(wire_order=[0, 1], format="csr") != sparse.eye(4)).sum()
 
@@ -373,7 +373,7 @@ class TestPauliWord:
     def test_to_mat(self, pw, wire_order, true_matrix):
         """Test that the wire_order is correctly incorporated in computing the
         matrix representation."""
-        assert np.allclose(pw.to_mat(wire_order=wire_order), true_matrix)
+        assert pnp.allclose(pw.to_mat(wire_order=wire_order), true_matrix)
 
     @pytest.mark.parametrize("pw, wire_order, true_matrix", tup_pws_mat_wire)
     def test_to_mat_format(self, pw, wire_order, true_matrix):
@@ -381,7 +381,7 @@ class TestPauliWord:
         format kwarg."""
         sparse_mat = pw.to_mat(wire_order, format="csr")
         assert sparse.issparse(sparse_mat)
-        assert np.allclose(sparse_mat.toarray(), true_matrix)
+        assert pnp.allclose(sparse_mat.toarray(), true_matrix)
 
     tup_pw_operation = (
         (PauliWord({0: X}), qml.PauliX(wires=0)),
@@ -559,13 +559,13 @@ class TestPauliSentence:
         (ps5, ps1, ps5),
         (
             PauliSentence(
-                {PauliWord({0: "Z"}): np.array(1.0), PauliWord({0: "Z", 1: "X"}): np.array(1.0)}
+                {PauliWord({0: "Z"}): pnp.array(1.0), PauliWord({0: "Z", 1: "X"}): pnp.array(1.0)}
             ),
-            PauliSentence({PauliWord({1: "Z"}): np.array(1.0), PauliWord({1: "Y"}): np.array(1.0)}),
+            PauliSentence({PauliWord({1: "Z"}): pnp.array(1.0), PauliWord({1: "Y"}): pnp.array(1.0)}),
             PauliSentence(
                 {
-                    PauliWord({0: "Z", 1: "Z"}): np.array(1.0 + 1.0j),
-                    PauliWord({0: "Z", 1: "Y"}): np.array(1.0 - 1.0j),
+                    PauliWord({0: "Z", 1: "Z"}): pnp.array(1.0 + 1.0j),
+                    PauliWord({0: "Z", 1: "Y"}): pnp.array(1.0 - 1.0j),
                 }
             ),
         ),
@@ -627,7 +627,7 @@ class TestPauliSentence:
         assert pauli2 == copy_ps2
 
     @pytest.mark.parametrize("ps", sentences)
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0, np.int64(1), np.float64(1.0)])
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0, pnp.int64(1), pnp.float64(1.0)])
     def test_mul(self, ps, scalar):
         """Test scalar multiplication"""
         res1 = scalar * ps
@@ -970,7 +970,7 @@ class TestPauliSentence:
         word1 = PauliWord({2: "X", 3: "Y", 4: "Z"})
         word2 = PauliWord({2: "Y", 3: "Z"})
         ps = PauliSentence({word1: 1.5, word2: -0.5})
-        vector = np.random.rand(2)
+        vector = pnp.random.rand(2)
         with pytest.raises(
             ValueError,
             match="get the matrix for the specified wire order because it does not contain all the Pauli",
@@ -986,13 +986,13 @@ class TestPauliSentence:
         ps = PauliSentence({word1: 1.5, word2: -0.5})
         psmat = ps.to_mat(wire_order=wire_order)
         vector = (
-            np.random.rand(psmat.shape[0])
+            pnp.random.rand(psmat.shape[0])
             if batch_size is None
-            else np.random.rand(batch_size, psmat.shape[0])
+            else pnp.random.rand(batch_size, psmat.shape[0])
         )
         v0 = ps.dot(vector, wire_order=wire_order)
         v1 = (psmat @ vector.T).T
-        assert np.allclose(v0, v1)
+        assert pnp.allclose(v0, v1)
 
     def test_map_wires(self):
         """Test the map_wires conversion method."""
@@ -1021,12 +1021,12 @@ class TestPauliSentenceMatrix:
     """Tests for calculating the matrix of a pauli sentence."""
 
     PS_EMPTY_CASES = (
-        (PauliSentence({}), np.zeros((1, 1))),
-        (PauliSentence({PauliWord({}): 1.0}), np.ones((1, 1))),
-        (PauliSentence({PauliWord({}): 2.5}), 2.5 * np.ones((1, 1))),
+        (PauliSentence({}), pnp.zeros((1, 1))),
+        (PauliSentence({PauliWord({}): 1.0}), pnp.ones((1, 1))),
+        (PauliSentence({PauliWord({}): 2.5}), 2.5 * pnp.ones((1, 1))),
         (
             PauliSentence({PauliWord({}): 2.5, PauliWord({0: "X"}): 1.0}),
-            2.5 * np.eye(2) + qml.matrix(qml.PauliX(0)),
+            2.5 * pnp.eye(2) + qml.matrix(qml.PauliX(0)),
         ),
     )
 
@@ -1035,7 +1035,7 @@ class TestPauliSentenceMatrix:
         """Test that empty PauliSentences and PauliSentences with empty PauliWords are handled correctly"""
 
         res_dense = ps.to_mat()
-        assert np.allclose(res_dense, true_res)
+        assert pnp.allclose(res_dense, true_res)
         res_sparse = ps.to_mat(format="csr")
         assert sparse.issparse(res_sparse)
         assert qml.math.allclose(res_sparse.todense(), true_res)
@@ -1043,7 +1043,7 @@ class TestPauliSentenceMatrix:
     def test_empty_pauli_to_mat_with_wire_order(self):
         """Test the to_mat method with an empty PauliSentence and PauliWord and an external wire order."""
         actual = PauliSentence({PauliWord({}): 1.5}).to_mat([0, 1])
-        assert np.allclose(actual, 1.5 * np.eye(4))
+        assert pnp.allclose(actual, 1.5 * pnp.eye(4))
 
     ps_wire_order = ((ps1, []), (ps1, [0, 1, 2, "a", "b"]), (ps3, [0, 1, "c"]))
 
@@ -1057,9 +1057,9 @@ class TestPauliSentenceMatrix:
 
     def test_to_mat_empty_sentence_with_wires(self):
         """Test that a zero matrix is returned if wire_order is provided on an empty PauliSentence."""
-        true_res = np.zeros((4, 4))
+        true_res = pnp.zeros((4, 4))
         res_dense = ps5.to_mat(wire_order=[0, 1])
-        assert np.allclose(res_dense, true_res)
+        assert pnp.allclose(res_dense, true_res)
         res_sparse = ps5.to_mat(wire_order=[0, 1], format="csr")
         assert sparse.issparse(res_sparse)
         assert qml.math.allclose(res_sparse.todense(), true_res)
@@ -1068,21 +1068,21 @@ class TestPauliSentenceMatrix:
         (
             ps1,
             [0, 1, 2, "a", "b", "c"],
-            1.23 * np.kron(np.kron(matI, np.kron(matX, matY)), np.eye(8))
-            + 4j * np.kron(np.eye(8), np.kron(matX, np.kron(matX, matZ)))
-            - 0.5 * np.kron(matZ, np.kron(np.eye(8), np.kron(matZ, matZ))),
+            1.23 * pnp.kron(pnp.kron(matI, pnp.kron(matX, matY)), pnp.eye(8))
+            + 4j * pnp.kron(pnp.eye(8), pnp.kron(matX, pnp.kron(matX, matZ)))
+            - 0.5 * pnp.kron(matZ, pnp.kron(pnp.eye(8), pnp.kron(matZ, matZ))),
         ),
         (
             ps2,
             ["a", "b", "c", 0, 1, 2],
-            -1.23 * np.kron(np.eye(8), np.kron(matI, np.kron(matX, matY)))
-            - 4j * np.kron(np.kron(matX, np.kron(matX, matZ)), np.eye(8))
-            + 0.5 * np.kron(np.kron(matI, np.kron(matZ, np.kron(matZ, matZ))), np.eye(4)),
+            -1.23 * pnp.kron(pnp.eye(8), pnp.kron(matI, pnp.kron(matX, matY)))
+            - 4j * pnp.kron(pnp.kron(matX, pnp.kron(matX, matZ)), pnp.eye(8))
+            + 0.5 * pnp.kron(pnp.kron(matI, pnp.kron(matZ, pnp.kron(matZ, matZ))), pnp.eye(4)),
         ),
         (
             ps3,
             [0, "b", "c"],
-            -0.5 * np.kron(matZ, np.kron(matZ, matZ)) + 1 * np.eye(8),
+            -0.5 * pnp.kron(matZ, pnp.kron(matZ, matZ)) + 1 * pnp.eye(8),
         ),
     )
 
@@ -1090,14 +1090,14 @@ class TestPauliSentenceMatrix:
     def test_to_mat_wire_order(self, ps, wire_order, true_matrix):
         """Test that the wire_order is correctly incorporated in computing the
         matrix representation."""
-        assert np.allclose(ps.to_mat(wire_order), true_matrix)
+        assert pnp.allclose(ps.to_mat(wire_order), true_matrix)
 
     @pytest.mark.parametrize("ps, wire_order, true_matrix", tup_ps_mat)
     def test_to_mat_format(self, ps, wire_order, true_matrix):
         """Test that the correct type of matrix is returned given the format kwarg."""
         sparse_mat = ps.to_mat(wire_order, format="csr")
         assert sparse.issparse(sparse_mat)
-        assert np.allclose(sparse_mat.toarray(), true_matrix)
+        assert pnp.allclose(sparse_mat.toarray(), true_matrix)
 
     @pytest.mark.parametrize("ps,wire_order,true_matrix", tup_ps_mat)
     def test_to_mat_buffer(self, ps, wire_order, true_matrix):
@@ -1105,7 +1105,7 @@ class TestPauliSentenceMatrix:
         size is reached."""
         buffer_size = 2 ** len(wire_order) * 48  # Buffer size for 2 matrices
         sparse_mat = ps.to_mat(wire_order, format="csr", buffer_size=buffer_size)
-        assert np.allclose(sparse_mat.toarray(), true_matrix)
+        assert pnp.allclose(sparse_mat.toarray(), true_matrix)
 
     @pytest.mark.tf
     def test_dense_matrix_tf(self):
@@ -1123,8 +1123,8 @@ class TestPauliSentenceMatrix:
 
         gx, gy = tape.jacobian(mat, [x, y])
 
-        pw1_mat = np.array([[0, 0, 0, -1j], [0, 0, 1j, 0], [0, -1j, 0, 0], [1j, 0, 0, 0]])
-        pw2_mat = np.array([[0, 0, 0, -1j], [0, 0, -1j, 0], [0, 1j, 0, 0], [1j, 0, 0, 0]])
+        pw1_mat = pnp.array([[0, 0, 0, -1j], [0, 0, 1j, 0], [0, -1j, 0, 0], [1j, 0, 0, 0]])
+        pw2_mat = pnp.array([[0, 0, 0, -1j], [0, 0, -1j, 0], [0, 1j, 0, 0], [1j, 0, 0, 0]])
 
         assert qml.math.allclose(mat, x * pw1_mat + y * pw2_mat)
         assert qml.math.allclose(gx, qml.math.conj(pw1_mat))  # tf complex number convention
@@ -1175,8 +1175,8 @@ class TestPauliSentenceMatrix:
         x = jax.numpy.array(0.1 + 0j)
         y = jax.numpy.array(0.2 + 0j)
 
-        pw1_mat = np.array([[0, 0, 0, -1j], [0, 0, 1j, 0], [0, -1j, 0, 0], [1j, 0, 0, 0]])
-        pw2_mat = np.array([[0, 0, 0, -1j], [0, 0, -1j, 0], [0, 1j, 0, 0], [1j, 0, 0, 0]])
+        pw1_mat = pnp.array([[0, 0, 0, -1j], [0, 0, 1j, 0], [0, -1j, 0, 0], [1j, 0, 0, 0]])
+        pw2_mat = pnp.array([[0, 0, 0, -1j], [0, 0, -1j, 0], [0, 1j, 0, 0], [1j, 0, 0, 0]])
 
         mat = f(x, y)
         assert qml.math.allclose(mat, x * pw1_mat + y * pw2_mat)
@@ -1192,7 +1192,7 @@ class TestPaulicomms:
     def test_pauli_word_comm_raises_NotImplementedError(self):
         """Test that a NotImplementedError is raised when a PauliWord.commutator() for type that is not PauliWord, PauliSentence or Operator"""
         op1 = PauliWord({0: "X"})
-        matrix = np.eye(2)
+        matrix = pnp.eye(2)
         with pytest.raises(NotImplementedError, match="Cannot compute natively a commutator"):
             op1.commutator(matrix)
 
@@ -1442,9 +1442,9 @@ class TestPauliArithmeticWithADInterfaces:
     def test_autograd_initialization(self, scalar):
         """Test initializing PauliSentence from autograd array"""
 
-        tensor = scalar * np.ones(4)
+        tensor = scalar * pnp.ones(4)
         res = PauliSentence(dict(zip(words, tensor)))
-        assert all(isinstance(val, np.ndarray) for val in res.values())
+        assert all(isinstance(val, pnp.ndarray) for val in res.values())
 
     @pytest.mark.jax
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
@@ -1492,18 +1492,18 @@ class TestPauliArithmeticWithADInterfaces:
     def test_autograd_scalar_multiplication(self, ps, scalar):
         """Test that multiplying with an autograd array works and results in the correct types"""
 
-        res1 = np.array(scalar) * ps
-        res2 = ps * np.array(scalar)
-        res3 = ps / np.array(scalar)
+        res1 = pnp.array(scalar) * ps
+        res2 = ps * pnp.array(scalar)
+        res3 = ps / pnp.array(scalar)
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)
         assert isinstance(res3, PauliSentence)
         assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
         assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
-        assert all(isinstance(val, np.ndarray) for val in res1.values())
-        assert all(isinstance(val, np.ndarray) for val in res2.values())
-        assert all(isinstance(val, np.ndarray) for val in res3.values())
+        assert all(isinstance(val, pnp.ndarray) for val in res1.values())
+        assert all(isinstance(val, pnp.ndarray) for val in res2.values())
+        assert all(isinstance(val, pnp.ndarray) for val in res3.values())
 
     @pytest.mark.jax
     @pytest.mark.parametrize("ps", sentences)

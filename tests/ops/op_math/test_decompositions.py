@@ -22,7 +22,7 @@ import pytest
 from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.op_math.decompositions.two_qubit_unitary import (
     _compute_num_cnots,
@@ -63,7 +63,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
         ), "Incorrect gate parameters"
 
     obtained_mat = reduce(
-        np.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
+        pnp.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
     )
 
     if len(obtained_mat.shape) == 2:
@@ -92,36 +92,36 @@ typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ, qml.GlobalPhase)
 test_cases_zyz = [
     # Special unitaries
     (I, [0.0, 0.0, 0.0, 0]),
-    (Z, [np.pi / 2, 0.0, np.pi / 2, -np.pi / 2]),
-    (S, [np.pi / 4, 0.0, np.pi / 4, -np.pi / 4]),
-    (T, [np.pi / 8, 0.0, np.pi / 8, -np.pi / 8]),
-    (H, [np.pi, np.pi / 2, 0.0, -np.pi / 2]),
-    (X, [np.pi / 2, np.pi, 7 * np.pi / 2, -np.pi / 2]),
+    (Z, [pnp.pi / 2, 0.0, pnp.pi / 2, -pnp.pi / 2]),
+    (S, [pnp.pi / 4, 0.0, pnp.pi / 4, -pnp.pi / 4]),
+    (T, [pnp.pi / 8, 0.0, pnp.pi / 8, -pnp.pi / 8]),
+    (H, [pnp.pi, pnp.pi / 2, 0.0, -pnp.pi / 2]),
+    (X, [pnp.pi / 2, pnp.pi, 7 * pnp.pi / 2, -pnp.pi / 2]),
     # Single rotations
     (qml.RZ(0.3, wires=0).matrix(), [0.15, 0.0, 0.15, 0]),
-    (qml.RZ(-0.5, wires=0).matrix(), [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25, 0]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [0.2, 0.5, 4 * np.pi - 0.3, 0]),
+    (qml.RZ(-0.5, wires=0).matrix(), [4 * pnp.pi - 0.25, 0.0, 4 * pnp.pi - 0.25, 0]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [0.2, 0.5, 4 * pnp.pi - 0.3, 0]),
     # Other random unitaries
     (
-        np.array(
+        pnp.array(
             [
                 [0, -9.831019270939975e-01 + 0.1830590094588862j],
                 [9.831019270939975e-01 + 0.1830590094588862j, 0],
             ]
         ),
-        [12.382273469673908, np.pi, 0.18409714468526372, 0],
+        [12.382273469673908, pnp.pi, 0.18409714468526372, 0],
     ),
     (
-        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
-        [4 * np.pi - 1.0, 2.0, 4 * np.pi - 3.0, -0.02],
+        pnp.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
+        [4 * pnp.pi - 1.0, 2.0, 4 * pnp.pi - 3.0, -0.02],
     ),
     # Broadcasted unitaries, one coming from RZ and another from Rot
     (
-        qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
-        [[np.pi / 2, np.pi / 4], [0.0, 0.0], [np.pi / 2, np.pi / 4], [0, 0]],
+        qml.QubitUnitary(qml.RZ.compute_matrix(pnp.array([pnp.pi, pnp.pi / 2])), wires=0).matrix(),
+        [[pnp.pi / 2, pnp.pi / 4], [0.0, 0.0], [pnp.pi / 2, pnp.pi / 4], [0, 0]],
     ),
     (
-        qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
+        qml.Rot(pnp.array([1.2, 2.3]), pnp.array([1.2, 2.3]), pnp.array([1.2, 2.3]), wires=0).matrix(),
         [[1.2, 2.3], [1.2, 2.3], [1.2, 2.3], [0, 0]],
     ),
 ]
@@ -174,7 +174,7 @@ typeof_gates_xyx = (qml.RX, qml.RY, qml.RX, qml.GlobalPhase)
 test_cases_xyx = [
     # Try a random dense unitary
     (
-        np.array(
+        pnp.array(
             [
                 [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
                 [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
@@ -184,17 +184,17 @@ test_cases_xyx = [
     ),
     # Try a few specific special unitaries
     (I, [0, 0, 0, 0]),  # This triggers the if-conditional trivially
-    (X, [np.pi * 3 / 2, 0.0, 7 * np.pi / 2, -np.pi / 2]),
-    (Y, [np.pi / 2, np.pi, np.pi / 2, -np.pi / 2]),
-    (Z, [7 * np.pi / 2, np.pi, np.pi / 2, -np.pi / 2]),
+    (X, [pnp.pi * 3 / 2, 0.0, 7 * pnp.pi / 2, -pnp.pi / 2]),
+    (Y, [pnp.pi / 2, pnp.pi, pnp.pi / 2, -pnp.pi / 2]),
+    (Z, [7 * pnp.pi / 2, pnp.pi, pnp.pi / 2, -pnp.pi / 2]),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
-        qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
-        [[7 * np.pi / 2, 7 * np.pi / 2], [np.pi, np.pi / 2], [np.pi / 2, np.pi / 2], [0, 0]],
+        qml.QubitUnitary(qml.RZ.compute_matrix(pnp.array([pnp.pi, pnp.pi / 2])), wires=0).matrix(),
+        [[7 * pnp.pi / 2, 7 * pnp.pi / 2], [pnp.pi, pnp.pi / 2], [pnp.pi / 2, pnp.pi / 2], [0, 0]],
     ),
     (
         # This triggers the if-conditional non-trivially
-        qml.Rot(np.array([1.2, 1.5]), np.array([1.2, 1.5]), np.array([1.2, 1.5]), wires=0).matrix(),
+        qml.Rot(pnp.array([1.2, 1.5]), pnp.array([1.2, 1.5]), pnp.array([1.2, 1.5]), wires=0).matrix(),
         [
             [11.62877054, 11.74682533],
             [2.53416365, 3.03803113],
@@ -251,7 +251,7 @@ class TestQubitUnitaryXYXDecomposition:
 typeof_gates_xzx = (qml.RX, qml.RZ, qml.RX, qml.GlobalPhase)
 test_cases_xzx = [
     (
-        np.array(
+        pnp.array(
             [
                 [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
                 [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
@@ -260,16 +260,16 @@ test_cases_xzx = [
         [12.416147693665032, 1.3974974090935608, 11.448040119199066, 1.1759220332464762],
     ),
     (I, [0, 0, 0, 0]),
-    (X, [np.pi / 2, 0, np.pi / 2, -np.pi / 2]),
-    (Y, [np.pi / 2, np.pi, 7 * np.pi / 2, -np.pi / 2]),
-    (Z, [0, np.pi, 0, -np.pi / 2]),
-    (H, [np.pi / 2, np.pi / 2, np.pi / 2, -np.pi / 2]),
+    (X, [pnp.pi / 2, 0, pnp.pi / 2, -pnp.pi / 2]),
+    (Y, [pnp.pi / 2, pnp.pi, 7 * pnp.pi / 2, -pnp.pi / 2]),
+    (Z, [0, pnp.pi, 0, -pnp.pi / 2]),
+    (H, [pnp.pi / 2, pnp.pi / 2, pnp.pi / 2, -pnp.pi / 2]),
     (
-        qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
-        [[0, 0], [np.pi, np.pi / 2], [0, 0], [0, 0]],
+        qml.QubitUnitary(qml.RZ.compute_matrix(pnp.array([pnp.pi, pnp.pi / 2])), wires=0).matrix(),
+        [[0, 0], [pnp.pi, pnp.pi / 2], [0, 0], [0, 0]],
     ),
     (
-        qml.Rot(np.array([1.2, 1.5]), np.array([1.2, 1.5]), np.array([1.2, 1.5]), wires=0).matrix(),
+        qml.Rot(pnp.array([1.2, 1.5]), pnp.array([1.2, 1.5]), pnp.array([1.2, 1.5]), wires=0).matrix(),
         [
             [0.63319625, 0.75125105],
             [2.53416365, 3.03803113],
@@ -326,39 +326,39 @@ class TestQubitUnitaryXZXDecomposition:
 typeof_gates_zxz = (qml.RZ, qml.RX, qml.RZ, qml.GlobalPhase)
 test_cases_zxz = [
     (I, [0.0, 0.0, 0.0, 0]),
-    (Z, [np.pi / 2, 0.0, np.pi / 2, -np.pi / 2]),
-    (S, [np.pi / 4, 0.0, np.pi / 4, -np.pi / 4]),
-    (T, [np.pi / 8, 0.0, np.pi / 8, -np.pi / 8]),
-    (H, [np.pi / 2, np.pi / 2, np.pi / 2, -np.log(1j) / 1j]),
-    (X, [0, np.pi, 4 * np.pi, -np.log(1j) / 1j]),
+    (Z, [pnp.pi / 2, 0.0, pnp.pi / 2, -pnp.pi / 2]),
+    (S, [pnp.pi / 4, 0.0, pnp.pi / 4, -pnp.pi / 4]),
+    (T, [pnp.pi / 8, 0.0, pnp.pi / 8, -pnp.pi / 8]),
+    (H, [pnp.pi / 2, pnp.pi / 2, pnp.pi / 2, -pnp.log(1j) / 1j]),
+    (X, [0, pnp.pi, 4 * pnp.pi, -pnp.log(1j) / 1j]),
     (qml.RZ(0.3, wires=0).matrix(), [0.15, 0.0, 0.15, 0]),
-    (qml.RZ(-0.5, wires=0).matrix(), [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25, 0]),
+    (qml.RZ(-0.5, wires=0).matrix(), [4 * pnp.pi - 0.25, 0.0, 4 * pnp.pi - 0.25, 0]),
     (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [11.195574287564275, 0.5, 1.2707963267948965, 0]),
     (
-        np.array(
+        pnp.array(
             [
                 [0, -9.831019270939975e-01 + 0.1830590094588862j],
                 [9.831019270939975e-01 + 0.1830590094588862j, 0],
             ]
         ),
-        [10.811477142879012, np.pi, 1.7548934714801607, 0],
+        [10.811477142879012, pnp.pi, 1.7548934714801607, 0],
     ),
     (
-        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
+        pnp.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         [
             9.995574287564276,
             2.0,
             11.137166941154069,
-            -np.log(0.9998000066665778 + 0.019998666693333122j) / 1j,
+            -pnp.log(0.9998000066665778 + 0.019998666693333122j) / 1j,
         ],
     ),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
-        qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
-        [[np.pi / 2, np.pi / 4], [0.0, 0.0], [np.pi / 2, np.pi / 4], [0, 0]],
+        qml.QubitUnitary(qml.RZ.compute_matrix(pnp.array([pnp.pi, pnp.pi / 2])), wires=0).matrix(),
+        [[pnp.pi / 2, pnp.pi / 4], [0.0, 0.0], [pnp.pi / 2, pnp.pi / 4], [0, 0]],
     ),
     (
-        qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
+        qml.Rot(pnp.array([1.2, 2.3]), pnp.array([1.2, 2.3]), pnp.array([1.2, 2.3]), wires=0).matrix(),
         [
             [12.19557429, 0.72920367],
             [1.2, 2.3],
@@ -415,16 +415,16 @@ class TestQubitUnitaryZXZDecomposition:
 test_cases_rot = [
     # These will be decomposed to RZ
     (I, [qml.RZ, qml.GlobalPhase], [0.0, 0.0]),
-    (Z, [qml.RZ, qml.GlobalPhase], [np.pi, -np.pi / 2]),
-    (S, [qml.RZ, qml.GlobalPhase], [np.pi / 2, -np.pi / 4]),
-    (T, [qml.RZ, qml.GlobalPhase], [np.pi / 4, -np.pi / 8]),
+    (Z, [qml.RZ, qml.GlobalPhase], [pnp.pi, -pnp.pi / 2]),
+    (S, [qml.RZ, qml.GlobalPhase], [pnp.pi / 2, -pnp.pi / 4]),
+    (T, [qml.RZ, qml.GlobalPhase], [pnp.pi / 4, -pnp.pi / 8]),
     (qml.RZ(0.3, wires=0).matrix(), [qml.RZ, qml.GlobalPhase], [0.3, 0.0]),
-    (qml.RZ(-0.5, wires=0).matrix(), [qml.RZ, qml.GlobalPhase], [4 * np.pi - 0.5, 0.0]),
+    (qml.RZ(-0.5, wires=0).matrix(), [qml.RZ, qml.GlobalPhase], [4 * pnp.pi - 0.5, 0.0]),
     # # This will be decomposed to Rot
     (
         qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(),
         [qml.Rot, qml.GlobalPhase],
-        [[0.2, 0.5, 4 * np.pi - 0.3], 0.0],
+        [[0.2, 0.5, 4 * pnp.pi - 0.3], 0.0],
     ),
 ]
 
@@ -919,7 +919,7 @@ samples_su2_su2 = [
             [0.257810302107603 + 0.3791450460627684j, 0.7491086034534051 - 0.478141383280444j],
             [-0.6878868994174759 + 0.5626673047041733j, -0.2798521896663711 - 0.3631802166496543j],
         ],
-        [[np.exp(-1j * np.pi / 3), 0], [0, np.exp(1j * np.pi / 3)]],
+        [[pnp.exp(-1j * pnp.pi / 3), 0], [0, pnp.exp(1j * pnp.pi / 3)]],
     ),
     (
         [
@@ -951,17 +951,17 @@ class TestTwoQubitUnitaryDecomposition:
     def test_convert_to_su4(self, U):
         """Test a matrix in U(4) is correct converted to SU(4)."""
 
-        U_su4 = _convert_to_su4(np.array(U))
+        U_su4 = _convert_to_su4(pnp.array(U))
 
         # Ensure the determinant is correct and the mats are equivalent up to a phase
         assert qml.math.isclose(qml.math.linalg.det(U_su4), 1.0)
-        assert check_matrix_equivalence(np.array(U), U_su4)
+        assert check_matrix_equivalence(pnp.array(U), U_su4)
 
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
         """Test SU(2) x SU(2) can be correctly factored into tensor products."""
 
-        true_matrix = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))
+        true_matrix = qml.math.kron(pnp.array(U_pair[0]), pnp.array(U_pair[1]))
         A, B = _su2su2_to_tensor_products(true_matrix)
         assert check_matrix_equivalence(qml.math.kron(A, B), true_matrix)
 
@@ -970,7 +970,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
         """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
 
-        U = _convert_to_su4(np.array(U))
+        U = _convert_to_su4(pnp.array(U))
 
         assert _compute_num_cnots(U) == 3
 
@@ -993,7 +993,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
 
-        U = _convert_to_su4(np.array(U))
+        U = _convert_to_su4(pnp.array(U))
 
         assert _compute_num_cnots(U) == 2
 
@@ -1014,7 +1014,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
         """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
 
-        U = _convert_to_su4(np.array(U))
+        U = _convert_to_su4(pnp.array(U))
 
         assert _compute_num_cnots(U) == 1
 
@@ -1035,7 +1035,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a two-qubit tensor product matrix is correctly decomposed."""
 
-        U = _convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
+        U = _convert_to_su4(qml.math.kron(pnp.array(U_pair[0]), pnp.array(U_pair[1])))
 
         assert _compute_num_cnots(U) == 0
 
@@ -1262,28 +1262,28 @@ def test_two_qubit_decomposition_special_case_discontinuity():
             theta1
             / 2
             * (
-                np.cos(0.2)
+                pnp.cos(0.2)
                 / 2
-                * (np.array([[0, 0, 0, 0], [0, 0, 2, 0], [0, 2, 0, 0], [0, 0, 0, 0]]))
-                + np.sin(0.2)
+                * (pnp.array([[0, 0, 0, 0], [0, 0, 2, 0], [0, 2, 0, 0], [0, 0, 0, 0]]))
+                + pnp.sin(0.2)
                 / 2
-                * (np.array([[0, 0, 0, 0], [0, 0, 2j, 0], [0, -2j, 0, 0], [0, 0, 0, 0]]))
+                * (pnp.array([[0, 0, 0, 0], [0, 0, 2j, 0], [0, -2j, 0, 0], [0, 0, 0, 0]]))
             )
         )
 
         def expm(val):
-            d, U = np.linalg.eigh(-1.0j * val)
-            return np.dot(U, np.dot(np.diag(np.exp(1.0j * d)), np.conj(U).T))
+            d, U = pnp.linalg.eigh(-1.0j * val)
+            return pnp.dot(U, pnp.dot(pnp.diag(pnp.exp(1.0j * d)), pnp.conj(U).T))
 
         mat = expm(-1j * generator)
 
-        assert np.allclose(
-            np.dot(np.transpose(np.conj(mat)), mat), np.eye(len(mat))
+        assert pnp.allclose(
+            pnp.dot(pnp.transpose(pnp.conj(mat)), mat), pnp.eye(len(mat))
         ), "mat is not unitary"
 
         return mat
 
-    mat = make_unitary(np.pi / 2)
+    mat = make_unitary(pnp.pi / 2)
     decomp_mat = qml.matrix(two_qubit_decomposition, wire_order=(0, 1))(mat, wires=(0, 1))
     assert qml.math.allclose(mat, decomp_mat)
 
@@ -1296,7 +1296,7 @@ class TestTwoQubitDecompositionWarnings:
         dev = qml.device("default.qubit", wires=2)
 
         def my_qfunc(params):
-            U = qml.numpy.array(np.eye(4, dtype=np.complex128), requires_grad=True) * params
+            U = qml.numpy.array(pnp.eye(4, dtype=pnp.complex128), requires_grad=True) * params
             ops = qml.ops.two_qubit_decomposition(U, wires=[0, 1])
             for op in ops:
                 qml.apply(op)
@@ -1376,7 +1376,7 @@ class TestTwoQubitDecompositionWarnings:
         dev = qml.device("default.qubit", wires=2)
 
         def my_qfunc(params):
-            U = jnp.array(np.eye(4, dtype=np.complex128)) * params
+            U = jnp.array(pnp.eye(4, dtype=pnp.complex128)) * params
             ops = qml.ops.two_qubit_decomposition(U, wires=[0, 1])
             for op in ops:
                 qml.apply(op)
@@ -1399,7 +1399,7 @@ class TestTwoQubitDecompositionWarnings:
         dev = qml.device("default.qubit", wires=2)
 
         def my_qfunc(params):
-            U = qml.numpy.array(np.eye(4, dtype=np.complex128), requires_grad=True) * params
+            U = qml.numpy.array(pnp.eye(4, dtype=pnp.complex128), requires_grad=True) * params
             ops = qml.ops.two_qubit_decomposition(U, wires=[0, 1])
             for op in ops:
                 qml.apply(op)

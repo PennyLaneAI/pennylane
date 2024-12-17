@@ -17,7 +17,7 @@ from collections.abc import Iterable
 from typing import Union
 
 import pennylane as qml
-import pennylane.numpy as np
+import pennylane.numpy as pnp
 from pennylane import math
 
 
@@ -44,7 +44,7 @@ def create_initial_state(
         2 * num_wires
     )  # we initialize the density matrix as the tensor form to keep compatibility with the rest of the module
     if not prep_operation:
-        state = np.zeros((2,) * num_axes, dtype=complex)
+        state = pnp.zeros((2,) * num_axes, dtype=complex)
         state[(0,) * num_axes] = 1
         return math.asarray(state, like=like)
 
@@ -53,7 +53,7 @@ def create_initial_state(
 
     else:
         pure_state = prep_operation.state_vector(wire_order=list(wires))
-        density_matrix = np.outer(pure_state, np.conj(pure_state))
+        density_matrix = pnp.outer(pure_state, pnp.conj(pure_state))
     return _post_process(density_matrix, num_axes, like)
 
 
@@ -61,7 +61,7 @@ def _post_process(density_matrix, num_axes, like):
     r"""
     This post processor is necessary to ensure that the density matrix is in the correct format, i.e. the original tensor form, instead of the pure matrix form, as requested by all the other more fundamental chore functions in the module (again from some legacy code).
     """
-    density_matrix = np.reshape(density_matrix, (2,) * num_axes)
+    density_matrix = pnp.reshape(density_matrix, (2,) * num_axes)
     dtype = str(density_matrix.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
     dtype = "complex64" if floating_single else "complex128"

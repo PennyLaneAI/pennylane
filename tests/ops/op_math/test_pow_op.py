@@ -19,7 +19,7 @@ from copy import copy
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.operation import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
@@ -47,7 +47,7 @@ def test_basic_validity():
     op = qml.pow(qml.PauliX(0), 2.5)
     qml.ops.functions.assert_valid(op)
 
-    op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
+    op = qml.pow(qml.Hermitian(pnp.eye(2), 0), 2)
     qml.ops.functions.assert_valid(op)
 
 
@@ -214,7 +214,7 @@ class TestInitialization:
 
     def test_template_base(self, power_method, seed):
         """Test pow initialization for a template."""
-        rng = np.random.default_rng(seed=seed)
+        rng = pnp.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)  # pylint:disable=no-member
 
@@ -242,7 +242,7 @@ class TestProperties:
 
     def test_data(self, power_method):
         """Test base data can be get and set through Pow class."""
-        x = np.array(1.234)
+        x = pnp.array(1.234)
 
         base = qml.RX(x, wires="a")
         op: Pow = power_method(base=base, z=3.21)
@@ -250,13 +250,13 @@ class TestProperties:
         assert op.data == (x,)
 
         # update parameters through pow
-        x_new = np.array(2.3456)
+        x_new = pnp.array(2.3456)
         op.data = (x_new,)
         assert base.data == (x_new,)
         assert op.data == (x_new,)
 
         # update base data updates pow data
-        x_new2 = np.array(3.456)
+        x_new2 = pnp.array(3.456)
         base.data = (x_new2,)
         assert op.data == (x_new2,)
 
@@ -328,7 +328,7 @@ class TestProperties:
             def pow(self, z):
                 return super().pow(z % 2)
 
-        pow_op = power_method(base=MyOp(wires=0), z=np.array([1.0, 2.0]))
+        pow_op = power_method(base=MyOp(wires=0), z=pnp.array([1.0, 2.0]))
         assert not pow_op.has_decomposition
 
         with pytest.raises(DecompositionUndefinedError):
@@ -383,27 +383,27 @@ class TestProperties:
         """Test the batching properties and methods."""
 
         # base is batched
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        base = qml.RX(pnp.array([1.2, 2.3, 3.4]), 0)
         op = power_method(base, z=1)
         assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
 
         # coeff is batched
         base = qml.RX(1, 0)
-        op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
+        op = power_method(base, z=pnp.array([1.2, 2.3, 3.4]))
         assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
 
         # both are batched
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
-        op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
+        base = qml.RX(pnp.array([1.2, 2.3, 3.4]), 0)
+        op = power_method(base, z=pnp.array([1.2, 2.3, 3.4]))
         assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
 
     def test_different_batch_sizes_raises_error(self, power_method):
         """Test that using different batch sizes for base and scalar raises an error."""
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
-        op = power_method(base, np.array([0.1, 1.2, 2.3, 3.4]))
+        base = qml.RX(pnp.array([1.2, 2.3, 3.4]), 0)
+        op = power_method(base, pnp.array([0.1, 1.2, 2.3, 3.4]))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
@@ -565,7 +565,7 @@ class TestMiscMethods:
 
     def test_label_matrix_param(self):
         """Test that when passed a matrix op, the matrix is cached into passed dictionary."""
-        base = qml.QubitUnitary(np.eye(2), wires=0)
+        base = qml.QubitUnitary(pnp.eye(2), wires=0)
         op = Pow(base, -1.2)
 
         cache = {"matrices": []}
@@ -666,7 +666,7 @@ class TestMatrix:
 
     def test_base_batching_support(self):
         """Test that Pow matrix has base batching support."""
-        x = np.array([-1, -2, -3])
+        x = pnp.array([-1, -2, -3])
         op = Pow(qml.RX(x, 0), z=3)
         mat = op.matrix()
         true_mat = qml.math.stack([Pow(qml.RX(i, 0), z=3).matrix() for i in x])
@@ -675,7 +675,7 @@ class TestMatrix:
 
     def test_coeff_batching_support(self):
         """Test that Pow matrix has coeff batching support."""
-        x = np.array([-1, -2, -3])
+        x = pnp.array([-1, -2, -3])
         op = Pow(qml.PauliX(0), z=x)
         mat = op.matrix()
         true_mat = qml.math.stack([Pow(qml.PauliX(0), i).matrix() for i in x])
@@ -684,8 +684,8 @@ class TestMatrix:
 
     def test_base_and_coeff_batching_support(self):
         """Test that Pow matrix has base and coeff batching support."""
-        x = np.array([-1, -2, -3])
-        y = np.array([1, 2, 3])
+        x = pnp.array([-1, -2, -3])
+        y = pnp.array([1, 2, 3])
         op = Pow(qml.RX(x, 0), z=y)
         mat = op.matrix()
         true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
@@ -814,7 +814,7 @@ class TestMatrix:
         mat = pow_op.matrix()
 
         true_mat = [[1, 0], [0, 1]]
-        assert np.allclose(mat, true_mat)
+        assert pnp.allclose(mat, true_mat)
 
 
 class TestSparseMatrix:
@@ -825,7 +825,7 @@ class TestSparseMatrix:
         sparse matrix and the exponennt is an int."""
         from scipy.sparse import csr_matrix
 
-        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = pnp.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
         H = csr_matrix(H)
         base = qml.SparseHamiltonian(H, wires=0)
 
@@ -844,7 +844,7 @@ class TestSparseMatrix:
         raises a SparseMatrixUndefinedError error."""
         from scipy.sparse import csr_matrix
 
-        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = pnp.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
         H = csr_matrix(H)
         base = qml.SparseHamiltonian(H, wires=0)
 
@@ -974,11 +974,11 @@ class TestIntegration:
 
         x = qml.numpy.array(1.234, requires_grad=True)
 
-        expected = -np.sin(x * z)
+        expected = -pnp.sin(x * z)
         assert qml.math.allclose(circuit(x, z), expected)
 
         grad = qml.grad(circuit)(x, z)
-        expected_grad = -z * np.cos(x * z)
+        expected_grad = -z * pnp.cos(x * z)
         assert qml.math.allclose(grad, expected_grad)
 
     def test_batching_execution(self):
@@ -993,7 +993,7 @@ class TestIntegration:
         x = qml.numpy.array([1.234, 2.34, 3.456])
         res = circuit(x)
 
-        expected = -np.sin(x * 2.5)
+        expected = -pnp.sin(x * 2.5)
         assert qml.math.allclose(res, expected)
 
     def test_non_decomposable_power(self):
@@ -1037,5 +1037,5 @@ class TestIntegration:
             expected = expected_circuit(x)
         expected_grad = expected_tape.gradient(expected, x)
 
-        assert np.allclose(res, expected)
-        assert np.allclose(res_grad, expected_grad)
+        assert pnp.allclose(res, expected)
+        assert pnp.allclose(res_grad, expected_grad)

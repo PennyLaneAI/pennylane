@@ -18,7 +18,7 @@ Tests for the OutMultiplier template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.templates.subroutines.out_multiplier import OutMultiplier
 
 
@@ -112,7 +112,7 @@ class TestOutMultiplier:
             mod = 2 ** len(output_wires)
 
         # pylint: disable=bad-reversed-sequence
-        assert np.allclose(
+        assert pnp.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))), (x * y) % mod
         )
 

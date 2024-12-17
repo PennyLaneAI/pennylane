@@ -18,7 +18,7 @@
 import pytest
 
 import pennylane as qml
-import pennylane.numpy as np
+import pennylane.numpy as pnp
 from pennylane.shadows import ClassicalShadow
 from pennylane.shadows.classical_shadow import _project_density_matrix_spectrum
 
@@ -41,10 +41,10 @@ def expected_entropy_ising_xx(param, alpha):
     """
     Return the analytical entropy for the IsingXX.
     """
-    eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
-    eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+    eig_1 = (1 + pnp.sqrt(1 - 4 * pnp.cos(param / 2) ** 2 * pnp.sin(param / 2) ** 2)) / 2
+    eig_2 = (1 - pnp.sqrt(1 - 4 * pnp.cos(param / 2) ** 2 * pnp.sin(param / 2) ** 2)) / 2
     eigs = [eig_1, eig_2]
-    eigs = np.array([eig for eig in eigs if eig > 0])
+    eigs = pnp.array([eig for eig in eigs if eig > 0])
 
     if alpha == 1 or qml.math.isclose(alpha, 1):
         return qml.math.entr(eigs)
@@ -56,7 +56,7 @@ class TestShadowEntropies:
     """Tests for entropies in ClassicalShadow class"""
 
     @pytest.mark.parametrize("n_wires", [2, 4])
-    @pytest.mark.parametrize("base", [np.exp(1), 2])
+    @pytest.mark.parametrize("base", [pnp.exp(1), 2])
     def test_constant_distribution(self, n_wires, base):
         """Test for state with constant eigenvalues of reduced state that all entropies are the same"""
 
@@ -64,9 +64,9 @@ class TestShadowEntropies:
         shadow = ClassicalShadow(bits, recipes)
 
         entropies = [shadow.entropy(wires=[0], alpha=alpha, base=base) for alpha in [1, 2, 3]]
-        assert np.allclose(entropies, entropies[0], atol=1e-2)
-        expected = np.log(2) / np.log(base)
-        assert np.allclose(entropies, expected, atol=2e-2)
+        assert pnp.allclose(entropies, entropies[0], atol=1e-2)
+        expected = pnp.log(2) / pnp.log(base)
+        assert pnp.allclose(entropies, expected, atol=2e-2)
 
     def test_non_constant_distribution(self):
         """Test entropies match roughly with exact solution for a non-constant distribution using other PennyLane functionalities"""
@@ -96,7 +96,7 @@ class TestShadowEntropies:
 
             return qml.classical_shadow(wires=dev.wires)
 
-        x = np.arange(n_wires, requires_grad=True)
+        x = pnp.arange(n_wires, requires_grad=True)
 
         bitstrings, recipes = qnode(x)
         shadow = ClassicalShadow(bitstrings, recipes)
@@ -113,9 +113,9 @@ class TestShadowEntropies:
             rdm = qml.math.reduce_dm(rho, indices=rdm_wires)
             evs = qml.math.eigvalsh(rdm)
 
-            evs = evs[np.where(evs > 0)]
+            evs = evs[pnp.where(evs > 0)]
 
-            exact_2 = -np.log(np.trace(rdm @ rdm))
+            exact_2 = -pnp.log(pnp.trace(rdm @ rdm))
 
             alpha = 1.5
             exact_alpha = qml.math.log(qml.math.sum(evs**alpha)) / (1 - alpha)
@@ -126,7 +126,7 @@ class TestShadowEntropies:
             # shadow estimate
             entropies = [shadow.entropy(wires=rdm_wires, alpha=alpha) for alpha in [1, 1.5, 2]]
 
-            assert np.allclose(entropies, exact, atol=1e-1)
+            assert pnp.allclose(entropies, exact, atol=1e-1)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
@@ -145,11 +145,11 @@ class TestShadowEntropies:
 
         # explicitly not use pytest parametrize to reuse the same measurements
         for alpha in [1, 2, 3]:
-            for base in [2, np.exp(1)]:
+            for base in [2, pnp.exp(1)]:
                 for reduced_wires in [[0], [1]]:
                     entropy = shadow.entropy(wires=reduced_wires, base=base, alpha=alpha)
 
-                    expected_entropy = expected_entropy_ising_xx(param, alpha) / np.log(base)
+                    expected_entropy = expected_entropy_ising_xx(param, alpha) / pnp.log(base)
 
                     assert qml.math.allclose(entropy, expected_entropy, atol=1e-1)
 
@@ -169,19 +169,19 @@ class TestShadowEntropies:
 
             return qml.state()
 
-        x = np.linspace(0.5, 1.5, num=wires)
+        x = pnp.linspace(0.5, 1.5, num=wires)
         state = qnode(x)
         rho = qml.math.dm_from_state_vector(state)
         lambdas = _project_density_matrix_spectrum(rho)
-        assert np.isclose(np.sum(lambdas), 1.0)
+        assert pnp.isclose(pnp.sum(lambdas), 1.0)
         assert all(lambdas > 0)
 
 
-rho0 = np.zeros((2**3, 2**3))
+rho0 = pnp.zeros((2**3, 2**3))
 rho0[0, 0] = 1.0
 
-rho1 = np.diag([-0.1, -0.1, -0.1, 1.3])
-rho2 = np.diag([-0.1, -0.1, 0.1, 1.1])
+rho1 = pnp.diag([-0.1, -0.1, -0.1, 1.3])
+rho2 = pnp.diag([-0.1, -0.1, 0.1, 1.1])
 
 
 @pytest.mark.parametrize("rho", [rho0, rho1, rho2])

@@ -21,7 +21,7 @@ import pytest
 import scipy
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.pauli import pauli_sentence
 from pennylane.qchem.tapering import (
     _kernel,
@@ -39,7 +39,7 @@ from pennylane.qchem.tapering import (
     ("binary_matrix", "result"),
     [
         (
-            np.array(
+            pnp.array(
                 [
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [1, 0, 0, 0, 0, 0, 0, 0],
@@ -58,7 +58,7 @@ from pennylane.qchem.tapering import (
                     [0, 0, 1, 1, 0, 0, 0, 0],
                 ]
             ),
-            np.array(
+            pnp.array(
                 [
                     [1, 0, 0, 0, 0, 0, 0, 0],
                     [0, 1, 0, 0, 0, 0, 0, 0],
@@ -87,8 +87,8 @@ def test_reduced_row_echelon(binary_matrix, result):
     shape = binary_matrix.shape
     for irow in range(shape[0]):
         pivot_index = 0
-        if np.count_nonzero(binary_matrix[irow, :]):
-            pivot_index = np.nonzero(binary_matrix[irow, :])[0][0]
+        if pnp.count_nonzero(binary_matrix[irow, :]):
+            pivot_index = pnp.nonzero(binary_matrix[irow, :])[0][0]
 
         for jrow in range(shape[0]):
             if jrow != irow and binary_matrix[jrow, pivot_index]:
@@ -97,19 +97,19 @@ def test_reduced_row_echelon(binary_matrix, result):
     indices = [
         irow
         for irow in range(shape[0] - 1)
-        if np.array_equal(binary_matrix[irow, :], np.zeros(shape[1]))
+        if pnp.array_equal(binary_matrix[irow, :], pnp.zeros(shape[1]))
     ]
 
     temp_row_echelon_matrix = binary_matrix.copy()
     for row in indices[::-1]:
-        temp_row_echelon_matrix = np.delete(temp_row_echelon_matrix, row, axis=0)
+        temp_row_echelon_matrix = pnp.delete(temp_row_echelon_matrix, row, axis=0)
 
-    row_echelon_matrix = np.zeros(shape, dtype=int)
+    row_echelon_matrix = pnp.zeros(shape, dtype=int)
     row_echelon_matrix[: shape[0] - len(indices), :] = temp_row_echelon_matrix
 
     # build reduced row echelon form of the matrix from row echelon form
     for idx in range(len(row_echelon_matrix))[:0:-1]:
-        nonzeros = np.nonzero(row_echelon_matrix[idx])[0]
+        nonzeros = pnp.nonzero(row_echelon_matrix[idx])[0]
         if len(nonzeros) > 0:
             redrow = (row_echelon_matrix[idx, :] % 2).reshape(1, -1)
             coeffs = (
@@ -130,7 +130,7 @@ def test_reduced_row_echelon(binary_matrix, result):
     ("binary_matrix", "result"),
     [
         (
-            np.array(
+            pnp.array(
                 [
                     [1, 0, 0, 0, 0, 0, 0, 0],
                     [0, 1, 0, 0, 0, 0, 0, 0],
@@ -149,7 +149,7 @@ def test_reduced_row_echelon(binary_matrix, result):
                     [0, 0, 0, 0, 0, 0, 0, 0],
                 ]
             ),
-            np.array(
+            pnp.array(
                 [[0, 0, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 1, 0, 1, 0], [0, 0, 0, 0, 1, 0, 0, 1]]
             ),
         ),
@@ -160,15 +160,15 @@ def test_kernel(binary_matrix, result):
 
     # get the kernel from the gaussian elimination.
     pivots = (binary_matrix.T != 0).argmax(axis=0)
-    nonpivots = np.setdiff1d(range(len(binary_matrix[0])), pivots)
+    nonpivots = pnp.setdiff1d(range(len(binary_matrix[0])), pivots)
 
     kernel = []
     for col in nonpivots:
         col_vector = binary_matrix[:, col]
-        null_vector = np.zeros((binary_matrix.shape[1]), dtype=int)
+        null_vector = pnp.zeros((binary_matrix.shape[1]), dtype=int)
         null_vector[col] = 1
         for i in pivots:
-            first_entry = np.where(binary_matrix[:, i] == 1)[0][0]
+            first_entry = pnp.where(binary_matrix[:, i] == 1)[0][0]
             if col_vector[first_entry] == 1:
                 null_vector[i] = 1
         kernel.append(null_vector.tolist())
@@ -215,7 +215,7 @@ def test_generate_paulis(generators, num_qubits, result):
     [
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
@@ -239,17 +239,17 @@ def test_symmetry_generators(symbols, geometry, res_generators):
     [
         (
             [
-                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(0)]),
-                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(1)]),
+                qml.Hamiltonian(pnp.array([1.0]), [qml.PauliZ(0)]),
+                qml.Hamiltonian(pnp.array([1.0]), [qml.PauliZ(1)]),
             ],
             [qml.PauliX(0), qml.PauliX(1)],
             qml.Hamiltonian(
-                np.array(
+                pnp.array(
                     [
-                        (1 / np.sqrt(2)) ** 2,
-                        (1 / np.sqrt(2)) ** 2,
-                        (1 / np.sqrt(2)) ** 2,
-                        (1 / np.sqrt(2)) ** 2,
+                        (1 / pnp.sqrt(2)) ** 2,
+                        (1 / pnp.sqrt(2)) ** 2,
+                        (1 / pnp.sqrt(2)) ** 2,
+                        (1 / pnp.sqrt(2)) ** 2,
                     ]
                 ),
                 [
@@ -278,7 +278,7 @@ def test_clifford(generator, paulixops, result):
     [
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]], requires_grad=False),
+            pnp.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]], requires_grad=False),
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
@@ -287,7 +287,7 @@ def test_clifford(generator, paulixops, result):
             [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
             [1, -1, -1],
             qml.Hamiltonian(
-                np.array([-0.3210344, 0.18092703, 0.79596785]),
+                pnp.array([-0.3210344, 0.18092703, 0.79596785]),
                 [qml.Identity(0), qml.PauliX(0), qml.PauliZ(0)],
             ),
         ),
@@ -303,7 +303,7 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
     hamref_terms = list(zip(*ham_ref.terms()))
 
     for term, ref_term in zip(sorted_terms, hamref_terms):
-        assert np.allclose(term[0], ref_term[0])
+        assert pnp.allclose(term[0], ref_term[0])
         assert pauli_sentence(term[1]) == pauli_sentence(ref_term[1])
 
 
@@ -312,7 +312,7 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
     [
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             0,
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
@@ -324,7 +324,7 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
         ),
         (
             ["He", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]], requires_grad=False),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]], requires_grad=False),
             1,
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
@@ -335,7 +335,7 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
         ),
         (
             ["H", "H", "H"],
-            np.array(
+            pnp.array(
                 [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
                 requires_grad=False,
             ),
@@ -363,7 +363,7 @@ def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, re
     [
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
@@ -401,7 +401,7 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
             (1, -1, -1),
             2,
             4,
-            np.array([1]),
+            pnp.array([1]),
         ),
         (
             [
@@ -412,7 +412,7 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
             (-1, -1),
             2,
             6,
-            np.array([1, 1, 0, 0]),
+            pnp.array([1, 1, 0, 0]),
         ),
         (
             [
@@ -450,7 +450,7 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
             (1, 1, 1, 1),
             4,
             12,
-            np.array([1, 1, 0, 0, 0, 0, 0, 0]),
+            pnp.array([1, 1, 0, 0, 0, 0, 0, 0]),
         ),
     ],
 )
@@ -464,7 +464,7 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         num_electrons,
         num_wires,
     )
-    assert np.all(tapered_hf_state == result)
+    assert pnp.all(tapered_hf_state == result)
 
 
 @pytest.mark.parametrize(
@@ -472,12 +472,12 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
     [
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
             0,
         ),
         (
             ["He", "H"],
-            np.array(
+            pnp.array(
                 [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
                 requires_grad=True,
             ),
@@ -485,7 +485,7 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         ),
         (
             ["H", "H", "H"],
-            np.array(
+            pnp.array(
                 [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
                 requires_grad=True,
             ),
@@ -493,7 +493,7 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         ),
         (
             ["H", "H", "H", "H"],
-            np.array(
+            pnp.array(
                 [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0], [0.0, 0.0, 3.0]],
                 requires_grad=True,
             ),
@@ -507,7 +507,7 @@ def test_taper_obs(symbols, geometry, charge):
 
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
-    hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
+    hf_state = pnp.where(pnp.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
     generators = qml.symmetry_generators(hamiltonian)
     paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
@@ -516,10 +516,10 @@ def test_taper_obs(symbols, geometry, charge):
     )
 
     # calculate the HF energy <\psi_{HF}| H |\psi_{HF}> for tapered and untapered Hamiltonian
-    o = np.array([1, 0])
-    l = np.array([0, 1])
-    state = functools.reduce(np.kron, [l if s else o for s in hf_state])
-    state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_state_tapered])
+    o = pnp.array([1, 0])
+    l = pnp.array([0, 1])
+    state = functools.reduce(pnp.kron, [l if s else o for s in hf_state])
+    state_tapered = functools.reduce(pnp.kron, [l if s else o for s in hf_state_tapered])
 
     observables = [
         hamiltonian,
@@ -544,7 +544,7 @@ def test_taper_obs(symbols, geometry, charge):
             @ scipy.sparse.coo_matrix(state_tapered).T
         ).toarray()
 
-        assert np.isclose(obs_val, obs_val_tapered)
+        assert pnp.isclose(obs_val, obs_val_tapered)
         qml.assert_equal(tapered_obs, tapered_ps)
 
 
@@ -553,7 +553,7 @@ def test_taper_obs(symbols, geometry, charge):
     [
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
             0,
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
@@ -566,7 +566,7 @@ def test_taper_obs(symbols, geometry, charge):
         ),
         (
             ["He", "H"],
-            np.array(
+            pnp.array(
                 [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
                 requires_grad=True,
             ),
@@ -581,7 +581,7 @@ def test_taper_obs(symbols, geometry, charge):
         ),
         (
             ["H", "H", "H"],
-            np.array(
+            pnp.array(
                 [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
                 requires_grad=True,
             ),
@@ -604,7 +604,7 @@ def test_taper_excitations(
 
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     num_electrons, num_wires = mol.n_electrons, 2 * mol.n_orbitals
-    hf_state = np.where(np.arange(num_wires) < num_electrons, 1, 0)
+    hf_state = pnp.where(pnp.arange(num_wires) < num_electrons, 1, 0)
     hf_tapered = taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires)
 
     observables = [
@@ -618,16 +618,16 @@ def test_taper_excitations(
         qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
     ]
 
-    o = np.array([1, 0])
-    l = np.array([0, 1])
-    state = functools.reduce(np.kron, [l if s else o for s in hf_state])
-    state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_tapered])
+    o = pnp.array([1, 0])
+    l = pnp.array([0, 1])
+    state = functools.reduce(pnp.kron, [l if s else o for s in hf_state])
+    state_tapered = functools.reduce(pnp.kron, [l if s else o for s in hf_tapered])
 
     singles, doubles = qml.qchem.excitations(num_electrons, num_wires)
     exc_fnc = [qml.SingleExcitation, qml.DoubleExcitation]
     exc_obs, exc_tap = [[], []], [[], []]
     for idx, exc in enumerate([singles, doubles]):
-        exc_obs[idx] = [exc_fnc[idx](np.pi, wires=wire) for wire in exc]
+        exc_obs[idx] = [exc_fnc[idx](pnp.pi, wires=wire) for wire in exc]
         exc_tap[idx] = [
             taper_operation(op, generators, paulixops, paulix_sector, range(num_wires))
             for op in exc_obs[idx]
@@ -639,12 +639,12 @@ def test_taper_excitations(
     obs_all, obs_tap = exc_obs[0] + exc_obs[1], exc_tap[0] + exc_tap[1]
     for op_all, op_tap in zip(obs_all, obs_tap):
         if op_tap:
-            excited_state = np.matmul(qml.matrix(op_all, wire_order=range(len(hf_state))), state)
+            excited_state = pnp.matmul(qml.matrix(op_all, wire_order=range(len(hf_state))), state)
             ob_tap_mat = functools.reduce(
-                np.matmul,
+                pnp.matmul,
                 [qml.matrix(op, wire_order=range(len(hf_tapered))) for op in op_tap],
             )
-            excited_state_tapered = np.matmul(ob_tap_mat, state_tapered)
+            excited_state_tapered = pnp.matmul(ob_tap_mat, state_tapered)
             # check if tapered excitation gates remains spin and particle-number conserving,
             # and also evolves the tapered-state to have consistent energy values
             for obs, tap_obs in zip(observables, tapered_obs):
@@ -658,7 +658,7 @@ def test_taper_excitations(
                     @ tap_obs.sparse_matrix(wire_order=range(len(hf_tapered)))
                     @ scipy.sparse.coo_matrix(excited_state_tapered).getH()
                 ).toarray()
-                assert np.isclose(expec_val, expec_val_tapered)
+                assert pnp.isclose(expec_val, expec_val_tapered)
 
 
 @pytest.mark.parametrize(
@@ -667,7 +667,7 @@ def test_taper_excitations(
         (qml.U2(1, 1, 2), None, "is not implemented, please provide it with 'op_gen' args"),
         (
             qml.U2(1, 1, 2),
-            np.identity(16),
+            pnp.identity(16),
             "Generator for the operation needs to be a valid operator",
         ),
         (
@@ -682,7 +682,7 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
 
     symbols, geometry, charge = (
         ["He", "H"],
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
     mol = qml.qchem.Molecule(symbols, geometry, charge)
@@ -700,11 +700,11 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
 @pytest.mark.parametrize(
     ("operation", "op_gen"),
     [
-        (qml.PauliX(1), qml.Hamiltonian((np.pi / 2,), [qml.PauliX(wires=[1])])),
-        (qml.PauliY(2), qml.Hamiltonian((np.pi / 2,), [qml.PauliY(wires=[2])])),
-        (qml.PauliZ(3), qml.Hamiltonian((np.pi / 2,), [qml.PauliZ(wires=[3])])),
+        (qml.PauliX(1), qml.Hamiltonian((pnp.pi / 2,), [qml.PauliX(wires=[1])])),
+        (qml.PauliY(2), qml.Hamiltonian((pnp.pi / 2,), [qml.PauliY(wires=[2])])),
+        (qml.PauliZ(3), qml.Hamiltonian((pnp.pi / 2,), [qml.PauliZ(wires=[3])])),
         (
-            qml.OrbitalRotation(np.pi, wires=[0, 1, 2, 3]),
+            qml.OrbitalRotation(pnp.pi, wires=[0, 1, 2, 3]),
             qml.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
@@ -716,7 +716,7 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
             ),
         ),
         (
-            qml.FermionicSWAP(np.pi, wires=[0, 1]),
+            qml.FermionicSWAP(pnp.pi, wires=[0, 1]),
             qml.Hamiltonian(
                 (0.5, -0.25, -0.25, -0.25, -0.25),
                 [
@@ -735,7 +735,7 @@ def test_consistent_taper_ops(operation, op_gen):
 
     symbols, geometry, charge = (
         ["He", "H"],
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
     mol = qml.qchem.Molecule(symbols, geometry, charge)
@@ -782,19 +782,19 @@ def test_consistent_taper_ops(operation, op_gen):
             qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
         ]
 
-        hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
+        hf_state = pnp.where(pnp.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
         hf_tapered = taper_hf(
             generators, paulixops, paulix_sector, mol.n_electrons, len(hamiltonian.wires)
         )
-        o, l = np.array([1, 0]), np.array([0, 1])
-        state = functools.reduce(np.kron, [l if s else o for s in hf_state])
-        state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_tapered])
-        evolved_state = np.matmul(qml.matrix(operation, wire_order=range(len(hf_state))), state)
+        o, l = pnp.array([1, 0]), pnp.array([0, 1])
+        state = functools.reduce(pnp.kron, [l if s else o for s in hf_state])
+        state_tapered = functools.reduce(pnp.kron, [l if s else o for s in hf_tapered])
+        evolved_state = pnp.matmul(qml.matrix(operation, wire_order=range(len(hf_state))), state)
         ob_tap_mat = functools.reduce(
-            np.matmul,
+            pnp.matmul,
             [qml.matrix(op, wire_order=range(len(hf_tapered))) for op in taper_op1],
         )
-        evolved_state_tapered = np.matmul(ob_tap_mat, state_tapered)
+        evolved_state_tapered = pnp.matmul(ob_tap_mat, state_tapered)
 
         for obs, tap_obs in zip(observables, tapered_obs):
             expec_val = (
@@ -807,7 +807,7 @@ def test_consistent_taper_ops(operation, op_gen):
                 @ scipy.sparse.coo_matrix(qml.matrix(tap_obs, wire_order=range(len(hf_tapered))))
                 @ scipy.sparse.coo_matrix(evolved_state_tapered).getH()
             ).toarray()
-            assert np.isclose(expec_val, expec_val_tapered)
+            assert pnp.isclose(expec_val, expec_val_tapered)
 
 
 @pytest.mark.parametrize(
@@ -836,7 +836,7 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
 
     symbols, geometry, charge = (
         ["He", "H"],
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
     mol = qml.qchem.Molecule(symbols, geometry, charge)
@@ -852,7 +852,7 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
     )
     assert callable(taper_op_fn)
 
-    for params in [0.0, 1.3, np.pi / 2, 2.37, np.pi]:
+    for params in [0.0, 1.3, pnp.pi / 2, 2.37, pnp.pi]:
         if callable(op_gen):
             op_gen = op_gen(op_wires)
         taper_op = taper_operation(
@@ -893,7 +893,7 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
 
     symbols, geometry, charge = (
         ["He", "H"],
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
     mol = qml.qchem.Molecule(symbols, geometry, charge)
@@ -914,7 +914,7 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
     )
     assert callable(taper_op1)
 
-    for params in [0.0, 1.3, np.pi / 2, 2.37, np.pi]:
+    for params in [0.0, 1.3, pnp.pi / 2, 2.37, pnp.pi]:
         taper_op2 = taper_operation(
             operation(params, wires=op_wires),
             generators,
@@ -958,7 +958,7 @@ def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
 
     symbols, geometry, charge = (
         ["He", "H"],
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
     mol = qml.qchem.Molecule(symbols, geometry, charge)

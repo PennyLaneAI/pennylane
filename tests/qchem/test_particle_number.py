@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import Identity, PauliZ
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem
 
 
@@ -27,7 +27,7 @@ from pennylane import qchem
     [
         (  # computed with PL-QChem using OpenFermion
             4,
-            np.array([2.0, -0.5, -0.5, -0.5, -0.5]),
+            pnp.array([2.0, -0.5, -0.5, -0.5, -0.5]),
             [
                 Identity(wires=[0]),
                 PauliZ(wires=[0]),
@@ -38,7 +38,7 @@ from pennylane import qchem
         ),
         (
             6,
-            np.array([3.0, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5]),
+            pnp.array([3.0, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5]),
             [
                 Identity(wires=[0]),
                 PauliZ(wires=[0]),
@@ -61,7 +61,7 @@ def test_particle_number(orbitals, coeffs_ref, ops_ref):
     assert isinstance(n, qml.ops.Sum)
 
     wire_order = n_ref.wires
-    assert np.allclose(
+    assert pnp.allclose(
         qml.matrix(n, wire_order=wire_order),
         qml.matrix(n_ref, wire_order=wire_order),
     )

@@ -17,9 +17,9 @@ from string import ascii_letters as alphabet
 
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
-alphabet_array = np.array(list(alphabet))
+alphabet_array = pnp.array(list(alphabet))
 QUDIT_DIM = 3  # specifies qudit dimension
 
 

@@ -19,7 +19,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.gradients import finite_diff
 from pennylane.measurements import Shots
 from pennylane.operation import AnyWires, Observable
@@ -38,7 +38,7 @@ class TestFiniteDiff:
     def test_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a non-differentiable argument"""
-        psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
+        psi = pnp.array([1, 0, 1, 0], requires_grad=False) / pnp.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(psi, wires=[0, 1])
@@ -222,7 +222,7 @@ class TestFiniteDiff:
             qml.Rot(*params, wires=0)
             return qml.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
         all_result = qml.gradients.finite_diff(circuit, h=h_val)(params)
 
@@ -230,9 +230,9 @@ class TestFiniteDiff:
         assert len(all_result) == len(default_shot_vector)
 
         for result in all_result:
-            assert isinstance(result, np.ndarray)
+            assert isinstance(result, pnp.ndarray)
             assert result.shape == (4, 3)
-            assert np.allclose(result, 0)
+            assert pnp.allclose(result, 0)
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -245,7 +245,7 @@ class TestFiniteDiff:
             qml.Rot(*params, wires=0)
             return qml.expval(qml.PauliZ(wires=2)), qml.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
         all_result = qml.gradients.finite_diff(circuit, h=h_val)(params)
         assert isinstance(all_result, tuple)
@@ -255,9 +255,9 @@ class TestFiniteDiff:
             assert isinstance(res, tuple)
             assert len(res) == 2
             for r, exp_shape in zip(res, [(3,), (4, 3)]):
-                assert isinstance(r, np.ndarray)
+                assert isinstance(r, pnp.ndarray)
                 assert r.shape == exp_shape
-                assert np.allclose(r, 0)
+                assert pnp.allclose(r, 0)
 
     def test_y0(self):
         """Test that if first order finite differences is used, then
@@ -316,7 +316,7 @@ class TestFiniteDiff:
         tapes, fn = finite_diff(tape2, approx_order=1, h=h_val)
         j2 = fn(dev.execute(tapes))
 
-        exp = -np.sin(1)
+        exp = -pnp.sin(1)
 
         assert isinstance(j1, tuple)
         assert len(j1) == len(many_shots_shot_vector)
@@ -324,8 +324,8 @@ class TestFiniteDiff:
         assert len(j2) == len(many_shots_shot_vector)
 
         for _j1, _j2 in zip(j1, j2):
-            assert np.allclose(_j1, [exp, 0], atol=0.07)
-            assert np.allclose(_j2, [0, exp], atol=0.07)
+            assert pnp.allclose(_j1, [exp, 0], atol=0.07)
+            assert pnp.allclose(_j2, [0, exp], atol=0.07)
 
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
@@ -355,7 +355,7 @@ class TestFiniteDiff:
             qml.Rot(*x, wires=0)
             return qml.probs([0, 1]), qml.probs([2, 3])
 
-        x = np.random.rand(3)
+        x = pnp.random.rand(3)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x)) for c in circuits]
@@ -374,7 +374,7 @@ class TestFiniteDiff:
             qml.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)
             return qml.probs([0, 1]), qml.probs([2, 3])
 
-        x, y, z = np.random.rand(3, 2)
+        x, y, z = pnp.random.rand(3, 2)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2)]
 
         transform = [
@@ -432,7 +432,7 @@ class TestFiniteDiff:
             # pylint: disable=unused-argument
             @staticmethod
             def _asarray(arr, dtype=None):
-                return np.array(arr)
+                return pnp.array(arr)
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -458,9 +458,9 @@ class TestFiniteDiff:
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        par = np.array(0.2, requires_grad=True)
-        assert np.isclose(qnode(par).item().val, reference_qnode(par))
-        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
+        par = pnp.array(0.2, requires_grad=True)
+        assert pnp.isclose(qnode(par).item().val, reference_qnode(par))
+        assert pnp.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
@@ -535,7 +535,7 @@ class TestFiniteDiffIntegration:
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(many_shots_shot_vector)
 
-        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        expected = pnp.array([[-pnp.sin(y) * pnp.sin(x), pnp.cos(y) * pnp.cos(x)]])
         for res in all_res:
             assert isinstance(res, tuple)
             assert len(res) == 2
@@ -546,7 +546,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=0.15, rtol=0)
+            assert pnp.allclose(res, expected, atol=0.15, rtol=0)
 
     def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
@@ -577,7 +577,7 @@ class TestFiniteDiffIntegration:
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(many_shots_shot_vector)
 
-        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        expected = pnp.array([[-pnp.sin(y) * pnp.sin(x), pnp.cos(y) * pnp.cos(x)]])
         for res in all_res:
             assert isinstance(res, tuple)
             assert len(res) == 2
@@ -588,7 +588,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=0.15, rtol=0)
+            assert pnp.allclose(res, expected, atol=0.15, rtol=0)
 
     def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
@@ -623,7 +623,7 @@ class TestFiniteDiffIntegration:
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(many_shots_shot_vector)
 
-        expected = [0, np.cos(y) * np.cos(x)]
+        expected = [0, pnp.cos(y) * pnp.cos(x)]
 
         for res in all_res:
             assert isinstance(res, tuple)
@@ -635,7 +635,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=0.12, rtol=0)
+            assert pnp.allclose(res, expected, atol=0.12, rtol=0)
 
     def test_probs_expval_with_argnum_one(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
@@ -672,18 +672,18 @@ class TestFiniteDiffIntegration:
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(many_shots_shot_vector)
 
-        cx, sx, cy, sy = np.cos(x / 2), np.sin(x / 2), np.cos(y / 2), np.sin(y / 2)
+        cx, sx, cy, sy = pnp.cos(x / 2), pnp.sin(x / 2), pnp.cos(y / 2), pnp.sin(y / 2)
         # probability vector is [cx**2 * cy**2, cx**2 * sy**2, sx**2 * sy**2, sx**2 * cy**2]
-        exp_dprob = np.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * (sy * cy)
-        exp_probs = [np.zeros(4), exp_dprob]
+        exp_dprob = pnp.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * (sy * cy)
+        exp_probs = [pnp.zeros(4), exp_dprob]
         # expval is np.sin(y) * np.cos(x)
-        exp_expval = [0, np.cos(y) * np.cos(x)]
+        exp_expval = [0, pnp.cos(y) * pnp.cos(x)]
 
         for res in all_res:
             assert isinstance(res, tuple)
             assert len(res) == 2  # two measurements
-            assert np.allclose(res[0], exp_probs, atol=0.07)
-            assert np.allclose(res[1], exp_expval, atol=0.2)
+            assert pnp.allclose(res[0], exp_probs, atol=0.07)
+            assert pnp.allclose(res[1], exp_expval, atol=0.2)
 
     def test_multiple_expectation_values(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
@@ -718,13 +718,13 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.15, rtol=0)
+            assert pnp.allclose(res[0], [-pnp.sin(x), 0], atol=0.15, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(res[1], [0, np.cos(y)], atol=0.15, rtol=0)
+            assert pnp.allclose(res[1], [0, pnp.cos(y)], atol=0.15, rtol=0)
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
@@ -761,13 +761,13 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.2, rtol=0)
+            assert pnp.allclose(res[0], [-pnp.sin(x), 0], atol=0.2, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(res[1], [0, -2 * np.cos(y) * np.sin(y)], atol=0.2, rtol=0)
+            assert pnp.allclose(res[1], [0, -2 * pnp.cos(y) * pnp.sin(y)], atol=0.2, rtol=0)
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
@@ -804,32 +804,32 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0][0], -np.sin(x), atol=0.1, rtol=0)
+            assert pnp.allclose(res[0][0], -pnp.sin(x), atol=0.1, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
-            assert np.allclose(res[0][1], 0, atol=0.1, rtol=0)
+            assert pnp.allclose(res[0][1], 0, atol=0.1, rtol=0)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(
+            assert pnp.allclose(
                 res[1][0],
                 [
-                    -(np.cos(y / 2) ** 2 * np.sin(x)) / 2,
-                    -(np.sin(x) * np.sin(y / 2) ** 2) / 2,
-                    (np.sin(x) * np.sin(y / 2) ** 2) / 2,
-                    (np.cos(y / 2) ** 2 * np.sin(x)) / 2,
+                    -(pnp.cos(y / 2) ** 2 * pnp.sin(x)) / 2,
+                    -(pnp.sin(x) * pnp.sin(y / 2) ** 2) / 2,
+                    (pnp.sin(x) * pnp.sin(y / 2) ** 2) / 2,
+                    (pnp.cos(y / 2) ** 2 * pnp.sin(x)) / 2,
                 ],
                 atol=0.07,
                 rtol=0,
             )
             assert isinstance(res[1][0], numpy.ndarray)
-            assert np.allclose(
+            assert pnp.allclose(
                 res[1][1],
                 [
-                    -(np.cos(x / 2) ** 2 * np.sin(y)) / 2,
-                    (np.cos(x / 2) ** 2 * np.sin(y)) / 2,
-                    (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
-                    -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
+                    -(pnp.cos(x / 2) ** 2 * pnp.sin(y)) / 2,
+                    (pnp.cos(x / 2) ** 2 * pnp.sin(y)) / 2,
+                    (pnp.sin(x / 2) ** 2 * pnp.sin(y)) / 2,
+                    -(pnp.sin(x / 2) ** 2 * pnp.sin(y)) / 2,
                 ],
                 atol=0.08,
                 rtol=0,
@@ -848,7 +848,7 @@ class TestFiniteDiffGradients:
         """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
-        params = np.array([0.543, -0.654], requires_grad=True)
+        params = pnp.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -866,7 +866,7 @@ class TestFiniteDiffGradients:
                 strategy=strategy,
                 h=h_val,
             )
-            return np.array(fn(dev.execute(tapes)))
+            return pnp.array(fn(dev.execute(tapes)))
 
         all_res = qml.jacobian(cost_fn)(params)
 
@@ -875,21 +875,21 @@ class TestFiniteDiffGradients:
 
         for res in all_res:
             x, y = params
-            expected = np.array(
+            expected = pnp.array(
                 [
-                    [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                    [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+                    [-pnp.cos(x) * pnp.sin(y), -pnp.cos(y) * pnp.sin(x)],
+                    [-pnp.cos(y) * pnp.sin(x), -pnp.cos(x) * pnp.sin(y)],
                 ]
             )
 
-            assert np.allclose(res, expected, atol=0.3, rtol=0)
+            assert pnp.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.autograd
     def test_autograd_ragged(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
-        params = np.array([0.543, -0.654], requires_grad=True)
+        params = pnp.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -918,8 +918,8 @@ class TestFiniteDiffGradients:
         assert len(all_res) == len(many_shots_shot_vector)
 
         for res in all_res:
-            expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-            assert np.allclose(res, expected, atol=0.3, rtol=0)
+            expected = pnp.array([-pnp.cos(x) * pnp.cos(y) / 2, pnp.sin(x) * pnp.sin(y) / 2])
+            assert pnp.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.slow
@@ -954,13 +954,13 @@ class TestFiniteDiffGradients:
         res_0 = t.jacobian(jac_0, params)
         res_1 = t.jacobian(jac_1, params)
 
-        expected = np.array(
+        expected = pnp.array(
             [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+                [-pnp.cos(x) * pnp.sin(y), -pnp.cos(y) * pnp.sin(x)],
+                [-pnp.cos(y) * pnp.sin(x), -pnp.cos(x) * pnp.sin(y)],
             ]
         )
-        assert np.allclose([res_0, res_1], expected, atol=0.3, rtol=0)
+        assert pnp.allclose([res_0, res_1], expected, atol=0.3, rtol=0)
 
     @pytest.mark.tf
     def test_tf_ragged(self, approx_order, strategy):
@@ -995,9 +995,9 @@ class TestFiniteDiffGradients:
 
         res_01 = t.jacobian(jac_01, params)
 
-        expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
+        expected = pnp.array([-pnp.cos(x) * pnp.cos(y) / 2, pnp.sin(x) * pnp.sin(y) / 2])
 
-        assert np.allclose(res_01[0], expected, atol=0.3, rtol=0)
+        assert pnp.allclose(res_01[0], expected, atol=0.3, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, approx_order, strategy):
@@ -1029,15 +1029,15 @@ class TestFiniteDiffGradients:
 
         x, y = params.detach().numpy()
 
-        expected = np.array(
+        expected = pnp.array(
             [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+                [-pnp.cos(x) * pnp.sin(y), -pnp.cos(y) * pnp.sin(x)],
+                [-pnp.cos(y) * pnp.sin(x), -pnp.cos(x) * pnp.sin(y)],
             ]
         )
 
-        assert np.allclose(hess[0].detach().numpy(), expected[0], atol=0.3, rtol=0)
-        assert np.allclose(hess[1].detach().numpy(), expected[1], atol=0.3, rtol=0)
+        assert pnp.allclose(hess[0].detach().numpy(), expected[0], atol=0.3, rtol=0)
+        assert pnp.allclose(hess[1].detach().numpy(), expected[1], atol=0.3, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, approx_order, strategy):
@@ -1073,20 +1073,20 @@ class TestFiniteDiffGradients:
         assert len(all_res) == len(many_shots_shot_vector)
 
         x, y = params
-        expected = np.array(
+        expected = pnp.array(
             [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+                [-pnp.cos(x) * pnp.sin(y), -pnp.cos(y) * pnp.sin(x)],
+                [-pnp.cos(y) * pnp.sin(x), -pnp.cos(x) * pnp.sin(y)],
             ]
         )
         for res in all_res:
             assert isinstance(res, tuple)
-            assert np.allclose(res, expected, atol=0.3, rtol=0)
+            assert pnp.allclose(res, expected, atol=0.3, rtol=0)
 
 
 pauliz = qml.PauliZ(wires=0)
 proj = qml.Projector([1], wires=0)
-A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+A = pnp.array([[4, -1 + 6j], [-1 - 6j, 2]])
 hermitian = qml.Hermitian(A, wires=0)
 
 expval = qml.expval(pauliz)
@@ -1143,7 +1143,7 @@ class TestReturn:
         assert isinstance(all_res, tuple)
 
         for res in all_res:
-            assert isinstance(res, np.ndarray)
+            assert isinstance(res, pnp.ndarray)
             assert res.shape == shape
 
     @pytest.mark.parametrize("op_wire", [0, 1])
@@ -1179,7 +1179,7 @@ class TestReturn:
         expected_shapes = [(), (4,), (), ()]
         for meas_res in all_res:
             for res, shape in zip(meas_res, expected_shapes):
-                assert isinstance(res, np.ndarray)
+                assert isinstance(res, pnp.ndarray)
                 assert res.shape == shape
 
     @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
@@ -1212,14 +1212,14 @@ class TestReturn:
 
         for param_res in all_res:
             for res in param_res:
-                assert isinstance(res, np.ndarray)
+                assert isinstance(res, pnp.ndarray)
                 assert res.shape == shape
 
     @pytest.mark.parametrize("op_wires", [(0, 1, 2, 3, 4), (5, 5, 5, 5, 5)])
     def test_N_N(self, shot_vec, op_wires):
         """Test multi-param multi-measurement case"""
         dev = qml.device("default.qubit", wires=6, shots=shot_vec)
-        params = np.random.random(6)
+        params = pnp.random.random(6)
 
         with qml.queuing.AnnotatedQueue() as q:
             for idx, w in enumerate(op_wires):
@@ -1258,5 +1258,5 @@ class TestReturn:
             for idx, param_res in enumerate(meas_res):
                 assert len(param_res) == 5
                 for res in param_res:
-                    assert isinstance(res, np.ndarray)
+                    assert isinstance(res, pnp.ndarray)
                     assert res.shape == expected_shapes[idx]

@@ -19,7 +19,7 @@ import warnings
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms.optimization import merge_amplitude_embedding
 
 
@@ -50,7 +50,7 @@ class TestMergeAmplitudeEmbedding:
 
         # Check that the solution is as expected.
         dev = qml.device("default.qubit", wires=2)
-        assert np.allclose(qml.QNode(transformed_qfunc, dev)()[-1], 1)
+        assert pnp.allclose(qml.QNode(transformed_qfunc, dev)()[-1], 1)
 
     def test_multi_amplitude_embedding_qnode(self):
         """Test that the transformation is working correctly by joining two AmplitudeEmbedding."""
@@ -66,7 +66,7 @@ class TestMergeAmplitudeEmbedding:
             qml.Hadamard(wires=1)
             return qml.state()
 
-        assert qml.math.allclose(circuit(), np.array([1, -1, -1, 1]) / 2)
+        assert qml.math.allclose(circuit(), pnp.array([1, -1, -1, 1]) / 2)
 
     def test_repeated_qubit(self):
         """Check that AmplitudeEmbedding cannot be applied if the qubit has already been used."""
@@ -113,8 +113,8 @@ class TestMergeAmplitudeEmbedding:
         assert qnode.tape.batch_size == 2
 
         # |001> and |100>
-        expected = np.array([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]])
-        assert np.allclose(res, expected)
+        expected = pnp.array([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]])
+        assert pnp.allclose(res, expected)
 
 
 class TestMergeAmplitudeEmbeddingInterfaces:
@@ -133,7 +133,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
-        amplitude = np.array([0.0, 1.0], requires_grad=True)
+        amplitude = pnp.array([0.0, 1.0], requires_grad=True)
         # Check the state |11> is being generated.
         assert optimized_qnode(amplitude)[-1] == 1
 

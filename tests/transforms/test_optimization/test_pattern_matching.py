@@ -20,7 +20,7 @@ import warnings
 import pytest
 
 import pennylane as qml
-import pennylane.numpy as np
+import pennylane.numpy as pnp
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.transforms.optimization.pattern_matching import (
     BackwardMatch,
@@ -82,7 +82,7 @@ class TestPatternMatchingOptimization:
         assert cnots_optimized_qnode == 3
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_simple_quantum_function_pattern_matching_qnode(self):
         """Test pattern matching algorithm for circuit optimization with a CNOTs template."""
@@ -111,7 +111,7 @@ class TestPatternMatchingOptimization:
 
         optimized_qnode = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode()
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(circuit)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(circuit)())
 
     def test_custom_quantum_cost(self):
         """Test pattern matching algorithm for circuit optimization with a CNOTs template with custom quantum dict."""
@@ -157,7 +157,7 @@ class TestPatternMatchingOptimization:
         assert cnots_optimized_qnode == 3
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_no_match_not_optimized(self):
         """Test pattern matching algorithm for circuit optimization with no match and therefore no optimization."""
@@ -197,7 +197,7 @@ class TestPatternMatchingOptimization:
         assert cnots_optimized_qnode == 4
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_adjoint_s(self):
         def circuit():
@@ -238,7 +238,7 @@ class TestPatternMatchingOptimization:
         assert s_adjoint_optimized_qnode == 1
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_template_with_toffoli(self):
         """Test pattern matching algorithm for circuit optimization with a template having Toffoli gates."""
@@ -284,7 +284,7 @@ class TestPatternMatchingOptimization:
         assert toffolis_optimized_qnode == 0
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_template_with_swap(self):
         """Test pattern matching algorithm for circuit optimization with a template having swap gates."""
@@ -336,7 +336,7 @@ class TestPatternMatchingOptimization:
         assert cnot_optimized_qnode == 4
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_template_with_multiple_swap(self):
         """Test pattern matching algorithm for circuit optimization with a template having multiple swap gates."""
@@ -386,7 +386,7 @@ class TestPatternMatchingOptimization:
         assert cnot_optimized_qnode == 1
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_template_with_multiple_control_swap(self):
         """Test pattern matching algorithm for circuit optimization with a template having multiple cswap gates."""
@@ -436,7 +436,7 @@ class TestPatternMatchingOptimization:
         assert cnot_optimized_qnode == 1
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_parametrized_pattern_matching(self):
         """Test pattern matching algorithm for circuit optimization with parameters."""
@@ -494,7 +494,7 @@ class TestPatternMatchingOptimization:
         assert rz_optimized_qnode == 0
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(0.1, 0.2), qml.matrix(qnode)(0.1, 0.2))
+        assert pnp.allclose(qml.matrix(optimized_qnode)(0.1, 0.2), qml.matrix(qnode)(0.1, 0.2))
 
     def test_multiple_patterns(self):
         """Test pattern matching algorithm for circuit optimization with three different templates."""
@@ -545,7 +545,7 @@ class TestPatternMatchingOptimization:
         assert cnots_optimized_qnode == 1
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_mod_5_4_pattern_matching(self):
         """Test pattern matching algorithm for mod_5_4 with a CNOTs template."""
@@ -631,7 +631,7 @@ class TestPatternMatchingOptimization:
         assert cnots_optimized_qnode == 26
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     @pytest.mark.slow
     def test_vbe_adder_3_pattern_matching(self):
@@ -756,7 +756,7 @@ class TestPatternMatchingOptimization:
         assert cnots_optimized_qnode == 45
 
         assert qnode_res == optimized_qnode_res
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert pnp.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_transform_tape(self):
         """Test that the transform works as expected with a tape."""
@@ -792,7 +792,7 @@ class TestPatternMatchingOptimization:
             qml.CZ([1, 2]),
         ]
 
-        assert np.allclose(result, 0.0)
+        assert pnp.allclose(result, 0.0)
 
         # pattern_matching_optimization returns a null postprocessing function
         assert postprocessing_fn(result) == result[0]

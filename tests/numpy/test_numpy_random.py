@@ -19,7 +19,7 @@ additional property, ``requires_grad``, that marks them as trainable/ non-traina
 
 import pytest
 
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.numpy import random
 
 # distributions that require no extra parameters
@@ -53,7 +53,7 @@ class TestGeneratorDistributions:
         size = (3,)
         output = getattr(general_gen, distribution)(size=size)
 
-        assert isinstance(output, np.tensor)
+        assert isinstance(output, pnp.tensor)
 
         assert output.shape == size
         assert output.requires_grad is True
@@ -72,7 +72,7 @@ class Test_default_rng:
         assert isinstance(rng, random.Generator)
 
         output = rng.random((3,))
-        assert isinstance(output, np.tensor)
+        assert isinstance(output, pnp.tensor)
 
     @pytest.mark.parametrize("bitgen_cls", bit_generator_classes)
     def test_bit_generators(self, bitgen_cls):
@@ -87,7 +87,7 @@ class Test_default_rng:
         assert isinstance(rng.bit_generator, bitgen_cls)
 
         output = rng.random((3,))
-        assert isinstance(output, np.tensor)
+        assert isinstance(output, pnp.tensor)
 
     def test_generator_input(self):
         """Tests that ``np.random.default_rng`` passes through a Generator when its passed as input."""
@@ -112,9 +112,9 @@ class Test_default_rng:
         mat1 = rng1.random(size=size)
         mat2 = rng2.random(size=size)
 
-        assert np.all(mat1 == mat2)
+        assert pnp.all(mat1 == mat2)
 
         mat1_2 = rng1.normal(size=size)
         mat2_2 = rng2.normal(size=size)
 
-        assert np.all(mat1_2 == mat2_2)
+        assert pnp.all(mat1_2 == mat2_2)

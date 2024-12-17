@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qnode
 
 pytestmark = pytest.mark.tf
@@ -50,7 +50,7 @@ def gradient_kwargs(request):
     diff_method = request.node.funcargs["diff_method"]
     seed = request.getfixturevalue("seed")
     return kwargs[diff_method] | (
-        {"sampler_rng": np.random.default_rng(seed)} if diff_method == "spsa" else {}
+        {"sampler_rng": pnp.random.default_rng(seed)} if diff_method == "spsa" else {}
     )
 
 
@@ -488,13 +488,13 @@ class TestReturnShotVectorIntegration:
         assert isinstance(all_res, tuple)
         assert len(all_res) == 2
 
-        expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
+        expected = pnp.array([-pnp.sin(y) * pnp.sin(x), pnp.cos(y) * pnp.cos(x)])
         tol = TOLS[diff_method]
 
         for res, exp in zip(all_res, expected):
             assert isinstance(res, tf.Tensor)
             assert res.shape == (num_copies,)
-            assert np.allclose(res, exp, atol=tol, rtol=0)
+            assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
     def test_prob_expectation_values(
         self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
@@ -526,21 +526,21 @@ class TestReturnShotVectorIntegration:
         assert isinstance(all_res, tuple)
         assert len(all_res) == 2
 
-        expected = np.array(
+        expected = pnp.array(
             [
                 [
-                    -np.sin(x),
-                    -(np.cos(y / 2) ** 2 * np.sin(x)) / 2,
-                    -(np.sin(x) * np.sin(y / 2) ** 2) / 2,
-                    (np.sin(x) * np.sin(y / 2) ** 2) / 2,
-                    (np.cos(y / 2) ** 2 * np.sin(x)) / 2,
+                    -pnp.sin(x),
+                    -(pnp.cos(y / 2) ** 2 * pnp.sin(x)) / 2,
+                    -(pnp.sin(x) * pnp.sin(y / 2) ** 2) / 2,
+                    (pnp.sin(x) * pnp.sin(y / 2) ** 2) / 2,
+                    (pnp.cos(y / 2) ** 2 * pnp.sin(x)) / 2,
                 ],
                 [
                     0,
-                    -(np.cos(x / 2) ** 2 * np.sin(y)) / 2,
-                    (np.cos(x / 2) ** 2 * np.sin(y)) / 2,
-                    (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
-                    -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
+                    -(pnp.cos(x / 2) ** 2 * pnp.sin(y)) / 2,
+                    (pnp.cos(x / 2) ** 2 * pnp.sin(y)) / 2,
+                    (pnp.sin(x / 2) ** 2 * pnp.sin(y)) / 2,
+                    -(pnp.sin(x / 2) ** 2 * pnp.sin(y)) / 2,
                 ],
             ]
         )
@@ -550,4 +550,4 @@ class TestReturnShotVectorIntegration:
         for res, exp in zip(all_res, expected):
             assert isinstance(res, tf.Tensor)
             assert res.shape == (num_copies, 5)
-            assert np.allclose(res, exp, atol=tol, rtol=0)
+            assert pnp.allclose(res, exp, atol=tol, rtol=0)

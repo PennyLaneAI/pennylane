@@ -22,7 +22,7 @@ from gate_data import H, I, S, T, X, Z
 from test_optimization.utils import check_matrix_equivalence
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms import unitary_to_rot
 from pennylane.wires import Wires
 
@@ -37,32 +37,32 @@ def suppress_tape_property_deprecation_warning():
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ)
 single_qubit_decompositions = [
     (I, typeof_gates_zyz, [0.0, 0.0, 0.0]),
-    (Z, typeof_gates_zyz, [np.pi / 2, 0.0, np.pi / 2]),
-    (S, typeof_gates_zyz, [np.pi / 4, 0.0, np.pi / 4]),
-    (T, typeof_gates_zyz, [np.pi / 8, 0.0, np.pi / 8]),
-    (H, typeof_gates_zyz, [np.pi, np.pi / 2, 0.0]),
-    (X, typeof_gates_zyz, [np.pi / 2, np.pi, 7 * np.pi / 2]),
+    (Z, typeof_gates_zyz, [pnp.pi / 2, 0.0, pnp.pi / 2]),
+    (S, typeof_gates_zyz, [pnp.pi / 4, 0.0, pnp.pi / 4]),
+    (T, typeof_gates_zyz, [pnp.pi / 8, 0.0, pnp.pi / 8]),
+    (H, typeof_gates_zyz, [pnp.pi, pnp.pi / 2, 0.0]),
+    (X, typeof_gates_zyz, [pnp.pi / 2, pnp.pi, 7 * pnp.pi / 2]),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15]),
     (
         qml.RZ(-0.5, wires=0).matrix(),
         typeof_gates_zyz,
-        [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25],
+        [4 * pnp.pi - 0.25, 0.0, 4 * pnp.pi - 0.25],
     ),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, 4 * np.pi - 0.3]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, 4 * pnp.pi - 0.3]),
     (
-        np.array(
+        pnp.array(
             [
                 [0, -9.831019270939975e-01 + 0.1830590094588862j],
                 [9.831019270939975e-01 + 0.1830590094588862j, 0],
             ]
         ),
         typeof_gates_zyz,
-        [12.382273469673908, np.pi, 0.18409714468526417],
+        [12.382273469673908, pnp.pi, 0.18409714468526417],
     ),
     (
-        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
+        pnp.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zyz,
-        [4 * np.pi - 1.0, 2.0, 4 * np.pi - 3.0],
+        [4 * pnp.pi - 1.0, 2.0, 4 * pnp.pi - 3.0],
     ),
 ]
 
@@ -81,7 +81,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test for applying the transform on a QNode."""
         dev = qml.device("default.qubit", wires=2)
 
-        U = np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix()
+        U = pnp.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix()
 
         @qml.qnode(device=dev)
         def circuit(U):
@@ -93,7 +93,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         transformed_qnode = unitary_to_rot(circuit)
         res_trans = transformed_qnode(U)
         res = circuit(U)
-        assert np.allclose(res_trans, res)
+        assert pnp.allclose(res_trans, res)
 
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
     def test_unitary_to_rot(self, U, expected_gates, expected_params):
@@ -248,8 +248,8 @@ class TestDecomposeSingleQubitUnitaryTransform:
         original_result = original_qnode(U)
         transformed_result = transformed_qnode(U)
         jitted_result = jitted_qnode(U)
-        assert np.allclose(transformed_result, original_result)
-        assert np.allclose(jitted_result, original_result)
+        assert pnp.allclose(transformed_result, original_result)
+        assert pnp.allclose(jitted_result, original_result)
 
 
 # A simple circuit; we will test QubitUnitary on matrices constructed using trainable
@@ -262,7 +262,7 @@ def original_qfunc_for_grad(angles):
     return qml.expval(qml.PauliX(wires="a"))
 
 
-angle_pairs = [[0.3, 0.3], [np.pi, -0.65], [0.0, np.pi / 2], [np.pi / 3, 0.0]]
+angle_pairs = [[0.3, 0.3], [pnp.pi, -0.65], [0.0, pnp.pi / 2], [pnp.pi / 3, 0.0]]
 diff_methods = ["parameter-shift", "backprop"]
 angle_diff_pairs = list(product(angle_pairs, diff_methods))
 
@@ -280,11 +280,11 @@ class TestQubitUnitaryDifferentiability:
             z = angles[0]
             x = angles[1]
 
-            Z_mat = np.array([[np.exp(-1j * z / 2), 0.0], [0.0, np.exp(1j * z / 2)]])
+            Z_mat = pnp.array([[pnp.exp(-1j * z / 2), 0.0], [0.0, pnp.exp(1j * z / 2)]])
 
-            c = np.cos(x / 2)
-            s = np.sin(x / 2) * 1j
-            X_mat = np.array([[c, -s], [-s, c]])
+            c = pnp.cos(x / 2)
+            s = pnp.sin(x / 2) * 1j
+            X_mat = pnp.array([[c, -s], [-s, c]])
 
             qml.Hadamard(wires="a")
             qml.QubitUnitary(Z_mat, wires="a")
@@ -299,7 +299,7 @@ class TestQubitUnitaryDifferentiability:
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
         transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
 
-        angles = np.array(rot_angles, requires_grad=True)
+        angles = pnp.array(rot_angles, requires_grad=True)
         assert qml.math.allclose(original_qnode(angles), transformed_qnode(angles), atol=1e-7)
 
         original_grad = qml.grad(original_qnode)(angles)
@@ -447,8 +447,8 @@ class TestQubitUnitaryDifferentiability:
         # Check that we can also JIT
         grad_of_jit = jax.grad(jax.jit(transformed_qnode))(angles)
         jit_of_grad = jax.jit(jax.grad(transformed_qnode))(angles)
-        assert np.allclose(original_grad, jit_of_grad, atol=1e-7)
-        assert np.allclose(original_grad, grad_of_jit, atol=1e-7)
+        assert pnp.allclose(original_grad, jit_of_grad, atol=1e-7)
+        assert pnp.allclose(original_grad, grad_of_jit, atol=1e-7)
 
 
 test_two_qubit_unitaries = [
@@ -515,7 +515,7 @@ def test_unitary_to_rot_multiple_two_qubit(num_reps):
 
     dev = qml.device("default.qubit", wires=2)
 
-    U = np.array(test_two_qubit_unitaries[1], dtype=np.complex128)
+    U = pnp.array(test_two_qubit_unitaries[1], dtype=pnp.complex128)
 
     def my_circuit():
         for _ in range(num_reps):
@@ -544,8 +544,8 @@ class TestTwoQubitUnitaryDifferentiability:
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_gradient_unitary_to_rot_two_qubit(self, diff_method):
         """Tests differentiability in autograd interface."""
-        U0 = np.array(test_two_qubit_unitaries[0], requires_grad=False, dtype=np.complex128)
-        U1 = np.array(test_two_qubit_unitaries[1], requires_grad=False, dtype=np.complex128)
+        U0 = pnp.array(test_two_qubit_unitaries[0], requires_grad=False, dtype=pnp.complex128)
+        U1 = pnp.array(test_two_qubit_unitaries[1], requires_grad=False, dtype=pnp.complex128)
 
         def two_qubit_decomp_qnode(x, y, z):
             qml.RX(x, wires=0)
@@ -555,9 +555,9 @@ class TestTwoQubitUnitaryDifferentiability:
             qml.QubitUnitary(U1, wires=[1, 2])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
-        x = np.array(0.1, requires_grad=True)
-        y = np.array(0.2, requires_grad=True)
-        z = np.array(0.3, requires_grad=True)
+        x = pnp.array(0.1, requires_grad=True)
+        y = pnp.array(0.2, requires_grad=True)
+        z = pnp.array(0.3, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 

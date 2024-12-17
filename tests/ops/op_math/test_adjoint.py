@@ -15,11 +15,11 @@
 
 import pickle
 
-import numpy as np
+import numpy as pnp
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
 
@@ -161,7 +161,7 @@ class TestInitialization:
 
     def test_template_base(self, seed):
         """Test adjoint initialization for a template."""
-        rng = np.random.default_rng(seed=seed)
+        rng = pnp.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
@@ -184,7 +184,7 @@ class TestProperties:
 
     def test_data(self):
         """Test base data can be get and set through Adjoint class."""
-        x = np.array(1.234)
+        x = pnp.array(1.234)
 
         base = qml.RX(x, wires="a")
         adj = Adjoint(base)
@@ -192,13 +192,13 @@ class TestProperties:
         assert adj.data == (x,)
 
         # update parameters through adjoint
-        x_new = np.array(2.3456)
+        x_new = pnp.array(2.3456)
         adj.data = (x_new,)
         assert base.data == (x_new,)
         assert adj.data == (x_new,)
 
         # update base data updates Adjoint data
-        x_new2 = np.array(3.456)
+        x_new2 = pnp.array(3.456)
         base.data = (x_new2,)
         assert adj.data == (x_new2,)
 
@@ -315,7 +315,7 @@ class TestProperties:
     def test_batching_properties(self):
         """Test the batching properties and methods."""
 
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        base = qml.RX(pnp.array([1.2, 2.3, 3.4]), 0)
         op = Adjoint(base)
         assert op.batch_size == 3
         assert op.ndim_params == (0,)
@@ -332,7 +332,7 @@ class TestSimplify:
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         adj_op = Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0))))
-        final_op = qml.RZ(4 * np.pi - 1.32, wires=0)
+        final_op = qml.RZ(4 * pnp.pi - 1.32, wires=0)
         simplified_op = adj_op.simplify()
         qml.assert_equal(simplified_op, final_op)
 
@@ -340,7 +340,7 @@ class TestSimplify:
         """Test that the simplify methods converts an adjoint of sums to a sum of adjoints."""
         adj_op = Adjoint(qml.sum(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
         sum_op = qml.sum(
-            qml.RX(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RZ(4 * np.pi - 1, 0)
+            qml.RX(4 * pnp.pi - 1, 0), qml.RY(4 * pnp.pi - 1, 0), qml.RZ(4 * pnp.pi - 1, 0)
         )
         simplified_op = adj_op.simplify()
         qml.assert_equal(simplified_op, sum_op)
@@ -350,7 +350,7 @@ class TestSimplify:
         of adjoints."""
         adj_op = Adjoint(qml.prod(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
         final_op = qml.prod(
-            qml.RZ(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RX(4 * np.pi - 1, 0)
+            qml.RZ(4 * pnp.pi - 1, 0), qml.RY(4 * pnp.pi - 1, 0), qml.RX(4 * pnp.pi - 1, 0)
         )
         simplified_op = adj_op.simplify()
         qml.assert_equal(simplified_op, final_op)
@@ -396,7 +396,7 @@ class TestMiscMethods:
         diag_gate = Adjoint(base).diagonalizing_gates()[0]
 
         assert isinstance(diag_gate, qml.RY)
-        assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
+        assert qml.math.allclose(diag_gate.data[0], -pnp.pi / 4)
 
     # pylint: disable=protected-access
     def test_flatten_unflatten(self):
@@ -561,7 +561,7 @@ class TestMatrix:
     @pytest.mark.autograd
     def test_matrix_autograd(self):
         """Test the matrix of an Adjoint operator with an autograd parameter."""
-        self.check_matrix(np.array(1.2345), "autograd")
+        self.check_matrix(pnp.array(1.2345), "autograd")
 
     @pytest.mark.jax
     def test_matrix_jax(self):
@@ -586,7 +586,7 @@ class TestMatrix:
 
     def test_no_matrix_defined(self, seed):
         """Test that if the base has no matrix defined, then Adjoint.matrix also raises a MatrixUndefinedError."""
-        rng = np.random.default_rng(seed=seed)
+        rng = pnp.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
@@ -602,14 +602,14 @@ class TestMatrix:
         mat = adj_op.matrix()
 
         true_mat = qml.matrix(U)
-        assert np.allclose(mat, true_mat)
+        assert pnp.allclose(mat, true_mat)
 
 
 def test_sparse_matrix():
     """Test that the spare_matrix method returns the adjoint of the base sparse matrix."""
     from scipy.sparse import coo_matrix, csr_matrix
 
-    H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+    H = pnp.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
     H = csr_matrix(H)
     base = qml.SparseHamiltonian(H, wires=0)
 
@@ -629,7 +629,7 @@ class TestEigvals:
     """Test the Adjoint class adjoint methods."""
 
     @pytest.mark.parametrize(
-        "base", (qml.PauliX(0), qml.Hermitian(np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]]), wires=0))
+        "base", (qml.PauliX(0), qml.Hermitian(pnp.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]]), wires=0))
     )
     def test_hermitian_eigvals(self, base):
         """Test adjoint's eigvals are the same as base eigvals when op is Hermitian."""
@@ -648,7 +648,7 @@ class TestEigvals:
 
     def test_batching_eigvals(self):
         """Test that eigenvalues work with batched parameters."""
-        x = np.array([1.2, 2.3, 3.4])
+        x = pnp.array([1.2, 2.3, 3.4])
         base = qml.RX(x, 0)
         adj = Adjoint(base)
         compare = qml.RX(-x, 0)
@@ -709,7 +709,7 @@ class TestDecompositionExpand:
         """Test that when the base gate doesn't have a decomposition, the Adjoint decomposition
         method raises the proper error."""
         nr_wires = 2
-        rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
+        rho = pnp.zeros((2**nr_wires, 2**nr_wires), dtype=pnp.complex128)
         rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
         base = qml.QubitDensityMatrix(rho, wires=(0, 1))
 
@@ -741,14 +741,14 @@ class TestIntegration:
             Adjoint(qml.RX(x, wires=0))
             return qml.expval(qml.PauliY(0))
 
-        x = np.array(1.2345, requires_grad=True)
+        x = pnp.array(1.2345, requires_grad=True)
 
         res = circuit(x)
-        expected = np.sin(x)
+        expected = pnp.sin(x)
         assert qml.math.allclose(res, expected)
 
         grad = qml.grad(circuit)(x)
-        expected_grad = np.cos(x)
+        expected_grad = pnp.cos(x)
 
         assert qml.math.allclose(grad, expected_grad)
 
@@ -764,7 +764,7 @@ class TestIntegration:
         x = qml.numpy.array([1.234, 2.34, 3.456])
         res = circuit(x)
 
-        expected = np.sin(x)
+        expected = pnp.sin(x)
         assert qml.math.allclose(res, expected)
 
 
@@ -1047,9 +1047,9 @@ class TestAdjointConstructorIntegration:
             return qml.state()
 
         res = circ()
-        expected = np.array([0, -1j])
+        expected = pnp.array([0, -1j])
 
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
@@ -1063,8 +1063,8 @@ class TestAdjointConstructorIntegration:
             return qml.expval(qml.PauliY(0))
 
         x = autograd.numpy.array(0.234)
-        expected_res = np.sin(x)
-        expected_grad = np.cos(x)
+        expected_res = pnp.sin(x)
+        expected_grad = pnp.cos(x)
         assert qml.math.allclose(circ(x), expected_res)
         assert qml.math.allclose(
             autograd.grad(circ)(x), expected_grad  # pylint: disable=no-value-for-parameter

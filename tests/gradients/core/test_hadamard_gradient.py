@@ -18,7 +18,7 @@ Tests for the gradients.hadamard_gradient module.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
@@ -135,7 +135,7 @@ class TestHadamardGrad:
         ]
         separate_tapes_and_fns = [qml.gradients.hadamard_grad(t) for t in separate_tapes]
         separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
-        assert np.allclose(batched_grad, separate_grad)
+        assert pnp.allclose(batched_grad, separate_grad)
 
     def test_tape_with_partitioned_shots_multiple_measurements_raises(self):
         """Test that an error is raised with multiple measurements and partitioned shots."""
@@ -147,14 +147,14 @@ class TestHadamardGrad:
         with pytest.raises(NotImplementedError):
             qml.gradients.hadamard_grad(tape)
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("theta", pnp.linspace(-2 * pnp.pi, 2 * pnp.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.U1])
     def test_pauli_rotation_gradient(self, G, theta, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
         dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2), wires=0)
             G(theta, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -165,21 +165,21 @@ class TestHadamardGrad:
 
         assert len(tapes) == 1
 
-        assert isinstance(res_hadamard, np.ndarray)
+        assert isinstance(res_hadamard, pnp.ndarray)
         assert res_hadamard.shape == ()
 
         res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
 
-        assert np.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("theta", pnp.linspace(-2 * pnp.pi, 2 * pnp.pi, 7))
     def test_rot_gradient(self, theta, tol):
         """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         dev = qml.device("default.qubit", wires=2)
-        params = np.array([theta, theta**3, np.sqrt(2) * theta])
+        params = pnp.array([theta, theta**3, pnp.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2), wires=0)
             qml.Rot(*params, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -195,16 +195,16 @@ class TestHadamardGrad:
 
         res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
 
-        assert np.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("theta", pnp.linspace(-2 * pnp.pi, 2 * pnp.pi, 7))
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, theta, tol):
         """Test gradient of controlled rotation gates"""
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
@@ -212,16 +212,16 @@ class TestHadamardGrad:
         tape.trainable_params = {1}
 
         res_hadamard = dev.execute(tape)
-        assert np.allclose(res_hadamard, -np.cos(theta / 2), atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard, -pnp.cos(theta / 2), atol=tol, rtol=0)
 
         res_hadamard, _ = grad_fn(tape, dev)
 
         res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
-        assert np.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
 
-        expected = np.sin(theta / 2) / 2
+        expected = pnp.sin(theta / 2) / 2
 
-        assert np.allclose(res_hadamard, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard, expected, atol=tol, rtol=0)
 
     def test_control_rotations(self, tol):
         """Test RX, CRX and CRY."""
@@ -237,16 +237,16 @@ class TestHadamardGrad:
         tape.trainable_params = {0, 1, 2}
 
         res_hadamard, _ = grad_fn(tape, dev)
-        assert np.allclose(res_hadamard, np.zeros(3), atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard, pnp.zeros(3), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("theta", pnp.linspace(-2 * pnp.pi, 2 * pnp.pi, 7))
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient_multi(self, G, theta, tol):
         """Test gradient of controlled rotation gates with multiple measurements"""
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
             qml.expval(qml.PauliX(0))
             qml.probs(wires=[1])
@@ -258,17 +258,17 @@ class TestHadamardGrad:
         res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
 
         assert isinstance(res_hadamard, tuple)
-        assert np.allclose(res_hadamard[0], res_param_shift[0], atol=tol, rtol=0)
-        assert np.allclose(res_hadamard[1], res_param_shift[1], atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard[0], res_param_shift[0], atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard[1], res_param_shift[1], atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("theta", pnp.linspace(-2 * pnp.pi, 2 * pnp.pi, 7))
     @pytest.mark.parametrize("G", [qml.IsingXX, qml.IsingYY, qml.IsingZZ])
     def test_ising_gradient(self, G, theta, tol):
         """Test gradient of Ising coupling gates"""
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
             qml.expval(qml.PauliZ(1))
 
@@ -279,17 +279,17 @@ class TestHadamardGrad:
 
         res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
 
-        assert np.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+    @pytest.mark.parametrize("theta", pnp.linspace(-2 * pnp.pi, pnp.pi, 7))
     def test_CRot_gradient_with_expansion(self, theta, tol):
         """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parametrized
         gate is correct."""
         dev = qml.device("default.qubit", wires=3)
-        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
+        a, b, c = pnp.array([theta, theta**3, pnp.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2), wires=0)
             qml.CRot(a, b, c, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
@@ -297,29 +297,29 @@ class TestHadamardGrad:
         tape.trainable_params = {1, 2, 3}
 
         res_hadamard = dev.execute(tape)
-        expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
-        assert np.allclose(res_hadamard, expected, atol=tol, rtol=0)
+        expected = -pnp.cos(b / 2) * pnp.cos(0.5 * (a + c))
+        assert pnp.allclose(res_hadamard, expected, atol=tol, rtol=0)
 
         grad, _ = grad_fn(tape, dev)
 
-        expected = np.array(
+        expected = pnp.array(
             [
-                0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
-                0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
-                0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+                0.5 * pnp.cos(b / 2) * pnp.sin(0.5 * (a + c)),
+                0.5 * pnp.sin(b / 2) * pnp.cos(0.5 * (a + c)),
+                0.5 * pnp.cos(b / 2) * pnp.sin(0.5 * (a + c)),
             ]
         )
 
         assert isinstance(grad, tuple)
         assert len(grad) == 5
-        assert np.allclose(-grad[1] / 2, expected[0], atol=tol, rtol=0)
-        assert np.allclose(-grad[2] / 2, expected[1], atol=tol, rtol=0)
-        assert np.allclose(-grad[1] / 2, expected[2], atol=tol, rtol=0)
+        assert pnp.allclose(-grad[1] / 2, expected[0], atol=tol, rtol=0)
+        assert pnp.allclose(-grad[2] / 2, expected[1], atol=tol, rtol=0)
+        assert pnp.allclose(-grad[1] / 2, expected[2], atol=tol, rtol=0)
 
     def test_gradients_agree_finite_differences(self, tol):
         """Tests that the Hadamard test gradient agrees with the first and second
         order finite differences"""
-        params = np.array([0.1, -1.6, np.pi / 5])
+        params = pnp.array([0.1, -1.6, pnp.pi / 5])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(params[0], wires=[0])
@@ -342,10 +342,10 @@ class TestHadamardGrad:
         grad_A, _ = grad_fn(tape, dev)
 
         # gradients computed with different methods must agree
-        assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
-        assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A, grad_F1, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.parametrize("angle", pnp.linspace(0, 2 * pnp.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ", "XY", "YX", "ZX", "ZY", "YZ"])
     def test_differentiability_paulirot(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
@@ -360,7 +360,7 @@ class TestHadamardGrad:
         res_hadamard, _ = grad_fn(tape, dev)
         res_param_shift, _ = grad_fn(tape, dev, fn=qml.gradients.param_shift)
 
-        assert np.allclose(res_hadamard, res_param_shift, tol)
+        assert pnp.allclose(res_hadamard, res_param_shift, tol)
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -385,9 +385,9 @@ class TestHadamardGrad:
         assert not isinstance(res_hadamard[0], tuple)
         assert not isinstance(res_hadamard[1], tuple)
 
-        expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
-        assert np.allclose(res_hadamard[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res_hadamard[1], expected[1], atol=tol, rtol=0)
+        expected = pnp.array([-pnp.sin(y) * pnp.sin(x), pnp.cos(y) * pnp.cos(x)])
+        assert pnp.allclose(res_hadamard[0], expected[0], atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard[1], expected[1], atol=tol, rtol=0)
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -413,9 +413,9 @@ class TestHadamardGrad:
         assert len(res_hadamard[0]) == 2
         assert len(res_hadamard[1]) == 2
 
-        expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
-        assert np.allclose(res_hadamard[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res_hadamard[1], expected[1], atol=tol, rtol=0)
+        expected = pnp.array([[-pnp.sin(x), 0], [0, pnp.cos(y)]])
+        assert pnp.allclose(res_hadamard[0], expected[0], atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard[1], expected[1], atol=tol, rtol=0)
 
     def test_diff_single_probs(self, tol):
         """Test diff of single probabilities."""
@@ -440,15 +440,15 @@ class TestHadamardGrad:
         assert res_hadamard[0].shape == (2,)
         assert res_hadamard[1].shape == (2,)
 
-        expected = np.array(
+        expected = pnp.array(
             [
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+                [-pnp.sin(x) * pnp.cos(y) / 2, -pnp.cos(x) * pnp.sin(y) / 2],
+                [pnp.cos(y) * pnp.sin(x) / 2, pnp.cos(x) * pnp.sin(y) / 2],
             ]
         )
 
-        assert np.allclose(res_hadamard[0], expected.T[0], atol=tol, rtol=0)
-        assert np.allclose(res_hadamard[1], expected.T[1], atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard[0], expected.T[0], atol=tol, rtol=0)
+        assert pnp.allclose(res_hadamard[1], expected.T[1], atol=tol, rtol=0)
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -478,55 +478,55 @@ class TestHadamardGrad:
         assert isinstance(res_hadamard[0], tuple)
         assert len(res_hadamard[0]) == 2
 
-        assert isinstance(res_hadamard[0][0], np.ndarray)
+        assert isinstance(res_hadamard[0][0], pnp.ndarray)
         assert res_hadamard[0][0].shape == ()
-        assert isinstance(res_hadamard[0][1], np.ndarray)
+        assert isinstance(res_hadamard[0][1], pnp.ndarray)
         assert res_hadamard[0][1].shape == ()
 
         for res in res_hadamard[1:]:
             assert isinstance(res, tuple)
             assert len(res) == 2
 
-            assert isinstance(res[0], np.ndarray)
+            assert isinstance(res[0], pnp.ndarray)
             assert res[0].shape == (4,)
-            assert isinstance(res[1], np.ndarray)
+            assert isinstance(res[1], pnp.ndarray)
             assert res[1].shape == (4,)
 
-        expval_expected = [-2 * np.sin(x) / 2, 0]
+        expval_expected = [-2 * pnp.sin(x) / 2, 0]
         probs_expected = (
-            np.array(
+            pnp.array(
                 [
                     [
-                        -(np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                        -(pnp.cos(y / 2) ** 2 * pnp.sin(x)),
+                        -(pnp.cos(x / 2) ** 2 * pnp.sin(y)),
                     ],
                     [
-                        -(np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                        -(pnp.sin(x) * pnp.sin(y / 2) ** 2),
+                        (pnp.cos(x / 2) ** 2 * pnp.sin(y)),
                     ],
                     [
-                        (np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                        (pnp.sin(x) * pnp.sin(y / 2) ** 2),
+                        (pnp.sin(x / 2) ** 2 * pnp.sin(y)),
                     ],
                     [
-                        (np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                        (pnp.cos(y / 2) ** 2 * pnp.sin(x)),
+                        -(pnp.sin(x / 2) ** 2 * pnp.sin(y)),
                     ],
                 ]
             )
             / 2
         )
         # Expvals
-        assert np.allclose(res_hadamard[0][0], expval_expected[0], tol)
-        assert np.allclose(res_hadamard[0][1], expval_expected[1], tol)
+        assert pnp.allclose(res_hadamard[0][0], expval_expected[0], tol)
+        assert pnp.allclose(res_hadamard[0][1], expval_expected[1], tol)
 
         # Probs
         for res in res_hadamard[1:]:
-            assert np.allclose(res[0], probs_expected[:, 0], tol)
-            assert np.allclose(res[1], probs_expected[:, 1], tol)
+            assert pnp.allclose(res[0], probs_expected[:, 0], tol)
+            assert pnp.allclose(res[1], probs_expected[:, 1], tol)
 
     costs_and_expected_expval_scalar = [
-        (cost7, (), np.ndarray),
+        (cost7, (), pnp.ndarray),
         (cost8, (1,), list),
         (cost9, (2,), tuple),
     ]
@@ -537,16 +537,16 @@ class TestHadamardGrad:
         expectation values and a scalar parameter."""
         dev = qml.device("default.qubit", wires=4)
 
-        x = np.array(0.419)
+        x = pnp.array(0.419)
         circuit = qml.QNode(cost, dev)
 
         res_hadamard = qml.gradients.hadamard_grad(circuit)(x)
 
         assert isinstance(res_hadamard, exp_type)
-        assert np.array(res_hadamard).shape == exp_shape
+        assert pnp.array(res_hadamard).shape == exp_shape
 
     costs_and_expected_expval_array = [
-        (cost1, [3], np.ndarray),
+        (cost1, [3], pnp.ndarray),
         (cost2, [3], list),
         (cost3, [2, 3], tuple),
     ]
@@ -557,7 +557,7 @@ class TestHadamardGrad:
         expectation values and an array-valued parameter."""
         dev = qml.device("default.qubit", wires=4)
 
-        x = np.random.rand(3)
+        x = pnp.random.rand(3)
         circuit = qml.QNode(cost, dev)
 
         res_hadamard = qml.gradients.hadamard_grad(circuit)(x)
@@ -569,16 +569,16 @@ class TestHadamardGrad:
 
         if len(exp_shape) > 1:
             for r in res_hadamard:
-                assert isinstance(r, np.ndarray)
+                assert isinstance(r, pnp.ndarray)
                 assert len(r) == exp_shape[1]
 
     costs_and_expected_probs = [
-        (cost4, [4, 3], np.ndarray),
+        (cost4, [4, 3], pnp.ndarray),
         (cost5, [4, 3], list),
         (cost6, [2, 4, 3], tuple),
-        (cost10, [32, 3], np.ndarray),  # Note that the shape here depends on the device
+        (cost10, [32, 3], pnp.ndarray),  # Note that the shape here depends on the device
         (cost11, [2, 32, 3], tuple),
-        (cost12, [8, 3], np.ndarray),
+        (cost12, [8, 3], pnp.ndarray),
     ]
 
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
@@ -586,7 +586,7 @@ class TestHadamardGrad:
         """Test that the transform output shape matches that of the QNode."""
         dev = qml.device("default.qubit", wires=5)
 
-        x = np.random.rand(3)
+        x = pnp.random.rand(3)
         circuit = qml.QNode(cost, dev)
 
         res_hadamard = qml.gradients.hadamard_grad(circuit)(x)
@@ -603,16 +603,16 @@ class TestHadamardGrad:
         for res in [res_hadamard, res_hadamard_tape]:
             if len(exp_shape) > 2:
                 for r in res:
-                    assert isinstance(r, np.ndarray)
+                    assert isinstance(r, pnp.ndarray)
                     assert len(r) == exp_shape[1]
 
                     for r_ in r:
-                        assert isinstance(r_, np.ndarray)
+                        assert isinstance(r_, pnp.ndarray)
                         assert len(r_) == exp_shape[2]
 
             elif len(exp_shape) > 1:
                 for r in res:
-                    assert isinstance(r, np.ndarray)
+                    assert isinstance(r, pnp.ndarray)
                     assert len(r) == exp_shape[1]
 
     @pytest.mark.parametrize("shots", [None, 100])
@@ -895,7 +895,7 @@ class TestHadamardGradEdgeCases:
         res_hadamard = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
-        assert isinstance(res_hadamard, np.ndarray)
+        assert isinstance(res_hadamard, pnp.ndarray)
         assert res_hadamard.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
@@ -919,7 +919,7 @@ class TestHadamardGradEdgeCases:
         assert tapes == []
         assert isinstance(res_hadamard, tuple)
         for r in res_hadamard:
-            assert isinstance(r, np.ndarray)
+            assert isinstance(r, pnp.ndarray)
             assert r.shape == (0,)
 
     def test_all_zero_diff_methods_tape(self):
@@ -927,7 +927,7 @@ class TestHadamardGradEdgeCases:
         identified to be 0, and that no tapes were generated."""
         dev = qml.device("default.qubit", wires=3)
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.Rot(*params, wires=0)
@@ -943,17 +943,17 @@ class TestHadamardGradEdgeCases:
 
         assert len(res_hadamard) == 3
 
-        assert isinstance(res_hadamard[0], np.ndarray)
+        assert isinstance(res_hadamard[0], pnp.ndarray)
         assert res_hadamard[0].shape == (4,)
-        assert np.allclose(res_hadamard[0], 0)
+        assert pnp.allclose(res_hadamard[0], 0)
 
-        assert isinstance(res_hadamard[1], np.ndarray)
+        assert isinstance(res_hadamard[1], pnp.ndarray)
         assert res_hadamard[1].shape == (4,)
-        assert np.allclose(res_hadamard[1], 0)
+        assert pnp.allclose(res_hadamard[1], 0)
 
-        assert isinstance(res_hadamard[2], np.ndarray)
+        assert isinstance(res_hadamard[2], pnp.ndarray)
         assert res_hadamard[2].shape == (4,)
-        assert np.allclose(res_hadamard[2], 0)
+        assert pnp.allclose(res_hadamard[2], 0)
 
     def test_all_zero_diff_methods_multiple_returns_tape(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -961,7 +961,7 @@ class TestHadamardGradEdgeCases:
 
         dev = qml.device("default.qubit", wires=3)
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.Rot(*params, wires=0)
@@ -981,32 +981,32 @@ class TestHadamardGradEdgeCases:
         # First elem
         assert len(res_hadamard[0]) == 3
 
-        assert isinstance(res_hadamard[0][0], np.ndarray)
+        assert isinstance(res_hadamard[0][0], pnp.ndarray)
         assert res_hadamard[0][0].shape == ()
-        assert np.allclose(res_hadamard[0][0], 0)
+        assert pnp.allclose(res_hadamard[0][0], 0)
 
-        assert isinstance(res_hadamard[0][1], np.ndarray)
+        assert isinstance(res_hadamard[0][1], pnp.ndarray)
         assert res_hadamard[0][1].shape == ()
-        assert np.allclose(res_hadamard[0][1], 0)
+        assert pnp.allclose(res_hadamard[0][1], 0)
 
-        assert isinstance(res_hadamard[0][2], np.ndarray)
+        assert isinstance(res_hadamard[0][2], pnp.ndarray)
         assert res_hadamard[0][2].shape == ()
-        assert np.allclose(res_hadamard[0][2], 0)
+        assert pnp.allclose(res_hadamard[0][2], 0)
 
         # Second elem
         assert len(res_hadamard[0]) == 3
 
-        assert isinstance(res_hadamard[1][0], np.ndarray)
+        assert isinstance(res_hadamard[1][0], pnp.ndarray)
         assert res_hadamard[1][0].shape == (4,)
-        assert np.allclose(res_hadamard[1][0], 0)
+        assert pnp.allclose(res_hadamard[1][0], 0)
 
-        assert isinstance(res_hadamard[1][1], np.ndarray)
+        assert isinstance(res_hadamard[1][1], pnp.ndarray)
         assert res_hadamard[1][1].shape == (4,)
-        assert np.allclose(res_hadamard[1][1], 0)
+        assert pnp.allclose(res_hadamard[1][1], 0)
 
-        assert isinstance(res_hadamard[1][2], np.ndarray)
+        assert isinstance(res_hadamard[1][2], pnp.ndarray)
         assert res_hadamard[1][2].shape == (4,)
-        assert np.allclose(res_hadamard[1][2], 0)
+        assert pnp.allclose(res_hadamard[1][2], 0)
 
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_all_zero_diff_methods(self, prefactor):
@@ -1019,13 +1019,13 @@ class TestHadamardGradEdgeCases:
             qml.Rot(*(prefactor * params), wires=0)
             return qml.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = qml.gradients.hadamard_grad(circuit)(params)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, pnp.ndarray)
         assert result.shape == (4, 3)
-        assert np.allclose(result, 0)
+        assert pnp.allclose(result, 0)
 
 
 class TestHadamardTestGradDiff:
@@ -1036,7 +1036,7 @@ class TestHadamardTestGradDiff:
         """Tests that the output of the hadamard gradient transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=3)
-        params = np.array([0.543, -0.654], requires_grad=True)
+        params = pnp.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn_hadamard(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1066,7 +1066,7 @@ class TestHadamardTestGradDiff:
 
         res_hadamard = qml.jacobian(cost_fn_hadamard)(params)
         res_param_shift = qml.jacobian(cost_fn_param_shift)(params)
-        assert np.allclose(res_hadamard, res_param_shift)
+        assert pnp.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.tf
     def test_tf(self):
@@ -1106,7 +1106,7 @@ class TestHadamardTestGradDiff:
         res_hadamard = t_h.jacobian(jac_h, params)
         res_param_shift = t_p.jacobian(jac_p, params)
 
-        assert np.allclose(res_hadamard, res_param_shift)
+        assert pnp.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.torch
     def test_torch(self):
@@ -1144,8 +1144,8 @@ class TestHadamardTestGradDiff:
         res_hadamard = torch.autograd.functional.jacobian(cost_h, params)
         res_param_shift = torch.autograd.functional.jacobian(cost_p, params)
 
-        assert np.allclose(res_hadamard[0].detach(), res_param_shift[0].detach())
-        assert np.allclose(res_hadamard[1].detach(), res_param_shift[1].detach())
+        assert pnp.allclose(res_hadamard[0].detach(), res_param_shift[0].detach())
+        assert pnp.allclose(res_hadamard[1].detach(), res_param_shift[1].detach())
 
     @pytest.mark.jax
     def test_jax(self):
@@ -1185,7 +1185,7 @@ class TestHadamardTestGradDiff:
 
         res_hadamard = jax.jacobian(cost_h)(params)
         res_param_shift = jax.jacobian(cost_p)(params)
-        assert np.allclose(res_hadamard, res_param_shift)
+        assert pnp.allclose(res_hadamard, res_param_shift)
 
 
 @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
@@ -1237,16 +1237,16 @@ class TestJaxArgnums:
 
         res = qml.gradients.hadamard_grad(circuit, argnums=argnums)(x, y)
 
-        expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
-        expected_1 = np.array(np.cos(y) * np.cos(x[0]))
+        expected_0 = pnp.array([-pnp.sin(y) * pnp.sin(x[0]), 0])
+        expected_1 = pnp.array(pnp.cos(y) * pnp.cos(x[0]))
 
         if argnums == [0]:
-            assert np.allclose(res, expected_0)
+            assert pnp.allclose(res, expected_0)
         if argnums == [1]:
-            assert np.allclose(res, expected_1)
+            assert pnp.allclose(res, expected_1)
         if argnums == [0, 1]:
-            assert np.allclose(res[0], expected_0)
-            assert np.allclose(res[1], expected_1)
+            assert pnp.allclose(res[0], expected_0)
+            assert pnp.allclose(res[1], expected_1)
 
     def test_multi_expectation_values(self, argnums, interface):
         """Test for multiple expectation values."""
@@ -1266,19 +1266,19 @@ class TestJaxArgnums:
 
         res = qml.gradients.hadamard_grad(circuit, argnums=argnums)(x, y)
 
-        expected_0 = np.array([[-np.sin(x[0]), 0.0], [0.0, 0.0]])
-        expected_1 = np.array([0, np.cos(y)])
+        expected_0 = pnp.array([[-pnp.sin(x[0]), 0.0], [0.0, 0.0]])
+        expected_1 = pnp.array([0, pnp.cos(y)])
 
         if argnums == [0]:
-            assert np.allclose(res[0], expected_0[0])
-            assert np.allclose(res[1], expected_0[1])
+            assert pnp.allclose(res[0], expected_0[0])
+            assert pnp.allclose(res[1], expected_0[1])
         if argnums == [1]:
-            assert np.allclose(res, expected_1)
+            assert pnp.allclose(res, expected_1)
         if argnums == [0, 1]:
-            assert np.allclose(res[0][0], expected_0[0])
-            assert np.allclose(res[0][1], expected_0[1])
-            assert np.allclose(res[1][0], expected_1[0])
-            assert np.allclose(res[1][1], expected_1[1])
+            assert pnp.allclose(res[0][0], expected_0[0])
+            assert pnp.allclose(res[0][1], expected_0[1])
+            assert pnp.allclose(res[1][0], expected_1[0])
+            assert pnp.allclose(res[1][1], expected_1[1])
 
     def test_hessian(self, argnums, interface):
         """Test for hessian."""
@@ -1303,9 +1303,9 @@ class TestJaxArgnums:
 
         if len(argnums) == 1:
             # jax.hessian produces an additional tuple axis, which we have to index away here
-            assert np.allclose(res, res_expected[0])
+            assert pnp.allclose(res, res_expected[0])
         else:
             # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]
             for r, r_e in zip(res, res_expected):
                 for r_, r_e_ in zip(r, r_e):
-                    assert np.allclose(r_, r_e_)
+                    assert pnp.allclose(r_, r_e_)

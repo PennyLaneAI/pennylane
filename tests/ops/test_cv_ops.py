@@ -19,14 +19,14 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 import numpy.testing as np_testing
 import pytest
 
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.operation import AnyWires
 from pennylane.ops import cv
 from pennylane.wires import Wires
 
-s_vals = np.linspace(-3, 3, 13)
-phis = np.linspace(-2 * np.pi, 2 * np.pi, 11)
-mags = np.linspace(0.0, 1.0, 7)
+s_vals = pnp.linspace(-3, 3, 13)
+phis = pnp.linspace(-2 * pnp.pi, 2 * pnp.pi, 11)
+mags = pnp.linspace(0.0, 1.0, 7)
 
 
 class TestCV:
@@ -36,10 +36,10 @@ class TestCV:
     def test_rotation_heisenberg(self, phi):
         """ops: Tests the Heisenberg representation of the Rotation gate."""
         matrix = cv.Rotation._heisenberg_rep([phi])
-        true_matrix = np.array(
-            [[1, 0, 0], [0, np.cos(phi), -np.sin(phi)], [0, np.sin(phi), np.cos(phi)]]
+        true_matrix = pnp.array(
+            [[1, 0, 0], [0, pnp.cos(phi), -pnp.sin(phi)], [0, pnp.sin(phi), pnp.cos(phi)]]
         )
-        assert np.allclose(matrix, true_matrix)
+        assert pnp.allclose(matrix, true_matrix)
 
     @pytest.mark.parametrize(
         "op,size",
@@ -56,7 +56,7 @@ class TestCV:
             (cv.TwoModeSqueezing(2.532, 1.778, wires=[1, 2]), 5),
             (
                 cv.InterferometerUnitary(
-                    np.array([[1, 1], [1, -1]]) * -1.0j / np.sqrt(2.0), wires=1
+                    pnp.array([[1, 1], [1, -1]]) * -1.0j / pnp.sqrt(2.0), wires=1
                 ),
                 5,
             ),
@@ -68,10 +68,10 @@ class TestCV:
         op_d = op.adjoint()
         op_heis = op._heisenberg_rep(op.parameters)
         op_d_heis = op_d._heisenberg_rep(op_d.parameters)
-        res1 = np.dot(op_heis, op_d_heis)
-        res2 = np.dot(op_d_heis, op_heis)
-        np_testing.assert_allclose(res1, np.eye(size), atol=tol)
-        np_testing.assert_allclose(res2, np.eye(size), atol=tol)
+        res1 = pnp.dot(op_heis, op_d_heis)
+        res2 = pnp.dot(op_d_heis, op_heis)
+        np_testing.assert_allclose(res1, pnp.eye(size), atol=tol)
+        np_testing.assert_allclose(res2, pnp.eye(size), atol=tol)
         assert op.wires == op_d.wires
 
     @pytest.mark.parametrize(
@@ -92,14 +92,14 @@ class TestCV:
         """ops: Tests the Heisenberg representation of the Squeezing gate."""
         r = mag
         matrix = cv.Squeezing._heisenberg_rep([r, phi])
-        true_matrix = np.array(
+        true_matrix = pnp.array(
             [
                 [1, 0, 0],
-                [0, np.cosh(r) - np.cos(phi) * np.sinh(r), -np.sin(phi) * np.sinh(r)],
-                [0, -np.sin(phi) * np.sinh(r), np.cosh(r) + np.cos(phi) * np.sinh(r)],
+                [0, pnp.cosh(r) - pnp.cos(phi) * pnp.sinh(r), -pnp.sin(phi) * pnp.sinh(r)],
+                [0, -pnp.sin(phi) * pnp.sinh(r), pnp.cosh(r) + pnp.cos(phi) * pnp.sinh(r)],
             ]
         )
-        assert np.allclose(matrix, true_matrix)
+        assert pnp.allclose(matrix, true_matrix)
 
     @pytest.mark.parametrize("phi", phis)
     @pytest.mark.parametrize("mag", mags)
@@ -108,30 +108,30 @@ class TestCV:
         r = mag
         hbar = 2
         matrix = cv.Displacement._heisenberg_rep([r, phi])
-        true_matrix = np.array(
+        true_matrix = pnp.array(
             [
                 [1, 0, 0],
-                [np.sqrt(2 * hbar) * r * np.cos(phi), 1, 0],
-                [np.sqrt(2 * hbar) * r * np.sin(phi), 0, 1],
+                [pnp.sqrt(2 * hbar) * r * pnp.cos(phi), 1, 0],
+                [pnp.sqrt(2 * hbar) * r * pnp.sin(phi), 0, 1],
             ]
         )
-        assert np.allclose(matrix, true_matrix)
+        assert pnp.allclose(matrix, true_matrix)
 
     @pytest.mark.parametrize("phi", phis)
     @pytest.mark.parametrize("theta", phis)
     def test_beamsplitter_heisenberg(self, phi, theta):
         """ops: Tests the Heisenberg representation of the Beamsplitter gate."""
         matrix = cv.Beamsplitter._heisenberg_rep([theta, phi])
-        true_matrix = np.array(
+        true_matrix = pnp.array(
             [
                 [1, 0, 0, 0, 0],
-                [0, np.cos(theta), 0, -np.cos(phi) * np.sin(theta), -np.sin(phi) * np.sin(theta)],
-                [0, 0, np.cos(theta), np.sin(phi) * np.sin(theta), -np.cos(phi) * np.sin(theta)],
-                [0, np.cos(phi) * np.sin(theta), -np.sin(phi) * np.sin(theta), np.cos(theta), 0],
-                [0, np.sin(phi) * np.sin(theta), np.cos(phi) * np.sin(theta), 0, np.cos(theta)],
+                [0, pnp.cos(theta), 0, -pnp.cos(phi) * pnp.sin(theta), -pnp.sin(phi) * pnp.sin(theta)],
+                [0, 0, pnp.cos(theta), pnp.sin(phi) * pnp.sin(theta), -pnp.cos(phi) * pnp.sin(theta)],
+                [0, pnp.cos(phi) * pnp.sin(theta), -pnp.sin(phi) * pnp.sin(theta), pnp.cos(theta), 0],
+                [0, pnp.sin(phi) * pnp.sin(theta), pnp.cos(phi) * pnp.sin(theta), 0, pnp.cos(theta)],
             ]
         )
-        assert np.allclose(matrix, true_matrix)
+        assert pnp.allclose(matrix, true_matrix)
 
     @pytest.mark.parametrize("phi", phis)
     @pytest.mark.parametrize("mag", mags)
@@ -139,48 +139,48 @@ class TestCV:
         """ops: Tests the Heisenberg representation of the Beamsplitter gate."""
         r = mag
         matrix = cv.TwoModeSqueezing._heisenberg_rep([r, phi])
-        true_matrix = np.array(
+        true_matrix = pnp.array(
             [
                 [1, 0, 0, 0, 0],
-                [0, np.cosh(r), 0, np.cos(phi) * np.sinh(r), np.sin(phi) * np.sinh(r)],
-                [0, 0, np.cosh(r), np.sin(phi) * np.sinh(r), -np.cos(phi) * np.sinh(r)],
-                [0, np.cos(phi) * np.sinh(r), np.sin(phi) * np.sinh(r), np.cosh(r), 0],
-                [0, np.sin(phi) * np.sinh(r), -np.cos(phi) * np.sinh(r), 0, np.cosh(r)],
+                [0, pnp.cosh(r), 0, pnp.cos(phi) * pnp.sinh(r), pnp.sin(phi) * pnp.sinh(r)],
+                [0, 0, pnp.cosh(r), pnp.sin(phi) * pnp.sinh(r), -pnp.cos(phi) * pnp.sinh(r)],
+                [0, pnp.cos(phi) * pnp.sinh(r), pnp.sin(phi) * pnp.sinh(r), pnp.cosh(r), 0],
+                [0, pnp.sin(phi) * pnp.sinh(r), -pnp.cos(phi) * pnp.sinh(r), 0, pnp.cosh(r)],
             ]
         )
-        assert np.allclose(matrix, true_matrix)
+        assert pnp.allclose(matrix, true_matrix)
 
     @pytest.mark.parametrize("s", s_vals)
     def test_quadratic_phase_heisenberg(self, s):
         """ops: Tests the Heisenberg representation of the QuadraticPhase gate."""
         matrix = cv.QuadraticPhase._heisenberg_rep([s])
-        true_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, s, 1]])
-        assert np.allclose(matrix, true_matrix)
+        true_matrix = pnp.array([[1, 0, 0], [0, 1, 0], [0, s, 1]])
+        assert pnp.allclose(matrix, true_matrix)
 
     @pytest.mark.parametrize("s", s_vals)
     def test_controlled_addition_heisenberg(self, s):
         """ops: Tests the Heisenberg representation of ControlledAddition gate."""
         matrix = cv.ControlledAddition._heisenberg_rep([s])
-        true_matrix = np.array(
+        true_matrix = pnp.array(
             [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, -s], [0, s, 0, 1, 0], [0, 0, 0, 0, 1]]
         )
-        assert np.allclose(matrix, true_matrix)
+        assert pnp.allclose(matrix, true_matrix)
 
     @pytest.mark.parametrize("s", s_vals)
     def test_controlled_phase_heisenberg(self, s):
         """Tests the Heisenberg representation of the ControlledPhase gate."""
         matrix = cv.ControlledPhase._heisenberg_rep([s])
-        true_matrix = np.array(
+        true_matrix = pnp.array(
             [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, s, 0], [0, 0, 0, 1, 0], [0, s, 0, 0, 1]]
         )
-        assert np.allclose(matrix, true_matrix)
+        assert pnp.allclose(matrix, true_matrix)
 
     @pytest.mark.parametrize("phi", phis)
     def test_quadoperator_heisenberg(self, phi):
         """ops: Tests the Heisenberg representation of the QuadOperator gate."""
         matrix = cv.QuadOperator._heisenberg_rep([phi])
-        true_matrix = np.array([0, np.cos(phi), np.sin(phi)])
-        assert np.allclose(matrix, true_matrix)
+        true_matrix = pnp.array([0, pnp.cos(phi), pnp.sin(phi)])
+        assert pnp.allclose(matrix, true_matrix)
 
 
 class TestNonGaussian:
@@ -220,7 +220,7 @@ state_prep_data = [
     (cv.GaussianState(0.1, 0.2, wires=(0, 1, 2, 3, 4)), 2, AnyWires, "F"),
     (cv.FockState(1, wires=0), 1, 1, None),
     (cv.FockStateVector([0, 0, 1, 0], wires=0), 1, AnyWires, "F"),
-    (cv.FockDensityMatrix(np.eye(2), wires=0), 1, AnyWires, "F"),
+    (cv.FockDensityMatrix(pnp.eye(2), wires=0), 1, AnyWires, "F"),
     (cv.CatState(0.1, 0.2, 0.3, wires=0), 3, 1, "F"),
 ]
 
@@ -246,10 +246,10 @@ label_data = [
     (cv.Kerr(1.234, wires=0), "Kerr", "Kerr\n(1.23)"),
     (cv.CrossKerr(1.234, wires=(0, 1)), "CrossKerr", "CrossKerr\n(1.23)"),
     (cv.CubicPhase(1.234, wires=0), "V", "V\n(1.23)"),
-    (cv.InterferometerUnitary(np.eye(2), wires=0), "U", "U"),
+    (cv.InterferometerUnitary(pnp.eye(2), wires=0), "U", "U"),
     (cv.ThermalState(1.234, wires=0), "Thermal", "Thermal\n(1.23)"),
     (
-        cv.GaussianState(np.array([[2, 0], [0, 2]]), np.array([1, 2]), wires=[1]),
+        cv.GaussianState(pnp.array([[2, 0], [0, 2]]), pnp.array([1, 2]), wires=[1]),
         "Gaussian",
         "Gaussian",
     ),

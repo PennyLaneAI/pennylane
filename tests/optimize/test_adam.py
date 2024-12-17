@@ -16,7 +16,7 @@ Unit tests for the ``AdamOptimizer``.
 """
 import pytest
 
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.optimize import AdamOptimizer
 
 
@@ -38,15 +38,15 @@ class TestAdamOptimizer:
         """
         stepsize, gamma, delta, eps = 0.1, 0.5, 0.8, 1e-8
         sgd_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta, eps=eps)
-        grad, args = np.array(grad), np.array(args, requires_grad=True)
+        grad, args = pnp.array(grad), pnp.array(args, requires_grad=True)
 
         a1 = (1 - gamma) * grad
         b1 = (1 - delta) * grad**2
         a1_corrected = a1 / (1 - gamma)
         b1_corrected = b1 / (1 - delta)
-        expected = args - stepsize * a1_corrected / (np.sqrt(b1_corrected) + eps)
+        expected = args - stepsize * a1_corrected / (pnp.sqrt(b1_corrected) + eps)
         res = sgd_opt.apply_grad(grad, args)
-        assert np.allclose(res, expected, atol=tol)
+        assert pnp.allclose(res, expected, atol=tol)
 
         # Simulate a new step
         grad = grad + args
@@ -56,21 +56,21 @@ class TestAdamOptimizer:
         b2 = delta * b1 + (1 - delta) * grad**2
         a2_corrected = a2 / (1 - gamma**2)
         b2_corrected = b2 / (1 - delta**2)
-        expected = args - stepsize * a2_corrected / (np.sqrt(b2_corrected) + eps)
+        expected = args - stepsize * a2_corrected / (pnp.sqrt(b2_corrected) + eps)
         res = sgd_opt.apply_grad(grad, args)
-        assert np.allclose(res, expected, atol=tol)
+        assert pnp.allclose(res, expected, atol=tol)
 
-    @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
+    @pytest.mark.parametrize("x_start", pnp.linspace(-10, 10, 16, endpoint=False))
     def test_adam_optimizer_univar(self, x_start, tol):
         """Tests that adam optimizer takes one and two steps correctly
         for univariate functions."""
         stepsize, gamma, delta = 0.1, 0.5, 0.8
         adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
+        univariate_funcs = [pnp.sin, lambda x: pnp.exp(x / 10.0), lambda x: x**2]
         grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
+            lambda x: (pnp.cos(x),),
+            lambda x: (pnp.exp(x / 10.0) / 10.0,),
             lambda x: (2 * x,),
         ]
 
@@ -78,24 +78,24 @@ class TestAdamOptimizer:
             adam_opt.reset()
 
             x_onestep = adam_opt.step(f, x_start)
-            adapted_stepsize = stepsize * np.sqrt(1 - delta) / (1 - gamma)
+            adapted_stepsize = stepsize * pnp.sqrt(1 - delta) / (1 - gamma)
             firstmoment = (1 - gamma) * gradf(x_start)[0]
             secondmoment = (1 - delta) * gradf(x_start)[0] * gradf(x_start)[0]
             x_onestep_target = x_start - adapted_stepsize * firstmoment / (
-                np.sqrt(secondmoment) + 1e-8
+                pnp.sqrt(secondmoment) + 1e-8
             )
-            assert np.allclose(x_onestep, x_onestep_target, atol=tol)
+            assert pnp.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = adam_opt.step(f, x_onestep)
-            adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
+            adapted_stepsize = stepsize * pnp.sqrt(1 - delta**2) / (1 - gamma**2)
             firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
             secondmoment = (
                 delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
             )
             x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (
-                np.sqrt(secondmoment) + 1e-8
+                pnp.sqrt(secondmoment) + 1e-8
             )
-            assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+            assert pnp.allclose(x_twosteps, x_twosteps_target, atol=tol)
 
     def test_adam_optimizer_multivar(self, tol):
         """Tests that adam optimizer takes one and two steps correctly
@@ -104,24 +104,24 @@ class TestAdamOptimizer:
         adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
 
         multivariate_funcs = [
-            lambda x: np.sin(x[0]) + np.cos(x[1]),
-            lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_**2 for x_ in x]),
+            lambda x: pnp.sin(x[0]) + pnp.cos(x[1]),
+            lambda x: pnp.exp(x[0] / 3) * pnp.tanh(x[1]),
+            lambda x: pnp.sum([x_**2 for x_ in x]),
         ]
         grad_multi_funcs = [
-            lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
+            lambda x: (pnp.array([pnp.cos(x[0]), -pnp.sin(x[1])]),),
             lambda x: (
-                np.array(
+                pnp.array(
                     [
-                        np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
+                        pnp.exp(x[0] / 3) / 3 * pnp.tanh(x[1]),
+                        pnp.exp(x[0] / 3) * (1 - pnp.tanh(x[1]) ** 2),
                     ]
                 ),
             ),
-            lambda x: (np.array([2 * x_ for x_ in x]),),
+            lambda x: (pnp.array([2 * x_ for x_ in x]),),
         ]
 
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = pnp.linspace(-10, 10, 16, endpoint=False)
 
         for gradf, f in zip(grad_multi_funcs, multivariate_funcs):
             for jdx in range(len(x_vals[:-1])):
@@ -129,24 +129,24 @@ class TestAdamOptimizer:
 
                 x_vec = x_vals[jdx : jdx + 2]
                 x_onestep = adam_opt.step(f, x_vec)
-                adapted_stepsize = stepsize * np.sqrt(1 - delta) / (1 - gamma)
+                adapted_stepsize = stepsize * pnp.sqrt(1 - delta) / (1 - gamma)
                 firstmoment = (1 - gamma) * gradf(x_vec)[0]
                 secondmoment = (1 - delta) * gradf(x_vec)[0] * gradf(x_vec)[0]
                 x_onestep_target = x_vec - adapted_stepsize * firstmoment / (
-                    np.sqrt(secondmoment) + 1e-8
+                    pnp.sqrt(secondmoment) + 1e-8
                 )
-                assert np.allclose(x_onestep, x_onestep_target, atol=tol)
+                assert pnp.allclose(x_onestep, x_onestep_target, atol=tol)
 
                 x_twosteps = adam_opt.step(f, x_onestep)
-                adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
+                adapted_stepsize = stepsize * pnp.sqrt(1 - delta**2) / (1 - gamma**2)
                 firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
                 secondmoment = (
                     delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
                 )
                 x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (
-                    np.sqrt(secondmoment) + 1e-8
+                    pnp.sqrt(secondmoment) + 1e-8
                 )
-                assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+                assert pnp.allclose(x_twosteps, x_twosteps_target, atol=tol)
 
     def test_adam_optimizer_properties(self):
         """Test the adam property interfaces"""
@@ -159,7 +159,7 @@ class TestAdamOptimizer:
         assert adam_opt.t is None
 
         # Do some calculations to fill accumulation
-        adam_opt.step(np.sin, np.random.rand(1))
+        adam_opt.step(pnp.sin, pnp.random.rand(1))
 
         # Check the properties return the same values, stored in accumulation
         assert adam_opt.fm == adam_opt.accumulation["fm"]

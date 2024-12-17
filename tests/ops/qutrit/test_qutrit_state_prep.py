@@ -17,14 +17,14 @@ Unit tests for the available qubit state preparation operations.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.wires import WireError
 
 
 def test_QutritBasisState_decomposition():
     """Test the decomposition for QutritBasisState"""
 
-    n = np.array([0, 1, 0])
+    n = pnp.array([0, 1, 0])
     wires = (0, 1, 2)
     ops1 = qml.QutritBasisState.compute_decomposition(n, wires)
     ops2 = qml.QutritBasisState(n, wires=wires).decomposition()
@@ -56,15 +56,15 @@ class TestStateVector:
         assert qml.math.shape(ket) == (3,) * num_wires
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
-        assert np.allclose(np.zeros((3,) * num_wires), ket)
+        assert pnp.allclose(pnp.zeros((3,) * num_wires), ket)
 
     @pytest.mark.parametrize(
         "state",
         [
-            np.array([0, 0]),
-            np.array([1, 0]),
-            np.array([0, 1]),
-            np.array([1, 1]),
+            pnp.array([0, 0]),
+            pnp.array([1, 0]),
+            pnp.array([0, 1]),
+            pnp.array([1, 1]),
         ],
     )
     @pytest.mark.parametrize("device_wires", [3, 4, 5])
@@ -82,7 +82,7 @@ class TestStateVector:
 
         assert basis_state[one_index] == 1
         basis_state[one_index] = 0
-        assert not np.any(basis_state)
+        assert not pnp.any(basis_state)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])

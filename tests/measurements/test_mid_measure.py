@@ -18,7 +18,7 @@ from itertools import product
 import pytest
 
 import pennylane as qml
-import pennylane.numpy as np
+import pennylane.numpy as pnp
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
@@ -95,9 +95,9 @@ class TestMeasurementValueManipulation:
 
         m = MeasurementValue([mp1], lambda v: v)
 
-        sin_of_m = m._apply(np.sin)  # pylint: disable=protected-access
+        sin_of_m = m._apply(pnp.sin)  # pylint: disable=protected-access
         assert sin_of_m[0] == 0.0
-        assert sin_of_m[1] == np.sin(1)
+        assert sin_of_m[1] == pnp.sin(1)
 
     def test_and_with_bool(self):
         """Test the __add__ dunder method between MeasurementValue and scalar."""
@@ -239,8 +239,8 @@ class TestMeasurementValueManipulation:
         assert qml.math.allclose(m_inversion.concretize(values), False)
         values = {mp1: False}
         assert qml.math.allclose(m_inversion.concretize(values), True)
-        values = {mp1: np.random.rand(10) < 0.5}
-        assert all(m_inversion.concretize(values) != np.array(values.values()))
+        values = {mp1: pnp.random.rand(10) < 0.5}
+        assert all(m_inversion.concretize(values) != pnp.array(values.values()))
 
     def test_lt(self):
         """Test the __lt__ dunder method between a MeasurementValue and a float."""
@@ -504,7 +504,7 @@ class TestMeasurementCompositeValueManipulation:
         assert isinstance(boolean_of_measurements, MeasurementValue)
 
     @pytest.mark.parametrize("div", divisions)
-    @pytest.mark.parametrize("other", [MeasurementValue([mp3], lambda v: v) + 5, np.pi])
+    @pytest.mark.parametrize("other", [MeasurementValue([mp3], lambda v: v) + 5, pnp.pi])
     @pytest.mark.parametrize("binary", binary_dunders)
     def test_composition_with_division(self, binary, div, other):
         """Test the composition of dunder methods with division."""

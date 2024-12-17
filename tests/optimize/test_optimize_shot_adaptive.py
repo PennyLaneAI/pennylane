@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 class TestExceptions:
@@ -34,7 +34,7 @@ class TestExceptions:
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        x = np.array(0.5, requires_grad=True)
+        x = pnp.array(0.5, requires_grad=True)
 
         with pytest.raises(ValueError, match="can only be used with devices that"):
             opt.step(expval_cost, x)
@@ -54,14 +54,14 @@ class TestExceptions:
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.0)
 
         # lipschitz constant is given by sum(|coeffs|)
-        lipschitz = np.sum(np.abs(coeffs))
+        lipschitz = pnp.sum(pnp.abs(coeffs))
 
         assert opt.stepsize > 2 / lipschitz
 
         with pytest.raises(
             ValueError, match=f"The learning rate must be less than {2 / lipschitz}"
         ):
-            opt.step(expval_cost, np.array(0.5, requires_grad=True))
+            opt.step(expval_cost, pnp.array(0.5, requires_grad=True))
 
     def test_compute_grad_no_qnode_error(self):
         """Test that an exception is raised if a cost_function is not encoded
@@ -71,7 +71,7 @@ class TestExceptions:
             return None
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
-        x_init = np.array(0.5, requires_grad=True)
+        x_init = pnp.array(0.5, requires_grad=True)
 
         with pytest.raises(
             ValueError, match="The objective function must be encoded as a single QNode object"
@@ -115,11 +115,11 @@ class TestSingleShotGradientIntegration:
         spy_grad = mocker.spy(opt, "compute_grad")
 
         dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
-        x_init = np.array(0.5, requires_grad=True)
+        x_init = pnp.array(0.5, requires_grad=True)
         qnode = qml.QNode(self.cost_fn0, device=dev)
         new_x = opt.step(qnode, x_init)
 
-        assert isinstance(new_x, np.tensor)
+        assert isinstance(new_x, pnp.tensor)
         assert new_x != x_init
 
         spy_grad.assert_called_once()
@@ -137,23 +137,23 @@ class TestSingleShotGradientIntegration:
         )
 
         # reset the shot budget
-        opt.s = [np.array(10)]
+        opt.s = [pnp.array(10)]
 
         # check that the gradient and variance are computed correctly
         grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
         assert len(grad) == 1
         assert len(grad_variance) == 1
-        assert np.allclose(grad, np.mean(single_shot_grads))
-        assert np.allclose(grad_variance, np.var(single_shot_grads, ddof=1))
+        assert pnp.allclose(grad, pnp.mean(single_shot_grads))
+        assert pnp.allclose(grad_variance, pnp.var(single_shot_grads, ddof=1))
 
         # check that the gradient and variance are computed correctly
         # with a different shot budget
-        opt.s = [np.array(5)]
+        opt.s = [pnp.array(5)]
         grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
         assert len(grad) == 1
         assert len(grad_variance) == 1
-        assert np.allclose(grad, np.mean(single_shot_grads[0][:5]))
-        assert np.allclose(grad_variance, np.var(single_shot_grads[0][:5], ddof=1))
+        assert pnp.allclose(grad, pnp.mean(single_shot_grads[0][:5]))
+        assert pnp.allclose(grad_variance, pnp.var(single_shot_grads[0][:5], ddof=1))
 
     @staticmethod
     def cost_fn1(params):
@@ -170,12 +170,12 @@ class TestSingleShotGradientIntegration:
 
         dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
 
-        x_init = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        x_init = pnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
         qnode = qml.QNode(self.cost_fn1, device=dev)
         new_x = opt.step(qnode, x_init)
 
-        assert isinstance(new_x, np.ndarray)
-        assert not np.allclose(new_x, x_init)
+        assert isinstance(new_x, pnp.ndarray)
+        assert not pnp.allclose(new_x, x_init)
 
         spy_single_shot_qnodes.assert_called_once()
         single_shot_grads = opt._single_shot_qnode_gradients(qnode, [x_init], {})
@@ -192,7 +192,7 @@ class TestSingleShotGradientIntegration:
         )
 
         # reset the shot budget
-        opt.s = [10 * np.ones([2, 3], dtype=np.int64)]
+        opt.s = [10 * pnp.ones([2, 3], dtype=pnp.int64)]
 
         # check that the gradient and variance are computed correctly
         grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
@@ -201,8 +201,8 @@ class TestSingleShotGradientIntegration:
         assert grad[0].shape == x_init.shape
         assert grad_variance[0].shape == x_init.shape
 
-        assert np.allclose(grad, np.mean(single_shot_grads, axis=1))
-        assert np.allclose(grad_variance, np.var(single_shot_grads, ddof=1, axis=1))
+        assert pnp.allclose(grad, pnp.mean(single_shot_grads, axis=1))
+        assert pnp.allclose(grad_variance, pnp.var(single_shot_grads, ddof=1, axis=1))
 
         # check that the gradient and variance are computed correctly
         # with a different shot budget
@@ -214,12 +214,12 @@ class TestSingleShotGradientIntegration:
         assert len(grad_variance) == 1
 
         # check zeroth element
-        assert np.allclose(grad[0][0, 0], np.mean(single_shot_grads[0][:8, 0, 0]))
-        assert np.allclose(grad_variance[0][0, 0], np.var(single_shot_grads[0][:8, 0, 0], ddof=1))
+        assert pnp.allclose(grad[0][0, 0], pnp.mean(single_shot_grads[0][:8, 0, 0]))
+        assert pnp.allclose(grad_variance[0][0, 0], pnp.var(single_shot_grads[0][:8, 0, 0], ddof=1))
 
         # check other elements
-        assert np.allclose(grad[0][0, 1], np.mean(single_shot_grads[0][:5, 0, 1]))
-        assert np.allclose(grad_variance[0][0, 1], np.var(single_shot_grads[0][:5, 0, 1], ddof=1))
+        assert pnp.allclose(grad[0][0, 1], pnp.mean(single_shot_grads[0][:5, 0, 1]))
+        assert pnp.allclose(grad_variance[0][0, 1], pnp.var(single_shot_grads[0][:5, 0, 1], ddof=1))
 
     @staticmethod
     def cost_fn2(params):
@@ -236,13 +236,13 @@ class TestSingleShotGradientIntegration:
         spy_grad = mocker.spy(opt, "compute_grad")
 
         shape = qml.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
-        x_init = np.ones(shape) * 0.5
+        x_init = pnp.ones(shape) * 0.5
         dev = qml.device("default.qubit", wires=2, shots=100, seed=seed)
         qnode = qml.QNode(self.cost_fn2, device=dev)
         new_x = opt.step(qnode, x_init)
 
-        assert isinstance(new_x, np.ndarray)
-        assert not np.allclose(new_x, x_init)
+        assert isinstance(new_x, pnp.ndarray)
+        assert not pnp.allclose(new_x, x_init)
 
         spy_single_shot_qnodes.assert_called_once()
         single_shot_grads = opt._single_shot_qnode_gradients(qnode, [x_init], {})
@@ -259,7 +259,7 @@ class TestSingleShotGradientIntegration:
         )
 
         # reset the shot budget
-        opt.s = [10 * np.ones(shape, dtype=np.int64)]
+        opt.s = [10 * pnp.ones(shape, dtype=pnp.int64)]
 
         # check that the gradient and variance are computed correctly
         grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
@@ -268,8 +268,8 @@ class TestSingleShotGradientIntegration:
         assert grad[0].shape == x_init.shape
         assert grad_variance[0].shape == x_init.shape
 
-        assert np.allclose(grad, np.mean(single_shot_grads, axis=1))
-        assert np.allclose(grad_variance, np.var(single_shot_grads, ddof=1, axis=1))
+        assert pnp.allclose(grad, pnp.mean(single_shot_grads, axis=1))
+        assert pnp.allclose(grad_variance, pnp.var(single_shot_grads, ddof=1, axis=1))
 
         # check that the gradient and variance are computed correctly
         # with a different shot budget
@@ -281,15 +281,15 @@ class TestSingleShotGradientIntegration:
         assert len(grad_variance) == 1
 
         # check zeroth element
-        assert np.allclose(grad[0][0, 0, 0], np.mean(single_shot_grads[0][:8, 0, 0, 0]))
-        assert np.allclose(
-            grad_variance[0][0, 0, 0], np.var(single_shot_grads[0][:8, 0, 0, 0], ddof=1)
+        assert pnp.allclose(grad[0][0, 0, 0], pnp.mean(single_shot_grads[0][:8, 0, 0, 0]))
+        assert pnp.allclose(
+            grad_variance[0][0, 0, 0], pnp.var(single_shot_grads[0][:8, 0, 0, 0], ddof=1)
         )
 
         # check other elements
-        assert np.allclose(grad[0][0, 0, 1], np.mean(single_shot_grads[0][:5, 0, 0, 1]))
-        assert np.allclose(
-            grad_variance[0][0, 0, 1], np.var(single_shot_grads[0][:5, 0, 0, 1], ddof=1)
+        assert pnp.allclose(grad[0][0, 0, 1], pnp.mean(single_shot_grads[0][:5, 0, 0, 1]))
+        assert pnp.allclose(
+            grad_variance[0][0, 0, 1], pnp.var(single_shot_grads[0][:5, 0, 0, 1], ddof=1)
         )
 
         # Step twice to ensure that `opt.s` does not get reshaped.
@@ -313,7 +313,7 @@ class TestSingleShotGradientIntegration:
         spy_single_shot = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
-        args = [np.array(0.1, requires_grad=True), np.array(0.2, requires_grad=True)]
+        args = [pnp.array(0.1, requires_grad=True), pnp.array(0.2, requires_grad=True)]
         new_x = opt.step(circuit, *args)
 
         assert isinstance(new_x, list)
@@ -334,25 +334,25 @@ class TestSingleShotGradientIntegration:
         )
 
         # reset the shot budget
-        opt.s = [np.array(10), np.array(10)]
+        opt.s = [pnp.array(10), pnp.array(10)]
 
         # check that the gradient and variance are computed correctly
         grad, grad_variance = opt.compute_grad(circuit, args, {})
         assert len(grad) == 2
         assert len(grad_variance) == 2
-        assert np.allclose(grad, np.mean(single_shot_grads, axis=1))
-        assert np.allclose(grad_variance, np.var(single_shot_grads, ddof=1, axis=1))
+        assert pnp.allclose(grad, pnp.mean(single_shot_grads, axis=1))
+        assert pnp.allclose(grad_variance, pnp.var(single_shot_grads, ddof=1, axis=1))
 
         # check that the gradient and variance are computed correctly
         # with a different shot budget
-        opt.s = [np.array(5), np.array(7)]
+        opt.s = [pnp.array(5), pnp.array(7)]
         grad, grad_variance = opt.compute_grad(circuit, args, {})
         assert len(grad) == 2
         assert len(grad_variance) == 2
 
         for p, s in zip(range(2), opt.s):
-            assert np.allclose(grad[p], np.mean(single_shot_grads[p][:s]))
-            assert np.allclose(grad_variance[p], np.var(single_shot_grads[p][:s], ddof=1))
+            assert pnp.allclose(grad[p], pnp.mean(single_shot_grads[p][:s]))
+            assert pnp.allclose(grad_variance[p], pnp.var(single_shot_grads[p][:s], ddof=1))
 
     def test_multiple_array_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with multiple array arguments correctly performs an optimization step,
@@ -377,7 +377,7 @@ class TestSingleShotGradientIntegration:
         spy_single_shot = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
-        args = [np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), np.array([1.0, 2.0, 3.0])]
+        args = [pnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), pnp.array([1.0, 2.0, 3.0])]
         new_x = opt.step(circuit, *args)
 
         assert isinstance(new_x, list)
@@ -399,7 +399,7 @@ class TestSingleShotGradientIntegration:
         )
 
         # reset the shot budget
-        opt.s = [10 * np.ones([2, 3], dtype=np.int64), 10 * np.ones([3], dtype=np.int64)]
+        opt.s = [10 * pnp.ones([2, 3], dtype=pnp.int64), 10 * pnp.ones([3], dtype=pnp.int64)]
 
         # check that the gradient and variance are computed correctly
         grad, grad_variance = opt.compute_grad(circuit, args, {})
@@ -410,11 +410,11 @@ class TestSingleShotGradientIntegration:
             assert grad[i].shape == args[i].shape
             assert grad_variance[i].shape == args[i].shape
 
-        assert np.allclose(grad[0], np.mean(single_shot_grads[0], axis=0))
-        assert np.allclose(grad_variance[0], np.var(single_shot_grads[0], ddof=1, axis=0))
+        assert pnp.allclose(grad[0], pnp.mean(single_shot_grads[0], axis=0))
+        assert pnp.allclose(grad_variance[0], pnp.var(single_shot_grads[0], ddof=1, axis=0))
 
-        assert np.allclose(grad[1], np.mean(single_shot_grads[1], axis=0))
-        assert np.allclose(grad_variance[1], np.var(single_shot_grads[1], ddof=1, axis=0))
+        assert pnp.allclose(grad[1], pnp.mean(single_shot_grads[1], axis=0))
+        assert pnp.allclose(grad_variance[1], pnp.var(single_shot_grads[1], ddof=1, axis=0))
 
         # check that the gradient and variance are computed correctly
         # with a different shot budget
@@ -429,20 +429,20 @@ class TestSingleShotGradientIntegration:
         assert len(grad_variance) == 2
 
         # check zeroth element of arg 0
-        assert np.allclose(grad[0][0, 0], np.mean(single_shot_grads[0][:8, 0, 0]))
-        assert np.allclose(grad_variance[0][0, 0], np.var(single_shot_grads[0][:8, 0, 0], ddof=1))
+        assert pnp.allclose(grad[0][0, 0], pnp.mean(single_shot_grads[0][:8, 0, 0]))
+        assert pnp.allclose(grad_variance[0][0, 0], pnp.var(single_shot_grads[0][:8, 0, 0], ddof=1))
 
         # check other elements of arg 0
-        assert np.allclose(grad[0][0, 1], np.mean(single_shot_grads[0][:5, 0, 1]))
-        assert np.allclose(grad_variance[0][0, 1], np.var(single_shot_grads[0][:5, 0, 1], ddof=1))
+        assert pnp.allclose(grad[0][0, 1], pnp.mean(single_shot_grads[0][:5, 0, 1]))
+        assert pnp.allclose(grad_variance[0][0, 1], pnp.var(single_shot_grads[0][:5, 0, 1], ddof=1))
 
         # check zeroth element of arg 1
-        assert np.allclose(grad[1][0], np.mean(single_shot_grads[1][:7, 0]))
-        assert np.allclose(grad_variance[1][0], np.var(single_shot_grads[1][:7, 0], ddof=1))
+        assert pnp.allclose(grad[1][0], pnp.mean(single_shot_grads[1][:7, 0]))
+        assert pnp.allclose(grad_variance[1][0], pnp.var(single_shot_grads[1][:7, 0], ddof=1))
 
         # check other elements of arg 1
-        assert np.allclose(grad[1][1], np.mean(single_shot_grads[1][:2, 1]))
-        assert np.allclose(grad_variance[1][1], np.var(single_shot_grads[1][:2, 1], ddof=1))
+        assert pnp.allclose(grad[1][1], pnp.mean(single_shot_grads[1][:2, 1]))
+        assert pnp.allclose(grad_variance[1][1], pnp.var(single_shot_grads[1][:2, 1], ddof=1))
 
 
 class TestQNodeWeightedRandomSampling:
@@ -461,8 +461,8 @@ class TestQNodeWeightedRandomSampling:
             qml.CNOT([0, 1])
             return qml.expval(H)
 
-        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
-        x = np.array(1.1)
+        weights = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        x = pnp.array(1.1)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
         spy = mocker.spy(opt, "qnode_weighted_random_sampling")
@@ -487,8 +487,8 @@ class TestQNodeWeightedRandomSampling:
             qml.CNOT([0, 1])
             return qml.expval(H)
 
-        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
-        x = np.array(1.1)
+        weights = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        x = pnp.array(1.1)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
         spy = mocker.spy(opt, "qnode_weighted_random_sampling")
@@ -515,7 +515,7 @@ class TestQNodeWeightedRandomSampling:
             qml.StronglyEntanglingLayers(weights, wires=range(2))
             return qml.expval(H)
 
-        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        weights = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling=None)
         spy = mocker.spy(opt, "qnode_weighted_random_sampling")
@@ -534,7 +534,7 @@ class TestQNodeWeightedRandomSampling:
             qml.StronglyEntanglingLayers(weights, wires=range(2))
             return qml.expval(H)
 
-        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        weights = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="uniform_random_sampling")
 
@@ -553,12 +553,12 @@ class TestQNodeWeightedRandomSampling:
             qml.StronglyEntanglingLayers(weights, wires=range(2))
             return qml.expval(H)
 
-        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        weights = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy = mocker.spy(qml, "jacobian")
         mocker.patch(
-            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]])
+            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=pnp.array([[4, 0, 6]])
         )
         grads = opt.qnode_weighted_random_sampling(circuit, coeffs, H.ops, 10, [0], weights)
 
@@ -578,13 +578,13 @@ class TestQNodeWeightedRandomSampling:
             qml.StronglyEntanglingLayers(weights, wires=range(2))
             return qml.expval(H)
 
-        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        weights = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
         spy = mocker.spy(qml, "jacobian")
         mocker.patch(
-            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
+            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=pnp.array([[4, 1, 5]])
         )
         grads = opt.qnode_weighted_random_sampling(circuit, coeffs, H.ops, 10, [0], weights)
 
@@ -610,7 +610,7 @@ class TestOptimization:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
 
-        params = np.array([0.1, 0.3, 0.4], requires_grad=True)
+        params = pnp.array([0.1, 0.3, 0.4], requires_grad=True)
         initial_loss = circuit(params)
 
         min_shots = 10
@@ -622,7 +622,7 @@ class TestOptimization:
             loss = circuit(params)
 
         assert loss < initial_loss
-        assert np.allclose(circuit(params), -1, atol=0.1, rtol=0.2)
+        assert pnp.allclose(circuit(params), -1, atol=0.1, rtol=0.2)
         assert opt.shots_used > min_shots
 
     @pytest.mark.slow
@@ -646,7 +646,7 @@ class TestOptimization:
             ansatz(params)
             return qml.expval(H)
 
-        rng = np.random.default_rng(seed)
+        rng = pnp.random.default_rng(seed)
         params = rng.random((4, 3), requires_grad=True)
         initial_loss = cost(params)
 
@@ -659,7 +659,7 @@ class TestOptimization:
             loss = cost(params)
 
         assert loss < initial_loss
-        assert np.allclose(loss, -1 / (2 * np.sqrt(5)), atol=0.1, rtol=0.2)
+        assert pnp.allclose(loss, -1 / (2 * pnp.sqrt(5)), atol=0.1, rtol=0.2)
         assert opt.shots_used > min_shots
 
 
@@ -680,11 +680,11 @@ class TestStepAndCost:
             qml.RY(x[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        params = np.array([0.1, 0.3], requires_grad=True)
+        params = pnp.array([0.1, 0.3], requires_grad=True)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
         for _ in range(100):
             params, res = opt.step_and_cost(circuit, params)
 
-        assert np.allclose(res, -1, atol=tol, rtol=0)
+        assert pnp.allclose(res, -1, atol=tol, rtol=0)

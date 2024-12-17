@@ -24,7 +24,7 @@ from gate_data import CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import numpy as npp
+from pennylane import numpy as pnp
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.wires import Wires
@@ -1764,7 +1764,7 @@ class TestGrad:
 
     for phi in phis:
         for device, method in device_methods:
-            configuration.append([device, method, npp.array(phi, requires_grad=True)])
+            configuration.append([device, method, pnp.array(phi, requires_grad=True)])
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
@@ -1782,7 +1782,7 @@ class TestGrad:
         psi_2 = 0.3
         psi_3 = 0.4
 
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        init_state = pnp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
@@ -1923,7 +1923,7 @@ class TestGrad:
         psi_2 = 0.3
         psi_3 = 0.4
 
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        init_state = pnp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
@@ -1959,7 +1959,7 @@ class TestGrad:
         psi_2 = 0.3
         psi_3 = 0.4
 
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        init_state = pnp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
@@ -1995,7 +1995,7 @@ class TestGrad:
         psi_2 = 0.3
         psi_3 = 0.4
 
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        init_state = pnp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
@@ -2005,7 +2005,7 @@ class TestGrad:
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        phi = npp.array(phi, requires_grad=True)
+        phi = pnp.array(phi, requires_grad=True)
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
@@ -2023,7 +2023,7 @@ class TestGrad:
         psi_2 = 0.3
         psi_3 = 0.4
 
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        init_state = pnp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
@@ -2033,7 +2033,7 @@ class TestGrad:
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = npp.array(phi, requires_grad=True)
+        phi = pnp.array(phi, requires_grad=True)
 
         expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
 
@@ -2057,7 +2057,7 @@ class TestGrad:
             qml.Hadamard(wires[1])
             return qml.expval(qml.PauliZ(wires[1]))
 
-        phi = npp.array(2.1, requires_grad=True)
+        phi = pnp.array(2.1, requires_grad=True)
 
         expected = [-0.8632093]
 
@@ -2438,7 +2438,7 @@ class TestGrad:
             pytest.skip("PCPhase does not support adjoint diff")
 
         dev = qml.device(dev_name, wires=[0, 1])
-        expected_grad = -4 * npp.cos(phi) * npp.sin(phi)  # computed by hand
+        expected_grad = -4 * pnp.cos(phi) * pnp.sin(phi)  # computed by hand
 
         @qml.qnode(dev, diff_method=diff_method)
         def circ(phi):
@@ -2451,7 +2451,7 @@ class TestGrad:
             qml.Hadamard(wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
-        phi = npp.array(phi, requires_grad=True)
+        phi = pnp.array(phi, requires_grad=True)
         computed_grad = qml.grad(circ)(phi)
         assert np.isclose(computed_grad, expected_grad)
 
@@ -2465,7 +2465,7 @@ class TestGrad:
         import tensorflow as tf
 
         dev = qml.device(dev_name, wires=[0, 1])
-        expected_grad = tf.Variable(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
+        expected_grad = tf.Variable(-4 * pnp.cos(phi) * pnp.sin(phi))  # computed by hand
         phi = tf.Variable(phi)
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -2495,7 +2495,7 @@ class TestGrad:
         import torch
 
         dev = qml.device(dev_name, wires=[0, 1])
-        expected_grad = torch.tensor(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
+        expected_grad = torch.tensor(-4 * pnp.cos(phi) * pnp.sin(phi))  # computed by hand
         phi = torch.tensor(phi, requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -2524,7 +2524,7 @@ class TestGrad:
         import jax.numpy as jnp
 
         dev = qml.device(dev_name, wires=[0, 1])
-        expected_grad = jnp.array(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
+        expected_grad = jnp.array(-4 * pnp.cos(phi) * pnp.sin(phi))  # computed by hand
         phi = jnp.array(phi)
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -2898,7 +2898,7 @@ class TestPauliRot:
         assert decomp_ops[4].wires == Wires([2])
         assert decomp_ops[4].data[0] == -np.pi / 2
 
-    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.parametrize("angle", pnp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
@@ -2928,7 +2928,7 @@ class TestPauliRot:
             qml.PauliRot(theta, pauli_word, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        angle = npp.linspace(0, 2 * np.pi, 7, requires_grad=True)
+        angle = pnp.linspace(0, 2 * np.pi, 7, requires_grad=True)
         jac = qml.jacobian(circuit)(angle)
 
         assert np.allclose(
@@ -2937,7 +2937,7 @@ class TestPauliRot:
             atol=tol,
         )
 
-    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.parametrize("angle", pnp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_decomposition_integration(self, angle):
         """Test that the decompositon of PauliRot yields the same results."""
 
@@ -3169,7 +3169,7 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
-    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.parametrize("angle", pnp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
 
@@ -3201,14 +3201,14 @@ class TestMultiRZ:
 
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
-        angle = npp.linspace(0, 2 * np.pi, 7, requires_grad=True)
+        angle = pnp.linspace(0, 2 * np.pi, 7, requires_grad=True)
         jac = qml.jacobian(circuit)(angle)
 
         assert np.allclose(
             jac, 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), atol=tol
         )
 
-    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.parametrize("angle", pnp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_decomposition_integration(self, angle):
         """Test that the decompositon of MultiRZ yields the same results."""
         angle = qml.numpy.array(angle)
@@ -3310,11 +3310,11 @@ class TestSimplify:
     def get_unsimplified_op(op_class):
         # construct the parameters of the op
         if op_class.num_params == 1:
-            params = npp.array([[-50.0, 3.0, 50.0]])
+            params = pnp.array([[-50.0, 3.0, 50.0]])
         elif op_class.num_params == 2:
-            params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0]])
+            params = pnp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0]])
         else:
-            params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0], [50.0, -50.0, 3.0]])
+            params = pnp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0], [50.0, -50.0, 3.0]])
 
         # construct the wires
         if op_class.num_wires == 1:

@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.qubit import create_initial_state
 from pennylane.operation import StatePrepBase
 
@@ -64,26 +64,26 @@ class TestInitializeState:
         state = create_initial_state([0, 1, 2], prep_operation=prep_op)
         assert state[0, 1, 0] == 1
         state[0, 1, 0] = 0  # set to zero to make test below simple
-        assert qml.math.allequal(state, np.zeros((2, 2, 2)))
+        assert qml.math.allequal(state, pnp.zeros((2, 2, 2)))
 
     @pytest.mark.parametrize("prep_op_cls", [qml.StatePrep, qml.AmplitudeEmbedding])
     def test_create_initial_state_with_StatePrep(self, prep_op_cls):
         """Tests that create_initial_state works with the StatePrep operator."""
-        prep_op = prep_op_cls(np.array([0, 1, 0, 0, 0, 0, 0, 1]) / np.sqrt(2), wires=[0, 1, 2])
+        prep_op = prep_op_cls(pnp.array([0, 1, 0, 0, 0, 0, 0, 1]) / pnp.sqrt(2), wires=[0, 1, 2])
         state = create_initial_state([0, 1, 2], prep_operation=prep_op)
-        expected = np.zeros((2, 2, 2))
-        expected[0, 0, 1] = expected[1, 1, 1] = 1 / np.sqrt(2)
-        assert np.array_equal(state, expected)
+        expected = pnp.zeros((2, 2, 2))
+        expected[0, 0, 1] = expected[1, 1, 1] = 1 / pnp.sqrt(2)
+        assert pnp.array_equal(state, expected)
 
     @pytest.mark.parametrize("prep_op_cls", [qml.StatePrep, qml.AmplitudeEmbedding])
     def test_create_initial_state_with_StatePrep_broadcasted(self, prep_op_cls):
         """Tests that create_initial_state works with a broadcasted StatePrep
         operator."""
-        prep_op = prep_op_cls(np.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1])
+        prep_op = prep_op_cls(pnp.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1])
         state = create_initial_state([0, 1], prep_operation=prep_op)
-        expected = np.zeros((3, 2, 2))
+        expected = pnp.zeros((3, 2, 2))
         expected[0, 0, 1] = expected[1, 1, 1] = expected[2, 1, 0] = 1
-        assert np.array_equal(state, expected)
+        assert pnp.array_equal(state, expected)
 
     @pytest.mark.torch
     def test_create_initial_state_casts_to_like_with_prep_op(self):
@@ -113,4 +113,4 @@ class TestInitializeState:
         """Tests that the default interface is vanilla numpy."""
         state = qml.devices.qubit.create_initial_state((0, 1))
         assert qml.math.get_interface(state) == "numpy"
-        assert state.dtype == np.complex128
+        assert state.dtype == pnp.complex128

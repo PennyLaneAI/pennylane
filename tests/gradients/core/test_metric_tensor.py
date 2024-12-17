@@ -22,7 +22,7 @@ import pytest
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.gradients.metric_tensor import _get_aux_wire
 
 
@@ -36,7 +36,7 @@ class TestMetricTensor:
 
     def test_rot_decomposition(self):
         """Test that the rotation gate is correctly decomposed"""
-        params = np.array([1.0, 2.0, 3.0], requires_grad=True)
+        params = pnp.array([1.0, 2.0, 3.0], requires_grad=True)
 
         with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.Rot(params[0], params[1], params[2], wires=0)
@@ -74,7 +74,7 @@ class TestMetricTensor:
             qml.MultiRZ(b, wires=[0, 1, 2])
             return qml.expval(qml.PauliX(0))
 
-        params = np.array([0.1, 0.2], requires_grad=True)
+        params = pnp.array([0.1, 0.2], requires_grad=True)
         result = qml.metric_tensor(circuit, approx="block-diag")(*params)
         assert isinstance(result, tuple) and len(result) == 2
         assert qml.math.shape(result[0]) == ()
@@ -83,10 +83,10 @@ class TestMetricTensor:
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
         with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(np.array(1.0, requires_grad=True), wires=0)
-            qml.RY(np.array(1.0, requires_grad=True), wires=0)
+            qml.RX(pnp.array(1.0, requires_grad=True), wires=0)
+            qml.RY(pnp.array(1.0, requires_grad=True), wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(np.array(1.0, requires_grad=True), wires=1)
+            qml.PhaseShift(pnp.array(1.0, requires_grad=True), wires=1)
             qml.expval(qml.PauliX(0))
             qml.expval(qml.PauliX(1))
 
@@ -114,7 +114,7 @@ class TestMetricTensor:
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed
         when a layer structure exists"""
-        params = np.ones([8])
+        params = pnp.ones([8])
 
         with qml.queuing.AnnotatedQueue() as q:
             # section 1
@@ -197,7 +197,7 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev)
 
-        abc = np.array([0.432, 0.12, -0.432], requires_grad=True)
+        abc = pnp.array([0.432, 0.12, -0.432], requires_grad=True)
         a, b, _ = abc
 
         # evaluate metric tensor
@@ -206,13 +206,13 @@ class TestMetricTensor:
 
         # check that the metric tensor is correct
         expected = (
-            np.array(
-                [1, np.cos(a) ** 2, (3 - 2 * np.cos(a) ** 2 * np.cos(2 * b) - np.cos(2 * a)) / 4]
+            pnp.array(
+                [1, pnp.cos(a) ** 2, (3 - 2 * pnp.cos(a) ** 2 * pnp.cos(2 * b) - pnp.cos(2 * a)) / 4]
             )
             / 4
         )
-        assert qml.math.allclose(g_diag, np.diag(expected), atol=tol, rtol=0)
-        assert qml.math.allclose(g_blockdiag, np.diag(expected), atol=tol, rtol=0)
+        assert qml.math.allclose(g_diag, pnp.diag(expected), atol=tol, rtol=0)
+        assert qml.math.allclose(g_blockdiag, pnp.diag(expected), atol=tol, rtol=0)
 
     def test_template_integration(self):
         """Test that the metric tensor transform acts on QNodes
@@ -224,7 +224,7 @@ class TestMetricTensor:
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qml.probs(wires=[0, 1])
 
-        weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
+        weights = pnp.ones([2, 3, 3], dtype=pnp.float64, requires_grad=True)
         res = qml.metric_tensor(circuit, approx="block-diag")(weights)
         assert res.shape == (2, 3, 3, 2, 3, 3)
 
@@ -246,8 +246,8 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev)
 
-        a = np.array([0.432, 0.1], requires_grad=True)
-        b = np.array(0.12, requires_grad=True)
+        a = pnp.array([0.432, 0.1], requires_grad=True)
+        b = pnp.array(0.12, requires_grad=True)
 
         # evaluate metric tensor
         g = qml.metric_tensor(circuit, approx="block-diag")(a, b)
@@ -257,10 +257,10 @@ class TestMetricTensor:
         assert g[1].shape == tuple()
 
         # check that the metric tensor is correct
-        expected = np.array([np.cos(a[1]) ** 2, 1]) / 4
-        assert qml.math.allclose(g[0], np.diag(expected), atol=tol, rtol=0)
+        expected = pnp.array([pnp.cos(a[1]) ** 2, 1]) / 4
+        assert qml.math.allclose(g[0], pnp.diag(expected), atol=tol, rtol=0)
 
-        expected = (3 - 2 * np.cos(a[1]) ** 2 * np.cos(2 * a[0]) - np.cos(2 * a[1])) / 16
+        expected = (3 - 2 * pnp.cos(a[1]) ** 2 * pnp.cos(2 * a[0]) - pnp.cos(2 * a[1])) / 16
         assert qml.math.allclose(g[1], expected, atol=tol, rtol=0)
 
     @pytest.fixture(params=["parameter-shift", "backprop"])
@@ -307,7 +307,7 @@ class TestMetricTensor:
         computation."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
 
-        params = np.array(
+        params = pnp.array(
             [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
             requires_grad=True,
         )
@@ -323,30 +323,30 @@ class TestMetricTensor:
         #   qml.RY(y, wires=1)
         #   qml.RZ(z, wires=2)
 
-        G1 = np.zeros([3, 3])
+        G1 = pnp.zeros([3, 3])
 
         # diag elements
-        G1[0, 0] = np.sin(a) ** 2 / 4
+        G1[0, 0] = pnp.sin(a) ** 2 / 4
         G1[1, 1] = (
-            16 * np.cos(a) ** 2 * np.sin(b) ** 3 * np.cos(b) * np.sin(2 * c)
-            + np.cos(2 * b) * (2 - 8 * np.cos(a) ** 2 * np.sin(b) ** 2 * np.cos(2 * c))
-            + np.cos(2 * (a - b))
-            + np.cos(2 * (a + b))
-            - 2 * np.cos(2 * a)
+            16 * pnp.cos(a) ** 2 * pnp.sin(b) ** 3 * pnp.cos(b) * pnp.sin(2 * c)
+            + pnp.cos(2 * b) * (2 - 8 * pnp.cos(a) ** 2 * pnp.sin(b) ** 2 * pnp.cos(2 * c))
+            + pnp.cos(2 * (a - b))
+            + pnp.cos(2 * (a + b))
+            - 2 * pnp.cos(2 * a)
             + 14
         ) / 64
-        G1[2, 2] = (3 - np.cos(2 * a) - 2 * np.cos(a) ** 2 * np.cos(2 * (b + c))) / 16
+        G1[2, 2] = (3 - pnp.cos(2 * a) - 2 * pnp.cos(a) ** 2 * pnp.cos(2 * (b + c))) / 16
 
         # off diag elements
-        G1[0, 1] = G1[1, 0] = np.sin(a) ** 2 * np.sin(b) * np.cos(b + c) / 4
-        G1[0, 2] = G1[2, 0] = np.sin(a) ** 2 * np.cos(b + c) / 4
+        G1[0, 1] = G1[1, 0] = pnp.sin(a) ** 2 * pnp.sin(b) * pnp.cos(b + c) / 4
+        G1[0, 2] = G1[2, 0] = pnp.sin(a) ** 2 * pnp.cos(b + c) / 4
         G1[1, 2] = G1[2, 1] = (
-            -np.sin(b)
+            -pnp.sin(b)
             * (
-                np.cos(2 * (a - b - c))
-                + np.cos(2 * (a + b + c))
-                + 2 * np.cos(2 * a)
-                + 2 * np.cos(2 * (b + c))
+                pnp.cos(2 * (a - b - c))
+                + pnp.cos(2 * (a + b + c))
+                + 2 * pnp.cos(2 * a)
+                + 2 * pnp.cos(2 * (b + c))
                 - 6
             )
             / 32
@@ -396,7 +396,7 @@ class TestMetricTensor:
 
         # calculate the diagonal terms
         varK0, varK1 = layer2_diag(params)
-        G2 = np.diag([varK0 / 4, varK1 / 4])
+        G2 = pnp.diag([varK0 / 4, varK1 / 4])
 
         # calculate the off-diagonal terms
         exK0, exK1 = layer2_off_diag_first_order(params)
@@ -444,7 +444,7 @@ class TestMetricTensor:
         """Test that a metric tensor under the diagonal approximation evaluates
         correctly."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
-        params = np.array(
+        params = pnp.array(
             [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
             requires_grad=True,
         )
@@ -460,19 +460,19 @@ class TestMetricTensor:
         #   qml.RY(y, wires=1)
         #   qml.RZ(z, wires=2)
 
-        G1 = np.zeros([3, 3])
+        G1 = pnp.zeros([3, 3])
 
         # diag elements
-        G1[0, 0] = np.sin(a) ** 2 / 4
+        G1[0, 0] = pnp.sin(a) ** 2 / 4
         G1[1, 1] = (
-            16 * np.cos(a) ** 2 * np.sin(b) ** 3 * np.cos(b) * np.sin(2 * c)
-            + np.cos(2 * b) * (2 - 8 * np.cos(a) ** 2 * np.sin(b) ** 2 * np.cos(2 * c))
-            + np.cos(2 * (a - b))
-            + np.cos(2 * (a + b))
-            - 2 * np.cos(2 * a)
+            16 * pnp.cos(a) ** 2 * pnp.sin(b) ** 3 * pnp.cos(b) * pnp.sin(2 * c)
+            + pnp.cos(2 * b) * (2 - 8 * pnp.cos(a) ** 2 * pnp.sin(b) ** 2 * pnp.cos(2 * c))
+            + pnp.cos(2 * (a - b))
+            + pnp.cos(2 * (a + b))
+            - 2 * pnp.cos(2 * a)
             + 14
         ) / 64
-        G1[2, 2] = (3 - np.cos(2 * a) - 2 * np.cos(a) ** 2 * np.cos(2 * (b + c))) / 16
+        G1[2, 2] = (3 - pnp.cos(2 * a) - 2 * pnp.cos(a) ** 2 * pnp.cos(2 * (b + c))) / 16
 
         assert qml.math.allclose(G[:3, :3], G1, atol=tol, rtol=0)
 
@@ -486,7 +486,7 @@ class TestMetricTensor:
         # Observables are the generators of:
         #   qml.RY(f, wires=1)
         #   qml.RZ(g, wires=2)
-        G2 = np.zeros([2, 2])
+        G2 = pnp.zeros([2, 2])
 
         def layer2_diag(params):
             x, y, z, *_ = params
@@ -628,7 +628,7 @@ class TestMetricTensor:
             qml.RZ(weights[2], wires=1)
             qml.RZ(weights[3], wires=0)
 
-        weights = np.array([0.1, 0.2, 0.3, 0.5], requires_grad=True)
+        weights = pnp.array([0.1, 0.2, 0.3, 0.5], requires_grad=True)
 
         with qml.tape.QuantumTape() as tape:
             circuit(weights)
@@ -893,7 +893,7 @@ fubini_ansatze = [
     fubini_ansatz8,
 ]
 
-B = np.array(
+B = pnp.array(
     [
         [
             [0.73, 0.49, 0.04],
@@ -909,18 +909,18 @@ B = np.array(
     requires_grad=True,
 )
 fubini_params = [
-    (np.array([0.3434, -0.7245345], requires_grad=True),),
+    (pnp.array([0.3434, -0.7245345], requires_grad=True),),
     (B,),
-    (np.array([-0.1111, -0.2222], requires_grad=True),),
-    (np.array([-0.1111, -0.2222, 0.4554], requires_grad=True),),
+    (pnp.array([-0.1111, -0.2222], requires_grad=True),),
+    (pnp.array([-0.1111, -0.2222, 0.4554], requires_grad=True),),
     (
-        np.array(-0.1735, requires_grad=True),
-        np.array([-0.1735, -0.2846, -0.2846], requires_grad=True),
+        pnp.array(-0.1735, requires_grad=True),
+        pnp.array([-0.1735, -0.2846, -0.2846], requires_grad=True),
     ),
-    (np.array([-0.1735, -0.2846], requires_grad=True),),
-    (np.array([-0.1735, -0.2846], requires_grad=True),),
-    (np.array(-0.1735, requires_grad=True),),
-    (np.array([-0.1111, 0.3333], requires_grad=True),),
+    (pnp.array([-0.1735, -0.2846], requires_grad=True),),
+    (pnp.array([-0.1735, -0.2846], requires_grad=True),),
+    (pnp.array(-0.1735, requires_grad=True),),
+    (pnp.array([-0.1111, 0.3333], requires_grad=True),),
 ]
 
 
@@ -938,10 +938,10 @@ def autodiff_metric_tensor(ansatz, num_wires):
         state = qnode(*params)
 
         def rqnode(*params):
-            return np.real(qnode(*params))
+            return pnp.real(qnode(*params))
 
         def iqnode(*params):
-            return np.imag(qnode(*params))
+            return pnp.imag(qnode(*params))
 
         rjac = qml.jacobian(rqnode)(*params)
         ijac = qml.jacobian(iqnode)(*params)
@@ -950,20 +950,20 @@ def autodiff_metric_tensor(ansatz, num_wires):
             out = []
             for rc, ic in zip(rjac, ijac):
                 c = rc + 1j * ic
-                psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
+                psidpsi = pnp.tensordot(pnp.conj(state), c, axes=([0], [0]))
                 out.append(
-                    np.real(
-                        np.tensordot(np.conj(c), c, axes=([0], [0]))
-                        - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+                    pnp.real(
+                        pnp.tensordot(pnp.conj(c), c, axes=([0], [0]))
+                        - pnp.tensordot(pnp.conj(psidpsi), psidpsi, axes=0)
                     )
                 )
             return tuple(out)
 
         jac = rjac + 1j * ijac
-        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
-        return np.real(
-            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
-            - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+        psidpsi = pnp.tensordot(pnp.conj(state), jac, axes=([0], [0]))
+        return pnp.real(
+            pnp.tensordot(pnp.conj(jac), jac, axes=([0], [0]))
+            - pnp.tensordot(pnp.conj(psidpsi), psidpsi, axes=0)
         )
 
     return mt
@@ -1118,13 +1118,13 @@ def diffability_ansatz_0(weights, wires=None):
 
 
 def expected_diag_jac_0(weights):
-    return np.array(
+    return pnp.array(
         [
             [0, 0, 0],
             [0, 0, 0],
             [
-                np.cos(weights[0] + weights[1]) * np.sin(weights[0] + weights[1]) / 2,
-                np.cos(weights[0] + weights[1]) * np.sin(weights[0] + weights[1]) / 2,
+                pnp.cos(weights[0] + weights[1]) * pnp.sin(weights[0] + weights[1]) / 2,
+                pnp.cos(weights[0] + weights[1]) * pnp.sin(weights[0] + weights[1]) / 2,
                 0,
             ],
         ]
@@ -1140,13 +1140,13 @@ def diffability_ansatz_1(weights, wires=None):
 
 
 def expected_diag_jac_1(weights):
-    return np.array(
+    return pnp.array(
         [
             [0, 0, 0],
-            [-np.sin(2 * weights[0]) / 4, 0, 0],
+            [-pnp.sin(2 * weights[0]) / 4, 0, 0],
             [
-                np.cos(weights[0]) * np.cos(weights[1]) ** 2 * np.sin(weights[0]) / 2,
-                np.cos(weights[0]) ** 2 * np.sin(2 * weights[1]) / 4,
+                pnp.cos(weights[0]) * pnp.cos(weights[1]) ** 2 * pnp.sin(weights[0]) / 2,
+                pnp.cos(weights[0]) ** 2 * pnp.sin(2 * weights[1]) / 4,
                 0,
             ],
         ]
@@ -1162,20 +1162,20 @@ def diffability_ansatz_2(weights, wires=None):
 
 
 def expected_diag_jac_2(weights):
-    return np.array(
+    return pnp.array(
         [
             [0, 0, 0],
             [0, 0, 0],
             [
-                np.cos(weights[1]) ** 2 * np.sin(2 * weights[0]) / 4,
-                np.cos(weights[0]) ** 2 * np.sin(2 * weights[1]) / 4,
+                pnp.cos(weights[1]) ** 2 * pnp.sin(2 * weights[0]) / 4,
+                pnp.cos(weights[0]) ** 2 * pnp.sin(2 * weights[1]) / 4,
                 0,
             ],
         ]
     )
 
 
-weights_diff = np.array([0.432, 0.12, -0.292], requires_grad=True)
+weights_diff = pnp.array([0.432, 0.12, -0.292], requires_grad=True)
 
 
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
@@ -1331,10 +1331,10 @@ class TestDifferentiability:
         qnode = qml.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
 
         def cost_full(*weights):
-            return np.array(qml.metric_tensor(qnode, approx=None)(*weights))
+            return pnp.array(qml.metric_tensor(qnode, approx=None)(*weights))
 
         def _cost_full(*weights):
-            return np.array(autodiff_metric_tensor(ansatz, 3)(*weights))
+            return pnp.array(autodiff_metric_tensor(ansatz, 3)(*weights))
 
         _c = _cost_full(*weights)
         c = cost_full(*weights)
@@ -1419,7 +1419,7 @@ class TestDifferentiability:
 def test_invalid_value_for_approx(approx):
     """Test exception is raised if ``approx`` is invalid."""
     with qml.queuing.AnnotatedQueue() as q:
-        qml.RX(np.array(0.5, requires_grad=True), wires=0)
+        qml.RX(pnp.array(0.5, requires_grad=True), wires=0)
         qml.expval(qml.PauliX(0))
 
     tape = qml.tape.QuantumScript.from_queue(q)
@@ -1434,7 +1434,7 @@ def test_generator_no_expval(monkeypatch):
         m.setattr("pennylane.RX.generator", lambda self: qml.RX(0.1, wires=0))
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(np.array(0.5, requires_grad=True), wires=0)
+            qml.RX(pnp.array(0.5, requires_grad=True), wires=0)
             qml.expval(qml.PauliX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -1456,8 +1456,8 @@ def test_error_missing_aux_wire():
         qml.RZ(z, wires="wire2")
         return qml.expval(qml.PauliZ("wire2"))
 
-    x = np.array(0.5, requires_grad=True)
-    z = np.array(0.1, requires_grad=True)
+    x = pnp.array(0.5, requires_grad=True)
+    z = pnp.array(0.1, requires_grad=True)
 
     with pytest.raises(
         qml.wires.WireError, match="The device has no free wire for the auxiliary wire."
@@ -1469,7 +1469,7 @@ def test_error_not_available_aux_wire():
     """Tests that a special error is raised if aux wires is not available."""
 
     dev = qml.device("default.qubit", wires=1)
-    x = np.array(0.5, requires_grad=True)
+    x = pnp.array(0.5, requires_grad=True)
 
     @qml.qnode(dev)
     def circuit(x):
@@ -1489,8 +1489,8 @@ def test_error_generator_not_registered(allow_nonunitary):
     controlled-generator operation registered."""
     dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "wire3"]))
 
-    x = np.array(0.5, requires_grad=True)
-    z = np.array(0.1, requires_grad=True)
+    x = pnp.array(0.5, requires_grad=True)
+    z = pnp.array(0.1, requires_grad=True)
 
     class RX(qml.RX):
         def generator(self):
@@ -1536,8 +1536,8 @@ def test_no_error_missing_aux_wire_not_used():
         qml.RZ(z, wires="wire2")
         return qml.expval(qml.PauliZ("wire2"))
 
-    x = np.array(0.5, requires_grad=True)
-    z = np.array(0.1, requires_grad=True)
+    x = pnp.array(0.5, requires_grad=True)
+    z = pnp.array(0.1, requires_grad=True)
 
     qml.metric_tensor(circuit_single_block, approx=None)(x, z)
     qml.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
@@ -1559,7 +1559,7 @@ def test_raises_circuit_that_uses_missing_wire():
         qml.RX(x[1], 0)
         return qml.expval(qml.PauliZ(0))
 
-    x = np.array([1.3, 0.2])
+    x = pnp.array([1.3, 0.2])
     with pytest.raises(qml.wires.WireError, match=r"contain wires not found on the device: \{1\}"):
         qml.metric_tensor(circuit)(x)
 
@@ -1578,7 +1578,7 @@ def aux_wire_ansatz_1(x, y):
 @pytest.mark.parametrize("ansatz", [aux_wire_ansatz_0, aux_wire_ansatz_1])
 def test_get_aux_wire(aux_wire, ansatz):
     """Test ``_get_aux_wire`` without device_wires."""
-    x, y = np.array([0.2, 0.1], requires_grad=True)
+    x, y = pnp.array([0.2, 0.1], requires_grad=True)
     with qml.queuing.AnnotatedQueue() as q:
         ansatz(x, y)
     tape = qml.tape.QuantumScript.from_queue(q)
@@ -1592,7 +1592,7 @@ def test_get_aux_wire(aux_wire, ansatz):
 
 def test_get_aux_wire_with_device_wires():
     """Test ``_get_aux_wire`` with device_wires."""
-    x, y = np.array([0.2, 0.1], requires_grad=True)
+    x, y = pnp.array([0.2, 0.1], requires_grad=True)
     with qml.queuing.AnnotatedQueue() as q:
         qml.RX(x, wires=0)
         qml.RX(y, wires="one")
@@ -1611,7 +1611,7 @@ def test_get_aux_wire_with_device_wires():
 
 def test_get_aux_wire_with_unavailable_aux():
     """Test ``_get_aux_wire`` with device_wires and a requested ``aux_wire`` that is missing."""
-    x, y = np.array([0.2, 0.1], requires_grad=True)
+    x, y = pnp.array([0.2, 0.1], requires_grad=True)
     with qml.queuing.AnnotatedQueue() as q:
         qml.RX(x, wires=0)
         qml.RX(y, wires="one")

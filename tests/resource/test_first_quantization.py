@@ -19,7 +19,7 @@ for quantum algorithms in first quantization using a plane-wave basis.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 @pytest.mark.parametrize(
@@ -32,12 +32,12 @@ def test_fq_params(n, eta, omega, error, charge, br):
     r"""Test that the FirstQuantization class initiates correct parameters."""
     est = qml.resource.FirstQuantization(n, eta, omega)
 
-    assert np.allclose(est.n, n)
-    assert np.allclose(est.eta, eta)
-    assert np.allclose(est.omega, omega)
-    assert np.allclose(est.error, error)
-    assert np.allclose(est.charge, charge)
-    assert np.allclose(est.br, br)
+    assert pnp.allclose(est.n, n)
+    assert pnp.allclose(est.eta, eta)
+    assert pnp.allclose(est.omega, omega)
+    assert pnp.allclose(est.error, error)
+    assert pnp.allclose(est.charge, charge)
+    assert pnp.allclose(est.br, br)
 
 
 @pytest.mark.parametrize(
@@ -50,9 +50,9 @@ def test_fq_vals(n, eta, omega, lamb, g_cost, q_cost):
     r"""Test that the FirstQuantization class computes correct attributes."""
     est = qml.resource.FirstQuantization(n, eta, omega)
 
-    assert np.allclose(est.lamb, lamb)
-    assert np.allclose(est.gates, g_cost)
-    assert np.allclose(est.qubits, q_cost)
+    assert pnp.allclose(est.lamb, lamb)
+    assert pnp.allclose(est.gates, g_cost)
+    assert pnp.allclose(est.qubits, q_cost)
 
 
 @pytest.mark.parametrize(
@@ -246,7 +246,7 @@ def test_norm(n, eta, omega, error, br, charge, norm_ref):
     r"""Test that norm returns the correct value."""
     norm = qml.resource.FirstQuantization.norm(n, eta, omega, error, br, charge)
 
-    assert np.allclose(norm, norm_ref)
+    assert pnp.allclose(norm, norm_ref)
 
 
 @pytest.mark.parametrize(
@@ -275,7 +275,7 @@ def test_norm_error(n, eta, omega, error, br, charge):
             100000,
             156,
             None,
-            np.array(
+            pnp.array(
                 [
                     [9.44862994, 0.0, 0.0],
                     [0.0, 10.39349294, 0.0],
@@ -290,7 +290,7 @@ def test_norm_error(n, eta, omega, error, br, charge):
             10000,
             312,
             None,
-            np.array(
+            pnp.array(
                 [
                     [18.89725988, 0.0, 0.0],
                     [0.0, 10.39349294, 0.0],
@@ -305,7 +305,7 @@ def test_norm_error(n, eta, omega, error, br, charge):
             100000,
             156,
             None,
-            np.array(
+            pnp.array(
                 [
                     [9.44862994, 0.0, 0.0],
                     [0.0, 10.39349294, 0.0],
@@ -322,9 +322,9 @@ def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
     r"""Test that the FirstQuantization class computes correct attributes."""
     est = qml.resource.FirstQuantization(n, eta, omega, vectors=vectors)
 
-    assert np.allclose(est.lamb, lamb)
-    assert np.allclose(est.gates, g_cost)
-    assert np.allclose(est.qubits, q_cost)
+    assert pnp.allclose(est.lamb, lamb)
+    assert pnp.allclose(est.gates, g_cost)
+    assert pnp.allclose(est.qubits, q_cost)
 
 
 @pytest.mark.parametrize(
@@ -349,7 +349,7 @@ def test_init_error_1(n, eta, omega, error, br, charge, vectors):
             0.001,
             7,
             0,
-            np.array(
+            pnp.array(
                 [
                     [9.0, 0.0, 0.0],
                     [0.0, 9.0, 0.0],
@@ -374,7 +374,7 @@ def test_init_error_2(n, eta, omega, error, br, charge, vectors):
             0.0016,
             7,
             0,
-            np.array(
+            pnp.array(
                 [
                     [10.0, 0.0, 0.0],
                     [0.0, 10.0, 0.0],

@@ -21,7 +21,7 @@ import pytest
 from scipy.linalg import sqrtm
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def get_single_input_qnode():
@@ -60,28 +60,28 @@ def get_grad_finite_diff(params, finite_diff_step, grad_dirs):
     qnode(params + finite_diff_step * grad_dirs) - qnode(params - finite_diff_step * grad_dirs)
     """
     qnode_finite_diff = (
-        -np.sin(params[0]) * np.sin(finite_diff_step * grad_dirs[0])
-        + np.sin(params[1]) * np.sin(finite_diff_step * grad_dirs[1])
+        -pnp.sin(params[0]) * pnp.sin(finite_diff_step * grad_dirs[0])
+        + pnp.sin(params[1]) * pnp.sin(finite_diff_step * grad_dirs[1])
         + (
-            np.cos(
+            pnp.cos(
                 params[0]
                 + params[1]
                 + finite_diff_step * grad_dirs[0]
                 + finite_diff_step * grad_dirs[1]
             )
-            + np.cos(
+            + pnp.cos(
                 params[0]
                 + finite_diff_step * grad_dirs[0]
                 - params[1]
                 - finite_diff_step * grad_dirs[1]
             )
-            - np.cos(
+            - pnp.cos(
                 params[0]
                 + params[1]
                 - finite_diff_step * grad_dirs[0]
                 - finite_diff_step * grad_dirs[1]
             )
-            - np.cos(
+            - pnp.cos(
                 params[0]
                 - finite_diff_step * grad_dirs[0]
                 - params[1]
@@ -106,12 +106,12 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
         # analytically computed state overlap between two parametrized ansatzes
         # with input params1 and params2
         return (
-            np.cos(params1[0][0] / 2) * np.cos(params2[0][0] / 2)
-            + np.sin(params1[0][0] / 2)
-            * np.sin(params2[0][0] / 2)
+            pnp.cos(params1[0][0] / 2) * pnp.cos(params2[0][0] / 2)
+            + pnp.sin(params1[0][0] / 2)
+            * pnp.sin(params2[0][0] / 2)
             * (
-                np.sin(params1[0][1] / 2) * np.sin(params2[0][1] / 2)
-                + np.cos(params1[0][1] / 2) * np.cos(params2[0][1] / 2)
+                pnp.sin(params1[0][1] / 2) * pnp.sin(params2[0][1] / 2)
+                + pnp.cos(params1[0][1] / 2) * pnp.cos(params2[0][1] / 2)
             )
         ) ** 2
 
@@ -122,7 +122,7 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
         + get_state_overlap(params, params - perturb1)
     )
     metric_tensor_expected = (
-        -(np.tensordot(dir_vec1, dir_vec2, axes=0) + np.tensordot(dir_vec2, dir_vec1, axes=0))
+        -(pnp.tensordot(dir_vec1, dir_vec2, axes=0) + pnp.tensordot(dir_vec2, dir_vec1, axes=0))
         * tensor_finite_diff
         / (8 * finite_diff_step * finite_diff_step)
     )
@@ -144,7 +144,7 @@ class TestQNSPSAOptimizer:
             seed=seed,
         )
         qnode, params_shape = get_single_input_qnode()
-        params = np.random.rand(*params_shape)
+        params = pnp.random.rand(*params_shape)
 
         # gradient result from QNSPSAOptimizer
         grad_tapes, grad_dirs = opt._get_spsa_grad_tapes(qnode, [params], {})
@@ -154,7 +154,7 @@ class TestQNSPSAOptimizer:
         # gradient computed analytically
         qnode_finite_diff = get_grad_finite_diff(params[0], finite_diff_step, grad_dirs[0][0])
         grad_expected = qnode_finite_diff / (2 * finite_diff_step) * grad_dirs[0]
-        assert np.allclose(grad_res, grad_expected)
+        assert pnp.allclose(grad_res, grad_expected)
 
     def test_raw_metric_tensor(self, finite_diff_step, seed):
         """Test that the QNSPSA metric tensor estimation(before regularization) is correct by
@@ -170,7 +170,7 @@ class TestQNSPSAOptimizer:
         )
 
         qnode, params_shape = get_single_input_qnode()
-        params = np.random.rand(*params_shape)
+        params = pnp.random.rand(*params_shape)
 
         # raw metric tensor result from QNSPSAOptimizer
         metric_tapes, tensor_dirs = opt._get_tensor_tapes(qnode, [params], {})
@@ -181,7 +181,7 @@ class TestQNSPSAOptimizer:
         metric_tensor_expected = get_metric_from_single_input_qnode(
             params, finite_diff_step, tensor_dirs
         )
-        assert np.allclose(metric_tensor_res, metric_tensor_expected)
+        assert pnp.allclose(metric_tensor_res, metric_tensor_expected)
 
     def test_gradient_from_multi_input(self, finite_diff_step, seed):
         """Test that the QNSPSA gradient estimation is correct by comparing the optimizer result
@@ -196,7 +196,7 @@ class TestQNSPSAOptimizer:
             seed=seed,
         )
         qnode = get_multi_input_qnode()
-        params = [np.random.rand(1) for _ in range(2)]
+        params = [pnp.random.rand(1) for _ in range(2)]
         # gradient result from QNSPSAOptimizer
         grad_tapes, grad_dirs = opt._get_spsa_grad_tapes(qnode, params, {})
         raw_results = qml.execute(grad_tapes, qnode.device, None)
@@ -207,7 +207,7 @@ class TestQNSPSAOptimizer:
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
-        assert np.allclose(grad_res, grad_expected)
+        assert pnp.allclose(grad_res, grad_expected)
 
     def test_step_from_single_input(self, finite_diff_step, seed):
         """Test step() function with the single-input qnode."""
@@ -226,7 +226,7 @@ class TestQNSPSAOptimizer:
         target_opt = deepcopy(opt)
 
         qnode, params_shape = get_single_input_qnode()
-        params = np.random.rand(*params_shape)
+        params = pnp.random.rand(*params_shape)
 
         new_params_res = opt.step(qnode, params)
 
@@ -240,14 +240,14 @@ class TestQNSPSAOptimizer:
             params, finite_diff_step, tensor_dirs
         )
         # regularize raw metric tensor
-        identity = np.identity(metric_tensor_expected.shape[0])
+        identity = pnp.identity(metric_tensor_expected.shape[0])
         avg_metric_tensor = 0.5 * (identity + metric_tensor_expected)
-        tensor_reg = np.real(sqrtm(np.matmul(avg_metric_tensor, avg_metric_tensor)))
+        tensor_reg = pnp.real(sqrtm(pnp.matmul(avg_metric_tensor, avg_metric_tensor)))
         tensor_reg = (tensor_reg + regularization * identity) / (1 + regularization)
 
-        inv_metric_tensor = np.linalg.inv(tensor_reg)
-        new_params_expected = params - stepsize * np.matmul(inv_metric_tensor, grad_expected)
-        assert np.allclose(new_params_res, new_params_expected)
+        inv_metric_tensor = pnp.linalg.inv(tensor_reg)
+        new_params_expected = params - stepsize * pnp.matmul(inv_metric_tensor, grad_expected)
+        assert pnp.allclose(new_params_res, new_params_expected)
 
     def test_step_and_cost_from_single_input(self, finite_diff_step, seed):
         """Test step_and_cost() function with the single-input qnode. Both blocking settings
@@ -270,23 +270,23 @@ class TestQNSPSAOptimizer:
         target_opt = deepcopy(opt_blocking)
 
         qnode, params_shape = get_single_input_qnode()
-        params = np.random.rand(*params_shape)
+        params = pnp.random.rand(*params_shape)
 
         new_params_blocking_res, qnode_blocking_res = opt_blocking.step_and_cost(qnode, params)
         with pytest.warns(UserWarning):
             new_params_expected = target_opt.step(qnode, params)
         # analytical expression of the qnode
-        qnode_expected = np.cos(params[0][0] / 2) ** 2 - np.sin(params[0][0] / 2) ** 2 * np.cos(
+        qnode_expected = pnp.cos(params[0][0] / 2) ** 2 - pnp.sin(params[0][0] / 2) ** 2 * pnp.cos(
             params[0][1]
         )
-        assert np.allclose(new_params_blocking_res, new_params_expected)
-        assert np.allclose(qnode_blocking_res, qnode_expected)
+        assert pnp.allclose(new_params_blocking_res, new_params_expected)
+        assert pnp.allclose(qnode_blocking_res, qnode_expected)
 
         new_params_no_blocking_res, qnode_no_blocking_res = opt_no_blocking.step_and_cost(
             qnode, params
         )
-        assert np.allclose(new_params_no_blocking_res, new_params_expected)
-        assert np.allclose(qnode_no_blocking_res, qnode_expected)
+        assert pnp.allclose(new_params_no_blocking_res, new_params_expected)
+        assert pnp.allclose(qnode_no_blocking_res, qnode_expected)
 
     def test_step_and_cost_from_multi_input(self, finite_diff_step, seed):
         """Test step_and_cost() function with the multi-input qnode."""
@@ -305,14 +305,14 @@ class TestQNSPSAOptimizer:
         target_opt = deepcopy(opt)
 
         qnode = get_multi_input_qnode()
-        params = [np.array(1.0) for _ in range(2)]
+        params = [pnp.array(1.0) for _ in range(2)]
         # this single-step result will be different from the one from the single-input qnode, due to the
         # different order in sampling perturbation directions.
         new_params_res, qnode_res = opt.step_and_cost(qnode, *params)
 
         # test the expectation value
-        qnode_expected = np.cos(params[0] / 2) ** 2 - np.sin(params[0] / 2) ** 2 * np.cos(params[1])
-        assert np.allclose(qnode_res, qnode_expected)
+        qnode_expected = pnp.cos(params[0] / 2) ** 2 - pnp.sin(params[0] / 2) ** 2 * pnp.cos(params[1])
+        assert pnp.allclose(qnode_res, qnode_expected)
 
         # test the next-step parameter
         _, grad_dirs = target_opt._get_spsa_grad_tapes(qnode, params, {})
@@ -323,27 +323,27 @@ class TestQNSPSAOptimizer:
         ]
         # reshape the params list into a tensor to reuse the
         # get_metric_from_single_input_qnode helper function
-        params_tensor = np.array(params).reshape(1, len(params))
+        params_tensor = pnp.array(params).reshape(1, len(params))
         metric_tensor_expected = get_metric_from_single_input_qnode(
             params_tensor, finite_diff_step, tensor_dirs
         )
 
         # regularize raw metric tensor
-        identity = np.identity(metric_tensor_expected.shape[0])
+        identity = pnp.identity(metric_tensor_expected.shape[0])
         avg_metric_tensor = 0.5 * (identity + metric_tensor_expected)
-        tensor_reg = np.real(sqrtm(np.matmul(avg_metric_tensor, avg_metric_tensor)))
+        tensor_reg = pnp.real(sqrtm(pnp.matmul(avg_metric_tensor, avg_metric_tensor)))
         tensor_reg = (tensor_reg + regularization * identity) / (1 + regularization)
 
-        inv_metric_tensor = np.linalg.inv(tensor_reg)
-        grad_tensor = np.array(grad_expected).reshape(
+        inv_metric_tensor = pnp.linalg.inv(tensor_reg)
+        grad_tensor = pnp.array(grad_expected).reshape(
             inv_metric_tensor.shape[0],
         )
-        new_params_tensor_expected = params_tensor - stepsize * np.matmul(
+        new_params_tensor_expected = params_tensor - stepsize * pnp.matmul(
             inv_metric_tensor, grad_tensor
         )
 
-        assert np.allclose(
-            np.array(new_params_res).reshape(new_params_tensor_expected.shape),
+        assert pnp.allclose(
+            pnp.array(new_params_res).reshape(new_params_tensor_expected.shape),
             new_params_tensor_expected,
         )
 
@@ -366,10 +366,10 @@ class TestQNSPSAOptimizer:
         # a deep copy of the same opt, to be applied to qnode_reduced
         target_opt = deepcopy(opt)
         dev = qml.device("default.qubit", wires=2)
-        non_trainable_param = np.random.rand(1)
+        non_trainable_param = pnp.random.rand(1)
         non_trainable_param.requires_grad = False
 
-        trainable_param = np.random.rand(1)
+        trainable_param = pnp.random.rand(1)
 
         @qml.qnode(dev)
         def qnode_with_non_trainable(trainable, non_trainable):
@@ -393,9 +393,9 @@ class TestQNSPSAOptimizer:
             qnode_reduced, trainable_param
         )
 
-        assert np.allclose(qnode_res, qnode_expected)
-        assert np.allclose(new_non_trianable_res, non_trainable_param)
-        assert np.allclose(new_trainable_res, new_trainable_expected)
+        assert pnp.allclose(qnode_res, qnode_expected)
+        assert pnp.allclose(new_non_trianable_res, non_trainable_param)
+        assert pnp.allclose(new_trainable_res, new_trainable_expected)
 
     def test_blocking(self, finite_diff_step, seed):
         """Test blocking setting of the optimizer."""
@@ -413,14 +413,14 @@ class TestQNSPSAOptimizer:
         )
         qnode, params_shape = get_single_input_qnode()
         # params minimizes the qnode
-        params = np.tensor([3.1415, 0]).reshape(params_shape)
+        params = pnp.tensor([3.1415, 0]).reshape(params_shape)
 
         # fill opt.last_n_steps array with a minimum expectation value
         for _ in range(history_length):
             opt.step_and_cost(qnode, params)
         # blocking should stop params from updating from this minimum
         new_params, _ = opt.step_and_cost(qnode, params)
-        assert np.allclose(new_params, params)
+        assert pnp.allclose(new_params, params)
 
 
 def test_template_no_adjoint(seed):
@@ -434,7 +434,7 @@ def test_template_no_adjoint(seed):
         qml.RandomLayers(weights=params, wires=range(num_qubits), seed=seed)
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-    params = np.random.normal(0, np.pi, (2, 4))
+    params = pnp.random.normal(0, pnp.pi, (2, 4))
     opt = qml.QNSPSAOptimizer(stepsize=5e-2)
     assert opt.step_and_cost(cost, params)  # just checking it runs without error
     assert not qml.RandomLayers.has_adjoint
@@ -459,5 +459,5 @@ def test_workflow_integration():
 
     assert qml.math.allclose(loss, -1, atol=1e-3)
     # compare sine of params and target params as could converge to params + 2* np.pi
-    target_params = np.array([np.pi, 0])
-    assert qml.math.allclose(np.sin(params), np.sin(target_params), atol=1e-2)
+    target_params = pnp.array([pnp.pi, 0])
+    assert qml.math.allclose(pnp.sin(params), pnp.sin(target_params), atol=1e-2)

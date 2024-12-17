@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -83,7 +83,7 @@ class TestVonNeumannEntropy:  # pylint: disable=too-few-public-methods
         [1],
     ]
 
-    base = [2, np.exp(1), 10]
+    base = [2, pnp.exp(1), 10]
 
     check_state = [True, False]
 
@@ -109,7 +109,7 @@ class TestVonNeumannEntropy:  # pylint: disable=too-few-public-methods
         if pure:
             expected_entropy = 0
         else:
-            expected_entropy = np.log(2) / np.log(base)
+            expected_entropy = pnp.log(2) / pnp.log(base)
 
         assert qml.math.allclose(entropy, expected_entropy)
 
@@ -123,8 +123,8 @@ class TestMutualInformation:
         [
             ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], 0),
             ([[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]], 0),
-            ([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]], 2 * np.log(2)),
-            (np.ones((4, 4)) * 0.25, 0),
+            ([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]], 2 * pnp.log(2)),
+            (pnp.ones((4, 4)) * 0.25, 0),
         ],
     )
     def test_density_matrix(self, interface, state, expected):
@@ -132,15 +132,15 @@ class TestMutualInformation:
         state = qml.math.asarray(state, like=interface)
 
         actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
-        assert np.allclose(actual, expected)
+        assert pnp.allclose(actual, expected)
 
     @pytest.mark.parametrize(
         "state, wires0, wires1",
         [
-            (np.diag([1, 0, 0, 0]), [0], [0]),
-            (np.diag([1, 0, 0, 0]), [0], [0, 1]),
-            (np.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1]),
-            (np.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1, 2]),
+            (pnp.diag([1, 0, 0, 0]), [0], [0]),
+            (pnp.diag([1, 0, 0, 0]), [0], [0, 1]),
+            (pnp.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1]),
+            (pnp.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1, 2]),
         ],
     )
     def test_subsystem_overlap(self, state, wires0, wires1):
@@ -150,7 +150,7 @@ class TestMutualInformation:
         ):
             qml.math.mutual_info(state, indices0=wires0, indices1=wires1)
 
-    @pytest.mark.parametrize("state", [np.array([5])])
+    @pytest.mark.parametrize("state", [pnp.array([5])])
     def test_invalid_type(self, state):
         """Test that an error is raised when an unsupported type is passed"""
         with pytest.raises(ValueError, match="Density matrix must be of shape"):
@@ -173,7 +173,7 @@ class TestEntanglementEntropy:
                 ],
                 0,
             ),
-            ([[0, 0, 0, 0], [0, 0.5, -0.5, 0], [0, -0.5, 0.5, 0], [0, 0, 0, 0]], np.log(2)),
+            ([[0, 0, 0, 0], [0, 0.5, -0.5, 0], [0, -0.5, 0.5, 0], [0, 0, 0, 0]], pnp.log(2)),
             (
                 [
                     [1 / 1.25, 0, 0, 0.5 / 1.25],
@@ -194,10 +194,10 @@ class TestEntanglementEntropy:
     @pytest.mark.parametrize(
         "state, wires0, wires1",
         [
-            (np.diag([1, 0, 0, 0]), [0], [0]),
-            (np.diag([1, 0, 0, 0]), [0], [0, 1]),
-            (np.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1]),
-            (np.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1, 2]),
+            (pnp.diag([1, 0, 0, 0]), [0], [0]),
+            (pnp.diag([1, 0, 0, 0]), [0], [0, 1]),
+            (pnp.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1]),
+            (pnp.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1, 2]),
         ],
     )
     def test_subsystem_overlap(self, state, wires0, wires1):
@@ -207,7 +207,7 @@ class TestEntanglementEntropy:
         ):
             qml.math.vn_entanglement_entropy(state, indices0=wires0, indices1=wires1)
 
-    @pytest.mark.parametrize("state", [np.array([5])])
+    @pytest.mark.parametrize("state", [pnp.array([5])])
     def test_invalid_type(self, state):
         """Test that an error is raised when an unsupported type is passed"""
         with pytest.raises(ValueError, match="Density matrix must be of shape"):
@@ -224,10 +224,10 @@ class TestRelativeEntropy:
     @pytest.mark.parametrize(
         "state0, state1, expected",
         [
-            ([[1, 0], [0, 0]], [[0, 0], [0, 1]], np.inf),
-            ([[1, 0], [0, 0]], np.ones((2, 2)) / 2, np.inf),
+            ([[1, 0], [0, 0]], [[0, 0], [0, 1]], pnp.inf),
+            ([[1, 0], [0, 0]], pnp.ones((2, 2)) / 2, pnp.inf),
             ([[0, 0], [0, 1]], [[0, 0], [0, 1]], 0),
-            ([[1, 0], [0, 0]], np.eye(2) / 2, np.log(2)),
+            ([[1, 0], [0, 0]], pnp.eye(2) / 2, pnp.log(2)),
         ],
     )
     @pytest.mark.parametrize("base", bases)
@@ -238,16 +238,16 @@ class TestRelativeEntropy:
         state1 = qml.math.asarray(state1, like=interface)
 
         actual = qml.math.relative_entropy(state0, state1, base=base, check_state=check_state)
-        div = 1 if base is None else np.log(base)
-        assert np.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
+        div = 1 if base is None else pnp.log(base)
+        assert pnp.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
 
     @pytest.mark.parametrize(
         "state0, state1",
         [
-            (np.array([[1, 0], [0, 0]]), np.diag([0, 1, 0, 0])),
+            (pnp.array([[1, 0], [0, 0]]), pnp.diag([0, 1, 0, 0])),
             (
-                np.array([[1, 0], [0, 0]]),
-                np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
+                pnp.array([[1, 0], [0, 0]]),
+                pnp.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
             ),
         ],
     )
@@ -267,7 +267,7 @@ class TestMaxEntropy:
         [1],
     ]
 
-    base = [2, np.exp(1), 10]
+    base = [2, pnp.exp(1), 10]
 
     check_state = [True, False]
 
@@ -293,7 +293,7 @@ class TestMaxEntropy:
         if pure:
             expected_max_entropy = 0
         else:
-            expected_max_entropy = np.log(2) / np.log(base)
+            expected_max_entropy = pnp.log(2) / pnp.log(base)
 
         assert qml.math.allclose(entropy, expected_max_entropy)
 
@@ -308,7 +308,7 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_max_entropy_grad(self, params, wires, base, check_state):
         """Test `max_entropy` differentiability with autograd."""
-        params = np.tensor(params)
+        params = pnp.tensor(params)
 
         gradient = qml.grad(qml.math.max_entropy)(params, wires, base, check_state)
         assert qml.math.allclose(gradient, 0.0)
@@ -378,7 +378,7 @@ class TestMinEntropy:
         [1],
     ]
 
-    base = [2, np.exp(1), 10]
+    base = [2, pnp.exp(1), 10]
 
     check_state = [True, False]
 
@@ -404,7 +404,7 @@ class TestMinEntropy:
         if pure:
             expected_min_entropy = 0
         else:
-            expected_min_entropy = np.log(2) / np.log(base)
+            expected_min_entropy = pnp.log(2) / pnp.log(base)
 
         assert qml.math.allclose(entropy, expected_min_entropy)
 
@@ -420,10 +420,10 @@ class TestMinEntropy:
     def test_min_entropy_grad(self, params, wires, base, check_state):
         """Test `min_entropy` differentiability with autograd."""
 
-        params = np.tensor(params)
+        params = pnp.tensor(params)
 
         gradient = qml.grad(qml.math.min_entropy)(params, wires, base, check_state)
-        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
+        assert qml.math.allclose(gradient, -pnp.eye(4) / pnp.log(base))
 
     @pytest.mark.torch
     @pytest.mark.parametrize("params", parameters)
@@ -439,7 +439,7 @@ class TestMinEntropy:
         min_entropy.backward()
         gradient = params.grad
 
-        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
+        assert qml.math.allclose(gradient, -pnp.eye(4) / pnp.log(base))
 
     @pytest.mark.tf
     @pytest.mark.parametrize("params", parameters)
@@ -456,7 +456,7 @@ class TestMinEntropy:
 
         gradient = tape.gradient(min_entropy, params)
 
-        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
+        assert qml.math.allclose(gradient, -pnp.eye(4) / pnp.log(base))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
@@ -482,7 +482,7 @@ class TestMinEntropy:
         else:
             gradient = min_entropy_grad(params, wires, base, check_state)
 
-        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
+        assert qml.math.allclose(gradient, -pnp.eye(4) / pnp.log(base))
 
 
 class TestEntropyBroadcasting:
@@ -519,7 +519,7 @@ class TestEntropyBroadcasting:
             [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
             [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
         ]
-        expected = [np.log(2), 0]
+        expected = [pnp.log(2), 0]
 
         if interface:
             density_matrix = qml.math.asarray(density_matrix, like=interface)
@@ -534,42 +534,42 @@ class TestEntropyBroadcasting:
             [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
             [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]],
             [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]],
-            np.ones((4, 4)) * 0.25,
+            pnp.ones((4, 4)) * 0.25,
         ]
-        expected = [0, 0, 2 * np.log(2), 0]
+        expected = [0, 0, 2 * pnp.log(2), 0]
 
         state = qml.math.asarray(state, like=interface)
 
         actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
-        assert np.allclose(actual, expected)
+        assert pnp.allclose(actual, expected)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("check_state", check_state)
     def test_relative_entropy_broadcast_dm(self, interface, check_state):
         """Test broadcasting for relative entropy and density matrices"""
         state0 = [[[1, 0], [0, 0]], [[1, 0], [0, 0]], [[0, 0], [0, 1]], [[1, 0], [0, 0]]]
-        state1 = [[[0, 0], [0, 1]], np.ones((2, 2)) / 2, [[0, 0], [0, 1]], np.eye(2) / 2]
-        expected = [np.inf, np.inf, 0, np.log(2)]
+        state1 = [[[0, 0], [0, 1]], pnp.ones((2, 2)) / 2, [[0, 0], [0, 1]], pnp.eye(2) / 2]
+        expected = [pnp.inf, pnp.inf, 0, pnp.log(2)]
 
         state0 = qml.math.asarray(state0, like=interface)
         state1 = qml.math.asarray(state1, like=interface)
 
         actual = qml.math.relative_entropy(state0, state1, check_state=check_state)
-        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
+        assert pnp.allclose(actual, expected, rtol=1e-06, atol=1e-07)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("check_state", check_state)
     def test_relative_entropy_broadcast_dm_unbatched(self, interface, check_state):
         """Test broadcasting for relative entropy and density matrices when one input is unbatched"""
-        state0 = [[[0, 0], [0, 1]], np.ones((2, 2)) / 2, [[1, 0], [0, 0]], np.eye(2) / 2]
-        state1 = np.eye(2) / 2
-        expected = [np.log(2), np.log(2), np.log(2), 0]
+        state0 = [[[0, 0], [0, 1]], pnp.ones((2, 2)) / 2, [[1, 0], [0, 0]], pnp.eye(2) / 2]
+        state1 = pnp.eye(2) / 2
+        expected = [pnp.log(2), pnp.log(2), pnp.log(2), 0]
 
         state0 = qml.math.asarray(state0, like=interface)
         state1 = qml.math.asarray(state1, like=interface)
 
         actual = qml.math.relative_entropy(state0, state1, check_state=check_state)
-        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
+        assert pnp.allclose(actual, expected, rtol=1e-06, atol=1e-07)
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("check_state", check_state)
@@ -580,7 +580,7 @@ class TestEntropyBroadcasting:
             [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
             [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
         ]
-        expected = [np.log(2), 0]
+        expected = [pnp.log(2), 0]
 
         if interface:
             density_matrix = qml.math.asarray(density_matrix, like=interface)

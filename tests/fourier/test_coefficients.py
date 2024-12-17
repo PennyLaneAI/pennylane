@@ -20,7 +20,7 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.fourier import coefficients
 
 
@@ -42,8 +42,8 @@ def fourier_function(freq_dict, x):
     if 0 in freq_dict.keys():
         result = freq_dict[0]
 
-    _sum = sum(coeff * np.exp(1j * freq * x) for freq, coeff in freq_dict.items() if freq != 0)
-    result += _sum + np.conj(_sum)
+    _sum = sum(coeff * pnp.exp(1j * freq * x) for freq, coeff in freq_dict.items() if freq != 0)
+    result += _sum + pnp.conj(_sum)
     return result.real
 
 
@@ -76,10 +76,10 @@ class TestFourierCoefficientSingleVariable:
     @pytest.mark.parametrize(
         "freq_dict,expected_coeffs",
         [
-            ({0: 0.5, 1: 2.3, 3: 0.4}, np.array([0.5, 2.3, 0, 0.4, 0.4, 0, 2.3])),
+            ({0: 0.5, 1: 2.3, 3: 0.4}, pnp.array([0.5, 2.3, 0, 0.4, 0.4, 0, 2.3])),
             (
                 {3: 0.4, 4: 0.2 + 0.8j, 5: 1j},
-                np.array([0, 0, 0, 0.4, 0.2 + 0.8j, 1j, -1j, 0.2 - 0.8j, 0.4, 0.0, 0]),
+                pnp.array([0, 0, 0, 0.4, 0.2 + 0.8j, 1j, -1j, 0.2 - 0.8j, 0.4, 0.0, 0]),
             ),
         ],
     )
@@ -91,11 +91,11 @@ class TestFourierCoefficientSingleVariable:
         # Testing with a single degree provided as integer
         coeffs = coefficients(partial_func, 1, degree)
 
-        assert np.allclose(coeffs, expected_coeffs)
+        assert pnp.allclose(coeffs, expected_coeffs)
         # Testing with a single-entry sequence of degrees
         coeffs = coefficients(partial_func, 1, (degree,))
 
-        assert np.allclose(coeffs, expected_coeffs)
+        assert pnp.allclose(coeffs, expected_coeffs)
 
 
 dev_1 = qml.device("default.qubit", wires=1)
@@ -202,33 +202,33 @@ class TestFourierCoefficientCircuits:
     @pytest.mark.parametrize(
         "circuit,degree,expected_coeffs",
         [
-            (circuit_one_qubit_one_param_rx, 1, np.array([0, 0.5, 0.5])),
-            (circuit_one_qubit_one_param_rx, 2, np.array([0, 0.5, 0, 0, 0.5])),
-            (circuit_one_qubit_one_param_h_ry, (1,), np.array([0, 0.5j, -0.5j])),
+            (circuit_one_qubit_one_param_rx, 1, pnp.array([0, 0.5, 0.5])),
+            (circuit_one_qubit_one_param_rx, 2, pnp.array([0, 0.5, 0, 0, 0.5])),
+            (circuit_one_qubit_one_param_h_ry, (1,), pnp.array([0, 0.5j, -0.5j])),
             (
                 circuit_one_qubit_one_param_h_ry,
                 3,
-                np.array([0, 0.5j, 0, 0, 0, 0, -0.5j]),
+                pnp.array([0, 0.5j, 0, 0, 0, 0, -0.5j]),
             ),
             (
                 circuit_one_qubit_one_param_rx_ry,
                 2,
-                np.array([0.5, 0, 0.25, 0.25, 0]),
+                pnp.array([0.5, 0, 0.25, 0.25, 0]),
             ),
             (
                 circuit_one_qubit_one_param_rx_ry,
                 4,
-                np.array([0.5, 0, 0.25, 0, 0, 0, 0, 0.25, 0]),
+                pnp.array([0.5, 0, 0.25, 0, 0, 0, 0, 0.25, 0]),
             ),
             (
                 circuit_two_qubits_repeated_param,
                 (2,),
-                np.array([0.5, 0, 0.25, 0.25, 0]),
+                pnp.array([0.5, 0, 0.25, 0.25, 0]),
             ),
             (
                 circuit_two_qubits_repeated_param,
                 3,
-                np.array([0.5, 0, 0.25, 0, 0, 0.25, 0]),
+                pnp.array([0.5, 0, 0.25, 0, 0, 0.25, 0]),
             ),
         ],
     )
@@ -238,7 +238,7 @@ class TestFourierCoefficientCircuits:
         """Test that coeffs for a single instance of a single parameter match the by-hand
         results regardless of input degree (max degree is 1)."""
         coeffs = coefficients(circuit, circuit.n_inputs, degree, use_broadcasting=use_broadcasting)
-        assert np.allclose(coeffs, expected_coeffs)
+        assert pnp.allclose(coeffs, expected_coeffs)
 
     @pytest.mark.parametrize(
         "circuit,degree,expected_coeffs",
@@ -246,22 +246,22 @@ class TestFourierCoefficientCircuits:
             (
                 circuit_two_qubits_two_params,
                 1,
-                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
+                pnp.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
             ),
             (
                 circuit_two_qubits_two_params,
                 (1, 1),
-                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
+                pnp.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
             ),
             (
                 circuit_one_qubit_two_params,
                 1,
-                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
+                pnp.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
             ),
             (
                 circuit_one_qubit_two_params,
                 (2, 1),
-                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0, 0], [0, 0, 0], [0, 0.25, 0.25]]),
+                pnp.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0, 0], [0, 0, 0], [0, 0.25, 0.25]]),
             ),
         ],
     )
@@ -271,7 +271,7 @@ class TestFourierCoefficientCircuits:
         """Test that coeffs for a single instance of a single parameter match the by-hand
         results regardless of input degree (max degree is 1)."""
         coeffs = coefficients(circuit, circuit.n_inputs, degree, use_broadcasting=use_broadcasting)
-        assert np.allclose(coeffs, expected_coeffs)
+        assert pnp.allclose(coeffs, expected_coeffs)
 
 
 class TestAntiAliasing:
@@ -283,7 +283,7 @@ class TestAntiAliasing:
             (
                 circuit_two_qubits_repeated_param,
                 1,
-                np.array([0.5, 0, 0]),
+                pnp.array([0.5, 0, 0]),
             ),
         ],
     )
@@ -293,10 +293,10 @@ class TestAntiAliasing:
         coeffs_anti_aliased = coefficients(
             circuit, circuit.n_inputs, degree, lowpass_filter=True, filter_threshold=degree + 2
         )
-        assert np.allclose(coeffs_anti_aliased, expected_coeffs)
+        assert pnp.allclose(coeffs_anti_aliased, expected_coeffs)
 
         coeffs_regular = coefficients(circuit, circuit.n_inputs, degree)
-        assert not np.allclose(coeffs_regular, expected_coeffs)
+        assert not pnp.allclose(coeffs_regular, expected_coeffs)
 
     @pytest.mark.parametrize(
         "circuit,degree,threshold",
@@ -325,7 +325,7 @@ class TestAntiAliasing:
             filter_threshold=threshold,
         )
 
-        assert np.allclose(coeffs_regular, coeffs_anti_aliased)
+        assert pnp.allclose(coeffs_regular, coeffs_anti_aliased)
 
 
 class TestInterfaces:
@@ -343,7 +343,7 @@ class TestInterfaces:
 
     dev = qml.device("default.qubit", wires=2)
 
-    expected_result = np.array(
+    expected_result = pnp.array(
         [
             [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
             [0.0 + 0.0j, 0.21502233 + 0.0j, 0.21502233 + 0.0j],
@@ -362,7 +362,7 @@ class TestInterfaces:
 
         obtained_result = coefficients(partial(qnode, weights), 2, 1)
 
-        assert np.allclose(obtained_result, self.expected_result)
+        assert pnp.allclose(obtained_result, self.expected_result)
 
     @pytest.mark.torch
     def test_coefficients_torch_interface(self):
@@ -375,7 +375,7 @@ class TestInterfaces:
 
         obtained_result = coefficients(partial(qnode, weights), 2, 1)
 
-        assert np.allclose(obtained_result, self.expected_result)
+        assert pnp.allclose(obtained_result, self.expected_result)
 
     @pytest.mark.jax
     def test_coefficients_jax_interface(self):
@@ -388,4 +388,4 @@ class TestInterfaces:
 
         obtained_result = coefficients(partial(qnode, weights), 2, 1)
 
-        assert np.allclose(obtained_result, self.expected_result)
+        assert pnp.allclose(obtained_result, self.expected_result)

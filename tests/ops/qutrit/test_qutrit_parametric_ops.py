@@ -24,7 +24,7 @@ import pytest
 from gate_data import TCLOCK, TSHIFT
 
 import pennylane as qml
-from pennylane import numpy as npp
+from pennylane import numpy as pnp
 from pennylane.ops.qutrit import validate_subspace
 from pennylane.wires import Wires
 
@@ -443,7 +443,7 @@ class TestGrad:
     diff_methods = ["parameter-shift", "finite-diff", "best", "backprop"]
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.parametrize("phi", pnp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability(self, op, obs, grad_fn, phi, diff_method, tol):
         """Test that parametrized rotations are differentiable and the gradient is correct"""
@@ -468,7 +468,7 @@ class TestGrad:
         if diff_method in ("finite-diff", "parameter-shift"):
             pytest.xfail()
 
-        phi = npp.linspace(0, 2 * np.pi, 7, requires_grad=True)
+        phi = pnp.linspace(0, 2 * np.pi, 7, requires_grad=True)
 
         dev = qml.device("default.qutrit", wires=1)
 
@@ -485,7 +485,7 @@ class TestGrad:
         assert np.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("phi", pnp.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability_jax(self, op, obs, grad_fn, phi, diff_method, tol):
         """Test that parametrized operations are differentiable with JAX and the gradient is correct"""
@@ -533,7 +533,7 @@ class TestGrad:
         assert np.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("phi", pnp.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability_torch(self, op, obs, grad_fn, phi, diff_method, tol):
         """Test that parametrized operations are differentiable with Torch and the gradient is correct"""
@@ -580,7 +580,7 @@ class TestGrad:
         assert qml.math.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("phi", pnp.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability_tf(self, op, obs, grad_fn, phi, diff_method, tol):
         """Test that parametrized operations are differentiable with TensorFlow and the gradient is correct"""

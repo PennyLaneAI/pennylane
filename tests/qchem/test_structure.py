@@ -24,7 +24,7 @@ from unittest.mock import patch
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem
 from pennylane.fermi import FermiWord
 from pennylane.templates.subroutines import UCCSD
@@ -36,7 +36,7 @@ def test_reading_xyz_file(tmpdir):
     r"""Test reading of the generated file 'structure.xyz'"""
 
     ref_symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
-    ref_coords = np.array(
+    ref_coords = pnp.array(
         [
             0.68219113,
             -0.85415621,
@@ -68,7 +68,7 @@ def test_reading_xyz_file(tmpdir):
     symbols, coordinates = qchem.read_structure(name, outpath=tmpdir)
 
     assert symbols == ref_symbols
-    assert np.allclose(coordinates, ref_coords)
+    assert pnp.allclose(coordinates, ref_coords)
 
 
 @pytest.mark.parametrize(
@@ -278,7 +278,7 @@ def test_excitations_to_wires_exceptions(singles, doubles, wires, message_match)
     ("weights", "singles", "doubles", "expected"),
     [
         (
-            np.array([3.90575761, -1.89772083, -1.36689032]),
+            pnp.array([3.90575761, -1.89772083, -1.36689032]),
             [[0, 2], [1, 3]],
             [[0, 1, 2, 3]],
             [0.14619406, 0.06502792, -0.14619406, -0.06502792],
@@ -295,11 +295,11 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
 
     @qml.qnode(dev)
     def circuit(weights):
-        UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=np.array([1, 1, 0, 0]))
+        UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=pnp.array([1, 1, 0, 0]))
         return [qml.expval(qml.PauliZ(w)) for w in range(n)]
 
     res = circuit(weights)
-    assert np.allclose(res, np.array(expected))
+    assert pnp.allclose(res, pnp.array(expected))
 
 
 @pytest.mark.parametrize(
@@ -308,18 +308,18 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
     # [`Tranter et al. Int. J. Quantum Chem. 115, 1431 (2015)
     # <https://doi.org/10.1002/qua.24969>`_]
     [
-        (1, 1, "occupation_number", np.array([1])),
-        (2, 5, "occupation_number", np.array([1, 1, 0, 0, 0])),
-        (1, 5, "occupation_number", np.array([1, 0, 0, 0, 0])),
-        (5, 5, "occupation_number", np.array([1, 1, 1, 1, 1])),
-        (1, 1, "parity", np.array([1])),
-        (2, 5, "parity", np.array([1, 0, 0, 0, 0])),
-        (1, 5, "parity", np.array([1, 1, 1, 1, 1])),
-        (5, 5, "parity", np.array([1, 0, 1, 0, 1])),
-        (1, 1, "bravyi_kitaev", np.array([1])),
-        (2, 5, "bravyi_kitaev", np.array([1, 0, 0, 0, 0])),
-        (1, 5, "bravyi_kitaev", np.array([1, 1, 0, 1, 0])),
-        (5, 5, "bravyi_kitaev", np.array([1, 0, 1, 0, 1])),
+        (1, 1, "occupation_number", pnp.array([1])),
+        (2, 5, "occupation_number", pnp.array([1, 1, 0, 0, 0])),
+        (1, 5, "occupation_number", pnp.array([1, 0, 0, 0, 0])),
+        (5, 5, "occupation_number", pnp.array([1, 1, 1, 1, 1])),
+        (1, 1, "parity", pnp.array([1])),
+        (2, 5, "parity", pnp.array([1, 0, 0, 0, 0])),
+        (1, 5, "parity", pnp.array([1, 1, 1, 1, 1])),
+        (5, 5, "parity", pnp.array([1, 0, 1, 0, 1])),
+        (1, 1, "bravyi_kitaev", pnp.array([1])),
+        (2, 5, "bravyi_kitaev", pnp.array([1, 0, 0, 0, 0])),
+        (1, 5, "bravyi_kitaev", pnp.array([1, 1, 0, 1, 0])),
+        (5, 5, "bravyi_kitaev", pnp.array([1, 0, 1, 0, 1])),
     ],
 )
 def test_hf_state(electrons, orbitals, basis, exp_state):
@@ -328,17 +328,17 @@ def test_hf_state(electrons, orbitals, basis, exp_state):
     res_state = qchem.hf_state(electrons, orbitals, basis)
 
     assert len(res_state) == len(exp_state)
-    assert np.allclose(res_state, exp_state)
+    assert pnp.allclose(res_state, exp_state)
 
 
 @pytest.mark.parametrize(
     ("electrons", "symbols", "geometry", "charge"),
     [
-        (2, ["H", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False), 0),
+        (2, ["H", "H"], pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False), 0),
         (
             2,
             ["H", "H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]], requires_grad=False),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]], requires_grad=False),
             1,
         ),
     ],
@@ -529,7 +529,7 @@ def test_consistent_pubchem_mol_data(identifier, identifier_type):
 
     ref_mol_data_3d = (
         ["C", "H", "H", "H", "H"],
-        np.array(
+        pnp.array(
             [
                 [0.0, 0.0, 0.0],
                 [1.04709725, 1.51102501, 0.93824902],
@@ -539,7 +539,7 @@ def test_consistent_pubchem_mol_data(identifier, identifier_type):
             ]
         ),
     )
-    ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]))
+    ref_mol_data_2d = (["H", "H"], pnp.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]))
 
     mock_gc, mock_fc = ft.partial(mock_get_cids, pcp=pcp), ft.partial(mock_from_cid, pcp=pcp)
     with patch.dict(sys.modules, {"pubchempy": pcp}) and patch.object(
@@ -550,7 +550,7 @@ def test_consistent_pubchem_mol_data(identifier, identifier_type):
         ref_mol_data = ref_mol_data_2d if pub_mol_data[0] == ["H", "H"] else ref_mol_data_3d
 
         assert ref_mol_data[0] == pub_mol_data[0]
-        assert np.allclose(ref_mol_data[1], pub_mol_data[1])
+        assert pnp.allclose(ref_mol_data[1], pub_mol_data[1])
 
 
 @pytest.mark.parametrize(

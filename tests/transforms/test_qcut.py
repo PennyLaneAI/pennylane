@@ -35,7 +35,7 @@ from networkx import number_of_selfloops
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qcut
 from pennylane.queuing import WrappedObj
 from pennylane.wires import Wires
@@ -51,17 +51,17 @@ def suppress_tape_property_deprecation_warning():
 pytestmark = pytest.mark.qcut
 
 I, X, Y, Z = (
-    np.eye(2),
+    pnp.eye(2),
     qml.PauliX.compute_matrix(),
     qml.PauliY.compute_matrix(),
     qml.PauliZ.compute_matrix(),
 )
 
 states_pure = [
-    np.array([1, 0]),
-    np.array([0, 1]),
-    np.array([1, 1]) / np.sqrt(2),
-    np.array([1, 1j]) / np.sqrt(2),
+    pnp.array([1, 0]),
+    pnp.array([0, 1]),
+    pnp.array([1, 1]) / pnp.sqrt(2),
+    pnp.array([1, 1j]) / pnp.sqrt(2),
 ]
 
 with qml.queuing.AnnotatedQueue() as q_no_cut:
@@ -116,8 +116,8 @@ def kron(*args):
     if len(args) == 1:
         return args[0]
     if len(args) == 2:
-        return np.kron(args[0], args[1])
-    return np.kron(args[0], kron(*args[1:]))
+        return pnp.kron(args[0], args[1])
+    return pnp.kron(args[0], kron(*args[1:]))
 
 
 def fn(x):
@@ -291,7 +291,7 @@ def compare_measurements(meas1, meas2):
     assert get_name(meas1.return_type) == get_name(meas2.return_type)
     obs1 = meas1.obs
     obs2 = meas2.obs
-    assert np.array(get_name(obs1) == get_name(obs2)).all()
+    assert pnp.array(get_name(obs1) == get_name(obs2)).all()
     assert obs1.wires.tolist() == obs2.wires.tolist()
 
 
@@ -453,8 +453,8 @@ class TestTapeToGraph:
                 ],
             ),
             (
-                qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0]),
-                [qml.expval(qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0]))],
+                qml.Hermitian(pnp.array([[1, 0], [0, -1]]), wires=[0]),
+                [qml.expval(qml.Hermitian(pnp.array([[1, 0], [0, -1]]), wires=[0]))],
             ),
             (
                 qml.Projector([0, 1], wires=[0, 1]) @ qml.Projector([1, 0], wires=[0, 2]),
@@ -1899,7 +1899,7 @@ class TestExpandFragmentTapesMC:
         }
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
-        fixed_choice = np.array([[4, 0, 1]])
+        fixed_choice = pnp.array([[4, 0, 1]])
 
         class _MockRNG:
 
@@ -1912,7 +1912,7 @@ class TestExpandFragmentTapesMC:
                 tapes, communication_graph, 3
             )
 
-        assert np.allclose(settings, fixed_choice)
+        assert pnp.allclose(settings, fixed_choice)
 
         frag_0_ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
         frag_0_expected_meas = [
@@ -1970,7 +1970,7 @@ class TestExpandFragmentTapesMC:
 
         communication_graph = MultiDiGraph(frag_edge_data)
 
-        fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
+        fixed_choice = pnp.array([[4, 6], [1, 2], [2, 3], [3, 0]])
 
         class _MockRNG:
 
@@ -1987,7 +1987,7 @@ class TestExpandFragmentTapesMC:
                 frags, communication_graph, 2
             )
 
-        assert np.allclose(settings, fixed_choice)
+        assert pnp.allclose(settings, fixed_choice)
 
         with qml.queuing.AnnotatedQueue() as q1:
             qml.Hadamard(wires=[0])
@@ -2111,12 +2111,12 @@ class TestMCPostprocessing:
         shots = 3
 
         fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
+            pnp.array([[1.0], [0.0], [1.0], [1.0]]),
+            pnp.array([[0.0], [0.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [1.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [-1.0], [1.0]]),
+            pnp.array([[0.0], [-1.0], [-1.0]]),
+            pnp.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [
             qml.math.convert_like(fs, autograd.numpy.ones(1)) for fs in fixed_samples
@@ -2125,9 +2125,9 @@ class TestMCPostprocessing:
         postprocessed = qcut.qcut_processing_fn_sample(
             convert_fixed_samples, communication_graph, shots
         )
-        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+        expected_postprocessed = [pnp.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
 
-        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert pnp.allclose(postprocessed[0], expected_postprocessed[0])
         assert isinstance(convert_fixed_samples[0], type(postprocessed[0]))
 
     @pytest.mark.tf
@@ -2142,21 +2142,21 @@ class TestMCPostprocessing:
         shots = 3
 
         fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
+            pnp.array([[1.0], [0.0], [1.0], [1.0]]),
+            pnp.array([[0.0], [0.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [1.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [-1.0], [1.0]]),
+            pnp.array([[0.0], [-1.0], [-1.0]]),
+            pnp.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [qml.math.convert_like(fs, tf.ones(1)) for fs in fixed_samples]
 
         postprocessed = qcut.qcut_processing_fn_sample(
             convert_fixed_samples, communication_graph, shots
         )
-        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+        expected_postprocessed = [pnp.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
 
-        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert pnp.allclose(postprocessed[0], expected_postprocessed[0])
         assert isinstance(convert_fixed_samples[0], type(postprocessed[0]))
 
     @pytest.mark.torch
@@ -2171,21 +2171,21 @@ class TestMCPostprocessing:
         shots = 3
 
         fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
+            pnp.array([[1.0], [0.0], [1.0], [1.0]]),
+            pnp.array([[0.0], [0.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [1.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [-1.0], [1.0]]),
+            pnp.array([[0.0], [-1.0], [-1.0]]),
+            pnp.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [qml.math.convert_like(fs, torch.ones(1)) for fs in fixed_samples]
 
         postprocessed = qcut.qcut_processing_fn_sample(
             convert_fixed_samples, communication_graph, shots
         )
-        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+        expected_postprocessed = [pnp.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
 
-        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert pnp.allclose(postprocessed[0], expected_postprocessed[0])
         assert isinstance(convert_fixed_samples[0], type(postprocessed[0]))
 
     @pytest.mark.jax
@@ -2200,12 +2200,12 @@ class TestMCPostprocessing:
         shots = 3
 
         fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
+            pnp.array([[1.0], [0.0], [1.0], [1.0]]),
+            pnp.array([[0.0], [0.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [1.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [-1.0], [1.0]]),
+            pnp.array([[0.0], [-1.0], [-1.0]]),
+            pnp.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [
             qml.math.convert_like(fs, jax.numpy.ones(1)) for fs in fixed_samples
@@ -2214,9 +2214,9 @@ class TestMCPostprocessing:
         postprocessed = qcut.qcut_processing_fn_sample(
             convert_fixed_samples, communication_graph, shots
         )
-        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+        expected_postprocessed = [pnp.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
 
-        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert pnp.allclose(postprocessed[0], expected_postprocessed[0])
         assert isinstance(convert_fixed_samples[0], type(postprocessed[0]))
 
     @pytest.mark.autograd
@@ -2231,21 +2231,21 @@ class TestMCPostprocessing:
         shots = 3
 
         fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
+            pnp.array([[1.0], [0.0], [1.0], [1.0]]),
+            pnp.array([[0.0], [0.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [1.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [-1.0], [1.0]]),
+            pnp.array([[0.0], [-1.0], [-1.0]]),
+            pnp.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [
             qml.math.convert_like(fs, autograd.numpy.ones(1)) for fs in fixed_samples
         ]
 
-        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+        fixed_settings = pnp.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
-        spy_prod = mocker.spy(np, "prod")
-        spy_hstack = mocker.spy(np, "hstack")
+        spy_prod = mocker.spy(pnp, "prod")
+        spy_hstack = mocker.spy(pnp, "hstack")
 
         postprocessed = qcut.qcut_processing_fn_mc(
             convert_fixed_samples, communication_graph, fixed_settings, shots, fn
@@ -2254,31 +2254,31 @@ class TestMCPostprocessing:
         expected = -85.33333333333333
 
         prod_args = [
-            np.array([1.0, 1.0, -1.0, 1.0]),
+            pnp.array([1.0, 1.0, -1.0, 1.0]),
             [0.5, -0.5, 0.5, -0.5],
-            np.array([1.0, -1.0, -1.0, -1.0]),
+            pnp.array([1.0, -1.0, -1.0, -1.0]),
             [-0.5, -0.5, 0.5, 0.5],
-            np.array([1.0, -1.0, 1.0, 1.0]),
+            pnp.array([1.0, -1.0, 1.0, 1.0]),
             [0.5, 0.5, -0.5, 0.5],
         ]
 
         hstack_args = [
-            [np.array([1.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
-            [np.array([0.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
-            [np.array([0.0, 1.0]), np.array([1.0])],
-            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+            [pnp.array([1.0, 0.0]), pnp.array([0.0])],
+            [pnp.array([1.0, 1.0]), pnp.array([-1.0, 1.0])],
+            [pnp.array([0.0, 0.0]), pnp.array([0.0])],
+            [pnp.array([1.0, -1.0]), pnp.array([-1.0, -1.0])],
+            [pnp.array([0.0, 1.0]), pnp.array([1.0])],
+            [pnp.array([1.0, -1.0]), pnp.array([1.0, 1.0])],
         ]
 
         for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
-            assert np.allclose(arg[0][0], expected_arg)
+            assert pnp.allclose(arg[0][0], expected_arg)
 
         for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
             for arg, expected_arg in zip(args[0][0], expected_args):
-                assert np.allclose(arg, expected_arg)
+                assert pnp.allclose(arg, expected_arg)
 
-        assert np.isclose(postprocessed, expected)
+        assert pnp.isclose(postprocessed, expected)
         assert isinstance(convert_fixed_samples[0], type(postprocessed))
 
     @pytest.mark.tf
@@ -2293,19 +2293,19 @@ class TestMCPostprocessing:
         shots = 3
 
         fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
+            pnp.array([[1.0], [0.0], [1.0], [1.0]]),
+            pnp.array([[0.0], [0.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [1.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [-1.0], [1.0]]),
+            pnp.array([[0.0], [-1.0], [-1.0]]),
+            pnp.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [qml.math.convert_like(fs, tf.ones(1)) for fs in fixed_samples]
 
-        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+        fixed_settings = pnp.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
-        spy_prod = mocker.spy(np, "prod")
-        spy_hstack = mocker.spy(np, "hstack")
+        spy_prod = mocker.spy(pnp, "prod")
+        spy_hstack = mocker.spy(pnp, "hstack")
 
         postprocessed = qcut.qcut_processing_fn_mc(
             convert_fixed_samples, communication_graph, fixed_settings, shots, fn
@@ -2314,31 +2314,31 @@ class TestMCPostprocessing:
         expected = -85.33333333333333
 
         prod_args = [
-            np.array([1.0, 1.0, -1.0, 1.0]),
+            pnp.array([1.0, 1.0, -1.0, 1.0]),
             [0.5, -0.5, 0.5, -0.5],
-            np.array([1.0, -1.0, -1.0, -1.0]),
+            pnp.array([1.0, -1.0, -1.0, -1.0]),
             [-0.5, -0.5, 0.5, 0.5],
-            np.array([1.0, -1.0, 1.0, 1.0]),
+            pnp.array([1.0, -1.0, 1.0, 1.0]),
             [0.5, 0.5, -0.5, 0.5],
         ]
 
         hstack_args = [
-            [np.array([1.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
-            [np.array([0.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
-            [np.array([0.0, 1.0]), np.array([1.0])],
-            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+            [pnp.array([1.0, 0.0]), pnp.array([0.0])],
+            [pnp.array([1.0, 1.0]), pnp.array([-1.0, 1.0])],
+            [pnp.array([0.0, 0.0]), pnp.array([0.0])],
+            [pnp.array([1.0, -1.0]), pnp.array([-1.0, -1.0])],
+            [pnp.array([0.0, 1.0]), pnp.array([1.0])],
+            [pnp.array([1.0, -1.0]), pnp.array([1.0, 1.0])],
         ]
 
         for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
-            assert np.allclose(arg[0][0], expected_arg)
+            assert pnp.allclose(arg[0][0], expected_arg)
 
         for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
             for arg, expected_arg in zip(args[0][0], expected_args):
-                assert np.allclose(arg, expected_arg)
+                assert pnp.allclose(arg, expected_arg)
 
-        assert np.isclose(postprocessed, expected)
+        assert pnp.isclose(postprocessed, expected)
         assert isinstance(convert_fixed_samples[0], type(postprocessed))
 
     @pytest.mark.torch
@@ -2353,19 +2353,19 @@ class TestMCPostprocessing:
         shots = 3
 
         fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
+            pnp.array([[1.0], [0.0], [1.0], [1.0]]),
+            pnp.array([[0.0], [0.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [1.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [-1.0], [1.0]]),
+            pnp.array([[0.0], [-1.0], [-1.0]]),
+            pnp.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [qml.math.convert_like(fs, torch.ones(1)) for fs in fixed_samples]
 
-        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+        fixed_settings = pnp.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
-        spy_prod = mocker.spy(np, "prod")
-        spy_hstack = mocker.spy(np, "hstack")
+        spy_prod = mocker.spy(pnp, "prod")
+        spy_hstack = mocker.spy(pnp, "hstack")
 
         postprocessed = qcut.qcut_processing_fn_mc(
             convert_fixed_samples, communication_graph, fixed_settings, shots, fn
@@ -2374,31 +2374,31 @@ class TestMCPostprocessing:
         expected = -85.33333333333333
 
         prod_args = [
-            np.array([1.0, 1.0, -1.0, 1.0]),
+            pnp.array([1.0, 1.0, -1.0, 1.0]),
             [0.5, -0.5, 0.5, -0.5],
-            np.array([1.0, -1.0, -1.0, -1.0]),
+            pnp.array([1.0, -1.0, -1.0, -1.0]),
             [-0.5, -0.5, 0.5, 0.5],
-            np.array([1.0, -1.0, 1.0, 1.0]),
+            pnp.array([1.0, -1.0, 1.0, 1.0]),
             [0.5, 0.5, -0.5, 0.5],
         ]
 
         hstack_args = [
-            [np.array([1.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
-            [np.array([0.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
-            [np.array([0.0, 1.0]), np.array([1.0])],
-            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+            [pnp.array([1.0, 0.0]), pnp.array([0.0])],
+            [pnp.array([1.0, 1.0]), pnp.array([-1.0, 1.0])],
+            [pnp.array([0.0, 0.0]), pnp.array([0.0])],
+            [pnp.array([1.0, -1.0]), pnp.array([-1.0, -1.0])],
+            [pnp.array([0.0, 1.0]), pnp.array([1.0])],
+            [pnp.array([1.0, -1.0]), pnp.array([1.0, 1.0])],
         ]
 
         for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
-            assert np.allclose(arg[0][0], expected_arg)
+            assert pnp.allclose(arg[0][0], expected_arg)
 
         for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
             for arg, expected_arg in zip(args[0][0], expected_args):
-                assert np.allclose(arg, expected_arg)
+                assert pnp.allclose(arg, expected_arg)
 
-        assert np.isclose(postprocessed, expected)
+        assert pnp.isclose(postprocessed, expected)
         assert isinstance(convert_fixed_samples[0], type(postprocessed))
 
     @pytest.mark.jax
@@ -2413,21 +2413,21 @@ class TestMCPostprocessing:
         shots = 3
 
         fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
+            pnp.array([[1.0], [0.0], [1.0], [1.0]]),
+            pnp.array([[0.0], [0.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [1.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [-1.0], [1.0]]),
+            pnp.array([[0.0], [-1.0], [-1.0]]),
+            pnp.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [
             qml.math.convert_like(fs, jax.numpy.ones(1)) for fs in fixed_samples
         ]
 
-        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+        fixed_settings = pnp.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
-        spy_prod = mocker.spy(np, "prod")
-        spy_hstack = mocker.spy(np, "hstack")
+        spy_prod = mocker.spy(pnp, "prod")
+        spy_hstack = mocker.spy(pnp, "hstack")
 
         postprocessed = qcut.qcut_processing_fn_mc(
             convert_fixed_samples, communication_graph, fixed_settings, shots, fn
@@ -2436,31 +2436,31 @@ class TestMCPostprocessing:
         expected = -85.33333333333333
 
         prod_args = [
-            np.array([1.0, 1.0, -1.0, 1.0]),
+            pnp.array([1.0, 1.0, -1.0, 1.0]),
             [0.5, -0.5, 0.5, -0.5],
-            np.array([1.0, -1.0, -1.0, -1.0]),
+            pnp.array([1.0, -1.0, -1.0, -1.0]),
             [-0.5, -0.5, 0.5, 0.5],
-            np.array([1.0, -1.0, 1.0, 1.0]),
+            pnp.array([1.0, -1.0, 1.0, 1.0]),
             [0.5, 0.5, -0.5, 0.5],
         ]
 
         hstack_args = [
-            [np.array([1.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
-            [np.array([0.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
-            [np.array([0.0, 1.0]), np.array([1.0])],
-            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+            [pnp.array([1.0, 0.0]), pnp.array([0.0])],
+            [pnp.array([1.0, 1.0]), pnp.array([-1.0, 1.0])],
+            [pnp.array([0.0, 0.0]), pnp.array([0.0])],
+            [pnp.array([1.0, -1.0]), pnp.array([-1.0, -1.0])],
+            [pnp.array([0.0, 1.0]), pnp.array([1.0])],
+            [pnp.array([1.0, -1.0]), pnp.array([1.0, 1.0])],
         ]
 
         for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
-            assert np.allclose(arg[0][0], expected_arg)
+            assert pnp.allclose(arg[0][0], expected_arg)
 
         for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
             for arg, expected_arg in zip(args[0][0], expected_args):
-                assert np.allclose(arg, expected_arg)
+                assert pnp.allclose(arg, expected_arg)
 
-        assert np.isclose(postprocessed, expected)
+        assert pnp.isclose(postprocessed, expected)
         assert isinstance(convert_fixed_samples[0], type(postprocessed))
 
     def test_reshape_results(self):
@@ -2470,18 +2470,18 @@ class TestMCPostprocessing:
         """
 
         results = [
-            np.array([[0.0], [-1.0]]),
-            np.array([[1.0], [1.0]]),
-            np.array([[1.0], [1.0]]),
-            np.array([[1.0], [1.0]]),
-            np.array([[1.0], [1.0]]),
-            np.array([[0.0], [0.0]]),
+            pnp.array([[0.0], [-1.0]]),
+            pnp.array([[1.0], [1.0]]),
+            pnp.array([[1.0], [1.0]]),
+            pnp.array([[1.0], [1.0]]),
+            pnp.array([[1.0], [1.0]]),
+            pnp.array([[0.0], [0.0]]),
         ]
 
         expected_reshaped = [
-            [np.array([0.0, -1.0]), np.array([1.0, 1.0])],
-            [np.array([1.0, 1.0]), np.array([1.0, 1.0])],
-            [np.array([1.0, 1.0]), np.array([0.0, 0.0])],
+            [pnp.array([0.0, -1.0]), pnp.array([1.0, 1.0])],
+            [pnp.array([1.0, 1.0]), pnp.array([1.0, 1.0])],
+            [pnp.array([1.0, 1.0]), pnp.array([0.0, 0.0])],
         ]
 
         shots = 3
@@ -2490,7 +2490,7 @@ class TestMCPostprocessing:
 
         for resh, exp_resh in zip(reshaped, expected_reshaped):
             for arr, exp_arr in zip(resh, exp_resh):
-                assert np.allclose(arr, exp_arr)
+                assert pnp.allclose(arr, exp_arr)
 
     def test_classical_processing_error(self):
         """
@@ -2501,18 +2501,18 @@ class TestMCPostprocessing:
         shots = 3
 
         fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
+            pnp.array([[1.0], [0.0], [1.0], [1.0]]),
+            pnp.array([[0.0], [0.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [1.0], [1.0], [-1.0]]),
+            pnp.array([[0.0], [-1.0], [1.0]]),
+            pnp.array([[0.0], [-1.0], [-1.0]]),
+            pnp.array([[1.0], [1.0], [1.0]]),
         ]
 
         def func(x):
             return 2 * (-1) ** (x[0] + x[1])
 
-        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+        fixed_settings = pnp.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
         with pytest.raises(ValueError, match="The classical processing function supplied must "):
             qcut.qcut_processing_fn_mc(
@@ -2571,7 +2571,7 @@ class TestCutCircuitMCTransform:
         cut_res_mc = circuit(v)
 
         target = target_circuit(v)
-        assert np.isclose(cut_res_mc, target, atol=0.15)  # not guaranteed to pass each time
+        assert pnp.isclose(cut_res_mc, target, atol=0.15)  # not guaranteed to pass each time
 
     def test_cut_circuit_mc_sample(self, dev_fn):
         """
@@ -2827,7 +2827,7 @@ class TestCutCircuitMCTransform:
         v = 0.319
         res = cut_circuit(v)
         assert res.shape == (shots, 2)
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, pnp.ndarray)
 
     @pytest.mark.autograd
     def test_samples_autograd(self, dev_fn):
@@ -3116,14 +3116,14 @@ class TestCutCircuitMCTransform:
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.WireCut(wires=1)
-            qml.RX(np.sin(x) ** 2, wires=1)
+            qml.RX(pnp.sin(x) ** 2, wires=1)
             qml.CNOT(wires=[1, 2])
             qml.WireCut(wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.sample(wires=[0, 1])
 
         spy = mocker.spy(qcut.cutcircuit_mc, "qcut_processing_fn_mc")
-        x = np.array(0.531, requires_grad=True)
+        x = pnp.array(0.531, requires_grad=True)
         res = circuit(x)
 
         spy.assert_called_once()
@@ -3197,7 +3197,7 @@ class TestCutCircuitMCTransform:
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def circuit(params):
-            qml.BasisState(np.array([1]), wires=[0])
+            qml.BasisState(pnp.array([1]), wires=[0])
             qml.WireCut(wires=0)
 
             qml.CNOT(wires=[0, 1])
@@ -3215,18 +3215,18 @@ class TestCutCircuitMCTransform:
             qml.WireCut(wires=3)
             two_qubit_unitary(params[2] ** 2, wires=[3, 4])
             qml.WireCut(wires=3)
-            two_qubit_unitary(np.sin(params[3]), wires=[3, 2])
+            two_qubit_unitary(pnp.sin(params[3]), wires=[3, 2])
             qml.WireCut(wires=3)
-            two_qubit_unitary(np.sqrt(params[4]), wires=[4, 3])
+            two_qubit_unitary(pnp.sqrt(params[4]), wires=[4, 3])
             qml.WireCut(wires=3)
-            two_qubit_unitary(np.cos(params[1]), wires=[3, 2])
+            two_qubit_unitary(pnp.cos(params[1]), wires=[3, 2])
             qml.CRX(params[2], wires=[4, 1])
 
             return qml.sample(wires=[1, 2, 3])
 
         spy = mocker.spy(qcut.cutcircuit_mc, "qcut_processing_fn_mc")
 
-        params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
+        params = pnp.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
         res = circuit(params)
 
         spy.assert_called_once()
@@ -3236,14 +3236,14 @@ class TestCutCircuitMCTransform:
 class TestContractTensors:
     """Tests for the contract_tensors function"""
 
-    t = [np.arange(4), np.arange(4, 8)]
+    t = [pnp.arange(4), pnp.arange(4, 8)]
     # make copies of nodes to ensure id comparisons work correctly
     m = [[qcut.MeasureNode(wires=0)], []]
     p = [[], [qcut.PrepareNode(wires=0)]]
     m_copy, p_copy = copy.copy(m), copy.copy(p)
     edge_dict = {"pair": (WrappedObj(m_copy[0][0]), WrappedObj(p_copy[1][0]))}
     g = MultiDiGraph([(0, 1, edge_dict)])
-    expected_result = np.dot(*t)
+    expected_result = pnp.dot(*t)
 
     @pytest.mark.parametrize("use_opt_einsum", [False, True])
     def test_basic(self, use_opt_einsum):
@@ -3252,7 +3252,7 @@ class TestContractTensors:
             pytest.importorskip("opt_einsum")
         res = qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
 
-        assert np.allclose(res, self.expected_result)
+        assert pnp.allclose(res, self.expected_result)
 
     def test_fail_import(self, monkeypatch):
         """Test if an ImportError is raised when opt_einsum is requested but not installed"""
@@ -3275,16 +3275,16 @@ class TestContractTensors:
     params = [0.3, 0.5]
 
     expected_grad_0 = (
-        np.cos(params[0]) * np.cos(params[1])
-        + 2 * np.cos(params[0]) * np.sin(params[0]) * np.cos(params[1]) ** 2
-        + 3 * np.cos(params[0]) * np.sin(params[0]) ** 2 * np.cos(params[1]) ** 3
+        pnp.cos(params[0]) * pnp.cos(params[1])
+        + 2 * pnp.cos(params[0]) * pnp.sin(params[0]) * pnp.cos(params[1]) ** 2
+        + 3 * pnp.cos(params[0]) * pnp.sin(params[0]) ** 2 * pnp.cos(params[1]) ** 3
     )
     expected_grad_1 = (
-        -np.sin(params[0]) * np.sin(params[1])
-        - 2 * np.sin(params[0]) ** 2 * np.sin(params[1]) * np.cos(params[1])
-        - 3 * np.sin(params[0]) ** 3 * np.sin(params[1]) * np.cos(params[1]) ** 2
+        -pnp.sin(params[0]) * pnp.sin(params[1])
+        - 2 * pnp.sin(params[0]) ** 2 * pnp.sin(params[1]) * pnp.cos(params[1])
+        - 3 * pnp.sin(params[0]) ** 3 * pnp.sin(params[1]) * pnp.cos(params[1]) ** 2
     )
-    expected_grad = np.array([expected_grad_0, expected_grad_1])
+    expected_grad = pnp.array([expected_grad_0, expected_grad_1])
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
@@ -3294,16 +3294,16 @@ class TestContractTensors:
             pytest.importorskip("opt_einsum")
 
         def contract(params):
-            t1 = np.asarray([np.sin(params[0]) ** i for i in range(4)])
-            t2 = np.asarray([np.cos(params[1]) ** i for i in range(4)])
+            t1 = pnp.asarray([pnp.sin(params[0]) ** i for i in range(4)])
+            t2 = pnp.asarray([pnp.cos(params[1]) ** i for i in range(4)])
             t = [t1, t2]
             r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
             return r
 
-        params = np.array(self.params, requires_grad=True)
+        params = pnp.array(self.params, requires_grad=True)
         grad = qml.grad(contract)(params)
 
-        assert np.allclose(grad, self.expected_grad)
+        assert pnp.allclose(grad, self.expected_grad)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
@@ -3323,7 +3323,7 @@ class TestContractTensors:
         r.backward()
         grad = params.grad
 
-        assert np.allclose(grad, self.expected_grad)
+        assert pnp.allclose(grad, self.expected_grad)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
@@ -3344,7 +3344,7 @@ class TestContractTensors:
 
         grad = tape.gradient(r, params)
 
-        assert np.allclose(grad, self.expected_grad)
+        assert pnp.allclose(grad, self.expected_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
@@ -3396,9 +3396,9 @@ class TestContractTensors:
             spy = mocker.spy(qml.math, "einsum")
 
         t = [
-            np.arange(4**8).reshape((4,) * 8),
-            np.arange(4**4).reshape((4,) * 4),
-            np.arange(4**2).reshape((4,) * 2),
+            pnp.arange(4**8).reshape((4,) * 8),
+            pnp.arange(4**4).reshape((4,) * 4),
+            pnp.arange(4**2).reshape((4,) * 2),
         ]
         m = [
             [
@@ -3446,7 +3446,7 @@ class TestContractTensors:
         expected_eqn = "abccdegf,deab,fg"
 
         assert eqn == expected_eqn
-        assert np.allclose(res, np.einsum(eqn, *t))
+        assert pnp.allclose(res, pnp.einsum(eqn, *t))
 
 
 class TestQCutProcessingFn:
@@ -3459,12 +3459,12 @@ class TestQCutProcessingFn:
         prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 4]
         measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 3]
         tensors = [
-            np.arange(4**5).reshape((4,) * 5),
-            np.arange(4**4).reshape((4,) * 4),
-            np.arange(4**4).reshape((4,) * 4),
-            np.arange(4**7).reshape((4,) * 7),
+            pnp.arange(4**5).reshape((4,) * 5),
+            pnp.arange(4**4).reshape((4,) * 4),
+            pnp.arange(4**4).reshape((4,) * 4),
+            pnp.arange(4**7).reshape((4,) * 7),
         ]
-        results = np.concatenate([t.flatten() for t in tensors])
+        results = pnp.concatenate([t.flatten() for t in tensors])
 
         def mock_process_tensor(r, num_prep, num_meas):
             return qml.math.reshape(r, (4,) * (num_prep + num_meas))
@@ -3474,15 +3474,15 @@ class TestQCutProcessingFn:
             tensors_out = qcut._to_tensors(results, prepare_nodes, measure_nodes)
 
         for t1, t2 in zip(tensors, tensors_out):
-            assert np.allclose(t1, t2)
+            assert pnp.allclose(t1, t2)
 
     def test_to_tensors_raises(self):
         """Tests if a ValueError is raised when a results vector is passed to _to_tensors with a
         size that is incompatible with the prepare_nodes and measure_nodes arguments"""
         prepare_nodes = [[None] * 3]
         measure_nodes = [[None] * 2]
-        tensors = [np.arange(4**5).reshape((4,) * 5), np.arange(4)]
-        results = np.concatenate([t.flatten() for t in tensors])
+        tensors = [pnp.arange(4**5).reshape((4,) * 5), pnp.arange(4)]
+        results = pnp.concatenate([t.flatten() for t in tensors])
 
         with pytest.raises(ValueError, match="should be a flat list of length 1024"):
             qcut._to_tensors(results, prepare_nodes, measure_nodes)
@@ -3496,7 +3496,7 @@ class TestQCutProcessingFn:
         U = unitary_group.rvs(2**n, random_state=1967)
 
         # First, create target process tensor
-        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        basis = pnp.array([I, X, Y, Z]) / pnp.sqrt(2)
         prod_inp = itertools.product(range(4), repeat=n)
         prod_out = itertools.product(range(4), repeat=n)
 
@@ -3507,9 +3507,9 @@ class TestQCutProcessingFn:
         for inp, out in itertools.product(prod_inp, prod_out):
             input = kron(*[basis[i] for i in inp])
             output = kron(*[basis[i] for i in out])
-            results.append(np.trace(output @ U @ input @ U.conj().T))
+            results.append(pnp.trace(output @ U @ input @ U.conj().T))
 
-        target_tensor = np.array(results).reshape((4,) * (2 * n))
+        target_tensor = pnp.array(results).reshape((4,) * (2 * n))
 
         # Now, create the input results vector found from executing over the product of |0>, |1>,
         # |+>, |+i> inputs and using the grouped Pauli terms for measurements
@@ -3530,11 +3530,11 @@ class TestQCutProcessingFn:
             input = kron(*[states_pure[i] for i in inp])
             results.append(f(input, out))
 
-        results = qml.math.cast_like(np.concatenate(results), autograd.numpy.ones(1))
+        results = qml.math.cast_like(pnp.concatenate(results), autograd.numpy.ones(1))
 
         # Now apply _process_tensor
         tensor = qcut._process_tensor(results, n, n)
-        assert np.allclose(tensor, target_tensor)
+        assert pnp.allclose(tensor, target_tensor)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n", [1, 2])
@@ -3545,7 +3545,7 @@ class TestQCutProcessingFn:
         U = unitary_group.rvs(2**n, random_state=1967)
 
         # First, create target process tensor
-        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        basis = pnp.array([I, X, Y, Z]) / pnp.sqrt(2)
         prod_inp = itertools.product(range(4), repeat=n)
         prod_out = itertools.product(range(4), repeat=n)
 
@@ -3556,9 +3556,9 @@ class TestQCutProcessingFn:
         for inp, out in itertools.product(prod_inp, prod_out):
             input = kron(*[basis[i] for i in inp])
             output = kron(*[basis[i] for i in out])
-            results.append(np.trace(output @ U @ input @ U.conj().T))
+            results.append(pnp.trace(output @ U @ input @ U.conj().T))
 
-        target_tensor = np.array(results).reshape((4,) * (2 * n))
+        target_tensor = pnp.array(results).reshape((4,) * (2 * n))
 
         # Now, create the input results vector found from executing over the product of |0>, |1>,
         # |+>, |+i> inputs and using the grouped Pauli terms for measurements
@@ -3579,11 +3579,11 @@ class TestQCutProcessingFn:
             input = kron(*[states_pure[i] for i in inp])
             results.append(f(input, out))
 
-        results = qml.math.cast_like(np.concatenate(results), tf.ones(1))
+        results = qml.math.cast_like(pnp.concatenate(results), tf.ones(1))
 
         # Now apply _process_tensor
         tensor = qcut._process_tensor(results, n, n)
-        assert np.allclose(tensor, target_tensor)
+        assert pnp.allclose(tensor, target_tensor)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("n", [1, 2])
@@ -3594,7 +3594,7 @@ class TestQCutProcessingFn:
         U = unitary_group.rvs(2**n, random_state=1967)
 
         # First, create target process tensor
-        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        basis = pnp.array([I, X, Y, Z]) / pnp.sqrt(2)
         prod_inp = itertools.product(range(4), repeat=n)
         prod_out = itertools.product(range(4), repeat=n)
 
@@ -3605,9 +3605,9 @@ class TestQCutProcessingFn:
         for inp, out in itertools.product(prod_inp, prod_out):
             input = kron(*[basis[i] for i in inp])
             output = kron(*[basis[i] for i in out])
-            results.append(np.trace(output @ U @ input @ U.conj().T))
+            results.append(pnp.trace(output @ U @ input @ U.conj().T))
 
-        target_tensor = np.array(results).reshape((4,) * (2 * n))
+        target_tensor = pnp.array(results).reshape((4,) * (2 * n))
 
         # Now, create the input results vector found from executing over the product of |0>, |1>,
         # |+>, |+i> inputs and using the grouped Pauli terms for measurements
@@ -3628,11 +3628,11 @@ class TestQCutProcessingFn:
             input = kron(*[states_pure[i] for i in inp])
             results.append(f(input, out))
 
-        results = qml.math.cast_like(np.concatenate(results), torch.ones(1))
+        results = qml.math.cast_like(pnp.concatenate(results), torch.ones(1))
 
         # Now apply _process_tensor
         tensor = qcut._process_tensor(results, n, n)
-        assert np.allclose(tensor, target_tensor)
+        assert pnp.allclose(tensor, target_tensor)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("n", [1, 2])
@@ -3643,7 +3643,7 @@ class TestQCutProcessingFn:
         U = unitary_group.rvs(2**n, random_state=1967)
 
         # First, create target process tensor
-        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        basis = pnp.array([I, X, Y, Z]) / pnp.sqrt(2)
         prod_inp = itertools.product(range(4), repeat=n)
         prod_out = itertools.product(range(4), repeat=n)
 
@@ -3654,9 +3654,9 @@ class TestQCutProcessingFn:
         for inp, out in itertools.product(prod_inp, prod_out):
             input = kron(*[basis[i] for i in inp])
             output = kron(*[basis[i] for i in out])
-            results.append(np.trace(output @ U @ input @ U.conj().T))
+            results.append(pnp.trace(output @ U @ input @ U.conj().T))
 
-        target_tensor = np.array(results).reshape((4,) * (2 * n))
+        target_tensor = pnp.array(results).reshape((4,) * (2 * n))
 
         # Now, create the input results vector found from executing over the product of |0>, |1>,
         # |+>, |+i> inputs and using the grouped Pauli terms for measurements
@@ -3677,11 +3677,11 @@ class TestQCutProcessingFn:
             input = kron(*[states_pure[i] for i in inp])
             results.append(f(input, out))
 
-        results = qml.math.cast_like(np.concatenate(results), jax.numpy.ones(1))
+        results = qml.math.cast_like(pnp.concatenate(results), jax.numpy.ones(1))
 
         # Now apply _process_tensor
         tensor = qcut._process_tensor(results, n, n)
-        assert np.allclose(tensor, target_tensor)
+        assert pnp.allclose(tensor, target_tensor)
 
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn(self, use_opt_einsum):
@@ -3710,15 +3710,15 @@ class TestQCutProcessingFn:
         ### Find the result using qcut_processing_fn
 
         meas_basis = [I, Z, X, Y]
-        states = [np.outer(s, s.conj()) for s in states_pure]
+        states = [pnp.outer(s, s.conj()) for s in states_pure]
         zero_proj = states[0]
 
         u1 = qml.RX.compute_matrix(x)
         u2 = qml.RY.compute_matrix(y)
         u3 = qml.RX.compute_matrix(z)
-        t1 = np.array([np.trace(b @ u1 @ zero_proj @ u1.conj().T) for b in meas_basis])
-        t2 = np.array([[np.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
-        t3 = np.array([np.trace(Z @ u3 @ s @ u3.conj().T) for s in states])
+        t1 = pnp.array([pnp.trace(b @ u1 @ zero_proj @ u1.conj().T) for b in meas_basis])
+        t2 = pnp.array([[pnp.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
+        t3 = pnp.array([pnp.trace(Z @ u3 @ s @ u3.conj().T) for s in states])
 
         res = [t1, t2.flatten(), t3]
         p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
@@ -3731,7 +3731,7 @@ class TestQCutProcessingFn:
         g = MultiDiGraph(edges)
 
         result = qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
-        assert np.allclose(result, expected_result)
+        assert pnp.allclose(result, expected_result)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
@@ -3741,12 +3741,12 @@ class TestQCutProcessingFn:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        x = np.array(0.9, requires_grad=True)
+        x = pnp.array(0.9, requires_grad=True)
 
         def f(x):
-            t1 = x * np.arange(4)
-            t2 = x**2 * np.arange(16).reshape((4, 4))
-            t3 = np.sin(x * np.pi / 2) * np.arange(4)
+            t1 = x * pnp.arange(4)
+            t2 = x**2 * pnp.arange(16).reshape((4, 4))
+            t3 = pnp.sin(x * pnp.pi / 2) * pnp.arange(4)
 
             res = [t1, t2.flatten(), t3]
             p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
@@ -3762,10 +3762,10 @@ class TestQCutProcessingFn:
 
         grad = qml.grad(f)(x)
         expected_grad = (
-            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+            3 * x**2 * pnp.sin(x * pnp.pi / 2) + x**3 * pnp.cos(x * pnp.pi / 2) * pnp.pi / 2
         ) * f(1)
 
-        assert np.allclose(grad, expected_grad)
+        assert pnp.allclose(grad, expected_grad)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
@@ -3783,7 +3783,7 @@ class TestQCutProcessingFn:
             x = tf.cast(x, dtype=tf.float64)  # pylint:disable=unexpected-keyword-arg
             t1 = x * tf.range(4, dtype=tf.float64)
             t2 = x**2 * tf.range(16, dtype=tf.float64)
-            t3 = tf.sin(x * np.pi / 2) * tf.range(4, dtype=tf.float64)
+            t3 = tf.sin(x * pnp.pi / 2) * tf.range(4, dtype=tf.float64)
 
             res = [t1, t2, t3]
             p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
@@ -3802,10 +3802,10 @@ class TestQCutProcessingFn:
 
         grad = tape.gradient(res, x)
         expected_grad = (
-            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+            3 * x**2 * pnp.sin(x * pnp.pi / 2) + x**3 * pnp.cos(x * pnp.pi / 2) * pnp.pi / 2
         ) * f(1)
 
-        assert np.allclose(grad, expected_grad)
+        assert pnp.allclose(grad, expected_grad)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
@@ -3821,7 +3821,7 @@ class TestQCutProcessingFn:
         def f(x):
             t1 = x * torch.arange(4)
             t2 = x**2 * torch.arange(16)
-            t3 = torch.sin(x * np.pi / 2) * torch.arange(4)
+            t3 = torch.sin(x * pnp.pi / 2) * torch.arange(4)
 
             res = [t1, t2, t3]
             p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
@@ -3842,10 +3842,10 @@ class TestQCutProcessingFn:
         x_ = x.detach().numpy()
         f1 = f(torch.tensor(1, dtype=torch.float64))
         expected_grad = (
-            3 * x_**2 * np.sin(x_ * np.pi / 2) + x_**3 * np.cos(x_ * np.pi / 2) * np.pi / 2
+            3 * x_**2 * pnp.sin(x_ * pnp.pi / 2) + x_**3 * pnp.cos(x_ * pnp.pi / 2) * pnp.pi / 2
         ) * f1
 
-        assert np.allclose(grad.detach().numpy(), expected_grad)
+        assert pnp.allclose(grad.detach().numpy(), expected_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
@@ -3862,7 +3862,7 @@ class TestQCutProcessingFn:
         def f(x):
             t1 = x * jnp.arange(4)
             t2 = x**2 * jnp.arange(16).reshape((4, 4))
-            t3 = jnp.sin(x * np.pi / 2) * jnp.arange(4)
+            t3 = jnp.sin(x * pnp.pi / 2) * jnp.arange(4)
 
             res = [t1, t2.flatten(), t3]
             p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
@@ -3878,10 +3878,10 @@ class TestQCutProcessingFn:
 
         grad = jax.grad(f)(x)
         expected_grad = (
-            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+            3 * x**2 * pnp.sin(x * pnp.pi / 2) + x**3 * pnp.cos(x * pnp.pi / 2) * pnp.pi / 2
         ) * f(1)
 
-        assert np.allclose(grad, expected_grad)
+        assert pnp.allclose(grad, expected_grad)
 
 
 @pytest.mark.parametrize("use_opt_einsum", [True, False])
@@ -3912,17 +3912,17 @@ class TestCutCircuitTransform:
             return qml.expval(qml.PauliZ(wires=[0]))
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-        x = np.array(0.531, requires_grad=True)
+        x = pnp.array(0.531, requires_grad=True)
         cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
         atol = 1e-2 if shots else 1e-8
-        assert np.isclose(cut_circuit(x), float(circuit(x)), atol=atol)
+        assert pnp.isclose(cut_circuit(x), float(circuit(x)), atol=atol)
         spy.assert_called_once()
 
         gradient = qml.grad(circuit)(x)
         cut_gradient = qml.grad(cut_circuit)(x)
 
-        assert np.isclose(gradient, cut_gradient, atol=atol)
+        assert pnp.isclose(gradient, cut_gradient, atol=atol)
 
     @pytest.mark.torch
     def test_simple_cut_circuit_torch(self, use_opt_einsum):
@@ -3952,7 +3952,7 @@ class TestCutCircuitTransform:
 
         res = cut_circuit(x)
         res_expected = circuit(x)
-        assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
+        assert pnp.isclose(res.detach().numpy(), res_expected.detach().numpy())
 
         res.backward()
         grad = x.grad.detach().numpy()
@@ -3961,7 +3961,7 @@ class TestCutCircuitTransform:
         res_expected.backward()
         grad_expected = x.grad.detach().numpy()
 
-        assert np.isclose(grad, grad_expected)
+        assert pnp.isclose(grad, grad_expected)
 
     @pytest.mark.tf
     def test_simple_cut_circuit_tf(self, use_opt_einsum):
@@ -3999,8 +3999,8 @@ class TestCutCircuitTransform:
 
         grad_expected = tape.gradient(res_expected, x)
 
-        assert np.isclose(res, res_expected)
-        assert np.isclose(grad, grad_expected)
+        assert pnp.isclose(res, res_expected)
+        assert pnp.isclose(grad, grad_expected)
 
     @pytest.mark.jax
     def test_simple_cut_circuit_jax(self, use_opt_einsum):
@@ -4035,8 +4035,8 @@ class TestCutCircuitTransform:
         grad = jax.grad(cut_circuit)(x)
         grad_expected = jax.grad(circuit)(x)
 
-        assert np.isclose(res, res_expected)
-        assert np.isclose(grad, grad_expected)
+        assert pnp.isclose(res, res_expected)
+        assert pnp.isclose(grad, grad_expected)
 
     def test_with_mid_circuit_measurement(self, mocker, use_opt_einsum):
         """Tests the full circuit cutting pipeline returns the correct value and gradient for a
@@ -4051,23 +4051,23 @@ class TestCutCircuitTransform:
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.WireCut(wires=1)
-            qml.RX(np.sin(x) ** 2, wires=1)
+            qml.RX(pnp.sin(x) ** 2, wires=1)
             qml.CNOT(wires=[1, 2])
             qml.WireCut(wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-        x = np.array(0.531, requires_grad=True)
+        x = pnp.array(0.531, requires_grad=True)
         cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
-        assert np.isclose(cut_circuit(x), float(circuit(x)))
+        assert pnp.isclose(cut_circuit(x), float(circuit(x)))
         spy.assert_called_once()
 
         gradient = qml.grad(circuit)(x)
         cut_gradient = qml.grad(cut_circuit)(x)
 
-        assert np.isclose(gradient, cut_gradient)
+        assert pnp.isclose(gradient, cut_gradient)
 
     @pytest.mark.torch
     def test_simple_cut_circuit_torch_trace(self, mocker, use_opt_einsum):
@@ -4109,7 +4109,7 @@ class TestCutCircuitTransform:
         spy.assert_not_called()
 
         res_expected = circuit(x)
-        assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
+        assert pnp.isclose(res.detach().numpy(), res_expected.detach().numpy())
 
         res.backward()
         grad = x.grad.detach().numpy()
@@ -4118,15 +4118,15 @@ class TestCutCircuitTransform:
         res_expected.backward()
         grad_expected = x.grad.detach().numpy()
 
-        assert np.isclose(grad, grad_expected)
+        assert pnp.isclose(grad, grad_expected)
 
         # Run more times over a range of values
-        for x in np.linspace(-1, 1, 10):
+        for x in pnp.linspace(-1, 1, 10):
             x = torch.tensor(x, requires_grad=True)
             res = cut_circuit_trace(x)
 
             res_expected = circuit(x)
-            assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
+            assert pnp.isclose(res.detach().numpy(), res_expected.detach().numpy())
 
             res.backward()
             grad = x.grad.detach().numpy()
@@ -4135,7 +4135,7 @@ class TestCutCircuitTransform:
             res_expected.backward()
             grad_expected = x.grad.detach().numpy()
 
-            assert np.isclose(grad, grad_expected)
+            assert pnp.isclose(grad, grad_expected)
 
         spy.assert_not_called()
 
@@ -4191,11 +4191,11 @@ class TestCutCircuitTransform:
 
         grad_expected = tape.gradient(res_expected, x)
 
-        assert np.isclose(res, res_expected)
-        assert np.isclose(grad, grad_expected)
+        assert pnp.isclose(res, res_expected)
+        assert pnp.isclose(grad, grad_expected)
 
         # Run more times over a range of values
-        for x in np.linspace(-1, 1, 10):
+        for x in pnp.linspace(-1, 1, 10):
             x = tf.Variable(x, dtype=tf.float32)
 
             cut_circuit_jit(x)
@@ -4210,8 +4210,8 @@ class TestCutCircuitTransform:
 
             grad_expected = tape.gradient(res_expected, x)
 
-            assert np.isclose(res, res_expected)
-            assert np.isclose(grad, grad_expected)
+            assert pnp.isclose(res, res_expected)
+            assert pnp.isclose(grad, grad_expected)
 
         spy.assert_called_once()
 
@@ -4254,30 +4254,30 @@ class TestCutCircuitTransform:
         res_expected = circuit(x)
 
         spy.assert_called_once()
-        assert np.isclose(res, res_expected)
+        assert pnp.isclose(res, res_expected)
 
         jax.grad(cut_circuit_jit)(x)
         grad = jax.grad(cut_circuit_jit)(x)
         grad_expected = jax.grad(circuit)(x)
 
-        assert np.isclose(grad, grad_expected)
+        assert pnp.isclose(grad, grad_expected)
         assert spy.call_count == 1
 
         # Run more times over a range of values
-        for x in np.linspace(-1, 1, 10):
+        for x in pnp.linspace(-1, 1, 10):
             x = jnp.array(x)
 
             cut_circuit_jit(x)
             res = cut_circuit_jit(x)
             res_expected = circuit(x)
 
-            assert np.isclose(res, res_expected)
+            assert pnp.isclose(res, res_expected)
 
             jax.grad(cut_circuit_jit)(x)
             grad = jax.grad(cut_circuit_jit)(x)
             grad_expected = jax.grad(circuit)(x)
 
-            assert np.isclose(grad, grad_expected)
+            assert pnp.isclose(grad, grad_expected)
 
         assert spy.call_count == 2
 
@@ -4310,8 +4310,8 @@ class TestCutCircuitTransform:
         res_1 = cut_circuit_1()
         res_2 = cut_circuit_2()
 
-        assert np.isclose(res_expected, res_1)
-        assert np.isclose(res_expected, res_2)
+        assert pnp.isclose(res_expected, res_1)
+        assert pnp.isclose(res_expected, res_2)
 
     def test_circuit_with_disconnected_components(self, use_opt_einsum):
         """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
@@ -4333,7 +4333,7 @@ class TestCutCircuitTransform:
 
         x = 0.4
         res = circuit(x)
-        assert np.allclose(res, np.cos(x))
+        assert pnp.allclose(res, pnp.cos(x))
 
     def test_circuit_with_trivial_wire_cut(self, use_opt_einsum, mocker):
         """Tests that a circuit with a trivial wire cut (not separating the circuit into
@@ -4356,7 +4356,7 @@ class TestCutCircuitTransform:
 
         x = 0.4
         res = circuit(x)
-        assert np.allclose(res, np.cos(x))
+        assert pnp.allclose(res, pnp.cos(x))
         assert len(spy.call_args[0][0]) == 1  # there should be 1 tensor for wire 0
         assert spy.call_args[0][0][0].shape == ()
 
@@ -4391,7 +4391,7 @@ class TestCutCircuitTransform:
             qml.CRY(param, wires=[wires[0], wires[1]])
 
         def f(params):
-            qml.BasisState(np.array([1]), wires=[0])
+            qml.BasisState(pnp.array([1]), wires=[0])
             qml.WireCut(wires=0)
 
             qml.CNOT(wires=[0, 1])
@@ -4409,16 +4409,16 @@ class TestCutCircuitTransform:
             qml.WireCut(wires=3)
             two_qubit_unitary(params[2] ** 2, wires=[3, 4])
             qml.WireCut(wires=3)
-            two_qubit_unitary(np.sin(params[3]), wires=[3, 2])
+            two_qubit_unitary(pnp.sin(params[3]), wires=[3, 2])
             qml.WireCut(wires=3)
-            two_qubit_unitary(np.sqrt(params[4]), wires=[4, 3])
+            two_qubit_unitary(pnp.sqrt(params[4]), wires=[4, 3])
             qml.WireCut(wires=3)
-            two_qubit_unitary(np.cos(params[1]), wires=[3, 2])
+            two_qubit_unitary(pnp.cos(params[1]), wires=[3, 2])
             qml.CRX(params[2], wires=[4, 1])
 
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3))
 
-        params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
+        params = pnp.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
 
         circuit = qml.QNode(f, dev_original)
         cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut), use_opt_einsum=use_opt_einsum)
@@ -4431,8 +4431,8 @@ class TestCutCircuitTransform:
         spy.assert_called_once()
         grad = qml.grad(cut_circuit)(params)
 
-        assert np.isclose(res, res_expected)
-        assert np.allclose(grad, grad_expected)
+        assert pnp.isclose(res, res_expected)
+        assert pnp.allclose(grad, grad_expected)
 
     @pytest.mark.parametrize("shots", [None, int(1e7)])
     def test_standard_circuit(self, mocker, use_opt_einsum, shots, seed):
@@ -4478,7 +4478,7 @@ class TestCutCircuitTransform:
         spy.assert_called_once()
 
         atol = 1e-2 if shots else 1e-8
-        assert np.isclose(res, res_expected, atol=atol)
+        assert pnp.isclose(res, res_expected, atol=atol)
 
 
 class TestCutCircuitTransformValidation:
@@ -4622,7 +4622,7 @@ class TestCutCircuitExpansion:
         spy_tapes.assert_called_once()
         spy_cc.assert_called_once()
 
-        assert np.isclose(res, qnode(template_weights))
+        assert pnp.isclose(res, qnode(template_weights))
 
     def test_expansion_mc_ttn(self, mocker):
         """Test if wire cutting is compatible with the tree tensor network operation"""
@@ -4864,7 +4864,7 @@ def make_weakly_connected_tape(
         fragment_wire_sizes = [3, 5]
     if inter_fragment_gate_wires == "default":
         inter_fragment_gate_wires = {(0, 1): 1}
-    rng = np.random.default_rng(seed)
+    rng = pnp.random.default_rng(seed)
     inter_fragment_gate_wires = inter_fragment_gate_wires or {}
     with qml.queuing.AnnotatedQueue() as q:
         for _ in range(repeats):
@@ -5231,7 +5231,7 @@ class TestAutoCutCircuit:
             qml.CRY(param, wires=[wires[0], wires[1]])
 
         def f(params):
-            qml.BasisState(np.array([1]), wires=[0])
+            qml.BasisState(pnp.array([1]), wires=[0])
 
             qml.CNOT(wires=[0, 1])
             qml.RX(params[0], wires=0)
@@ -5240,14 +5240,14 @@ class TestAutoCutCircuit:
 
             two_qubit_unitary(params[1], wires=[2, 3])
             two_qubit_unitary(params[2] ** 2, wires=[3, 4])
-            two_qubit_unitary(np.sin(params[3]), wires=[3, 2])
-            two_qubit_unitary(np.sqrt(params[4]), wires=[4, 3])
-            two_qubit_unitary(np.cos(params[1]), wires=[3, 2])
+            two_qubit_unitary(pnp.sin(params[3]), wires=[3, 2])
+            two_qubit_unitary(pnp.sqrt(params[4]), wires=[4, 3])
+            two_qubit_unitary(pnp.cos(params[1]), wires=[3, 2])
             qml.CRX(params[2], wires=[4, 1])
 
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3))
 
-        params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
+        params = pnp.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
 
         circuit = qml.QNode(f, dev_original)
         cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut), auto_cutter=True, max_depth=max_depth)
@@ -5260,8 +5260,8 @@ class TestAutoCutCircuit:
         spy.assert_called_once()
         grad = qml.grad(cut_circuit)(params)
 
-        assert np.isclose(res, res_expected)
-        assert np.allclose(grad, grad_expected)
+        assert pnp.isclose(res, res_expected)
+        assert pnp.allclose(grad, grad_expected)
 
     @pytest.mark.parametrize("shots", [None])  # using analytic mode only to save time.
     def test_standard_circuit(self, mocker, shots):
@@ -5303,7 +5303,7 @@ class TestAutoCutCircuit:
         spy.assert_called_once()
 
         atol = 1e-2 if shots else 1e-8
-        assert np.isclose(res, res_expected, atol=atol)
+        assert pnp.isclose(res, res_expected, atol=atol)
 
     def test_circuit_with_disconnected_components(self):
         """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
@@ -5324,7 +5324,7 @@ class TestAutoCutCircuit:
 
         x = 0.4
         res = circuit(x)
-        assert np.allclose(res, np.cos(x))
+        assert pnp.allclose(res, pnp.cos(x))
 
     def test_circuit_with_trivial_wire_cut(self):
         """Tests that a circuit with a trivial wire cut (not separating the circuit into
@@ -5344,7 +5344,7 @@ class TestAutoCutCircuit:
 
         x = 0.4
         res = circuit(x)
-        assert np.allclose(res, np.cos(x))
+        assert pnp.allclose(res, pnp.cos(x))
 
     def test_cut_circuit_mc_sample(self):
         """
@@ -5478,7 +5478,7 @@ class TestCutCircuitWithHamiltonians:
             qml.CRY(param, wires=[wires[0], wires[1]])
 
         def f(params):
-            qml.BasisState(np.array([1]), wires=[0])
+            qml.BasisState(pnp.array([1]), wires=[0])
             qml.WireCut(wires=0)
 
             qml.CNOT(wires=[0, 1])
@@ -5496,16 +5496,16 @@ class TestCutCircuitWithHamiltonians:
             qml.WireCut(wires=3)
             two_qubit_unitary(params[2] ** 2, wires=[3, 4])
             qml.WireCut(wires=3)
-            two_qubit_unitary(np.sin(params[3]), wires=[3, 2])
+            two_qubit_unitary(pnp.sin(params[3]), wires=[3, 2])
             qml.WireCut(wires=3)
-            two_qubit_unitary(np.sqrt(params[4]), wires=[4, 3])
+            two_qubit_unitary(pnp.sqrt(params[4]), wires=[4, 3])
             qml.WireCut(wires=3)
-            two_qubit_unitary(np.cos(params[1]), wires=[3, 2])
+            two_qubit_unitary(pnp.cos(params[1]), wires=[3, 2])
             qml.CRX(params[2], wires=[4, 1])
 
             return qml.expval(hamiltonian)
 
-        params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
+        params = pnp.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
 
         circuit = qml.QNode(f, dev_original)
         cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut))
@@ -5519,8 +5519,8 @@ class TestCutCircuitWithHamiltonians:
 
         grad = qml.grad(cut_circuit)(params)
 
-        assert np.isclose(res, res_expected)
-        assert np.allclose(grad, grad_expected)
+        assert pnp.isclose(res, res_expected)
+        assert pnp.allclose(grad, grad_expected)
 
     def test_autoscale_and_grouped_with_hamiltonian(self, mocker):
         """
@@ -5569,7 +5569,7 @@ class TestCutCircuitWithHamiltonians:
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit()
         assert spy.call_count == len(hamiltonian.ops)
-        assert np.isclose(res, res_expected, atol=1e-8)
+        assert pnp.isclose(res, res_expected, atol=1e-8)
         assert cut_circuit.tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
 
     def test_template_with_hamiltonian(self, seed):
@@ -5641,7 +5641,7 @@ class TestCutCircuitWithHamiltonians:
         tape = qml.tape.QuantumScript(circuit, measurements=[qml.expval(H)])
         cut_tapes, proc_fn = qml.cut_circuit(tape, device_wires=range(3))
 
-        assert np.allclose(
+        assert pnp.allclose(
             qml.execute([tape], dev, None)[0], proc_fn(qml.execute(cut_tapes, dev, None))
         )
 

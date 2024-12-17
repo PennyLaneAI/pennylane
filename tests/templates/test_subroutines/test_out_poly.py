@@ -18,7 +18,7 @@ Tests for the OutPoly template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.templates.subroutines.out_poly import (
     _get_polynomial,
     _mobius_inversion_of_zeta_transform,
@@ -107,7 +107,7 @@ class TestOutPoly:
 
         if mod is None:
             mod = int(2 ** len(output_wires))
-        assert np.isclose(np.argmax(circuit()), polynomial_function(2, 1) % mod)
+        assert pnp.isclose(pnp.argmax(circuit()), polynomial_function(2, 1) % mod)
 
     @pytest.mark.parametrize(
         ("input_registers", "output_wires", "mod", "work_wires", "msg_match"),
@@ -219,4 +219,4 @@ class TestOutPoly:
             )
             return qml.sample(wires=wires["output"])
 
-        assert np.allclose(circuit(), [0, 0, 1])
+        assert pnp.allclose(circuit(), [0, 0, 1])

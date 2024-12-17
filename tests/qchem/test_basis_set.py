@@ -19,7 +19,7 @@ import sys
 
 import pytest
 
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem
 
 
@@ -45,13 +45,13 @@ class TestBasis:
 
         basis_function = qchem.BasisFunction(l, alpha, coeff, r)
 
-        assert np.allclose(np.array(basis_function.alpha), np.array(alpha))
-        assert np.allclose(np.array(basis_function.coeff), np.array(coeff))
-        assert np.allclose(np.array(basis_function.r), np.array(r))
+        assert pnp.allclose(pnp.array(basis_function.alpha), pnp.array(alpha))
+        assert pnp.allclose(pnp.array(basis_function.coeff), pnp.array(coeff))
+        assert pnp.allclose(pnp.array(basis_function.r), pnp.array(r))
 
-        assert np.allclose(basis_function.params[0], alpha)
-        assert np.allclose(basis_function.params[1], coeff)
-        assert np.allclose(basis_function.params[2], r)
+        assert pnp.allclose(basis_function.params[0], alpha)
+        assert pnp.allclose(basis_function.params[1], coeff)
+        assert pnp.allclose(basis_function.params[2], r)
 
     @pytest.mark.parametrize(
         ("basis_name", "atom_name", "params_ref"),
@@ -475,7 +475,7 @@ class TestBasis:
 
         assert n_basis == n_ref
 
-        assert np.allclose(params, params_ref)
+        assert pnp.allclose(params, params_ref)
 
     def test_mol_basis_data_error(self):
         """Test that correct error is raised if the element is not present in the internal basis-sets"""

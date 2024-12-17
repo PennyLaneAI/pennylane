@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.qutrit_mixed import apply_operation, create_initial_state, measure
 from pennylane.devices.qutrit_mixed.measure import (
     calculate_expval,
@@ -43,10 +43,10 @@ BATCH_SIZE = 2
 def get_expanded_op_mult_state(op, state):
     """Finds the expanded matrix to multiply state by and multiplies it by a flattened state"""
     num_qutrits = int(len(state.shape) / 2)
-    pre_wires_identity = np.eye(3 ** min(op.wires))
-    post_wires_identity = np.eye(3 ** ((num_qutrits - 1) - op.wires[-1]))
+    pre_wires_identity = pnp.eye(3 ** min(op.wires))
+    post_wires_identity = pnp.eye(3 ** ((num_qutrits - 1) - op.wires[-1]))
 
-    expanded_op = reduce(np.kron, (pre_wires_identity, op.matrix(), post_wires_identity))
+    expanded_op = reduce(pnp.kron, (pre_wires_identity, op.matrix(), post_wires_identity))
     flattened_state = state.reshape((3**num_qutrits,) * 2)
     return expanded_op @ flattened_state
 
@@ -54,15 +54,15 @@ def get_expanded_op_mult_state(op, state):
 def get_expval(op, state):
     """Finds op@state and traces to find the expectation value of observable on the state"""
     op_mult_state = get_expanded_op_mult_state(op, state)
-    return np.trace(op_mult_state)
+    return pnp.trace(op_mult_state)
 
 
 def test_probs_with_negative_on_diagonal():
     """Test that if there is a negative on diagonal it is clipped to 0"""
-    state = np.array([[1 - 1e-4 + 0j, 0, 0], [0, -1e-4, 0], [0, 0, 1e-4]])
+    state = pnp.array([[1 - 1e-4 + 0j, 0, 0], [0, -1e-4, 0], [0, 0, 1e-4]])
     probs = measure(qml.probs(), state)
-    expected_probs = np.array([1 - 1e-4, 0, 1e-4])
-    assert np.allclose(probs, expected_probs)
+    expected_probs = pnp.array([1 - 1e-4, 0, 1e-4])
+    assert pnp.allclose(probs, expected_probs)
 
 
 @pytest.mark.parametrize(
@@ -92,7 +92,7 @@ class TestMeasurementDispatch:
 
     def test_hermitian_calculate_expval_method(self):
         """Test that the expectation value of a hermitian uses the calculate expval method."""
-        mp = qml.expval(qml.THermitian(np.eye(3), wires=0))
+        mp = qml.expval(qml.THermitian(pnp.eye(3), wires=0))
         assert get_measurement_function(mp) is calculate_expval
 
     def test_hamiltonian_sum_of_terms(self):
@@ -140,7 +140,7 @@ class TestMeasurements:
         res = measure(measurement, two_qutrit_state)
         expected = get_expected(two_qutrit_state)
 
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize(
         "coeffs, observables",
@@ -160,7 +160,7 @@ class TestMeasurements:
         for i, coeff in enumerate(coeffs):
             expected += coeff * get_expval(observables[i], two_qutrit_state)
 
-        assert np.isclose(res, expected)
+        assert pnp.isclose(res, expected)
 
     @pytest.mark.parametrize(
         "observable",
@@ -178,7 +178,7 @@ class TestMeasurements:
         res = measure(qml.expval(observable), two_qutrit_state)
         expected = get_expval(observable, two_qutrit_state)
 
-        assert np.isclose(res, expected)
+        assert pnp.isclose(res, expected)
 
     def test_sum_expval_tensor_contraction(self):
         """Test that `Sum` expectation values are correct when tensor contraction
@@ -194,18 +194,18 @@ class TestMeasurements:
 
         rots = [0.123, 0.321]
         schmidts = [0.7, 0.3]
-        state = np.zeros([3] * (2 * 5), dtype=complex)
+        state = pnp.zeros([3] * (2 * 5), dtype=complex)
 
         for i in range(2):
             vec = find_state(rots[i])
-            state += schmidts[i] * np.outer(vec, np.conj(vec)).reshape([3] * (2 * 5))
+            state += schmidts[i] * pnp.outer(vec, pnp.conj(vec)).reshape([3] * (2 * 5))
 
         res = measure(qml.expval(obs), state)
         expected = 0
         for schmidt, theta in zip(schmidts, rots):
-            expected += schmidt * (4 * (-np.sin(theta) * np.cos(theta)))
+            expected += schmidt * (4 * (-pnp.sin(theta) * pnp.cos(theta)))
 
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize(
         "observable",
@@ -225,7 +225,7 @@ class TestMeasurements:
         expval_of_squared_obs = get_expval(obs_squared, two_qutrit_state)
 
         expected = expval_of_squared_obs - expval_obs**2
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
 
 @pytest.mark.parametrize(
@@ -241,31 +241,31 @@ class TestExpValAnalytical:
     def test_expval_pure_state(self, obs):
         """Test that measurements work on pure states as expected from analytical calculation."""
         # Create TRX[0,2](0.246)TRX[0,1](0.246)|0> state
-        state_vector = np.array([np.cos(0.123) ** 2, -1j * np.sin(0.123), -1j * np.sin(0.246) / 2])
-        state = np.outer(state_vector, np.conj(state_vector))
+        state_vector = pnp.array([pnp.cos(0.123) ** 2, -1j * pnp.sin(0.123), -1j * pnp.sin(0.246) / 2])
+        state = pnp.outer(state_vector, pnp.conj(state_vector))
         res = measure(qml.expval(obs), state)
 
-        expected = 0.5 * (np.sin(0.246) * np.cos(0.123) ** 2) + 2 * (
-            np.cos(0.123) ** 4 - np.sin(0.123) ** 2
+        expected = 0.5 * (pnp.sin(0.246) * pnp.cos(0.123) ** 2) + 2 * (
+            pnp.cos(0.123) ** 4 - pnp.sin(0.123) ** 2
         )
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     def test_expval_mixed_state(self, obs):
         """Test that measurements work on mixed states as expected from analytical calculation."""
         # Create TRX[0,1](0.246)|0> state mixed with TRX[0,2](0.246)|0>
-        state_vector_one = np.array([np.cos(0.123), -1j * np.sin(0.123), 0])
-        state_one = np.outer(state_vector_one, np.conj(state_vector_one))
+        state_vector_one = pnp.array([pnp.cos(0.123), -1j * pnp.sin(0.123), 0])
+        state_one = pnp.outer(state_vector_one, pnp.conj(state_vector_one))
 
-        state_vector_two = np.array([np.cos(0.123), 0, -1j * np.sin(0.123)])
-        state_two = np.outer(state_vector_two, np.conj(state_vector_two))
+        state_vector_two = pnp.array([pnp.cos(0.123), 0, -1j * pnp.sin(0.123)])
+        state_two = pnp.outer(state_vector_two, pnp.conj(state_vector_two))
 
         state = (0.33 * state_one) + (0.67 * state_two)
 
         res = measure(qml.expval(obs), state)
-        expected_pure_state_one = 2 * np.cos(0.246)
-        expected_pure_state_two = 0.5 * np.sin(0.246) + 2 * np.cos(0.123) ** 2
+        expected_pure_state_one = 2 * pnp.cos(0.246)
+        expected_pure_state_two = 0.5 * pnp.sin(0.246) + 2 * pnp.cos(0.123) ** 2
         expected = (0.33 * expected_pure_state_one) + (0.67 * expected_pure_state_two)
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -294,7 +294,7 @@ class TestBroadcasting:
         expected = get_expected(two_qutrit_batched_state)
 
         assert qml.math.get_interface(res) == ml_framework
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize(
         "measurement, matrix_transform",
@@ -317,7 +317,7 @@ class TestBroadcasting:
             expected.append(math.diag(transformed_state[i]))
 
         assert qml.math.get_interface(res) == ml_framework
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize(
         "observable",
@@ -326,7 +326,7 @@ class TestBroadcasting:
             qml.GellMann(0, 6),
             qml.prod(qml.GellMann(0, 2), qml.GellMann(1, 3)),
             qml.THermitian(
-                np.array(
+                pnp.array(
                     [
                         [1.37770247 + 0.0j, 0.60335894 - 0.10889947j, 0.98223403 - 0.94429544j],
                         [0.60335894 + 0.10889947j, 0.90178212 + 0.0j, 0.45529663 - 0.03054001j],
@@ -360,11 +360,11 @@ class TestBroadcasting:
         initial_state = math.asarray(two_qutrit_batched_state, like=ml_framework)
         res = measure(qml.expval(observable), initial_state, is_state_batched=True)
 
-        expanded_mat = np.zeros((9, 9), dtype=complex)
+        expanded_mat = pnp.zeros((9, 9), dtype=complex)
         for summand in observable:
             mat = summand.matrix()
             expanded_mat += (
-                np.kron(np.eye(3), mat) if summand.wires[0] == 1 else np.kron(mat, np.eye(3))
+                pnp.kron(pnp.eye(3), mat) if summand.wires[0] == 1 else pnp.kron(mat, pnp.eye(3))
             )
 
         expected = []
@@ -385,11 +385,11 @@ class TestBroadcasting:
         observable = qml.Hamiltonian(coeffs, observables)
         res = measure(qml.expval(observable), initial_state, is_state_batched=True)
 
-        expanded_mat = np.zeros((9, 9), dtype=complex)
+        expanded_mat = pnp.zeros((9, 9), dtype=complex)
         for coeff, summand in zip(coeffs, observables):
             mat = summand.matrix()
             expanded_mat += coeff * (
-                np.kron(np.eye(3), mat) if summand.wires[0] == 1 else np.kron(mat, np.eye(3))
+                pnp.kron(pnp.eye(3), mat) if summand.wires[0] == 1 else pnp.kron(mat, pnp.eye(3))
             )
 
         expected = []
@@ -424,7 +424,7 @@ class TestBroadcasting:
             expected.append(expval_of_squared_obs - expval_obs**2)
 
         assert qml.math.get_interface(res) == ml_framework
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
 
 class TestSumOfTermsDifferentiability:

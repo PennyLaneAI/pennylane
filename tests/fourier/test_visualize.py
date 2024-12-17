@@ -18,7 +18,7 @@ Unit tests for :mod:`fourier` visualization functions.
 
 import pytest
 
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.fourier.visualize import _validate_coefficients, bar, box, panel, radial_box, violin
 
 matplotlib = pytest.importorskip("matplotlib")
@@ -26,13 +26,13 @@ matplotlib = pytest.importorskip("matplotlib")
 plt = matplotlib.pyplot
 
 
-coeffs_1D_valid_1 = np.array([0.5, 0, 0.25j, 0.25j, 0])
+coeffs_1D_valid_1 = pnp.array([0.5, 0, 0.25j, 0.25j, 0])
 coeffs_1D_valid_2 = [0.5, 0.1j, -0.25j, 0.25j, -0.1j]
-coeffs_1D_invalid = np.array([0.5, 0, 0.25j, 0.25j])
+coeffs_1D_invalid = pnp.array([0.5, 0, 0.25j, 0.25j])
 
 coeffs_1D_valid_list = [coeffs_1D_valid_1, coeffs_1D_valid_2]
 
-coeffs_2D_valid_1 = np.array(
+coeffs_2D_valid_1 = pnp.array(
     [
         [
             0.07469786 + 0.0000e00j,
@@ -72,7 +72,7 @@ coeffs_2D_valid_1 = np.array(
     ]
 )
 
-coeffs_2D_valid_2 = np.array(
+coeffs_2D_valid_2 = pnp.array(
     [
         [
             0.12707831 + 0.0j,
@@ -114,10 +114,10 @@ coeffs_2D_valid_2 = np.array(
 
 coeffs_2D_valid_list = [coeffs_2D_valid_1, coeffs_2D_valid_2]
 
-coeffs_2D_varying_degrees = np.zeros((5, 9), dtype=complex)
+coeffs_2D_varying_degrees = pnp.zeros((5, 9), dtype=complex)
 coeffs_2D_varying_degrees[:5, :5] = coeffs_2D_valid_2
 
-coeffs_2D_invalid = np.array(
+coeffs_2D_invalid = pnp.array(
     [
         [
             0.12707831 + 0.0j,
@@ -150,7 +150,7 @@ coeffs_2D_invalid = np.array(
     ]
 )
 
-coeffs_3D_valid = np.zeros((5, 5, 5), dtype=complex)
+coeffs_3D_valid = pnp.zeros((5, 5, 5), dtype=complex)
 data = {
     (0, 0, 1): -0.00882888 - 0.14568055j,
     (0, 0, 4): -0.00882888 + 0.14568055j,
@@ -183,7 +183,7 @@ data = {
     (3, 3, 4): -0.00098495 - 0.00146529j,
     (3, 4, 0): 0.00439013 + 0.00574692j,
 }
-coeffs_3D_varying_degrees = np.zeros((3, 7, 5), dtype=complex)
+coeffs_3D_varying_degrees = pnp.zeros((3, 7, 5), dtype=complex)
 
 for key, val in data.items():
     coeffs_3D_valid[key] = val
@@ -213,22 +213,22 @@ class TestValidateCoefficients:
     @pytest.mark.parametrize(
         "coeffs,n_inputs,can_be_list,expected_coeffs",
         [
-            (coeffs_1D_valid_1, 1, True, np.array([coeffs_1D_valid_1])),
-            (coeffs_1D_valid_1, 1, False, np.array(coeffs_1D_valid_1)),
-            (coeffs_1D_valid_2, 1, True, np.array([coeffs_1D_valid_2])),
+            (coeffs_1D_valid_1, 1, True, pnp.array([coeffs_1D_valid_1])),
+            (coeffs_1D_valid_1, 1, False, pnp.array(coeffs_1D_valid_1)),
+            (coeffs_1D_valid_2, 1, True, pnp.array([coeffs_1D_valid_2])),
             (coeffs_1D_valid_2, 1, False, coeffs_1D_valid_2),
-            (coeffs_2D_valid_1, 2, True, np.array([coeffs_2D_valid_1])),
-            (coeffs_2D_valid_list, 2, True, np.array(coeffs_2D_valid_list)),
-            (coeffs_3D_valid, 3, True, np.array([coeffs_3D_valid])),
+            (coeffs_2D_valid_1, 2, True, pnp.array([coeffs_2D_valid_1])),
+            (coeffs_2D_valid_list, 2, True, pnp.array(coeffs_2D_valid_list)),
+            (coeffs_3D_valid, 3, True, pnp.array([coeffs_3D_valid])),
             (coeffs_3D_valid, 3, False, coeffs_3D_valid),
-            (coeffs_3D_varying_degrees, 3, True, np.array([coeffs_3D_varying_degrees])),
+            (coeffs_3D_varying_degrees, 3, True, pnp.array([coeffs_3D_varying_degrees])),
             (coeffs_3D_varying_degrees, 3, False, coeffs_3D_varying_degrees),
         ],
     )
     def test_valid_fourier_coeffs(self, coeffs, n_inputs, can_be_list, expected_coeffs):
         """Check that valid parameters are properly processed."""
         obtained_coeffs = _validate_coefficients(coeffs, n_inputs, can_be_list)
-        assert np.allclose(obtained_coeffs, expected_coeffs)
+        assert pnp.allclose(obtained_coeffs, expected_coeffs)
 
     def test_incorrect_type_fourier_coeffs(self):
         """Check that invalid type of parameters is caught"""

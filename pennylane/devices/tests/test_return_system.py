@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np  # Import from PennyLane to mirror the standard approach in demos
+from pennylane import numpy as pnp  # Import from PennyLane to mirror the standard approach in demos
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -56,9 +56,9 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], (float, np.ndarray))
+        assert isinstance(res[0], (float, pnp.ndarray))
 
-        assert isinstance(res[1], (float, np.ndarray))
+        assert isinstance(res[1], (float, pnp.ndarray))
 
     def test_multiple_var(self, device):
         """Return multiple vars."""
@@ -83,9 +83,9 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], (float, np.ndarray))
+        assert isinstance(res[0], (float, pnp.ndarray))
 
-        assert isinstance(res[1], (float, np.ndarray))
+        assert isinstance(res[1], (float, pnp.ndarray))
 
     def test_multiple_prob(self, device):
         """Return multiple probs."""
@@ -103,10 +103,10 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], np.ndarray)
+        assert isinstance(res[0], pnp.ndarray)
         assert res[0].shape == (2**1,)
 
-        assert isinstance(res[1], np.ndarray)
+        assert isinstance(res[1], pnp.ndarray)
         assert res[1].shape == (2**1,)
 
     def test_mix_meas(self, device):
@@ -129,12 +129,12 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res, tuple)
         assert len(res) == 4
 
-        assert isinstance(res[0], np.ndarray)
+        assert isinstance(res[0], pnp.ndarray)
         assert res[0].shape == (2**1,)
 
-        assert isinstance(res[1], (float, np.ndarray))
+        assert isinstance(res[1], (float, pnp.ndarray))
 
-        assert isinstance(res[2], np.ndarray)
+        assert isinstance(res[2], pnp.ndarray)
         assert res[2].shape == (2**1,)
 
-        assert isinstance(res[3], (float, np.ndarray))
+        assert isinstance(res[3], (float, pnp.ndarray))

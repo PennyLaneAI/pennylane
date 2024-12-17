@@ -17,7 +17,7 @@ Unit tests for functions needed for computing the Hamiltonian.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem
 from pennylane.fermi import from_string
 
@@ -29,9 +29,9 @@ from pennylane.fermi import from_string
             # H2 bond length: 1 Angstrom, basis = 'sto-3g', multiplicity = 1, charge = 0
             # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
             # run_pyscf(molecule).get_integrals()
-            np.array([0.529177210903]),  # nuclear repulsion 1 / 1.88973 Bohr
-            np.array([[-1.11084418e00, 1.01781501e-16], [7.32122533e-17, -5.89121004e-01]]),
-            np.array(
+            pnp.array([0.529177210903]),  # nuclear repulsion 1 / 1.88973 Bohr
+            pnp.array([[-1.11084418e00, 1.01781501e-16], [7.32122533e-17, -5.89121004e-01]]),
+            pnp.array(
                 [
                     [
                         [[6.26402500e-01, -1.84129592e-16], [-2.14279171e-16, 1.96790583e-01]],
@@ -84,8 +84,8 @@ from pennylane.fermi import from_string
             + 0.32653537347128725 * from_string("3+ 3+ 3- 3-"),
         ),
         (
-            np.array([2.869]),
-            np.array(
+            pnp.array([2.869]),
+            pnp.array(
                 [
                     [0.95622463, 0.7827277, -0.53222294],
                     [0.7827277, 1.42895581, 0.23469918],
@@ -120,7 +120,7 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
     r"""Test that fermionic_observable returns the correct fermionic observable."""
     f = qchem.fermionic_observable(core_constant, integral_one, integral_two)
 
-    assert np.allclose(list(f.values()), list(f_ref.values()))
+    assert pnp.allclose(list(f.values()), list(f_ref.values()))
     assert f.keys() == f_ref.keys()
 
 
@@ -173,7 +173,7 @@ def test_qubit_observable(f_observable, q_observable):
     h_ref = qml.Hamiltonian(q_observable[0], ops)
 
     assert h_ref.compare(h_as_op)
-    assert np.allclose(
+    assert pnp.allclose(
         qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref, wire_order=[0, 1, 2])
     )
 
@@ -197,6 +197,6 @@ def test_qubit_observable_cutoff(f_observable, cut_off):
     h_as_op = qchem.qubit_observable(f_observable, cutoff=cut_off)
 
     assert h_ref.compare(h_as_op)
-    assert np.allclose(
+    assert pnp.allclose(
         qml.matrix(h_ref_op, wire_order=[0, 1, 2]), qml.matrix(h_as_op, wire_order=[0, 1, 2])
     )

@@ -18,7 +18,7 @@ Tests for the ModExp template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def test_standard_validity_ModExp():
@@ -72,7 +72,7 @@ class TestModExp:
             mod = 2 ** len(output_wires)
 
         # pylint: disable=bad-reversed-sequence
-        assert np.allclose(
+        assert pnp.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, k)))),
             (k * (base**x)) % mod,
         )
