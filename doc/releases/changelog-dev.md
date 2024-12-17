@@ -204,6 +204,8 @@ such as `shots`, `rng` and `prng_key`.
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+  * Implemented functions for generating the vibrational Hamiltonian in VSCF basis
+    [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
 
 <h3>Improvements 🛠</h3>
 
@@ -248,6 +250,11 @@ such as `shots`, `rng` and `prng_key`.
 
 * The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
   [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
+
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.CancelInterpreter`
+  when program capture is enabled. This class cancels operators appearing consecutively that are adjoints of each
+  other, and follows the same API as `qml.transforms.cancel_inverses`.
+  [(#6692)](https://github.com/PennyLaneAI/pennylane/pull/6692)
 
 * Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
   when program capture is enabled. This class decomposes pennylane operators following the same API as
@@ -499,6 +506,7 @@ same information.
 
 * The `Wires` object throws a `TypeError` if `wires=None`. 
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
+  [(#6720)](https://github.com/PennyLaneAI/pennylane/pull/6720)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
