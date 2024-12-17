@@ -572,8 +572,11 @@ def load_interactive():
     print("force:", force)
     print("dest folder:", dest_folder / "datasets")
 
-    approve = input("Would you like to continue? (Default is yes) [Y/n]: ")
-    if approve not in ["Y", "", "y"]:
+    approve = (
+        input("Would you like to continue? (Default is yes) [Y/n]: ").strip().lower()
+        or "y"
+    )
+    if approve != "y":
         print("Aborting and not downloading!")
         return None
 
