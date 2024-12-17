@@ -14,7 +14,12 @@
 """
 Public/internal API for the pennylane.capture.transforms module.
 """
+from .capture_cancel_inverses import CancelInversesInterpreter
 from .capture_decompose import DecomposeInterpreter
 from .map_wires import MapWiresInterpreter
 
-__all__ = ("DecomposeInterpreter", "MapWiresInterpreter")
+__all__ = (
+    "CancelInversesInterpreter",
+    "DecomposeInterpreter",
+    "MapWiresInterpreter",
+)
