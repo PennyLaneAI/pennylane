@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-The default.mixed device is PennyLane's standard qubit simulator for mixed-state computations.
-
-It implements the necessary :class:`~pennylane.devices.LegacyDevice` methods as well as some built-in
-qubit :doc:`operations </introduction/operations>`, providing a simple mixed-state simulation of
+The default.mixed device is PennyLane's standard qubit simulator for mixed-state computations. It provides a simple mixed-state simulation of
 qubit-based quantum circuits.
 """
 # isort: skip_file
