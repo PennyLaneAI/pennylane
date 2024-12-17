@@ -226,7 +226,12 @@ class ClassicalShadowMP(MeasurementTransform):
             where the instance has to be identified
     """
 
-    def __init__(self, wires: WiresLike, seed: Optional[int] = None, id: Optional[str] = None):
+    def __init__(
+        self,
+        wires: Optional[WiresLike] = None,
+        seed: Optional[int] = None,
+        id: Optional[str] = None,
+    ):
         self.seed = seed
         super().__init__(wires=wires, id=id)
 
