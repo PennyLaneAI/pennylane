@@ -55,7 +55,7 @@ def register_primitive_for_expansion(primitive, plxpr_transform):
         final_jaxpr = plxpr_transform(
             unravelled_jaxpr.jaxpr, unravelled_jaxpr.consts, targs, tkwargs, *inner_args
         )
-        return jax.core.eval_jaxpr(final_jaxpr.jaxpr, final_jaxpr.consts, *inner_args)
+        return copy(self).eval(final_jaxpr.jaxpr, final_jaxpr.consts, *inner_args)
 
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
