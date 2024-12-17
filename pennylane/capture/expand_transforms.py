@@ -17,7 +17,7 @@ Helper function for expanding transforms with program capture
 from functools import wraps
 from typing import Callable
 
-from pennylane.capture.base_interpreter import PlxprInterpreter
+from .base_interpreter import PlxprInterpreter
 
 
 class ExpandTransformsInterpreter(PlxprInterpreter):

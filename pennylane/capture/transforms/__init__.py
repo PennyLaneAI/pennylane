@@ -14,11 +14,11 @@
 """
 Public/internal API for the pennylane.capture.transforms module.
 """
-from .capture_cancel_inverses import CancelInversesInterpreter
-from .expand_transforms import ExpandTransformsInterpreter, expand_plxpr_transforms
+# from .capture_cancel_inverses import CancelInversesInterpreter
+# from ..expand_transforms import ExpandTransformsInterpreter, expand_plxpr_transforms
 
-__all__ = (
-    "CancelInversesInterpreter",
-    "ExpandTransformsInterpreter",
-    "expand_plxpr_transforms",
-)
+# __all__ = (
+#     "CancelInversesInterpreter",
+#     "ExpandTransformsInterpreter",
+#     "expand_plxpr_transforms",
+# )

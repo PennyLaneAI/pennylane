@@ -35,7 +35,7 @@ def register_primitive_for_expansion(primitive, plxpr_transform):
     # pylint: disable=import-outside-toplevel
     import jax
 
-    from pennylane.capture.transforms import ExpandTransformsInterpreter
+    from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
 
     @ExpandTransformsInterpreter.register_primitive(primitive)
     def _(

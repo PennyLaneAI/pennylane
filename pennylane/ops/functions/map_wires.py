@@ -93,7 +93,7 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
             qml.capture.enable()
             return super().interpret_measurement(measurement)
 
-    def map_wires_jaxpr_to_jaxpr(jaxpr, consts, targs, tkwargs, *args):
+    def map_wires_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for mapping wires in plxpr"""
         wire_map = targs[0] if len(targs) > 0 else tkwargs.pop("wire_map")
         interpreter = MapWiresInterpreter(wire_map)
@@ -103,10 +103,10 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
 
         return make_jaxpr(wrapper)(*args)
 
-    return MapWiresInterpreter, map_wires_jaxpr_to_jaxpr
+    return MapWiresInterpreter, map_wires_plxpr_to_plxpr
 
 
-MapWiresInterpreter, map_wires_jaxpr_to_jaxpr = _get_plxpr_map_wires()
+MapWiresInterpreter, map_wires_plxpr_to_plxpr = _get_plxpr_map_wires()
 
 
 @overload
@@ -215,7 +215,7 @@ def processing_fn(res):
     return res[0]
 
 
-@partial(transform, plxpr_transform=map_wires_jaxpr_to_jaxpr)
+@partial(transform, plxpr_transform=map_wires_plxpr_to_plxpr)
 def _map_wires_transform(
     tape: QuantumScript, wire_map=None, queue=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:

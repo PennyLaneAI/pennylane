@@ -203,7 +203,7 @@ def __getattr__(key):
         return PlxprInterpreter
 
     if key == "expand_plxpr_transforms":
-        from .transforms.expand_transforms import expand_plxpr_transforms
+        from .expand_transforms import expand_plxpr_transforms
 
         return expand_plxpr_transforms
 

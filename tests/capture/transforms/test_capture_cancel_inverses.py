@@ -30,7 +30,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.capture.transforms import CancelInversesInterpreter
+from pennylane.transforms.optimization.cancel_inverses import CancelInversesInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 

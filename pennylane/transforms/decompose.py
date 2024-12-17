@@ -64,7 +64,7 @@ def _operator_decomposition_gen(
 @lru_cache
 def _get_plxpr_decompose():  # pylint: disable=missing-docstring
     try:
-        # pylint: disable=import-outside-toplevel,unused-import
+        # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
 
         from pennylane.capture.primitives import ctrl_transform_prim
@@ -167,7 +167,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
     def handle_ctrl_transform(*_, **__):  # pylint: disable=missing-function-docstring
         raise NotImplementedError
 
-    def decompose_jaxpr_to_jaxpr(
+    def decompose_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
         """Function from decomposing jaxpr."""
@@ -180,13 +180,13 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
         return make_jaxpr(wrapper)(*args)
 
-    return DecomposeInterpreter, decompose_jaxpr_to_jaxpr
+    return DecomposeInterpreter, decompose_plxpr_to_plxpr
 
 
-DecomposeInterpreter, decompose_jaxpr_to_jaxpr = _get_plxpr_decompose()
+DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
-@partial(transform, plxpr_transform=decompose_jaxpr_to_jaxpr)
+@partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
 def decompose(tape, gate_set=None, max_expansion=None):
     """Decomposes a quantum circuit into a user-specified gate set.
 
