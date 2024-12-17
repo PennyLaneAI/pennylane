@@ -59,6 +59,7 @@
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
   [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
+  [(#6685)](https://github.com/PennyLaneAI/pennylane/pull/6685)
 
 * New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
@@ -203,6 +204,8 @@ such as `shots`, `rng` and `prng_key`.
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+  * Implemented functions for generating the vibrational Hamiltonian in VSCF basis
+    [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
 
 <h3>Improvements 🛠</h3>
 
@@ -229,6 +232,7 @@ such as `shots`, `rng` and `prng_key`.
 
 * Added JAX support for the differentiable Hartree-Fock workflow.
   [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
+  [(#6707)](https://github.com/PennyLaneAI/pennylane/pull/6707)
 
 * Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
@@ -237,6 +241,10 @@ such as `shots`, `rng` and `prng_key`.
   they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
+
+* A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as 
+  JAX array elements.
+  [(#6699)](https://github.com/PennyLaneAI/pennylane/pull/6699)
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -488,6 +496,7 @@ same information.
 
 * The `Wires` object throws a `TypeError` if `wires=None`. 
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
+  [(#6720)](https://github.com/PennyLaneAI/pennylane/pull/6720)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
