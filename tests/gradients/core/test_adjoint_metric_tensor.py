@@ -336,9 +336,9 @@ class TestAdjointMetricTensorTape:
         assert qml.math.allclose(mt, expected)
 
         tape = qml.workflow.construct_tape(circuit)(*t_params)
-        mt = qml.adjoint_metric_tensor(tape)
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt.detach().numpy(), expected)
+        met_tens = qml.adjoint_metric_tensor(tape)
+        expected = qml.math.reshape(expected, qml.math.shape(met_tens))
+        assert qml.math.allclose(met_tens.detach().numpy(), expected)
 
     interfaces = ["auto", "tf"]
 
