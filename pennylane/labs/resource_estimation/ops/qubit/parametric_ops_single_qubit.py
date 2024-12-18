@@ -70,7 +70,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        """
+        r"""
         The resources for a multi-controlled phase shift gate are generated using
         the identity defined in (lemma 7.11) from https://arxiv.org/pdf/quant-ph/9503016.
         """
@@ -117,7 +117,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        """
+        r"""
         Resources:
             The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
             unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
@@ -180,7 +180,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        """
+        r"""
         Resources:
         The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
@@ -240,7 +240,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        """
+        r"""
         The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
 
@@ -298,7 +298,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        """
+        r"""
         Resources:
             The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
             unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identities:
