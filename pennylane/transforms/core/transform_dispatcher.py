@@ -115,8 +115,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         self._plxpr_transform = plxpr_transform
         self._primitive = _create_transform_primitive(self._transform.__name__)
-        if self._plxpr_transform is not None:
-            register_primitive_for_expansion(self._primitive, self._plxpr_transform)
+        register_primitive_for_expansion(self._primitive, self._plxpr_transform)
 
     def __call__(
         self, *targs, **tkwargs
