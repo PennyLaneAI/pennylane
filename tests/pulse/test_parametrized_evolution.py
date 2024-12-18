@@ -755,6 +755,9 @@ class TestIntegration:
             atol=5e-4,
         )
 
+    @pytest.mark.xfail(
+        reason=r"ProbsMP.process_density_matrix issue. See https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064"
+    )
     def test_mixed_device(self):
         """Test mixed device integration matches that of default qubit"""
         import jax
