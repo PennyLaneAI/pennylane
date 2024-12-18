@@ -59,10 +59,19 @@
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
   [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
+  [(#6685)](https://github.com/PennyLaneAI/pennylane/pull/6685)
 
 * New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
+* Added a new `qml.transforms.combine_global_phases` transform to combine all `qml.GlobalPhase` gates in a circuit into a single one applied at the end.
+  This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
+  decompositions that include `qml.GlobalPhase` gates, etc.
+  [(#6686)](https://github.com/PennyLaneAI/pennylane/pull/6686)
+
+* Added support to build a vibrational Hamiltonian in Taylor form.
+  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
@@ -195,11 +204,16 @@ such as `shots`, `rng` and `prng_key`.
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+  * Implemented functions for generating the vibrational Hamiltonian in VSCF basis
+    [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
 
 <h3>Improvements 🛠</h3>
 
 * `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
   [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
+
+* Remove redundant commutator computations from `qml.lie_closure`.
+  [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
 
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
   arguments and `interface="auto"`.
@@ -221,6 +235,7 @@ such as `shots`, `rng` and `prng_key`.
 
 * Added JAX support for the differentiable Hartree-Fock workflow.
   [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
+  [(#6707)](https://github.com/PennyLaneAI/pennylane/pull/6707)
 
 * Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
@@ -230,7 +245,24 @@ such as `shots`, `rng` and `prng_key`.
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
+* A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as 
+  JAX array elements.
+  [(#6699)](https://github.com/PennyLaneAI/pennylane/pull/6699)
+
 <h4>Capturing and representing hybrid programs</h4>
+
+* The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
+  [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
+
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.CancelInterpreter`
+  when program capture is enabled. This class cancels operators appearing consecutively that are adjoints of each
+  other, and follows the same API as `qml.transforms.cancel_inverses`.
+  [(#6692)](https://github.com/PennyLaneAI/pennylane/pull/6692)
+
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
+  when program capture is enabled. This class decomposes pennylane operators following the same API as
+  `qml.transforms.decompose`.
+  [(#6691)](https://github.com/PennyLaneAI/pennylane/pull/6691)
 
 * Implemented a `MapWiresInterpreter` class that can be used as a quantum transform to map
   operator and measurement wires with capture enabled.
@@ -275,7 +307,10 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
-* Standardize supported interfaces to an internal Enum object. 
+* Add developer focused `run` function to `qml.workflow` module.
+  [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
+
+* Standardize supported interfaces to an internal `Enum` object. 
   [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
@@ -340,7 +375,15 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+
 <h3>Breaking changes 💔</h3>
+
+* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` for grouping observables was changed 
+  from `"rlf"` to `"lf"`. Internally, `qml.pauli.group_observables` has been replaced with `qml.pauli.compute_partition_indices`
+  in several places to improve efficiency.
+  [(#6706)](https://github.com/PennyLaneAI/pennylane/pull/6706)
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
   Autograd framework. As the function uses automatic differentiation for validation, parameters
@@ -442,6 +485,10 @@ same information.
 
 <h3>Documentation 📝</h3>
 
+* The docstrings for `qml.qchem.Molecule` and `qml.qchem.molecular_hamiltonian` have been updated to include a 
+  note that says that they are not compatible with qjit or jit.  
+  [(#6702)](https://github.com/PennyLaneAI/pennylane/pull/6702)
+
 * Updated the documentation of `TrotterProduct` to include the impact of the operands in the
   Hamiltonian on the strucutre of the created circuit. Included an illustrative example on this.
   [(#6629)](https://github.com/PennyLaneAI/pennylane/pull/6629)
@@ -452,7 +499,17 @@ same information.
 * Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
+* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
+  [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
+
+* Updated the documentation of `QSVT` to include examples for different block encodings.
+  [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
+
 <h3>Bug fixes 🐛</h3>
+
+* The `Wires` object throws a `TypeError` if `wires=None`. 
+  [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
+  [(#6720)](https://github.com/PennyLaneAI/pennylane/pull/6720)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
@@ -492,9 +549,11 @@ Diksha Dhawan,
 Lasse Dierich,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
+Simone Gasperini,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+Alan Martin,
 William Maxwell,
 Andrija Paurevic,
 Justin Pickering,

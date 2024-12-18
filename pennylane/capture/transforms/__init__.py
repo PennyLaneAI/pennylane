@@ -11,12 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
-Public/internal API for the Transforms module.
+Public/internal API for the pennylane.capture.transforms module.
 """
-
+from .capture_cancel_inverses import CancelInversesInterpreter
+from .capture_decompose import DecomposeInterpreter
 from .map_wires import MapWiresInterpreter
 
-
-__all__ = ("MapWiresInterpreter",)
+__all__ = (
+    "CancelInversesInterpreter",
+    "DecomposeInterpreter",
+    "MapWiresInterpreter",
+)

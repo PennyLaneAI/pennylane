@@ -309,12 +309,6 @@ class BoseWord(dict):
                 bs = bw.shift_operator(right_pointer, left_pointer)
                 bs_as_list = sorted(list(bs.items()), key=lambda x: len(x[0].keys()), reverse=True)
                 bw = bs_as_list[0][0]
-                # Sort by ascending index order
-                if left_pointer > 0:
-                    bw_as_list = sorted(list(bw.keys()))
-                    if bw_as_list[left_pointer - 1][1] > bw_as_list[left_pointer][1]:
-                        temp_bs = bw.shift_operator(left_pointer - 1, left_pointer)
-                        bw = list(temp_bs.items())[0][0]
 
                 for i in range(1, len(bs_as_list)):
                     bw_comm += bs_as_list[i][0] * bs_as_list[i][1]
@@ -322,7 +316,20 @@ class BoseWord(dict):
                 # Left pointer now points to the new leftmost annihilation term
                 left_pointer += 1
 
-        ordered_op = bw + bw_comm.normal_order()
+        # Sort BoseWord by indice
+        plus_terms = list(bw.items())[:left_pointer]
+        minus_terms = list(bw.items())[left_pointer:]
+
+        sorted_plus_terms = dict(sorted(plus_terms, key=lambda x: (x[0][1], x[0][0])))
+        sorted_minus_terms = dict(sorted(minus_terms, key=lambda x: (x[0][1], x[0][0])))
+
+        sorted_dict = {**sorted_plus_terms, **sorted_minus_terms}
+
+        bw_sorted_by_index = {}
+        for i, (k, v) in enumerate(sorted_dict.items()):
+            bw_sorted_by_index[(i, k[1])] = v
+
+        ordered_op = BoseWord(bw_sorted_by_index) + bw_comm.normal_order()
         ordered_op.simplify(tol=1e-8)
         return ordered_op
 
