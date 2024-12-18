@@ -507,6 +507,9 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
+  [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
+
 * The `Wires` object throws a `TypeError` if `wires=None`. 
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
   [(#6720)](https://github.com/PennyLaneAI/pennylane/pull/6720)
