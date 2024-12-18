@@ -72,7 +72,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
 
         from pennylane.capture import AbstractMeasurement, AbstractOperator, PlxprInterpreter
         from pennylane.operation import Operator
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return None, None
 
     # pylint: disable=redefined-outer-name

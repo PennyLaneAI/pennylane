@@ -35,7 +35,7 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
         from jax import make_jaxpr
 
         from pennylane.capture.base_interpreter import PlxprInterpreter
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return None, None
 
     # pylint: disable=redefined-outer-name

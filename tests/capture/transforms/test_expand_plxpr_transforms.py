@@ -22,7 +22,8 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.expand_transforms import ExpandTransformsInterpreter, expand_plxpr_transforms
+from pennylane.capture import expand_plxpr_transforms
+from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 

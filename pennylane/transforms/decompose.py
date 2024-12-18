@@ -68,7 +68,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         from jax import make_jaxpr
 
         from pennylane.capture.primitives import ctrl_transform_prim
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return None, None
 
     # pylint: disable=redefined-outer-name
