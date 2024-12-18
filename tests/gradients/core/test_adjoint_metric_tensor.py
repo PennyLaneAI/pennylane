@@ -280,9 +280,9 @@ class TestAdjointMetricTensorTape:
         assert qml.math.allclose(mt, expected)
 
         tape = qml.workflow.construct_tape(circuit)(*params)
-        mt = qml.adjoint_metric_tensor(tape)
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt, expected)
+        met_tens = qml.adjoint_metric_tensor(tape)
+        expected = qml.math.reshape(expected, qml.math.shape(met_tens))
+        assert qml.math.allclose(met_tens, expected)
 
     @pytest.mark.jax
     @pytest.mark.skip("JAX does not support forward pass execution of the metric tensor.")
