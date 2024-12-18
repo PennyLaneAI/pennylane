@@ -31,7 +31,7 @@ from pennylane import operation
 from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.compiler import compiler
 from pennylane.operation import Operator
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
@@ -175,7 +175,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
     # Flatten nested controlled operations to a multi-controlled operation for better
     # decomposition algorithms. This includes special cases like CRX, CRot, etc.
     if isinstance(op, Controlled):
-        work_wires = work_wires or []
+        work_wires = () if work_wires is None else work_wires
         return ctrl(
             op.base,
             control=control + op.control_wires,
@@ -489,9 +489,16 @@ class Controlled(SymbolicOp):
         )
 
     # pylint: disable=too-many-function-args
-    def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
+    def __init__(
+        self,
+        base,
+        control_wires: WiresLike,
+        control_values=None,
+        work_wires: WiresLike = None,
+        id=None,
+    ):
         control_wires = Wires(control_wires)
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         if control_values is None:
             control_values = [True] * len(control_wires)
