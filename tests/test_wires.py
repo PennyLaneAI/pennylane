@@ -30,9 +30,14 @@ else:
     jax = None
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, too-many-positional-arguments
 class TestWires:
     """Tests for the ``Wires`` class."""
+
+    def test_error_if_wires_none(self):
+        """Tests that a TypeError is raised if None is given as wires."""
+        with pytest.raises(TypeError, match="Must specify a set of wires."):
+            Wires(None)
 
     @pytest.mark.parametrize("iterable", [np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)])
     def test_creation_from_common_iterables(self, iterable):
@@ -204,6 +209,16 @@ class TestWires:
         assert isinstance(array, np.ndarray)
         assert array.shape == (3,)
         for w1, w2 in zip(array, np.array([4, 0, 1])):
+            assert w1 == w2
+
+    @pytest.mark.jax
+    def test_jax_array_representation(self):
+        """Tests that Wires object has a JAX array representation."""
+
+        wires = Wires([4, 0, 1])
+        array = jax.numpy.asarray(wires)
+        assert isinstance(array, jax.numpy.ndarray)
+        for w1, w2 in zip(array, [4, 0, 1]):
             assert w1 == w2
 
     def test_set_of_wires(self):
