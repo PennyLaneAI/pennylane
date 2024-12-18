@@ -157,7 +157,7 @@ class VibronicBlockMatrix:
     def matrix(self, gridpoints: int, block_dim: int):
         """Matrix representation of the VibronicBlockMatrix"""
 
-        dim = self.dim * gridpoints**block_dim
+        dim = self.dim * (gridpoints**block_dim)
         final_matrix = sp.sparse.csr_matrix((dim, dim))
         for key, value in self.blocks.items():
             data = np.array([1])
@@ -298,7 +298,7 @@ class VibronicHamiltonian:
         block_matrix = VibronicBlockMatrix(dim=self.states)
         for j in range(self.states):
             coeffs = self.betas[j, m ^ j] * np.multiply.outer(self.omegas, self.omegas)
-            operator = VibronicWord({("PP",): coeffs})
+            operator = VibronicWord({("P", "P"): coeffs})
             block_matrix.set_block(j, m ^ j, operator)
 
         return 2 * block_matrix

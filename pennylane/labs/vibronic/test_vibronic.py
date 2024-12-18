@@ -92,6 +92,13 @@ class TestVibronic:
         assert y.get_block(1, 0) == mat2
         assert y.get_block(1, 1) == VibronicWord({})
 
+    def test_epsilon_matrix(self):
+        states = 4
+        modes = 3
+        vham = VibronicHamiltonian(states, modes, *coeffs(states, modes))
+
+        vham.epsilon(1.7).matrix(2, 3)
+
     @pytest.mark.parametrize("modes", range(5))
     def test_epsilon(self, modes):
         """Test that epsilon is correct for N=2"""
