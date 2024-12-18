@@ -59,19 +59,21 @@ class TestHadamard:
         r2 = re.get_resources(ch)
         assert r1 == r2
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+    pow_data = (
+        (1, {re.ResourceHadamard.resource_rep(): 1}),
+        (2, {}),
+        (3, {re.ResourceHadamard.resource_rep(): 1}),
+        (4, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceHadamard.resource_rep(): z % 2}
-        assert re.ResourceHadamard.pow_resource_decomp(z) == expected
+        op = re.ResourceHadamard(0)
+        assert op.pow_resource_decomp(z) == expected_res
 
-        h = re.ResourceHadamard(0)
-        pow_h = re.ResourcePow(re.ResourceHadamard(0), z)
-
-        r1 = re.get_resources(h) * (z % 2)
-        r2 = re.get_resources(pow_h)
-
-        assert r1 == r2
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
 
 
 class TestSWAP:
@@ -125,19 +127,21 @@ class TestSWAP:
         r2 = re.get_resources(cswap)
         assert r1 == r2
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+    pow_data = (
+        (1, {re.ResourceSWAP.resource_rep(): 1}),
+        (2, {}),
+        (3, {re.ResourceSWAP.resource_rep(): 1}),
+        (4, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceSWAP.resource_rep(): z % 2}
-        assert re.ResourceSWAP.pow_resource_decomp(z) == expected
+        op = re.ResourceSWAP([0, 1])
+        assert op.pow_resource_decomp(z) == expected_res
 
-        swap = re.ResourceSWAP([0, 1])
-        pow_swap = re.ResourcePow(re.ResourceSWAP([0, 1]), z)
-
-        r1 = re.get_resources(swap) * (z % 2)
-        r2 = re.get_resources(pow_swap)
-
-        assert r1 == r2
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
 
 
 class TestS:
@@ -182,19 +186,25 @@ class TestS:
         r2 = re.get_resources(s_dag)
         assert r1 == r2
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+    pow_data = (
+        (1, {re.ResourceS.resource_rep(): 1}),
+        (2, {re.ResourceS.resource_rep(): 2}),
+        (3, {re.ResourceS.resource_rep(): 3}),
+        (4, {}),
+        (7, {re.ResourceS.resource_rep(): 3}),
+        (8, {}),
+        (14, {re.ResourceS.resource_rep(): 2}),
+        (15, {re.ResourceS.resource_rep(): 3}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceS.resource_rep(): z % 4}
-        assert re.ResourceS.pow_resource_decomp(z) == expected
+        op = re.ResourceS(0)
+        assert op.pow_resource_decomp(z) == expected_res
 
-        s = re.ResourceS(0)
-        pow_s = re.ResourcePow(s, z)
-
-        r1 = re.get_resources(s) * (z % 4)
-        r2 = re.get_resources(pow_s)
-
-        assert r1 == r2
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
 
 
 class TestT:
@@ -228,19 +238,25 @@ class TestT:
         r2 = re.get_resources(t_dag)
         assert r1 == r2
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+    pow_data = (
+        (1, {re.ResourceT.resource_rep(): 1}),
+        (2, {re.ResourceT.resource_rep(): 2}),
+        (3, {re.ResourceT.resource_rep(): 3}),
+        (7, {re.ResourceT.resource_rep(): 7}),
+        (8, {}),
+        (14, {re.ResourceT.resource_rep(): 6}),
+        (15, {re.ResourceT.resource_rep(): 7}),
+        (16, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceT.resource_rep(): z % 8}
-        assert re.ResourceT.pow_resource_decomp(z) == expected
+        op = re.ResourceT(0)
+        assert op.pow_resource_decomp(z) == expected_res
 
-        t = re.ResourceT(0)
-        pow_t = re.ResourcePow(t, z)
-
-        r1 = re.get_resources(t) * (z % 8)
-        r2 = re.get_resources(pow_t)
-
-        assert r1 == r2
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
 
 
 class TestX:
@@ -293,16 +309,18 @@ class TestX:
         r2 = re.get_resources(x_dag)
         assert r1 == r2
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+    pow_data = (
+        (1, {re.ResourceX.resource_rep(): 1}),
+        (2, {}),
+        (3, {re.ResourceX.resource_rep(): 1}),
+        (4, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceX.resource_rep(): z % 2}
-        assert re.ResourceX.pow_resource_decomp(z) == expected
+        op = re.ResourceX(0)
+        assert op.pow_resource_decomp(z) == expected_res
 
-        x = re.ResourceX(0)
-        pow_x = re.ResourcePow(x, z)
-
-        r1 = re.get_resources(x) * (z % 2)
-        r2 = re.get_resources(pow_x)
-
-        assert r1 == r2
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res

@@ -65,16 +65,40 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
 
     @staticmethod
     def adjoint_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
-        return {}
+        """The adjoint of a global phase is itself another global phase"""
+        return {re.ResourceGlobalPhase.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_values == 0:
-            return {re.ResourcePhaseShift.resource_rep(): 1}
-        raise re.ResourcesNotDefined
+        """
+        Resources:
+            The resources are generated from the identity that a global phase
+            controlled on a single qubit is equivalent to a local phase shift on that qubit.
+
+            This idea can be generalized to a multi-qubit global phase by introducing one
+            'clean' auxilliary qubit which gets reset at the end of the computation. In this
+            case, we apply sandwich the phase shift operation with two multi-controlled X gates.
+        """
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourcePhaseShift.resource_rep(): 1}
+
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        ps = re.ResourcePhaseShift.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+
+        return {ps: 1, mcx: 2}
 
     @staticmethod
     def pow_resource_decomp(z) -> Dict[re.CompressedResourceOp, int]:
-        return {}
+        """Taking arbitrary powers of a global phase produces another global phase"""
+        return {re.ResourceGlobalPhase.resource_rep(): 1}

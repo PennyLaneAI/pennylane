@@ -130,19 +130,27 @@ class TestGlobalPhase:
         """Test that the adjoint resources are as expected"""
         op = re.ResourceGlobalPhase(0.1, wires=0)
         op2 = re.ResourceAdjoint(op)
-        assert op.adjoint_resource_decomp() == {}
-        assert op2.resources(**op2.resource_params()) == {}
+        assert op.adjoint_resource_decomp() == {re.ResourceGlobalPhase.resource_rep(): 1}
+        assert op2.resources(**op2.resource_params()) == {re.ResourceGlobalPhase.resource_rep(): 1}
 
     globalphase_ctrl_data = (
         ([1], [1], [], {re.ResourcePhaseShift.resource_rep(): 1}),
-        ([1, 2], [1, 1], ["w1"], {re.ResourcePhaseShift.resource_rep(): 1}),
+        (
+            [1, 2],
+            [1, 1],
+            ["w1"],
+            {
+                re.ResourcePhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
+            },
+        ),
         (
             [1, 2, 3],
             [1, 0, 0],
             ["w1", "w2"],
             {
-                re.ResourceControlled.resource_rep(re.ResourceGlobalPhase, {}, 3, 0, 2): 1,
-                re.ResourceX.resource_rep(): 4,
+                re.ResourcePhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
             },
         ),
     )
@@ -161,21 +169,16 @@ class TestGlobalPhase:
             op, control_wires=ctrl_wires, control_values=ctrl_values, work_wires=work_wires
         )
 
-        if num_ctrl_values == 0:
-            assert (
-                op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
-                == expected_res
-            )
-        else:
-            with pytest.raises(re.ResourcesNotDefined):
-                op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
-
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
+            == expected_res
+        )
         assert op2.resources(**op2.resource_params()) == expected_res
 
     globalphase_pow_data = (
-        (1, {}),
-        (2, {}),
-        (5, {}),
+        (1, {re.ResourceGlobalPhase.resource_rep(): 1}),
+        (2, {re.ResourceGlobalPhase.resource_rep(): 1}),
+        (5, {re.ResourceGlobalPhase.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", globalphase_pow_data)
