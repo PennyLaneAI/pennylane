@@ -183,6 +183,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Improvements 🛠</h3>
 
+* `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
+  [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
+
 * Remove redundant commutator computations from `qml.lie_closure`.
   [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
 
@@ -224,6 +227,11 @@ such as `shots`, `rng` and `prng_key`.
 
 * The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
   [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
+
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.CancelInterpreter`
+  when program capture is enabled. This class cancels operators appearing consecutively that are adjoints of each
+  other, and follows the same API as `qml.transforms.cancel_inverses`.
+  [(#6692)](https://github.com/PennyLaneAI/pennylane/pull/6692)
 
 * Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
   when program capture is enabled. This class decomposes pennylane operators following the same API as
@@ -375,6 +383,11 @@ such as `shots`, `rng` and `prng_key`.
   [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
 
 <h3>Breaking changes 💔</h3>
+
+* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` for grouping observables was changed 
+  from `"rlf"` to `"lf"`. Internally, `qml.pauli.group_observables` has been replaced with `qml.pauli.compute_partition_indices`
+  in several places to improve efficiency.
+  [(#6706)](https://github.com/PennyLaneAI/pennylane/pull/6706)
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
   Autograd framework. As the function uses automatic differentiation for validation, parameters
