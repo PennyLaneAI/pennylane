@@ -344,8 +344,7 @@ class TestBroadcasting:
         """Test that expval Hamiltonian measurements work on broadcasted state"""
         initial_state = math.asarray(two_qubit_batched_state, like=ml_framework)
         observables = [qml.PauliX(1), qml.PauliX(0)]
-        coeffs = [2, 0.4]
-        coeffs = math.convert_like(coeffs, initial_state)
+        coeffs = math.convert_like([2, 0.4], initial_state)
         observable = qml.Hamiltonian(coeffs, observables)
         res = measure(qml.expval(observable), initial_state, is_state_batched=True)
 
