@@ -141,6 +141,8 @@
   [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
 
+* Added `from_string()` function to convert strings to BoseWords.
+  [(#6663)](https://github.com/PennyLaneAI/pennylane/pull/6663)
 
 <h4>New API for Qubit Mixed</h4>
 
