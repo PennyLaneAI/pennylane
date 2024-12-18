@@ -385,6 +385,17 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
     """
     if isinstance(measurement, CountsMP):
         tmp = Counter()
+
+        if measurement.all_outcomes:
+            if isinstance(measurement.mv, Sequence):
+                values = [list(m.branches.values()) for m in measurement.mv]
+                values = list(itertools.product(*values))
+                tmp = Counter({"".join(map(str, v)): 0 for v in values})
+            else:
+                values = [list(measurement.mv.branches.values())]
+                values = list(itertools.product(*values))
+                tmp = Counter({float(*v): 0 for v in values})
+
         for i, d in enumerate(samples):
             tmp.update(
                 {k if isinstance(k, str) else float(k): v * is_valid[i] for k, v in d.items()}
@@ -458,7 +469,7 @@ def gather_mcm(measurement, samples, is_valid, postselect_mode=None):
             counts = qml.math.array(counts, like=interface)
             return counts / qml.math.sum(counts)
         if isinstance(measurement, CountsMP):
-            mcm_samples = [measurement.process_samples(mcm_samples, wire_order=measurement.wires)]
+            mcm_samples = [{"".join(str(int(v)) for v in tuple(s)): 1} for s in mcm_samples]
         return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
     mcm_samples = qml.math.ravel(qml.math.array(mv.concretize(samples), like=interface))
     if isinstance(measurement, ProbabilityMP):
@@ -471,8 +482,6 @@ def gather_mcm(measurement, samples, is_valid, postselect_mode=None):
         counts = qml.math.array(counts, like=interface)
         return counts / qml.math.sum(counts)
     if isinstance(measurement, CountsMP):
-        mcm_samples = [
-            measurement.process_samples(mcm_samples[:, None], wire_order=measurement.wires)
-        ]
+        mcm_samples = [{float(s): 1} for s in mcm_samples]
 
     return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
