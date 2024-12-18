@@ -33,9 +33,12 @@ def register_primitive_for_expansion(primitive, plxpr_transform):
     """Register a transform such that it can be expanded when applied to a function with
     program capture enabled."""
     # pylint: disable=import-outside-toplevel
-    import jax
+    try:
+        import jax
 
-    from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
+        from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
+    except ImportError:
+        return
 
     @ExpandTransformsInterpreter.register_primitive(primitive)
     def _(
