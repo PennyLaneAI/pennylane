@@ -302,7 +302,6 @@ class TestBroadcasting:
     def test_expval_measurement(self, observable, ml_framework, two_qubit_batched_state):
         """Test that expval measurements work on broadcasted state"""
         initial_state = math.asarray(two_qubit_batched_state, like=ml_framework)
-        # observable = math.convert_like(observable, initial_state)
         res = measure(qml.expval(observable), initial_state, is_state_batched=True)
 
         expected = [get_expval(observable, two_qubit_batched_state[i]) for i in range(BATCH_SIZE)]
