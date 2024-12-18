@@ -511,6 +511,9 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+*  `qml.counts` returns all outcomes when requested with mid-circuit measurements present.
+  [(#6732)](https://github.com/PennyLaneAI/pennylane/pull/6732)
+
 * `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
   [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
 
