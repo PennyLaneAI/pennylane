@@ -25,7 +25,6 @@ requirements = [
     "scipy",
     "networkx",
     "rustworkx>=0.14.0",
-    "autograd",
     "tomlkit",
     "appdirs",
     "autoray>=0.6.11",

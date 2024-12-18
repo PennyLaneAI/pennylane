@@ -16,12 +16,13 @@ import numbers
 from collections.abc import Iterable
 
 import pennylane as qml
+from pennylane import math
+
+from .gradient_descent import GradientDescentOptimizer
 
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
-from pennylane import numpy as pnp
 
-from .gradient_descent import GradientDescentOptimizer
 
 
 def _reshape_and_regularize(tensor, lam):
@@ -279,9 +280,9 @@ class QNGOptimizer(GradientDescentOptimizer):
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                grad_flat = pnp.array(list(_flatten_np(grad[trained_index])))
+                grad_flat = math.asarray(list(_flatten_np(grad[trained_index])), like="autograd")
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                update = pnp.linalg.pinv(mt[trained_index]) @ grad_flat
+                update = math.linalg.pinv(mt[trained_index]) @ grad_flat
                 args_new[index] = arg - self.stepsize * _unflatten_np(update, grad[trained_index])
 
                 trained_index += 1
@@ -300,6 +301,8 @@ def _flatten_np(x):
     Yields:
         Any: elements of x in depth-first order
     """
+    from pennylane import numpy as pnp
+
     if isinstance(x, pnp.ndarray):
         yield from _flatten_np(
             x.flat
@@ -331,6 +334,8 @@ def _unflatten_np_dispatch(flat, model):
         Union[array, list, Any], array: first elements of flat arranged into the nested
         structure of model, unused elements of flat
     """
+    from pennylane import numpy as pnp
+
     if isinstance(model, (numbers.Number, str)):
         return flat[0], flat[1:]
 
@@ -359,6 +364,8 @@ def _unflatten_np(flat, model):
     Raises:
         ValueError: if ``flat`` has more elements than ``model``
     """
+    from pennylane import numpy as pnp
+
     # pylint:disable=len-as-condition
     res, tail = _unflatten_np_dispatch(pnp.asarray(flat), model)
     if len(tail) != 0:

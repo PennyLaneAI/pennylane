@@ -18,8 +18,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-import autograd
-
 import pennylane.queuing
 
 has_jax = True
@@ -296,19 +294,24 @@ def _unflatten(new_data, structure):
     return unflatten_registrations[structure.type_](children, structure.metadata)
 
 
-# pylint: disable=no-member
-register_pytree(
-    autograd.builtins.list,
-    lambda obj: (list(obj), ()),
-    lambda data, _: autograd.builtins.list(data),
-)
-register_pytree(
-    autograd.builtins.tuple,
-    lambda obj: (list(obj), ()),
-    lambda data, _: autograd.builtins.tuple(data),
-)
-register_pytree(
-    autograd.builtins.SequenceBox,
-    lambda obj: (list(obj), ()),
-    lambda data, _: autograd.builtins.SequenceBox(data),
-)
+import contextlib
+
+with contextlib.suppress(ImportError):
+    import autograd
+
+    # pylint: disable=no-member
+    register_pytree(
+        autograd.builtins.list,
+        lambda obj: (list(obj), ()),
+        lambda data, _: autograd.builtins.list(data),
+    )
+    register_pytree(
+        autograd.builtins.tuple,
+        lambda obj: (list(obj), ()),
+        lambda data, _: autograd.builtins.tuple(data),
+    )
+    register_pytree(
+        autograd.builtins.SequenceBox,
+        lambda obj: (list(obj), ()),
+        lambda data, _: autograd.builtins.SequenceBox(data),
+    )

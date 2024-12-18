@@ -16,7 +16,6 @@ import copy
 
 # pylint: disable= no-value-for-parameter, protected-access, not-callable
 import pennylane as qml
-from pennylane import numpy as pnp
 from pennylane import transform
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
@@ -211,17 +210,19 @@ class AdaptiveOptimizer:
                 )
             ]
 
-        params = pnp.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
+        params = qml.math.asarray([gate.parameters[0] for gate in operator_pool], like="autograd")
         qnode.func = self._circuit
         grads = qml.grad(qnode)(params, gates=operator_pool, initial_circuit=circuit.func)
 
-        selected_gates = [operator_pool[pnp.argmax(abs(grads))]]
+        selected_gates = [operator_pool[qml.math.argmax(abs(grads))]]
         optimizer = qml.GradientDescentOptimizer(stepsize=self.stepsize)
 
         if params_zero:
-            params = pnp.zeros(len(selected_gates))
+            params = qml.math.zeros(len(selected_gates), like="autograd")
         else:
-            params = pnp.array([gate.parameters[0] for gate in selected_gates], requires_grad=True)
+            params = qml.math.asarray(
+                [gate.parameters[0] for gate in selected_gates], like="autograd"
+            )
 
         for _ in range(self.param_steps):
             params, _ = optimizer.step_and_cost(

@@ -18,7 +18,6 @@ import autoray as ar
 import numpy as _np
 
 # pylint: disable=import-outside-toplevel
-from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 
 from . import single_dispatch  # pylint:disable=unused-import
@@ -141,7 +140,7 @@ def cast_like(tensor1, tensor2):
     """
     if isinstance(tensor2, tuple) and len(tensor2) > 0:
         tensor2 = tensor2[0]
-    if isinstance(tensor2, ArrayBox):
+    if type(tensor2).__name__ == "ArrayBox":
         dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
     elif not is_abstract(tensor2):
         dtype = ar.to_numpy(tensor2).dtype.type

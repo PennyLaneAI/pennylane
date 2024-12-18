@@ -19,7 +19,6 @@ from collections.abc import Sequence
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as onp
-from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
 
@@ -775,7 +774,9 @@ def unwrap(values, max_depth=None):
         if isinstance(val, (tuple, list)):
             return unwrap(val)
         new_val = (
-            np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
+            np.to_numpy(val, max_depth=max_depth)
+            if type(val).__name__ == "ArrayBox"
+            else np.to_numpy(val)
         )
         return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
@@ -783,7 +784,7 @@ def unwrap(values, max_depth=None):
         return type(values)(convert(val) for val in values)
     return (
         np.to_numpy(values, max_depth=max_depth)
-        if isinstance(values, ArrayBox)
+        if type(val).__name__ == "ArrayBox"
         else np.to_numpy(values)
     )
 

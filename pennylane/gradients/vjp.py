@@ -15,7 +15,6 @@
 This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
-import autograd
 
 # pylint: disable=no-member, too-many-branches
 import numpy as np
@@ -120,7 +119,7 @@ def compute_vjp_single(dy, jac, num=None):
     # TODO: Excplictly catalogue and update raises for known types.
 
     # Single measurement with a single param
-    if not isinstance(jac, (tuple, autograd.builtins.SequenceBox)):
+    if type(jac).__name__ != "SequenceBox" and not isinstance(jac, (tuple, list)):
         # No trainable parameters
         if jac.shape == (0,):
             res = qml.math.zeros((1, 0))
@@ -200,7 +199,7 @@ def compute_vjp_multi(dy, jac, num=None):
         return None
 
     # Single parameter
-    if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
+    if type(jac[0]).__name__ != "SequenceBox" and not isinstance(jac[0], (tuple, list)):
         res = []
         for d, j_ in zip(dy, jac):
             res.append(compute_vjp_single(d, j_, num=num))

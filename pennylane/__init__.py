@@ -18,7 +18,6 @@ PennyLane can be directly imported.
 
 
 from pennylane.boolean_fn import BooleanFn
-import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
 import pennylane.capture

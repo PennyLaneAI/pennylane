@@ -24,10 +24,6 @@ import warnings
 from functools import partial
 
 import numpy as np
-from autograd.core import VJPNode
-from autograd.tracer import isbox, new_box, trace_stack
-
-from pennylane import numpy as pnp
 
 
 def _autograd_is_indep_analytic(func, *args, **kwargs):
@@ -56,6 +52,9 @@ def _autograd_is_indep_analytic(func, *args, **kwargs):
     <https://github.com/HIPS/autograd/blob/master/autograd/tracer.py#L7>`__.
     """
     # pylint: disable=protected-access
+    from autograd.core import VJPNode
+    from autograd.tracer import isbox, new_box, trace_stack
+
     node = VJPNode.new_root()
     with trace_stack.new_trace() as t:
         start_box = new_box(args, t, node)
@@ -207,7 +206,12 @@ def _get_random_args(args, interface, num, seed, bounds):
         ]
         if interface == "autograd":
             # Mark the arguments as trainable with Autograd
-            rnd_args = [tuple(pnp.array(a, requires_grad=True) for a in arg) for arg in rnd_args]
+            import autograd
+
+            rnd_args = [
+                tuple(autograd.numpy.asarray(a, requires_grad=True) for a in arg)
+                for arg in rnd_args
+            ]
 
     return rnd_args
 
