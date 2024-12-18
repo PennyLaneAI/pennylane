@@ -1503,8 +1503,7 @@ class TestParameterShiftHessianQNode:
         result = qml.gradients.param_shift_hessian(circuit)(params)
         assert np.allclose(result, np.zeros((3, 3, 4)), atol=0, rtol=0)
 
-        tape = qml.workflow.construct_tape(circuit)(params)
-        tapes, _ = qml.gradients.param_shift_hessian(tape)
+        tapes, _ = qml.gradients.param_shift_hessian(qml.workflow.construct_tape(circuit)(params))
         assert tapes == []
 
     @pytest.mark.xfail(reason="Update tracker for new return types")
@@ -1594,8 +1593,9 @@ class TestParamShiftHessianWithKwargs:
         x = np.array([0.6, -0.2], requires_grad=True)
 
         expected = qml.math.transpose(qml.jacobian(qml.jacobian(circuit))(x), (1, 2, 0))
-        tape = qml.workflow.construct_tape(circuit)(x)
-        tapes, fn = qml.gradients.param_shift_hessian(tape, diagonal_shifts=diagonal_shifts)
+        tapes, fn = qml.gradients.param_shift_hessian(
+            qml.workflow.construct_tape(circuit)(x), diagonal_shifts=diagonal_shifts
+        )
 
         # We expect the following tapes:
         # - 1 without shifts (used for second diagonal),
@@ -1636,8 +1636,9 @@ class TestParamShiftHessianWithKwargs:
         x = np.array([0.6, -0.2], requires_grad=True)
 
         expected = qml.math.transpose(qml.jacobian(qml.jacobian(circuit))(x), (1, 2, 0))
-        tape = qml.workflow.construct_tape(circuit)(x)
-        tapes, fn = qml.gradients.param_shift_hessian(tape, off_diagonal_shifts=off_diagonal_shifts)
+        tapes, fn = qml.gradients.param_shift_hessian(
+            qml.workflow.construct_tape(circuit)(x), off_diagonal_shifts=off_diagonal_shifts
+        )
 
         # We expect the following tapes:
         # - 1 without shifts (used for diagonals),
