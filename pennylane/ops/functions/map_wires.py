@@ -49,7 +49,7 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
 
             import jax
             from pennylane.ops.functions.map_wires import MapWiresInterpreter
-            
+
             qml.capture.enable()
 
             @MapWiresInterpreter(wire_map={0: 1})

@@ -163,8 +163,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 return self.decompose_operation(op)
             return op
 
+    # pylint: disable=unused-variable,missing-function-docstring
     @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
-    def handle_ctrl_transform(*_, **__):  # pylint: disable=missing-function-docstring
+    def handle_ctrl_transform(*_, **__):
         raise NotImplementedError
 
     def decompose_plxpr_to_plxpr(
