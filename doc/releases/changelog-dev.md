@@ -209,6 +209,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Improvements 🛠</h3>
 
+* `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
+  [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
+
 * Remove redundant commutator computations from `qml.lie_closure`.
   [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
 
@@ -376,6 +379,11 @@ such as `shots`, `rng` and `prng_key`.
   [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Breaking changes 💔</h3>
+
+* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` for grouping observables was changed 
+  from `"rlf"` to `"lf"`. Internally, `qml.pauli.group_observables` has been replaced with `qml.pauli.compute_partition_indices`
+  in several places to improve efficiency.
+  [(#6706)](https://github.com/PennyLaneAI/pennylane/pull/6706)
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
   Autograd framework. As the function uses automatic differentiation for validation, parameters
