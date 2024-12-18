@@ -209,6 +209,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Improvements 🛠</h3>
 
+* `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
+  [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
+
 * Remove redundant commutator computations from `qml.lie_closure`.
   [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
 
