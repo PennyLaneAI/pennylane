@@ -483,5 +483,4 @@ def gather_mcm(measurement, samples, is_valid, postselect_mode=None):
         return counts / qml.math.sum(counts)
     if isinstance(measurement, CountsMP):
         mcm_samples = [{float(s): 1} for s in mcm_samples]
-
     return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
