@@ -14,7 +14,6 @@
 """
 Unit tests for the compiler subpackage.
 """
-import warnings
 
 # pylint: disable=import-outside-toplevel
 from unittest.mock import patch
@@ -27,14 +26,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.compiler.compiler import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
@@ -382,7 +373,7 @@ class TestCatalystControlFlow:
         assert f(4, 7) == 28  # 4 * 7
 
     def test_fallback_while_loop_qnode(self):
-        """Test that qml.while_loop inside a qnode fallsback to
+        """Test that qml.while_loop inside a qnode falls back to
         Python without qjit"""
         dev = qml.device("lightning.qubit", wires=1)
 
@@ -398,9 +389,9 @@ class TestCatalystControlFlow:
 
         assert jnp.allclose(circuit(1), -1.0)
 
-        res = circuit.tape.operations
+        tape = qml.workflow.construct_tape(circuit)(1)
         expected = [qml.PauliX(0) for i in range(4)]
-        _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
+        _ = [qml.assert_equal(i, j) for i, j in zip(tape.operations, expected)]
 
     def test_dynamic_wires_for_loops(self):
         """Test for loops with iteration index-dependant wires."""
