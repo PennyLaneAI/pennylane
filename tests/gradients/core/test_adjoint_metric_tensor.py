@@ -304,9 +304,9 @@ class TestAdjointMetricTensorTape:
 
         circuit(*j_params)
         tape = qml.workflow.construct_tape(circuit)(*j_params)
-        mt = qml.adjoint_metric_tensor(tape)
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt, expected)
+        met_tens = qml.adjoint_metric_tensor(tape)
+        expected = qml.math.reshape(expected, qml.math.shape(met_tens))
+        assert qml.math.allclose(met_tens, expected)
 
         mt = qml.adjoint_metric_tensor(circuit)(*j_params)
         assert qml.math.allclose(mt, expected)
