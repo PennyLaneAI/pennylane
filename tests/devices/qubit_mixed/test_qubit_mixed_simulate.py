@@ -84,7 +84,7 @@ class TestBasicCircuit:
         return qml.tape.QuantumScript(ops, obs)
 
     def test_basic_circuit_numpy(self, wires):
-        """Test execution with a basic circuit, only the first wire."""
+        """Test execution with a basic circuit, only one wire."""
         phi = np.array(0.397)
 
         qs = self.get_quantum_script(phi, wires)
