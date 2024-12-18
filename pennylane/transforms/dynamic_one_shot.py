@@ -458,7 +458,7 @@ def gather_mcm(measurement, samples, is_valid, postselect_mode=None):
             counts = qml.math.array(counts, like=interface)
             return counts / qml.math.sum(counts)
         if isinstance(measurement, CountsMP):
-            mcm_samples = [{"".join(str(int(v)) for v in tuple(s)): 1} for s in mcm_samples]
+            mcm_samples = [measurement.process_samples(mcm_samples, wire_order=measurement.wires)]
         return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
     mcm_samples = qml.math.ravel(qml.math.array(mv.concretize(samples), like=interface))
     if isinstance(measurement, ProbabilityMP):
@@ -471,5 +471,8 @@ def gather_mcm(measurement, samples, is_valid, postselect_mode=None):
         counts = qml.math.array(counts, like=interface)
         return counts / qml.math.sum(counts)
     if isinstance(measurement, CountsMP):
-        mcm_samples = [{float(s): 1} for s in mcm_samples]
+        mcm_samples = [
+            measurement.process_samples(mcm_samples[:, None], wire_order=measurement.wires)
+        ]
+
     return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
