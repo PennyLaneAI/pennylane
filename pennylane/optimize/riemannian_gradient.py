@@ -79,7 +79,7 @@ def append_time_evolution(
         with QueuingManager.stop_recording():
             new_operations.append(qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n))
 
-    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -379,12 +379,15 @@ class RiemannianGradientOptimizer:
             array: array of omegas for each direction in the Lie algebra.
         """
 
-        obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)
+        partition_indices = qml.pauli.compute_partition_indices(self.observables)
+        grouped_obs = [[self.observables[idx] for idx in group] for group in partition_indices]
+
         # get all circuits we need to calculate the coefficients
+
         tape = qml.workflow.construct_tape(self.circuit)()
         circuits = algebra_commutator(
             tape,
-            obs_groupings,
+            grouped_obs,
             self.lie_algebra_basis_names,
             self.nqubits,
         )

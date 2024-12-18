@@ -271,7 +271,7 @@ def insert(
             sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
             new_operations.extend(sub_tape.operations)
 
-    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
