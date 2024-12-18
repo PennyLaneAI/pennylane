@@ -167,7 +167,7 @@ class ControlledQubitUnitary(ControlledOp):
 
         if isinstance(base, Iterable):
             if len(wires) == 0:
-                if len(Wires(control_wires)) > 1:
+                if len(control_wires) > 1:
                     num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
                     wires = control_wires[-num_base_wires:]
                     control_wires = control_wires[:-num_base_wires]
