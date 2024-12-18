@@ -115,32 +115,6 @@
   b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
   ```
 
-<h4>New `pennylane.labs.dla` module for handling (dynamical) Lie algebras (DLAs)</h4>
-
-* Added a dense implementation of computing the Lie closure in a new function
-  `lie_closure_dense` in `pennylane.labs.dla`.
-  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
-  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
-
-* Added a dense implementation of computing the structure constants in a new function
-  `structure_constants_dense` in `pennylane.labs.dla`.
-  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
-
-* Added utility functions for handling dense matrices and advanced functionality in the Lie theory context.
-  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
-* Added a ``cartan_decomp`` function along with two standard involutions ``even_odd_involution`` and ``concurrence_involution``.
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-
-* Added a `recursive_cartan_decomp` function and all canonical Cartan involutions.
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
-* Added a `cartan_subalgebra` function to compute the (horizontal) Cartan subalgebra of a Cartan decomposition.
-  [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
 
 * Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
@@ -181,8 +155,13 @@
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+  * Implemented functions for generating the vibrational Hamiltonian in VSCF basis
+    [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
 
 <h3>Improvements 🛠</h3>
+
+* `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
+  [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
 
 * Remove redundant commutator computations from `qml.lie_closure`.
   [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
@@ -225,6 +204,11 @@
 
 * The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
   [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
+
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.CancelInterpreter`
+  when program capture is enabled. This class cancels operators appearing consecutively that are adjoints of each
+  other, and follows the same API as `qml.transforms.cancel_inverses`.
+  [(#6692)](https://github.com/PennyLaneAI/pennylane/pull/6692)
 
 * Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
   when program capture is enabled. This class decomposes pennylane operators following the same API as
@@ -345,7 +329,42 @@
 * Added support to build a vibrational Hamiltonian in the Christiansen form.
   [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
+<h4>New `pennylane.labs.dla` module for handling (dynamical) Lie algebras (DLAs)</h4>
+
+* Added a dense implementation of computing the Lie closure in a new function
+  `lie_closure_dense` in `pennylane.labs.dla`.
+  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
+
+* Added a dense implementation of computing the structure constants in a new function
+  `structure_constants_dense` in `pennylane.labs.dla`.
+  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
+
+* Added utility functions for handling dense matrices and advanced functionality in the Lie theory context.
+  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+
+* Added a ``cartan_decomp`` function along with two standard involutions ``even_odd_involution`` and ``concurrence_involution``.
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+
+* Added a `recursive_cartan_decomp` function and all canonical Cartan involutions.
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+
+* Added a `cartan_subalgebra` function to compute the (horizontal) Cartan subalgebra of a Cartan decomposition.
+  [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+
+* Added a `variational_kak_adj` function to compute a KaK decomposition of a Hamiltonian given a Cartan
+  decomposition and the ordered adjoint representation of the Lie algebra.
+  [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
+
 <h3>Breaking changes 💔</h3>
+
+* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` for grouping observables was changed 
+  from `"rlf"` to `"lf"`. Internally, `qml.pauli.group_observables` has been replaced with `qml.pauli.compute_partition_indices`
+  in several places to improve efficiency.
+  [(#6706)](https://github.com/PennyLaneAI/pennylane/pull/6706)
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
   Autograd framework. As the function uses automatic differentiation for validation, parameters
@@ -469,8 +488,12 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
+  [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
+
 * The `Wires` object throws a `TypeError` if `wires=None`. 
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
+  [(#6720)](https://github.com/PennyLaneAI/pennylane/pull/6720)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
