@@ -14,7 +14,6 @@
 """Unit tests for the Clifford+T transform."""
 
 import math
-import warnings
 from functools import reduce
 
 import pytest
@@ -30,14 +29,6 @@ from pennylane.transforms.decompositions.clifford_t_transform import (
     clifford_t_decomposition,
 )
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 _SKIP_GATES = (qml.Barrier, qml.Snapshot, qml.WireCut)
 _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
@@ -172,10 +163,12 @@ class TestCliffordCompile:
         res1, res2 = original_qnode(), transfmd_qnode()
         assert qml.math.isclose(res1, res2, atol=1e-2)
 
+        tape = qml.workflow.construct_tape(transfmd_qnode)()
+
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
             or isinstance(getattr(op, "base", None), _CLIFFORD_PHASE_GATES)
-            for op in transfmd_qnode.tape.operations
+            for op in tape.operations
         )
 
     @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 9e-2])
