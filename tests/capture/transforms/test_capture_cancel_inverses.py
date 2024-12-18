@@ -30,7 +30,10 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.transforms.optimization.cancel_inverses import CancelInversesInterpreter
+from pennylane.transforms.optimization.cancel_inverses import (
+    CancelInversesInterpreter,
+    cancel_inverses_plxpr_to_plxpr,
+)
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -422,3 +425,21 @@ class TestCancelInversesInterpreter:
         assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+def test_cancel_inverses_plxpr_to_plxpr():
+    """Test that transforming plxpr works."""
+
+    def circuit():
+        qml.X(0)
+        qml.S(1)
+        qml.X(0)
+        qml.adjoint(qml.S(1))
+        return qml.expval(qml.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit)()
+    transformed_jaxpr = cancel_inverses_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
+    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert len(transformed_jaxpr.eqns) == 2
+    assert transformed_jaxpr.eqns[0].primitive == qml.PauliZ._primitive
+    assert transformed_jaxpr.eqns[1].primitive == qml.measurements.ExpectationMP._obs_primitive

@@ -220,11 +220,12 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
     .. details::
         :title: Transforms with experimental program capture
 
-        To define a transform that can be applied directly to plxpr without the need to create ``QuantumScript``\ s,
-        users must provide the ``plxpr_transform`` argument. If this argument is not provided, executing transformed
-        functions will raise a ``NotImplementedError``. The ``plxpr_transform`` argument should be a function that
-        accepts ``jax.core.Jaxpr`` as input and returns ``jax.core.ClosedJaxpr`` that has been transformed. The exact
-        expected signature of ``plxpr_transform`` is shown in the example below:
+        To define a transform that can be applied directly to plxpr without the need to create ``QuantumScript``\ s, users
+        must provide the ``plxpr_transform`` argument. If this argument is not provided, executing transformed functions
+        will raise a ``NotImplementedError``. The ``plxpr_transform`` argument should be a function that applies the
+        respective transform to ``jax.core.Jaxpr`` and returns a transformed ``jax.core.ClosedJaxpr``. ``plxpr_transform``
+        can assume that no transform primitives are present in the input plxpr, and its implementation does not need to
+        account for these primitives. The exact expected signature of ``plxpr_transform`` is shown in the example below:
 
         .. code-block:: python
 

@@ -94,9 +94,11 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
             qml.capture.enable()
             return super().interpret_measurement(measurement)
 
-    def map_wires_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+    def map_wires_plxpr_to_plxpr(
+        jaxpr, consts, targs, tkwargs, *args
+    ):  # pylint: disable=unused-argument
         """Function for mapping wires in plxpr"""
-        wire_map = targs[0] if len(targs) > 0 else tkwargs.pop("wire_map")
+        wire_map = tkwargs.pop("wire_map")
         interpreter = MapWiresInterpreter(wire_map)
 
         def wrapper(*inner_args):
