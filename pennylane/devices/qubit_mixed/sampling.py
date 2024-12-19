@@ -156,7 +156,7 @@ def _measure_classical_shadow(
 
 
 def _measure_hamiltonian_with_samples(
-    mp: list[SampleMeasurement],
+    mp: list[ExpectationMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -189,7 +189,7 @@ def _measure_hamiltonian_with_samples(
 
 
 def _measure_sum_with_samples(
-    mp: list[SampleMeasurement],
+    mp: list[ExpectationMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
