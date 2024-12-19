@@ -115,32 +115,6 @@
   b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
   ```
 
-<h4>New `pennylane.labs.dla` module for handling (dynamical) Lie algebras (DLAs)</h4>
-
-* Added a dense implementation of computing the Lie closure in a new function
-  `lie_closure_dense` in `pennylane.labs.dla`.
-  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
-  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
-
-* Added a dense implementation of computing the structure constants in a new function
-  `structure_constants_dense` in `pennylane.labs.dla`.
-  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
-
-* Added utility functions for handling dense matrices and advanced functionality in the Lie theory context.
-  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
-* Added a ``cartan_decomp`` function along with two standard involutions ``even_odd_involution`` and ``concurrence_involution``.
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-
-* Added a `recursive_cartan_decomp` function and all canonical Cartan involutions.
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
-* Added a `cartan_subalgebra` function to compute the (horizontal) Cartan subalgebra of a Cartan decomposition.
-  [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
 
 <h4>New API for Qubit Mixed</h4>
 
@@ -208,6 +182,9 @@ such as `shots`, `rng` and `prng_key`.
     [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
 
 <h3>Improvements 🛠</h3>
+
+* `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
+  [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
 
 * Remove redundant commutator computations from `qml.lie_closure`.
   [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
@@ -375,6 +352,36 @@ such as `shots`, `rng` and `prng_key`.
 * Added support to build a vibrational Hamiltonian in the Christiansen form.
   [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
+<h4>New `pennylane.labs.dla` module for handling (dynamical) Lie algebras (DLAs)</h4>
+
+* Added a dense implementation of computing the Lie closure in a new function
+  `lie_closure_dense` in `pennylane.labs.dla`.
+  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
+
+* Added a dense implementation of computing the structure constants in a new function
+  `structure_constants_dense` in `pennylane.labs.dla`.
+  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
+
+* Added utility functions for handling dense matrices and advanced functionality in the Lie theory context.
+  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+
+* Added a ``cartan_decomp`` function along with two standard involutions ``even_odd_involution`` and ``concurrence_involution``.
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+
+* Added a `recursive_cartan_decomp` function and all canonical Cartan involutions.
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+
+* Added a `cartan_subalgebra` function to compute the (horizontal) Cartan subalgebra of a Cartan decomposition.
+  [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+
+* Added a `variational_kak_adj` function to compute a KaK decomposition of a Hamiltonian given a Cartan
+  decomposition and the ordered adjoint representation of the Lie algebra.
+  [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
+
 <h3>Breaking changes 💔</h3>
 
 * The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` for grouping observables was changed 
@@ -503,6 +510,9 @@ same information.
   [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
+  [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
 
 * The `Wires` object throws a `TypeError` if `wires=None`. 
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
