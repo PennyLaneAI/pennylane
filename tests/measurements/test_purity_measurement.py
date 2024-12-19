@@ -293,7 +293,7 @@ class TestPurityIntegration:
         assert qml.math.allclose(purity, expected_purity)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", ["default.qubit"])
+    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
