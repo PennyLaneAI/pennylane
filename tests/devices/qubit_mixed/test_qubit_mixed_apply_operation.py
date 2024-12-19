@@ -883,8 +883,7 @@ class TestDensityMatrix:
         op = qml.QubitDensityMatrix(density_matrix, wires=range(num_q))
 
         shape = (batch_size,) + (2,) * (2 * num_q)
-        state = np.zeros(shape, dtype=np.complex128)
-        state = math.asarray(state, like=ml_framework)
+        state = math.zeros(shape, like=ml_framework)
         state = math.cast(state, dtype=complex)
 
         result = qml.devices.qubit_mixed.apply_operation(op, state, is_state_batched=True)
@@ -903,7 +902,8 @@ class TestDensityMatrix:
 
         with pytest.raises(ValueError, match="Density matrix must have shape"):
             op = qml.QubitDensityMatrix(invalid_matrix, wires=[0])
-            state = math.zeros([2, 2], like=ml_framework, dtype=complex)
+            state = math.zeros([2, 2], like=ml_framework)
+            state = math.cast(state, dtype=complex)
             qml.devices.qubit_mixed.apply_operation(op, state)
 
     def test_non_hermitian(self, ml_framework):
@@ -913,7 +913,8 @@ class TestDensityMatrix:
 
         with pytest.raises(ValueError, match="Density matrix must be Hermitian"):
             op = qml.QubitDensityMatrix(non_hermitian, wires=[0])
-            state = math.zeros([2, 2], like=ml_framework, dtype=complex)
+            state = math.zeros([2, 2], like=ml_framework)
+            state = math.cast(state, dtype=complex)
             qml.devices.qubit_mixed.apply_operation(op, state)
 
     def test_invalid_trace(self, ml_framework):
@@ -923,7 +924,8 @@ class TestDensityMatrix:
 
         with pytest.raises(ValueError, match="Density matrix must have a trace of 1"):
             op = qml.QubitDensityMatrix(invalid_trace, wires=[0])
-            state = math.zeros([2, 2], like=ml_framework, dtype=complex)
+            state = math.zeros([2, 2], like=ml_framework)
+            state = math.cast(state, dtype=complex)
             qml.devices.qubit_mixed.apply_operation(op, state)
 
 
