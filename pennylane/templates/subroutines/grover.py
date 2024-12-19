@@ -109,9 +109,9 @@ class GroverOperator(Operation):
         hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
         return tuple(), (self.wires, hyperparameters)
 
-    def __init__(self, wires: WiresLike = None, work_wires: WiresLike = None, id=None):
-        work_wires = Wires(() if work_wires is None else work_wires)
-        wires = Wires(() if wires is None else wires)
+    def __init__(self, wires: WiresLike, work_wires: WiresLike = (), id=None):
+        wires = Wires(wires)
+        work_wires = Wires(work_wires)
 
         if len(wires) < 2:
             raise ValueError("GroverOperator must have at least two wires provided.")
