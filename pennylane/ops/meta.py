@@ -23,7 +23,7 @@ from typing import Optional
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires, WiresLike  # pylint: disable=unused-import
+from pennylane.wires import Wires, WiresLike
 
 
 class Barrier(Operation):
