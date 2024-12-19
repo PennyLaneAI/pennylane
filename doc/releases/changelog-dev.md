@@ -77,6 +77,20 @@
   b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
   ```
 
+<h4>Bosonic operators 🎈</h4>
+
+* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
+
+* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
+* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
+  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
+
+* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
+  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
+
 <h4>Construct vibrational Hamiltonians 🫨</h4>
 
 * Added submodule for calculating vibrational Hamiltonians
@@ -99,20 +113,6 @@
 
 * Added support to build a vibrational Hamiltonian in the Christiansen form.
   [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
-
-<h4>Bosonic operators 🎈</h4>
-
-* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
-  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
-
-* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
-  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
-
-* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
-  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
-
-* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
-  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
 <h4>New device capabilities 💾</h4>
 
