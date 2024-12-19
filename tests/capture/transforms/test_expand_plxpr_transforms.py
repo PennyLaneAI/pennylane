@@ -291,3 +291,45 @@ class TestExpandPlxprTransforms:
             transformed_jaxpr.eqns[2].outvars[0],
             transformed_jaxpr.eqns[6].outvars[0],
         ]
+
+    def test_expand_function_with_no_transforms(self):
+        """Test that using expand_plxpr_transforms on a function with no transforms does
+        not affect it."""
+
+        def f(x, y):
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+            qml.RY(y, 1)
+            return qml.expval(qml.Z(1))
+
+        args = (1.5, 2.6)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        transformed_f = expand_plxpr_transforms(f)
+        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        assert len(jaxpr.eqns) == len(transformed_jaxpr.eqns)
+        assert all(
+            eqn1.primitive == eqn2.primitive
+            for eqn1, eqn2 in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True)
+        )
+        assert all(
+            eqn1.params == eqn2.params
+            for eqn1, eqn2 in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True)
+        )
+        assert jaxpr.jaxpr.outvars == jaxpr.eqns[-1].outvars
+        assert transformed_jaxpr.jaxpr.outvars == transformed_jaxpr.eqns[-1].outvars
+
+    def test_error_raised_for_unsupported_transform(self):
+        """Test that an error is raised if we try to expand a transform that is not supported."""
+
+        @dummy_tape_only_transform
+        def f(x, y):
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+            qml.RY(y, 1)
+            return qml.expval(qml.Z(1))
+
+        args = (1.2, 3.4)
+        transformed_f = expand_plxpr_transforms(f)
+
+        with pytest.raises(NotImplementedError):
+            transformed_f(*args)
