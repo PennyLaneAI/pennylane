@@ -34,19 +34,19 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
     def resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
-    @staticmethod
-    def adjoint_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
-        return {}
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
 
-    @staticmethod
+    @classmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        cls, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return {}
+        return {cls.resource_rep(): 1}
 
-    @staticmethod
-    def pow_resource_decomp(z) -> Dict[re.CompressedResourceOp, int]:
-        return {}
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
 
 
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):

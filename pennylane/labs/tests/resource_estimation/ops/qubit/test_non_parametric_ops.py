@@ -364,7 +364,6 @@ class TestT:
     """Tests for ResourceT"""
 
     def test_resources(self):
-        """Test that ResourceT does not implement a decomposition"""
         op = re.ResourceT(0)
         with pytest.raises(re.ResourcesNotDefined):
             op.resources()

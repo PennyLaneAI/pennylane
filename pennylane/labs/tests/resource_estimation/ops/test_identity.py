@@ -53,13 +53,13 @@ class TestIdentity:
         """Test that the adjoint resources are as expected"""
         op = re.ResourceIdentity(0)
         op2 = re.ResourceAdjoint(op)
-        assert op.adjoint_resource_decomp() == {}
-        assert op2.resources(**op2.resource_params()) == {}
+        assert op.adjoint_resource_decomp() == {re.ResourceIdentity.resource_rep(): 1}
+        assert op2.resources(**op2.resource_params()) == {re.ResourceIdentity.resource_rep(): 1}
 
     identity_ctrl_data = (
-        ([1], [1], [], {}),
-        ([1, 2], [1, 1], ["w1"], {}),
-        ([1, 2, 3], [1, 0, 0], ["w1", "w2"], {}),
+        ([1], [1], [], {re.ResourceIdentity.resource_rep(): 1}),
+        ([1, 2], [1, 1], ["w1"], {re.ResourceIdentity.resource_rep(): 1}),
+        ([1, 2, 3], [1, 0, 0], ["w1", "w2"], {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize(
@@ -83,9 +83,9 @@ class TestIdentity:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     identity_pow_data = (
-        (1, {}),
-        (2, {}),
-        (5, {}),
+        (1, {re.ResourceIdentity.resource_rep(): 1}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
+        (5, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", identity_pow_data)
