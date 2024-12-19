@@ -125,6 +125,28 @@ class TestMeasurementDispatch:
         state = qml.numpy.zeros(2)
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
+    def test_sparse_method_for_density_matrix(self):
+        """Check that csr_dot_products_density_matrix is used for sparse measurements on density matrices"""
+        # Create a sparse observable
+        H = qml.SparseHamiltonian(
+            qml.Hamiltonian([1.0], [qml.PauliZ(0)]).sparse_matrix(), wires=[0]
+        )
+        state = np.zeros((2, 2))  # 2x2 density matrix
+
+        # Verify the correct measurement function is selected
+        assert get_measurement_function(qml.expval(H), state) is csr_dot_products_density_matrix
+
+        # Also test with a larger system
+        H_large = qml.SparseHamiltonian(
+            qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliX(1)]).sparse_matrix(), wires=[0, 1]
+        )
+        state_large = np.zeros((4, 4))  # 4x4 density matrix for 2 qubits
+
+        assert (
+            get_measurement_function(qml.expval(H_large), state_large)
+            is csr_dot_products_density_matrix
+        )
+
     def test_no_sparse_matrix(self):
         """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
 
