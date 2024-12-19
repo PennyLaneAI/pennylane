@@ -334,6 +334,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
+* PennyLane is compatible with `quimb 1.10.0`.
+  [(#6630)](https://github.com/PennyLaneAI/pennylane/pull/6630)
+
 * Add developer focused `run` function to `qml.workflow` module.
   [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
 
