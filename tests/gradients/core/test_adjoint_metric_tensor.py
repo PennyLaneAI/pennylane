@@ -14,7 +14,6 @@
 """
 Unit tests for the adjoint_metric_tensor function.
 """
-import warnings
 
 import numpy as onp
 
@@ -23,14 +22,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
@@ -288,9 +279,10 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit)(*params)
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.adjoint_metric_tensor(circuit.qtape)
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt, expected)
+        tape = qml.workflow.construct_tape(circuit)(*params)
+        met_tens = qml.adjoint_metric_tensor(tape)
+        expected = qml.math.reshape(expected, qml.math.shape(met_tens))
+        assert qml.math.allclose(met_tens, expected)
 
     @pytest.mark.jax
     @pytest.mark.skip("JAX does not support forward pass execution of the metric tensor.")
@@ -311,9 +303,10 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*j_params)
-        mt = qml.adjoint_metric_tensor(circuit.qtape)
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt, expected)
+        tape = qml.workflow.construct_tape(circuit)(*j_params)
+        met_tens = qml.adjoint_metric_tensor(tape)
+        expected = qml.math.reshape(expected, qml.math.shape(met_tens))
+        assert qml.math.allclose(met_tens, expected)
 
         mt = qml.adjoint_metric_tensor(circuit)(*j_params)
         assert qml.math.allclose(mt, expected)
@@ -342,9 +335,10 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit)(*t_params)
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.adjoint_metric_tensor(circuit.qtape)
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt.detach().numpy(), expected)
+        tape = qml.workflow.construct_tape(circuit)(*t_params)
+        met_tens = qml.adjoint_metric_tensor(tape)
+        expected = qml.math.reshape(expected, qml.math.shape(met_tens))
+        assert qml.math.allclose(met_tens.detach().numpy(), expected)
 
     interfaces = ["auto", "tf"]
 
@@ -368,7 +362,8 @@ class TestAdjointMetricTensorTape:
 
         with tf.GradientTape():
             circuit(*t_params)
-            mt = qml.adjoint_metric_tensor(circuit.qtape)
+            tape = qml.workflow.construct_tape(circuit)(*t_params)
+            mt = qml.adjoint_metric_tensor(tape)
 
         with tf.GradientTape():
             mt = qml.adjoint_metric_tensor(circuit)(*t_params)
