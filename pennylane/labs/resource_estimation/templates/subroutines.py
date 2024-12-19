@@ -147,7 +147,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
 class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
 
     @staticmethod
-    def _resource_decomp(num_wires, dim_N) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(dim_N, **kargs) -> Dict[CompressedResourceOp, int]:
         gate_types = {}
         phase_shift = ResourcePhaseShift.resource_rep()
         single_excitation = ResourceSingleExcitation.resource_rep()

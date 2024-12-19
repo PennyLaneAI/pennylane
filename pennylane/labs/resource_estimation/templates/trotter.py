@@ -487,7 +487,7 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         return self.__class__.resource_rep(**self.resource_params(), name=self._name)
 
 
-def resource_trotterize(qfunc, n=1, order=2, reverse=False, name=None):
+def resource_trotterize(qfunc, n=1, order=2, reverse=False):
     r"""Generates higher order Suzuki-Trotter product formulas from a set of
     operations defined in a function.
 
@@ -582,7 +582,7 @@ def my_circuit(time, theta, phi, num_trotter_steps):
         time = args[0]
         other_args = args[1:]
         return ResourceTrotterizedQfunc(
-            time, *other_args, qfunc=qfunc, n=n, order=order, reverse=reverse, name=name, **kwargs
+            time, *other_args, qfunc=qfunc, n=n, order=order, reverse=reverse, **kwargs
         )
 
     return wrapper

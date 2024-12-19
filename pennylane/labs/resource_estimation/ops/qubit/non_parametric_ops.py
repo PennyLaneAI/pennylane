@@ -296,7 +296,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        """
+        r"""
         The resources are defined using the identity: 
 
         .. math:: 
