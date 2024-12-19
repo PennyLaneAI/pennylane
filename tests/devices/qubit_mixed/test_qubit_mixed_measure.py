@@ -21,6 +21,14 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.devices.qubit_mixed import apply_operation, create_initial_state, measure
+from pennylane.devices.qubit_mixed.measure import (
+    csr_dot_products_density_matrix,
+    full_dot_products_density_matrix,
+    get_measurement_function,
+    measure,
+    state_diagonalizing_gates,
+    sum_of_terms_method,
+)
 
 ml_frameworks_list = [
     "numpy",
@@ -58,6 +66,84 @@ class TestCurrentlyUnsupportedCases:
         """Test sample-only measurements raise a NotImplementedError."""
         with pytest.raises(NotImplementedError):
             _ = measure(mp, two_qubit_state)
+
+
+@pytest.mark.unit
+class TestMeasurementDispatch:
+    """Test that get_measurement_function dispatchs to the correct place."""
+
+    def test_state_no_obs(self):
+        """Test that the correct internal function is used for a measurement process with no observables."""
+        # Test a case where state_measurement_process is used
+        mp1 = qml.state()
+        assert get_measurement_function(mp1, state=1) == state_diagonalizing_gates
+
+    @pytest.mark.parametrize(
+        "m",
+        (
+            qml.var(qml.PauliZ(0)),
+            qml.expval(qml.sum(qml.PauliZ(0), qml.PauliX(0))),
+            qml.expval(qml.sum(*(qml.PauliX(i) for i in range(15)))),
+            qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(10))),
+        ),
+    )
+    def test_diagonalizing_gates(self, m):
+        """Test that the state_diagonalizing gates are used when there's an observable has diagonalizing
+        gates and allows the measurement to be efficiently computed with them."""
+        assert get_measurement_function(m, state=1) is state_diagonalizing_gates
+
+    def test_hermitian_full_dot_product(self):
+        """Test that the expectation value of a hermitian uses the full dot products method."""
+        mp = qml.expval(qml.Hermitian(np.eye(2), wires=0))
+        assert get_measurement_function(mp, state=1) is full_dot_products_density_matrix
+
+    def test_hamiltonian_sparse_method(self):
+        """Check that the sum_of_terms_method method is used if the state is numpy."""
+        H = qml.Hamiltonian([2], [qml.PauliX(0)])
+        state = np.zeros(2)
+        assert get_measurement_function(qml.expval(H), state) is sum_of_terms_method
+
+    def test_hamiltonian_sum_of_terms_when_backprop(self):
+        """Check that the sum of terms method is used when the state is trainable."""
+        H = qml.Hamiltonian([2], [qml.PauliX(0)])
+        state = qml.numpy.zeros(2)
+        assert get_measurement_function(qml.expval(H), state) is sum_of_terms_method
+
+    def test_sum_sparse_method_when_large_and_nonoverlapping(self):
+        """Check that the sum_of_terms_method is used if the state is numpy and
+        the Sum is large with overlapping wires."""
+        S = qml.prod(*(qml.PauliX(i) for i in range(8))) + qml.prod(
+            *(qml.PauliY(i) for i in range(8))
+        )
+        state = np.zeros(2)
+        assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
+
+    def test_sum_sum_of_terms_when_backprop(self):
+        """Check that the sum of terms method is used when"""
+        S = qml.prod(*(qml.PauliX(i) for i in range(8))) + qml.prod(
+            *(qml.PauliY(i) for i in range(8))
+        )
+        state = qml.numpy.zeros(2)
+        assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
+
+    def test_no_sparse_matrix(self):
+        """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
+
+        class DummyOp(qml.operation.Observable):  # pylint: disable=too-few-public-methods
+            num_wires = 1
+
+        S1 = qml.Hamiltonian([0.5, 0.5], [qml.X(0), DummyOp(wires=1)])
+        state = np.zeros(2)
+        assert get_measurement_function(qml.expval(S1), state) is sum_of_terms_method
+
+        S2 = qml.X(0) + DummyOp(wires=1)
+        assert get_measurement_function(qml.expval(S2), state) is sum_of_terms_method
+
+        S3 = 0.5 * qml.X(0) + 0.5 * DummyOp(wires=1)
+        assert get_measurement_function(qml.expval(S3), state) is sum_of_terms_method
+
+        S4 = qml.Y(0) + qml.X(0) @ DummyOp(wires=1)
+        assert get_measurement_function(qml.expval(S4), state) is sum_of_terms_method
 
 
 class TestMeasurements:
