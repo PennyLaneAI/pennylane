@@ -471,7 +471,7 @@ class TestSumOfTermsDifferentiability:
         expected_gradient = jax.grad(self.expected)(x, coeffs)
         assert qml.math.allclose(expected_gradient, gradient)
 
-    @pytest.mark.skip
+    @pytest.mark.skip("Implementation of csr not differentiable for jax here")
     @pytest.mark.jax
     def test_jax_backprop_coeffs(self):
         """Test that backpropagation derivatives work with jax with
@@ -546,7 +546,7 @@ class TestSumOfTermsDifferentiability:
         expected_gradient = tape2.gradient(expected_out, x)
         assert qml.math.allclose(expected_gradient, gradient)
 
-    @pytest.mark.skip
+    @pytest.mark.skip("Implementation of csr not differentiable for tf here")
     @pytest.mark.tf
     def test_tf_backprop_coeffs(self):
         """Test that backpropagation derivatives work with tensorflow with
