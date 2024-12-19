@@ -295,7 +295,7 @@ class TestState:
 
         state_val = func()
         program = dev.preprocess_transforms()
-        scripts, _ = program([func.tape])
+        scripts, _ = program([qml.workflow.construct_tape(func)()])
         assert len(scripts) == 1
         expected_state, _ = qml.devices.qubit.get_final_state(scripts[0])
         assert np.allclose(state_val, expected_state.flatten())

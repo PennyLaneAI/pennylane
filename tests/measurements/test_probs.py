@@ -53,9 +53,9 @@ class TestProbs:
         def circuit():
             return qml.probs(wires=0)
 
-        circuit()
+        tape = qml.workflow.construct_tape(circuit)()
 
-        assert isinstance(circuit.tape[0], ProbabilityMP)
+        assert isinstance(tape[0], ProbabilityMP)
 
     def test_numeric_type(self):
         """Test that the numeric type is correct."""

@@ -165,7 +165,8 @@ class TestMeasurementTransform:
         def circuit():
             return MyMeasurement()
 
-        assert circuit() == {dev._shots: len(circuit.tape)}  # pylint:disable=protected-access
+        tape = qml.workflow.construct_tape(circuit)()
+        assert circuit() == {dev._shots: len(tape)}  # pylint:disable=protected-access
 
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
