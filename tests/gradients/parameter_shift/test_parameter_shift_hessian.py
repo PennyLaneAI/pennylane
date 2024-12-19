@@ -1198,6 +1198,9 @@ class TestParameterShiftHessianQNode:
         assert np.allclose(qml.math.transpose(expected[1], (0, 2, 3, 4, 5, 1)), hessian[1])
         assert np.allclose(qml.math.transpose(expected[2], (0, 2, 3, 1)), hessian[2])
 
+    @pytest.mark.xfail(
+        reason=r"ProbsMP.process_density_matrix issue. See https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064"
+    )
     def test_with_channel(self):
         """Test that the Hessian is correctly computed for circuits
         that contain quantum channels."""

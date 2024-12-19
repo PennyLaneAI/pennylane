@@ -791,8 +791,7 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
         wires, basis=circuit_basis, shots=shots, interface=interface, device=device
     )
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
-    tape = qml.workflow.construct_tape(circuit)()
-    new_bits, new_recipes = tape.measurements[0].process(tape, circuit.device.target_device)
+    new_bits, new_recipes = circuit()
 
     # test that the recipes follow a rough uniform distribution
     ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
@@ -838,9 +837,7 @@ def test_hadamard_expval(k=1, obs=obs_hadamard, expected=expected_hadamard):
     superposition of qubits"""
     circuit = hadamard_circuit_legacy(3, shots=50000)
     actual = circuit(obs, k=k)
-
-    tape = qml.workflow.construct_tape(circuit)(obs, k=k)
-    new_actual = tape.measurements[0].process(tape, circuit.device.target_device)
+    new_actual = circuit(obs, k=k)
 
     assert actual.shape == (len(obs_hadamard),)
     assert actual.dtype == np.float64

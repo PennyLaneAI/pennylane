@@ -154,30 +154,6 @@ class TestTransformProgramGetter:
         expected += dev_program
         assert full_prog == expected
 
-    def test_get_transform_program_legacy_device_interface(self):
-        """Test the contents of the transform program with the legacy device interface."""
-
-        dev = qml.device("default.mixed", wires=5)
-
-        @qml.transforms.merge_rotations
-        @qml.qnode(dev, diff_method="backprop")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        program = get_transform_program(circuit)
-
-        m1 = TransformContainer(qml.transforms.merge_rotations.transform)
-        assert program[:1] == TransformProgram([m1])
-
-        m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
-        assert program[1].transform == m2.transform.transform
-        assert program[1].kwargs["device"] == dev.target_device
-
-        # a little hard to check the contents of a expand_fn transform
-        # this is the best proxy I can find
-        assert program[2].transform == qml.devices.legacy_facade.legacy_device_expand_fn.transform
-
     def test_get_transform_program_final_transform(self):
         """Test that gradient preprocessing and device transform occur before a final transform."""
 
@@ -330,32 +306,6 @@ class TestConstructBatch:
         qml.assert_equal(batch[0], expected)
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
-
-    @pytest.mark.parametrize("level", ("device", None))
-    def test_device_transforms_legacy_interface(self, level):
-        """Test that the device transforms can be selected with level=device or None without trainable parameters"""
-
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.mixed", wires=2, shots=50))
-        def circuit(order):
-            qml.Permute(order, wires=(0, 1, 2))
-            qml.X(0)
-            qml.X(0)
-            return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
-
-        batch, fn = qml.workflow.construct_batch(circuit, level=level)((2, 1, 0))
-
-        expected0 = qml.tape.QuantumScript(
-            [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
-        )
-        qml.assert_equal(expected0, batch[0])
-        expected1 = qml.tape.QuantumScript(
-            [qml.SWAP((0, 2))], [qml.expval(qml.PauliY(0))], shots=50
-        )
-        qml.assert_equal(expected1, batch[1])
-        assert len(batch) == 2
-
-        assert fn((1.0, 2.0)) == ((1.0, 2.0),)
 
     def test_final_transform(self):
         """Test that the final transform is included when level=None."""
