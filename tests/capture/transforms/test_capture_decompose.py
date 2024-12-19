@@ -28,7 +28,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.capture.transforms import DecomposeInterpreter
+from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -477,3 +477,25 @@ class TestDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[2].primitive == qml.RZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+def test_decompose_plxpr_to_plxpr():
+    """Test that transforming plxpr works."""
+    gate_set = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
+
+    def circuit(x, y, z):
+        qml.Rot(x, y, z, 0)
+        return qml.expval(qml.Z(0))
+
+    args = (1.2, 3.4, 5.6)
+    jaxpr = jax.make_jaxpr(circuit)(*args)
+    transformed_jaxpr = decompose_plxpr_to_plxpr(
+        jaxpr.jaxpr, jaxpr.consts, [], {"gate_set": gate_set}, *args
+    )
+    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert len(transformed_jaxpr.eqns) == 5
+    assert transformed_jaxpr.eqns[0].primitive == qml.RZ._primitive
+    assert transformed_jaxpr.eqns[1].primitive == qml.RY._primitive
+    assert transformed_jaxpr.eqns[2].primitive == qml.RZ._primitive
+    assert transformed_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
+    assert transformed_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
