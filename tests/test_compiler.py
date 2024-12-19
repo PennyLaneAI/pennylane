@@ -864,8 +864,7 @@ class TestCatalystMCMs:
     @pytest.mark.parametrize(
         "measure_f",
         [
-            # https://github.com/PennyLaneAI/pennylane/issues/6700
-            pytest.param(qml.counts, marks=pytest.mark.xfail),
+            qml.counts,
             qml.expval,
             qml.probs,
         ],
