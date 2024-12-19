@@ -148,10 +148,12 @@ def ctrl(op, control: Any, control_values=None, work_wires=None):
     return create_controlled_op(op, control, control_values=control_values, work_wires=work_wires)
 
 
-def create_controlled_op(op, control, control_values=None, work_wires=None):
+def create_controlled_op(op, control, control_values=None, work_wires: WiresLike = ()):
     """Default ``qml.ctrl`` implementation, allowing other implementations to call it when needed."""
 
-    control = qml.wires.Wires(control)
+    control = Wires(control)
+    work_wires = Wires(() if work_wires is None else work_wires)
+
     if isinstance(control_values, (int, bool)):
         control_values = [control_values]
     elif control_values is None:
@@ -269,7 +271,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs))(*args)
-        control_wires = qml.wires.Wires(control)  # make sure is iterable
+        control_wires = Wires(control)  # make sure is iterable
         ctrl_prim.bind(
             *jaxpr.consts,
             *args,
@@ -318,7 +320,9 @@ def _get_pauli_x_based_ops():
     return qml.X, qml.CNOT, qml.Toffoli, qml.MultiControlledX
 
 
-def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=None):
+def _try_wrap_in_custom_ctrl_op(
+    op, control: WiresLike, control_values=None, work_wires: WiresLike = ()
+):
     """Wraps a controlled operation in custom ControlledOp, returns None if not applicable."""
 
     ops_with_custom_ctrl_ops = _get_special_ops()
@@ -336,7 +340,9 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
     return None
 
 
-def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires):
+def _handle_pauli_x_based_controlled_ops(
+    op, control: WiresLike, control_values, work_wires: WiresLike = None
+):
     """Handles PauliX-based controlled operations."""
 
     op_map = {
@@ -355,7 +361,6 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
             wires=control + op.wires, control_values=control_values, work_wires=work_wires
         )
 
-    work_wires = work_wires or []
     return qml.MultiControlledX(
         wires=control + op.wires,
         control_values=control_values + op.control_values,
