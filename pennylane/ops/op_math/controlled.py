@@ -148,11 +148,11 @@ def ctrl(op, control: Any, control_values=None, work_wires=None):
     return create_controlled_op(op, control, control_values=control_values, work_wires=work_wires)
 
 
-def create_controlled_op(op, control, control_values=None, work_wires: WiresLike = None):
+def create_controlled_op(op, control, control_values=None, work_wires: WiresLike = ()):
     """Default ``qml.ctrl`` implementation, allowing other implementations to call it when needed."""
 
     control = Wires(control)
-    # work_wires = Wires(() if work_wires is None else work_wires)
+    work_wires = Wires(() if work_wires is None else work_wires)
 
     if isinstance(control_values, (int, bool)):
         control_values = [control_values]
@@ -321,7 +321,7 @@ def _get_pauli_x_based_ops():
 
 
 def _try_wrap_in_custom_ctrl_op(
-    op, control: WiresLike, control_values=None, work_wires: WiresLike = None
+    op, control: WiresLike, control_values=None, work_wires: WiresLike = ()
 ):
     """Wraps a controlled operation in custom ControlledOp, returns None if not applicable."""
 
@@ -341,7 +341,7 @@ def _try_wrap_in_custom_ctrl_op(
 
 
 def _handle_pauli_x_based_controlled_ops(
-    op, control: WiresLike, control_values, work_wires: WiresLike
+    op, control: WiresLike, control_values, work_wires: WiresLike = None
 ):
     """Handles PauliX-based controlled operations."""
 
