@@ -819,7 +819,7 @@ class DefaultTensor(Device):
                 dtype=self._c_dtype.__name__,
                 optimize=self._contraction_optimizer,
             )
-        elif self.method == "tn":
+        else:
             exp_val = qc.local_expectation(
                 matrix,
                 wires,
@@ -828,8 +828,6 @@ class DefaultTensor(Device):
                 simplify_sequence=self._local_simplify,
                 simplify_atol=0.0,
             )
-        else:
-            raise NotImplementedError  # pragma: no cover
 
         return float(np.real(exp_val))
 
