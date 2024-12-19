@@ -410,6 +410,7 @@ class TestCountsIntegration:
 
         assert list(res.keys()) == [0.0, 1.0]
         assert sum(res.values()) == n_sample
+        assert res[0.0] == n_sample
 
         @qml.qnode(device=dev, mcm_method="one-shot")
         def double_mcm():
@@ -421,6 +422,7 @@ class TestCountsIntegration:
 
         assert list(res.keys()) == ["00", "01", "10", "11"]
         assert sum(res.values()) == n_sample
+        assert res["00"] == n_sample
 
     def test_counts_dimension(self):
         """Test that the counts function outputs counts of the right size"""
