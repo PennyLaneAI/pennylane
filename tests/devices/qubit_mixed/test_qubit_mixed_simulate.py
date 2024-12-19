@@ -191,6 +191,36 @@ class TestBasicCircuit:
             ]
         )
 
+    def test_state_cache(self, wires):
+        """Test that the state_cache parameter properly stores the final state when accounting for wire mapping."""
+        phi = np.array(0.397)
+
+        # Create a cache dictionary to store states
+        state_cache = {}
+
+        # Create and map the circuit to standard wires first
+        qs = self.get_quantum_script(phi, wires)
+        mapped_qs = qs.map_to_standard_wires()
+        mapped_hash = mapped_qs.hash
+
+        # Run the circuit with cache
+        result1 = simulate(qs, state_cache=state_cache)
+
+        # Verify the mapped circuit's hash is in the cache
+        assert mapped_hash in state_cache, "Mapped circuit hash should be in cache"
+
+        # Verify the cached state has correct shape
+        cached_state = state_cache[mapped_hash]
+        assert cached_state.shape == (2, 2), "Cached state should be 2x2 density matrix"
+
+        # Run same circuit again and verify results are consistent
+        result2 = simulate(qs, state_cache=state_cache)
+        assert np.allclose(result1, result2)
+
+        # Verify results match theoretical expectations
+        expected = (0, -np.sin(phi), np.cos(phi))
+        assert np.allclose(result1, expected)
+
 
 class TestBroadcasting:
     """Test that simulate works with broadcasted parameters."""
