@@ -1262,7 +1262,7 @@ class MultiControlledX(ControlledOp):
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
     def compute_decomposition(
-        wires: WiresLike, work_wires: WiresLike, control_values=None, **kwargs
+        wires: WiresLike, work_wires: WiresLike = (), control_values=None, **kwargs
     ):
         r"""Representation of the operator as a product of other operators (static method).
 
