@@ -42,10 +42,21 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCH.resource_rep(): 1}
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceCH.resource_rep(): 1}
 
-        raise re.ResourcesNotDefined
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        ch = re.ResourceCH.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+        return {ch: 1, mcx: 2}
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -78,10 +89,21 @@ class ResourceS(qml.S, re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceControlledPhaseShift.resource_rep(): 1}
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceControlledPhaseShift.resource_rep(): 1}
 
-        raise re.ResourcesNotDefined
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        cs = re.ResourceControlledPhaseShift.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+        return {cs: 1, mcx: 2}
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -148,10 +170,21 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCSWAP.resource_rep(): 1}
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceCSWAP.resource_rep(): 1}
 
-        raise re.ResourcesNotDefined
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        cnot = re.ResourceCNOT.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+        return {cnot: 2, mcx: 1}
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -181,10 +214,21 @@ class ResourceT(qml.T, re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceControlledPhaseShift.resource_rep(): 1}
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceControlledPhaseShift.resource_rep(): 1}
 
-        raise re.ResourcesNotDefined
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        ct = re.ResourceControlledPhaseShift.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+        return {ct: 1, mcx: 2}
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -221,16 +265,24 @@ class ResourceX(qml.X, re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCNOT.resource_rep(): 1}
-        if num_ctrl_wires == 2 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceToffoli.resource_rep(): 1}
+        if num_ctrl_wires > 2:
+            return {
+                re.ResourceMultiControlledX.resource_rep(
+                    num_ctrl_wires, num_ctrl_values, num_work_wires
+                ): 1
+            }
 
-        return {
-            re.ResourceMultiControlledX.resource_rep(
-                num_ctrl_wires, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        gate_types = {}
+        if num_ctrl_values:
+            gate_types[re.ResourceX.resource_rep()] = 2 * num_ctrl_values
+
+        if num_ctrl_wires == 1:
+            gate_types[re.ResourceCNOT.resource_rep()] = 1
+
+        if num_ctrl_wires == 2:
+            gate_types[re.ResourceToffoli.resource_rep()] = 1
+
+        return gate_types
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -244,6 +296,19 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        """
+        The resources are defined using the identity: 
+
+        .. math:: 
+
+            \begin{align}
+                \hat{Y} &= \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}, \\
+                \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
+                \hat{Z} &= \hat{S}^{2}, \\
+                \hat{S}^{\dagger} &= 3 \hat{S}. 
+            \end{align}
+
+        """
         s = re.ResourceS.resource_rep()
         h = re.ResourceHadamard.resource_rep()
 
@@ -268,10 +333,21 @@ class ResourceY(qml.Y, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCY.resource_rep(): 1}
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceCY.resource_rep(): 1}
 
-        raise re.ResourcesNotDefined
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        cy = re.ResourceCY.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+        return {cy: 1, mcx: 2}
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -307,13 +383,26 @@ class ResourceZ(qml.Z, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCZ.resource_rep(): 1}
+        if num_ctrl_wires > 2:
+            cz = re.ResourceCZ.resource_rep()
+            mcx = re.ResourceMultiControlledX.resource_rep(
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+            return {cz: 1, mcx: 2}
 
-        if num_ctrl_wires == 2 and num_ctrl_wires == 0 and num_work_wires == 0:
-            return {re.ResourceCCZ.resource_rep(): 1}
+        gate_types = {}
+        if num_ctrl_wires == 1:
+            gate_types[re.ResourceCZ.resource_rep()] = 1
 
-        raise re.ResourcesNotDefined
+        if num_ctrl_wires == 2:
+            gate_types[re.ResourceCCZ.resource_rep()] = 1
+
+        if num_ctrl_values:
+            gate_types[re.ResourceX.resource_rep()] = 2 * num_ctrl_values
+
+        return gate_types
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
