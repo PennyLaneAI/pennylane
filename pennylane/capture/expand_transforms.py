@@ -32,60 +32,67 @@ class ExpandTransformsInterpreter(PlxprInterpreter):
 
 
 def expand_plxpr_transforms(f: Callable) -> Callable:
-    """Function for expanding plxpr transforms.
+    """Function for applying transforms to plxpr.
 
-    This function wraps the input callable where transforms may be present, but not yet applied.
-    The returned wrapper expands all transforms that may be present on the input callable.
+    Currently, when program capture is enabled, transforms are used as higher-order primitives.
+    These primitives are present in the program, but their respective transform is not applied
+    when a transformed function is called. ``expand_plxpr_transforms`` further "transforms" the
+    input function to apply any transform primitives that are present in the program being run.
 
     **Example**
 
-    .. code-block:: python
+    In the below example, we can see that the ``qml.transforms.cancel_inverses`` transform has been
+    applied to a function. However, the resulting program representation leaves the
+    ``cancel_inverses`` transform as a primitive without actually transforming the program.
 
-        from functools import partial
-        import jax
+    ..code-block:: python
 
         qml.capture.enable()
-        wire_map = {0: 3, 1: 6, 2: 9}
 
-        @partial(qml.map_wires, wire_map=wire_map)
-        def circuit(x, y):
-            qml.RX(x, 0)
-            qml.CNOT([0, 1])
-            qml.CRY(y, [1, 2])
-            return qml.expval(qml.Z(2))
+        @qml.transforms.cancel_inverses
+        def circuit():
+            qml.X(0)
+            qml.S(1)
+            qml.X(0)
+            qml.adjoint(qml.S(1))
+            return qml.expval(qml.Z(1))
 
-    >>> jax.make_jaxpr(circuit)(1.2, 3.4)
-    { lambda ; a:f32[] b:f32[]. let
-        c:AbstractMeasurement(n_wires=None) = _map_wires_transform_transform[
-        args_slice=slice(0, 2, None)
-        consts_slice=slice(2, 2, None)
-        inner_jaxpr={ lambda ; d:f32[] e:f32[]. let
-            _:AbstractOperator() = RX[n_wires=1] d 0
-            _:AbstractOperator() = CNOT[n_wires=2] 0 1
-            _:AbstractOperator() = CRY[n_wires=2] e 1 2
-            f:AbstractOperator() = PauliZ[n_wires=1] 2
-            g:AbstractMeasurement(n_wires=None) = expval_obs f
-          in (g,) }
-        targs_slice=slice(2, None, None)
-        tkwargs={'wire_map': {0: 3, 1: 6, 2: 9}, 'queue': False}
-        ] a b
-      in (c,) }
+    >>> qml.capture.make_plxpr(circuit)()
+    { lambda ; . let
+        a:AbstractMeasurement(n_wires=None) = cancel_inverses_transform[
+        args_slice=slice(0, 0, None)
+        consts_slice=slice(0, 0, None)
+        inner_jaxpr={ lambda ; . let
+            _:AbstractOperator() = PauliX[n_wires=1] 0
+            _:AbstractOperator() = S[n_wires=1] 1
+            _:AbstractOperator() = PauliX[n_wires=1] 0
+            b:AbstractOperator() = S[n_wires=1] 1
+            _:AbstractOperator() = Adjoint b
+            c:AbstractOperator() = PauliZ[n_wires=1] 1
+            d:AbstractMeasurement(n_wires=None) = expval_obs c
+          in (d,) }
+        targs_slice=slice(0, None, None)
+        tkwargs={}
+        ]
+      in (a,) }
+
+    To apply the transform, we can use ``expand_plxpr_transforms`` as follows:
 
     >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
-    >>> jax.make_jaxpr(transformed_circuit)(1.2, 3.4)
-    { lambda ; a:f32[] b:f32[]. let
-        _:AbstractOperator() = RX[n_wires=1] a 3
-        _:AbstractOperator() = CNOT[n_wires=2] 3 6
-        _:AbstractOperator() = CRY[n_wires=2] b 6 9
-        c:AbstractOperator() = PauliZ[n_wires=1] 9
-        d:AbstractMeasurement(n_wires=None) = expval_obs c
-      in (d,) }
+    >>> qml.capture.make_plxpr(transformed_circuit)()
+    { lambda ; . let
+        a:AbstractOperator() = PauliZ[n_wires=1] 1
+        b:AbstractMeasurement(n_wires=None) = expval_obs a
+      in (b,) }
+
+    As seen, the transform primitive is no longer present, but it has been applied
+    to the original program, indicated by the inverse operators being cancelled.
 
     Args:
-        f (Callable): The callable for which we want to expand transforms.
+        f (Callable): The callable to which any present transforms should be applied.
 
     Returns:
-        Callable: Callable with expanded transforms
+        Callable: Callable with transforms applied.
     """
 
     @wraps(f)
