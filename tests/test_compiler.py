@@ -481,7 +481,8 @@ class TestCatalystControlFlow:
         x = 0.5
         assert jnp.allclose(circuit(x, 3), qml.qjit(circuit)(x, 3))
 
-        res = circuit.tape.operations
+        tape = qml.workflow.construct_tape(circuit)(x, 3)
+        res = tape.operations
         expected = [
             qml.Hadamard(wires=[0]),
             qml.Hadamard(wires=[1]),
@@ -926,8 +927,10 @@ class TestCatalystMCMs:
         results0 = ref_func(*params)
         results1 = func(*params)
         if measure_f == qml.counts:
-            ndim = 2  # both [0] and m0 are on one wire only
-            results1 = {format(int(state), f"0{ndim}b"): count for state, count in zip(*results1)}
+            # Convert keys to the same data-type for comparison
+            results1 = {format(int(state), "b"): count for state, count in zip(*results1)}
+            if all(not isinstance(key, str) for key in results0.keys()):
+                results0 = {format(state, "b"): count for state, count in results0.items()}
         if measure_f == qml.sample:
             results0 = results0[results0 != fill_in_value]
             results1 = results1[results1 != fill_in_value]
