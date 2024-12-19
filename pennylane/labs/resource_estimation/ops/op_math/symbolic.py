@@ -244,9 +244,28 @@ class ResourceExp(Exp, re.ResourceOperator):
         )
 
     @classmethod
-    def pow_resource_decomp(cls, z, *args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(base_class, z0 * z, base_params): 1}
-        return super().pow_resource_decomp(z, *args, **kwargs)
+    def pow_resource_decomp(cls, z0, base_class, coeff, num_steps) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(base_class, z0 * coeff, num_steps): 1}
+
+    @classmethod
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires, num_ctrl_values, num_work_wires, base_class, coeff, num_steps,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        """The controlled exponential decomposition of a Pauli hamiltonian is symmetric, thus we only need to control
+        on the RZ gate in the middle. """
+        if (p_rep := base_class.pauli_rep) and math.real(coeff) == 0:
+
+            if qml.pauli.is_pauli_word(base_class) and len(p_rep) > 1:
+                base_gate_types = cls.resources(base_class, coeff, num_steps)
+
+                rz_counts = base_gate_types.pop(re.ResourceRZ.resource_rep())
+                ctrl_rz = re.ResourceControlled.resource_rep(re.ResourceRZ, {}, num_ctrl_wires, num_ctrl_values, num_work_wires)
+                
+                base_gate_types[ctrl_rz] = rz_counts
+                return base_gate_types
+        
+        raise re.ResourcesNotDefined
+
 
 
 def _resources_from_pauli_word(pauli_word, num_wires):

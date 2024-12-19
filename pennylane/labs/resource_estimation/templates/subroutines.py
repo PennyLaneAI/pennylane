@@ -26,6 +26,8 @@ from pennylane.labs.resource_estimation import (
     ResourceOperator,
     ResourceRZ,
     ResourceSWAP,
+    ResourcePhaseShift,
+    ResourceSingleExcitation,
 )
 
 # pylint: disable=arguments-differ
@@ -110,6 +112,9 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
         return f"QuantumPhaseEstimation({base_class}, {num_estimation_wires})"
 
 
+ResourceQPE = ResourceQuantumPhaseEstimation  # Alias for ease of typing
+
+
 class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     """Resource class for StatePrep.
 
@@ -137,3 +142,99 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     def resource_rep(cls, num_wires) -> CompressedResourceOp:
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, params)
+
+
+class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
+
+    @staticmethod
+    def _resource_decomp(num_wires, dim_N) -> Dict[CompressedResourceOp, int]:
+        gate_types = {}
+        phase_shift = ResourcePhaseShift.resource_rep()
+        single_excitation = ResourceSingleExcitation.resource_rep()
+
+        se_count = (dim_N * (dim_N - 1) / 2)
+        ps_count = dim_N + se_count
+
+        gate_types[phase_shift] = ps_count
+        gate_types[single_excitation] = se_count
+        return gate_types
+
+    def resource_params(self) -> dict:
+        unitary_matrix = self.hyperparameters["unitary_matrix"]
+        return {"dim_N": qml.math.shape(unitary_matrix)[0]}
+
+    @classmethod
+    def resource_rep(cls, dim_N) -> CompressedResourceOp:
+        params = {"dim_N": dim_N}
+        return CompressedResourceOp(cls, params)
+
+
+# class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
+
+#     @staticmethod
+#     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+#         gate_types = {}
+#         rz = ResourceRZ.resource_rep()
+#         cnot = ResourceCNOT.resource_rep()
+
+#         r_count = 2 ** (num_wires + 2) - 5
+#         cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
+
+#         gate_types[rz] = r_count
+#         gate_types[cnot] = cnot_count
+#         return gate_types
+
+#     def resource_params(self) -> dict:
+#         return {"num_wires": len(self.wires)}
+
+#     @classmethod
+#     def resource_rep(cls, num_wires) -> CompressedResourceOp:
+#         params = {"num_wires": num_wires}
+#         return CompressedResourceOp(cls, params)
+
+
+# class ResourceReflection(qml.Reflection, ResourceOperator):
+
+#     @staticmethod
+#     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+#         gate_types = {}
+#         rz = ResourceRZ.resource_rep()
+#         cnot = ResourceCNOT.resource_rep()
+
+#         r_count = 2 ** (num_wires + 2) - 5
+#         cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
+
+#         gate_types[rz] = r_count
+#         gate_types[cnot] = cnot_count
+#         return gate_types
+
+#     def resource_params(self) -> dict:
+#         return {"num_wires": len(self.wires)}
+
+#     @classmethod
+#     def resource_rep(cls, num_wires) -> CompressedResourceOp:
+#         params = {"num_wires": num_wires}
+#         return CompressedResourceOp(cls, params)
+
+
+# class ResourceQubitization(qml.Qubitization, ResourceOperator):
+#     @staticmethod
+#     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+#         gate_types = {}
+#         rz = ResourceRZ.resource_rep()
+#         cnot = ResourceCNOT.resource_rep()
+
+#         r_count = 2 ** (num_wires + 2) - 5
+#         cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
+
+#         gate_types[rz] = r_count
+#         gate_types[cnot] = cnot_count
+#         return gate_types
+
+#     def resource_params(self) -> dict:
+#         return {"num_wires": len(self.wires)}
+
+#     @classmethod
+#     def resource_rep(cls, num_wires) -> CompressedResourceOp:
+#         params = {"num_wires": num_wires}
+#         return CompressedResourceOp(cls, params)
