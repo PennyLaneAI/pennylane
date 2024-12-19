@@ -17,12 +17,10 @@ them.
 """
 
 import sys
-import urllib.parse
 from concurrent import futures
 from functools import lru_cache
 from pathlib import Path
-from time import sleep
-from typing import Any, Iterable, Mapping, Optional, Union
+from typing import Iterable, Mapping, Optional, Union, Any
 
 from requests import get, head
 
@@ -36,7 +34,7 @@ from .graphql import (
     list_data_names,
     list_attributes,
 )
-from .foldermap import DataPath, FolderMapView, ParamArg
+from .foldermap import FolderMapView, ParamArg
 from .params import DEFAULT, FULL, format_params, provide_defaults
 
 
@@ -98,7 +96,9 @@ def _download_partial(  # pylint: disable=too-many-arguments
         attributes_to_fetch.difference_update(dest_dataset.attrs)
 
     if len(attributes_to_fetch) > 0:
-        remote_dataset = remote_dataset or Dataset(open_hdf5_s3(s3_url, block_size=block_size))
+        remote_dataset = remote_dataset or Dataset(
+            open_hdf5_s3(s3_url, block_size=block_size)
+        )
         remote_dataset.write(dest_dataset, "a", attributes, overwrite=overwrite)
 
     if remote_dataset:
@@ -113,7 +113,9 @@ def _download_partial(  # pylint: disable=too-many-arguments
         pbar_task.update(completed=file_size, total=file_size)
 
 
-def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: Optional[progress.Task]):
+def _download_full(
+    s3_url: str, dest: Path, block_size: int, pbar_task: Optional[progress.Task]
+):
     """Download the full dataset file at ``s3_url`` to ``path``."""
     resp = get(s3_url, timeout=5.0, stream=True)
     resp.raise_for_status()
@@ -156,7 +158,9 @@ def _download_dataset(  # pylint: disable=too-many-arguments
             pbar_task=pbar_task,
         )
     else:
-        _download_full(dataset_url, dest=dest, block_size=block_size, pbar_task=pbar_task)
+        _download_full(
+            dataset_url, dest=dest, block_size=block_size, pbar_task=pbar_task
+        )
 
 
 def _download_datasets(  # pylint: disable=too-many-arguments
@@ -185,7 +189,9 @@ def _download_datasets(  # pylint: disable=too-many-arguments
 
     if pbar is not None:
         if attributes is None:
-            file_sizes = [int(head(url).headers["Content-Length"]) for url in dataset_urls]
+            file_sizes = [
+                int(head(url).headers["Content-Length"]) for url in dataset_urls
+            ]
         else:
             # Can't get file sizes for partial downloads
             file_sizes = (None for _ in dataset_urls)
@@ -226,7 +232,9 @@ def _validate_attributes(data_name: str, attributes: Iterable[str]):
         return
 
     if len(invalid_attributes) == 1:
-        values_err = f"'{invalid_attributes[0]}' is an invalid attribute for '{data_name}'"
+        values_err = (
+            f"'{invalid_attributes[0]}' is an invalid attribute for '{data_name}'"
+        )
     else:
         values_err = f"{invalid_attributes} are invalid attributes for '{data_name}'"
 
@@ -339,7 +347,11 @@ def load(  # pylint: disable=too-many-arguments
         params = []
 
     params = provide_defaults(data_name, params)
-    params = [param for param in params if ("values", ParamArg.FULL) not in list(param.items())]
+    params = [
+        param
+        for param in params
+        if ("values", ParamArg.FULL) not in list(param.items())
+    ]
 
     dataset_ids_and_urls = get_dataset_urls(data_name, params)
     if dataset_ids_and_urls == []:
@@ -443,7 +455,9 @@ def _interactive_request_attributes(attribute_options):
     for i, option in enumerate(attribute_options):
         print(f"{i + 1}: {option}")
 
-    choice_input = input("Comma-separated list of attributes: ")
+    choice_input = (
+        input("Comma-separated list of attributes (full): ").strip() or "full"
+    )
     choices = [str(choice).strip() for choice in choice_input.strip("[]").split(",")]
     if "full" in choices:
         return attribute_options
@@ -453,26 +467,47 @@ def _interactive_request_attributes(attribute_options):
     return choices
 
 
-def _interactive_requests(parameters, parameter_tree):
+def _interactive_request_parameters(
+    parameter_names: list[str], parameter_tree: dict[str, Any]
+):
     """Prompts the user to select parameters for datasets one at a time."""
+    selection: dict[str, str] = {}
+    curr_node = parameter_tree
 
-    branch = parameter_tree
-    for param in parameters:
+    for param in parameter_names:
+        if not curr_node["next"]:
+            return selection
 
-        if len(branch["next"]) == 1:
-            branch = next(iter(branch["next"].values()))
-            continue
+        if len(curr_node["next"]) == 1:
+            param_val, next_node = None, next(iter(curr_node["next"].values()))
+        else:
+            print(f"Available options for {param}:")
+            default = curr_node["default"] or next(iter(curr_node["next"].keys()))
 
-        print(f"Available options for {param}:")
-        for i, option in enumerate(branch["next"].keys()):
-            print(f"{i + 1}: {option}")
-        user_value = input(f"Please select a {param}:").strip()
-        try:
-            branch = branch["next"][user_value]
-        except KeyError as e:
-            raise ValueError(f"Must enter a valid {param}:") from e
+            print(f"1: {default} (default)")
+            for i, option in enumerate(
+                option for option in curr_node["next"].keys() if option != default
+            ):
+                print(f"{i + 2}: {option}")
 
-    return branch
+            param_val = input(f"Please select a {param} ({default}): ").strip()
+            if not param_val:
+                param_val = default
+
+            try:
+                next_node = curr_node["next"][param_val]
+            except KeyError as e:
+                raise ValueError(f"Must enter a valid {param}") from e
+
+        if param_val:
+            selection[param] = param_val
+
+        if isinstance(next_node, str):
+            break
+
+        curr_node = next_node
+
+    return selection
 
 
 def load_interactive():
@@ -517,30 +552,36 @@ def load_interactive():
     data_names = list_data_names()
     data_name = _interactive_request_data_name(data_names)
 
-    parameters, attribute_options, parameter_tree = _get_parameter_tree(data_name)
+    parameter_names, attribute_options, parameter_tree = _get_parameter_tree(data_name)
+    parameters = (
+        _interactive_request_parameters(parameter_names, parameter_tree)
+        if parameter_names
+        else {}
+    )
 
-    dataset_id = _interactive_requests(parameters, parameter_tree)
     attributes = _interactive_request_attributes(attribute_options)
     force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
     dest_folder = Path(
-        input("Folder to download to? (Default is pwd, will download to /datasets subdirectory): ")
+        input(
+            "Folder to download to? (Default is pwd, will download to /datasets subdirectory): "
+        )
     )
     print("\nPlease confirm your choices:")
     print("attributes:", attributes)
+    print("parameters:", parameters)
     print("force:", force)
     print("dest folder:", dest_folder / "datasets")
-    print("dataset:", dataset_id)
 
-    approve = input("Would you like to continue? (Default is yes) [Y/n]: ")
-    if approve not in ["Y", "", "y"]:
+    approve = (
+        input("Would you like to continue? (Default is yes) [Y/n]: ").strip().lower()
+        or "y"
+    )
+    if approve != "y":
         print("Aborting and not downloading!")
         return None
 
     return load(
-        data_name,
-        attributes=attributes,
-        folder_path=dest_folder,
-        force=force,
+        data_name, attributes, dest_folder, force=force, progress_bar=True, **parameters
     )[0]
 
 
