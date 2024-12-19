@@ -94,22 +94,16 @@ def _measure_with_samples_diagonalizing_gates(
 
         return tuple(processed)
 
-    try:
-        prng_key, _ = jax_random_split(prng_key)
-        samples = sample_state(
-            state,
-            shots=shots.total_shots,
-            is_state_batched=is_state_batched,
-            wires=wires,
-            rng=rng,
-            prng_key=prng_key,
-            readout_errors=readout_errors,
-        )
-    except ValueError as e:
-        if str(e) != "probabilities contain NaN":
-            raise e
-        samples = math.full((shots.total_shots, len(wires)), 0)
-
+    prng_key, _ = jax_random_split(prng_key)
+    samples = sample_state(
+        state,
+        shots=shots.total_shots,
+        is_state_batched=is_state_batched,
+        wires=wires,
+        rng=rng,
+        prng_key=prng_key,
+        readout_errors=readout_errors,
+    )
     processed_samples = []
     for lower, upper in shots.bins():
         shot = _process_single_shot(samples[..., lower:upper, :])
