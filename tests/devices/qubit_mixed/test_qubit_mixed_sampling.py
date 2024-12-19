@@ -335,6 +335,7 @@ class TestBatchedOperations:
             Shots(100),
             Shots((100, 200)),
             Shots((100, 200, 300)),
+            Shots((200, (100, 2))),
         ],
     )
     def test_batched_measurements_shots(self, shots, batched_two_qubit_pure_state):
