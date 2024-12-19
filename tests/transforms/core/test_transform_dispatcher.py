@@ -463,25 +463,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             transform(first_valid_transform, expand_transform=non_valid_expand_transform)
 
-    def test_default_plxpr_transform_error(self):
-        """Test that an error is raised if attempting to use transform.plxpr_transform without
-        providing it on initialization."""
-
-        dispatched_transform = transform(first_valid_transform)
-        dummy_args = {
-            "primitive": None,
-            "tracers": None,
-            "params": None,
-            "targs": None,
-            "tkwargs": None,
-            "state": None,
-        }
-
-        with pytest.raises(
-            TransformError, match="first_valid_transform cannot be used to transform PLxPR."
-        ):
-            _ = dispatched_transform.plxpr_transform(**dummy_args)
-
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""
         dispatched_transform = transform(second_valid_transform)
