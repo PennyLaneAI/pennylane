@@ -4,10 +4,29 @@
 
 <h3>New features since last release</h3>
 
-<h4>Efficient state preparation for tensor network simulations 🦾</h4>
+<h4>Efficient state preparation methods 🦾</h4>
 
 * Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
   [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
+
+* Users can prepare a linear combination of basis states using `qml.Superposition`.
+  [(#6670)](https://github.com/PennyLaneAI/pennylane/pull/6670)
+
+  ```python
+  coeffs = np.array([0.70710678, 0.70710678])
+  basis =  np.array([[0, 0], [1, 0]])
+
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Superposition(coeffs, basis)
+      return qml.state()
+  ```
+  ```
+  >>> circuit()
+  tensor([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j], requires_grad=True)
+  ```
+
+  This template is also JAX-jit compatible!
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
