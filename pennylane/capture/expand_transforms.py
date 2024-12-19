@@ -45,7 +45,7 @@ def expand_plxpr_transforms(f: Callable) -> Callable:
     applied to a function. However, the resulting program representation leaves the
     ``cancel_inverses`` transform as a primitive without actually transforming the program.
 
-    ..code-block:: python
+    .. code-block:: python
 
         qml.capture.enable()
 
