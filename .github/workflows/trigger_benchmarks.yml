@@ -47,9 +47,9 @@ jobs:
               username: user
             });
             const userPermissions = data.user.permissions;
-            const permission = userPermissions.admin || userPermissions.maintain;
+            const permission = userPermissions.admin || userPermissions.maintain || (userPermissions.write || userPermissions.push);
 
-            console.log(`User '${user}' has admin/maintain access => ${permission}`);
+            console.log(`User '${user}' has admin/maintain/write access => ${permission}`);
 
             return permission;
       
@@ -85,7 +85,7 @@ jobs:
             }
           
       - name: React to original comment indicating webhook sent
-        if: steps.comment_user.outputs.result == 'true' 
+        if: steps.comment_body.outputs.triggers_benchmark == 'true' && steps.comment_user.outputs.result == 'true'
         uses: actions/github-script@v7
         env:
           REPO_OWNER: ${{ steps.repo_info.outputs.REPO_OWNER }}
