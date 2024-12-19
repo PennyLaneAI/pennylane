@@ -60,7 +60,7 @@ class TestModifierDefaultBeahviour:
         """Test that a ValueError is raised is called on something that is not a subclass of Device."""
 
         with pytest.raises(ValueError, match=f"{modifier.__name__} only accepts"):
-            modifier(qml.devices.DefaultMixed)
+            modifier(qml.devices.DefaultQutrit)
 
     def test_adds_to_applied_modifiers_private_property(self, modifier):
         """Test that the modifier is added to the `_applied_modifiers` property."""

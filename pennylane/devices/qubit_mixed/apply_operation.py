@@ -19,14 +19,14 @@ from string import ascii_letters as alphabet
 
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from .einsum_manpulation import get_einsum_mapping
 
-alphabet_array = np.array(list(alphabet))
+alphabet_array = pnp.array(list(alphabet))
 
 TENSORDOT_STATE_NDIM_PERF_THRESHOLD = 9
 
@@ -146,6 +146,7 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
         - The phase shift operator U for single-qubit case is:
           U = [[1, 0],
                [0, phase_factor]]
+
     """
     n_dim = math.ndim(state)
     sl_0 = _get_slice(0, axis, n_dim)
@@ -260,7 +261,10 @@ def apply_operation_tensordot(
         kraus = [mat]
     kraus = [math.reshape(k, kraus_shape) for k in kraus]
     kraus = math.array(kraus)  # Necessary for Jax
-    # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
+    # Small trick: following the same logic as in the legacy DefaultMixedLegacy.
+    # _apply_channel_tensordot, here for the contraction on the right side we
+    # also directly contract the column indices of the channel instead of rows
+    # for simplicity. This can also save a step when transposing the Kraus operators.
     row_wires_list = [w + is_state_batched for w in channel_wires.tolist()]
     col_wires_list = [w + num_wires for w in row_wires_list]
     channel_col_ids = list(range(-num_ch_wires, 0))
@@ -292,31 +296,32 @@ def apply_operation(
     Args:
         op (Operator): The operation to apply to ``state``
         state (TensorLike): The starting state.
-        is_state_batched (bool): Boolean representing whether the state is batched or not
-        debugger (_Debugger): The debugger to use
+        is_state_batched (bool): Boolean representing whether the state is batched or not.
+        debugger (_Debugger): The debugger to use.
 
     Keyword Arguments:
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``.
+            This is the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
-        tape_shots (Shots): the shots object of the tape
+        tape_shots (Shots): The shots object of the tape.
 
     Returns:
-        ndarray: output state
+        ndarray: The output state.
 
     .. warning::
 
         ``apply_operation`` is an internal function, and thus subject to change without a deprecation cycle.
 
     .. warning::
+
         ``apply_operation`` applies no validation to its inputs.
 
         This function assumes that the wires of the operator correspond to indices
         of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
 
-        The shape of state should be ``[2]*(num_wires * 2)`` (the original tensor form) or
-        ``[2**num_wires, 2**num_wires]`` (the expanded matrix form), where `2`` is
+        The shape of the state should be ``[2] * (num_wires * 2)`` (the original tensor form) or
+        ``[2**num_wires, 2**num_wires]`` (the expanded matrix form), where ``2`` is
         the dimension of the system.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels
@@ -334,32 +339,25 @@ def apply_operation(
     >>> state[0][0] = 1
     >>> state
     array([[[[1., 0.],
-         [0., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]],
-
-
-       [[[0., 0.],
-         [0., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]]])
+             [0., 0.]],
+            [[0., 0.],
+             [0., 0.]]],
+           [[[0., 0.],
+             [0., 0.]],
+            [[0., 0.],
+             [0., 0.]]]])
     >>> apply_operation(qml.PauliX(0), state)
     array([[[[0., 0.],
-         [0., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]],
-
-
-       [[[0., 0.],
-         [1., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]]])
+             [0., 0.]],
+            [[0., 0.],
+             [0., 0.]]],
+           [[[0., 0.],
+             [1., 0.]],
+            [[0., 0.],
+             [0., 0.]]]])
 
     """
+
     return _apply_operation_default(op, state, is_state_batched, debugger, **_)
 
 
@@ -440,11 +438,11 @@ def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_
 
     # First, flip the left side
     axis = op.wires[0] + is_state_batched
-    state = _phase_shift(state, axis, phase_factor=math.exp(0.25j * np.pi))
+    state = _phase_shift(state, axis, phase_factor=math.exp(0.25j * pnp.pi))
 
     # Second, flip the right side
     axis = op.wires[0] + is_state_batched + num_wires
-    state = _phase_shift(state, axis, phase_factor=math.exp(-0.25j * np.pi))
+    state = _phase_shift(state, axis, phase_factor=math.exp(-0.25j * pnp.pi))
 
     return state
 
@@ -630,7 +628,7 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     # Basically, we want to do, lambda_a rho_ab lambda_b
     einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
-    return math.einsum(einsum_indices, eigvals, state, eigvals.conj())
+    return math.einsum(einsum_indices, eigvals, state, math.conj(eigvals))
 
 
 @apply_operation.register
@@ -657,7 +655,7 @@ def apply_snapshot(
             snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
         else:
             snapshot = qml.devices.qubit_mixed.measure_with_samples(
-                measurement,
+                [measurement],
                 state,
                 shots,
                 is_state_batched,
@@ -671,4 +669,78 @@ def apply_snapshot(
         else:
             debugger.snapshots[len(debugger.snapshots)] = snapshot
 
+    return state
+
+
+# pylint: disable=unused-argument
+@apply_operation.register
+def apply_density_matrix(
+    op: qml.QubitDensityMatrix,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **execution_kwargs,
+):
+    """
+    Applies a :class:`~.QubitDensityMatrix` operation by initializing or replacing
+    the quantum state with the provided density matrix.
+
+    Args:
+        op (qml.QubitDensityMatrix): The QubitDensityMatrix operation to apply.
+        state (array-like): The current quantum state (density matrix or batched density matrices).
+        is_state_batched (bool): Whether the state is batched (True) or not (False).
+        debugger: A debugger instance for diagnostics.
+        **execution_kwargs: Additional keyword arguments for execution.
+
+    Returns:
+        array-like: The updated quantum state.
+
+    Raises:
+        ValueError: If the input density matrix is invalid.
+    """
+    # Extract the density matrix from the operation
+    density_matrix = op.parameters[0]
+
+    # Get the number of wires for the operation
+    num_wires = len(op.wires)
+    expected_dim = 2**num_wires
+
+    # Validate the shape of the density matrix
+    if density_matrix.shape != (expected_dim, expected_dim):
+        raise ValueError(
+            f"Density matrix must have shape {(expected_dim, expected_dim)}, "
+            f"but got {density_matrix.shape}."
+        )
+
+    # Validate Hermiticity
+    if not math.allclose(density_matrix, math.conj(density_matrix.T)):
+        raise ValueError("Density matrix must be Hermitian.")
+
+    # Validate trace
+    if not math.isclose(math.trace(density_matrix), 1):
+        raise ValueError("Density matrix must have a trace of 1.")
+
+    # Replace the state for the wires involved in the operation
+    # Determine which axes to replace in the current state
+    num_state_wires = _get_num_wires(state, is_state_batched)
+
+    # Prepare the new state by embedding the density matrix
+    # If batched, expand the density matrix across the batch dimension
+    if is_state_batched:
+        batch_size = math.shape(state)[0]
+        density_matrix = math.broadcast_to(density_matrix, (batch_size,) + density_matrix.shape)
+
+    # Use slicing to replace the relevant part of the state
+    state_slices = [slice(None)] * math.ndim(state)  # Initialize full slicing tuple
+    for wire in op.wires:
+        # Update the slice for the wire (left side)
+        state_slices[wire] = slice(None)
+
+        # Update the slice for the corresponding right side (conjugate side)
+        state_slices[wire + num_state_wires] = slice(None)
+
+    # Apply the density matrix to the corresponding slice
+    state[tuple(state_slices)] = density_matrix
+
+    # Return the updated state
     return state
