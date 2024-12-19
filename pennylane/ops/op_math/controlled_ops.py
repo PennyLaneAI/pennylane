@@ -1262,7 +1262,7 @@ class MultiControlledX(ControlledOp):
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
     def compute_decomposition(
-        wires: WiresLike, work_wires: WiresLike, control_values=None, **kwargs
+        wires: WiresLike = None, work_wires: WiresLike = None, control_values=None, **kwargs
     ):
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -1283,7 +1283,7 @@ class MultiControlledX(ControlledOp):
         **Example:**
 
         >>> print(qml.MultiControlledX.compute_decomposition(
-        ...     wires=[0,1,2,3], control_values=[1,1,1], work_wires="aux"))
+        ...     wires=[0,1,2,3], control_values=[1,1,1], work_wires=qml.wires.Wires("aux")))
         [Toffoli(wires=[2, 'aux', 3]),
         Toffoli(wires=[0, 1, 'aux']),
         Toffoli(wires=[2, 'aux', 3]),
@@ -1291,7 +1291,6 @@ class MultiControlledX(ControlledOp):
 
         """
         wires = Wires(() if wires is None else wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
 
         if len(wires) < 2:
             raise ValueError(f"Wrong number of wires. {len(wires)} given. Need at least 2.")
@@ -1301,6 +1300,8 @@ class MultiControlledX(ControlledOp):
 
         if control_values is None:
             control_values = [True] * len(control_wires)
+
+        work_wires = work_wires or []
 
         flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
