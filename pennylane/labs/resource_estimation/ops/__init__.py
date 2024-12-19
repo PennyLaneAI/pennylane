@@ -59,6 +59,7 @@ from .op_math import (
     ResourceCRX,
     ResourceCRY,
     ResourceCRZ,
+    ResourceExp,
     ResourceToffoli,
     ResourceMultiControlledX,
     ResourceCNOT,
