@@ -111,7 +111,7 @@ class GroverOperator(Operation):
 
     def __init__(self, wires: WiresLike, work_wires: WiresLike = (), id=None):
         wires = Wires(wires)
-        work_wires = Wires(work_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         if len(wires) < 2:
             raise ValueError("GroverOperator must have at least two wires provided.")
