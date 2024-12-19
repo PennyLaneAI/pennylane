@@ -23,11 +23,11 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
-from pennylane.capture.transforms import MapWiresInterpreter
+from pennylane.ops.functions.map_wires import MapWiresInterpreter, map_wires_plxpr_to_plxpr
 
 
 # pylint: disable=protected-access, expression-not-assigned
-class TestMapWiresTransform:
+class TestMapWiresInterpreter:
     """Unit tests for the MapWiresInterpreter class."""
 
     def test_single_operation(self):
@@ -349,3 +349,44 @@ class TestMapWiresTransform:
         """Test that invalid wire mappings raise an error."""
         with pytest.raises(ValueError, match="Wire map values must be constant positive integers"):
             MapWiresInterpreter(wire_map={0: "a", 1: 2})
+
+
+def test_map_wires_plxpr_to_plxpr():
+    """Test that transforming plxpr works."""
+    wire_map = {0: 5, 1: 6, 2: 7}
+
+    def circuit(x):
+        qml.X(0)
+        qml.CRX(x, [0, 1])
+        qml.CNOT([1, 2])
+        return qml.expval(qml.Z(0))
+
+    args = (1.2,)
+    jaxpr = jax.make_jaxpr(circuit)(*args)
+    transformed_jaxpr = map_wires_plxpr_to_plxpr(
+        jaxpr.jaxpr, jaxpr.consts, [], {"wire_map": wire_map}, *args
+    )
+    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert len(transformed_jaxpr.eqns) == 5
+
+    def assert_wires(orig_eqn, transformed_eqn):
+        orig_wires = [orig_eqn.invars[-i].val for i in range(orig_eqn.params["n_wires"], 0, -1)]
+        expected_wires = [wire_map[w] for w in orig_wires]
+        transformed_wires = [
+            transformed_eqn.invars[-i].val for i in range(transformed_eqn.params["n_wires"], 0, -1)
+        ]
+        assert transformed_wires == expected_wires
+
+    assert transformed_jaxpr.eqns[0].primitive == qml.PauliX._primitive
+    assert_wires(jaxpr.eqns[0], transformed_jaxpr.eqns[0])
+
+    assert transformed_jaxpr.eqns[1].primitive == qml.CRX._primitive
+    assert_wires(jaxpr.eqns[1], transformed_jaxpr.eqns[1])
+
+    assert transformed_jaxpr.eqns[2].primitive == qml.CNOT._primitive
+    assert_wires(jaxpr.eqns[2], transformed_jaxpr.eqns[2])
+
+    assert transformed_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
+    assert_wires(jaxpr.eqns[3], transformed_jaxpr.eqns[3])
+
+    assert transformed_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
