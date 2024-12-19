@@ -40,7 +40,6 @@ class TestSingleReturnExecute:
             return qml.state()
 
         qnode = qml.QNode(circuit, dev)
-        tape = qml.workflow.construct_tape(qnode)(0.5)
         if dev.shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
         program = dev.preprocess_transforms()
