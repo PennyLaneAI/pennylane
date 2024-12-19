@@ -927,10 +927,8 @@ class TestCatalystMCMs:
         results0 = ref_func(*params)
         results1 = func(*params)
         if measure_f == qml.counts:
-            # Convert keys to the same data-type for comparison
-            results1 = {format(int(state), "b"): count for state, count in zip(*results1)}
-            if all(not isinstance(key, str) for key in results0.keys()):
-                results0 = {format(state, "b"): count for state, count in results0.items()}
+            ndim = 1
+            results1 = {format(int(state), f"0{ndim}b"): count for state, count in zip(*results1)}
         if measure_f == qml.sample:
             results0 = results0[results0 != fill_in_value]
             results1 = results1[results1 != fill_in_value]
