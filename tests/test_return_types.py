@@ -45,7 +45,7 @@ class TestSingleReturnExecute:
             pytest.skip("cannot return analytic measurements with finite shots.")
         program = dev.preprocess_transforms()
         res = qml.execute(
-            tapes=[tape],
+            tapes=[qml.workflow.construct_tape(qnode)(0.5)],
             device=dev,
             diff_method=None,
             interface=interface,
