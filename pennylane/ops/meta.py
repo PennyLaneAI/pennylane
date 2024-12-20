@@ -120,8 +120,8 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires: WiresLike = None, id=None):
-        if wires == []:
+    def __init__(self, *params, wires: WiresLike = (), id=None):
+        if len(qml.wires.Wires(wires)) == 0:
             raise ValueError(
                 f"{self.__class__.__name__}: wrong number of wires. "
                 f"At least one wire has to be given."
