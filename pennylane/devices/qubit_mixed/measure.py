@@ -159,7 +159,7 @@ def full_dot_products_density_matrix(
     multiplication.
 
     For a density matrix ρ and observable O, the expectation value is:
-    Tr(ρ O).
+    .. math:: \text{Tr}(\rho O).
 
     Args:
         measurementprocess (ExpectationMP): measurement process to apply to the density matrix state
