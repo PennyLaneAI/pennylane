@@ -12,22 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for measuring states in devices/qubit_mixed."""
+# pylint: disable=too-few-public-methods
 
 from functools import reduce
 
+import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import math
-import numpy as np
-from pennylane.devices.qubit_mixed import apply_operation, create_initial_state, measure
+from pennylane.devices.qubit_mixed import (apply_operation,
+                                           create_initial_state, measure)
 from pennylane.devices.qubit_mixed.measure import (
-    csr_dot_products_density_matrix,
-    full_dot_products_density_matrix,
-    get_measurement_function,
-    state_diagonalizing_gates,
-    sum_of_terms_method,
-)
+    csr_dot_products_density_matrix, full_dot_products_density_matrix,
+    get_measurement_function, state_diagonalizing_gates, sum_of_terms_method)
 
 ml_frameworks_list = [
     "numpy",
