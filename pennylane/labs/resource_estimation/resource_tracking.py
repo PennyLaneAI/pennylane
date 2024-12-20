@@ -30,9 +30,9 @@ from .resource_operator import ResourceOperator
 
 # user-friendly gateset for visual checks and initial compilation
 _StandardGateSet = {
-    "PauliX",
-    "PauliY",
-    "PauliZ",
+    "X",
+    "Y",
+    "Z",
     "Hadamard",
     "SWAP",
     "CNOT",
