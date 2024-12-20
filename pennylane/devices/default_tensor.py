@@ -226,7 +226,7 @@ class DefaultTensor(Device):
             `quimb's tensor_contract documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_contract>`_.
             Default is ``"auto-hq"``.
         local_simplify (str): The simplification sequence to apply to the tensor network for computing local expectation values.
-            At present, this can only be used with the TN method. For a complete list of available simplification options,
+            At present, this argument can only be provided when the TN method is used. with the TN method. For a complete list of available simplification options,
             see the `quimb's full_simplify documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
             Default is ``"ADCRS"``.
 
