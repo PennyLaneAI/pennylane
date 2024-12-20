@@ -14,12 +14,12 @@
 """
 This module contains the transform dispatcher and the transform container.
 """
-import copy
 import functools
 import os
 import types
 import warnings
 from collections.abc import Sequence
+from copy import copy
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
@@ -29,11 +29,36 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
 
 
-def _default_plxpr_transform(transform_name):  # pylint: disable=missing-function-docstring
-    def wrapper(*_, **__):
-        raise TransformError(f"{transform_name} cannot be used to transform PLxPR.")
+def register_primitive_for_expansion(primitive, plxpr_transform):
+    """Register a transform such that it can be expanded when applied to a function with
+    program capture enabled."""
+    # pylint: disable=import-outside-toplevel
+    try:
+        import jax
 
-    return wrapper
+        from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
+    except ImportError:
+        return
+
+    @ExpandTransformsInterpreter.register_primitive(primitive)
+    def _(
+        self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
+    ):  # pylint: disable=too-many-arguments,missing-docstring
+        if plxpr_transform is None:
+            raise NotImplementedError
+
+        inner_args = invals[args_slice]
+        inner_consts = invals[consts_slice]
+        targs = invals[targs_slice]
+
+        def wrapper(*args):
+            return copy(self).eval(inner_jaxpr, inner_consts, *args)
+
+        unravelled_jaxpr = jax.make_jaxpr(wrapper)(*inner_args)
+        final_jaxpr = plxpr_transform(
+            unravelled_jaxpr.jaxpr, unravelled_jaxpr.consts, targs, tkwargs, *inner_args
+        )
+        return copy(self).eval(final_jaxpr.jaxpr, final_jaxpr.consts, *inner_args)
 
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
@@ -87,13 +112,13 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._qnode_transform = self.default_qnode_transform
-        self._plxpr_transform = plxpr_transform or _default_plxpr_transform(
-            self._transform.__name__
-        )
 
         self._use_argnum_in_expand = use_argnum_in_expand
-        self._primitive = _create_transform_primitive(self._transform.__name__)
         functools.update_wrapper(self, transform)
+
+        self._plxpr_transform = plxpr_transform
+        self._primitive = _create_transform_primitive(self._transform.__name__)
+        register_primitive_for_expansion(self._primitive, self._plxpr_transform)
 
     def __call__(
         self, *targs, **tkwargs
@@ -186,6 +211,11 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return self._classical_cotransform
 
     @property
+    def plxpr_transform(self):
+        """Function for transforming plxpr."""
+        return self._plxpr_transform
+
+    @property
     def is_informative(self):
         """``True`` if the transform is informative."""
         return self._is_informative
@@ -232,7 +262,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         with the transform applied.
         """
 
-        qnode = copy.copy(qnode)
+        qnode = copy(qnode)
 
         if self.expand_transform:
             qnode.add_transform(
@@ -255,24 +285,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
         )
         return qnode
-
-    def plxpr_transform(self, primitive, tracers, params, targs, tkwargs, state):
-        """Function for processing primitives to transform PLxPR.
-
-        Args:
-            primitive (jax.core.Primitive): Primitive to transform
-            tracers (Sequence[jax.core.Tracer]): Input tracers to the primitive
-            params (dict): Dictionary containing keyword arguments/metadata for the primitive
-            targs (Sequence[Any]): Arguments for the transform
-            tkwargs (dict): Keyword arguments for the transform
-            state (dict): Dictionary containing auxiliary information about the environment/state
-                needed to apply the transform
-
-        Returns:
-            Any: The results of the transformed primitive
-        """
-        # Implemented this way rather than using a property so that the correct docstring is used
-        return self._plxpr_transform(primitive, tracers, params, targs, tkwargs, state)
 
     def _capture_callable_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function when program capture is enabled"""
