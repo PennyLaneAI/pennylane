@@ -232,37 +232,73 @@ def simulate(
     **execution_kwargs,
 ) -> Result:
     r"""
-    Simulate a single quantum script.
+    Simulate the execution of a single quantum script.
 
-    This is an internal function that will be called by ``default.mixed``.
+    This internal function is used by the ``default.mixed`` device to simulate quantum circuits
+    and return the results of specified measurements. It supports both analytic and finite-shot
+    simulations and can handle advanced features such as readout errors and batched states.
 
     Args:
-        circuit (QuantumScript): The single circuit to simulate
-        rng (Optional[Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]]): A
-            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
-        debugger (_Debugger): The debugger to use
-        interface (str): The machine learning interface to create the initial state with
-        readout_errors (List[Callable]): List of channels to apply to each wire being measured
-        to simulate readout errors.
+        circuit (QuantumScript): The quantum script containing the operations and measurements
+            to be simulated.
+        debugger (_Debugger): An optional debugger instance used to track and debug circuit
+            execution.
+        state_cache (dict): An optional cache to store the final state of the circuit,
+            keyed by the circuit hash.
+        
+    Keyword Args:
+        rng (Optional[Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]]): 
+            A seed-like parameter for ``numpy.random.default_rng``. If no value is provided, 
+            a default random number generator is used.
+        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number generator. 
+            If None, a random key is generated. Only relevant for JAX-based simulations.
+        interface (str): The machine learning interface used to create the initial state.
+        readout_errors (List[Callable]): A list of quantum channels (callable functions) applied 
+            to each wire during measurement to simulate readout errors.
 
     Returns:
-        tuple(TensorLike): The results of the simulation
+        tuple(TensorLike): The results of the simulation. Measurement results are returned as a 
+        tuple, with each entry corresponding to a specified measurement in the circuit.
 
-    Note that this function can return measurements for non-commuting observables simultaneously.
+    Notes:
+        - This function assumes that all operations in the circuit provide matrices.
+        - Non-commuting observables can be measured simultaneously, with the results returned
+          in the same tuple.
 
-    This function assumes that all operations provide matrices.
+    **Example**
 
-    >>> qs = qml.tape.QuantumScript(
-    ...     [qml.RX(1.2, wires=0)],
-    ...     [qml.expval(qml.PauliX(0)), qml.probs(wires=(0, 1))]
-    ... )
-    >>> simulate(qs)
-    (0.0, array([0.68117888, 0.        , 0.31882112, 0.        ]))
+    Simulate a quantum circuit with both expectation values and probability measurements:
 
+    .. code-block:: python
+
+        from pennylane import expval, probs
+        from pennylane.devices.qubit_mixed import simulate
+        from pennylane.ops import RX, PauliX
+        from pennylane.tape import QuantumScript
+
+        # Define a quantum script
+        circuit = QuantumScript(
+            ops=[RX(1.2, wires=0)],
+            measurements=[expval(PauliX(0)), probs(wires=(0, 1))]
+        )
+
+        # Simulate the circuit
+        results = simulate(circuit)
+        print(results)
+        # Output: (0.0, array([0.68117888, 0.0, 0.31882112, 0.0]))
+
+    .. details::
+        :title: Usage Details
+
+        - Analytic simulations (without shots) compute exact expectation values and probabilities.
+        - Finite-shot simulations sample from the distribution defined by the quantum state,
+          using the specified RNG or PRNG key. Readout errors, if provided, are applied
+          during the measurement step.
+        - The `state_cache` parameter can be used to cache the final state for reuse
+          in subsequent calculations.
+
+    .. seealso::
+        :func:`~.get_final_state`, :func:`~.measure_final_state`
     """
 
     prng_key = execution_kwargs.pop("prng_key", None)
