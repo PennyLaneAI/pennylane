@@ -120,13 +120,9 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires: WiresLike = None, id=None):
-        if wires == []:
-            raise ValueError(
-                f"{self.__class__.__name__}: wrong number of wires. "
-                f"At least one wire has to be given."
-            )
-        super().__init__(*params, wires=wires, id=id)
+    def __init__(self, wires: WiresLike = (), id=None):
+        wires = Wires(wires)
+        super().__init__(wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(wires: WiresLike):  # pylint: disable=unused-argument
