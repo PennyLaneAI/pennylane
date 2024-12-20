@@ -34,6 +34,9 @@ from .measure import measure
 def _apply_diagonalizing_gates(
     mps: list[SampleMeasurement], state: np.ndarray, is_state_batched: bool = False
 ):
+    """
+    !Note: `mps` is supposed only have qubit-wise commuting measurements
+    """
     if len(mps) == 1:
         diagonalizing_gates = mps[0].diagonalizing_gates()
     elif all(mp.obs for mp in mps):
