@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
+import numpy as np
 from pennylane.devices.qubit_mixed import apply_operation, create_initial_state, measure
 from pennylane.devices.qubit_mixed.measure import (
     csr_dot_products_density_matrix,
@@ -100,7 +100,7 @@ class TestMeasurementDispatch:
         """Check that the sum_of_terms_method method is used if the state is numpy."""
         H = qml.Hamiltonian([2], [qml.PauliX(0)])
         state = np.zeros(2)
-        assert get_measurement_function(qml.expval(H), state) is sum_of_terms_method
+        assert get_measurement_function(qml.expval(H), state) is csr_dot_products_density_matrix
 
     def test_hamiltonian_sum_of_terms_when_backprop(self):
         """Check that the sum of terms method is used when the state is trainable."""
@@ -115,7 +115,7 @@ class TestMeasurementDispatch:
             *(qml.PauliY(i) for i in range(8))
         )
         state = np.zeros(2)
-        assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
+        assert get_measurement_function(qml.expval(S), state) is csr_dot_products_density_matrix
 
     def test_sum_sum_of_terms_when_backprop(self):
         """Check that the sum of terms method is used when"""
@@ -165,6 +165,66 @@ class TestMeasurementDispatch:
 
         S4 = qml.Y(0) + qml.X(0) @ DummyOp(wires=1)
         assert get_measurement_function(qml.expval(S4), state) is sum_of_terms_method
+
+    def test_hamiltonian_no_sparse_matrix_in_second_term(self):
+        """Tests when not all terms of a Hamiltonian have sparse matrices, excluding the first term."""
+
+        class DummyOp(qml.operation.Observable):  # Custom observable with no sparse matrix
+            num_wires = 1
+
+        H = qml.Hamiltonian([0.5, 0.5, 0.5], [qml.PauliX(0), DummyOp(wires=1), qml.PauliZ(2)])
+        state = np.zeros(2)
+        assert get_measurement_function(qml.expval(H), state) is sum_of_terms_method
+
+    def test_sum_no_sparse_matrix(self):
+        """Tests when not all terms in a Sum observable have sparse matrices."""
+
+        class DummyOp(qml.operation.Observable):  # Custom observable with no sparse matrix
+            num_wires = 1
+
+        S = qml.sum(qml.PauliX(0), DummyOp(wires=1))
+        state = np.zeros(2)
+        assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
+
+    def test_has_overlapping_wires(self):
+        """Test that the has_overlapping_wires property correctly detects overlapping wires."""
+
+        # Define some operators with overlapping and non-overlapping wires
+        op1 = qml.PauliX(wires=0)
+        op2 = qml.PauliZ(wires=1)
+        op3 = qml.PauliY(wires=0)  # Overlaps with op1
+        op4 = qml.PauliX(wires=2)  # No overlap
+        op5 = qml.MultiControlledX(wires=range(8))
+
+        # Create Prod operators with and without overlapping wires
+        prod_with_overlap = op1 @ op3
+        prod_without_overlap = op1 @ op2 @ op4
+
+        # Assert that overlapping wires are correctly detected
+        assert (
+            prod_with_overlap.has_overlapping_wires is True
+        ), "Expected overlapping wires to be detected."
+        assert (
+            prod_without_overlap.has_overlapping_wires is False
+        ), "Expected no overlapping wires to be detected."
+        # Create a Sum observable that involves the operators
+        sum_obs = qml.sum(op1, op2, op3, op4, op5)  # 5 terms
+        assert sum_obs.has_overlapping_wires is True, "Expected overlapping wires to be detected."
+
+        # Create the measurement process
+        measurementprocess = qml.expval(op=sum_obs)
+
+        # Create a mock state (you would normally use a real state here)
+        dim = 2**8
+        state = np.diag([1 / dim] * dim)  # Example state, length of 16 for the test
+
+        # Check if we hit the tensor contraction branch
+        result = get_measurement_function(measurementprocess, state)
+
+        # Verify the correct function is returned (csr_dot_products_density_matrix)
+        assert (
+            result == csr_dot_products_density_matrix
+        ), "Expected csr_dot_products_density_matrix method"
 
 
 class TestMeasurements:
