@@ -97,7 +97,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
 class ResourceRX(qml.RX, re.ResourceOperator):
     """Resource class for the RX gate.
-    
+
     Resources:
         The resources are estimated by approximating the gate with a series of T gates.
         The estimate is taken from https://arxiv.org/abs/1404.5320.
@@ -165,7 +165,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
 class ResourceRY(qml.RY, re.ResourceOperator):
     """Resource class for the RY gate.
-    
+
     Resources:
         The resources are estimated by approximating the gate with a series of T gates.
         The estimate is taken from https://arxiv.org/abs/1404.5320.

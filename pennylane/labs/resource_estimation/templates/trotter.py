@@ -30,7 +30,7 @@ from pennylane.operation import Operation, Operator
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
 from pennylane.resource.error import ErrorOperation, SpectralNormError
-from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar, TrotterizedQfunc
+from pennylane.templates.subroutines.trotter import TrotterizedQfunc, _recursive_expression, _scalar
 from pennylane.wires import Wires
 
 

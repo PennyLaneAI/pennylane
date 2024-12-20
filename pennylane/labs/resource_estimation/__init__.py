@@ -113,9 +113,14 @@ Templates
     :toctree: api
 
     ~ResourceBasisRotation
+    ~ResourcePrepSelPrep
     ~ResourceQFT
     ~ResourceQPE
+    ~ResourceQubitization
+    ~ResourceReflection
+    ~ResourceSelect
     ~ResourceStatePrep
+    ~ResourceTrotterProduct
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -198,9 +203,13 @@ from .ops import (
 
 from .templates import (
     ResourceBasisRotation,
+    ResourcePrepSelPrep,
     ResourceQFT,
-    ResourceQPE, 
+    ResourceQPE,
     ResourceQuantumPhaseEstimation,
+    ResourceQubitization,
+    ResourceReflection,
+    ResourceSelect,
     ResourceStatePrep,
     ResourceTrotterProduct,
     resource_trotterize,
