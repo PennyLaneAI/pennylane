@@ -199,8 +199,6 @@ such as `shots`, `rng` and `prng_key`.
 * Converted current tests that used `default.mixed` to use other equivalent devices in-place.
   [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
 
-* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
-  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
 
 * Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
   [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)

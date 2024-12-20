@@ -146,10 +146,10 @@ class LegacyDeviceFacade(Device):
     gradient_method=None, gradient_keyword_arguments={}, device_options={}, interface=<Interface.NUMPY: 'numpy'>,
     derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None)))
     >>> new_dev.shots
-    Shots(total=None)
+    Shots(total_shots=None, shot_vector=())
     >>> tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
     >>> new_dev.execute(tape)
-    array([0 0 0 0 0])
+    array([0, 0, 0, 0, 0])
 
     """
 

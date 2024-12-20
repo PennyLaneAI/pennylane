@@ -166,17 +166,9 @@ def _get_num_wires(state, is_state_batched):
     For density matrix, we need to infer the number of wires from the state.
     """
 
-    s = qml.math.shape(state)
-    flat_size = 1
-    for dim in s:
-        flat_size *= dim
-
-    if is_state_batched:
-        batch_size = s[0]
-    else:
-        batch_size = 1
-
-    total_dim = flat_size // batch_size
+    shape = qml.math.shape(state)
+    batch_size = shape[0] if is_state_batched else 1
+    total_dim = math.prod(shape) // batch_size
 
     # total_dim should be 2^(2*num_wires)
     # Solve for num_wires: 2*num_wires = log2(total_dim) -> num_wires = log2(total_dim)/2
