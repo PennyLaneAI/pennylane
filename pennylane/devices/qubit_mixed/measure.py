@@ -306,6 +306,7 @@ def measure(
         Tensorlike: the result of the measurement process being applied to the state.
     """
     measurement_function = get_measurement_function(measurementprocess, state)
-    return measurement_function(
+    res = measurement_function(
         measurementprocess, state, is_state_batched=is_state_batched, readout_errors=readout_errors
     )
+    return res
