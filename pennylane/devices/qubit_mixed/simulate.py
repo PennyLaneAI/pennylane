@@ -43,8 +43,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     Keyword Args:
         interface (str): The machine learning interface used to create the initial state.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number 
-            generator. Used only for simulations with JAX. If None, a ``numpy.random.default_rng`` 
+        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number
+            generator. Used only for simulations with JAX. If None, a ``numpy.random.default_rng``
             is used for sampling.
 
     Returns:
@@ -55,7 +55,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     Raises:
         ValueError: If the circuit contains invalid or unsupported operations.
 
-    .. seealso:: 
+    .. seealso::
         :func:`~.apply_operation`, :class:`~.QuantumScript`
 
     **Example**
@@ -133,14 +133,14 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
             to be simulated.
         state (TensorLike): The quantum state on which measurements are performed.
         is_state_batched (bool): Indicates whether the quantum state has a batch dimension.
-        
+
     Keyword Args:
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): 
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
             A seed-like parameter for ``numpy.random.default_rng``. If no value is provided,
             a default random number generator is used.
         prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number generator,
             used for sampling during JAX-based simulations. If None, a default NumPy RNG is used.
-        readout_errors (List[Callable]): A list of quantum channels (callable functions) applied 
+        readout_errors (List[Callable]): A list of quantum channels (callable functions) applied
             to each wire during measurement to simulate readout errors.
 
     Returns:
@@ -151,7 +151,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     Raises:
         ValueError: If the circuit contains invalid or unsupported measurements.
 
-    .. seealso:: 
+    .. seealso::
         :func:`~.measure`, :func:`~.measure_with_samples`
 
     **Example**
@@ -181,11 +181,11 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     .. details::
         :title: Usage Details
 
-        The function supports both analytic and finite-shot measurement processes. 
-        - In the analytic case (no shots specified), the exact expectation values 
+        The function supports both analytic and finite-shot measurement processes.
+        - In the analytic case (no shots specified), the exact expectation values
           are computed for each measurement in the circuit.
-        - In the finite-shot case (with shots specified), random samples are drawn 
-          according to the specified measurement process, using the provided RNG 
+        - In the finite-shot case (with shots specified), random samples are drawn
+          according to the specified measurement process, using the provided RNG
           or PRNG key. Readout errors, if provided, are applied during the simulation.
     """
 
@@ -245,19 +245,19 @@ def simulate(
             execution.
         state_cache (dict): An optional cache to store the final state of the circuit,
             keyed by the circuit hash.
-        
+
     Keyword Args:
-        rng (Optional[Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]]): 
-            A seed-like parameter for ``numpy.random.default_rng``. If no value is provided, 
+        rng (Optional[Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]]):
+            A seed-like parameter for ``numpy.random.default_rng``. If no value is provided,
             a default random number generator is used.
-        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number generator. 
+        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number generator.
             If None, a random key is generated. Only relevant for JAX-based simulations.
         interface (str): The machine learning interface used to create the initial state.
-        readout_errors (List[Callable]): A list of quantum channels (callable functions) applied 
+        readout_errors (List[Callable]): A list of quantum channels (callable functions) applied
             to each wire during measurement to simulate readout errors.
 
     Returns:
-        tuple(TensorLike): The results of the simulation. Measurement results are returned as a 
+        tuple(TensorLike): The results of the simulation. Measurement results are returned as a
         tuple, with each entry corresponding to a specified measurement in the circuit.
 
     Notes:
