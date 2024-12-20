@@ -102,8 +102,7 @@ def csr_dot_products_density_matrix(
     """Measure the expectation value of an observable from a density matrix using dot products between
     ``scipy.csr_matrix`` representations.
 
-    For a density matrix ρ and observable O, the expectation value is:
-    Tr(ρ O).
+    For a density matrix :math:`\rho` and observable :math:`O`, the expectation value is: .. math:: \text{Tr}(\rho O),
 
     Args:
         measurementprocess (ExpectationMP): measurement process to apply to the density matrix state
