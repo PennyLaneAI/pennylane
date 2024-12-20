@@ -481,7 +481,7 @@ class TestCatalystControlFlow:
         x = 0.5
         assert jnp.allclose(circuit(x, 3), qml.qjit(circuit)(x, 3))
 
-        res = circuit.tape.operations
+        res = qml.workflow.construct_tape(circuit)(x, 3).operations
         expected = [
             qml.Hadamard(wires=[0]),
             qml.Hadamard(wires=[1]),
