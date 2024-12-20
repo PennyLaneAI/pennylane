@@ -224,6 +224,47 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         params = {"cmpr_ops": cmpr_ops}
         return CompressedResourceOp(cls, params)
 
+    @classmethod
+    def adjoint_resource_decomp(cls, cmpr_ops, **kwargs) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation of the adjoint of the operator"""
+        raise {cls.resource_rep(cmpr_ops): 1}
+
+    @classmethod
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires, num_ctrl_values, num_work_wires, cmpr_ops, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation of the controlled version of the operator"""
+        gate_types = {}
+
+        num_ops = len(cmpr_ops)
+        num_wires = int(qnp.log2(num_ops))
+
+        prep = ResourceStatePrep.resource_rep(num_wires)
+        ctrl_sel = re.ResourceControlled.resource_rep(ResourceSelect, {"cmpr_ops": cmpr_ops}, num_ctrl_wires, num_ctrl_values, num_work_wires)
+        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
+
+        gate_types[prep] = 1
+        gate_types[ctrl_sel] = 1
+        gate_types[prep_dag] = 1
+        return gate_types
+
+    @classmethod
+    def pow_resource_decomp(cls, z, cmpr_ops, **kwargs) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation of the operator raised to a power"""
+        gate_types = {}
+
+        num_ops = len(cmpr_ops)
+        num_wires = int(qnp.log2(num_ops))
+
+        prep = ResourceStatePrep.resource_rep(num_wires)
+        pow_sel = re.ResourcePow.resource_rep(ResourceSelect, z, {"cmpr_ops": cmpr_ops})
+        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
+
+        gate_types[prep] = 1
+        gate_types[pow_sel] = 1
+        gate_types[prep_dag] = 1
+        return gate_types
+
 
 class ResourceReflection(qml.Reflection, ResourceOperator):
 

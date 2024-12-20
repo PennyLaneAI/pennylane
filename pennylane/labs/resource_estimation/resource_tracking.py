@@ -18,7 +18,7 @@ from functools import singledispatch, wraps
 from typing import Dict, Iterable, List, Set, Union
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -155,7 +155,7 @@ def get_resources(
 
 @get_resources.register
 def resources_from_operation(
-    obj: Operation, gate_set: Set = DefaultGateSet, config: Dict = resource_config
+    obj: Operator, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Resources:
     """Get resources from an operation"""
 

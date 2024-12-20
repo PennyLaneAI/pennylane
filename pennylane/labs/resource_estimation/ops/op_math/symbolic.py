@@ -23,6 +23,7 @@ from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.exp import Exp
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.prod import Prod
 from pennylane.ops.op_math.sprod import SProd
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
@@ -275,6 +276,35 @@ class ResourceExp(Exp, re.ResourceOperator):
                 return base_gate_types
 
         raise re.ResourcesNotDefined
+
+
+class ResourceProd(Prod, re.ResourceOperator):
+    """Resource class for Prod"""
+
+    @classmethod
+    def _resource_decomp(
+        cls, cmpr_reps, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        gate_types = defaultdict(int)
+    
+        for op in cmpr_reps:
+            gate_types[op] += 1
+        
+        return gate_types
+
+    def resource_params(self) -> dict:
+        ops = self.operands
+        cmpr_reps = tuple(op.resource_rep_from_op() for op in ops)
+        return {"cmpr_reps": cmpr_reps}
+
+    @classmethod
+    def resource_rep(cls, cmpr_reps) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {"cmpr_reps": cmpr_reps})
+
+    @staticmethod
+    def tracking_name(cmpr_reps) -> str:
+        base_names = [(cmpr_rep.op_type).tracking_name(**cmpr_rep.params) for cmpr_rep in cmpr_reps]
+        return f"Prod({",".join(base_names)})"
 
 
 def _resources_from_pauli_word(pauli_word, num_wires):
