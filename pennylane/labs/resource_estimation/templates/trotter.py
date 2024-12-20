@@ -20,12 +20,15 @@ from functools import wraps
 from typing import Dict
 
 import pennylane as qml
+from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation import (
     CompressedResourceOp,
     ResourceExp,
     ResourceOperator,
     ResourcesNotDefined,
 )
+from pennylane.labs.resource_estimation.resource_container import _scale_dict, _combine_dict
+
 from pennylane.operation import Operation, Operator
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
@@ -163,6 +166,7 @@ class ResourceTrotterProduct(ErrorOperation, ResourceOperator):
         self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
     ):
         r"""Initialize the TrotterProduct class"""
+        is_compact = isinstance(hamiltonian, re.CompactLCU)
 
         if order <= 0 or order != 1 and order % 2 != 0:
             raise ValueError(
@@ -188,12 +192,12 @@ class ResourceTrotterProduct(ErrorOperation, ResourceOperator):
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
 
-        if not isinstance(hamiltonian, Sum):
+        if not isinstance(hamiltonian, Sum) and not is_compact:
             raise TypeError(
                 f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
             )
 
-        if check_hermitian:
+        if check_hermitian and not is_compact:
             for op in hamiltonian.operands:
                 if not op.is_hermitian:
                     raise ValueError(
@@ -207,11 +211,26 @@ class ResourceTrotterProduct(ErrorOperation, ResourceOperator):
             "check_hermitian": check_hermitian,
         }
 
+        if is_compact:
+            super().__init__(time, wires=["NoListedWires"], id=id)
+            return
+
         super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
     @staticmethod
     def _resource_decomp(base, time, n, order, **kwargs) -> Dict[CompressedResourceOp, int]:
+        is_compact = isinstance(base, re.CompactLCU)
         k = order // 2
+
+        if is_compact:
+            if base.cost_per_exp_term is not None:
+                gate_types = defaultdict(int, base.cost_per_exp_term)
+                total_terms = 2 * n * (5 ** (k - 1)) * base.num_terms
+                _scale_dict(gate_types, total_terms, in_place=True)
+                
+                return gate_types
+            raise re.ResourcesNotDefined
+
         first_order_expansion = [
             ResourceExp.resource_rep(op, (time / n) * 1j, num_steps=1) for op in base.operands
         ]

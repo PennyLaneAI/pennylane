@@ -17,8 +17,11 @@ from typing import Dict
 
 import pennylane as qml
 from pennylane import numpy as qnp
+
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
+
+from pennylane.operation import StatePrepBase
 
 # pylint: disable=arguments-differ
 
@@ -112,8 +115,37 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         TODO: add the resources here
     """
 
+    def __init__(
+        self,
+        state,
+        wires=["NoListedWires"],
+        pad_with=None,
+        normalize=False,
+        id = None,
+        validate_norm = True,
+    ):
+        is_compact = isinstance(state, re.CompactState)
+
+        if is_compact:
+            self.state = state
+            StatePrepBase.__init__(self, [1, 0], wires=wires)
+            return
+
+        super().__init__(
+            state,
+            wires=wires,
+            pad_with=pad_with,
+            normalize=normalize,
+            id = id,
+            validate_norm = validate_norm,
+    )
+
     @staticmethod
-    def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(num_wires, state, **kwargs) -> Dict[CompressedResourceOp, int]:
+        if state: 
+            if state.cost_per_prep:
+                return state.cost_per_prep
+
         gate_types = {}
         rz = re.ResourceRZ.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
@@ -129,11 +161,16 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         return gate_types
 
     def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
+        try: 
+            state = self.state
+        except AttributeError:
+            state = None
+
+        return {"num_wires": len(self.wires), "state": state}
 
     @classmethod
-    def resource_rep(cls, num_wires) -> CompressedResourceOp:
-        params = {"num_wires": num_wires}
+    def resource_rep(cls, num_wires, state=None) -> CompressedResourceOp:
+        params = {"num_wires": num_wires, "state": state}
         return CompressedResourceOp(cls, params)
 
 
@@ -207,7 +244,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
 
         prep = ResourceStatePrep.resource_rep(num_wires)
         sel = ResourceSelect.resource_rep(cmpr_ops)
-        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
+        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires, "state": None})
 
         gate_types[prep] = 1
         gate_types[sel] = 1
@@ -243,7 +280,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         ctrl_sel = re.ResourceControlled.resource_rep(
             ResourceSelect, {"cmpr_ops": cmpr_ops}, num_ctrl_wires, num_ctrl_values, num_work_wires
         )
-        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
+        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires, "state": None})
 
         gate_types[prep] = 1
         gate_types[ctrl_sel] = 1
@@ -260,7 +297,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
 
         prep = ResourceStatePrep.resource_rep(num_wires)
         pow_sel = re.ResourcePow.resource_rep(ResourceSelect, z, {"cmpr_ops": cmpr_ops})
-        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
+        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires, "state": None})
 
         gate_types[prep] = 1
         gate_types[pow_sel] = 1
@@ -304,10 +341,11 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
 
 
 class ResourceQubitization(qml.Qubitization, ResourceOperator):
+
     @staticmethod
-    def _resource_decomp(cmpr_ops, num_ctrl_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(cmpr_ops, num_c_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         gate_types = {}
-        ref = ResourceReflection.resource_rep(re.ResourceIdentity.resource_rep(), num_ctrl_wires)
+        ref = ResourceReflection.resource_rep(re.ResourceIdentity.resource_rep(), num_c_wires)
         psp = ResourcePrepSelPrep.resource_rep(cmpr_ops)
 
         gate_types[ref] = 1
@@ -319,10 +357,10 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
         _, ops = lcu.terms()
 
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
-        num_ctrl_wires = len(self.hyperparameters["control"])
-        return {"cmpr_ops": cmpr_ops, "num_ctrl_wires": num_ctrl_wires}
+        num_c_wires = len(self.hyperparameters["control"])
+        return {"cmpr_ops": cmpr_ops, "num_c_wires": num_c_wires}
 
     @classmethod
-    def resource_rep(cls, cmpr_ops, num_ctrl_wires) -> CompressedResourceOp:
-        params = {"cmpr_ops": cmpr_ops, "num_ctrl_wires": num_ctrl_wires}
+    def resource_rep(cls, cmpr_ops, num_c_wires) -> CompressedResourceOp:
+        params = {"cmpr_ops": cmpr_ops, "num_c_wires": num_c_wires}
         return CompressedResourceOp(cls, params)
