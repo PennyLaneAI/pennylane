@@ -29,25 +29,58 @@ from .sampling import measure_with_samples
 
 
 def get_final_state(circuit, debugger=None, **execution_kwargs):
-    """
-    Get the final state that results from executing the given quantum script.
+    """Get the final state resulting from executing the given quantum script.
 
-    This is an internal function that will be called by ``default.mixed``.
+    This is an internal function used by ``default.mixed`` to simulate
+    the evolution of a quantum circuit.
 
     Args:
-        circuit (.QuantumScript): The single circuit to simulate
-        debugger (._Debugger): The debugger to use
-        interface (str): The machine learning interface to create the initial state with
+        circuit (.QuantumScript): The quantum script containing operations and measurements
+            that define the quantum computation.
+        debugger (._Debugger): Debugger instance used for tracking execution and debugging
+            circuit operations.
+
+    Keyword Args:
+        interface (str): The machine learning interface used to create the initial state.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
-            If None, a ``numpy.random.default_rng`` will be used for sampling.
+        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number 
+            generator. Used only for simulations with JAX. If None, a ``numpy.random.default_rng`` 
+            is used for sampling.
 
     Returns:
-        Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
-            whether the state has a batch dimension.
+        Tuple[TensorLike, bool]: A tuple containing:
+            - Tensor-like final state of the quantum script.
+            - A boolean indicating whether the final state includes a batch dimension.
+
+    Raises:
+        ValueError: If the circuit contains invalid or unsupported operations.
+
+    .. seealso:: 
+        :func:`~.apply_operation`, :class:`~.QuantumScript`
+
+    **Example**
+
+    Simulate a simple quantum script to obtain its final state:
+
+    .. code-block:: python
+
+        from pennylane.devices.qubit_mixed import get_final_state
+        from pennylane.tape import QuantumScript
+        from pennylane.ops import RX, CNOT
+
+        circuit = QuantumScript([RX(0.5, wires=0), CNOT(wires=[0, 1])])
+        final_state, is_batched = get_final_state(circuit)
+        print(final_state, is_batched)
+
+    .. details::
+        :title: Usage Details
+
+        This function supports multiple execution backends and random number generators,
+        such as NumPy and JAX. It initializes the quantum state, applies all operations in
+        the circuit, and returns the final state tensor and batching information.
 
     """
+
     prng_key = execution_kwargs.pop("prng_key", None)
     interface = execution_kwargs.get("interface", None)
 
