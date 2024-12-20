@@ -110,7 +110,12 @@ def test_postselection_error_with_wrong_device():
         qml.measure(0, postselect=1)
         return qml.probs(wires=[0])
 
-    with pytest.raises(qml.DeviceError, match=re.escape("Operator Projector(array([1]), wires=[0]) not supported with default.mixed and does not provide a decomposition.")):
+    with pytest.raises(
+        qml.DeviceError,
+        match=re.escape(
+            "Operator Projector(array([1]), wires=[0]) not supported with default.mixed and does not provide a decomposition."
+        ),
+    ):
         _ = circ()
 
 

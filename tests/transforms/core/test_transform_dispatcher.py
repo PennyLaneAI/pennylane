@@ -648,7 +648,9 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
         """Test a device transform."""
-        dev = qml.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))  # pylint: disable=redefined-outer-name
+        dev = qml.devices.LegacyDeviceFacade(
+            DefaultQubitLegacy(wires=2)
+        )  # pylint: disable=redefined-outer-name
 
         dispatched_transform = transform(valid_transform)
         new_dev = dispatched_transform(dev, index=0)
