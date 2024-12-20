@@ -31,6 +31,12 @@ def test_repr():
     assert repr(op) == expected
 
 
+def test_work_wire_property():
+    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
+    expected = qml.wires.Wires((3, 4))
+    assert op.work_wires == expected
+
+
 def test_standard_validity():
     """Test the standard criteria for a valid operation."""
     work_wires = qml.wires.Wires((3, 4))
