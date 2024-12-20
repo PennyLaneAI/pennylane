@@ -17,6 +17,7 @@ from collections.abc import Callable, Sequence
 from functools import partial
 
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
@@ -645,6 +646,35 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         circuit()
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_old_device_transform(self, valid_transform):
+        """Test a device transform."""
+        dev = qml.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))  # pylint: disable=redefined-outer-name
+
+        dispatched_transform = transform(valid_transform)
+        new_dev = dispatched_transform(dev, index=0)
+
+        assert new_dev.original_device is dev
+        assert repr(new_dev).startswith("Transformed Device")
+
+        program = dev.preprocess_transforms()
+        new_program = new_dev.preprocess_transforms()
+
+        assert isinstance(program, qml.transforms.core.TransformProgram)
+        assert isinstance(new_program, qml.transforms.core.TransformProgram)
+
+        assert len(program) == 3
+        assert len(new_program) == 4
+
+        assert new_program[-1].transform is valid_transform
+
+        @qml.qnode(new_dev)
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        circuit()
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_device_transform_error(self, valid_transform):
         """Test that the device transform returns errors."""
 
@@ -665,6 +695,29 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             dispatched_transform = transform(valid_transform, expand_transform=valid_transform)
             dispatched_transform(dev, index=0)
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_old_device_transform_error(self, valid_transform):
+        """Test that the old device transform returns errors."""
+        device = qml.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))
+
+        with pytest.raises(
+            TransformError, match="Device transform does not support informative transforms."
+        ):
+            dispatched_transform = transform(valid_transform, is_informative=True)
+            dispatched_transform(device, index=0)
+
+        with pytest.raises(
+            TransformError, match="Device transform does not support final transforms."
+        ):
+            dispatched_transform = transform(valid_transform, final_transform=True)
+            dispatched_transform(device, index=0)
+
+        with pytest.raises(
+            TransformError, match="Device transform does not support expand transforms."
+        ):
+            dispatched_transform = transform(valid_transform, expand_transform=valid_transform)
+            dispatched_transform(device, index=0)
 
     def test_sphinx_build(self, monkeypatch):
         """Test that transforms are not created during Sphinx builds"""
