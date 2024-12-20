@@ -114,6 +114,9 @@
 * Added support to build a vibrational Hamiltonian in the Christiansen form.
   [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
+
+<h3>Improvements 🛠</h3>
+
 <h4>New device capabilities 💾</h4>
 
 * Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
@@ -161,8 +164,6 @@
   a `capabilities` property.
   [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
-
-<h3>Improvements 🛠</h3>
 
 <h4>New API for Default mixed</h4>
 
@@ -235,6 +236,59 @@ such as `shots`, `rng` and `prng_key`.
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
   [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
   [(#6685)](https://github.com/PennyLaneAI/pennylane/pull/6685)
+
+* `qml.transform` now accepts a `plxpr_transform` argument. This argument must be a function that can transform plxpr.
+  Note that executing a transformed function will currently raise a `NotImplementedError`. To see more details, check
+  out the documentation of `qml.transform`.
+  [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
+  [(#6722)](https://github.com/PennyLaneAI/pennylane/pull/6722)
+
+* Users can now apply transforms with program capture enabled. Transformed functions cannot be executed by default. To apply
+  the transforms (and be able to execute the function), it must be decorated with the new `qml.capture.expand_plxpr_transforms`
+  function, which accepts a callable as input and returns a new function to which all present transforms have been applied.
+  [(#6722)](https://github.com/PennyLaneAI/pennylane/pull/6722)
+
+  ```python
+  from functools import partial
+  import jax
+
+  qml.capture.enable()
+  wire_map = {0: 3, 1: 6, 2: 9}
+
+  @partial(qml.map_wires, wire_map=wire_map)
+  def circuit(x, y):
+      qml.RX(x, 0)
+      qml.CNOT([0, 1])
+      qml.CRY(y, [1, 2])
+      return qml.expval(qml.Z(2))
+  ```
+  ```pycon
+  >>> qml.capture.make_plxpr(circuit)(1.2, 3.4)
+  { lambda ; a:f32[] b:f32[]. let
+      c:AbstractMeasurement(n_wires=None) = _map_wires_transform_transform[
+      args_slice=slice(0, 2, None)
+      consts_slice=slice(2, 2, None)
+      inner_jaxpr={ lambda ; d:f32[] e:f32[]. let
+          _:AbstractOperator() = RX[n_wires=1] d 0
+          _:AbstractOperator() = CNOT[n_wires=2] 0 1
+          _:AbstractOperator() = CRY[n_wires=2] e 1 2
+          f:AbstractOperator() = PauliZ[n_wires=1] 2
+          g:AbstractMeasurement(n_wires=None) = expval_obs f
+        in (g,) }
+      targs_slice=slice(2, None, None)
+      tkwargs={'wire_map': {0: 3, 1: 6, 2: 9}, 'queue': False}
+      ] a b
+    in (c,) }
+  >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
+  >>> jax.make_jaxpr(transformed_circuit)(1.2, 3.4)
+  { lambda ; a:f32[] b:f32[]. let
+      _:AbstractOperator() = RX[n_wires=1] a 3
+      _:AbstractOperator() = CNOT[n_wires=2] 3 6
+      _:AbstractOperator() = CRY[n_wires=2] b 6 9
+      c:AbstractOperator() = PauliZ[n_wires=1] 9
+      d:AbstractMeasurement(n_wires=None) = expval_obs c
+    in (d,) }
+  ```
 
 * The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
   [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
@@ -318,6 +372,9 @@ such as `shots`, `rng` and `prng_key`.
 * A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as 
   JAX array elements.
   [(#6699)](https://github.com/PennyLaneAI/pennylane/pull/6699)
+
+* PennyLane is compatible with `quimb 1.10.0`.
+  [(#6630)](https://github.com/PennyLaneAI/pennylane/pull/6630)
 
 * Add developer focused `run` function to `qml.workflow` module.
   [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
