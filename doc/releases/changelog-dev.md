@@ -345,6 +345,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
+* `Wires` object usage across Pennylane source code has been tidied up.
+  [(#6689)](https://github.com/PennyLaneAI/pennylane/pull/6689)
+
 * `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
   [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
 
@@ -379,6 +382,7 @@ such as `shots`, `rng` and `prng_key`.
 
 * PennyLane is compatible with `quimb 1.10.0`.
   [(#6630)](https://github.com/PennyLaneAI/pennylane/pull/6630)
+  [(#6736)](https://github.com/PennyLaneAI/pennylane/pull/6736)
 
 * Add developer focused `run` function to `qml.workflow` module.
   [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
