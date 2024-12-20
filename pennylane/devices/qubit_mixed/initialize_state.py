@@ -65,7 +65,10 @@ def create_initial_state(
 
 def _post_process(density_matrix, num_axes, like):
     r"""
-    This post processor is necessary to ensure that the density matrix is in the correct format, i.e. the original tensor form, instead of the pure matrix form, as requested by all the other more fundamental chore functions in the module (again from some legacy code).
+    This post processor is necessary to ensure that the density matrix is in 
+    the correct format, i.e. the original tensor form, instead of the pure 
+    matrix form, as requested by all the other more fundamental chore functions 
+    in the module (again from some legacy code).
     """
     density_matrix = np.reshape(density_matrix, (-1,) + (2,) * num_axes)
     dtype = str(density_matrix.dtype)
