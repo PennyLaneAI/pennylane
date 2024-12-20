@@ -341,7 +341,7 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
-* `GroverOperator` now has a `work_wires` property.
+* `qml.GroverOperator` now has a `work_wires` property.
   [(#6738)](https://github.com/PennyLaneAI/pennylane/pull/6738)
 
 * `Wires` object usage across Pennylane source code has been tidied up.
