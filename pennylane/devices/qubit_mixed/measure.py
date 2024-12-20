@@ -90,7 +90,7 @@ def state_diagonalizing_gates(  # pylint: disable=unused-argument
         measurementprocess = DensityMatrixMP(wires)
     res = measurementprocess.process_density_matrix(flattened_state, wires)
 
-    return math.convert_like(res, state)
+    return res
 
 
 def csr_dot_products_density_matrix(
@@ -218,7 +218,7 @@ def sum_of_terms_method(
     """
     # Recursively call measure on each term, so that the best measurement method can
     # be used for each term
-    return sum(
+    return math.sum(
         measure(
             ExpectationMP(term),
             state,

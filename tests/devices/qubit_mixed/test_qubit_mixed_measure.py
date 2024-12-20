@@ -544,7 +544,6 @@ class TestSumOfTermsDifferentiability:
         expected_gradient = qml.grad(self.expected)(x, coeffs)
         assert qml.math.allclose(expected_gradient, gradient)
 
-    # @pytest.mark.skip("Implementation of csr not differentiable for autograd here")
     @pytest.mark.autograd
     def test_autograd_backprop_coeffs(self):
         """Test that backpropagation derivatives work in autograd with
