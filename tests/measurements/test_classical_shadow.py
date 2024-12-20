@@ -843,3 +843,19 @@ def test_hadamard_expval(k=1, obs=obs_hadamard, expected=expected_hadamard):
     assert actual.dtype == np.float64
     assert qml.math.allclose(actual, expected, atol=1e-1)
     assert qml.math.allclose(new_actual, expected, atol=1e-1)
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
+@pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
+def test_partitioned_shots(interface, circuit_basis, basis_recipe):
+    """Test that mixed device works for partitioned shots"""
+    wires = 3
+    shots = (1000, 1000)
+
+    device = "default.mixed"
+    circuit = get_basis_circuit(
+        wires, basis=circuit_basis, shots=shots, interface=interface, device=device
+    )
+    bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
+    assert bits.shape == recipes.shape == (2, 1000, 3)
