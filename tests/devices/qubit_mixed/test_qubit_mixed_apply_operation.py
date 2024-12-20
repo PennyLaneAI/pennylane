@@ -983,4 +983,3 @@ class TestDensityMatrix:
         result = qml.devices.qubit_mixed.apply_operation(op, initial_state, is_state_batched=True)
 
         assert math.allclose(result, expected, atol=1e-8)
-
