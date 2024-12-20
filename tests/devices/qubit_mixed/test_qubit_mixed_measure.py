@@ -517,9 +517,9 @@ class TestBroadcasting:
         expanded_mat = np.zeros(((4, 4)), dtype=complex)
         for coeff, summand in zip(coeffs, observables):
             mat = summand.matrix()
-            expanded_mat += coeff * (
+            expanded_mat = np.add(expanded_mat, coeff * (
                 np.kron(np.eye(2), mat) if summand.wires[0] == 1 else np.kron(mat, np.eye(2))
-            )
+            ))
 
         expected = []
         for i in range(BATCH_SIZE):
