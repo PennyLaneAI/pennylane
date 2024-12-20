@@ -124,6 +124,10 @@ class GroverOperator(Operation):
         super().__init__(wires=wires, id=id)
 
     @property
+    def work_wires(self):
+        return self.hyperparameters["work_wires"]
+
+    @property
     def num_params(self):
         return 0
 
