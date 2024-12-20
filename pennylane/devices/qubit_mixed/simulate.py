@@ -123,27 +123,70 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments, unused-argument
 def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
-    """
-    Perform the measurements required by the circuit on the provided state.
+    """Perform the measurements specified in the circuit on the provided state.
 
-    This is an internal function that will be called by ``default.mixed``.
+    This is an internal function called by the ``default.mixed`` device to simulate
+    measurement processes in a quantum circuit.
 
     Args:
-        circuit (.QuantumScript): The single circuit to simulate
-        state (TensorLike): The state to perform measurement on
-        is_state_batched (bool): Whether the state has a batch dimension or not.
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
-            If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
-            will be for sampling.
-        readout_errors (List[Callable]): List of channels to apply to each wire being measured
-        to simulate readout errors.
+        circuit (.QuantumScript): The quantum script containing operations and measurements
+            to be simulated.
+        state (TensorLike): The quantum state on which measurements are performed.
+        is_state_batched (bool): Indicates whether the quantum state has a batch dimension.
+        
+    Keyword Args:
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): 
+            A seed-like parameter for ``numpy.random.default_rng``. If no value is provided,
+            a default random number generator is used.
+        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number generator,
+            used for sampling during JAX-based simulations. If None, a default NumPy RNG is used.
+        readout_errors (List[Callable]): A list of quantum channels (callable functions) applied 
+            to each wire during measurement to simulate readout errors.
 
     Returns:
-        Tuple[TensorLike]: The measurement results
+        Tuple[TensorLike]: The measurement results. If the circuit specifies only one measurement,
+        the result is a single tensor-like object. If multiple measurements are specified, a tuple
+        of results is returned.
+
+    Raises:
+        ValueError: If the circuit contains invalid or unsupported measurements.
+
+    .. seealso:: 
+        :func:`~.measure`, :func:`~.measure_with_samples`
+
+    **Example**
+
+    Simulate a circuit measurement process on a given state:
+
+    .. code-block:: python
+
+        import numpy as np
+        import pennylane as qml
+
+        from pennylane.devices.qubit_mixed import measure_final_state
+        from pennylane.tape import QuantumScript
+        from pennylane.ops import RX, CNOT, PauliZ
+
+        # Define a circuit with a PauliZ measurement
+        circuit = QuantumScript(
+            ops=[RX(0.5, wires=0), CNOT(wires=[0, 1])],
+            measurements=[qml.expval(PauliZ(wires=0))]
+        )
+
+        # Simulate measurement
+        state = np.ones((2,2,2,2)) * 0.25  # Initialize or compute the state
+        results = measure_final_state(circuit, state, is_state_batched=False)
+        print(results)
+
+    .. details::
+        :title: Usage Details
+
+        The function supports both analytic and finite-shot measurement processes. 
+        - In the analytic case (no shots specified), the exact expectation values 
+          are computed for each measurement in the circuit.
+        - In the finite-shot case (with shots specified), random samples are drawn 
+          according to the specified measurement process, using the provided RNG 
+          or PRNG key. Readout errors, if provided, are applied during the simulation.
     """
 
     rng = execution_kwargs.get("rng", None)
