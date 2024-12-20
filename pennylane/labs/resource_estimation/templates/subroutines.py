@@ -240,7 +240,9 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         num_wires = int(qnp.log2(num_ops))
 
         prep = ResourceStatePrep.resource_rep(num_wires)
-        ctrl_sel = re.ResourceControlled.resource_rep(ResourceSelect, {"cmpr_ops": cmpr_ops}, num_ctrl_wires, num_ctrl_values, num_work_wires)
+        ctrl_sel = re.ResourceControlled.resource_rep(
+            ResourceSelect, {"cmpr_ops": cmpr_ops}, num_ctrl_wires, num_ctrl_values, num_work_wires
+        )
         prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
 
         gate_types[prep] = 1

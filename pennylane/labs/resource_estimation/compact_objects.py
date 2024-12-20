@@ -13,6 +13,16 @@
 # limitations under the License.
 """This module contains the base classes for compact hamiltonians and states
 to be used with the existing resource estimation pipeline"""
+from pennylane.labs.resource_estimation import (
+    ResourceAdjoint,
+    ResourceBasisRotation,
+    ResourceControlled,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+)
 
 
 class CompactLCU:
@@ -26,6 +36,7 @@ class CompactLCU:
         k_local=None,
         cost_per_term=None,
         cost_per_exp_term=None,
+        cost_per_ctrl_exp_term=None,
         one_norm_error=None,
     ) -> None:
         """Store the meta info into the class attributes."""
@@ -35,6 +46,7 @@ class CompactLCU:
         self.k_local = k_local
         self.cost_per_term = cost_per_term
         self.cost_per_exp_term = cost_per_exp_term
+        self.cost_per_ctrl_exp_term = cost_per_ctrl_exp_term
         self.one_norm_error = one_norm_error
 
     def info(self, print_info=False):
@@ -50,6 +62,57 @@ class CompactLCU:
 
         return metadata_dict
 
+    def update(self):
+        """Update empty information after initializing the class."""
+        if self.lcu_type == "pauli":
+            cost_per_term = {}
+            x, y, z = (ResourceX.resource_rep(), ResourceY.resource_rep(), ResourceZ.resource_rep())
+
+            freq = self.k_local // 3
+
+            cost_per_term[x] = freq
+            cost_per_term[z] = freq
+            cost_per_term[y] = self.k_local - freq
+
+            avg_pword = freq * "X" + freq * "Z" + (self.k_local - freq) * "Y"
+            cost_per_exp_term = {ResourcePauliRot.resource_rep(avg_pword): 1}
+
+            self.cost_per_term = cost_per_term
+            self.cost_per_exp_term = cost_per_exp_term
+
+        if self.lcu_type == "cdf":
+            cost_per_term = {}
+            cost_per_exp_term = {}
+            cost_per_ctrl_exp_term = {}
+
+            basis_rot = ResourceBasisRotation.resource_rep(2**self.num_wires)
+            adj_basis_rot = ResourceAdjoint.resource_rep(
+                ResourceBasisRotation, {"dim_N": 2**self.num_wires}
+            )
+            z = ResourceZ.resource_rep()
+            multi_z = ResourceMultiRZ.resource_rep(2)
+            ctrl_multi_z = ResourceControlled.resource_rep(
+                ResourceMultiRZ, {"num_wires": 2}, 1, 0, 0
+            )
+
+            cost_per_term[basis_rot] = 2
+            cost_per_term[adj_basis_rot] = 2
+            cost_per_term[z] = 2
+
+            cost_per_exp_term[basis_rot] = 2
+            cost_per_exp_term[adj_basis_rot] = 2
+            cost_per_exp_term[multi_z] = 1
+
+            cost_per_ctrl_exp_term[basis_rot] = 2
+            cost_per_ctrl_exp_term[adj_basis_rot] = 2
+            cost_per_ctrl_exp_term[ctrl_multi_z] = 1
+
+            self.cost_per_term = cost_per_term
+            self.cost_per_exp_term = cost_per_exp_term
+            self.cost_per_ctrl_exp_term = cost_per_ctrl_exp_term
+
+        return
+
 
 class CompactState:
     """A class storing the meta data associated with a quantum state."""
@@ -57,18 +120,20 @@ class CompactState:
     def __init__(
         self,
         num_wires,
-        dimension=None,
+        data_size=None,
         is_sparse=False,
         is_bitstring=False,
         precision=None,
+        num_aux_wires=None,
         cost_per_prep=None,
         cost_per_ctrl_prep=None,
     ) -> None:
         self.num_wires = num_wires
-        self.dimension = dimension
+        self.data_size = data_size
         self.is_sparse = is_sparse
         self.is_bitstring = is_bitstring
         self.precision = precision
+        self.num_aux_wires = num_aux_wires
         self.cost_per_prep = cost_per_prep
         self.cost_per_ctrl_prep = cost_per_ctrl_prep
 
@@ -84,3 +149,7 @@ class CompactState:
                 print(f"-> {k}: {v}")
 
         return metadata_dict
+
+    def update(self):
+        """Update empty information after initializing the class."""
+        return

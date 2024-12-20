@@ -282,14 +282,12 @@ class ResourceProd(Prod, re.ResourceOperator):
     """Resource class for Prod"""
 
     @classmethod
-    def _resource_decomp(
-        cls, cmpr_reps, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(cls, cmpr_reps, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = defaultdict(int)
-    
+
         for op in cmpr_reps:
             gate_types[op] += 1
-        
+
         return gate_types
 
     def resource_params(self) -> dict:
