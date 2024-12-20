@@ -125,7 +125,7 @@ class GroverOperator(Operation):
 
     @property
     def work_wires(self):
-            """Additional auxiliary wires that can be used in the decomposition of :class:`~.MultiControlledX`."""
+        """Additional auxiliary wires that can be used in the decomposition of :class:`~.MultiControlledX`."""
         return self.hyperparameters["work_wires"]
 
     @property
