@@ -37,11 +37,6 @@ class TestQFT:
         exp = QFT
         assert np.allclose(res, exp)
 
-    def test_QFT_compute_decomposition_error(self):
-        """Test that an error is raised for incorrect n_wires"""
-        with pytest.raises(ValueError, match="`n_wires` does not match length of `wires`."):
-            qml.QFT.compute_decomposition(wires=[0, 1], n_wires=1)
-
     @pytest.mark.parametrize("n_qubits", range(2, 6))
     def test_QFT_compute_decomposition(self, n_qubits):
         """Test if the QFT operation is correctly decomposed"""

@@ -144,15 +144,16 @@ class QFT(Operation):
     def num_params(self):
         return 0
 
+    def decomposition(self):
+        return self.compute_decomposition(wires=self.wires)
+
     @staticmethod
     @functools.lru_cache()
     def compute_matrix(n_wires):  # pylint: disable=arguments-differ
         return np.fft.ifft(np.eye(2**n_wires), norm="ortho")
 
     @staticmethod
-    def compute_decomposition(
-        wires: WiresLike, n_wires=None
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -162,14 +163,13 @@ class QFT(Operation):
 
         Args:
             wires (Iterable, Wires): wires that the operator acts on
-            n_wires (int): number of wires or ``len(wires)``
 
         Returns:
             list[Operator]: decomposition of the operator
 
         **Example:**
 
-        >>> qml.QFT.compute_decomposition(wires=(0,1,2), n_wires=3)
+        >>> qml.QFT.compute_decomposition(wires=(0,1,2))
         [H(0),
          ControlledPhaseShift(1.5707963267948966, wires=Wires([1, 0])),
          ControlledPhaseShift(0.7853981633974483, wires=Wires([2, 0])),
@@ -180,11 +180,7 @@ class QFT(Operation):
 
         """
         wires = Wires(wires)
-        if n_wires is None:
-            n_wires = len(wires)
-        else:
-            if len(wires) != n_wires:
-                raise ValueError("`n_wires` does not match length of `wires`.")
+        n_wires = len(wires)
 
         shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
 
