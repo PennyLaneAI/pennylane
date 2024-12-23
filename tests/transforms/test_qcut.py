@@ -15,7 +15,7 @@
 Unit tests for the `pennylane.qcut` package.
 """
 # pylint: disable=protected-access,too-few-public-methods,too-many-arguments
-# pylint: disable=too-many-public-methods,comparison-with-callable
+# pylint: disable=too-many-public-methods,comparison-with-callable,unused-argument
 # pylint: disable=no-value-for-parameter,no-member,not-callable, use-implicit-booleaness-not-comparison
 import copy
 import itertools
@@ -1585,15 +1585,8 @@ class TestGetMeasurements:
         assert obs[0].wires.tolist() == [1, 0, 2]
         assert obs[1].wires.tolist() == [1, 0]
 
-        if qml.operation.active_new_opmath():
-
-            assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
-            assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
-
-        else:
-
-            assert [get_name(o) for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
-            assert [get_name(o) for o in obs[1].obs] == ["PauliZ", "PauliX"]
+        assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
+        assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
 
 
 class TestExpandFragmentTapes:
@@ -1898,8 +1891,14 @@ class TestExpandFragmentTapesMC:
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
         fixed_choice = np.array([[4, 0, 1]])
+
+        class _MockRNG:
+
+            def choice(self, *args, **kwargs):
+                return fixed_choice
+
         with monkeypatch.context() as m:
-            m.setattr(onp.random, "choice", lambda a, size, replace: fixed_choice)
+            m.setattr(onp.random, "default_rng", lambda *_: _MockRNG())
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 tapes, communication_graph, 3
             )
@@ -1963,11 +1962,17 @@ class TestExpandFragmentTapesMC:
         communication_graph = MultiDiGraph(frag_edge_data)
 
         fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
+
+        class _MockRNG:
+
+            def choice(self, *args, **kwargs):
+                return fixed_choice
+
         with monkeypatch.context() as m:
             m.setattr(
                 onp.random,
-                "choice",
-                lambda a, size, replace: fixed_choice,
+                "default_rng",
+                lambda *_: _MockRNG(),
             )
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 frags, communication_graph, 2
@@ -2537,7 +2542,7 @@ class TestCutCircuitMCTransform:
 
         dev = dev_fn(wires=2, shots=20000, seed=seed)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn, seed=seed)
         @qml.qnode(dev)
         def circuit(v):
             qml.RX(v, wires=0)
@@ -4560,28 +4565,6 @@ class TestCutCircuitExpansion:
 
         assert spy.call_count == 1 or spy_mc.call_count == 1
 
-    @pytest.mark.skip("Nested tapes are being deprecated")
-    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
-    def test_expansion(self, mocker, cut_transform, measurement):
-        """Test if expansion occurs if WireCut operations are present in a nested tape"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.3, wires=0)
-            with qml.tape.QuantumTape() as _:
-                qml.WireCut(wires=0)
-            qml.RY(0.4, wires=0)
-            qml.apply(measurement)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(qcut.tapes, "_qcut_expand_fn")
-        spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
-        spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
-
-        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
-        cut_transform(tape, device_wires=[0], **kwargs)
-
-        spy.assert_called_once()
-        assert spy_cc.call_count == 1 or spy_mc.call_count == 1
-
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
         """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
@@ -5571,14 +5554,16 @@ class TestCutCircuitWithHamiltonians:
         cut_circuit = qcut.cut_circuit(
             qml.QNode(f, dev_cut), auto_cutter=True, device_wires=qml.wires.Wires(range(3))
         )
+        cut_tape = qml.workflow.construct_tape(cut_circuit, level=0)()
 
         res_expected = circuit()
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit()
+
         assert spy.call_count == len(hamiltonian.ops)
         assert np.isclose(res, res_expected, atol=1e-8)
-        assert cut_circuit.tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
+        assert cut_tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
 
     def test_template_with_hamiltonian(self, seed):
         """Test cut with MPS Template"""

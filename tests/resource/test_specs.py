@@ -209,11 +209,11 @@ class TestSpecsTransform:
 
         specs = qml.specs(circ)()
         assert specs["resources"].num_gates == 1
-        assert specs["num_diagonalizing_gates"] == (1 if qml.operation.active_new_opmath() else 0)
+        assert specs["num_diagonalizing_gates"] == 1
 
         specs = qml.specs(circ, level="device")()
         assert specs["resources"].num_gates == 3
-        assert specs["num_diagonalizing_gates"] == (3 if qml.operation.active_new_opmath() else 0)
+        assert specs["num_diagonalizing_gates"] == 3
 
     def test_splitting_transforms(self):
         coeffs = [0.2, -0.543, 0.1]

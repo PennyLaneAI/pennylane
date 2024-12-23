@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types."""
+
 # pylint: disable=use-implicit-booleaness-not-comparison,abstract-method
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -740,25 +741,25 @@ class TestParamShift:
         tapes, _ = qml.gradients.param_shift(tape)
         assert tapes == []
 
-    # TODO: uncomment when QNode decorator uses new qml.execute pipeline
-    # @pytest.mark.parametrize("broadcast", [True, False])
-    # def test_all_zero_diff_methods(self, broadcast):
-    #     """Test that the transform works correctly when the diff method for every parameter is
-    #     identified to be 0, and that no tapes were generated."""
-    #     dev = qml.device("default.qubit", wires=4)
+    @pytest.mark.parametrize("broadcast", [True, False])
+    def test_all_zero_diff_methods(self, broadcast):
+        """Test that the transform works correctly when the diff method for every
+        parameter is identified to be 0, and that no tapes were generated."""
+        dev = qml.device("default.qubit", wires=4)
 
-    #     @qml.qnode(dev)
-    #     def circuit(params):
-    #         qml.Rot(*params, wires=0)
-    #         return qml.probs([2, 3])
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.Rot(*params, wires=0)
+            return qml.probs([2, 3])
 
-    #     params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-    #     result = qml.gradients.param_shift(circuit)(params)
-    #     assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
+        result = qml.gradients.param_shift(circuit)(params)
+        assert np.allclose(result, np.zeros((4, 3)), atol=0)
 
-    #     tapes, _ = qml.gradients.param_shift(circuit.tape, broadcast=broadcast)
-    #     assert tapes == []
+        tape = qml.workflow.construct_tape(circuit)(params)
+        tapes, _ = qml.gradients.param_shift(tape, broadcast=broadcast)
+        assert tapes == []
 
     @pytest.mark.parametrize("broadcast", [True, False])
     def test_with_gradient_recipes(self, broadcast):
@@ -1514,7 +1515,6 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
@@ -1797,7 +1797,7 @@ class TestParameterShiftRule:
         # gradients
         exact = np.cos(par)
         gtapes, fn = qml.gradients.param_shift(tape)
-        grad_PS = fn(qml.execute(gtapes, dev, gradient_fn=None))
+        grad_PS = fn(qml.execute(gtapes, dev, diff_method=None))
 
         # different methods must agree
         assert np.allclose(grad_PS, exact, atol=tol, rtol=0)
@@ -2418,7 +2418,6 @@ class TestParameterShiftRule:
         # + 2 operations x 2 shifted positions + 1 unshifted term          <-- <H^2>
         assert len(tapes) == (2 * 2 + 1) + (2 * 2 + 1)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
     def test_projector_variance(self, state, tol):
         """Test that the variance of a projector is correctly returned"""
@@ -2572,7 +2571,7 @@ class TestParameterShiftRule:
         assert np.allclose(np.squeeze(np.array(res_parshift)).shape, exp_shape)
 
     # TODO: revisit the following test when the Autograd interface supports
-    # parameter-shift with the new return type system
+    #       parameter-shift with the new return type system
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rather than a number."""
@@ -3321,7 +3320,6 @@ class TestParamShiftGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("broadcast", [True, False])
 class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be

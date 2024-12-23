@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the classical shadows transforms"""
+
 # pylint: disable=too-few-public-methods
 import pytest
 
@@ -172,11 +173,11 @@ class TestStateForward:
         """Test that a warning is raised when the system to get the state
         of is large"""
         circuit = hadamard_circuit(8, shots=1)
-        circuit.construct([], {})
+        tape = qml.workflow.construct_tape(circuit)()
 
         msg = "Differentiable state reconstruction for more than 8 qubits is not recommended"
         with pytest.warns(UserWarning, match=msg):
-            qml.shadows.shadow_state(circuit.qtape, wires=[0, 1, 2, 3, 4, 5, 6, 7], diffable=True)
+            qml.shadows.shadow_state(tape, wires=[0, 1, 2, 3, 4, 5, 6, 7], diffable=True)
 
     def test_multi_measurement_error(self):
         """Test that an error is raised when classical shadows is returned

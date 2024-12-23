@@ -16,6 +16,8 @@ This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
 
+.. _transforms:
+
 Custom transforms
 -----------------
 
@@ -52,6 +54,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.pattern_matching_optimization
     ~transforms.transpile
     ~transforms.decompose
+    ~transforms.combine_global_phases
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -133,24 +136,6 @@ that compute the desired quantity.
     ~draw
     ~draw_mpl
 
-Decorators and utility functions
---------------------------------
-
-The following decorators and convenience functions are provided
-to help build custom QNode, quantum function, and tape transforms:
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.make_tape
-    ~transforms.create_expand_fn
-    ~transforms.create_decomp_expand_fn
-    ~transforms.expand_invalid_trainable
-    ~transforms.expand_invalid_trainable_hadamard_gradient
-    ~transforms.expand_multipar
-    ~transforms.expand_trainable_multipar
-    ~transforms.expand_nonunitary_gen
-
 Transforms developer functions
 ------------------------------
 
@@ -206,7 +191,7 @@ function in this scenario, we include a function that simply returns the first a
     def remove_rx(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
         operations = filter(lambda op: op.name != "RX", tape.operations)
-        new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
+        new_tape = tape.copy(operations=operations)
 
         def null_postprocessing(results):
             return results[0]
@@ -234,7 +219,7 @@ function into a quantum transform.
     def sum_circuit_and_adjoint(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
         operations = [qml.adjoint(op) for op in tape.operation]
-        new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
+        new_tape = tape.copy(operations=operations)
 
         def sum_postprocessing(results):
             return qml.sum(results)
@@ -297,8 +282,7 @@ Additional information
 ----------------------
 
 Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
-For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qml_gradients>`.
-Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
+For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qml_gradients>`. Finally,
 for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qml_transforms>`.
 """
 
@@ -322,6 +306,7 @@ from .sign_expand import sign_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
+from .combine_global_phases import combine_global_phases
 
 from .mitigate import (
     mitigate_with_zne,
@@ -350,7 +335,6 @@ from .commutation_dag import (
 )
 from .tape_expand import (
     expand_invalid_trainable,
-    expand_invalid_trainable_hadamard_gradient,
     expand_multipar,
     expand_nonunitary_gen,
     expand_trainable_multipar,

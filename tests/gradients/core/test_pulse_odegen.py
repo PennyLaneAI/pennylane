@@ -1056,9 +1056,8 @@ class TestPulseOdegenTape:
             qml.evolve(H)(par, t=t)
             return qml.expval(Z(0))
 
-        circuit.construct(([x, y],), {})
         # TODO: remove once #2155 is resolved
-        tape_with_shots = circuit.tape.copy()
+        tape_with_shots = qml.workflow.construct_tape(circuit)([x, y])
         tape_with_shots.trainable_params = [0, 1]
         tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1])
@@ -1139,9 +1138,8 @@ class TestPulseOdegenTape:
             qml.evolve(H1)(par[1:], t=t)
             return qml.expval(Z(0))
 
-        circuit.construct(([x, y, z],), {})
         # TODO: remove once #2155 is resolved
-        tape_with_shots = circuit.tape.copy()
+        tape_with_shots = qml.workflow.construct_tape(circuit)([x, y, z])
         tape_with_shots.trainable_params = [0, 1, 2]
         tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1, 2])
