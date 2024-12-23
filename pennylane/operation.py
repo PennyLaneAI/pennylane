@@ -725,7 +725,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         to the primitive via ``cls._primitive.bind``.
 
         """
-        print(f"primitive_bind_call with {cls}")
+        print(f"primitive_bind_called with cls: {cls}, args: {args}, kwargs: {kwargs}")
         # Avoid recursion by bypassing _primitive_bind_call during instance creation
         # (create instance without invoking _primitive_bind_call)
         # instance = super(cls, cls).__new__(cls)
@@ -762,6 +762,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             args = args[:-1] + tuple(args[-1])
         else:
             kwargs["n_wires"] = 1
+
+        print(f"args: {args}, kwargs: {kwargs}")
 
         return cls._primitive.bind(*args, **kwargs)
 

@@ -80,7 +80,9 @@ class CaptureMeta(type):
 
     # Questa funzione e' chiamata quando si crea una istanza della classe Operator, di cui questa classe e' metaclass
     def __call__(cls, *args, **kwargs):
-        print(f"__call__ method in CaptureMeta called with {cls}")
+        print(
+            f"__call__ method in CaptureMeta called with cls: {cls}, args: {args}, kwargs: {kwargs}"
+        )
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
 
