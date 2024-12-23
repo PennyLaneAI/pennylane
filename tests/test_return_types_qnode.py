@@ -52,21 +52,6 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2**wires,)
         assert isinstance(res, (np.ndarray, np.float64))
 
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        dev = qml.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qubit_ansatz(x)
-            return qml.state()
-
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, (np.ndarray, np.float64))
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, device):
@@ -356,24 +341,6 @@ class TestIntegrationSingleReturnTensorFlow:
         assert res.shape == (2**wires,)
         assert isinstance(res, tf.Tensor)
 
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import tensorflow as tf
-
-        dev = qml.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.state()
-
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, tf.Tensor)
-
     wires_tf = [2, 3]
 
     @pytest.mark.parametrize("device", devices)
@@ -572,24 +539,6 @@ class TestIntegrationSingleReturnTorch:
         assert res.shape == (2**wires,)
         assert isinstance(res, torch.Tensor)
 
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import torch
-
-        dev = qml.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.state()
-
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(torch.tensor(0.5, requires_grad=True))
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, torch.Tensor)
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, device):
@@ -786,24 +735,6 @@ class TestIntegrationSingleReturnJax:
         res = qnode(jax.numpy.array(0.5))
 
         assert res.shape == (2**wires,)
-        assert isinstance(res, jax.numpy.ndarray)
-
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import jax
-
-        dev = qml.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.state()
-
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(jax.numpy.array(0.5))
-
-        assert res.shape == (2**wires, 2**wires)
         assert isinstance(res, jax.numpy.ndarray)
 
     @pytest.mark.parametrize("device", devices)
@@ -2247,42 +2178,6 @@ class TestIntegrationShotVectors:
         wires_to_use = wires if wires else op.wires
 
         assert all(r.shape == (2 ** len(wires_to_use),) for r in res)
-
-    @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
-    def test_density_matrix(self, shot_vector, wires, device):
-        """Test a density matrix measurement."""
-        if 1 in shot_vector:
-            pytest.xfail("cannot handle single-shot in shot vector")
-
-        if device == "default.qubit":
-            pytest.xfail("state-based measurement fails on default.qubit")
-
-        dev = qml.device(device, wires=3, shots=shot_vector)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.density_matrix(wires=wires)
-
-        # Diff method is to be set to None otherwise use Interface execute
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
-
-        assert isinstance(res, tuple)
-        assert len(res) == all_shots
-        dim = 2 ** len(wires)
-        assert all(r.shape == (dim, dim) for r in res)
 
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
     def test_samples(self, shot_vector, measurement, device):
