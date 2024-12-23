@@ -38,6 +38,24 @@ class TestQFT:
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
+    def test_QFT_compute_decomposition(self, n_qubits):
+        """Test if the QFT operation is correctly decomposed"""
+        decomp = qml.QFT.compute_decomposition(wires=range(n_qubits))
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        out_states = []
+        for state in np.eye(2**n_qubits):
+            ops = [qml.StatePrep(state, wires=range(n_qubits))] + decomp
+            qs = qml.tape.QuantumScript(ops, [qml.state()])
+            out_states.append(dev.execute(qs))
+
+        reconstructed_unitary = np.array(out_states).T
+        expected_unitary = qml.QFT(wires=range(n_qubits)).matrix()
+
+        assert np.allclose(reconstructed_unitary, expected_unitary)
+
+    @pytest.mark.parametrize("n_qubits", range(2, 6))
     def test_QFT_decomposition(self, n_qubits):
         """Test if the QFT operation is correctly decomposed"""
         op = qml.QFT(wires=range(n_qubits))
