@@ -17,7 +17,11 @@ Tests for the basic default behavior of the Device API.
 from typing import Optional, Union
 
 import pytest
-from custom_devices import BaseCustomDeviceReturnsTuple, BaseCustomDeviceReturnsZero
+from custom_devices import (
+    BaseCustomDeviceReturnsTuple,
+    BaseCustomDeviceReturnsTupleDefaultConfig,
+    BaseCustomDeviceReturnsZero,
+)
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig, MCMConfig
@@ -98,12 +102,9 @@ class TestDeviceCapabilities:
 
         with pytest.raises(FileNotFoundError):
 
-            class DeviceWithInvalidCapabilities(qml.devices.Device):
+            class DeviceWithInvalidCapabilities(BaseCustomDeviceReturnsTupleDefaultConfig):
 
                 config_filepath = "nonexistent_file.toml"
-
-                def execute(self, circuits, execution_config=DefaultExecutionConfig):
-                    return (0,)
 
 
 class TestSetupExecutionConfig:
@@ -209,11 +210,10 @@ class TestSetupExecutionConfig:
     def test_mcm_method_validation_without_capabilities(self, mcm_method, shots, expected_error):
         """Tests that the requested mcm method is validated without device capabilities"""
 
-        class CustomDevice(qml.devices.Device):
+        class CustomDevice(BaseCustomDeviceReturnsTupleDefaultConfig):
             """A device with only a dummy execute method provided."""
 
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
-                return (0,)
+            pass
 
         dev = CustomDevice()
         mcm_config = MCMConfig(mcm_method=mcm_method)
@@ -242,14 +242,10 @@ class TestSetupExecutionConfig:
     def test_mcm_method_resolution(self, request, shots, expected_method):
         """Tests that an MCM method is chosen if not specified."""
 
-        class CustomDevice(qml.devices.Device):
+        class CustomDevice(BaseCustomDeviceReturnsZero):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
-
-            def execute(self, circuit, **kwargs):
-                """The execute method for the custom device."""
-                return 0
 
         dev = CustomDevice()
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
@@ -504,7 +500,7 @@ class TestPreprocessTransforms:
         if overlapping_obs and sum_support:
             pytest.skip("The support for Sum doesn't matter here")
 
-        class CustomDevice(qml.devices.Device):
+        class CustomDevice(BaseCustomDeviceReturnsTupleDefaultConfig):
 
             config_filepath = request.node.toml_file
 
@@ -514,9 +510,6 @@ class TestPreprocessTransforms:
                 self.capabilities.non_commuting_observables = non_commuting_obs
                 if sum_support:
                     self.capabilities.observables.update({"Sum": OperatorProperties()})
-
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
-                return (0,)
 
         dev = CustomDevice()
         program = dev.preprocess_transforms()
@@ -549,7 +542,7 @@ class TestPreprocessTransforms:
     def test_diagonalize_measurements(self, request, non_commuting_obs, all_obs_support):
         """Tests that the diagonalize_measurements transform is applied correctly."""
 
-        class CustomDevice(qml.devices.Device):
+        class CustomDevice(BaseCustomDeviceReturnsTupleDefaultConfig):
 
             config_filepath = request.node.toml_file
 
@@ -575,9 +568,6 @@ class TestPreprocessTransforms:
                         }
                     )
 
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
-                return (0,)
-
         dev = CustomDevice()
         program = dev.preprocess_transforms()
         if non_commuting_obs is True:
@@ -598,11 +588,10 @@ class TestPreprocessTransforms:
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
 
-    class MinimalDevice(qml.devices.Device):
+    class MinimalDevice(BaseCustomDeviceReturnsTupleDefaultConfig):
         """A device with only a dummy execute method provided."""
 
-        def execute(self, circuits, execution_config=DefaultExecutionConfig):
-            return (0,)
+        pass
 
     dev = MinimalDevice()
 
