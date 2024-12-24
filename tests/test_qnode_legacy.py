@@ -20,6 +20,7 @@ from functools import partial
 
 import numpy as np
 import pytest
+from custom_devices import BaseCustomDeviceReturnsTuple
 from default_qubit_legacy import DefaultQubitLegacy
 from scipy.sparse import csr_matrix
 
@@ -1410,14 +1411,11 @@ class TestTransformProgramIntegration:
 
 
 # pylint: disable=unused-argument
-class CustomDevice(qml.devices.Device):
+class CustomDevice(BaseCustomDeviceReturnsTuple):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
-
-    def execute(self, circuits, execution_config=None):
-        return (0,)
 
 
 class TestTapeExpansion:
