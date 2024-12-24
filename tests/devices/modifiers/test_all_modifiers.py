@@ -52,6 +52,11 @@ def test_chained_modifiers():
     assert dev.tracker.history["shots"] == [50]
 
 
+class BaseDummyDev(qml.devices.Device):
+    def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+        return 0.0
+
+
 @pytest.mark.parametrize("modifier", (simulator_tracking, single_tape_support))
 class TestModifierDefaultBeahviour:
     """Test generic behavior for device modifiers."""
@@ -66,19 +71,14 @@ class TestModifierDefaultBeahviour:
         """Test that the modifier is added to the `_applied_modifiers` property."""
 
         @modifier
-        class DummyDev(qml.devices.Device):
-            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
-                return 0.0
+        class DummyDev(BaseDummyDev):
+            pass
 
         assert DummyDev._applied_modifiers == [modifier]
 
         @modifier
-        class DummyDev2(qml.devices.Device):
-
+        class DummyDev2(BaseDummyDev):
             _applied_modifiers = [None]  # some existing value
-
-            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
-                return 0.0
 
         assert DummyDev2._applied_modifiers == [None, modifier]
 
@@ -86,9 +86,8 @@ class TestModifierDefaultBeahviour:
         """Test that undefined methods are left the same as the Device class methods."""
 
         @modifier
-        class DummyDev(qml.devices.Device):
-            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
-                return 0.0
+        class DummyDev(BaseDummyDev):
+            pass
 
         assert DummyDev.compute_derivatives == Device.compute_derivatives
         assert DummyDev.execute_and_compute_derivatives == Device.execute_and_compute_derivatives
