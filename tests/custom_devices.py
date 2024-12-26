@@ -17,6 +17,11 @@ class BaseCustomDeviceReturnsTuple(Device):
         return (0,)
 
 
+class BaseCustomDeviceReturnsFloatDefaultConfig(Device):
+    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+        return 0.0
+
+
 class BaseCustomDeviceReturnsTupleDefaultConfig(Device):
     def execute(self, circuits, execution_config=DefaultExecutionConfig):
         return (0,)
