@@ -14,25 +14,25 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional, Union
+from typing import Optional
 
 import pytest
 from custom_devices import (
+    BaseCustomDeviceQuantumScriptOrBatch,
     BaseCustomDeviceReturnsTuple,
     BaseCustomDeviceReturnsTupleDefaultConfig,
     BaseCustomDeviceReturnsZero,
 )
 
 import pennylane as qml
-from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig, MCMConfig
+from pennylane.devices import DefaultExecutionConfig, ExecutionConfig, MCMConfig
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
     OperatorProperties,
 )
-from pennylane.tape import QuantumScript, QuantumScriptOrBatch
+from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
 # pylint:disable=unused-argument,too-few-public-methods,unused-variable,protected-access,too-many-arguments
@@ -299,17 +299,10 @@ class TestPreprocessTransforms:
             qml.devices.preprocess.mid_circuit_measurements,
         }
 
-        class CustomDevice(qml.devices.Device):
+        class CustomDevice(BaseCustomDeviceQuantumScriptOrBatch):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
-
-            def execute(
-                self,
-                circuits: QuantumScriptOrBatch,
-                execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
-                return (0,)
 
         dev = CustomDevice()
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method=mcm_method))
@@ -329,7 +322,7 @@ class TestPreprocessTransforms:
     def test_deferred_allow_postselect(self, request, supports_projector):
         """Tests that the deferred measurements transform validates postselection."""
 
-        class CustomDevice(qml.devices.Device):
+        class CustomDevice(BaseCustomDeviceQuantumScriptOrBatch):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -338,13 +331,6 @@ class TestPreprocessTransforms:
                 super().__init__()
                 if supports_projector:
                     self.capabilities.operations["Projector"] = OperatorProperties()
-
-            def execute(
-                self,
-                circuits: QuantumScriptOrBatch,
-                execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
-                return (0,)
 
         dev = CustomDevice()
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="deferred"))
@@ -364,7 +350,7 @@ class TestPreprocessTransforms:
     def test_decomposition(self, request, shots):
         """Tests that decomposition acts correctly with or without shots."""
 
-        class CustomDevice(qml.devices.Device):
+        class CustomDevice(BaseCustomDeviceQuantumScriptOrBatch):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -381,13 +367,6 @@ class TestPreprocessTransforms:
                         "RZ": OperatorProperties(),
                     }
                 )
-
-            def execute(
-                self,
-                circuits: QuantumScriptOrBatch,
-                execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
-                return (0,)
 
         dev = CustomDevice()
         program = dev.preprocess_transforms()
@@ -408,7 +387,7 @@ class TestPreprocessTransforms:
     def test_validation(self, request, shots):
         """Tests that observable and measurement validation works correctly."""
 
-        class CustomDevice(qml.devices.Device):
+        class CustomDevice(BaseCustomDeviceQuantumScriptOrBatch):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -434,13 +413,6 @@ class TestPreprocessTransforms:
                         "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
                     }
                 )
-
-            def execute(
-                self,
-                circuits: QuantumScriptOrBatch,
-                execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
-                return (0,)
 
         dev = CustomDevice()
         program = dev.preprocess_transforms()

@@ -1,24 +1,36 @@
 """A collection of Custom Devices"""
 
-import pennylane as qml
-from pennylane.devices import DefaultExecutionConfig
+from typing import Union
+
+from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
+from pennylane.tape import QuantumScriptOrBatch
+from pennylane.typing import Result, ResultBatch
 
 
-class BaseCustomDeviceReturnsZero(qml.devices.Device):
+class BaseCustomDeviceReturnsZero(Device):
     def execute(self, circuits, execution_config=None):
         return 0
 
 
-class BaseCustomDeviceReturnsTuple(qml.devices.Device):
+class BaseCustomDeviceReturnsTuple(Device):
     def execute(self, circuits, execution_config=None):
         return (0,)
 
 
-class BaseCustomDeviceReturnsZeroDefaultConfig(qml.devices.Device):
+class BaseCustomDeviceReturnsZeroDefaultConfig(Device):
     def execute(self, circuits, execution_config=DefaultExecutionConfig):
         return 0
 
 
-class BaseCustomDeviceReturnsTupleDefaultConfig(qml.devices.Device):
+class BaseCustomDeviceReturnsTupleDefaultConfig(Device):
     def execute(self, circuits, execution_config=DefaultExecutionConfig):
+        return (0,)
+
+
+class BaseCustomDeviceQuantumScriptOrBatch(Device):
+    def execute(
+        self,
+        circuits: QuantumScriptOrBatch,
+        execution_config: ExecutionConfig = None,
+    ) -> Union[Result, ResultBatch]:
         return (0,)
