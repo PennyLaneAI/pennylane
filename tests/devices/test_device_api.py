@@ -19,10 +19,10 @@ from typing import Optional
 import pytest
 from custom_devices import (
     BaseCustomDeviceQuantumScriptOrBatch,
+    BaseCustomDeviceReturnsInt,
     BaseCustomDeviceReturnsLiteralDefaultConfig,
     BaseCustomDeviceReturnsTuple,
     BaseCustomDeviceReturnsTupleDefaultConfig,
-    BaseCustomDeviceReturnsZero,
 )
 
 import pennylane as qml
@@ -243,7 +243,7 @@ class TestSetupExecutionConfig:
     def test_mcm_method_resolution(self, request, shots, expected_method):
         """Tests that an MCM method is chosen if not specified."""
 
-        class CustomDevice(BaseCustomDeviceReturnsZero):
+        class CustomDevice(BaseCustomDeviceReturnsInt):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -803,7 +803,7 @@ def test_eval_jaxpr_not_implemented():
         return x + 1
 
     # pylint: disable=too-few-public-methods
-    class NormalDevice(BaseCustomDeviceReturnsZero):
+    class NormalDevice(BaseCustomDeviceReturnsInt):
         pass
 
     jaxpr = jax.make_jaxpr(f)(2)

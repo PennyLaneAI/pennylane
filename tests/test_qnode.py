@@ -21,7 +21,7 @@ from functools import partial
 
 import numpy as np
 import pytest
-from custom_devices import BaseCustomDeviceReturnsZero
+from custom_devices import BaseCustomDeviceReturnsInt
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
@@ -67,14 +67,14 @@ def test_best_method_str_is_deprecated():
 
 
 # pylint: disable=unused-argument
-class CustomDevice(BaseCustomDeviceReturnsZero):
+class CustomDevice(BaseCustomDeviceReturnsInt):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
 
 
-class CustomDeviceWithDiffMethod(BaseCustomDeviceReturnsZero):
+class CustomDeviceWithDiffMethod(BaseCustomDeviceReturnsInt):
     """A device that defines a derivative."""
 
     def compute_derivatives(self, circuits, execution_config=None):
@@ -1657,7 +1657,7 @@ class TestNewDeviceIntegration:
         """Test that a custom device and designate that it supports backprop derivatives."""
 
         # pylint: disable=unused-argument
-        class BackpropDevice(BaseCustomDeviceReturnsZero):
+        class BackpropDevice(BaseCustomDeviceReturnsInt):
             """A device that says it supports backpropagation."""
 
             def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
@@ -1675,7 +1675,7 @@ class TestNewDeviceIntegration:
         """Test that a custom device can specify that it supports device derivatives."""
 
         # pylint: disable=unused-argument
-        class DerivativeDevice(BaseCustomDeviceReturnsZero):
+        class DerivativeDevice(BaseCustomDeviceReturnsInt):
             """A device that says it supports device derivatives."""
 
             def supports_derivatives(self, execution_config=None, circuit=None) -> bool:

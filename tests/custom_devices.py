@@ -7,7 +7,7 @@ from pennylane.tape import QuantumScriptOrBatch
 from pennylane.typing import Result, ResultBatch
 
 
-class BaseCustomDeviceReturnsZero(Device):
+class BaseCustomDeviceReturnsInt(Device):
     def execute(self, circuits, execution_config=None):
         return 0
 
@@ -15,11 +15,6 @@ class BaseCustomDeviceReturnsZero(Device):
 class BaseCustomDeviceReturnsTuple(Device):
     def execute(self, circuits, execution_config=None):
         return (0,)
-
-
-class BaseCustomDeviceReturnsZeroDefaultConfig(Device):
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
-        return 0
 
 
 class BaseCustomDeviceReturnsTupleDefaultConfig(Device):
