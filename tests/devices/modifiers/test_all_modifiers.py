@@ -19,7 +19,7 @@ import pytest
 from custom_devices import BaseCustomDeviceReturnsTupleForDefaultConfig, CreateBaseCustomDevice
 
 import pennylane as qml
-from pennylane.devices import Device
+from pennylane.devices import DefaultExecutionConfig, Device
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 
 
@@ -66,13 +66,13 @@ class TestModifierDefaultBeahviour:
         """Test that the modifier is added to the `_applied_modifiers` property."""
 
         @modifier
-        class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
+        class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
             pass
 
         assert DummyDev._applied_modifiers == [modifier]
 
         @modifier
-        class DummyDev2(CreateBaseCustomDevice(return_type="Float", config="Default")):
+        class DummyDev2(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
             _applied_modifiers = [None]  # some existing value
 
         assert DummyDev2._applied_modifiers == [None, modifier]
@@ -81,7 +81,7 @@ class TestModifierDefaultBeahviour:
         """Test that undefined methods are left the same as the Device class methods."""
 
         @modifier
-        class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
+        class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
             pass
 
         assert DummyDev.compute_derivatives == Device.compute_derivatives

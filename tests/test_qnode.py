@@ -67,14 +67,14 @@ def test_best_method_str_is_deprecated():
 
 
 # pylint: disable=unused-argument
-class CustomDevice(CreateBaseCustomDevice(return_type="Int", config=None)):
+class CustomDevice(CreateBaseCustomDevice(return_value=0, config=None)):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
 
 
-class CustomDeviceWithDiffMethod(CreateBaseCustomDevice(return_type="Int", config=None)):
+class CustomDeviceWithDiffMethod(CreateBaseCustomDevice(return_value=0, config=None)):
     """A device that defines a derivative."""
 
     def compute_derivatives(self, circuits, execution_config=None):
@@ -1657,7 +1657,7 @@ class TestNewDeviceIntegration:
         """Test that a custom device and designate that it supports backprop derivatives."""
 
         # pylint: disable=unused-argument
-        class BackpropDevice(CreateBaseCustomDevice(return_type="Int", config=None)):
+        class BackpropDevice(CreateBaseCustomDevice(return_value=0, config=None)):
             """A device that says it supports backpropagation."""
 
             def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
@@ -1675,7 +1675,7 @@ class TestNewDeviceIntegration:
         """Test that a custom device can specify that it supports device derivatives."""
 
         # pylint: disable=unused-argument
-        class DerivativeDevice(CreateBaseCustomDevice(return_type="Int", config=None)):
+        class DerivativeDevice(CreateBaseCustomDevice(return_value=0, config=None)):
             """A device that says it supports device derivatives."""
 
             def supports_derivatives(self, execution_config=None, circuit=None) -> bool:

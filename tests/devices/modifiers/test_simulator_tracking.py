@@ -18,6 +18,7 @@ from custom_devices import CreateBaseCustomDevice
 
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
 import pennylane as qml
+from pennylane.devices import DefaultExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking
 
 
@@ -58,7 +59,7 @@ def test_tracking_compute_derivatives():
     """Test the compute_derivatives tracking behavior."""
 
     @simulator_tracking
-    class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
+    class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
         def compute_derivatives(
             self, circuits, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -79,7 +80,7 @@ def test_tracking_execute_and_compute_derivatives():
     """Test tracking the execute_and_compute_derivatives method."""
 
     @simulator_tracking
-    class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
+    class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
         def execute_and_compute_derivatives(
             self, circuits, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -104,7 +105,7 @@ def test_tracking_compute_jvp():
     """Test the compute_jvp tracking behavior."""
 
     @simulator_tracking
-    class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
+    class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
         def compute_jvp(
             self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -125,7 +126,7 @@ def test_tracking_execute_and_compute_jvp():
     """Test tracking the execute_and_compute_jvp method."""
 
     @simulator_tracking
-    class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
+    class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
         def execute_and_compute_jvp(
             self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -151,7 +152,7 @@ def test_tracking_compute_vjp():
     """Test the compute_vjp tracking behavior."""
 
     @simulator_tracking
-    class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
+    class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
         def compute_vjp(
             self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -172,7 +173,7 @@ def test_tracking_execute_and_compute_vjp():
     """Test tracking the execute_and_compute_derivatives method."""
 
     @simulator_tracking
-    class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
+    class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
         def execute_and_compute_vjp(
             self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
         ):

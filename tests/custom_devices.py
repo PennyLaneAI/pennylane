@@ -21,25 +21,10 @@ class BaseCustomDeviceQuantumScriptOrBatch(Device):
         return (0,)
 
 
-def getReturnValue(return_type):
-    if return_type == "Tuple":
-        return (0,)
-    elif return_type == "Int":
-        return 0
-    elif return_type == "Float":
-        return 0.0
-    elif return_type == "Literal":
-        return "a"
-    else:
-        raise ValueError("Invalid return type")
-
-
-def CreateBaseCustomDevice(return_type="Int", config=None):
-    execution_config = DefaultExecutionConfig if config == "Default" else None
-    return_value = getReturnValue(return_type)
+def CreateBaseCustomDevice(return_value=0, config=None):
 
     class BaseCustomDevice(Device):
-        def execute(self, circuits, execution_config=execution_config):
+        def execute(self, circuits, execution_config=config):
             return return_value
 
     return BaseCustomDevice
