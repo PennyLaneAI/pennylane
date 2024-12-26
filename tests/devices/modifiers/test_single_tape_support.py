@@ -15,21 +15,18 @@
 Tests the `single_tape_support` device modifier.
 
 """
+from custom_devices import BaseCustomDeviceReturnsTupleForDefaultConfig
+
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
 import pennylane as qml
 from pennylane.devices.modifiers import single_tape_support
-
-
-class BaseDummyDev(qml.devices.Device):
-    def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
-        return tuple(0.0 for _ in circuits)
 
 
 def test_wraps_execute():
     """Test that execute now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(BaseDummyDev):
+    class DummyDev(BaseCustomDeviceReturnsTupleForDefaultConfig):
         pass
 
     t = qml.tape.QuantumScript()
@@ -41,7 +38,7 @@ def test_wraps_compute_derivatives():
     """Test that compute_derivatives now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(BaseDummyDev):
+    class DummyDev(BaseCustomDeviceReturnsTupleForDefaultConfig):
         def compute_derivatives(
             self, circuits, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -56,7 +53,7 @@ def test_wraps_execute_and_compute_derivatives():
     """Test that execute_and_compute_derivatives now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(BaseDummyDev):
+    class DummyDev(BaseCustomDeviceReturnsTupleForDefaultConfig):
         def execute_and_compute_derivatives(
             self, circuits, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -72,7 +69,7 @@ def test_wraps_compute_jvp():
     """Test that compute_jvp now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(BaseDummyDev):
+    class DummyDev(BaseCustomDeviceReturnsTupleForDefaultConfig):
         def compute_jvp(
             self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -89,7 +86,7 @@ def test_wraps_execute_and_compute_jvp():
     """Test that execute_and_compute_jvp now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(BaseDummyDev):
+    class DummyDev(BaseCustomDeviceReturnsTupleForDefaultConfig):
         def execute_and_compute_jvp(
             self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -106,7 +103,7 @@ def test_wraps_compute_vjp():
     """Test that compute_vjp now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(BaseDummyDev):
+    class DummyDev(BaseCustomDeviceReturnsTupleForDefaultConfig):
         def compute_vjp(
             self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -123,7 +120,7 @@ def test_wraps_execute_and_compute_vjp():
     """Test that execute_and_compute_vjp now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(BaseDummyDev):
+    class DummyDev(BaseCustomDeviceReturnsTupleForDefaultConfig):
         def execute_and_compute_vjp(
             self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
         ):

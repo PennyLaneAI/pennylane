@@ -27,6 +27,11 @@ class BaseCustomDeviceReturnsTupleDefaultConfig(Device):
         return (0,)
 
 
+class BaseCustomDeviceReturnsTupleForDefaultConfig(Device):
+    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+        return tuple(0.0 for _ in circuits)
+
+
 class BaseCustomDeviceReturnsLiteralDefaultConfig(Device):
     def execute(self, circuits, execution_config=DefaultExecutionConfig):
         return "a"
