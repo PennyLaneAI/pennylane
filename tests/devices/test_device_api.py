@@ -19,6 +19,7 @@ from typing import Optional
 import pytest
 from custom_devices import (
     BaseCustomDeviceQuantumScriptOrBatch,
+    BaseCustomDeviceReturnsLiteralDefaultConfig,
     BaseCustomDeviceReturnsTuple,
     BaseCustomDeviceReturnsTupleDefaultConfig,
     BaseCustomDeviceReturnsZero,
@@ -709,7 +710,7 @@ def test_device_with_ambiguous_preprocess():
 
     with pytest.raises(ValueError, match="A device should implement either"):
 
-        class InvalidDevice(qml.devices.Device):
+        class InvalidDevice(BaseCustomDeviceReturnsTupleDefaultConfig):
             """A device with ambiguous preprocess."""
 
             def preprocess(self, execution_config=None):
@@ -725,9 +726,6 @@ def test_device_with_ambiguous_preprocess():
             ) -> TransformProgram:
                 return TransformProgram()
 
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
-                return (0,)
-
 
 class TestProvidingDerivatives:
     """Tests logic when derivatives, vjp, or jvp are overridden."""
@@ -735,12 +733,8 @@ class TestProvidingDerivatives:
     def test_provided_derivative(self):
         """Tests default logic for a device with a derivative provided."""
 
-        class WithDerivative(qml.devices.Device):
+        class WithDerivative(BaseCustomDeviceReturnsLiteralDefaultConfig):
             """A device with a derivative."""
-
-            # pylint: disable=unused-argument
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
-                return "a"
 
             def compute_derivatives(
                 self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig
@@ -761,11 +755,8 @@ class TestProvidingDerivatives:
         """Tests default logic for a device with a jvp provided."""
 
         # pylint: disable=unused-argnument
-        class WithJvp(qml.devices.Device):
+        class WithJvp(BaseCustomDeviceReturnsLiteralDefaultConfig):
             """A device with a jvp."""
-
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
-                return "a"
 
             def compute_jvp(
                 self, circuits, tangents, execution_config: ExecutionConfig = DefaultExecutionConfig
@@ -783,11 +774,8 @@ class TestProvidingDerivatives:
         """Tests default logic for a device with a vjp provided."""
 
         # pylint: disable=unused-argnument
-        class WithVjp(qml.devices.Device):
+        class WithVjp(BaseCustomDeviceReturnsLiteralDefaultConfig):
             """A device with a vjp."""
-
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
-                return "a"
 
             def compute_vjp(
                 self,

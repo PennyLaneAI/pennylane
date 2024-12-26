@@ -27,6 +27,11 @@ class BaseCustomDeviceReturnsTupleDefaultConfig(Device):
         return (0,)
 
 
+class BaseCustomDeviceReturnsLiteralDefaultConfig(Device):
+    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+        return "a"
+
+
 class BaseCustomDeviceQuantumScriptOrBatch(Device):
     def execute(
         self,
