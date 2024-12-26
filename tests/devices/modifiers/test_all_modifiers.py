@@ -16,10 +16,7 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 """
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring, no-member
 import pytest
-from custom_devices import (
-    BaseCustomDeviceReturnsFloatDefaultConfig,
-    BaseCustomDeviceReturnsTupleForDefaultConfig,
-)
+from custom_devices import BaseCustomDeviceReturnsTupleForDefaultConfig, CreateBaseCustomDevice
 
 import pennylane as qml
 from pennylane.devices import Device
@@ -69,13 +66,13 @@ class TestModifierDefaultBeahviour:
         """Test that the modifier is added to the `_applied_modifiers` property."""
 
         @modifier
-        class DummyDev(BaseCustomDeviceReturnsFloatDefaultConfig):
+        class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
             pass
 
         assert DummyDev._applied_modifiers == [modifier]
 
         @modifier
-        class DummyDev2(BaseCustomDeviceReturnsFloatDefaultConfig):
+        class DummyDev2(CreateBaseCustomDevice(return_type="Float", config="Default")):
             _applied_modifiers = [None]  # some existing value
 
         assert DummyDev2._applied_modifiers == [None, modifier]
@@ -84,7 +81,7 @@ class TestModifierDefaultBeahviour:
         """Test that undefined methods are left the same as the Device class methods."""
 
         @modifier
-        class DummyDev(BaseCustomDeviceReturnsFloatDefaultConfig):
+        class DummyDev(CreateBaseCustomDevice(return_type="Float", config="Default")):
             pass
 
         assert DummyDev.compute_derivatives == Device.compute_derivatives

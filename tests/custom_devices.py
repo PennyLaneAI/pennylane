@@ -7,34 +7,9 @@ from pennylane.tape import QuantumScriptOrBatch
 from pennylane.typing import Result, ResultBatch
 
 
-class BaseCustomDeviceReturnsInt(Device):
-    def execute(self, circuits, execution_config=None):
-        return 0
-
-
-class BaseCustomDeviceReturnsTuple(Device):
-    def execute(self, circuits, execution_config=None):
-        return (0,)
-
-
-class BaseCustomDeviceReturnsFloatDefaultConfig(Device):
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
-        return 0.0
-
-
-class BaseCustomDeviceReturnsTupleDefaultConfig(Device):
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
-        return (0,)
-
-
 class BaseCustomDeviceReturnsTupleForDefaultConfig(Device):
     def execute(self, circuits, execution_config=DefaultExecutionConfig):
         return tuple(0.0 for _ in circuits)
-
-
-class BaseCustomDeviceReturnsLiteralDefaultConfig(Device):
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
-        return "a"
 
 
 class BaseCustomDeviceQuantumScriptOrBatch(Device):
@@ -44,3 +19,27 @@ class BaseCustomDeviceQuantumScriptOrBatch(Device):
         execution_config: ExecutionConfig = None,
     ) -> Union[Result, ResultBatch]:
         return (0,)
+
+
+def getReturnValue(return_type):
+    if return_type == "Tuple":
+        return (0,)
+    elif return_type == "Int":
+        return 0
+    elif return_type == "Float":
+        return 0.0
+    elif return_type == "Literal":
+        return "a"
+    else:
+        raise ValueError("Invalid return type")
+
+
+def CreateBaseCustomDevice(return_type="Int", config=None):
+    execution_config = DefaultExecutionConfig if config == "Default" else None
+    return_value = getReturnValue(return_type)
+
+    class BaseCustomDevice(Device):
+        def execute(self, circuits, execution_config=execution_config):
+            return return_value
+
+    return BaseCustomDevice

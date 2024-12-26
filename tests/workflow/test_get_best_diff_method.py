@@ -14,7 +14,7 @@
 """Unit tests for the `get_best_diff_method` function"""
 
 import pytest
-from custom_devices import BaseCustomDeviceReturnsInt, BaseCustomDeviceReturnsTuple
+from custom_devices import CreateBaseCustomDevice
 
 import pennylane as qml
 from pennylane.workflow import get_best_diff_method
@@ -32,14 +32,14 @@ def dummyfunc():
 
 
 # pylint: disable=unused-argument
-class CustomDevice(BaseCustomDeviceReturnsTuple):
+class CustomDevice(CreateBaseCustomDevice(return_type="Tuple", config=None)):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
 
 
-class CustomDeviceWithDiffMethod(BaseCustomDeviceReturnsInt):
+class CustomDeviceWithDiffMethod(CreateBaseCustomDevice(return_type="Int", config=None)):
     """A device that defines a derivative."""
 
     def compute_derivatives(self, circuits, execution_config=None):
