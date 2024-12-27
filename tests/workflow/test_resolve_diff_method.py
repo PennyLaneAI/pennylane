@@ -28,7 +28,7 @@ def dummyfunc():
 
 
 # pylint: disable=unused-argument
-class CustomDeviceWithDiffMethod(CreateBaseCustomDevice(return_value=0)):
+class CustomDeviceWithDiffMethod(CreateBaseCustomDevice()):
     """A device that defines its own derivative."""
 
     def compute_derivatives(self, circuits, execution_config=None):
@@ -37,14 +37,14 @@ class CustomDeviceWithDiffMethod(CreateBaseCustomDevice(return_value=0)):
 
 
 # pylint: disable=unused-argument, too-few-public-methods
-class CustomDevice(CreateBaseCustomDevice(return_value=0)):
+class CustomDevice(CreateBaseCustomDevice()):
     """A null device that just returns 0."""
 
     pass
 
 
 # pylint: disable=unused-argument
-class DerivativeDevice(CreateBaseCustomDevice(return_value=0)):
+class DerivativeDevice(CreateBaseCustomDevice()):
     """A device that says it supports device derivatives."""
 
     def supports_derivatives(self, execution_config=None, circuit=None):
@@ -52,7 +52,7 @@ class DerivativeDevice(CreateBaseCustomDevice(return_value=0)):
 
 
 # pylint: disable=unused-argument
-class BackpropDevice(CreateBaseCustomDevice(return_value=0)):
+class BackpropDevice(CreateBaseCustomDevice()):
     """A device that says it supports backpropagation."""
 
     def supports_derivatives(self, execution_config=None, circuit=None):

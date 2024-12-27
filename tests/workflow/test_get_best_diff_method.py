@@ -39,7 +39,7 @@ class CustomDevice(CreateBaseCustomDevice(return_value=(0,))):
         return "CustomDevice"
 
 
-class CustomDeviceWithDiffMethod(CreateBaseCustomDevice(return_value=0)):
+class CustomDeviceWithDiffMethod(CreateBaseCustomDevice()):
     """A device that defines a derivative."""
 
     def compute_derivatives(self, circuits, execution_config=None):

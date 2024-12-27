@@ -241,7 +241,7 @@ class TestSetupExecutionConfig:
     def test_mcm_method_resolution(self, request, shots, expected_method):
         """Tests that an MCM method is chosen if not specified."""
 
-        class CustomDevice(CreateBaseCustomDevice(return_value=0)):
+        class CustomDevice(CreateBaseCustomDevice()):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -817,7 +817,7 @@ def test_eval_jaxpr_not_implemented():
         return x + 1
 
     # pylint: disable=too-few-public-methods
-    class NormalDevice(CreateBaseCustomDevice(return_value=0)):
+    class NormalDevice(CreateBaseCustomDevice()):
         pass
 
     jaxpr = jax.make_jaxpr(f)(2)
