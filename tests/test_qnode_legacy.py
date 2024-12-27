@@ -1410,14 +1410,6 @@ class TestTransformProgramIntegration:
         assert circuit() == 100
 
 
-# pylint: disable=unused-argument
-class CustomDevice(CustomDeviceFactory(return_value=(0,))):
-    """A null device that just returns 0."""
-
-    def __repr__(self):
-        return "CustomDevice"
-
-
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
