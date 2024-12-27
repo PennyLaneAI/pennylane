@@ -17,7 +17,7 @@ Tests for the basic default behavior of the Device API.
 from typing import Optional
 
 import pytest
-from custom_devices import BaseCustomDeviceQuantumScriptOrBatch, CreateBaseCustomDevice
+from custom_devices import CreateBaseCustomDevice
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, ExecutionConfig, MCMConfig
@@ -298,7 +298,9 @@ class TestPreprocessTransforms:
             qml.devices.preprocess.mid_circuit_measurements,
         }
 
-        class CustomDevice(BaseCustomDeviceQuantumScriptOrBatch):
+        class CustomDevice(
+            CreateBaseCustomDevice(return_value=(0,), circuits_type="QuantumScriptOrBatch")
+        ):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -321,7 +323,9 @@ class TestPreprocessTransforms:
     def test_deferred_allow_postselect(self, request, supports_projector):
         """Tests that the deferred measurements transform validates postselection."""
 
-        class CustomDevice(BaseCustomDeviceQuantumScriptOrBatch):
+        class CustomDevice(
+            CreateBaseCustomDevice(return_value=(0,), circuits_type="QuantumScriptOrBatch")
+        ):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -349,7 +353,9 @@ class TestPreprocessTransforms:
     def test_decomposition(self, request, shots):
         """Tests that decomposition acts correctly with or without shots."""
 
-        class CustomDevice(BaseCustomDeviceQuantumScriptOrBatch):
+        class CustomDevice(
+            CreateBaseCustomDevice(return_value=(0,), circuits_type="QuantumScriptOrBatch")
+        ):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -386,7 +392,9 @@ class TestPreprocessTransforms:
     def test_validation(self, request, shots):
         """Tests that observable and measurement validation works correctly."""
 
-        class CustomDevice(BaseCustomDeviceQuantumScriptOrBatch):
+        class CustomDevice(
+            CreateBaseCustomDevice(return_value=(0,), circuits_type="QuantumScriptOrBatch")
+        ):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
