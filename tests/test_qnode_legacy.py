@@ -1411,7 +1411,7 @@ class TestTransformProgramIntegration:
 
 
 # pylint: disable=unused-argument
-class CustomDevice(CreateBaseCustomDevice(return_value=(0,), config=None)):
+class CustomDevice(CreateBaseCustomDevice(return_value=(0,))):
     """A null device that just returns 0."""
 
     def __repr__(self):

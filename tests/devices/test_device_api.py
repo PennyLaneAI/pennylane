@@ -84,7 +84,7 @@ class TestDeviceCapabilities:
     def test_device_capabilities(self, request):
         """Tests that the device capabilities object is correctly initialized"""
 
-        class DeviceWithCapabilities(CreateBaseCustomDevice(return_value=(0,), config=None)):
+        class DeviceWithCapabilities(CreateBaseCustomDevice(return_value=(0,))):
             """A device with a capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -112,7 +112,7 @@ class TestSetupExecutionConfig:
 
         default_execution_config = ExecutionConfig()
 
-        class CustomDevice(CreateBaseCustomDevice(return_value=(0,), config=None)):
+        class CustomDevice(CreateBaseCustomDevice(return_value=(0,))):
 
             def preprocess(self, execution_config=None):
                 return TransformProgram(), default_execution_config
@@ -124,7 +124,7 @@ class TestSetupExecutionConfig:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(CreateBaseCustomDevice(return_value=(0,), config=None)):
+        class DeviceNoCapabilities(CreateBaseCustomDevice(return_value=(0,))):
             pass
 
         dev = DeviceNoCapabilities()
@@ -178,7 +178,7 @@ class TestSetupExecutionConfig:
     ):
         """Tests that the requested MCM method is validated."""
 
-        class DeviceWithMCM(CreateBaseCustomDevice(return_value=(0,), config=None)):
+        class DeviceWithMCM(CreateBaseCustomDevice(return_value=(0,))):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -241,7 +241,7 @@ class TestSetupExecutionConfig:
     def test_mcm_method_resolution(self, request, shots, expected_method):
         """Tests that an MCM method is chosen if not specified."""
 
-        class CustomDevice(CreateBaseCustomDevice(return_value=0, config=None)):
+        class CustomDevice(CreateBaseCustomDevice(return_value=0)):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -260,7 +260,7 @@ class TestPreprocessTransforms:
 
         default_transform_program = TransformProgram()
 
-        class CustomDevice(CreateBaseCustomDevice(return_value=(0,), config=None)):
+        class CustomDevice(CreateBaseCustomDevice(return_value=(0,))):
 
             def preprocess(self, execution_config=None):
                 return default_transform_program, ExecutionConfig()
@@ -272,7 +272,7 @@ class TestPreprocessTransforms:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(CreateBaseCustomDevice(return_value=(0,), config=None)):
+        class DeviceNoCapabilities(CreateBaseCustomDevice(return_value=(0,))):
             pass
 
         dev = DeviceNoCapabilities()
@@ -809,7 +809,7 @@ def test_eval_jaxpr_not_implemented():
         return x + 1
 
     # pylint: disable=too-few-public-methods
-    class NormalDevice(CreateBaseCustomDevice(return_value=0, config=None)):
+    class NormalDevice(CreateBaseCustomDevice(return_value=0)):
         pass
 
     jaxpr = jax.make_jaxpr(f)(2)

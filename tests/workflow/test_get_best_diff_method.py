@@ -32,14 +32,14 @@ def dummyfunc():
 
 
 # pylint: disable=unused-argument
-class CustomDevice(CreateBaseCustomDevice(return_value=(0,), config=None)):
+class CustomDevice(CreateBaseCustomDevice(return_value=(0,))):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
 
 
-class CustomDeviceWithDiffMethod(CreateBaseCustomDevice(return_value=0, config=None)):
+class CustomDeviceWithDiffMethod(CreateBaseCustomDevice(return_value=0)):
     """A device that defines a derivative."""
 
     def compute_derivatives(self, circuits, execution_config=None):
