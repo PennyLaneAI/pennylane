@@ -107,7 +107,7 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the gradient in a jax-like manner for any interface.
 
     Args:
-        f (Callable): a function with a single 0-D scalar output
+        f (Callable): a function with a vector valued output
         argnums (Sequence[int] | int ) = 0 : which arguments to differentiate
 
     Returns:
@@ -137,6 +137,7 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
 
         if interface == "torch":
             from torch.autograd.functional import jacobian as _torch_jac
+
             g = _torch_jac(partial(f, **kwargs), args)
             g = tuple(g[i] for i in argnums)
             return g[0] if argnums_integer else g
@@ -153,4 +154,3 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
         raise ValueError(f"Interface {interface} is not differentiatble.")
 
     return compute_jacobian
-

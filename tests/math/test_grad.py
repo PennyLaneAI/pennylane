@@ -40,7 +40,6 @@ class TestGrad:
             assert math.get_interface(g) == interface
         assert math.allclose(g, 3.0)
 
-
     def test_multiple_argnums(self, interface):
         """Test that we can differentiate multiple arguments."""
 
@@ -57,7 +56,6 @@ class TestGrad:
 
         assert math.allclose(g1, 2)
         assert math.allclose(g2, 3)
-
 
     def test_keyword_arguments(self, interface):
         """Test that keyword arguments are considered."""
@@ -106,7 +104,6 @@ class TestJacobian:
 
         assert math.allclose(g1, 2 * math.eye(2))
         assert math.allclose(g2, 3 * math.eye(2))
-
 
     def test_keyword_arguments(self, interface):
         """Test that keyword arguments are considered."""
