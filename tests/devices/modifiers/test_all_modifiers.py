@@ -66,13 +66,13 @@ class TestModifierDefaultBeahviour:
         """Test that the modifier is added to the `_applied_modifiers` property."""
 
         @modifier
-        class DummyDev(CustomDeviceFactory(config=DefaultExecutionConfig)):
+        class DummyDev(CustomDeviceFactory()):
             pass
 
         assert DummyDev._applied_modifiers == [modifier]
 
         @modifier
-        class DummyDev2(CustomDeviceFactory(config=DefaultExecutionConfig)):
+        class DummyDev2(CustomDeviceFactory()):
             _applied_modifiers = [None]  # some existing value
 
         assert DummyDev2._applied_modifiers == [None, modifier]
@@ -81,7 +81,7 @@ class TestModifierDefaultBeahviour:
         """Test that undefined methods are left the same as the Device class methods."""
 
         @modifier
-        class DummyDev(CustomDeviceFactory(config=DefaultExecutionConfig)):
+        class DummyDev(CustomDeviceFactory()):
             pass
 
         assert DummyDev.compute_derivatives == Device.compute_derivatives
