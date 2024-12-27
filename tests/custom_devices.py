@@ -2,7 +2,7 @@
 
 from typing import Union
 
-from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
+from pennylane.devices import Device
 from pennylane.tape import QuantumScriptOrBatch
 from pennylane.typing import Result, ResultBatch
 
