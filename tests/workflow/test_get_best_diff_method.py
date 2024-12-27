@@ -32,7 +32,7 @@ def dummyfunc():
 
 
 # pylint: disable=unused-argument
-class CustomDevice(CustomDeviceFactory(return_value=(0,))):
+class CustomDevice(CustomDeviceFactory()):
     """A null device that just returns 0."""
 
     def __repr__(self):

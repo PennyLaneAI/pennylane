@@ -84,7 +84,7 @@ class TestDeviceCapabilities:
     def test_device_capabilities(self, request):
         """Tests that the device capabilities object is correctly initialized"""
 
-        class DeviceWithCapabilities(CustomDeviceFactory(return_value=(0,))):
+        class DeviceWithCapabilities(CustomDeviceFactory()):
             """A device with a capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -97,9 +97,7 @@ class TestDeviceCapabilities:
 
         with pytest.raises(FileNotFoundError):
 
-            class DeviceWithInvalidCapabilities(
-                CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)
-            ):
+            class DeviceWithInvalidCapabilities(CustomDeviceFactory(config=DefaultExecutionConfig)):
 
                 config_filepath = "nonexistent_file.toml"
 
@@ -112,7 +110,7 @@ class TestSetupExecutionConfig:
 
         default_execution_config = ExecutionConfig()
 
-        class CustomDevice(CustomDeviceFactory(return_value=(0,))):
+        class CustomDevice(CustomDeviceFactory()):
 
             def preprocess(self, execution_config=None):
                 return TransformProgram(), default_execution_config
@@ -124,7 +122,7 @@ class TestSetupExecutionConfig:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(CustomDeviceFactory(return_value=(0,))):
+        class DeviceNoCapabilities(CustomDeviceFactory()):
             pass
 
         dev = DeviceNoCapabilities()
@@ -178,7 +176,7 @@ class TestSetupExecutionConfig:
     ):
         """Tests that the requested MCM method is validated."""
 
-        class DeviceWithMCM(CustomDeviceFactory(return_value=(0,))):
+        class DeviceWithMCM(CustomDeviceFactory()):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -207,7 +205,7 @@ class TestSetupExecutionConfig:
     def test_mcm_method_validation_without_capabilities(self, mcm_method, shots, expected_error):
         """Tests that the requested mcm method is validated without device capabilities"""
 
-        class CustomDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
+        class CustomDevice(CustomDeviceFactory(config=DefaultExecutionConfig)):
             """A device with only a dummy execute method provided."""
 
             pass
@@ -258,7 +256,7 @@ class TestPreprocessTransforms:
 
         default_transform_program = TransformProgram()
 
-        class CustomDevice(CustomDeviceFactory(return_value=(0,))):
+        class CustomDevice(CustomDeviceFactory()):
 
             def preprocess(self, execution_config=None):
                 return default_transform_program, ExecutionConfig()
@@ -270,7 +268,7 @@ class TestPreprocessTransforms:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(CustomDeviceFactory(return_value=(0,))):
+        class DeviceNoCapabilities(CustomDeviceFactory()):
             pass
 
         dev = DeviceNoCapabilities()
@@ -296,9 +294,7 @@ class TestPreprocessTransforms:
             qml.devices.preprocess.mid_circuit_measurements,
         }
 
-        class CustomDevice(
-            CustomDeviceFactory(return_value=(0,), circuits_type="QuantumScriptOrBatch")
-        ):
+        class CustomDevice(CustomDeviceFactory(circuits_type="QuantumScriptOrBatch")):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -321,9 +317,7 @@ class TestPreprocessTransforms:
     def test_deferred_allow_postselect(self, request, supports_projector):
         """Tests that the deferred measurements transform validates postselection."""
 
-        class CustomDevice(
-            CustomDeviceFactory(return_value=(0,), circuits_type="QuantumScriptOrBatch")
-        ):
+        class CustomDevice(CustomDeviceFactory(circuits_type="QuantumScriptOrBatch")):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -351,9 +345,7 @@ class TestPreprocessTransforms:
     def test_decomposition(self, request, shots):
         """Tests that decomposition acts correctly with or without shots."""
 
-        class CustomDevice(
-            CustomDeviceFactory(return_value=(0,), circuits_type="QuantumScriptOrBatch")
-        ):
+        class CustomDevice(CustomDeviceFactory(circuits_type="QuantumScriptOrBatch")):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -390,9 +382,7 @@ class TestPreprocessTransforms:
     def test_validation(self, request, shots):
         """Tests that observable and measurement validation works correctly."""
 
-        class CustomDevice(
-            CustomDeviceFactory(return_value=(0,), circuits_type="QuantumScriptOrBatch")
-        ):
+        class CustomDevice(CustomDeviceFactory(circuits_type="QuantumScriptOrBatch")):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -477,7 +467,7 @@ class TestPreprocessTransforms:
         if overlapping_obs and sum_support:
             pytest.skip("The support for Sum doesn't matter here")
 
-        class CustomDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
+        class CustomDevice(CustomDeviceFactory(config=DefaultExecutionConfig)):
 
             config_filepath = request.node.toml_file
 
@@ -519,7 +509,7 @@ class TestPreprocessTransforms:
     def test_diagonalize_measurements(self, request, non_commuting_obs, all_obs_support):
         """Tests that the diagonalize_measurements transform is applied correctly."""
 
-        class CustomDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
+        class CustomDevice(CustomDeviceFactory(config=DefaultExecutionConfig)):
 
             config_filepath = request.node.toml_file
 
@@ -565,7 +555,7 @@ class TestPreprocessTransforms:
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
 
-    class MinimalDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
+    class MinimalDevice(CustomDeviceFactory(config=DefaultExecutionConfig)):
         """A device with only a dummy execute method provided."""
 
         pass
@@ -714,7 +704,7 @@ def test_device_with_ambiguous_preprocess():
 
     with pytest.raises(ValueError, match="A device should implement either"):
 
-        class InvalidDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
+        class InvalidDevice(CustomDeviceFactory(config=DefaultExecutionConfig)):
             """A device with ambiguous preprocess."""
 
             def preprocess(self, execution_config=None):

@@ -26,7 +26,7 @@ def test_wraps_execute():
     """Test that execute now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(CustomDeviceFactory(return_value=0.0, return_for_each_circuit=True)):
+    class DummyDev(CustomDeviceFactory(return_for_each_circuit=True)):
         pass
 
     t = qml.tape.QuantumScript()
@@ -38,7 +38,7 @@ def test_wraps_compute_derivatives():
     """Test that compute_derivatives now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(CustomDeviceFactory(return_value=0.0, return_for_each_circuit=True)):
+    class DummyDev(CustomDeviceFactory(return_for_each_circuit=True)):
         def compute_derivatives(
             self, circuits, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -53,7 +53,7 @@ def test_wraps_execute_and_compute_derivatives():
     """Test that execute_and_compute_derivatives now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(CustomDeviceFactory(return_value=0.0, return_for_each_circuit=True)):
+    class DummyDev(CustomDeviceFactory(return_for_each_circuit=True)):
         def execute_and_compute_derivatives(
             self, circuits, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -69,7 +69,7 @@ def test_wraps_compute_jvp():
     """Test that compute_jvp now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(CustomDeviceFactory(return_value=0.0, return_for_each_circuit=True)):
+    class DummyDev(CustomDeviceFactory(return_for_each_circuit=True)):
         def compute_jvp(
             self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -86,7 +86,7 @@ def test_wraps_execute_and_compute_jvp():
     """Test that execute_and_compute_jvp now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(CustomDeviceFactory(return_value=0.0, return_for_each_circuit=True)):
+    class DummyDev(CustomDeviceFactory(return_for_each_circuit=True)):
         def execute_and_compute_jvp(
             self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -103,7 +103,7 @@ def test_wraps_compute_vjp():
     """Test that compute_vjp now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(CustomDeviceFactory(return_value=0.0, return_for_each_circuit=True)):
+    class DummyDev(CustomDeviceFactory(return_for_each_circuit=True)):
         def compute_vjp(
             self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
@@ -120,7 +120,7 @@ def test_wraps_execute_and_compute_vjp():
     """Test that execute_and_compute_vjp now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(CustomDeviceFactory(return_value=0.0, return_for_each_circuit=True)):
+    class DummyDev(CustomDeviceFactory(return_for_each_circuit=True)):
         def execute_and_compute_vjp(
             self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
