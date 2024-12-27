@@ -1,4 +1,4 @@
-"""A collection of Custom Devices"""
+"""A Factory of Custom Devices"""
 
 from typing import Union
 
