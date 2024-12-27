@@ -20,7 +20,7 @@ from functools import partial
 
 import numpy as np
 import pytest
-from custom_devices import CreateBaseCustomDevice
+from custom_devices import CustomDeviceFactory
 from default_qubit_legacy import DefaultQubitLegacy
 from scipy.sparse import csr_matrix
 
@@ -1411,7 +1411,7 @@ class TestTransformProgramIntegration:
 
 
 # pylint: disable=unused-argument
-class CustomDevice(CreateBaseCustomDevice(return_value=(0,))):
+class CustomDevice(CustomDeviceFactory(return_value=(0,))):
     """A null device that just returns 0."""
 
     def __repr__(self):

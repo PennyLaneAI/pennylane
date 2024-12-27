@@ -7,29 +7,29 @@ from pennylane.tape import QuantumScriptOrBatch
 from pennylane.typing import Result, ResultBatch
 
 
-def CreateBaseCustomDevice(
+def CustomDeviceFactory(
     return_value=0, return_for_each_circuit=False, circuits_type=None, config=None
 ):
+    def _determineReturnValue(circuits):
+        if return_for_each_circuit:
+            return tuple(return_value for _ in circuits)
+        else:
+            return return_value
 
     class BaseCustomDevice(Device):
-        def execute(self, circuits, execution_config=config):
-            if return_for_each_circuit:
-                return tuple(return_value for _ in circuits)
-            else:
-                return return_value
+        if circuits_type == "QuantumScriptOrBatch":
 
-    class BaseCustomDeviceQuantumScriptOrBatch(Device):
-        def execute(
-            self, circuits: QuantumScriptOrBatch, execution_config=config
-        ) -> Union[Result, ResultBatch]:
-            if return_for_each_circuit:
-                return tuple(return_value for _ in circuits)
-            else:
-                return return_value
+            def execute(
+                self, circuits: QuantumScriptOrBatch, execution_config=config
+            ) -> Union[Result, ResultBatch]:
+                return _determineReturnValue()
 
-    if circuits_type == "QuantumScriptOrBatch":
-        return BaseCustomDeviceQuantumScriptOrBatch
-    elif circuits_type == None:
-        return BaseCustomDevice
-    else:
-        raise TypeError("Invalid citcuits type")
+        elif circuits_type == None:
+
+            def execute(self, circuits, execution_config=config):
+                return _determineReturnValue(circuits)
+
+        else:
+            raise TypeError("Invalid citcuits type")
+
+    return BaseCustomDevice

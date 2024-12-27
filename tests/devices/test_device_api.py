@@ -17,7 +17,7 @@ Tests for the basic default behavior of the Device API.
 from typing import Optional
 
 import pytest
-from custom_devices import CreateBaseCustomDevice
+from custom_devices import CustomDeviceFactory
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, ExecutionConfig, MCMConfig
@@ -84,7 +84,7 @@ class TestDeviceCapabilities:
     def test_device_capabilities(self, request):
         """Tests that the device capabilities object is correctly initialized"""
 
-        class DeviceWithCapabilities(CreateBaseCustomDevice(return_value=(0,))):
+        class DeviceWithCapabilities(CustomDeviceFactory(return_value=(0,))):
             """A device with a capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -98,7 +98,7 @@ class TestDeviceCapabilities:
         with pytest.raises(FileNotFoundError):
 
             class DeviceWithInvalidCapabilities(
-                CreateBaseCustomDevice(return_value=(0,), config=DefaultExecutionConfig)
+                CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)
             ):
 
                 config_filepath = "nonexistent_file.toml"
@@ -112,7 +112,7 @@ class TestSetupExecutionConfig:
 
         default_execution_config = ExecutionConfig()
 
-        class CustomDevice(CreateBaseCustomDevice(return_value=(0,))):
+        class CustomDevice(CustomDeviceFactory(return_value=(0,))):
 
             def preprocess(self, execution_config=None):
                 return TransformProgram(), default_execution_config
@@ -124,7 +124,7 @@ class TestSetupExecutionConfig:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(CreateBaseCustomDevice(return_value=(0,))):
+        class DeviceNoCapabilities(CustomDeviceFactory(return_value=(0,))):
             pass
 
         dev = DeviceNoCapabilities()
@@ -178,7 +178,7 @@ class TestSetupExecutionConfig:
     ):
         """Tests that the requested MCM method is validated."""
 
-        class DeviceWithMCM(CreateBaseCustomDevice(return_value=(0,))):
+        class DeviceWithMCM(CustomDeviceFactory(return_value=(0,))):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -207,9 +207,7 @@ class TestSetupExecutionConfig:
     def test_mcm_method_validation_without_capabilities(self, mcm_method, shots, expected_error):
         """Tests that the requested mcm method is validated without device capabilities"""
 
-        class CustomDevice(
-            CreateBaseCustomDevice(return_value=(0,), config=DefaultExecutionConfig)
-        ):
+        class CustomDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
             """A device with only a dummy execute method provided."""
 
             pass
@@ -241,7 +239,7 @@ class TestSetupExecutionConfig:
     def test_mcm_method_resolution(self, request, shots, expected_method):
         """Tests that an MCM method is chosen if not specified."""
 
-        class CustomDevice(CreateBaseCustomDevice()):
+        class CustomDevice(CustomDeviceFactory()):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -260,7 +258,7 @@ class TestPreprocessTransforms:
 
         default_transform_program = TransformProgram()
 
-        class CustomDevice(CreateBaseCustomDevice(return_value=(0,))):
+        class CustomDevice(CustomDeviceFactory(return_value=(0,))):
 
             def preprocess(self, execution_config=None):
                 return default_transform_program, ExecutionConfig()
@@ -272,7 +270,7 @@ class TestPreprocessTransforms:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(CreateBaseCustomDevice(return_value=(0,))):
+        class DeviceNoCapabilities(CustomDeviceFactory(return_value=(0,))):
             pass
 
         dev = DeviceNoCapabilities()
@@ -299,7 +297,7 @@ class TestPreprocessTransforms:
         }
 
         class CustomDevice(
-            CreateBaseCustomDevice(return_value=(0,), circuits_type="QuantumScriptOrBatch")
+            CustomDeviceFactory(return_value=(0,), circuits_type="QuantumScriptOrBatch")
         ):
             """A device with capabilities config file defined."""
 
@@ -324,7 +322,7 @@ class TestPreprocessTransforms:
         """Tests that the deferred measurements transform validates postselection."""
 
         class CustomDevice(
-            CreateBaseCustomDevice(return_value=(0,), circuits_type="QuantumScriptOrBatch")
+            CustomDeviceFactory(return_value=(0,), circuits_type="QuantumScriptOrBatch")
         ):
             """A device with capabilities config file defined."""
 
@@ -354,7 +352,7 @@ class TestPreprocessTransforms:
         """Tests that decomposition acts correctly with or without shots."""
 
         class CustomDevice(
-            CreateBaseCustomDevice(return_value=(0,), circuits_type="QuantumScriptOrBatch")
+            CustomDeviceFactory(return_value=(0,), circuits_type="QuantumScriptOrBatch")
         ):
             """A device with capabilities config file defined."""
 
@@ -393,7 +391,7 @@ class TestPreprocessTransforms:
         """Tests that observable and measurement validation works correctly."""
 
         class CustomDevice(
-            CreateBaseCustomDevice(return_value=(0,), circuits_type="QuantumScriptOrBatch")
+            CustomDeviceFactory(return_value=(0,), circuits_type="QuantumScriptOrBatch")
         ):
             """A device with capabilities config file defined."""
 
@@ -479,9 +477,7 @@ class TestPreprocessTransforms:
         if overlapping_obs and sum_support:
             pytest.skip("The support for Sum doesn't matter here")
 
-        class CustomDevice(
-            CreateBaseCustomDevice(return_value=(0,), config=DefaultExecutionConfig)
-        ):
+        class CustomDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
 
             config_filepath = request.node.toml_file
 
@@ -523,9 +519,7 @@ class TestPreprocessTransforms:
     def test_diagonalize_measurements(self, request, non_commuting_obs, all_obs_support):
         """Tests that the diagonalize_measurements transform is applied correctly."""
 
-        class CustomDevice(
-            CreateBaseCustomDevice(return_value=(0,), config=DefaultExecutionConfig)
-        ):
+        class CustomDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
 
             config_filepath = request.node.toml_file
 
@@ -571,7 +565,7 @@ class TestPreprocessTransforms:
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
 
-    class MinimalDevice(CreateBaseCustomDevice(return_value=(0,), config=DefaultExecutionConfig)):
+    class MinimalDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
         """A device with only a dummy execute method provided."""
 
         pass
@@ -720,9 +714,7 @@ def test_device_with_ambiguous_preprocess():
 
     with pytest.raises(ValueError, match="A device should implement either"):
 
-        class InvalidDevice(
-            CreateBaseCustomDevice(return_value=(0,), config=DefaultExecutionConfig)
-        ):
+        class InvalidDevice(CustomDeviceFactory(return_value=(0,), config=DefaultExecutionConfig)):
             """A device with ambiguous preprocess."""
 
             def preprocess(self, execution_config=None):
@@ -745,9 +737,7 @@ class TestProvidingDerivatives:
     def test_provided_derivative(self):
         """Tests default logic for a device with a derivative provided."""
 
-        class WithDerivative(
-            CreateBaseCustomDevice(return_value="a", config=DefaultExecutionConfig)
-        ):
+        class WithDerivative(CustomDeviceFactory(return_value="a", config=DefaultExecutionConfig)):
             """A device with a derivative."""
 
             def compute_derivatives(
@@ -769,7 +759,7 @@ class TestProvidingDerivatives:
         """Tests default logic for a device with a jvp provided."""
 
         # pylint: disable=unused-argnument
-        class WithJvp(CreateBaseCustomDevice(return_value="a", config=DefaultExecutionConfig)):
+        class WithJvp(CustomDeviceFactory(return_value="a", config=DefaultExecutionConfig)):
             """A device with a jvp."""
 
             def compute_jvp(
@@ -788,7 +778,7 @@ class TestProvidingDerivatives:
         """Tests default logic for a device with a vjp provided."""
 
         # pylint: disable=unused-argnument
-        class WithVjp(CreateBaseCustomDevice(return_value="a", config=DefaultExecutionConfig)):
+        class WithVjp(CustomDeviceFactory(return_value="a", config=DefaultExecutionConfig)):
             """A device with a vjp."""
 
             def compute_vjp(
@@ -817,7 +807,7 @@ def test_eval_jaxpr_not_implemented():
         return x + 1
 
     # pylint: disable=too-few-public-methods
-    class NormalDevice(CreateBaseCustomDevice()):
+    class NormalDevice(CustomDeviceFactory()):
         pass
 
     jaxpr = jax.make_jaxpr(f)(2)

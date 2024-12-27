@@ -16,7 +16,7 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 """
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring, no-member
 import pytest
-from custom_devices import CreateBaseCustomDevice
+from custom_devices import CustomDeviceFactory
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device
@@ -29,7 +29,7 @@ def test_chained_modifiers():
 
     @simulator_tracking
     @single_tape_support
-    class DummyDev(CreateBaseCustomDevice(return_value=0.0, return_for_each_circuit=True)):
+    class DummyDev(CustomDeviceFactory(return_value=0.0, return_for_each_circuit=True)):
         pass
 
     assert DummyDev._applied_modifiers == [single_tape_support, simulator_tracking]
@@ -66,13 +66,13 @@ class TestModifierDefaultBeahviour:
         """Test that the modifier is added to the `_applied_modifiers` property."""
 
         @modifier
-        class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
+        class DummyDev(CustomDeviceFactory(return_value=0.0, config=DefaultExecutionConfig)):
             pass
 
         assert DummyDev._applied_modifiers == [modifier]
 
         @modifier
-        class DummyDev2(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
+        class DummyDev2(CustomDeviceFactory(return_value=0.0, config=DefaultExecutionConfig)):
             _applied_modifiers = [None]  # some existing value
 
         assert DummyDev2._applied_modifiers == [None, modifier]
@@ -81,7 +81,7 @@ class TestModifierDefaultBeahviour:
         """Test that undefined methods are left the same as the Device class methods."""
 
         @modifier
-        class DummyDev(CreateBaseCustomDevice(return_value=0.0, config=DefaultExecutionConfig)):
+        class DummyDev(CustomDeviceFactory(return_value=0.0, config=DefaultExecutionConfig)):
             pass
 
         assert DummyDev.compute_derivatives == Device.compute_derivatives
