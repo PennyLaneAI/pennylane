@@ -20,7 +20,6 @@ from functools import partial
 
 import numpy as np
 import pytest
-from custom_devices import CustomDeviceFactory
 from default_qubit_legacy import DefaultQubitLegacy
 from scipy.sparse import csr_matrix
 
