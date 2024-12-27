@@ -16,7 +16,7 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 """
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring, no-member
 import pytest
-from custom_devices import BaseCustomDeviceReturnsTupleForDefaultConfig, CreateBaseCustomDevice
+from custom_devices import CreateBaseCustomDevice
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device
@@ -29,7 +29,7 @@ def test_chained_modifiers():
 
     @simulator_tracking
     @single_tape_support
-    class DummyDev(BaseCustomDeviceReturnsTupleForDefaultConfig):
+    class DummyDev(CreateBaseCustomDevice(return_value=0.0, return_for_each_circuit=True)):
         pass
 
     assert DummyDev._applied_modifiers == [single_tape_support, simulator_tracking]
