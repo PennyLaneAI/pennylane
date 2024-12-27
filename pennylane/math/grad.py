@@ -1,0 +1,98 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This submodule defines grad and jacobian for differentiating circuits in an interface
+independent way.
+"""
+
+from typing import Callable, Sequence
+
+from pennylane._grad import grad as autograd_grad
+
+from .interface_utils import get_interface
+
+
+# pylint: disable=import-outside-toplevel
+def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
+    """Compute the gradient in a jax-like manner for any interface.
+
+    Args:
+        f (Callable): a function with a single 0-D scalar output
+        argnums (Sequence[int] | int ) = 0 : which arguments to differentiate
+
+    Returns:
+        Callable: a function with the same signature as ``f`` that returns the gradient.
+
+    Note that this function follows the same design as jax. By default, the function will return the gradient
+    of the first argument, whether or not other arguments are trainable.
+
+    >>> def f(x, y):
+    ...     return  x * y
+    >>> qml.math.grad(f)(qml.numpy.array(2.0). qml.numpy.array(3.0))
+    tensor(3., requires_grad=True)
+    >>> qml.math.grad(f)(jax.numpy.array(2.0), jax.numpy.array(3.0))
+    Array(3., dtype=float32, weak_type=True)
+    >>> qml.math.grad(f)(torch.tensor(2.0, requires_grad=True), torch.tensor(3.0, requires_grad=True))
+    tensor(3.)
+    >>> qml.math.grad(f)(tf.Variable(2.0), tf.Variable(3.0))
+    <tf.Tensor: shape=(), dtype=float32, numpy=3.0>
+
+    ``argnums`` can be provided to differentiate multiple arguments.
+
+    >>> qml.math.grad(f, argnums=(0,1))(torch.tensor(2.0, requires_grad=True), torch.tensor(3.0, requires_grad=True))
+    (tensor(3.), tensor(2.))
+
+    Note that the selected arguments *must* be of an appropriately trainable datatype, or an error may occur.
+
+    >>> qml.math.grad(f)(torch.tensor(1.0), torch.tensor(2.))
+    RuntimeError: element 0 of tensors does not require grad and does not have a grad_fn
+
+    """
+
+    argnums_integer = False
+    if isinstance(argnums, int):
+        argnums = (argnums,)
+        argnums_integer = True
+
+    def compute_grad(*args, **kwargs):
+        interface = get_interface(*args)
+
+        if interface == "autograd":
+            g = autograd_grad(f, argnum=argnums)(*args, **kwargs)
+            return g[0] if argnums_integer else g
+
+        if interface == "jax":
+            import jax
+
+            g = jax.grad(f, argnums=argnums)(*args, **kwargs)
+            return g[0] if argnums_integer else g
+
+        if interface == "torch":
+            y = f(*args, **kwargs)
+            y.backward()
+            g = tuple(args[i].grad for i in argnums)
+            return g[0] if argnums_integer else g
+
+        if interface == "tensorflow":
+            import tensorflow as tf
+
+            with tf.GradientTape() as tape:
+                y = f(*args, **kwargs)
+
+            g = tape.gradient(y, tuple(args[i] for i in argnums))
+            return g[0] if argnums_integer else g
+
+        raise ValueError(f"Interface {interface} is not differentiatble.")
+
+    return compute_grad
