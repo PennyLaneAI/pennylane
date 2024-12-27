@@ -16,9 +16,11 @@ This submodule defines grad and jacobian for differentiating circuits in an inte
 independent way.
 """
 
+from functools import partial
 from typing import Callable, Sequence
 
-from pennylane._grad import grad as autograd_grad
+from pennylane._grad import grad as _autograd_grad
+from pennylane._grad import jacobian as _autograd_jacobian
 
 from .interface_utils import get_interface
 
@@ -33,6 +35,8 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
 
     Returns:
         Callable: a function with the same signature as ``f`` that returns the gradient.
+
+    .. seealso:: :func:`pennylane.math.jacobian`
 
     Note that this function follows the same design as jax. By default, the function will return the gradient
     of the first argument, whether or not other arguments are trainable.
@@ -69,7 +73,7 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
         interface = get_interface(*args)
 
         if interface == "autograd":
-            g = autograd_grad(f, argnum=argnums)(*args, **kwargs)
+            g = _autograd_grad(f, argnum=argnums)(*args, **kwargs)
             return g[0] if argnums_integer else g
 
         if interface == "jax":
@@ -96,3 +100,57 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
         raise ValueError(f"Interface {interface} is not differentiatble.")
 
     return compute_grad
+
+
+# pylint: disable=import-outside-toplevel
+def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
+    """Compute the gradient in a jax-like manner for any interface.
+
+    Args:
+        f (Callable): a function with a single 0-D scalar output
+        argnums (Sequence[int] | int ) = 0 : which arguments to differentiate
+
+    Returns:
+        Callable: a function with the same signature as ``f`` that returns the jacobian
+
+    .. seealso:: :func:`pennylane.math.grad`
+
+    """
+
+    argnums_integer = False
+    if isinstance(argnums, int):
+        argnums = (argnums,)
+        argnums_integer = True
+
+    def compute_jacobian(*args, **kwargs):
+        interface = get_interface(*args)
+
+        if interface == "autograd":
+            g = _autograd_jacobian(f, argnum=argnums)(*args, **kwargs)
+            return g[0] if argnums_integer else g
+
+        if interface == "jax":
+            import jax
+
+            g = jax.jacobian(f, argnums=argnums)(*args, **kwargs)
+            return g[0] if argnums_integer else g
+
+        if interface == "torch":
+            from torch.autograd.functional import jacobian as _torch_jac
+            g = _torch_jac(partial(f, **kwargs), args)
+            g = tuple(g[i] for i in argnums)
+            return g[0] if argnums_integer else g
+
+        if interface == "tensorflow":
+            import tensorflow as tf
+
+            with tf.GradientTape() as tape:
+                y = f(*args, **kwargs)
+
+            g = tape.jacobian(y, tuple(args[i] for i in argnums))
+            return g[0] if argnums_integer else g
+
+        raise ValueError(f"Interface {interface} is not differentiatble.")
+
+    return compute_jacobian
+

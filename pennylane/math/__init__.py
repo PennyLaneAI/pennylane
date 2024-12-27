@@ -101,7 +101,7 @@ from .interface_utils import (
     get_interface,
     Interface,
 )
-from .grad import grad
+from .grad import grad, jacobian
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
@@ -174,6 +174,7 @@ __all__ = [
     "is_abstract",
     "is_independent",
     "iscomplex",
+    "jacobian",
     "marginal_prob",
     "max_entropy",
     "min_entropy",

@@ -23,48 +23,98 @@ pytestmark = pytest.mark.all_interfaces
 
 
 @pytest.mark.parametrize("interface", ("autograd", "jax", "tensorflow", "torch"))
-def test_differentiate_first_arg(interface):
-    """Test taht we just differentiate the first argument by default."""
+class TestGrad:
+    """Tests for qml.math.grad"""
 
-    def f(x, y):
-        return x * y
+    def test_differentiate_first_arg(self, interface):
+        """Test that we just differentiate the first argument by default."""
 
-    x = math.asarray(2.0, like=interface, requires_grad=True)
-    y = math.asarray(3.0, like=interface, requires_grad=True)
+        def f(x, y):
+            return x * y
 
-    g = math.grad(f)(x, y)
-    if interface != "autograd":
-        assert math.get_interface(g) == interface
-    assert math.allclose(g, 3.0)
+        x = math.asarray(2.0, like=interface, requires_grad=True)
+        y = math.asarray(3.0, like=interface, requires_grad=True)
+
+        g = math.grad(f)(x, y)
+        if interface != "autograd":
+            assert math.get_interface(g) == interface
+        assert math.allclose(g, 3.0)
+
+
+    def test_multiple_argnums(self, interface):
+        """Test that we can differentiate multiple arguments."""
+
+        def g(x, y):
+            return 2 * x + 3 * y
+
+        x = math.asarray(0.5, like=interface, requires_grad=True)
+        y = math.asarray(2.5, like=interface, requires_grad=True)
+
+        g1, g2 = math.grad(g, argnums=(0, 1))(x, y)
+        if interface != "autograd":
+            assert math.get_interface(g1) == interface
+            assert math.get_interface(g2) == interface
+
+        assert math.allclose(g1, 2)
+        assert math.allclose(g2, 3)
+
+
+    def test_keyword_arguments(self, interface):
+        """Test that keyword arguments are considered."""
+
+        def f(x, *, constant):
+            return constant * x
+
+        x = math.asarray(2.0, like=interface, requires_grad=True)
+
+        g = math.grad(f)(x, constant=2.0)
+        assert math.allclose(g, 2.0)
 
 
 @pytest.mark.parametrize("interface", ("autograd", "jax", "tensorflow", "torch"))
-def test_multiple_argnums(interface):
-    """Test that we can differentiate multiple arguments."""
+class TestJacobian:
+    """Tests for the math.jacobian function."""
 
-    def g(x, y):
-        return 2 * x + 3 * y
+    def test_jac_first_arg(self, interface):
+        """Test taking the jacobian of the first argument."""
 
-    x = math.asarray(0.5, like=interface, requires_grad=True)
-    y = math.asarray(2.5, like=interface, requires_grad=True)
+        def f(x, y):
+            return x * y
 
-    g1, g2 = math.grad(g, argnums=(0, 1))(x, y)
-    if interface != "autograd":
-        assert math.get_interface(g1) == interface
-        assert math.get_interface(g2) == interface
+        x = math.asarray([2.0, 3.0], like=interface, requires_grad=True)
+        y = math.asarray(3.0, like=interface, requires_grad=True)
 
-    assert math.allclose(g1, 2)
-    assert math.allclose(g2, 3)
+        g = math.jacobian(f)(x, y)
+        if interface != "autograd":
+            assert math.get_interface(g) == interface
+        expected = math.asarray([[3.0, 0.0], [0.0, 3.0]])
+        assert math.allclose(g, expected)
+
+    def test_multiple_argnums(self, interface):
+        """Test that we can differentiate multiple arguments."""
+
+        def g(x, y):
+            return 2 * x + 3 * y
+
+        x = math.asarray([0.5, 1.2], like=interface, requires_grad=True)
+        y = math.asarray([2.5, 4.8], like=interface, requires_grad=True)
+
+        g1, g2 = math.jacobian(g, argnums=(0, 1))(x, y)
+        if interface != "autograd":
+            assert math.get_interface(g1) == interface
+            assert math.get_interface(g2) == interface
+
+        assert math.allclose(g1, 2 * math.eye(2))
+        assert math.allclose(g2, 3 * math.eye(2))
 
 
-@pytest.mark.parametrize("interface", ("autograd", "jax", "tensorflow", "torch"))
-def test_keyword_arguments(interface):
-    """Test that keyword arguments are considered."""
+    def test_keyword_arguments(self, interface):
+        """Test that keyword arguments are considered."""
 
-    def f(x, *, constant):
-        return constant * x
+        def f(x, *, constant):
+            return constant * x
 
-    x = math.asarray(2.0, like=interface, requires_grad=True)
+        x = math.asarray([2.0, 3.0], like=interface, requires_grad=True)
 
-    g = math.grad(f)(x, constant=2.0)
-    assert math.allclose(g, 2.0)
+        g = math.jacobian(f)(x, constant=2.0)
+        assert math.allclose(g, 2 * math.eye(2))
