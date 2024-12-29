@@ -212,7 +212,7 @@ def _diagonalize_all_pauli_obs(tape, to_eigvals=False):
 
     Returns:
         diagonalizing_gates: A list of operations to be applied to diagonalize the observable
-        new_measurements: the relevant measurement to perform after applying diagonalzing_gates to get the
+        new_measurements: the relevant measurement to perform after applying diagonalizing_gates to get the
             correct measurement output
     """
     new_measurements = []
@@ -250,7 +250,7 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
 
     Returns:
         diagonalizing_gates: A list of operations to be applied to diagonalize the observable
-        new_measurements: the relevant measurement to perform after applying diagonalzing_gates to get the
+        new_measurements: the relevant measurement to perform after applying diagonalizing_gates to get the
             correct measurement output
 
     Raises:
@@ -266,18 +266,22 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
         for m in comp_basis_sampling_meas:
             wires_sampled_in_computational_basis.extend(m.wires)
 
-    visited_obs = {qml.Z(w) for w in wires_sampled_in_computational_basis}
-    visited_wires = set(wires_sampled_in_computational_basis)
-    _visited_obs = (visited_obs, visited_wires)
+    # Initialize visited_observables and wire_basis
+    visited_observables = {qml.Z(w) for w in wires_sampled_in_computational_basis}
+    wire_basis = {w: 'Z' for w in wires_sampled_in_computational_basis}
+    _visited_obs = (visited_observables, wire_basis)
 
     diagonalizing_gates = []
     new_measurements = []
 
     for m in tape.measurements:
         if m.obs:
-            gates, new_obs, _visited_obs = _diagonalize_observable(
-                m.obs, _visited_obs, supported_base_obs
-            )
+            try:
+                gates, new_obs, _visited_obs = _diagonalize_observable(
+                    m.obs, _visited_obs, supported_base_obs
+                )
+            except ValueError as e:
+                raise ValueError(str(e)) from None
             diagonalizing_gates.extend(gates)
             if to_eigvals:
                 new_meas = type(m)(eigvals=m.eigvals(), wires=m.wires)
@@ -319,67 +323,73 @@ def _change_composite_op(observable: CompositeOp):
 
 
 def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
-    """Checks if the observable should be diagonalized based on whether its basis should
-    be switched, and whether the same observable has already been diagonalized.
-    Args:
-        obs: the observable to be diagonalized
-        _visited_obs: a tuple containing a set of all observables that have already
-            been encountered, and a set of all wires that have already been encountered
-        switch_basis: whether the observable should be switched for one measuring in
-            the Z-basis on the same wires.
- 
- 
-    Returns:
-        diagonalize (bool): whether or not to apply diagonalizing gates for the observable
-        _visited_obs (tuple(Iterables): an up-to-date record of the observables and wires
-            encountered on the tape so far
     """
-    visited_observables, visited_wires = _visited_obs
+    Checks if the observable should be diagonalized based on whether its basis should
+    be switched, and whether the same observable has already been diagonalized.
+
+    Args:
+        obs (Operator): The observable to check.
+        _visited_obs (tuple): A tuple containing a set of visited observables and a dict mapping wires to their basis.
+        switch_basis (bool): Whether to switch the basis for this observable.
+
+    Returns:
+        tuple: A tuple containing a boolean indicating whether to diagonalize and the updated _visited_obs.
+    """
+    visited_observables, wire_basis = _visited_obs
 
     if obs in visited_observables or isinstance(obs, qml.Identity):
         return False, _visited_obs
 
     wire0 = obs.wires[0]
-    if wire0 in visited_wires:
-        raise ValueError(
-            f"Expected measurements on the same wire to commute, but {obs} "
-            f"overlaps with another non-commuting observable on the tape."
-        )
+    if wire0 in wire_basis:
+        # Check if the current observable's basis matches the existing basis for this wire
+        if wire_basis[wire0] != 'Z':
+            raise ValueError(
+                f"Expected measurements on the same wire to commute, but {obs} "
+                f"overlaps with another non-commuting observable on the tape."
+            )
+        else:
+            # Already diagonalized to Z, allow
+            return False, _visited_obs
+    else:
+        # Set the basis for this wire
+        if switch_basis:
+            wire_basis[wire0] = 'Z'
+        else:
+            wire_basis[wire0] = type(obs).__name__
+        # Add to visited observables
+        visited_observables.add(obs)
+        return switch_basis, (visited_observables, wire_basis)
 
-    visited_observables.add(obs)
-    visited_wires.add(wire0)
-    return switch_basis, (visited_observables, visited_wires)
 
 def _diagonalize_observable(observable, _visited_obs=None, supported_base_obs=_default_supported_obs):
-    """Takes an observable and changes all unsupported obs to the measurement
-    basis. Applies diagonalizing gates if the observable being switched to the
-    measurement basis hasn't already been diagonalized for a previous observable
-    on the tape.
+    """
+    Diagonalizes a single observable.
+
     Args:
-        observable: the observable to be diagonalized
-        _visited_obs: a tuple containing a set of all observables that have already
-            been encountered, and a set of all wires that have already been encountered
-        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observables.
+        observable (Operator): The observable to diagonalize.
+        _visited_obs (tuple): A tuple containing a set of visited observables and a dict mapping wires to their basis.
+        supported_base_obs (set): A set of supported base observable classes.
+
     Returns:
-        diagonalizing_gates: A list of operations to be applied to diagonalize the observable
-        new_obs: the relevant measurement to perform after applying diagonalizing_gates to get the
-            correct measurement output
-        _visited_obs: an up-to-date record of the observables and wires
-            encountered on the tape so far
+        tuple: A tuple containing diagonalizing gates, the new observable, and updated _visited_obs.
     """
     if _visited_obs is None:
-        _visited_obs = (set(), set())
+        _visited_obs = (set(), {})
 
     if isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity)):
         switch_basis = type(observable) not in supported_base_obs
         diagonalize, _visited_obs = _check_if_diagonalizing(observable, _visited_obs, switch_basis)
 
-        if switch_basis:
-            diagonalizing_gates = observable.diagonalizing_gates()
+        if isinstance(observable, qml.Z):
+            return [], observable, _visited_obs
+
+        if diagonalize:
             new_obs = qml.Z(observable.wires)
+            diagonalizing_gates = observable.diagonalizing_gates()
         else:
-            diagonalizing_gates = []
             new_obs = observable
+            diagonalizing_gates = []
 
         return diagonalizing_gates, new_obs, _visited_obs
 
@@ -412,7 +422,6 @@ def _diagonalize_observable(observable, _visited_obs=None, supported_base_obs=_d
         return [], observable, _visited_obs
 
 
-
 def _get_obs_and_gates(obs_list, _visited_obs, supported_base_obs=_default_supported_obs):
     """Calls _diagonalize_observable on each observable in a list."""
     new_obs = []
@@ -438,7 +447,7 @@ def _diagonalize_non_basic_observable(observable, _visited_obs, supported_base_o
     visited_observables, visited_wires = _visited_obs
     visited_observables.add(observable)
     visited_wires.update(observable.wires)
-    return [], observable, (visited_observables, visited_wires)
+    return [], observable, _visited_obs
 
 
 @_diagonalize_non_basic_observable.register
