@@ -217,16 +217,16 @@ def _diagonalize_all_pauli_obs(tape, to_eigvals=False):
     for m in diagonal_measurements:
         if m.obs is not None:
             gates, new_obs = _change_obs_to_Z(m.obs)
-            if to_eigvals:
-                new_meas = type(m)(eigvals=m.eigvals(), wires=m.wires)
-            else:
-                new_meas = type(m)(new_obs)
+            new_measurements.append(
+                type(m)(
+                    eigvals=m.eigvals() if to_eigvals else None,
+                    wires=m.wires,
+                    observable=new_obs if not to_eigvals else None,
+                )
+            )
             diagonalizing_gates.extend(gates)
-            new_measurements.append(new_meas)
         else:
             new_measurements.append(m)
-
-    return diagonalizing_gates, new_measurements
 
 
 def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False):
