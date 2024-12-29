@@ -220,10 +220,10 @@ def _diagonalize_all_pauli_obs(tape, to_eigvals=False):
             new_measurements.append(
                 type(m)(
                     eigvals=m.eigvals() if to_eigvals else None,
-                    wires=m.wires,
-                    observable=new_obs if not to_eigvals else None,
-                )
+                    wires=m.wires
+                ) if to_eigvals else type(m)(new_obs)
             )
+
             diagonalizing_gates.extend(gates)
         else:
             new_measurements.append(m)
