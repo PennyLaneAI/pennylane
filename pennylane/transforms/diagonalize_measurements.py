@@ -39,7 +39,9 @@ def null_postprocessing(results):
 
 
 @transform
-def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to_eigvals=False):
+def diagonalize_measurements(
+    tape, supported_base_obs=_default_supported_obs, to_eigvals=False
+):
     """Diagonalize a set of measurements into the standard basis. Raises an error if the
     measurements do not commute.
 
@@ -173,7 +175,9 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     # Precompute measurement observables that have a Pauli representation
     pauli_measurements = [
-        m.obs for m in tape.measurements if m.obs is not None and m.obs.pauli_rep is not None
+        m.obs
+        for m in tape.measurements
+        if m.obs is not None and m.obs.pauli_rep is not None
     ]
 
     if pauli_measurements and diagonalize_all:
@@ -215,7 +219,9 @@ def _diagonalize_all_pauli_obs(tape, to_eigvals=False):
         new_measurements: the relevant measurement to perform after applying diagonalizing_gates to get the
             correct measurement output
     """
-    diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
+    diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(
+        tape
+    )
     new_measurements = []
 
     for m in diagonal_measurements:
@@ -260,11 +266,15 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
     supported_base_obs = supported_base_obs | {qml.Z, qml.Identity}
 
     # Precompute wires sampled in the computational basis
-    comp_basis_sampling_meas = [m for m in tape.measurements if m.samples_computational_basis]
+    comp_basis_sampling_meas = [
+        m for m in tape.measurements if m.samples_computational_basis
+    ]
     if any(m.wires == qml.wires.Wires([]) for m in comp_basis_sampling_meas):
         wires_sampled_in_computational_basis = set(tape.wires)
     elif comp_basis_sampling_meas:
-        wires_sampled_in_computational_basis = {wire for m in comp_basis_sampling_meas for wire in m.wires}
+        wires_sampled_in_computational_basis = {
+            wire for m in comp_basis_sampling_meas for wire in m.wires
+        }
     else:
         wires_sampled_in_computational_basis = set()
 
@@ -434,7 +444,9 @@ def _diagonalize_observable(
 
     # Determine if basis switching is needed
     switch_basis = type(observable) not in supported_base_obs
-    diagonalize, _visited_obs = _check_if_diagonalizing(observable, _visited_obs, switch_basis)
+    diagonalize, _visited_obs = _check_if_diagonalizing(
+        observable, _visited_obs, switch_basis
+    )
 
     if isinstance(observable, qml.Z):
         return [], observable, _visited_obs
@@ -445,7 +457,9 @@ def _diagonalize_observable(
     return diagonalizing_gates, new_obs, _visited_obs
 
 
-def _get_obs_and_gates(obs_list, _visited_obs, supported_base_obs=_default_supported_obs):
+def _get_obs_and_gates(
+    obs_list, _visited_obs, supported_base_obs=_default_supported_obs
+):
     """Calls _diagonalize_observable on each observable in a list, and returns the full result
     for the list of observables
 
@@ -464,7 +478,9 @@ def _get_obs_and_gates(obs_list, _visited_obs, supported_base_obs=_default_suppo
     diagonalizing_gates = []
 
     for o in obs_list:
-        gates, obs, _visited_obs = _diagonalize_observable(o, _visited_obs, supported_base_obs)
+        gates, obs, _visited_obs = _diagonalize_observable(
+            o, _visited_obs, supported_base_obs
+        )
         if gates:
             diagonalizing_gates.extend(gates)
         new_obs.append(obs)
@@ -528,7 +544,9 @@ def _diagonalize_symbolic_op(
 
 @_diagonalize_non_basic_observable.register
 def _diagonalize_linear_combination(
-    observable: LinearCombination, _visited_obs, supported_base_obs=_default_supported_obs
+    observable: LinearCombination,
+    _visited_obs,
+    supported_base_obs=_default_supported_obs,
 ):
     """Diagonalizes a LinearCombination observable.
 
