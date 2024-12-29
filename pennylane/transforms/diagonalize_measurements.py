@@ -350,7 +350,6 @@ def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
     visited_wires.add(wire0)
     return switch_basis, (visited_observables, visited_wires)
 
-
 def _diagonalize_observable(observable, _visited_obs=None, supported_base_obs=_default_supported_obs):
     """Takes an observable and changes all unsupported obs to the measurement
     basis. Applies diagonalizing gates if the observable being switched to the
@@ -371,18 +370,47 @@ def _diagonalize_observable(observable, _visited_obs=None, supported_base_obs=_d
     if _visited_obs is None:
         _visited_obs = (set(), set())
 
-    if not isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity)):
-        return _diagonalize_non_basic_observable(observable, _visited_obs, supported_base_obs)
+    if isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity)):
+        switch_basis = type(observable) not in supported_base_obs
+        diagonalize, _visited_obs = _check_if_diagonalizing(observable, _visited_obs, switch_basis)
 
-    switch_basis = type(observable) not in supported_base_obs
-    diagonalize, _visited_obs = _check_if_diagonalizing(observable, _visited_obs, switch_basis)
+        if switch_basis:
+            diagonalizing_gates = observable.diagonalizing_gates()
+            new_obs = qml.Z(observable.wires)
+        else:
+            diagonalizing_gates = []
+            new_obs = observable
 
-    if isinstance(observable, qml.Z):
+        return diagonalizing_gates, new_obs, _visited_obs
+
+    elif isinstance(observable, CompositeOp):
+        diagonalizing_gates = []
+        new_operands = []
+        for op in observable.operands:
+            gates, new_op, _visited_obs = _diagonalize_observable(op, _visited_obs, supported_base_obs)
+            diagonalizing_gates.extend(gates)
+            new_operands.append(new_op)
+        new_observable = observable.__class__(*new_operands)
+        return diagonalizing_gates, new_observable, _visited_obs
+
+    elif isinstance(observable, LinearCombination):
+        coeffs, ops = observable.terms()
+        diagonalizing_gates = []
+        new_ops = []
+        for op in ops:
+            gates, new_op, _visited_obs = _diagonalize_observable(op, _visited_obs, supported_base_obs)
+            diagonalizing_gates.extend(gates)
+            new_ops.append(new_op)
+        new_observable = LinearCombination(coeffs, new_ops)
+        return diagonalizing_gates, new_observable, _visited_obs
+
+    else:
+        # For other observable types, leave them unchanged
+        visited_observables, visited_wires = _visited_obs
+        visited_observables.add(observable)
+        visited_wires.update(observable.wires)
         return [], observable, _visited_obs
 
-    new_obs = qml.Z(observable.wires) if diagonalize else observable
-    diagonalizing_gates = observable.diagonalizing_gates() if diagonalize else []
-    return diagonalizing_gates, new_obs, _visited_obs
 
 
 def _get_obs_and_gates(obs_list, _visited_obs, supported_base_obs=_default_supported_obs):
