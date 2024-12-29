@@ -395,6 +395,9 @@ such as `shots`, `rng` and `prng_key`.
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
 
+* Optimized `diagonalize_measurements` transform to reduce redundant operations and improve performance.
+  [(#6742)](https://github.com/PennyLaneAI/pennylane/pull/6742)
+
   ```python
   import pennylane as qml
 
@@ -657,6 +660,7 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
 Austin Huang,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
 Alan Martin,
