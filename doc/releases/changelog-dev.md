@@ -395,9 +395,6 @@ such as `shots`, `rng` and `prng_key`.
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
 
-* Optimized `diagonalize_measurements` transform to reduce redundant operations and improve performance.
-  [(#6742)](https://github.com/PennyLaneAI/pennylane/pull/6742)
-
   ```python
   import pennylane as qml
 
@@ -431,6 +428,10 @@ such as `shots`, `rng` and `prng_key`.
 
 * Improved documentation for the `dynamic_one_shot` transform, and a warning is raised when a user-applied `dynamic_one_shot` transform is ignored in favour of the existing transform in a device's preprocessing transform program.
   [(#6701)](https://github.com/PennyLaneAI/pennylane/pull/6701)
+
+* Optimized `diagonalize_measurements` transform by using `frozenset` for immutable and faster lookups,
+  precomputing measurement observables to avoid redundant iterations, and streamlining functions to reduce computational overhead.
+  [(#6742)](https://github.com/PennyLaneAI/pennylane/pull/6742)
 
 <h3>Labs 🧪</h3>
 
