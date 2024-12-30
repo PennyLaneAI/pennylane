@@ -21,11 +21,14 @@ import pytest
 
 import pennylane as qml
 from pennylane import math
-from pennylane.devices.qubit_mixed import (apply_operation,
-                                           create_initial_state, measure)
+from pennylane.devices.qubit_mixed import apply_operation, create_initial_state, measure
 from pennylane.devices.qubit_mixed.measure import (
-    csr_dot_products_density_matrix, full_dot_products_density_matrix,
-    get_measurement_function, state_diagonalizing_gates, sum_of_terms_method)
+    csr_dot_products_density_matrix,
+    full_dot_products_density_matrix,
+    get_measurement_function,
+    state_diagonalizing_gates,
+    sum_of_terms_method,
+)
 
 ml_frameworks_list = [
     "numpy",
