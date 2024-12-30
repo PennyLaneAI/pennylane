@@ -150,9 +150,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     # Convert supported_base_obs to a frozenset once for faster membership checks
     supported_base_obs = frozenset(supported_base_obs)
-    allowed_obs = frozenset({qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity})
-
-    bad_obs_input = supported_base_obs - allowed_obs
+    bad_obs_input = supported_base_obs - {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
 
     if bad_obs_input:
         raise ValueError(
