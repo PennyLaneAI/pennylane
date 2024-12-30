@@ -16,10 +16,9 @@ Interface independent tests for qml.execute
 """
 
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-
-from default_qubit_legacy import DefaultQubitLegacy
 
 
 def test_old_interface_no_device_jacobian_products():

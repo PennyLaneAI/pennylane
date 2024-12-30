@@ -153,9 +153,22 @@ def _measure_classical_shadow(
     wires = qml.wires.Wires(range(_get_num_wires(state, is_state_batched)))
 
     if shots.has_partitioned_shots:
-        return [tuple(process_state_with_shots(mp, state, wires, s, rng=rng, is_state_batched=is_state_batched) for s in shots)]
+        return [
+            tuple(
+                process_state_with_shots(
+                    mp, state, wires, s, rng=rng, is_state_batched=is_state_batched
+                )
+                for s in shots
+            )
+        ]
 
-    return [process_state_with_shots(mp, state, wires, shots.total_shots, rng=rng, is_state_batched=is_state_batched)]
+    return [
+        process_state_with_shots(
+            mp, state, wires, shots.total_shots, rng=rng, is_state_batched=is_state_batched
+        )
+    ]
+
+
 def process_state_with_shots(mp, state, wire_order, shots, rng=None, is_state_batched=False):
     """Sample 'shots' classical shadow snapshots from the given density matrix `state`.
 
@@ -172,11 +185,17 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None, is_state_ba
     """
     if isinstance(mp, ShadowExpvalMP):
         classical_shadow = ClassicalShadowMP(wires=mp.wires, seed=mp.seed)
-        bits, recipes = process_state_with_shots(classical_shadow, state, wire_order, shots, rng=rng,)
+        bits, recipes = process_state_with_shots(
+            classical_shadow,
+            state,
+            wire_order,
+            shots,
+            rng=rng,
+        )
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=mp.wires.tolist())
         return shadow.expval(mp.H, mp.k)
     wire_map = {w: i for i, w in enumerate(wire_order)}
-    wires = mp.wires        
+    wires = mp.wires
     mapped_wires = [wire_map[w] for w in wires]
     n_snapshots = shots
 
@@ -192,16 +211,18 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None, is_state_ba
     outcomes = np.zeros((n_snapshots, n_qubits))
     # Single-qubit diagonalizing ops for X, Y, Z
     diag_list = [
-        qml.Hadamard.compute_matrix(),                               # X
-        qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi/2),  # Y
-        qml.Identity.compute_matrix(),                               # Z
+        qml.Hadamard.compute_matrix(),  # X
+        qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),  # Y
+        qml.Identity.compute_matrix(),  # Z
     ]
     bit_rng = np.random.default_rng(rng)
 
     for t in range(n_snapshots):
         for q_idx, q_wire in enumerate(mapped_wires):
             # (A) partial trace out all other qubits to get 2x2 block for qubit q_wire
-            rho_matrix = _reshape_state_as_matrix(state, _get_num_wires(state, is_state_batched=is_state_batched))
+            rho_matrix = _reshape_state_as_matrix(
+                state, _get_num_wires(state, is_state_batched=is_state_batched)
+            )
             rho_q = math.reduce_dm(rho_matrix, [q_wire])
 
             # (B) rotate that 2x2 block to Z-basis if recipe is X or Y
@@ -218,22 +239,9 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None, is_state_ba
             else:
                 outcomes[t, q_idx] = 1
 
-
     res = np.stack([outcomes, recipes]).astype(np.int8)
     return res
 
-def copy(state):
-    interface = math.get_interface(state)
-
-    if interface == "torch":
-        return state.clone()  # PyTorch
-    elif interface == "tensorflow":
-        import tensorflow as tf
-        return tf.identity(state)  # TensorFlow
-    elif interface == "jax":
-        import jax
-        return jax.numpy.copy(state)  # JAX
-    return state.copy()
 
 def _measure_hamiltonian_with_samples(
     mp: list[ExpectationMP],
