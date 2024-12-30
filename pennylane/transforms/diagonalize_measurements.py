@@ -171,11 +171,12 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         )
 
     # Precompute measurement observables that have a Pauli representation
-    pauli_measurements = [
-        m.obs for m in tape.measurements if m.obs is not None and m.obs.pauli_rep is not None
+    # measurements with observable with no pauli_rep are not compatible with the default method
+    incompatible_measurements = [
+        m for m in tape.measurements if m.obs is not None and m.obs.pauli_rep is None
     ]
 
-    if pauli_measurements and diagonalize_all:
+    if not incompatible_measurements and diagonalize_all:
         try:
             if tape.samples_computational_basis and len(tape.measurements) > 1:
                 _validate_computational_basis_sampling(tape)
