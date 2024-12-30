@@ -20,7 +20,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultMixed
-from pennylane.devices.default_mixed import DefaultMixed
 from pennylane.math import Interface
 
 
