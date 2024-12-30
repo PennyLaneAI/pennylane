@@ -27,8 +27,7 @@ from pennylane.transforms.core import transform
 
 # pylint: disable=protected-access,unused-argument
 
-# Convert the default supported observables to a frozenset for immutability and faster lookups
-_default_supported_obs = frozenset((qml.Z, qml.Identity))
+_default_supported_obs = frozenset(qml.Z, qml.Identity)
 
 
 def null_postprocessing(results):
