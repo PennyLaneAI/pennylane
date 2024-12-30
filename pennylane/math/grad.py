@@ -115,40 +115,60 @@ def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
 
     .. seealso:: :func:`pennylane.math.grad`
 
-    """
+    >>> import jax, torch, tensorflow as tf
+    >>> def f(x, y):
+    ...     return x * y
+    >>> qml.math.jacobian(f)(jax.numpy.array([1.0, 2.0]), jax.numpy.array(2.0))
+    Array([[2., 0.],
+       [0., 2.]], dtype=float32)
+    >>> qml.math.jacobian(f)(torch.tensor([1.0, 2.0]), torch.tensor(2.0))
+    tensor([[2., 0.],
+        [0., 2.]])
+    >>> qml.math.jacobian(f)(tf.Variable([1.0, 2.0]), tf.constant(2.0))
+    <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
+    array([[2., 0.],
+        [0., 2.]], dtype=float32)>
 
-    argnums_integer = False
-    if isinstance(argnums, int):
-        argnums = (argnums,)
-        argnums_integer = True
+    """
 
     def compute_jacobian(*args, **kwargs):
         interface = get_interface(*args)
 
         if interface == "autograd":
-            g = _autograd_jacobian(f, argnum=argnums)(*args, **kwargs)
-            return g[0] if argnums_integer else g
+            return _autograd_jacobian(f, argnum=argnums)(*args, **kwargs)
 
         if interface == "jax":
             import jax
 
-            g = jax.jacobian(f, argnums=argnums)(*args, **kwargs)
-            return g[0] if argnums_integer else g
+            return jax.jacobian(f, argnums=argnums)(*args, **kwargs)
 
         if interface == "torch":
             from torch.autograd.functional import jacobian as _torch_jac
 
-            g = _torch_jac(partial(f, **kwargs), args)
-            g = tuple(g[i] for i in argnums)
-            return g[0] if argnums_integer else g
-
+            if set(argnums) != set(range(len(args))):
+                # do to potential pytree output from function, cant just slice into gradient to get
+                # subset
+                raise ValueError("qml.math.jacobian must differentiate all arguments with torch.")
+            return _torch_jac(partial(f, **kwargs), args)
         if interface == "tensorflow":
             import tensorflow as tf
 
             with tf.GradientTape() as tape:
                 y = f(*args, **kwargs)
 
-            g = tape.jacobian(y, tuple(args[i] for i in argnums))
+            if get_interface(y) != "tensorflow":
+                raise ValueError(
+                    f"qml.math.jacobian does not work with tensorflow and non-tensor outputs. Got {y} of type {type(y)}."
+                )
+
+            argnums_integer = False
+            if isinstance(argnums, int):
+                argnums_tf = (argnums,)
+                argnums_integer = True
+            else:
+                argnums_tf = argnums
+
+            g = tape.jacobian(y, tuple(args[i] for i in argnums_tf))
             return g[0] if argnums_integer else g
 
         raise ValueError(f"Interface {interface} is not differentiable.")
