@@ -536,7 +536,7 @@ class TestDiagonalizeTapeMeasurements:
             [qml.RX(1.2, wires=0), qml.RY(2.34, wires=1)], measurements=measurements
         )
 
-        tapes, fn = diagonalize_measurements(tape)
+        tapes, _ = diagonalize_measurements(tape)
         new_tape = tapes[0]
 
         assert new_tape.measurements == [qml.expval(Z(0)), qml.expval(Z(1))]
@@ -572,7 +572,7 @@ class TestDiagonalizeTapeMeasurements:
         ]
         tape = QuantumScript([], measurements=measurements)
 
-        tapes, fn = diagonalize_measurements(tape, supported_base_obs=supported_base_obs)
+        tapes, _ = diagonalize_measurements(tape, supported_base_obs=supported_base_obs)
         new_tape = tapes[0]
 
         expected_measurements = [
