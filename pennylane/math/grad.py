@@ -17,7 +17,7 @@ independent way.
 """
 
 from functools import partial
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Union
 
 from pennylane._grad import grad as _autograd_grad
 from pennylane._grad import jacobian as _autograd_jacobian
@@ -26,7 +26,7 @@ from .interface_utils import get_interface
 
 
 # pylint: disable=import-outside-toplevel
-def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
+def grad(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
     """Compute the gradient in a jax-like manner for any interface.
 
     Args:
@@ -97,13 +97,13 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
             g = tape.gradient(y, tuple(args[i] for i in argnums))
             return g[0] if argnums_integer else g
 
-        raise ValueError(f"Interface {interface} is not differentiatble.")
+        raise ValueError(f"Interface {interface} is not differentiable.")
 
     return compute_grad
 
 
 # pylint: disable=import-outside-toplevel
-def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
+def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
     """Compute the gradient in a jax-like manner for any interface.
 
     Args:
@@ -151,6 +151,6 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
             g = tape.jacobian(y, tuple(args[i] for i in argnums))
             return g[0] if argnums_integer else g
 
-        raise ValueError(f"Interface {interface} is not differentiatble.")
+        raise ValueError(f"Interface {interface} is not differentiable.")
 
     return compute_jacobian

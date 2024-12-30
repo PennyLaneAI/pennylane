@@ -15,11 +15,20 @@
 Test the qml.math.grad and qml.math.jacobian functions.
 """
 
+import numpy as np
 import pytest
 
 from pennylane import math
 
 pytestmark = pytest.mark.all_interfaces
+
+
+@pytest.mark.parametrize("grad_fn", (math.grad, math.jacobian))
+def test_no_interface_error_numpy(grad_fn):
+    """Test that an error is raised for an unknown interface."""
+
+    with pytest.raises(ValueError, match="Interface numpy is not differentiable"):
+        grad_fn(lambda x: x**2)(np.array(2.0))
 
 
 @pytest.mark.parametrize("interface", ("autograd", "jax", "tensorflow", "torch"))
