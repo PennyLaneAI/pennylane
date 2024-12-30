@@ -27,7 +27,7 @@ from pennylane.transforms.core import transform
 
 # pylint: disable=protected-access,unused-argument
 
-_default_supported_obs = frozenset(qml.Z, qml.Identity)
+_default_supported_obs = frozenset((qml.Z, qml.Identity))
 
 
 def null_postprocessing(results):
