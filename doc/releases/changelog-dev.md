@@ -450,7 +450,7 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
-<h4>New `pennylane.labs.dla` module for handling (dynamical) Lie algebras (DLAs)</h4>
+<h4>Functionality for handling dynamical Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
