@@ -976,19 +976,19 @@ class TestDeviceInit:
 
         assert dev.shots.total_shots == 22
 
-    def test_has_partitioned_shots(self): # pylint:disable=protected-access
+    def test_has_partitioned_shots(self):
         """Tests _has_partitioned_shots returns correct values"""
         dev = DefaultQubitLegacy(wires=1, shots=100)
-        assert not dev._has_partitioned_shots()
+        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
 
         dev.shots = [10, 20]
-        assert dev._has_partitioned_shots()
+        assert dev._has_partitioned_shots()  # pylint:disable=protected-access
 
         dev.shots = 10
-        assert not dev._has_partitioned_shots()
+        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
 
         dev.shots = None
-        assert not dev._has_partitioned_shots()
+        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
 
 
 class TestBatchExecution:
