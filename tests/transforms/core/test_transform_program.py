@@ -15,6 +15,7 @@
 # pylint: disable=no-member
 
 import pytest
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -597,7 +598,8 @@ class TestClassicalCotransfroms:
         with pytest.raises(ValueError, match=r"programs with cotransform caches"):
             _ = program2 + program2
 
-    def test_error_on_numpy_qnode(self):
+    @pytest.mark.parametrize("arg", (0.5, rx.PyGraph()))
+    def test_error_on_numpy_qnode(self, arg):
         """Test an error is raised if there are no trainable parameters for a hybrid program."""
 
         @qml.qnode(qml.device("default.qubit"))
@@ -607,7 +609,7 @@ class TestClassicalCotransfroms:
 
         program = TransformProgram()
         program.add_transform(qml.gradients.param_shift, hybrid=True)
-        program.set_classical_component(circuit, (0.5,), {})
+        program.set_classical_component(circuit, (arg,), {})
 
         tape = qml.tape.QuantumScript([], [])
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters"):
