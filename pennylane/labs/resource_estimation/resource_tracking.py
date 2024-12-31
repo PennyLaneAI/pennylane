@@ -18,17 +18,16 @@ from functools import singledispatch, wraps
 from typing import Dict, Iterable, List, Set, Union
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import DecompositionUndefinedError, Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 from .resource_container import CompressedResourceOp, Resources
-from .resource_operator import ResourceOperator
+from .resource_operator import ResourceOperator, ResourceOperatorNotImplemented
 
 # pylint: disable=dangerous-default-value,protected-access
 
-# user-friendly gateset for visual checks and initial compilation
 _StandardGateSet = {
     "PauliX",
     "PauliY",
@@ -45,7 +44,7 @@ _StandardGateSet = {
     "PhaseShift",
 }
 
-# practical/realistic gateset for useful compilation of circuits
+
 DefaultGateSet = {
     "Hadamard",
     "CNOT",
@@ -55,7 +54,6 @@ DefaultGateSet = {
 }
 
 
-# parameters for further configuration of the decompositions
 resource_config = {
     "error_rx": 10e-3,
     "error_ry": 10e-3,
@@ -71,15 +69,15 @@ def get_resources(
     in the gate_set.
 
     Args:
-        obj (Union[Operation, Callable, QuantumScript]): the quantum circuit or operation to obtain resources from
-        gate_set (Set, optional): python set of strings specifying the names of operations to track
-        config (Dict, optional): dictionary of additiona; configurations that specify how resources are computed
+        obj (Union[Operation, Callable, QuantumScript]): The quantum circuit or operation to obtain resources from.
+        gate_set (Set, optional): A set (str) specifying the names of opertions to track. Defaults to DefaultGateSet.
+        config (Dict, optional): Additional configurations to specify how resources are tracked. Defaults to resource_config.
 
     Returns:
-        Resources: the total resources of the quantum circuit
+        Resources: The total resources of the quantum circuit.
 
-    Raises:
-        TypeError: could not obtain resources for obj of type `type(obj)`
+    Rasies:
+        TypeError: "Could not obtain resources for obj of type (type(obj))".
 
     **Example**
 
@@ -88,7 +86,6 @@ def get_resources(
 
     .. code-block:: python
 
-        import copy
         import pennylane.labs.resource_estimation as re
 
         def my_circuit():
@@ -160,18 +157,17 @@ def resources_from_operation(
 ) -> Resources:
     """Get resources from an operation"""
 
-    if isinstance(obj, ResourceOperator):
-        cp_rep = obj.resource_rep_from_op()
+    if not isinstance(obj, ResourceOperator):
+        obj = _op_to_resource_op(obj)
 
-        gate_counts_dict = defaultdict(int)
-        _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
-        gate_types = _clean_gate_counts(gate_counts_dict)
+    cp_rep = obj.resource_rep_from_op()
+    gate_counts_dict = defaultdict(int)
+    _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
 
-        n_gates = sum(gate_types.values())
-        return Resources(num_wires=len(obj.wires), num_gates=n_gates, gate_types=gate_types)
+    num_wires = len(obj.wires)
+    num_gates = sum(gate_counts_dict.values())
 
-    res = Resources()  # TODO: Add implementation here!
-    return res
+    return Resources(gate_types=gate_counts_dict, num_gates=num_gates, num_wires=num_wires)
 
 
 @get_resources.register
@@ -271,20 +267,44 @@ def _counts_from_compressed_res_op(
     return
 
 
-def _temp_map_func(op: Operation) -> ResourceOperator:
-    """Temp map function"""
-    raise NotImplementedError
+@qml.QueuingManager.stop_recording()
+def _op_to_resource_op(op: Operation) -> ResourceOperator:
+    """Map a PL Operator to its corresponding Resource Operator
+
+    Args:
+        op Operation: A PennyLane operator
+
+    Returns:
+        ResourceOperator: A ResourceOperator instantiated with op's parameters and hyperparameters.
+
+    """
+    import pennylane.labs.resource_estimation as re  # pylint: disable=import-outside-toplevel
+
+    name = "Resource" + op._name
+
+    try:
+        cls = vars(re)[name]
+    except KeyError as exc:
+        raise ResourceOperatorNotImplemented(
+            f"No resource operator for PennyLane operator {op._name} has been implemented."
+        ) from exc
+
+    return cls._unflatten(*op._flatten())
 
 
 def _clean_gate_counts(gate_counts: Dict[CompressedResourceOp, int]) -> Dict[str, int]:
     """Map resources with gate_types made from CompressedResourceOps
-    into one which tracks just strings of operations.
+    <<<<<<< HEAD
+        into one which tracks just strings of operations!
+    =======
+        into one which tracks just strings of operations.
+    >>>>>>> e33901fd824724bd5192b36010069599b9895cd8
 
-    Args:
-        gate_counts (Dict[CompressedResourceOp, int]): gate counts in terms of compressed resource ops
+        Args:
+            gate_counts (Dict[CompressedResourceOp, int]): gate counts in terms of compressed resource ops
 
-    Returns:
-        Dict[str, int]: gate counts in terms of names of operations
+        Returns:
+            Dict[str, int]: gate counts in terms of names of operations
     """
     clean_gate_counts = defaultdict(int)
 
@@ -299,22 +319,28 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
     """Convert the sequence of operations to a list of compressed resource ops.
 
     Args:
-        ops (Iterable[Operation]): set of operations to convert
+        ops (Iterable[Operation]): set of operations to convert.
 
     Returns:
-        List[CompressedResourceOp]: set of converted compressed resource ops
+        List[CompressedResourceOp]: set of converted compressed resource ops.
     """
     cmp_rep_ops = []
     for op in ops:
         if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
+            continue
 
-        else:
-            try:
-                cmp_rep_ops.append(_temp_map_func(op).resource_rep_from_op())
+        try:
+            cmp_rep_ops.append(_op_to_resource_op(op).resource_rep_from_op())
+        except ResourceOperatorNotImplemented:
+            pass
 
-            except NotImplementedError:
-                decomp = op.decomposition()
-                cmp_rep_ops.extend(_operations_to_compressed_reps(decomp))
+        try:
+            decomp = op.decomposition()
+            cmp_rep_ops.extend(_operations_to_compressed_reps(decomp))
+        except DecompositionUndefinedError as exc:
+            raise ResourceOperatorNotImplemented(
+                f"No resource operator defined for {op._name}, and {op._name} does not decompose into resource operators."
+            ) from exc
 
     return cmp_rep_ops
