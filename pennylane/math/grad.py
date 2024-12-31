@@ -102,7 +102,8 @@ def grad(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
 
 
 def _error_if_not_array(f):
-   """Raises an error if the function output is not an autograd or numpy array."""
+    """Raises an error if the function output is not an autograd or numpy array."""
+
     def new_f(*args, **kwargs):
         output = f(*args, **kwargs)
         if get_interface(output) not in {"autograd", "numpy"}:
