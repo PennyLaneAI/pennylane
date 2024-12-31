@@ -207,7 +207,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             jac = _jacobian(*args, **kwargs)
 
         else:
-            raise ValueError(f"Undifferentiable interface {qnode.interface}")
+            raise ValueError(f"Undifferentiable interface {qnode.interface}.")
 
         if old_interface == "auto":
             qnode.interface = "auto"

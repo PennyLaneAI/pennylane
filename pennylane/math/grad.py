@@ -102,11 +102,12 @@ def grad(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
 
 
 def _error_if_not_array(f):
+   """Raises an error if the function output is not an autograd or numpy array."""
     def new_f(*args, **kwargs):
         output = f(*args, **kwargs)
         if get_interface(output) not in {"autograd", "numpy"}:
             raise ValueError(
-                f"autograd can only differentiate with respect to arrays, not {type(output)}"
+                f"autograd can only differentiate with respect to arrays, not {type(output)}. Ensure the output interface is an autograd array."
             )
         return output
 
@@ -165,7 +166,7 @@ def _tensorflow_jac(f, argnums, args, kwargs):
 
 # pylint: disable=import-outside-toplevel
 def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
-    """Compute the gradient in a jax-like manner for any interface.
+    """Compute the Jacobian in a jax-like manner for any interface.
 
     Args:
         f (Callable): a function with a vector valued output
@@ -184,19 +185,19 @@ def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
     ...     return  x * y
     >>> qml.math.jacobian(f)(qml.numpy.array([2.0, 3.0]), qml.numpy.array(3.0))
     array([[3., 0.],
-    [0., 3.]])
+              [0., 3.]])
     >>> qml.math.jacobian(f)(jax.numpy.array([2.0, 3.0]), jax.numpy.array(3.0))
     Array([[3., 0.],
-    [0., 3.]], dtype=float32)
+               [0., 3.]], dtype=float32)
     >>> x_torch = torch.tensor([2.0, 3.0], requires_grad=True)
     >>> y_torch = torch.tensor(3.0, requires_grad=True)
     >>> qml.math.jacobian(f)(x_torch, y_torch)
     tensor([[3., 0.],
-        [0., 3.]])
+                [0., 3.]])
     >>> qml.math.jacobian(f)(tf.Variable([2.0, 3.0]), tf.Variable(3.0))
     <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
     array([[3., 0.],
-        [0., 3.]], dtype=float32)>
+              [0., 3.]], dtype=float32)>
 
     ``argnums`` can be provided to differentiate multiple arguments.
 
@@ -216,7 +217,7 @@ def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
     Torch can only differentiate arrays and tuples:
 
     >>> def tuple_f(x):
-    ... return x**2, x**3
+    ...     return x**2, x**3
     >>> qml.math.jacobian(tuple_f)(torch.tensor(2.0))
     (tensor(4.), tensor(12.))
     >>> qml.math.jacobian(pytree_f)(torch.tensor(2.0))

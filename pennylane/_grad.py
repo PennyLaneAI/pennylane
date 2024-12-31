@@ -252,14 +252,14 @@ class grad:
 
 
 def _error_if_not_array(f):
-    """A function decorator that raises an error in the function output is not an autograd, pennylane, or numpy array."""
+    """A function decorator that raises an error if the function output is not an autograd, pennylane, or numpy array."""
 
     @wraps(f)
     def new_f(*args, **kwargs):
         output = f(*args, **kwargs)
         if output.__class__.__module__.split(".")[0] not in {"autograd", "pennylane", "numpy"}:
             raise ValueError(
-                f"autograd can only differentiate with respect to arrays, not {type(output)}"
+                f"autograd can only differentiate with respect to arrays, not {type(output)}. Ensure the output class is an autograd array."
             )
         return output
 
