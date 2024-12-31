@@ -566,33 +566,52 @@ class TestTransformProgram:
             transform_program.push_back(transform2)
 
 
-def test_classical_cotransform_caching():
-    """Tests for setting the classical cotransform."""
+class TestClassicalCotransfroms:
+    """Test for handling the classical cotransform component."""
 
-    @qml.qnode(qml.device("default.qubit"))
-    def f(*_, **__):
-        return qml.state()
+    def test_classical_cotransform_caching(self):
+        """Tests for setting the classical cotransform."""
 
-    program1 = TransformProgram()  # no hybrid transforms
-    assert program1.cotransform_cache is None
-    program1.set_classical_component(f, (1,), {"a": 2})
-    assert program1.cotransform_cache is None
+        @qml.qnode(qml.device("default.qubit"))
+        def f(*_, **__):
+            return qml.state()
 
-    hybrid_t = TransformContainer(
-        qml.gradients.param_shift, (), {"hybrid": True}, classical_cotransform=lambda *args: 0
-    )
-    program2 = TransformProgram((hybrid_t,))
-    program2.set_classical_component(f, (1,), {"a": 2})
-    assert program2.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+        program1 = TransformProgram()  # no hybrid transforms
+        assert program1.cotransform_cache is None
+        program1.set_classical_component(f, (1,), {"a": 2})
+        assert program1.cotransform_cache is None
 
-    program3 = program1 + program2
-    assert program3.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+        hybrid_t = TransformContainer(
+            qml.gradients.param_shift, (), {"hybrid": True}, classical_cotransform=lambda *args: 0
+        )
+        program2 = TransformProgram((hybrid_t,))
+        program2.set_classical_component(f, (1,), {"a": 2})
+        assert program2.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
 
-    program4 = program2 + program1
-    assert program4.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+        program3 = program1 + program2
+        assert program3.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
 
-    with pytest.raises(ValueError, match=r"programs with cotransform caches"):
-        _ = program2 + program2
+        program4 = program2 + program1
+        assert program4.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+
+        with pytest.raises(ValueError, match=r"programs with cotransform caches"):
+            _ = program2 + program2
+
+    def test_error_on_numpy_qnode(self):
+        """Test an error is raised if there are no trainable parameters for a hybrid program."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        program = TransformProgram()
+        program.add_transform(qml.gradients.param_shift, hybrid=True)
+        program.set_classical_component(circuit, (0.5,), {})
+
+        tape = qml.tape.QuantumScript([], [])
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters"):
+            program((tape,))
 
 
 class TestTransformProgramCall:
