@@ -19,7 +19,6 @@ be found in pennylane/math/fidelity_gradient.md
 """
 from functools import lru_cache
 
-import autograd
 import autoray as ar
 
 import pennylane as qml
@@ -173,6 +172,8 @@ def _register_vjp(state0, state1):
     VJPs at PennyLane import time.
     """
     interface = qml.math.get_interface(state0, state1)
+    if interface == "autograd":
+        _register_autograd_vjp()
     if interface == "jax":
         _register_jax_vjp()
     elif interface == "torch":
@@ -265,29 +266,31 @@ ar.register_function("numpy", "compute_fidelity", _compute_fidelity_vanilla)
 ################################ autograd ################################
 
 
-@autograd.extend.primitive
-def _compute_fidelity_autograd(dm0, dm1):
-    return _compute_fidelity_vanilla(dm0, dm1)
+@lru_cache(maxsize=None)
+def _register_autograd_vjp():
+    import autograd
 
+    @autograd.extend.primitive
+    def _compute_fidelity_autograd(dm0, dm1):
+        return _compute_fidelity_vanilla(dm0, dm1)
 
-def _compute_fidelity_autograd_vjp0(_, dm0, dm1):
-    def vjp(grad_out):
-        return _compute_fidelity_vjp0(dm0, dm1, grad_out)
+    def _compute_fidelity_autograd_vjp0(_, dm0, dm1):
+        def vjp(grad_out):
+            return _compute_fidelity_vjp0(dm0, dm1, grad_out)
 
-    return vjp
+        return vjp
 
+    def _compute_fidelity_autograd_vjp1(_, dm0, dm1):
+        def vjp(grad_out):
+            return _compute_fidelity_vjp1(dm0, dm1, grad_out)
 
-def _compute_fidelity_autograd_vjp1(_, dm0, dm1):
-    def vjp(grad_out):
-        return _compute_fidelity_vjp1(dm0, dm1, grad_out)
+        return vjp
 
-    return vjp
+    autograd.extend.defvjp(
+        _compute_fidelity_autograd, _compute_fidelity_autograd_vjp0, _compute_fidelity_autograd_vjp1
+    )
+    ar.register_function("autograd", "compute_fidelity", _compute_fidelity_autograd)
 
-
-autograd.extend.defvjp(
-    _compute_fidelity_autograd, _compute_fidelity_autograd_vjp0, _compute_fidelity_autograd_vjp1
-)
-ar.register_function("autograd", "compute_fidelity", _compute_fidelity_autograd)
 
 ################################# jax #####################################
 

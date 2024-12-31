@@ -17,9 +17,10 @@
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis

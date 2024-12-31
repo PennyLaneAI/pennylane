@@ -17,7 +17,7 @@ import warnings
 from scipy.linalg import sqrtm
 
 import pennylane as qml
-from pennylane import numpy as pnp
+from pennylane import math
 
 
 class QNSPSAOptimizer:
@@ -143,7 +143,9 @@ class QNSPSAOptimizer:
         self.k = 1
         self.resamplings = resamplings
         self.blocking = blocking
-        self.last_n_steps = pnp.zeros(history_length)
+        self.last_n_steps = qml.math.zeros(history_length, like="autograd")
+        from pennylane import numpy as pnp
+
         self.rng = pnp.random.default_rng(seed)
 
     def step(self, cost, *args, **kwargs):
@@ -239,7 +241,7 @@ class QNSPSAOptimizer:
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
             for i in range(self.resamplings)
         ]
-        grads = pnp.array(grads)
+        grads = math.asarray(grads, like="autograd")
         metric_tensors = [
             self._post_process_tensor(
                 raw_results[2 * self.resamplings + 4 * i : 2 * self.resamplings + 4 * i + 4],
@@ -247,9 +249,9 @@ class QNSPSAOptimizer:
             )
             for i in range(self.resamplings)
         ]
-        metric_tensors = pnp.array(metric_tensors)
-        grad_avg = pnp.mean(grads, axis=0)
-        tensor_avg = pnp.mean(metric_tensors, axis=0)
+        metric_tensors = math.asarray(metric_tensors, like="autograd")
+        grad_avg = math.mean(grads, axis=0)
+        tensor_avg = math.mean(metric_tensors, axis=0)
 
         self._update_tensor(tensor_avg)
         params_next = self._get_next_params(args, grad_avg)
@@ -300,8 +302,8 @@ class QNSPSAOptimizer:
         )
         return (
             -(
-                pnp.tensordot(tensor_dirs[0], tensor_dirs[1], axes=0)
-                + pnp.tensordot(tensor_dirs[1], tensor_dirs[0], axes=0)
+                math.tensordot(tensor_dirs[0], tensor_dirs[1], axes=0)
+                + math.tensordot(tensor_dirs[1], tensor_dirs[0], axes=0)
             )
             * tensor_finite_diff
             / (8 * self.finite_diff_step**2)
@@ -322,12 +324,12 @@ class QNSPSAOptimizer:
 
         # params_vec and grad_vec group multiple inputs into the same vector to solve the
         # linear equation
-        params_vec = pnp.concatenate([param.reshape(-1) for param in params])
-        grad_vec = pnp.concatenate([grad.reshape(-1) for grad in gradient])
+        params_vec = math.concatenate([param.reshape(-1) for param in params])
+        grad_vec = math.concatenate([grad.reshape(-1) for grad in gradient])
 
-        new_params_vec = pnp.matmul(
-            pnp.linalg.pinv(self.metric_tensor),
-            (-self.stepsize * grad_vec + pnp.matmul(self.metric_tensor, params_vec)),
+        new_params_vec = math.matmul(
+            math.linalg.pinv(self.metric_tensor),
+            (-self.stepsize * grad_vec + math.matmul(self.metric_tensor, params_vec)),
         )
         # reshape single-vector new_params_vec into new_params, to match the input params
         params_split_indices = []
@@ -335,7 +337,7 @@ class QNSPSAOptimizer:
         for param in params:
             tmp += param.size
             params_split_indices.append(tmp)
-        new_params = pnp.split(new_params_vec, params_split_indices)
+        new_params = math.split(new_params_vec, params_split_indices)
         new_params_reshaped = [new_params[i].reshape(params[i].shape) for i in range(len(params))]
 
         next_args = []
@@ -378,12 +380,12 @@ class QNSPSAOptimizer:
     def _update_tensor(self, tensor_raw):
         def get_tensor_moving_avg(metric_tensor):
             if self.metric_tensor is None:
-                self.metric_tensor = pnp.identity(metric_tensor.shape[0])
+                self.metric_tensor = math.identity(metric_tensor.shape[0])
             return self.k / (self.k + 1) * self.metric_tensor + 1 / (self.k + 1) * metric_tensor
 
         def regularize_tensor(metric_tensor):
-            tensor_reg = pnp.real(sqrtm(pnp.matmul(metric_tensor, metric_tensor)))
-            return (tensor_reg + self.reg * pnp.identity(metric_tensor.shape[0])) / (1 + self.reg)
+            tensor_reg = math.real(sqrtm(math.matmul(metric_tensor, metric_tensor)))
+            return (tensor_reg + self.reg * math.identity(metric_tensor.shape[0])) / (1 + self.reg)
 
         tensor_avg = get_tensor_moving_avg(tensor_raw)
         tensor_regularized = regularize_tensor(tensor_avg)
@@ -408,7 +410,7 @@ class QNSPSAOptimizer:
             args_list[1][index] = arg + self.finite_diff_step * dir1
             args_list[2][index] = arg + self.finite_diff_step * (-dir1 + dir2)
             args_list[3][index] = arg - self.finite_diff_step * dir1
-        dir_vecs = (pnp.concatenate(dir1_list), pnp.concatenate(dir2_list))
+        dir_vecs = (math.concatenate(dir1_list), math.concatenate(dir2_list))
         tapes = [
             self._get_overlap_tape(cost, args, args_finite_diff, kwargs)
             for args_finite_diff in args_list
