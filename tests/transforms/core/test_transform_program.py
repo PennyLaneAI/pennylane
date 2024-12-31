@@ -578,7 +578,9 @@ def test_classical_cotransform_caching():
     program1.set_classical_component(f, (1,), {"a": 2})
     assert program1.cotransform_cache is None
 
-    hybrid_t = TransformContainer(qml.gradients.param_shift, (), {"hybrid": True})
+    hybrid_t = TransformContainer(
+        qml.gradients.param_shift, (), {"hybrid": True}, classical_cotransform=lambda *args: 0
+    )
     program2 = TransformProgram((hybrid_t,))
     program2.set_classical_component(f, (1,), {"a": 2})
     assert program2.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
