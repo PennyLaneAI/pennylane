@@ -101,20 +101,6 @@ def grad(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
     return compute_grad
 
 
-def _error_if_not_array(f):
-    """Raises an error if the function output is not an autograd or numpy array."""
-
-    def new_f(*args, **kwargs):
-        output = f(*args, **kwargs)
-        if get_interface(output) not in {"autograd", "numpy"}:
-            raise ValueError(
-                f"autograd can only differentiate with respect to arrays, not {type(output)}. Ensure the output interface is an autograd array."
-            )
-        return output
-
-    return new_f
-
-
 # pylint: disable=import-outside-toplevel
 def _torch_jac(f, argnums, args, kwargs):
     """Calculate a jacobian via torch."""
@@ -242,7 +228,7 @@ def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
         interface = get_interface(*args)
 
         if interface == "autograd":
-            return _autograd_jacobian(_error_if_not_array(f), argnum=argnums)(*args, **kwargs)
+            return _autograd_jacobian(f, argnum=argnums)(*args, **kwargs)
 
         if interface == "jax":
             import jax
