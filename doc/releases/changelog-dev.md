@@ -607,6 +607,9 @@ same information.
 * Updated the documentation of `QSVT` to include examples for different block encodings.
   [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
 
+* The link to `qml.ops.one_qubit_transform` was fixed in the `QubitUnitary` docstring.
+  [(#6745)](https://github.com/PennyLaneAI/pennylane/pull/6745)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
