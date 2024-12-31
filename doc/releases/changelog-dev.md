@@ -430,7 +430,7 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Labs 🧪</h3>
 
-<h4>Resource Estimation Infrastructure</h4>
+<h4>Resource estimation</h4>
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
