@@ -113,6 +113,7 @@ def _error_if_not_array(f):
     return new_f
 
 
+# pylint: disable=import-outside-toplevel
 def _torch_jac(f, argnums, args, kwargs):
     """Calculate a jacobian via torch."""
     from torch.autograd.functional import jacobian as _torch_jac
@@ -138,6 +139,7 @@ def _torch_jac(f, argnums, args, kwargs):
     return jac[0] if isinstance(argnums, int) else jac
 
 
+# pylint: disable=import-outside-toplevel
 def _tensorflow_jac(f, argnums, args, kwargs):
     """Calculate a jacobian via tensorflow"""
     import tensorflow as tf
@@ -165,73 +167,72 @@ def _tensorflow_jac(f, argnums, args, kwargs):
 def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
     """Compute the gradient in a jax-like manner for any interface.
 
-     Args:
-         f (Callable): a function with a vector valued output
-         argnums (Sequence[int] | int ) = 0 : which arguments to differentiate
+    Args:
+        f (Callable): a function with a vector valued output
+        argnums (Sequence[int] | int ) = 0 : which arguments to differentiate
 
-     Returns:
-         Callable: a function with the same signature as ``f`` that returns the jacobian
+    Returns:
+        Callable: a function with the same signature as ``f`` that returns the jacobian
 
-     .. seealso:: :func:`pennylane.math.grad`
+    .. seealso:: :func:`pennylane.math.grad`
 
+    Note that this function follows the same design as jax. By default, the function will return the gradient
+    of the first argument, whether or not other arguments are trainable.
 
-     Note that this function follows the same design as jax. By default, the function will return the gradient
-     of the first argument, whether or not other arguments are trainable.
-
-     >>> import jax, torch, tensorflow as tf
-     >>> def f(x, y):
-     ...     return  x * y
-     >>> qml.math.jacobian(f)(qml.numpy.array([2.0, 3.0]), qml.numpy.array(3.0))
-     array([[3., 0.],
+    >>> import jax, torch, tensorflow as tf
+    >>> def f(x, y):
+    ...     return  x * y
+    >>> qml.math.jacobian(f)(qml.numpy.array([2.0, 3.0]), qml.numpy.array(3.0))
+    array([[3., 0.],
+    [0., 3.]])
+    >>> qml.math.jacobian(f)(jax.numpy.array([2.0, 3.0]), jax.numpy.array(3.0))
+    Array([[3., 0.],
+    [0., 3.]], dtype=float32)
+    >>> x_torch = torch.tensor([2.0, 3.0], requires_grad=True)
+    >>> y_torch = torch.tensor(3.0, requires_grad=True)
+    >>> qml.math.jacobian(f)(x_torch, y_torch)
+    tensor([[3., 0.],
         [0., 3.]])
-     >>> qml.math.jacobian(f)(jax.numpy.array([2.0, 3.0]), jax.numpy.array(3.0))
-     Array([[3., 0.],
-        [0., 3.]], dtype=float32)
-     >>> x_torch = torch.tensor([2.0, 3.0], requires_grad=True)
-     >>> y_torch = torch.tensor(3.0, requires_grad=True)
-     >>> qml.math.jacobian(f)(x_torch, y_torch)
-     tensor([[3., 0.],
-         [0., 3.]])
-     >>> qml.math.jacobian(f)(tf.Variable([2.0, 3.0]), tf.Variable(3.0))
+    >>> qml.math.jacobian(f)(tf.Variable([2.0, 3.0]), tf.Variable(3.0))
     <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
-     array([[3., 0.],
-         [0., 3.]], dtype=float32)>
+    array([[3., 0.],
+        [0., 3.]], dtype=float32)>
 
-     ``argnums`` can be provided to differentiate multiple arguments.
+    ``argnums`` can be provided to differentiate multiple arguments.
 
-     >>> qml.math.jacobian(f, argnums=(0,1))(x_torch, y_torch)
-     (tensor([[3., 0.],
-             [0., 3.]]),
-     tensor([2., 3.]))
+    >>> qml.math.jacobian(f, argnums=(0,1))(x_torch, y_torch)
+    (tensor([[3., 0.],
+            [0., 3.]]),
+    tensor([2., 3.]))
 
-     While jax can handle taking jacobians of outputs with any pytree shape:
+    While jax can handle taking jacobians of outputs with any pytree shape:
 
-     >>> def pytree_f(x):
-     ...     return {"a": 2*x, "b": 3*x}
-     >>> qml.math.jacobian(pytree_f)(jax.numpy.array(2.0))
-     {'a': Array(2., dtype=float32, weak_type=True),
-     'b': Array(3., dtype=float32, weak_type=True)}
+    >>> def pytree_f(x):
+    ...     return {"a": 2*x, "b": 3*x}
+    >>> qml.math.jacobian(pytree_f)(jax.numpy.array(2.0))
+    {'a': Array(2., dtype=float32, weak_type=True),
+    'b': Array(3., dtype=float32, weak_type=True)}
 
-     Torch can only differentiate arrays and tuples:
+    Torch can only differentiate arrays and tuples:
 
-     >>> def tuple_f(x):
-     ... return x**2, x**3
-     >>> qml.math.jacobian(tuple_f)(torch.tensor(2.0))
-     (tensor(4.), tensor(12.))
-     >>> qml.math.jacobian(pytree_f)(torch.tensor(2.0))
-     TypeError: The outputs of the user-provided function given to jacobian must be
-     either a Tensor or a tuple of Tensors but the given outputs of the user-provided
-     function has type <class 'dict'>.
+    >>> def tuple_f(x):
+    ... return x**2, x**3
+    >>> qml.math.jacobian(tuple_f)(torch.tensor(2.0))
+    (tensor(4.), tensor(12.))
+    >>> qml.math.jacobian(pytree_f)(torch.tensor(2.0))
+    TypeError: The outputs of the user-provided function given to jacobian must be
+    either a Tensor or a tuple of Tensors but the given outputs of the user-provided
+    function has type <class 'dict'>.
 
 
-     But tensorflow and autograd can only handle array-valued outputs:
+    But tensorflow and autograd can only handle array-valued outputs:
 
-     >>> qml.math.jacobian(tuple_f)(qml.numpy.array(2.0))
-     ValueError: autograd can only differentiate with respect to arrays, not <class 'tuple'>
-     >>> qml.math.jacobian(tuple_f)(tf.Variable(2.0))
-     ValueError: qml.math.jacobian does not work with tensorflow and non-tensor outputs.
-     Got (<tf.Tensor: shape=(), dtype=float32, numpy=4.0>,
-     <tf.Tensor: shape=(), dtype=float32, numpy=8.0>) of type <class 'tuple'>.
+    >>> qml.math.jacobian(tuple_f)(qml.numpy.array(2.0))
+    ValueError: autograd can only differentiate with respect to arrays, not <class 'tuple'>
+    >>> qml.math.jacobian(tuple_f)(tf.Variable(2.0))
+    ValueError: qml.math.jacobian does not work with tensorflow and non-tensor outputs.
+    Got (<tf.Tensor: shape=(), dtype=float32, numpy=4.0>,
+    <tf.Tensor: shape=(), dtype=float32, numpy=8.0>) of type <class 'tuple'>.
 
     """
 
