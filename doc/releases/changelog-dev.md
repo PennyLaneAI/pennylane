@@ -192,7 +192,7 @@
   [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
-<h4>New API for Default Mixed</h4>
+<h4>New device API for Default Mixed</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
 
@@ -665,4 +665,4 @@ William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
 Jay Soni,
-David Wierichs,
+David Wierichs.
