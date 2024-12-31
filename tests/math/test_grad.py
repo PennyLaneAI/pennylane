@@ -63,8 +63,8 @@ class TestGrad:
             assert math.get_interface(g1) == interface
             assert math.get_interface(g2) == interface
 
-        assert math.allclose(g1, 2)
-        assert math.allclose(g2, 3)
+        assert math.allclose(g1, 2.0)
+        assert math.allclose(g2, 3.0)
 
     def test_keyword_arguments(self, interface):
         """Test that keyword arguments are considered."""
