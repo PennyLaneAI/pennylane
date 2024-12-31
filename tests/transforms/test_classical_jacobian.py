@@ -149,8 +149,8 @@ def test_error_undefined_interface():
     """Test that an error is raised in the qnode interface is not differentiable."""
 
     @qml.qnode(qml.device("default.qubit"), interface=None)
-    def circuit(a):
-        qml.RX(a, 0)
+    def circuit(_var):
+        qml.RX(_var, 0)
         return qml.expval(qml.Z(0))
 
     with pytest.raises(ValueError, match="Undifferentiable interface numpy"):

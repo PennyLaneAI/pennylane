@@ -92,6 +92,7 @@ class TestJacobian:
         y = math.asarray(3.0, like=interface, requires_grad=True)
 
         g = math.jacobian(f)(x, y)
+        print(g)
         if interface != "autograd":
             assert math.get_interface(g) == interface
         expected = math.asarray([[3.0, 0.0], [0.0, 3.0]])
@@ -124,3 +125,69 @@ class TestJacobian:
 
         g = math.jacobian(f)(x, constant=2.0)
         assert math.allclose(g, 2 * math.eye(2))
+
+
+class TestJacobianPytreeOutput:
+    """Test jacobians of non-array outputs."""
+
+    def test_jacobian_autograd_error(self):
+        """Test that an informative error if the output of a function isnt an array."""
+
+        def f(x):
+            return (x,)
+
+        with pytest.raises(
+            ValueError, match="autograd can only differentiate with respect to arrays,"
+        ):
+            math.jacobian(f)(math.asarray(2.0, like="autograd", requires_grad=True))
+
+    def test_jacobian_tf_error(self):
+        """Test that an informative error is raised if the output of a function isnt an array with tensorflow."""
+
+        def f(x):
+            return (x,)
+
+        with pytest.raises(
+            ValueError, match="qml.math.jacobian does not work with tensorflow and non-tensor"
+        ):
+            math.jacobian(f)(math.asarray(2.0, like="tensorflow", requires_grad=True))
+
+    @pytest.mark.parametrize("interface", ("torch", "jax"))
+    def test_tuple_output_scalar_argnum(self, interface):
+        """Test the shape outputted for a tuple valued function."""
+
+        def f(x):
+            return (5 * x, x**2)
+
+        jac = math.jacobian(f)(math.asarray(2.0, like=interface, requires_grad=True))
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
+        for j in jac:
+            assert math.get_interface(j) == interface
+
+        assert math.allclose(jac[0], 5)
+        assert math.allclose(jac[1], 4)
+
+    @pytest.mark.parametrize("interface", ("torch", "jax"))
+    def test_tuple_output_tuple_argnum(self, interface):
+        """Test the shape outputted for a tuple valued function with multiple traianble arguments."""
+
+        def f(x, y):
+            return (2 * y**2, 3 * x**2)
+
+        x = math.asarray(1.5, like=interface, requires_grad=True)
+        y = math.asarray(2.5, like=interface, requires_grad=True)
+
+        jac = math.jacobian(f, argnums=(0, 1))(x, y)
+
+        assert len(jac) == 2
+        assert len(jac[0]) == 2
+        assert len(jac[1]) == 2
+        dy0_dx0_expected = 0
+        assert math.allclose(jac[0][0], dy0_dx0_expected)
+        dy0_dx1_expected = 4 * y
+        assert math.allclose(jac[0][1], dy0_dx1_expected)
+        dy1_dx0_expected = 6 * x
+        assert math.allclose(jac[1][0], dy1_dx0_expected)
+        dy1_dx1_expected = 0
+        assert math.allclose(jac[1][1], dy1_dx1_expected)
