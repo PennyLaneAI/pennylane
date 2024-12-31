@@ -21,7 +21,6 @@ import copy
 import itertools
 import string
 import sys
-import warnings
 from functools import partial, reduce
 from itertools import product
 from os import environ
@@ -39,14 +38,6 @@ from pennylane import numpy as np
 from pennylane import qcut
 from pennylane.queuing import WrappedObj
 from pennylane.wires import Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 pytestmark = pytest.mark.qcut
 
@@ -5563,14 +5554,16 @@ class TestCutCircuitWithHamiltonians:
         cut_circuit = qcut.cut_circuit(
             qml.QNode(f, dev_cut), auto_cutter=True, device_wires=qml.wires.Wires(range(3))
         )
+        cut_tape = qml.workflow.construct_tape(cut_circuit, level=0)()
 
         res_expected = circuit()
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit()
+
         assert spy.call_count == len(hamiltonian.ops)
         assert np.isclose(res, res_expected, atol=1e-8)
-        assert cut_circuit.tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
+        assert cut_tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
 
     def test_template_with_hamiltonian(self, seed):
         """Test cut with MPS Template"""

@@ -49,8 +49,62 @@ X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
 
 
+# pylint: disable=too-many-public-methods
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
+
+    def test_wires_is_none(self):
+        """Test that an error is raised if the user provides no target wires for an iterable base operator"""
+        base_op = [[0, 1], [1, 0]]
+
+        with pytest.raises(TypeError, match="Must specify a set of wires"):
+            qml.ControlledQubitUnitary(base_op, control_wires=1, wires=None)
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_wires_specified_twice_with_capture(self):
+        """Test that a UserWarning is raised for providing redundant wires with capture enabled"""
+        base = qml.QubitUnitary(X, wires=0)
+        with pytest.warns(
+            UserWarning,
+            match="base operator already has wires; values specified through wires kwarg will be ignored.",
+        ):
+            qml.ControlledQubitUnitary(base, control_wires=[1, 2], wires=3)
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "control_wires, wires",
+        [(0, 1), ([0, 1], [2])],
+    )
+    def test_consistency_with_capture(self, control_wires, wires):
+        """Test that the operator wires are as expected with capture enabled"""
+        base_op = [[0, 1], [1, 0]]
+
+        op_kwarg = qml.ControlledQubitUnitary(base_op, control_wires=control_wires, wires=wires)
+        assert op_kwarg.base.wires == Wires(wires)
+        assert op_kwarg.control_wires == Wires(control_wires)
+        op = qml.ControlledQubitUnitary(base_op, control_wires, wires)
+        assert op.base.wires == Wires(wires)
+        assert op.control_wires == Wires(control_wires)
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_pairwise_consistency_with_capture(self):
+        """Test that both combinations of control and target wires lead to the same operator"""
+        base_op = [[0, 1], [1, 0]]
+
+        control_wires_1, wires_1 = [0, 1], [2]
+        op_1 = qml.ControlledQubitUnitary(base_op, control_wires=control_wires_1, wires=wires_1)
+
+        assert op_1.base.wires == Wires(2)
+        assert op_1.control_wires == Wires([0, 1])
+
+        control_wires_2, wires_2 = [0, 1, 2], ()
+        op_2 = qml.ControlledQubitUnitary(base_op, control_wires=control_wires_2, wires=wires_2)
+
+        assert op_2.base.wires == Wires(2)
+        assert op_2.control_wires == Wires([0, 1])
 
     def test_initialization_from_matrix_and_operator(self):
         base_op = QubitUnitary(X, wires=1)
@@ -88,7 +142,7 @@ class TestControlledQubitUnitary:
         with pytest.raises(ValueError, match=r"Input unitary must be of shape \(2, 2\)"):
             qml.ControlledQubitUnitary(np.eye(4), control_wires=[0, 1], wires=2).matrix()
 
-    @pytest.mark.parametrize("target_wire", range(3))
+    @pytest.mark.parametrize("target_wire", list(range(3)))
     def test_toffoli(self, target_wire):
         """Test if ControlledQubitUnitary acts like a Toffoli gate when the input unitary is a
         single-qubit X. This test allows the target wire to be any of the three wires."""
