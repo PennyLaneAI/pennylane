@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
-import warnings
 
 import numpy as np
 
@@ -22,14 +21,6 @@ import pytest
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
@@ -88,10 +79,6 @@ class TestQNode:
         a = tf.Variable(0.1)
         circuit(a)
 
-        # if executing outside a gradient tape, the number of trainable parameters
-        # cannot be determined by TensorFlow
-        assert circuit.qtape.trainable_params == []
-
         with tf.GradientTape() as tape:
             res = circuit(a)
 
@@ -100,9 +87,6 @@ class TestQNode:
         # with the interface, the tape returns tensorflow tensors
         assert isinstance(res, tf.Tensor)
         assert res.shape == ()
-
-        # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         grad = tape.gradient(res, a)
@@ -199,8 +183,6 @@ class TestQNode:
             res = circuit(a, b)
             res = tf.stack(res)
 
-        assert circuit.qtape.trainable_params == [0, 1]
-
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
 
@@ -270,9 +252,6 @@ class TestQNode:
             res = circuit(a, b)
             res = tf.stack(res)
 
-        # the tape has reported both gate arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1]
-
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -290,9 +269,6 @@ class TestQNode:
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
             res = tf.stack(res)
-
-        # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == [0]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -322,10 +298,6 @@ class TestQNode:
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b, c)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [0, 2]
-            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + tf.sin(a)]
 
         res = tape.jacobian(res, [a, b, c], experimental_use_pfor=not device_vjp)
 
@@ -358,9 +330,6 @@ class TestQNode:
             res = circuit(a, b)
             res = tf.stack(res)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == []
-
         assert res.shape == (2,)
         assert isinstance(res, tf.Tensor)
 
@@ -390,9 +359,6 @@ class TestQNode:
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(U, a)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 

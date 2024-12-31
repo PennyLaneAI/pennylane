@@ -14,7 +14,6 @@
 """Integration tests for using the autograd interface with a QNode"""
 # pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-dict-literal, no-name-in-module
 
-import warnings
 
 import autograd
 import autograd.numpy as anp
@@ -25,14 +24,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
@@ -165,7 +156,6 @@ class TestQNode:
         def cost(x, y):
             return autograd.numpy.hstack(circuit(x, y))
 
-        assert circuit.qtape.trainable_params == [0, 1]
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -276,10 +266,6 @@ class TestQNode:
 
         grad_fn = qml.grad(loss)
         res = grad_fn(a, b)
-
-        # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1]
-
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -288,18 +274,15 @@ class TestQNode:
         b = np.array(0.8, requires_grad=False)
 
         res = grad_fn(a, b)
-
-        # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == [0]
-
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # trainability also updates on evaluation
         a = np.array(0.54, requires_grad=False)
         b = np.array(0.8, requires_grad=True)
-        circuit(a, b)
-        assert circuit.qtape.trainable_params == [1]
+        res = grad_fn(a, b)
+        expected = [-np.cos(a) * np.cos(b)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_classical_processing(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test classical processing within the quantum tape"""
@@ -321,10 +304,6 @@ class TestQNode:
             return qml.expval(qml.PauliZ(0))
 
         res = qml.jacobian(circuit)(a, b, c)
-
-        assert circuit.qtape.trainable_params == [0, 2]
-        tape_params = np.array(circuit.qtape.get_parameters())
-        assert np.all(tape_params == [a * c, c + c**2 + np.sin(a)])
 
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == ()
@@ -352,9 +331,6 @@ class TestQNode:
         b = np.array(0.2, requires_grad=False)
 
         res = circuit(a, b)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == []
 
         assert len(res) == 2
         assert isinstance(res, tuple)
@@ -394,9 +370,6 @@ class TestQNode:
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(U, a)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
 
         res = qml.grad(circuit)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
@@ -931,15 +904,6 @@ class TestQubitIntegration:
         # np.hstack 'flattens' the ragged gradient array allowing it
         # to be compared with the expected result
         assert np.allclose(np.hstack(res), expected, atol=tol, rtol=0)
-
-        if diff_method != "backprop":
-            # Check that the gradient was computed
-            # for all parameters in circuit2
-            assert circuit2.qtape.trainable_params == [0, 1, 2, 3]
-
-            # Check that the parameter-shift rule was not applied
-            # to the first parameter of circuit1.
-            assert circuit1.qtape.trainable_params == [1, 2]
 
     def test_second_derivative(
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol

@@ -92,9 +92,9 @@ class TestInitialization:
         def circuit():
             return qml.vn_entropy(wires=0, log_base=2)
 
-        circuit()
+        tape = qml.workflow.construct_tape(circuit)()
 
-        assert isinstance(circuit.tape[0], VnEntropyMP)
+        assert isinstance(tape[0], VnEntropyMP)
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``log_base`` information."""

@@ -261,12 +261,13 @@ class TestParamShift:
             return qml.probs([2, 3])
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
-        circuit.construct((params,), {})
+
+        tape = qml.workflow.construct_tape(circuit)(params)
 
         result = qml.gradients.param_shift(circuit)(params)
         assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
 
-        tapes, _ = qml.gradients.param_shift(circuit.tape, broadcast=broadcast)
+        tapes, _ = qml.gradients.param_shift(tape, broadcast=broadcast)
         assert tapes == []
 
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
