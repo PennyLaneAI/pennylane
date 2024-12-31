@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 from collections.abc import Sequence
-from unittest.mock import patch
 
 import mcm_utils
 import numpy as np

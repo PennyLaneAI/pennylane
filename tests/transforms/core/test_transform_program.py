@@ -25,6 +25,7 @@ from pennylane.transforms.core import (
     transform,
 )
 from pennylane.transforms.core.transform_program import (
+    CotransfromCache,
     _apply_postprocessing_stack,
     _batch_postprocessing,
     null_postprocessing,
@@ -563,6 +564,33 @@ class TestTransformProgram:
             TransformError, match="The transform program already has a terminal transform."
         ):
             transform_program.push_back(transform2)
+
+
+def test_classical_cotransform_caching():
+    """Tests for setting the classical cotransform."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def f(*_, **__):
+        return qml.state()
+
+    program1 = TransformProgram()  # no hybrid transforms
+    assert program1.cotransform_cache is None
+    program1.set_classical_component(f, (1,), {"a": 2})
+    assert program1.cotransform_cache is None
+
+    hybrid_t = TransformContainer(qml.gradients.param_shift, (), {"hybrid": True})
+    program2 = TransformProgram((hybrid_t,))
+    program2.set_classical_component(f, (1,), {"a": 2})
+    assert program2.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+
+    program3 = program1 + program2
+    assert program3.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+
+    program4 = program2 + program1
+    assert program4.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+
+    with pytest.raises(ValueError, match=r"programs with cotransform caches"):
+        _ = program2 + program2
 
 
 class TestTransformProgramCall:

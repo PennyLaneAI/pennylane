@@ -215,6 +215,12 @@ class TransformProgram:
 
     The order of execution is the order in the list containing the containers.
 
+    Args:
+        initial_program (Optional[Sequence[TransformContainer]]): A sequence of transforms to
+            initialize the program with
+        cotransform_cache (Optional[CotransformCache]): A named tuple containing the ``qnode``,
+            ``args``, and ``kwargs`` required to compute classical cotransforms.
+
     The main case where one would have to interact directly with a transform program is when developing a
     :class:`Device <pennylane.devices.Device>`. In this case, the pre-processing method of a device
     returns a transform program. You should directly refer to the device API documentation for more details.
@@ -260,7 +266,7 @@ class TransformProgram:
 
     def __init__(
         self,
-        initial_program: Optional[Sequence] = None,
+        initial_program: Optional[Sequence[TransformContainer]] = None,
         cotransform_cache: Optional[CotransfromCache] = None,
     ):
         self._transform_program = list(initial_program) if initial_program else []
@@ -299,7 +305,7 @@ class TransformProgram:
         cotransform_cache = None
         if self.cotransform_cache:
             if other.cotransform_cache:
-                raise ValueError("Cannot add two transforms with cotransform caches.")
+                raise ValueError("Cannot add two transform programs with cotransform caches.")
             cotransform_cache = self.cotransform_cache
         elif other.cotransform_cache:
             cotransform_cache = other.cotransform_cache
@@ -469,6 +475,7 @@ class TransformProgram:
 
     def set_classical_component(self, qnode, args, kwargs):
         """Set the classical jacobians and argnums if the transform is hybrid with a classical cotransform."""
+        # pylint: disable=no-member
         if self.has_classical_cotransform() and self[-1].kwargs.get("hybrid", True):
             self.cotransform_cache = CotransfromCache(qnode, args, kwargs)
 
@@ -503,7 +510,7 @@ class TransformProgram:
     def _get_classical_jacobian(self, index: int):
         if self.cotransform_cache is None or not self[index].classical_cotransform:
             return None
-        argnums = self[-1].kwargs.get("argnums", None)
+        argnums = self[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
         qnode, args, kwargs = self.cotransform_cache
 
         interface = _get_interface(qnode, args, kwargs)
@@ -533,7 +540,7 @@ class TransformProgram:
         qnode, args, kwargs = self.cotransform_cache
         interface = _get_interface(qnode, args, kwargs)
         transform = self[index]
-        argnums = self[-1].kwargs.get("argnums", None)
+        argnums = self[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
         argnums = [0] if interface in ["jax", "jax-jit"] and argnums is None else argnums
         # pylint: disable=protected-access
         if (transform._use_argnum or transform.classical_cotransform) and argnums:
