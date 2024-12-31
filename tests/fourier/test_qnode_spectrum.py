@@ -261,7 +261,7 @@ class TestCircuits:
                     qml.RY(0.4, wires=i)
             return qml.expval(qml.PauliZ(wires=0))
 
-        res = qnode_spectrum(circuit)(0.1)
+        res = qnode_spectrum(circuit)(pnp.array(0.1, requires_grad=True))
         expected_degree = n_qubits * n_layers
         assert list(res.keys()) == ["x"] and list(res["x"].keys()) == [()]
         assert np.allclose(res["x"][()], range(-expected_degree, expected_degree + 1))
@@ -334,12 +334,30 @@ class TestCircuits:
                 qml.RX(x, wires=2)
             return qml.expval(qml.PauliZ(wires=0))
 
-        x = 0.9
+        x = pnp.array(0.9, requires_grad=True)
         res_true = qnode_spectrum(circuit, argnum=[0])(x, last_gate=True)
         assert np.allclose(res_true["x"][()], range(-3, 4))
 
         res_false = qnode_spectrum(circuit, argnum=[0])(x, last_gate=False)
         assert np.allclose(res_false["x"][()], range(-2, 3))
+
+    def test_numpy_parameters_auto_interface(self):
+        """Test that the spectrum computation raises an error with pure numpy inputs
+        and the "auto" interface."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            qml.RX(y, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        x = np.array([0.9, 0.7])
+        y = -0.5
+        with pytest.raises(ValueError, match="Only pure numpy arguments"):
+            _ = qnode_spectrum(circuit, argnum=[0, 1])(x, y)
 
     def test_multi_par_error(self):
         """Test that an error is thrown if the spectrum of
@@ -361,7 +379,7 @@ class TestCircuits:
         with pytest.raises(
             RecursionError, match="Reached recursion limit trying to decompose operations."
         ):
-            qnode_spectrum(circuit)(1.5)
+            qnode_spectrum(circuit)(pnp.array(1.5))
 
     @pytest.mark.parametrize(
         "measurement",
@@ -378,7 +396,7 @@ class TestCircuits:
             return [qml.expval(qml.PauliX(1)), qml.apply(measurement)]
 
         with pytest.raises(ValueError, match=f"{measurement.__class__.__name__} is not supported"):
-            qnode_spectrum(circuit)(1.5)
+            qnode_spectrum(circuit)(pnp.array(1.5))
 
 
 def circuit9(x, w):
@@ -498,7 +516,7 @@ class TestJax:
         import jax
 
         x = jax.numpy.array([1.0, 2.0, 3.0])
-        w = [[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]]
+        w = jax.numpy.array([[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]])
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit9, dev)

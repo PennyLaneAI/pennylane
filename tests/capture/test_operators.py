@@ -23,14 +23,7 @@ jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
 
-pytestmark = pytest.mark.jax
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 def test_abstract_operator():
@@ -395,7 +388,7 @@ class TestAbstractDunders:
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
 
-        assert eqn.params == {"grouping_type": None, "id": None, "method": "rlf"}
+        assert eqn.params == {"grouping_type": None, "id": None, "method": "lf"}
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 

@@ -213,7 +213,7 @@ def test_pennylane_pytree_roundtrip(obj_in: Any):
     data, struct = flatten(obj_in)
     obj_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
 
-    assert qml.equal(obj_in, obj_out)
+    qml.assert_equal(obj_in, obj_out)
 
 
 @pytest.mark.parametrize(

@@ -33,11 +33,11 @@ from .kupccgsd import kUpCCGSD
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .basis_rotation import BasisRotation
-from .qsvt import QSVT, qsvt
+from .qsvt import poly_to_angles, QSVT, qsvt, qsvt_legacy, transform_angles
 from .select import Select
 from .qdrift import QDrift
 from .controlled_sequence import ControlledSequence
-from .trotter import TrotterProduct
+from .trotter import TrotterProduct, TrotterizedQfunc, trotterize
 from .aqft import AQFT
 from .fable import FABLE
 from .reflection import Reflection
@@ -52,3 +52,4 @@ from .out_multiplier import OutMultiplier
 from .out_adder import OutAdder
 from .mod_exp import ModExp
 from .out_poly import OutPoly
+from .gqsp import GQSP

@@ -32,7 +32,7 @@ from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import PostprocessingFn, Result, ResultBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from . import Device
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
@@ -199,7 +199,7 @@ def adjoint_state_measurements(
     complex_data = [qml.math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
     new_mp = qml.measurements.StateMP(wires=tape.wires)
-    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
+    state_tape = tape.copy(measurements=[new_mp])
     return (state_tape,), partial(
         all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
     )
@@ -890,6 +890,28 @@ class DefaultQubit(Device):
                 )
 
         return tuple(zip(*results))
+
+    # pylint: disable=import-outside-toplevel
+    def eval_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args
+    ) -> list[TensorLike]:
+        from .qubit.dq_interpreter import DefaultQubitInterpreter
+
+        if self.wires is None:
+            raise qml.DeviceError("Device wires are required for jaxpr execution.")
+        if self.shots.has_partitioned_shots:
+            raise qml.DeviceError("Shot vectors are unsupported with jaxpr execution.")
+        if self._prng_key is not None:
+            key = self.get_prng_keys()[0]
+        else:
+            import jax
+
+            key = jax.random.PRNGKey(self._rng.integers(100000))
+
+        interpreter = DefaultQubitInterpreter(
+            num_wires=len(self.wires), shots=self.shots.total_shots, key=key
+        )
+        return interpreter.eval(jaxpr, consts, *args)
 
 
 def _simulate_wrapper(circuit, kwargs):

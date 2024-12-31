@@ -226,8 +226,8 @@ class DefaultTensor(Device):
             `quimb's tensor_contract documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_contract>`_.
             Default is ``"auto-hq"``.
         local_simplify (str): The simplification sequence to apply to the tensor network for computing local expectation values.
-            For a complete list of available simplification options, see the
-            `quimb's full_simplify documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
+            At present, this argument can only be provided when the TN method is used. For a complete list of available simplification options,
+            see the `quimb's full_simplify documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
             Default is ``"ADCRS"``.
 
 
@@ -400,8 +400,10 @@ class DefaultTensor(Device):
         self._max_bond_dim = kwargs.get("max_bond_dim", None)
         self._cutoff = kwargs.get("cutoff", None)
 
-        # options both for MPS and TN
+        # options for TN
         self._local_simplify = kwargs.get("local_simplify", "ADCRS")
+
+        # options both for MPS and TN
         self._contraction_optimizer = kwargs.get("contraction_optimizer", "auto-hq")
         self._contract = None
 
@@ -623,7 +625,7 @@ class DefaultTensor(Device):
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
         program.add_transform(validate_device_wires, self._wires, name=self.name)
-        program.add_transform(qml.defer_measurements, device=self)
+        program.add_transform(qml.defer_measurements, allow_postselect=False)
         program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
@@ -810,14 +812,22 @@ class DefaultTensor(Device):
         # after the execution, we could avoid copying the circuit.
         qc = self._quimb_circuit.copy()
 
-        exp_val = qc.local_expectation(
-            matrix,
-            wires,
-            dtype=self._c_dtype.__name__,
-            optimize=self._contraction_optimizer,
-            simplify_sequence=self._local_simplify,
-            simplify_atol=0.0,
-        )
+        if self.method == "mps":
+            exp_val = qc.local_expectation(
+                matrix,
+                wires,
+                dtype=self._c_dtype.__name__,
+                optimize=self._contraction_optimizer,
+            )
+        else:
+            exp_val = qc.local_expectation(
+                matrix,
+                wires,
+                dtype=self._c_dtype.__name__,
+                optimize=self._contraction_optimizer,
+                simplify_sequence=self._local_simplify,
+                simplify_atol=0.0,
+            )
 
         return float(np.real(exp_val))
 

@@ -50,7 +50,6 @@ from .multi_dispatch import (
     gammainc,
     get_trainable_indices,
     iscomplex,
-    jax_argnums_to_tape_trainable,
     kron,
     matmul,
     multi_dispatch,
@@ -90,12 +89,19 @@ from .utils import (
     cast,
     cast_like,
     convert_like,
+    in_backprop,
+    requires_grad,
+    is_abstract,
+)
+from .interface_utils import (
+    get_canonical_interface_name,
+    SupportedInterfaceUserInput,
+    SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
-    in_backprop,
-    is_abstract,
-    requires_grad,
+    Interface,
 )
+from .grad import grad, jacobian
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
@@ -160,12 +166,15 @@ __all__ = [
     "frobenius_inner_product",
     "get_dtype_name",
     "get_interface",
+    "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
+    "grad",
     "in_backprop",
     "is_abstract",
     "is_independent",
     "iscomplex",
+    "jacobian",
     "marginal_prob",
     "max_entropy",
     "min_entropy",

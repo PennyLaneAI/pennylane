@@ -1,3 +1,5 @@
+:og:description: Accelerate your adoption of PennyLane! Find clear, concise, accessible, and current information that will help you understand, use, and troubleshoot issues.
+
 PennyLane Documentation
 =======================
 
@@ -193,6 +195,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
+   code/qml_bose
    code/qml_compiler
    code/qml_data
    code/qml_debugging

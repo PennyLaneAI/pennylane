@@ -189,7 +189,7 @@ class QubitUnitary(Operation):
         A decomposition is only defined for matrices that act on either one or two wires. For more
         than two wires, this method raises a ``DecompositionUndefined``.
 
-        See :func:`~.transforms.one_qubit_decomposition` and :func:`~.ops.two_qubit_decomposition`
+        See :func:`~.ops.one_qubit_decomposition` and :func:`~.ops.two_qubit_decomposition`
         for more information on how the decompositions are computed.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.

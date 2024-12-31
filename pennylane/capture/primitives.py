@@ -22,11 +22,11 @@ from pennylane.measurements.mid_measure import _create_mid_measure_primitive
 from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
 from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
 from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
+from pennylane.workflow._capture_qnode import _get_qnode_prim
 
 from .capture_diff import _get_grad_prim, _get_jacobian_prim
 from .capture_measurements import _get_abstract_measurement
 from .capture_operators import _get_abstract_operator
-from .capture_qnode import _get_qnode_prim
 
 AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
