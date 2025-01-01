@@ -114,8 +114,35 @@
 * Added support to build a vibrational Hamiltonian in the Christiansen form.
   [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
-
 <h3>Improvements 🛠</h3>
+
+<h4>QChem improvements</h4>
+
+* The `qml.qchem.factorize` function now supports new methods for double factorization:
+  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
+  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
+  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
+
+* Added `qml.qchem.symmetry_shift` function to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
+
+* Added JAX support for the differentiable Hartree-Fock workflow.
+  [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
+  [(#6707)](https://github.com/PennyLaneAI/pennylane/pull/6707)
+
+<h4>Transform for combining GlobalPhase instances</h4>
+
+* Added a new `qml.transforms.combine_global_phases` transform to combine all `qml.GlobalPhase` gates in a circuit into a single one applied at the end.
+  This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
+  decompositions that include `qml.GlobalPhase` gates, etc.
+  [(#6686)](https://github.com/PennyLaneAI/pennylane/pull/6686)
+
+<h4>Better drawing functionality</h4>
+
+* Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
+  visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
+  [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
 <h4>New device capabilities 💾</h4>
 
@@ -198,34 +225,6 @@ such as `shots`, `rng` and `prng_key`.
 
 * Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
   [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
-
-<h4>QChem improvements</h4>
-
-* The `qml.qchem.factorize` function now supports new methods for double factorization:
-  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
-  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
-  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
-
-* Added `qml.qchem.symmetry_shift` function to perform the
-  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
-  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
-
-* Added JAX support for the differentiable Hartree-Fock workflow.
-  [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
-  [(#6707)](https://github.com/PennyLaneAI/pennylane/pull/6707)
-
-<h4>Transform for combining GlobalPhase instances</h4>
-
-* Added a new `qml.transforms.combine_global_phases` transform to combine all `qml.GlobalPhase` gates in a circuit into a single one applied at the end.
-  This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
-  decompositions that include `qml.GlobalPhase` gates, etc.
-  [(#6686)](https://github.com/PennyLaneAI/pennylane/pull/6686)
-
-<h4>Better drawing functionality</h4>
-
-* Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
-  visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
-  [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -341,6 +340,10 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
+* `qml.math.grad` and `qml.math.jacobian` added to differentiate a function with inputs of any
+  interface in a jax-like manner.
+  [(#6741)](https://github.com/PennyLaneAI/pennylane/pull/6741)
+
 * `qml.GroverOperator` now has a `work_wires` property.
   [(#6738)](https://github.com/PennyLaneAI/pennylane/pull/6738)
 
@@ -451,7 +454,7 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
-<h4>New `pennylane.labs.dla` module for handling (dynamical) Lie algebras (DLAs)</h4>
+<h4>Functionality for handling dynamical Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
@@ -607,6 +610,9 @@ same information.
 
 * Updated the documentation of `QSVT` to include examples for different block encodings.
   [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
+
+* The link to `qml.ops.one_qubit_transform` was fixed in the `QubitUnitary` docstring.
+  [(#6745)](https://github.com/PennyLaneAI/pennylane/pull/6745)
 
 <h3>Bug fixes 🐛</h3>
 
