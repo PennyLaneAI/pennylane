@@ -1074,12 +1074,9 @@ class T(Operation):
 
 class V(Operation):
     r"""V(wires)
-    The single-qubit V gate (square root of NOT)
+    The V operator (square root of NOT)
 
-    .. math:: V = \frac{1}{2}\begin{bmatrix}
-                1+i & 1-i \\
-                1-i & 1+i
-            \end{bmatrix}.
+    .. math:: V = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -i\\ -i & 1\end{bmatrix}.
 
     **Details:**
 
@@ -1089,24 +1086,21 @@ class V(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-
     num_wires = 1
     num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
+    basis = "V"
+    _queue_category = "_ops"
 
-    basis = "X"
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
 
-    batch_size = None
-
-    @property
-    def pauli_rep(self):
-        """The Pauli representation of a V gate."""
-        if self._pauli_rep is None:
-            self._pauli_rep = qml.pauli.PauliSentence({
-                "I": 0.5 * (1 + 1j),
-                "X": 0.5 * (1 - 1j),
-            })
-        return self._pauli_rep
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
+        return base_label or "V"
 
     def __repr__(self) -> str:
         """String representation."""
@@ -1115,65 +1109,43 @@ class V(Operation):
             return f"V('{wire}')"
         return f"V({wire})"
 
+    @property
+    def name(self) -> str:
+        return "V"
+
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+        r"""Representation of the operator as a canonical matrix in the computational basis.
 
         Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.V.compute_matrix())
-        [[0.5+0.5j 0.5-0.5j]
-         [0.5-0.5j 0.5+0.5j]]
+            ndarray: matrix representation
         """
-        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+        return INV_SQRT2 * np.array([[1, -1j], [-1j, 1]], dtype=complex)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:
-        r"""Eigenvalues of the operator in the computational basis (static method).
+        r"""Eigenvalues of the operator in the computational basis.
 
         Returns:
             array: eigenvalues
         """
         return np.array([1, 1j])
 
-    @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
-        r"""Representation of the operator as a product of other operators.
+    def adjoint(self) -> "V":
+        return V(wires=self.wires)
 
-        Args:
-            wires (Any, Wires): Wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-        return [
-            qml.RZ(-np.pi/2, wires=wires),
-            qml.RY(np.pi/2, wires=wires),
-            qml.RZ(np.pi/2, wires=wires),
-        ]
-
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: Union[int, float]):
         if z == 2:
             return [qml.PauliX(wires=self.wires)]
         return super().pow(z)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # V = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
-        return [-np.pi/2, np.pi/2, np.pi/2]
-
 
 class G(Operation):
     r"""G(wires)
-    The single-qubit G gate (special non-Clifford gate)
+    The G operator (square root of Pauli-X with global phase)
 
-    .. math:: G = \begin{bmatrix}
-                1 & -1 \\
-                1 & 1
-            \end{bmatrix} / \sqrt{2}.
+    .. math:: G = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -1\\ 1 & 1\end{bmatrix}.
 
     **Details:**
 
@@ -1183,25 +1155,21 @@ class G(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-
     num_wires = 1
     num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
+    basis = "G"
+    _queue_category = "_ops"
 
-    basis = "X"
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
 
-    batch_size = None
-
-    @property
-    def pauli_rep(self):
-        """The Pauli representation of a G gate."""
-        if self._pauli_rep is None:
-            self._pauli_rep = qml.pauli.PauliSentence({
-                "I": INV_SQRT2,
-                "X": INV_SQRT2,
-                "Z": -INV_SQRT2,
-            })
-        return self._pauli_rep
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
+        return base_label or "G"
 
     def __repr__(self) -> str:
         """String representation."""
@@ -1210,53 +1178,34 @@ class G(Operation):
             return f"G('{wire}')"
         return f"G({wire})"
 
+    @property
+    def name(self) -> str:
+        return "G"
+
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+        r"""Representation of the operator as a canonical matrix in the computational basis.
 
         Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.G.compute_matrix())
-        [[ 0.70710678 -0.70710678]
-         [ 0.70710678  0.70710678]]
+            ndarray: matrix representation
         """
-        return INV_SQRT2 * np.array([[1, -1], [1, 1]])
+        return INV_SQRT2 * np.array([[1, -1], [1, 1]], dtype=complex)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:
-        r"""Eigenvalues of the operator in the computational basis (static method).
+        r"""Eigenvalues of the operator in the computational basis.
 
         Returns:
             array: eigenvalues
         """
-        return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j)])
+        return INV_SQRT2 * np.array([1 + 1j, 1 - 1j])
 
-    @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
-        r"""Representation of the operator as a product of other operators.
+    def adjoint(self) -> "G":
+        return G(wires=self.wires)
 
-        Args:
-            wires (Any, Wires): Wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-        return [
-            qml.RZ(np.pi, wires=wires),
-            qml.RY(-np.pi/4, wires=wires),
-            qml.RZ(0, wires=wires),
-        ]
-
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: Union[int, float]):
         return super().pow(z % 4)
-
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # G = RZ(\pi) RY(-\pi/4) RZ(0)
-        return [np.pi, -np.pi/4, 0]
 
 
 class SX(Operation):
