@@ -340,6 +340,10 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
+* `qml.math.grad` and `qml.math.jacobian` added to differentiate a function with inputs of any
+  interface in a jax-like manner.
+  [(#6741)](https://github.com/PennyLaneAI/pennylane/pull/6741)
+
 * `qml.GroverOperator` now has a `work_wires` property.
   [(#6738)](https://github.com/PennyLaneAI/pennylane/pull/6738)
 
