@@ -195,11 +195,6 @@ try:
 except ImportError as e:
     jax_available = False
 
-try:
-    from pennylane.devices import DefaultGaussian
-except ImportError:
-    DefaultGaussian = None
-
 
 # pylint: disable=unused-argument
 def pytest_generate_tests(metafunc):

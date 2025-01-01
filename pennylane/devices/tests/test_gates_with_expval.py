@@ -225,8 +225,8 @@ class TestGatesQubitExpval:
             ("PauliY", -1),
             ("PauliZ", 1),
             ("Hadamard", 0),
-            ("V", 0.0),
-            ("G", 0.0),
+            ("V", 0),
+            ("G", 0),
         ],
     )
     def test_supported_gate_single_wire_no_parameters(self, device, tol, name, expected_output):
@@ -238,10 +238,10 @@ class TestGatesQubitExpval:
 
         @qml.qnode(dev)
         def circuit():
-            op(wires=[0])
+            op(wires=0)
             return qml.expval(qml.Z(0))
 
-        assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
+        assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
 
     # This test uses initial state |Phi+> and checks two Z expvals
     @pytest.mark.parametrize(
