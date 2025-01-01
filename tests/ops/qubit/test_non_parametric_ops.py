@@ -57,6 +57,8 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.S, S),
     (qml.T, T),
     (qml.ECR, ECR),
+    (qml.V, 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])),
+    (qml.G, 1/np.sqrt(2) * np.array([[1, -1], [1, 1]])),
     # Controlled operations
     (qml.CNOT, CNOT),
     (qml.CH, CH),
@@ -950,6 +952,8 @@ period_two_ops = (
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
+    qml.V(wires=0),
+    qml.G(wires=0),
     # Controlled operations
     qml.CNOT(wires=(0, 1)),
     qml.CY(wires=(0, 1)),
@@ -958,7 +962,7 @@ period_two_ops = (
     qml.CCZ(wires=(0, 1, 2)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
-    qml.MultiControlledX(wires=(0, 1, 2, 3)),
+    qml.MultiControlledX(wires=(0, 1, 2, 3))
 )
 
 
@@ -1354,3 +1358,65 @@ class TestPauliRep:
         """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
         assert np.allclose(op.matrix(), qml.matrix(op.pauli_rep, wire_order=op.wires))
         assert np.allclose(rep, qml.matrix(op.pauli_rep, wire_order=op.wires))
+
+    def test_v_gate_matrix(self, tol):
+        """Test that the V gate has the correct matrix representation."""
+        op = qml.V(wires=0)
+        res = op.matrix()
+        expected = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+        assert np.allclose(res, expected, atol=tol)
+
+    def test_v_gate_decomposition(self, tol):
+        """Test that the V gate decomposition is correct."""
+        op = qml.V(wires=0)
+        decomp = op.decomposition()
+        
+        # V = RZ(-π/2)RY(π/2)RZ(π/2)
+        assert len(decomp) == 3
+        assert isinstance(decomp[0], qml.RZ)
+        assert isinstance(decomp[1], qml.RY)
+        assert isinstance(decomp[2], qml.RZ)
+        assert np.allclose(decomp[0].data[0], np.pi/2, atol=tol)
+        assert np.allclose(decomp[1].data[0], np.pi/2, atol=tol)
+        assert np.allclose(decomp[2].data[0], -np.pi/2, atol=tol)
+
+    def test_g_gate_matrix(self, tol):
+        """Test that the G gate has the correct matrix representation."""
+        op = qml.G(wires=0)
+        res = op.matrix()
+        expected = 1/np.sqrt(2) * np.array([[1, -1], [1, 1]])
+        assert np.allclose(res, expected, atol=tol)
+
+    def test_g_gate_decomposition(self, tol):
+        """Test that the G gate decomposition is correct."""
+        op = qml.G(wires=0)
+        decomp = op.decomposition()
+        
+        # G = RZ(π)RY(-π/4)RZ(0)
+        assert len(decomp) == 3
+        assert isinstance(decomp[0], qml.RZ)
+        assert isinstance(decomp[1], qml.RY)
+        assert isinstance(decomp[2], qml.RZ)
+        assert np.allclose(decomp[0].data[0], 0, atol=tol)
+        assert np.allclose(decomp[1].data[0], -np.pi/4, atol=tol)
+        assert np.allclose(decomp[2].data[0], np.pi, atol=tol)
+
+    def test_v_gate_adjoint(self, tol):
+        """Test that the adjoint of the V gate is correct."""
+        op = qml.V(wires=0)
+        op_adj = op.adjoint()
+        
+        # V^† = V^3 (since V^4 = I)
+        res = op_adj.matrix()
+        expected = np.linalg.matrix_power(op.matrix(), 3)
+        assert np.allclose(res, expected, atol=tol)
+
+    def test_g_gate_adjoint(self, tol):
+        """Test that the adjoint of the G gate is correct."""
+        op = qml.G(wires=0)
+        op_adj = op.adjoint()
+        
+        # G^† = G (since G^2 = I)
+        res = op_adj.matrix()
+        expected = op.matrix()
+        assert np.allclose(res, expected, atol=tol)
