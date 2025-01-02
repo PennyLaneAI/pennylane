@@ -1269,12 +1269,10 @@ class V(Operation):
         if not isinstance(z, int):
             raise qml.operation.PowUndefinedError(self, z)
         z_mod4 = z % 4
-        if z_mod4 == 0:
+        if z_mod4 == 0 or z_mod4 == 2:  # For even powers (0 or 2 mod 4)
             return []
         elif z_mod4 == 1:
             return [copy(self)]
-        elif z_mod4 == 2:
-            return [qml.PauliX(wires=self.wires)]
         else:  # z_mod4 == 3
             # This is the adjoint V^†
             # Create a new V gate and modify its matrix to be V^†
