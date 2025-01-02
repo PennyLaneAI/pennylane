@@ -475,7 +475,7 @@ class TestX:
     """Tests for the ResourceX gate"""
 
     def test_resources(self):
-        """Test that ResourceT does not implement a decomposition"""
+        """Tests for the ResourceX gate"""
         expected = {
             re.ResourceS.resource_rep(): 2,
             re.ResourceHadamard.resource_rep(): 2,
@@ -714,7 +714,7 @@ class TestY:
 
 
 class TestZ:
-    """Tests for the ResourceY gate"""
+    """Tests for the ResourceZ gate"""
 
     def test_resources(self):
         """Test that ResourceT does not implement a decomposition"""
