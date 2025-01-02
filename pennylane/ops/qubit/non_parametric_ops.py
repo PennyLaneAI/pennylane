@@ -1260,7 +1260,7 @@ class V(Operation):
 
     def adjoint(self) -> "V":
         r"""The adjoint operator is V^3 since V^4 = I."""
-        return V(wires=self.wires)
+        return self.pow(3)[0]
 
     def pow(self, z: Union[int, float]):
         r"""Implement the power operation for the V gate."""
