@@ -1260,16 +1260,27 @@ class V(Operation):
 
     def adjoint(self) -> "V":
         r"""The adjoint operator is V^3 since V^4 = I."""
-        return self.pow(3)[0]
+        adj = copy(self)
+        adj._matrix = 0.5 * np.array([[1 - 1j, 1 + 1j], [1 + 1j, 1 - 1j]], dtype=complex)
+        return adj
 
     def pow(self, z: Union[int, float]):
         r"""Implement the power operation for the V gate."""
         if not isinstance(z, int):
             raise qml.operation.PowUndefinedError(self, z)
-        z_mod2 = z % 2
-        if z_mod2 == 0:
+        z_mod4 = z % 4
+        if z_mod4 == 0:
             return []
-        return [copy(self)]
+        elif z_mod4 == 1:
+            return [copy(self)]
+        elif z_mod4 == 2:
+            return [qml.PauliX(wires=self.wires)]
+        else:  # z_mod4 == 3
+            # This is the adjoint V^†
+            # Create a new V gate and modify its matrix to be V^†
+            adj = copy(self)
+            adj._matrix = 0.5 * np.array([[1 - 1j, 1 + 1j], [1 + 1j, 1 - 1j]], dtype=complex)
+            return [adj]
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
@@ -1664,6 +1675,7 @@ class ISWAP(Operation):
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         .. seealso:: :meth:`~.ISWAP.matrix`
+
 
         Returns:
             ndarray: matrix
