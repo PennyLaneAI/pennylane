@@ -870,7 +870,6 @@ class TestIntegration:
         grad = qml.grad(circuit)(phi)
         assert qml.math.allclose(grad, -qml.numpy.sin(phi))
 
-    @pytest.mark.xfail  # related to #6333
     @pytest.mark.autograd
     def test_autograd_param_shift_qnode(self):
         """Test execution and gradient with pennylane numpy array."""
