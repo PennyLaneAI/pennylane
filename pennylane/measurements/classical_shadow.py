@@ -444,7 +444,7 @@ class ClassicalShadowMP(MeasurementTransform):
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         n_qubits = len(mapped_wires)
-        num_dev_qubits = (len(state.shape)//2)
+        num_dev_qubits = len(state.shape) // 2
 
         # seed the random measurement generation so that recipes
         # are the same for different executions with the same seed
@@ -471,11 +471,19 @@ class ClassicalShadowMP(MeasurementTransform):
         )
         obs = obs_list[recipes]
         diagonalizers = diag_list[recipes]
-        diagonalizers_dagger = np.stack([qml.math.conjugate(qml.math.transpose(m)) for m in diagonalizers])
+        diagonalizers_dagger = np.stack(
+            [qml.math.conjugate(qml.math.transpose(m)) for m in diagonalizers]
+        )
 
         # transpose the state so that the measured wires appear first
         unmeasured_wires = [i for i in range(num_dev_qubits) if i not in mapped_wires]
-        transposed_state = np.transpose(state, axes=mapped_wires + unmeasured_wires + [w + num_dev_qubits for w in mapped_wires] + [w + num_dev_qubits for w in unmeasured_wires])
+        transposed_state = np.transpose(
+            state,
+            axes=mapped_wires
+            + unmeasured_wires
+            + [w + num_dev_qubits for w in mapped_wires]
+            + [w + num_dev_qubits for w in unmeasured_wires],
+        )
 
         outcomes = np.zeros((shots, n_qubits))
         stacked_state = np.repeat(transposed_state[np.newaxis, ...], shots, axis=0)
@@ -507,14 +515,14 @@ class ClassicalShadowMP(MeasurementTransform):
             # collapse the state of the remaining qubits; the next qubit in line
             # becomes the first qubit for the next iteration
             U = diagonalizers[:, active_qubit]
-            UT= diagonalizers[:, active_qubit]
-            
+            UT = diagonalizers[:, active_qubit]
+
             # index labeling:
             # (s, vL, a) (s, a, ..., b, ...) (s, b, vR) -> (s, vL, ..., vR, ...)
             v_dim_left = ABC[num_remaining_qubits + 2]
             v_dim_right = ABC[num_remaining_qubits + 3]
             a_dagger_dim = ABC[num_remaining_qubits + 4]
-            
+
             U_str = f"{stacked_dim}{v_dim_left}a"
             rho_str = f"{stacked_dim}a{traced_dim}{a_dagger_dim}..."
             UT_str = f"{stacked_dim}{a_dagger_dim}{v_dim_right}"
@@ -524,15 +532,21 @@ class ClassicalShadowMP(MeasurementTransform):
             )
             sampled_index = samples.astype(np.int8)
             stacked_state = rotated_state[np.arange(shots), sampled_index]
-            stacked_state = np.stack([np.take(stacked_state[i], sampled_index[i], axis=num_remaining_qubits-1) for i in range(shots)])
+            stacked_state = np.stack(
+                [
+                    np.take(stacked_state[i], sampled_index[i], axis=num_remaining_qubits - 1)
+                    for i in range(shots)
+                ]
+            )
 
             # re-normalize the collapsed state
-            norms = np.einsum(f"{stacked_dim}{traced_dim}{traced_dim}->{stacked_dim}", stacked_state)
-            norms = norms.reshape(norms.shape + (1, ) * (2*num_remaining_qubits - 2))
+            norms = np.einsum(
+                f"{stacked_dim}{traced_dim}{traced_dim}->{stacked_dim}", stacked_state
+            )
+            norms = norms.reshape(norms.shape + (1,) * (2 * num_remaining_qubits - 2))
             stacked_state /= norms
 
         return np.stack([outcomes, recipes]).astype(np.int8)
-        
 
     @property
     def samples_computational_basis(self):
