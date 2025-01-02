@@ -41,7 +41,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operation, Tensor
+from pennylane.operation import Observable, Operation
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.trotter import _recursive_expression
@@ -125,7 +125,6 @@ _observables = frozenset(
         "Identity",
         "Projector",
         "SparseHamiltonian",
-        "Hamiltonian",
         "LinearCombination",
         "Sum",
         "SProd",
@@ -227,8 +226,8 @@ class DefaultTensor(Device):
             `quimb's tensor_contract documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_contract>`_.
             Default is ``"auto-hq"``.
         local_simplify (str): The simplification sequence to apply to the tensor network for computing local expectation values.
-            For a complete list of available simplification options, see the
-            `quimb's full_simplify documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
+            At present, this argument can only be provided when the TN method is used. For a complete list of available simplification options,
+            see the `quimb's full_simplify documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
             Default is ``"ADCRS"``.
 
 
@@ -257,6 +256,10 @@ class DefaultTensor(Device):
     tensor(-1., requires_grad=True)
 
     We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
+
+    .. note::
+        Be aware that `quimb` uses multi-threading with `numba <https://numba.pydata.org/numba-doc/dev/user/threading-layer.html>`_ as well as for linear algebra operations with `numpy.linalg <https://numpy.org/doc/stable/reference/routines.linalg.html#linear-algebra-numpy-linalg>`_. Proper setting of the corresponding environment variables (e.g. `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `NUMBA_NUM_THREADS` etc.) depending on your hardware is highly recommended and will have a strong impact on the device's performance.
+        To avoid a slowdown in performance for circuits with more than 10 wires, we recommend setting the environment variable relevant for your BLAS library backend (e.g. `OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1` or `MKL_NUM_THREADS=1`), depending on your NumPy package & associated libraries. Alternatively, you can use  `threadpoolctl <https://github.com/joblib/threadpoolctl>`_  to limit the threads within your executing script. For optimal performance you can adjust the number of threads to find the best fit for your workload.
 
     .. details::
             :title: Usage with MPS Method
@@ -397,8 +400,10 @@ class DefaultTensor(Device):
         self._max_bond_dim = kwargs.get("max_bond_dim", None)
         self._cutoff = kwargs.get("cutoff", None)
 
-        # options both for MPS and TN
+        # options for TN
         self._local_simplify = kwargs.get("local_simplify", "ADCRS")
+
+        # options both for MPS and TN
         self._contraction_optimizer = kwargs.get("contraction_optimizer", "auto-hq")
         self._contract = None
 
@@ -620,7 +625,7 @@ class DefaultTensor(Device):
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
         program.add_transform(validate_device_wires, self._wires, name=self.name)
-        program.add_transform(qml.defer_measurements, device=self)
+        program.add_transform(qml.defer_measurements, allow_postselect=False)
         program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
@@ -807,14 +812,22 @@ class DefaultTensor(Device):
         # after the execution, we could avoid copying the circuit.
         qc = self._quimb_circuit.copy()
 
-        exp_val = qc.local_expectation(
-            matrix,
-            wires,
-            dtype=self._c_dtype.__name__,
-            optimize=self._contraction_optimizer,
-            simplify_sequence=self._local_simplify,
-            simplify_atol=0.0,
-        )
+        if self.method == "mps":
+            exp_val = qc.local_expectation(
+                matrix,
+                wires,
+                dtype=self._c_dtype.__name__,
+                optimize=self._contraction_optimizer,
+            )
+        else:
+            exp_val = qc.local_expectation(
+                matrix,
+                wires,
+                dtype=self._c_dtype.__name__,
+                optimize=self._contraction_optimizer,
+                simplify_sequence=self._local_simplify,
+                simplify_atol=0.0,
+            )
 
         return float(np.real(exp_val))
 
@@ -1022,12 +1035,6 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
 def expval_core(obs: Observable, device) -> float:
     """Dispatcher for expval."""
     return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
-
-
-@expval_core.register
-def expval_core_tensor(obs: Tensor, device) -> float:
-    """Computes the expval of a Tensor."""
-    return expval_core(Prod(*obs._args), device)
 
 
 @expval_core.register

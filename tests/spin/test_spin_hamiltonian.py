@@ -33,7 +33,6 @@ from pennylane.spin import (
 )
 
 # pylint: disable=too-many-arguments
-pytestmark = pytest.mark.usefixtures("new_opmath_only")
 
 
 def test_coupling_error():

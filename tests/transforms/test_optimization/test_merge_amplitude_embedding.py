@@ -14,6 +14,7 @@
 """
 Unit tests for the optimization transform ``merge_amplitude_embedding``.
 """
+
 import pytest
 
 import pennylane as qml
@@ -101,7 +102,8 @@ class TestMergeAmplitudeEmbedding:
             return qml.state()
 
         res = qnode()
-        assert qnode.tape.batch_size == 2
+        tape = qml.workflow.construct_tape(qnode)()
+        assert tape.batch_size == 2
 
         # |001> and |100>
         expected = np.array([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]])

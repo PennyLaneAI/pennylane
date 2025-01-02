@@ -16,7 +16,6 @@ Tests for the gradients.pulse_gradient module.
 """
 
 import copy
-import warnings
 
 import numpy as np
 import pytest
@@ -181,33 +180,6 @@ class TestSplitEvolOps:
 
             # Check that the inserted exponential is correct
             qml.assert_equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
-
-    @pytest.mark.usefixtures("legacy_opmath_only")  # this is only an issue with legacy Hamiltonian
-    def test_warnings_legacy_opmath(self):
-        """Test that a warning is raised for computing eigenvalues of a Hamiltonian
-        for more than four wires but not for fewer wires."""
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-        ham = qml.pulse.constant * qml.PauliY(0)
-        op = qml.evolve(ham)([0.3], 2.0)
-        ob = qml.Hamiltonian(
-            [0.4, 0.2], [qml.operation.Tensor(*[qml.PauliY(i) for i in range(5)]), qml.PauliX(0)]
-        )
-        with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            _split_evol_ops(op, ob, tau=0.4)
-
-        ob = qml.Hamiltonian(
-            [0.4, 0.2], [qml.operation.Tensor(*[qml.PauliY(i) for i in range(4)]), qml.PauliX(0)]
-        )
-        with warnings.catch_warnings():
-            warnings.filterwarnings("error")
-            warnings.filterwarnings(
-                "ignore",
-                "qml.operation.Tensor uses the old approach",
-                qml.PennyLaneDeprecationWarning,
-            )
-            _split_evol_ops(op, ob, tau=0.4)
 
 
 @pytest.mark.jax
@@ -1201,17 +1173,17 @@ class TestStochPulseGrad:
             qml.evolve(ham, atol=1e-6)(params, 0.1)
             return qml.expval(qml.PauliY(0) @ qml.PauliX(1))
 
-        qnode.construct((params,), {})
+        tape = qml.workflow.construct_tape(qnode)(params)
 
         num_split_times = 5
-        qnode.tape.trainable_params = [0, 1, 2]
+        tape.trainable_params = [0, 1, 2]
 
         # FIXME: This test case is not updated to use the pytest-rng generated seed because I'm
         #       unable to find a local salt that actually allows this test to pass. The 7123 here
         #       is basically a magic number. Every other seed I tried fails. I believe this test
         #       should be rewritten to use a better testing strategy because this currently goes
         #       against the spirit of seeding.
-        tapes, fn = stoch_pulse_grad(qnode.tape, num_split_times=num_split_times, sampler_seed=7123)
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=7123)
         # Two generating terms with two shifts (X_0 and Z_0), one with eight shifts
         # (Y_0Y_1+0.4 X_1 has eigenvalues [-1.4, -0.6, 0.6, 1.4] yielding frequencies
         # [0.8, 1.2, 2.0, 2.8] and hence 2 * 4 = 8 shifts)
@@ -1282,11 +1254,10 @@ class TestStochPulseGrad:
             qml.evolve(ham_1)(params_1, 0.15)
             return qml.expval(qml.PauliY(0) @ qml.PauliZ(1))
 
-        qnode.construct((params_0, params_1), {})
-
+        tape = qml.workflow.construct_tape(qnode)(params_0, params_1)
         num_split_times = 3
-        qnode.tape.trainable_params = [0, 1, 2]
-        tapes, fn = stoch_pulse_grad(qnode.tape, num_split_times=num_split_times, sampler_seed=seed)
+        tape.trainable_params = [0, 1, 2]
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=seed)
         assert len(tapes) == 3 * 2 * num_split_times
 
         res = fn(qml.execute(tapes, dev, None))

@@ -450,7 +450,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         start = 0
 
         if not results:
-            results = [np.squeeze(np.zeros([tape.output_dim]))]
+            results = [np.array(0.0)]
 
         interface = qml.math.get_interface(results[0])
         iterator = enumerate(zip(shapes, gradient_values, obs_indices))
@@ -538,7 +538,7 @@ def param_shift_cv(
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
-        dev (pennylane.Device): device the parameter-shift method is to be computed on
+        dev (pennylane.devices.LegacyDeviceFacade): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -726,7 +726,7 @@ def param_shift_cv(
         fns.append(data[1])
 
     if all(g == "0" for g in method_map.values()):
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        return [], lambda _: np.zeros([1, len(tape.trainable_params)])
 
     var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
 

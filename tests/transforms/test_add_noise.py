@@ -106,11 +106,8 @@ class TestAddNoise:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
+
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -142,11 +139,8 @@ class TestAddNoise:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
+
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -211,17 +205,17 @@ class TestAddNoiseInterface:
         in_tape = QuantumScript.from_queue(q_in_tape)
         dev = qml.device(dev_name, wires=2)
 
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         res_without_noise = qml.execute(
             [in_tape], dev, qml.gradients.param_shift, transform_program=program
         )
 
         c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseShift, 0.4)
         new_dev = add_noise(dev, noise_model=qml.NoiseModel({c: n}))
-        new_program, _ = new_dev.preprocess()
+        new_program = new_dev.preprocess_transforms()
         [tape], _ = new_program([in_tape])
         res_with_noise = qml.execute(
-            [in_tape], new_dev, qml.gradients, transform_program=new_program
+            [in_tape], new_dev, qml.gradients.param_shift, transform_program=new_program
         )
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
@@ -245,11 +239,8 @@ class TestAddNoiseInterface:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 2
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
+
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
         assert tape.observables[1].name == "PauliZ"

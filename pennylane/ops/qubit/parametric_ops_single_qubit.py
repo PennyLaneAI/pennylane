@@ -580,6 +580,7 @@ class Rot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         phi: TensorLike,
@@ -700,7 +701,7 @@ class Rot(Operation):
         >>> qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0).simplify()
         RX(0.1, wires=[0])
         >>> qml.Rot(np.pi, np.pi/2, 0, 0).simplify()
-        Hadamard(wires=[0])
+        H(0)
 
         """
         p0, p1, p2 = [p % (4 * np.pi) for p in self.data]
@@ -1031,6 +1032,7 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         theta: TensorLike,

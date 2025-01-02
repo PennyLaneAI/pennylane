@@ -31,6 +31,7 @@ from gate_data import (
     ISWAP,
     SISWAP,
     SWAP,
+    SX,
     H,
     I,
     S,
@@ -66,6 +67,19 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.CCZ, CCZ),
 ]
 
+NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED = [
+    (qml.X(0), X),
+    (qml.Y(0), Y),
+    (qml.Z(0), Z),
+    (qml.S(10000000), S),
+    (qml.T(10000000), T),
+    (qml.SX("qubit0"), SX),
+    (qml.SWAP([0, 1]), SWAP),
+    (qml.ISWAP([0, 1]), ISWAP),
+    (qml.ECR([-1, 1]), ECR),
+    (qml.SISWAP(["qubit0", "qubit1"]), SISWAP),
+]
+
 STRING_REPR = (
     (qml.Identity(0), "I(0)"),
     (qml.Hadamard(0), "H(0)"),
@@ -83,10 +97,16 @@ STRING_REPR = (
     (qml.X("a"), "X('a')"),
     (qml.Y("a"), "Y('a')"),
     (qml.Z("a"), "Z('a')"),
+    (qml.T("a"), "T('a')"),
+    (qml.S("a"), "S('a')"),
+    (qml.SX("a"), "SX('a')"),
     (qml.H(0), "H(0)"),
     (qml.X(1), "X(1)"),
     (qml.Y(2), "Y(2)"),
     (qml.Z(3), "Z(3)"),
+    (qml.T(0), "T(0)"),
+    (qml.S(0), "S(0)"),
+    (qml.SX(0), "SX(0)"),
 )
 
 
@@ -273,7 +293,7 @@ class TestDecompositions:
             elif i.wires == Wires([0, 1]) and i.name == "CZ":
                 mats.append(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]))
             else:
-                raise Exception("Unexpected gate in decomposition.")
+                raise ValueError("Unexpected gate in decomposition.")
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
@@ -475,7 +495,7 @@ class TestDecompositions:
                     )
                 )
             else:
-                raise Exception("Unexpected gate in decomposition.")
+                raise ValueError("Unexpected gate in decomposition.")
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
@@ -680,8 +700,8 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
 
         # Pick random starting state for the control and target qubits
-        control_state_weights = np.random.normal(size=(2 ** (len(control_wires) + 1) - 2))
-        target_state_weights = np.random.normal(size=(2 ** (len(target_wires) + 1) - 2))
+        control_state_weights = np.random.normal(size=2 ** (len(control_wires) + 1) - 2)
+        target_state_weights = np.random.normal(size=2 ** (len(target_wires) + 1) - 2)
 
         @qml.qnode(dev)
         def circuit_mpmct():
@@ -760,8 +780,8 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
 
         # Pick random starting state for the control and target qubits
-        control_state_weights = np.random.normal(size=(2 ** (len(control_wires) + 1) - 2))
-        target_state_weights = np.random.normal(size=(2 ** (len(target_wires) + 1) - 2))
+        control_state_weights = np.random.normal(size=2 ** (len(control_wires) + 1) - 2)
+        target_state_weights = np.random.normal(size=2 ** (len(target_wires) + 1) - 2)
 
         @qml.qnode(dev)
         def circuit_mpmct():
@@ -917,6 +937,7 @@ class TestMultiControlledX:
         """Test ``__repr__`` method that shows ``control_values``"""
         wires = [0, 1, 2]
         control_values = [False, True]
+        # pylint: disable=unnecessary-dunder-call
         op_repr = qml.MultiControlledX(wires=wires, control_values=control_values).__repr__()
         assert op_repr == f"MultiControlledX(wires={wires}, control_values={control_values})"
 
@@ -1313,3 +1334,23 @@ class TestHadamardAlias:
         assert isinstance(
             qml.H(0), qml.Hadamard
         ), "qml.H(0) should create an instance of qml.Hadamard"
+
+
+class TestPauliRep:
+    @pytest.mark.parametrize(
+        "op, _", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED
+    )
+    def test_lazy_implementation(self, op, _):
+        """Checks if the ._pauli_rep attribute is only computed when needed."""
+        # pylint: disable=unused-variable, protected-access
+        assert op._pauli_rep is None
+        pauli_rep = op.pauli_rep
+        assert op._pauli_rep is not None
+
+    @pytest.mark.parametrize(
+        "op, rep", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED
+    )
+    def test_matrix_and_pauli_rep_equivalence(self, op, rep):
+        """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
+        assert np.allclose(op.matrix(), qml.matrix(op.pauli_rep, wire_order=op.wires))
+        assert np.allclose(rep, qml.matrix(op.pauli_rep, wire_order=op.wires))

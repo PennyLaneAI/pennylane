@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the state module"""
+
 import numpy as np
 import pytest
 
@@ -238,8 +239,8 @@ class TestState:
             qml.Hadamard(0)
             return state()
 
-        func()
-        obs = func.qtape.observables
+        tape = qml.workflow.construct_tape(func)()
+        obs = tape.observables
         assert len(obs) == 1
         assert obs[0].return_type is State
 
@@ -293,8 +294,8 @@ class TestState:
             return state()
 
         state_val = func()
-        program, _ = dev.preprocess()
-        scripts, _ = program([func.tape])
+        program = dev.preprocess_transforms()
+        scripts, _ = program([qml.workflow.construct_tape(func)()])
         assert len(scripts) == 1
         expected_state, _ = qml.devices.qubit.get_final_state(scripts[0])
         assert np.allclose(state_val, expected_state.flatten())
@@ -368,7 +369,7 @@ class TestState:
         """Test if an error is raised for devices that are not capable of returning the state.
         This is tested by changing the capability of default.qubit"""
         dev = qml.device("default.mixed", wires=1)
-        capabilities = dev.capabilities().copy()
+        capabilities = dev.target_device.capabilities().copy()
         capabilities["returns_state"] = False
 
         @qml.qnode(dev)
@@ -569,8 +570,8 @@ class TestDensityMatrix:
             qml.Hadamard(0)
             return density_matrix(0)
 
-        func()
-        obs = func.qtape.observables
+        tape = qml.workflow.construct_tape(func)()
+        obs = tape.observables
         assert len(obs) == 1
         assert obs[0].return_type is State
 
@@ -1013,7 +1014,7 @@ class TestDensityMatrix:
         """Test if an error is raised for devices that are not capable of returning
         the density matrix. This is tested by changing the capability of default.qubit"""
         dev = qml.device("default.mixed", wires=2)
-        capabilities = dev.capabilities().copy()
+        capabilities = dev.target_device.capabilities().copy()
         capabilities["returns_state"] = False
 
         @qml.qnode(dev)

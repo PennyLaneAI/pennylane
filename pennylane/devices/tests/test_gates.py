@@ -68,7 +68,6 @@ ops = {
     "CPhaseShift00": qml.CPhaseShift00(0, wires=[0, 1]),
     "CPhaseShift01": qml.CPhaseShift01(0, wires=[0, 1]),
     "CPhaseShift10": qml.CPhaseShift10(0, wires=[0, 1]),
-    "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
     "StatePrep": qml.StatePrep(np.array([1.0, 0.0]), wires=[0]),
     "QubitDensityMatrix": qml.QubitDensityMatrix(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
@@ -365,7 +364,7 @@ class TestSupportedGates:
                 pytest.skip("operation not supported.")
         else:
             if ops[operation].name == "QubitDensityMatrix":
-                prog = dev.preprocess()[0]
+                prog = dev.preprocess_transforms()
                 tape = qml.tape.QuantumScript([ops[operation]])
                 try:
                     prog((tape,))

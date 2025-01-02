@@ -771,7 +771,7 @@ class TestDefaultQutritIntegration:
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.qutrit", wires=1)
-        cap = dev.capabilities()
+        cap = dev.target_device.capabilities()
         capabilities = {
             "model": "qutrit",
             "supports_finite_shots": True,

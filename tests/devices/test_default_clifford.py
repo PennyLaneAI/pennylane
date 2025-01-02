@@ -218,10 +218,10 @@ def test_meas_expval(shots, ops, seed):
         qml.sum(qml.PauliZ(0), qml.s_prod(2.0, qml.PauliY(1))),
     ],
 )
-def test_meas_var(shots, ops):
+def test_meas_var(shots, ops, seed):
     """Test that variance measurements with `default.clifford` is possible
     and agrees with `default.qubit`."""
-    dev_c = qml.device("default.clifford", shots=shots)
+    dev_c = qml.device("default.clifford", shots=shots, seed=seed)
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
@@ -256,7 +256,6 @@ def test_meas_samples(circuit, shots):
     assert qml.math.shape(samples[2]) == (shots,)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("tableau", [True, False])
 @pytest.mark.parametrize("shots", [None, 50000])
 @pytest.mark.parametrize(
@@ -485,9 +484,9 @@ def test_max_worker_clifford():
     )
     tapes = (qscript, qscript)
 
-    _, conf_d = dev_c.preprocess()
+    conf_d = dev_c.setup_execution_config()
     res_c = dev_c.execute(tapes, conf_d)
-    _, conf_q = dev_q.preprocess()
+    conf_q = dev_q.setup_execution_config()
     res_q = dev_q.execute(tapes, conf_q)
     assert np.allclose(res_q, res_c)
 
@@ -505,9 +504,9 @@ def test_tracker():
     tapes = tuple([qscript])
 
     with qml.Tracker(dev_c) as tracker:
-        _, conf_d = dev_c.preprocess()
+        conf_d = dev_c.setup_execution_config()
         res_c = dev_c.execute(tapes, conf_d)
-        _, conf_q = dev_q.preprocess()
+        conf_q = dev_q.setup_execution_config()
         res_q = dev_q.execute(tapes, conf_q)
         assert np.allclose(res_q, res_c)
 
@@ -602,7 +601,7 @@ def test_grad_error(circuit):
     qnode_clfrd = qml.QNode(circuit_fn, dev_c)
     qnode_clfrd()
 
-    conf_c, tape_c = dev_c.preprocess()[1], qnode_clfrd.tape
+    conf_c, tape_c = dev_c.setup_execution_config(), qnode_clfrd.tape
 
     with pytest.raises(
         NotImplementedError,

@@ -78,24 +78,9 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = "Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
-        with pytest.raises(NotImplementedError, match=err_msg):
-            transpiled_qnode()
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_transpile_raise_not_implemented_tensorproduct_mmt(self):
-        """test that error is raised when measurement is expectation of a Tensor product"""
-        dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
-
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[0, 3])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        # build circuit
-        transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
-        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = r"Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
+        err_msg = (
+            "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        )
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
@@ -111,7 +96,9 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = r"Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
+        err_msg = (
+            r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        )
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
@@ -235,8 +222,9 @@ class TestTranspile:
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(param)
 
-        original_ops = list(transpiled_qnode.qtape)
-        transpiled_ops = list(transpiled_qnode.qtape)
+        tape = qml.workflow.construct_tape(transpiled_qnode)(param)
+        original_ops = list(tape)
+        transpiled_ops = list(tape)
         qml.assert_equal(transpiled_ops[0], original_ops[0])
         qml.assert_equal(transpiled_ops[1], original_ops[1])
 
@@ -278,8 +266,9 @@ class TestTranspile:
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(param)
 
-        original_ops = list(transpiled_qnode.qtape)
-        transpiled_ops = list(transpiled_qnode.qtape)
+        tape = qml.workflow.construct_tape(transpiled_qnode)(param)
+        original_ops = list(tape)
+        transpiled_ops = list(tape)
         qml.assert_equal(transpiled_ops[0], original_ops[0])
         qml.assert_equal(transpiled_ops[1], original_ops[1])
 
@@ -368,7 +357,7 @@ class TestTranspile:
         assert batch[0][2] == qml.CNOT((0, 1))
         assert batch[0][3] == qml.state()
 
-        pre, post = dev.preprocess()[0]((tape,))
+        pre, post = dev.preprocess_transforms()((tape,))
         original_results = post(dev.execute(pre))
         transformed_results = fn(dev.execute(batch))
         assert qml.math.allclose(original_results, transformed_results)
@@ -394,7 +383,7 @@ class TestTranspile:
         assert batch[0][3] == qml.state()
         assert batch[0][4] == qml.expval(qml.PauliZ(1))
 
-        pre, post = dev.preprocess()[0]((tape,))
+        pre, post = dev.preprocess_transforms()((tape,))
         original_results = post(dev.execute(pre))
         transformed_results = fn(dev.execute(batch))
         assert qml.math.allclose(original_results[0][0], transformed_results[0])
@@ -426,7 +415,7 @@ class TestTranspile:
         assert batch[0].measurements[0] == qml.probs(wires=(0, 2, 1))
         assert batch[0].measurements[1] == qml.sample(wires=(0, 2, 1))
 
-        pre, post = dev.preprocess()[0]((tape,))
+        pre, post = dev.preprocess_transforms()((tape,))
         original_results = post(dev.execute(pre))[0]
         transformed_results = fn(dev.execute(batch))
         assert qml.math.allclose(original_results[0], transformed_results[0])

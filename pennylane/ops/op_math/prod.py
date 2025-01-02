@@ -26,7 +26,7 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -98,7 +98,6 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
     """
-    ops = tuple(convert_to_opmath(op) for op in ops)
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
             return ops[0]
@@ -282,13 +281,7 @@ class Prod(CompositeOp):
         mats: list[TensorLike] = []
         batched: list[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
-            gen = (
-                (
-                    (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix()),
-                    op.wires,
-                )
-                for op in ops
-            )
+            gen = ((op.matrix(), op.wires) for op in ops)
 
             reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
 

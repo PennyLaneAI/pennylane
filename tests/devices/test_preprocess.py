@@ -65,6 +65,17 @@ class InfiniteOp(qml.operation.Operation):
         return [InfiniteOp(*self.parameters, self.wires)]
 
 
+def test_max_expansion_is_deprecated():
+    """Test that max_expansion argument is deprecated."""
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
+    ):
+        tape = QuantumScript(
+            ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
+        )
+        decompose(tape, lambda obj: obj.has_matrix, max_expansion=1)
+
+
 class TestPrivateHelpers:
     """Test the private helpers for preprocessing."""
 
@@ -294,14 +305,6 @@ class TestValidateObservables:
         )
         with pytest.raises(qml.DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
-
-    @pytest.mark.usefixtures("legacy_opmath_only")  # only required for legacy observables
-    def test_valid_tensor_observable_legacy_opmath(self):
-        """Test that a valid tensor ovservable passes without error."""
-        tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
-        assert (
-            validate_observables(tape, lambda obs: obs.name in {"PauliZ", "PauliY"})[0][0] is tape
-        )
 
 
 class TestValidateMeasurements:

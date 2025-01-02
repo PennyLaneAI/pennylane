@@ -219,14 +219,6 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
             raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
 
         return _matrix_transform(op, wire_order=wire_order)
-
-    if isinstance(op, qml.operation.Tensor) and wire_order is not None:
-        op = 1.0 * op  # convert to a Hamiltonian
-
-    if isinstance(op, qml.ops.Hamiltonian):
-
-        return op.sparse_matrix(wire_order=wire_order).toarray()
-
     try:
         return op.matrix(wire_order=wire_order)
     except:  # pylint: disable=bare-except

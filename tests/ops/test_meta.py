@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the Snapshot operation."""
+
 import numpy as np
 
 # pylint: disable=protected-access
@@ -135,8 +136,8 @@ class TestBarrier:
             qml.ctrl(barrier, 2)()
             return qml.state()
 
-        circuit()
-        tape = circuit.tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
+        tape = qml.workflow.construct_tape(circuit)()
+        tape = tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
 
         assert tape.operations[1].name == "Barrier"
         assert tape.operations[4].name == "Barrier"

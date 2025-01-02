@@ -43,7 +43,7 @@ def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch,
         g.data = new_params
         new_operations.append(g)
 
-    new_tape = type(tape)(tape.operations + new_operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=tape.operations + new_operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -199,6 +199,7 @@ class AdaptiveOptimizer:
         """
         cost = circuit()
         qnode = copy.copy(circuit)
+        tape = qml.workflow.construct_tape(qnode)()
 
         if drain_pool:
             operator_pool = [
@@ -206,7 +207,7 @@ class AdaptiveOptimizer:
                 for gate in operator_pool
                 if all(
                     gate.name != operation.name or gate.wires != operation.wires
-                    for operation in circuit.tape.operations
+                    for operation in tape.operations
                 )
             ]
 

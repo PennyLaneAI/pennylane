@@ -17,10 +17,10 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
 import pennylane as qml
-import pennylane.math as math
 from pennylane import (
     CNOT,
     ISWAP,
@@ -30,8 +30,9 @@ from pennylane import (
     PauliError,
     PauliX,
     ResetError,
+    math,
 )
-from pennylane.devices.qubit_mixed import apply_operation
+from pennylane.devices.qubit_mixed import apply_operation, measure
 from pennylane.devices.qubit_mixed.apply_operation import (
     apply_operation_einsum,
     apply_operation_tensordot,
@@ -98,28 +99,6 @@ def root_state(nr_wires):
 
 
 special_state_generator = [base0, base1, cat_state, hadamard_state, max_mixed_state, root_state]
-
-
-def get_random_mixed_state(num_qubits):
-    """
-    Generates a random mixed state for testing purposes.
-
-    Args:
-        num_qubits (int): The number of qubits in the mixed state.
-
-    Returns:
-        np.ndarray: A tensor representing the random mixed state.
-    """
-    dim = 2**num_qubits
-
-    rng = np.random.default_rng(seed=4774)
-    basis = unitary_group(dim=dim, seed=584545).rvs()
-    schmidt_weights = rng.dirichlet(np.ones(dim), size=1).astype(complex)[0]
-    mixed_state = np.zeros((dim, dim)).astype(complex)
-    for i in range(dim):
-        mixed_state += schmidt_weights[i] * np.outer(np.conj(basis[i]), basis[i])
-
-    return mixed_state.reshape([2] * (2 * num_qubits))
 
 
 def get_expected_state(expanded_operator, state, num_q):
@@ -196,7 +175,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     @pytest.mark.parametrize("num_q", num_qubits)
-    def test_no_broadcasting(self, op, num_q, ml_framework):
+    def test_no_broadcasting(self, op, num_q, ml_framework, random_mixed_state):
         """
         Tests that unbatched operations are applied correctly to an unbatched state.
 
@@ -204,7 +183,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
             op (Operation): Quantum operation to apply.
             ml_framework (str): The machine learning framework in use (numpy, autograd, etc.).
         """
-        state = math.asarray(get_random_mixed_state(num_q), like=ml_framework)
+        state = math.asarray(random_mixed_state(num_q), like=ml_framework)
         res = apply_operation(op, state)
         res_tensordot = apply_operation_tensordot(op, state)
         res_einsum = apply_operation_einsum(op, state)
@@ -220,7 +199,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("op", diagonal_ops)
     @pytest.mark.parametrize("num_q", num_qubits)
-    def test_diagonal(self, op, num_q, ml_framework):
+    def test_diagonal(self, op, num_q, ml_framework, random_mixed_state):
         """
         Tests that diagonal operations are applied correctly to an unbatched state.
 
@@ -228,7 +207,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
             op (Operation): Quantum operation to apply.
             ml_framework (str): The machine learning framework in use (numpy, autograd, etc.).
         """
-        state_np = get_random_mixed_state(num_q)
+        state_np = random_mixed_state(num_q)
         state = math.asarray(state_np, like=ml_framework)
         res = apply_operation(op, state)
 
@@ -238,9 +217,9 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         assert math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
 
     @pytest.mark.parametrize("num_q", num_qubits)
-    def test_identity(self, num_q, ml_framework):
+    def test_identity(self, num_q, ml_framework, random_mixed_state):
         """Tests that the identity operation is applied correctly to an unbatched state."""
-        state_np = get_random_mixed_state(num_q)
+        state_np = random_mixed_state(num_q)
         state = math.asarray(state_np, like=ml_framework)
         op = qml.Identity(wires=0)
         res = apply_operation(op, state)
@@ -248,9 +227,9 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         assert math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
 
     @pytest.mark.parametrize("num_q", num_qubits)
-    def test_globalphase(self, num_q, ml_framework):
+    def test_globalphase(self, num_q, ml_framework, random_mixed_state):
         """Tests that the identity operation is applied correctly to an unbatched state."""
-        state_np = get_random_mixed_state(num_q)
+        state_np = random_mixed_state(num_q)
         state = math.asarray(state_np, like=ml_framework)
         op = qml.GlobalPhase(np.pi / 7, wires=0)
         res = apply_operation(op, state)
@@ -259,10 +238,10 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     @pytest.mark.parametrize("num_q", num_qubits)
-    def test_unbroadcasted_ops_batched(self, op, num_q, ml_framework):
+    def test_unbroadcasted_ops_batched(self, op, num_q, ml_framework, random_mixed_state):
         """Test that unbroadcasted operations are applied correctly to batched states."""
         batch_size = self.num_batched
-        state = np.array([get_random_mixed_state(num_q) for _ in range(batch_size)])
+        state = np.array([random_mixed_state(num_q) for _ in range(batch_size)])
         state = math.asarray(state, like=ml_framework)
         res = apply_operation(op, state, is_state_batched=True)
 
@@ -286,10 +265,10 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("op", diagonal_ops)
     @pytest.mark.parametrize("num_q", num_qubits)
-    def test_diagonal_ops_batched(self, op, num_q, ml_framework):
+    def test_diagonal_ops_batched(self, op, num_q, ml_framework, random_mixed_state):
         """Test that diagonal operations are applied correctly to batched states."""
         batch_size = self.num_batched
-        state = np.array([get_random_mixed_state(num_q) for _ in range(batch_size)])
+        state = np.array([random_mixed_state(num_q) for _ in range(batch_size)])
         state = math.asarray(state, like=ml_framework)
         res = apply_operation(op, state, is_state_batched=True)
 
@@ -325,9 +304,9 @@ class TestApplyGroverOperator:
             (9, "custom"),
         ],
     )
-    def test_dispatch_method(self, num_wires, expected_method, mocker):
+    def test_dispatch_method(self, num_wires, expected_method, mocker, random_mixed_state):
         """Test that the correct dispatch method is used based on the number of wires."""
-        state = get_random_mixed_state(num_wires)
+        state = random_mixed_state(num_wires)
 
         op = qml.GroverOperator(wires=range(num_wires))
 
@@ -348,9 +327,9 @@ class TestApplyGroverOperator:
             # assert not spy_tensordot.called
 
     @pytest.mark.parametrize("num_wires", [2, 3, 7, 8, 9])
-    def test_correctness(self, num_wires):
+    def test_correctness(self, num_wires, random_mixed_state):
         """Test that the GroverOperator is applied correctly for various wire numbers."""
-        state = get_random_mixed_state(num_wires)
+        state = random_mixed_state(num_wires)
 
         op = qml.GroverOperator(wires=range(num_wires))
         op_mat = op.matrix()
@@ -364,10 +343,10 @@ class TestApplyGroverOperator:
         assert np.allclose(result.reshape(flat_shape), expected)
 
     @pytest.mark.parametrize("num_wires", [2, 3, 7, 8, 9])
-    def test_batched_state(self, num_wires):
+    def test_batched_state(self, num_wires, random_mixed_state):
         """Test that the GroverOperator works correctly with batched states."""
         batch_size = 3
-        state = np.array([get_random_mixed_state(num_wires) for _ in range(batch_size)])
+        state = np.array([random_mixed_state(num_wires) for _ in range(batch_size)])
 
         op = qml.GroverOperator(wires=range(num_wires))
         op_mat = op.matrix()
@@ -382,10 +361,10 @@ class TestApplyGroverOperator:
         assert np.allclose(result.reshape(flat_shape), expected)
 
     @pytest.mark.parametrize("interface", ml_frameworks_list)
-    def test_interface_compatibility(self, interface):
+    def test_interface_compatibility(self, interface, random_mixed_state):
         """Test that the GroverOperator works with different interfaces."""
         num_wires = 5
-        state = get_random_mixed_state(num_wires)
+        state = random_mixed_state(num_wires)
         state = math.asarray(state, like=interface)
 
         op = qml.GroverOperator(wires=range(num_wires))
@@ -403,6 +382,7 @@ class TestApplyGroverOperator:
 class TestApplyMultiControlledX:
     """Test that MultiControlledX is applied correctly to mixed states."""
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.mark.parametrize(
         "num_wires, interface, expected_method",
         [
@@ -414,10 +394,12 @@ class TestApplyMultiControlledX:
             (9, "autograd", "custom"),
         ],
     )
-    def test_dispatch_method(self, num_wires, expected_method, interface, mocker):
+    def test_dispatch_method(
+        self, num_wires, expected_method, interface, mocker, random_mixed_state
+    ):
         """Test that the correct dispatch method is used based on the number of wires
         for numpy and autograd."""
-        state = get_random_mixed_state(num_wires)
+        state = random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)
 
@@ -438,6 +420,7 @@ class TestApplyMultiControlledX:
             assert not spy_einsum.called
             assert not spy_tensordot.called
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.mark.parametrize("interface", ml_frameworks_list[2:])
     @pytest.mark.parametrize(
         "num_wires, expected_method",
@@ -448,10 +431,12 @@ class TestApplyMultiControlledX:
             (9, "custom"),
         ],
     )
-    def test_dispatch_method_interfaces(self, num_wires, expected_method, interface, mocker):
+    def test_dispatch_method_interfaces(
+        self, num_wires, expected_method, interface, mocker, random_mixed_state
+    ):
         """Test that the correct dispatch method is used based on the number of wires
         for torch, tensorflow, and jax."""
-        state = get_random_mixed_state(num_wires)
+        state = random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)
 
@@ -473,9 +458,9 @@ class TestApplyMultiControlledX:
             assert not spy_tensordot.called
 
     @pytest.mark.parametrize("num_wires", [2, 3, 7, 8, 9])
-    def test_correctness(self, num_wires):
+    def test_correctness(self, num_wires, random_mixed_state):
         """Test that the MultiControlledX is applied correctly for various wire numbers."""
-        state = get_random_mixed_state(num_wires)
+        state = random_mixed_state(num_wires)
 
         op = qml.MultiControlledX(wires=range(num_wires))
         op_mat = op.matrix()
@@ -489,10 +474,10 @@ class TestApplyMultiControlledX:
         assert np.allclose(result.reshape(flat_shape), expected)
 
     @pytest.mark.parametrize("num_wires", [2, 3, 7, 8, 9])
-    def test_batched_state(self, num_wires):
+    def test_batched_state(self, num_wires, random_mixed_state):
         """Test that the MultiControlledX works correctly with batched states."""
         batch_size = 3
-        state = np.array([get_random_mixed_state(num_wires) for _ in range(batch_size)])
+        state = np.array([random_mixed_state(num_wires) for _ in range(batch_size)])
 
         op = qml.MultiControlledX(wires=range(num_wires))
         op_mat = op.matrix()
@@ -507,10 +492,10 @@ class TestApplyMultiControlledX:
         assert np.allclose(result.reshape(flat_shape), expected)
 
     @pytest.mark.parametrize("interface", ml_frameworks_list)
-    def test_interface_compatibility(self, interface):
+    def test_interface_compatibility(self, interface, random_mixed_state):
         """Test that the MultiControlledX works with different interfaces."""
         num_wires = 5
-        state = get_random_mixed_state(num_wires)
+        state = random_mixed_state(num_wires)
         state = math.asarray(state, like=interface)
 
         op = qml.MultiControlledX(wires=range(num_wires))
@@ -651,10 +636,10 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     ]
 
     @pytest.mark.parametrize("op", broadcasted_ops)
-    def test_broadcasted_op(self, op, ml_framework):
+    def test_broadcasted_op(self, op, ml_framework, random_mixed_state):
         """Tests that batched operations are applied correctly to an unbatched state."""
         num_q = 3
-        state = math.asarray(get_random_mixed_state(num_q), like=ml_framework)
+        state = math.asarray(random_mixed_state(num_q), like=ml_framework)
 
         res = apply_operation(op, state)
 
@@ -665,10 +650,10 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
-    def test_broadcasted_state(self, op, ml_framework):
+    def test_broadcasted_state(self, op, ml_framework, random_mixed_state):
         """Tests that batched operations are applied correctly to an unbatched state."""
         num_q = 3
-        state = [math.asarray(get_random_mixed_state(num_q), like=ml_framework) for _ in range(3)]
+        state = [math.asarray(random_mixed_state(num_q), like=ml_framework) for _ in range(3)]
         state = math.stack(state)
 
         res = apply_operation(op, state, is_state_batched=True)
@@ -680,10 +665,10 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", broadcasted_ops)
-    def test_broadcasted_op_broadcasted_state(self, op, ml_framework):
+    def test_broadcasted_op_broadcasted_state(self, op, ml_framework, random_mixed_state):
         """Tests that batched operations are applied correctly to batched state."""
         num_q = 3
-        state = [math.asarray(get_random_mixed_state(num_q), like=ml_framework) for _ in range(3)]
+        state = [math.asarray(random_mixed_state(num_q), like=ml_framework) for _ in range(3)]
         state = math.stack(state)
 
         res = apply_operation(op, state, is_state_batched=True)
@@ -704,3 +689,142 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         state = apply_operation_einsum(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+@pytest.mark.parametrize(
+    "state,shape", [("two_qubit_state", (4, 4)), ("two_qubit_batched_state", (2, 4, 4))]
+)
+class TestSnapshot:
+    """Test that apply_operation works for Snapshot ops"""
+
+    @pytest.mark.usefixtures("two_qubit_state")
+    def test_no_debugger(self, ml_framework, state, shape, request):
+        """Test that nothing happens when there is no debugger"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        new_state = apply_operation(qml.Snapshot(), initial_state, is_state_batched=len(shape) != 2)
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+    def test_empty_tag(self, ml_framework, state, shape, request):
+        """Test a snapshot is recorded properly when there is no tag"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        debugger = Debugger()
+        new_state = apply_operation(
+            qml.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [0]
+        assert debugger.snapshots[0].shape == shape
+        assert math.allclose(debugger.snapshots[0], math.reshape(initial_state, shape))
+
+    def test_provided_tag(self, ml_framework, state, shape, request):
+        """Test a snapshot is recorded properly when provided a tag"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        debugger = Debugger()
+        tag = "dense"
+        new_state = apply_operation(
+            qml.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+        assert debugger.snapshots[tag].shape == shape
+        assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, shape))
+
+    def test_snapshot_with_measurement(self, ml_framework, state, shape, request):
+        """Test a snapshot with measurement"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+        tag = "expected_value"
+
+        debugger = Debugger()
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=qml.expval(qml.PauliZ(0))),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=len(shape) != 2,
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+
+        if len(shape) == 2:
+            assert debugger.snapshots[tag].shape == ()
+            # Expected value for PauliZ measurement would depend on the initial state
+            # This value should be calculated based on your test state
+            expected_value = measure(qml.expval(qml.PauliZ(0)), initial_state)
+            assert math.allclose(debugger.snapshots[tag], expected_value)
+        else:
+            assert debugger.snapshots[tag].shape == (2,)
+            expected_values = measure(
+                qml.expval(qml.PauliZ(0)), initial_state, is_state_batched=True
+            )
+            assert math.allclose(debugger.snapshots[tag], expected_values)
+
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.sample(wires=[0, 1]),
+            qml.counts(wires=[0, 1]),
+        ],
+    )
+    def test_snapshot_with_shots_and_measurement(
+        self, measurement, ml_framework, state, shape, request
+    ):
+        """Test snapshots with shots for various measurement types."""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+        tag = "measurement_snapshot"
+        is_state_batched = len(shape) != 2
+
+        shots = qml.measurements.Shots(1000)
+        debugger = Debugger()
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=measurement),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=is_state_batched,
+            tape_shots=shots,
+        )
+
+        # Check state is unchanged
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        # Check snapshot was stored
+        assert list(debugger.snapshots.keys()) == [tag]
+
+        snapshot_result = debugger.snapshots[tag]
+
+        # Verify snapshot result based on measurement type
+        if isinstance(measurement, qml.measurements.SampleMP):
+            len_measured_wires = len(measurement.wires)
+            assert (
+                snapshot_result.shape == (1000, len_measured_wires)
+                if not is_state_batched
+                else (2, 1000, len_measured_wires)
+            )
+            assert set(np.unique(snapshot_result)) <= {0, 1}
+        elif isinstance(measurement, qml.measurements.CountsMP):
+            if is_state_batched:
+                snapshot_result = snapshot_result[0]
+            assert isinstance(snapshot_result, dict)
+            assert all(isinstance(k, str) for k in snapshot_result.keys())
+            assert sum(snapshot_result.values()) == 1000

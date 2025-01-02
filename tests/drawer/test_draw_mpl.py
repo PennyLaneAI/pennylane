@@ -328,6 +328,75 @@ class TestWireBehaviour:
             assert w.get_color() == "black"
             assert w.get_linewidth() == 4
 
+        @qml.qnode(dev)
+        def f_circ(x):
+            """Circuit on ten qubits."""
+            qml.RX(x, wires=0)
+            for w in range(10):
+                qml.Hadamard(w)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        # All wires are orange
+        wire_options = {"color": "orange"}
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for w in ax.lines:
+            assert w.get_color() == "orange"
+
+        # Wires are orange and cyan
+        wire_options = {0: {"color": "orange"}, 1: {"color": "cyan"}}
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        assert ax.lines[0].get_color() == "orange"
+        assert ax.lines[1].get_color() == "cyan"
+        assert ax.lines[2].get_color() == "black"
+
+        # Make all wires cyan and bold,
+        # except for wires 2 and 6, which are dashed and another color
+        wire_options = {
+            "color": "cyan",
+            "linewidth": 5,
+            2: {"linestyle": "--", "color": "red"},
+            6: {"linestyle": "--", "color": "orange", "linewidth": 1},
+        }
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for i, w in enumerate(ax.lines):
+            if i == 2:
+                assert w.get_color() == "red"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            elif i == 6:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 1
+            else:
+                assert w.get_color() == "cyan"
+                assert w.get_linestyle() == "-"
+                assert w.get_linewidth() == 5
+
+        wire_options = {
+            "linewidth": 5,
+            2: {"linestyle": "--", "color": "red"},
+            6: {"linestyle": "--", "color": "orange"},
+        }
+
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for i, w in enumerate(ax.lines):
+            if i == 2:
+                assert w.get_color() == "red"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            elif i == 6:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            else:
+                assert w.get_color() == "black"
+                assert w.get_linestyle() == "-"
+                assert w.get_linewidth() == 5
+
         plt.close()
 
 

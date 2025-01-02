@@ -79,7 +79,7 @@ def append_time_evolution(
         with QueuingManager.stop_recording():
             new_operations.append(qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n))
 
-    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -267,7 +267,7 @@ class RiemannianGradientOptimizer:
         self.circuit = circuit
         self.circuit.construct([], {})
         self.hamiltonian = circuit.func().obs
-        if not isinstance(self.hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if not isinstance(self.hamiltonian, qml.ops.LinearCombination):
             raise TypeError(
                 f"circuit must return the expectation value of a Hamiltonian,"
                 f"received {type(circuit.func().obs)}"
@@ -280,9 +280,7 @@ class RiemannianGradientOptimizer:
                 f"optimizing a {self.nqubits} qubit circuit may be slow.",
                 UserWarning,
             )
-        if restriction is not None and not isinstance(
-            restriction, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
-        ):
+        if restriction is not None and not isinstance(restriction, qml.ops.LinearCombination):
             raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
         (
             self.lie_algebra_basis_ops,
@@ -381,11 +379,15 @@ class RiemannianGradientOptimizer:
             array: array of omegas for each direction in the Lie algebra.
         """
 
-        obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)
+        partition_indices = qml.pauli.compute_partition_indices(self.observables)
+        grouped_obs = [[self.observables[idx] for idx in group] for group in partition_indices]
+
         # get all circuits we need to calculate the coefficients
+
+        tape = qml.workflow.construct_tape(self.circuit)()
         circuits = algebra_commutator(
-            self.circuit.qtape,
-            obs_groupings,
+            tape,
+            grouped_obs,
             self.lie_algebra_basis_names,
             self.nqubits,
         )
@@ -398,14 +400,14 @@ class RiemannianGradientOptimizer:
                 self.circuit.device,
                 transform_program=program,
                 config=config,
-                gradient_fn=None,
+                diff_method=None,
             )
         else:
             circuits = qml.execute(
-                circuits, self.circuit.device, gradient_fn=None
+                circuits, self.circuit.device, diff_method=None
             )  # pragma: no cover
 
-        program, _ = self.circuit.device.preprocess()
+        program = self.circuit.device.preprocess_transforms()
 
         circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
