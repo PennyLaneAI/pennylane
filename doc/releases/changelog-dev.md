@@ -484,7 +484,7 @@ such as `shots`, `rng` and `prng_key`.
   decomposition and the ordered adjoint representation of the Lie algebra.
   [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
 
-* Improved documentation by fixing links and latex issues. Also consistently use $\mathfrak{a}$ for the horizontal Cartan subalgebra instead of $\mathfrak{h}$.
+* Improved documentation by fixing broken links and latex issues. Also consistently use $\mathfrak{a}$ for the horizontal Cartan subalgebra instead of $\mathfrak{h}$.
   [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
 
 <h3>Breaking changes 💔</h3>
