@@ -1260,32 +1260,36 @@ class V(Operation):
 
     def adjoint(self) -> "V":
         r"""The adjoint operator is V^3 since V^4 = I."""
-        return V(wires=self.wires)
+        return self.pow(3)[0]
 
     def pow(self, z: Union[int, float]):
         r"""Implement the power operation for the V gate."""
         if not isinstance(z, int):
             raise qml.operation.PowUndefinedError(self, z)
-        z_mod2 = z % 2
-        if z_mod2 == 0:
+        z_mod4 = z % 4
+        if z_mod4 == 0:
             return []
-        return [copy(self)]
+        if z_mod4 == 1:
+            return [copy(self)]
+        if z_mod4 == 2:
+            return [qml.PauliX(wires=self.wires)]
+        return [V(wires=self.wires)] * 3
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Decomposition of V gate into basic gates.
         
-        V = RZ(π/2)RY(π/2)RZ(π/2)
+        V = RZ(-π/2)RY(π/2)RZ(π/2)
         """
         return [
             qml.RZ(np.pi/2, wires=wires),
             qml.RY(np.pi/2, wires=wires),
-            qml.RZ(np.pi/2, wires=wires),
+            qml.RZ(-np.pi/2, wires=wires),
         ]
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # V = RZ(\pi/2) RY(\pi/2) RZ(\pi/2)
-        return [np.pi/2, np.pi/2, np.pi/2]
+        # V = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
+        return [np.pi/2, np.pi/2, -np.pi/2]
 
 
 class G(Operation):
