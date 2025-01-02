@@ -616,6 +616,9 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* `Identity` operator wires are properly tracked when using `qml.Sum.terms`.
+  [(#6750)](https://github.com/PennyLaneAI/pennylane/pull/6750)
+
 * `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
   [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
 
