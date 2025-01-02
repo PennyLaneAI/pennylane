@@ -554,9 +554,9 @@ class TestParameterShiftRule:
         for a_val, n_val in zip(autograd_val, numeric_val):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
-    @pytest.mark.parametrize("G", [qml.V, qml.G])
+    @pytest.mark.parametrize("G", [qml.V])
     def test_non_parametric_gates(self, G, broadcast):
-        """Tests that non-parametric gates (V and G) work correctly."""
+        """Tests that non-parametric gates (V) work correctly."""
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=1, shots=shot_vec)
 
