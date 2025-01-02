@@ -471,9 +471,6 @@ class ClassicalShadowMP(MeasurementTransform):
         )
         obs = obs_list[recipes]
         diagonalizers = diag_list[recipes]
-        diagonalizers_dagger = np.stack(
-            [qml.math.conjugate(qml.math.transpose(m)) for m in diagonalizers]
-        )
 
         # transpose the state so that the measured wires appear first
         unmeasured_wires = [i for i in range(num_dev_qubits) if i not in mapped_wires]
@@ -515,7 +512,7 @@ class ClassicalShadowMP(MeasurementTransform):
             # collapse the state of the remaining qubits; the next qubit in line
             # becomes the first qubit for the next iteration
             U = diagonalizers[:, active_qubit]
-            UT = diagonalizers[:, active_qubit]
+            UT = np.stack([qml.math.conjugate(qml.math.transpose(m)) for m in U])
 
             # index labeling:
             # (s, vL, a) (s, a, ..., b, ...) (s, b, vR) -> (s, vL, ..., vR, ...)
