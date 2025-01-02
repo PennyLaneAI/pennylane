@@ -23,9 +23,10 @@ from typing import Optional, Union
 
 import numpy as np
 from scipy import sparse
+from scipy.linalg import sqrtm
 
 import pennylane as qml
-from pennylane.operation import Observable, Operation
+from pennylane.operation import Observable, Operation, expand_matrix
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -906,8 +907,6 @@ class S(Operation):
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
 
         .. seealso:: :meth:`~.S.decomposition`.
 
@@ -1036,8 +1035,6 @@ class T(Operation):
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
 
         .. seealso:: :meth:`~.T.decomposition`.
 
@@ -1165,8 +1162,6 @@ class SX(Operation):
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
 
         .. seealso:: :meth:`~.SX.decomposition`.
 
@@ -1201,6 +1196,104 @@ class SX(Operation):
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
+
+
+class V(Operation):
+    r"""V(wires)
+    The V gate, which is the square root of the X gate.
+
+    .. math:: V = \frac{1}{2}\begin{bmatrix} 1+i & 1-i \\ 1-i & 1+i \end{bmatrix}
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+
+    num_wires = 1
+    num_params = 0
+    basis = None
+
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        Returns:
+            ndarray: matrix
+        """
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]], dtype=complex)
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: V = H S H
+
+        Args:
+            wires (Any, Wires): Wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition of the operator
+        """
+        return [
+            qml.Hadamard(wires=wires),
+            qml.S(wires=wires),
+            qml.Hadamard(wires=wires),
+        ]
+
+    @staticmethod
+    def compute_eigvals():
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        Returns:
+            array: eigenvalues
+        """
+        return np.array([1, 1j])
+
+    def adjoint(self):
+        r"""Returns the adjoint (conjugate transpose) of the gate.
+
+        Returns:
+            Operation: the adjoint of the gate
+        """
+        adj = V(wires=self.wires)
+        adj._inverse = not getattr(self, "_inverse", False)
+        return adj
+
+    def matrix(self, wire_order=None):
+        r"""Return the matrix representation of the gate.
+
+        Args:
+            wire_order (Sequence[int]): the order of the wires to use when expanding the matrix
+
+        Returns:
+            array: matrix representation
+        """
+        mat = self.compute_matrix()
+        if getattr(self, "_inverse", False):
+            mat = mat.conj().T
+        return expand_matrix(mat, self.wires, wire_order)
+
+    def pow(self, z):
+        r"""Returns the gate raised to a power.
+
+        Args:
+            z (float): the power to raise the gate to
+
+        Returns:
+            list[Operation]: a list of operations that implement the power
+        """
+        z_mod4 = z % 4
+        if z_mod4 == 0:
+            return []
+        if z_mod4 == 1:
+            return [self]
+        if z_mod4 == 2:
+            return [qml.PauliX(wires=self.wires)]
+        return [self.adjoint()]
 
 
 class SWAP(Operation):
@@ -1251,6 +1344,7 @@ class SWAP(Operation):
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         .. seealso:: :meth:`~.SWAP.matrix`
+
 
         Returns:
             ndarray: matrix
@@ -1403,40 +1497,13 @@ class ECR(Operation):
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-           .. math:: O = O_1 O_2 \dots O_n.
-
-
-           .. seealso:: :meth:`~.ECR.decomposition`.
-
-           Args:
-               wires (Iterable, Wires): wires that the operator acts on
-
-           Returns:
-               list[Operator]: decomposition into lower level operations
-
-           **Example:**
-
-           >>> print(qml.ECR.compute_decomposition((0,1)))
-
-
-        [Z(0),
-         CNOT(wires=[0, 1]),
-         SX(1),
-         RX(1.5707963267948966, wires=[0]),
-         RY(1.5707963267948966, wires=[0]),
-         RX(1.5707963267948966, wires=[0])]
-
-        """
-        pi = np.pi
         return [
             Z(wires=[wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             SX(wires=[wires[1]]),
-            qml.RX(pi / 2, wires=[wires[0]]),
-            qml.RY(pi / 2, wires=[wires[0]]),
-            qml.RX(pi / 2, wires=[wires[0]]),
+            qml.RX(np.pi / 2, wires=[wires[0]]),
+            qml.RY(np.pi / 2, wires=[wires[0]]),
+            qml.RX(np.pi / 2, wires=[wires[0]]),
         ]
 
     def adjoint(self) -> "ECR":
@@ -1480,7 +1547,7 @@ class ISWAP(Operation):
                     qml.pauli.PauliWord({}): 0.5,
                     qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j,
                     qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j,
-                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
+                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5
                 }
             )
         return self._pauli_rep
@@ -1495,13 +1562,14 @@ class ISWAP(Operation):
 
         .. seealso:: :meth:`~.ISWAP.matrix`
 
+
         Returns:
             ndarray: matrix
 
         **Example**
 
         >>> print(qml.ISWAP.compute_matrix())
-        [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+        [[1.+0.j          0.+0.j          0.+0.j  0.+0.j]
          [0.+0.j 0.+0.j 0.+1.j 0.+0.j]
          [0.+0.j 0.+1.j 0.+0.j 0.+0.j]
          [0.+0.j 0.+0.j 0.+0.j 1.+0.j]]
@@ -1726,4 +1794,10 @@ class SISWAP(Operation):
         return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
 
 
+# Aliases
 SQISW = SISWAP
+"""SQISW = SISWAP
+The square root of i-swap operator.
+
+See :class:`~.SISWAP` for more details.
+"""
