@@ -1207,7 +1207,7 @@ class V(Operation):
     r"""V(wires)
     The V operator (square root of NOT)
 
-    .. math:: V = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -i\\ -i & 1\end{bmatrix}.
+    .. math:: V = \frac{1+i}{2} \begin{bmatrix} 1 & 1\\ 1 & 1\end{bmatrix}.
 
     **Details:**
 
@@ -1226,8 +1226,8 @@ class V(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): INV_SQRT2,
-                    qml.pauli.PauliWord({self.wires[0]: "X"}): -1j * INV_SQRT2,
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
                 }
             )
         return self._pauli_rep
@@ -1247,7 +1247,7 @@ class V(Operation):
         Returns:
             ndarray: matrix representation
         """
-        return INV_SQRT2 * np.array([[1, -1j], [-1j, 1]], dtype=complex)
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]], dtype=complex)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:
@@ -1260,35 +1260,32 @@ class V(Operation):
 
     def adjoint(self) -> "V":
         r"""The adjoint operator is V^3 since V^4 = I."""
-        return self.pow(3)
+        return V(wires=self.wires)
 
     def pow(self, z: Union[int, float]):
-        r"""Implement the power operation for the V gate.
-        V^4 = I, so we take z modulo 4."""
-        z_mod4 = z % 4
-        if z_mod4 == 0:
+        r"""Implement the power operation for the V gate."""
+        if not isinstance(z, int):
+            raise qml.operation.PowUndefinedError(self, z)
+        z_mod2 = z % 2
+        if z_mod2 == 0:
             return []
-        if z_mod4 == 1:
-            return [copy(self)]
-        if z_mod4 == 2:
-            return [qml.PauliX(wires=self.wires)]
-        return [V(wires=self.wires)] * 3
+        return [copy(self)]
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Decomposition of V gate into basic gates.
         
-        V = RZ(π/2)RY(π/2)RZ(0)
+        V = RZ(π/2)RY(π/2)RZ(π/2)
         """
         return [
-            qml.RZ(0, wires=wires),
+            qml.RZ(np.pi/2, wires=wires),
             qml.RY(np.pi/2, wires=wires),
             qml.RZ(np.pi/2, wires=wires),
         ]
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # V = RZ(\pi/2) RY(\pi/2) RZ(0)
-        return [np.pi/2, np.pi/2, 0.0]
+        # V = RZ(\pi/2) RY(\pi/2) RZ(\pi/2)
+        return [np.pi/2, np.pi/2, np.pi/2]
 
 
 class G(Operation):
@@ -1351,16 +1348,13 @@ class G(Operation):
         return G(wires=self.wires)
 
     def pow(self, z: Union[int, float]):
-        r"""Implement the power operation for the G gate.
-        G^4 = I, so we take z modulo 4."""
-        z_mod4 = z % 4
-        if z_mod4 == 0:
+        r"""Implement the power operation for the G gate."""
+        if not isinstance(z, int):
+            raise qml.operation.PowUndefinedError(self, z)
+        z_mod2 = z % 2
+        if z_mod2 == 0:
             return []
-        if z_mod4 == 1:
-            return [copy(self)]
-        if z_mod4 == 2:
-            return [qml.PauliX(wires=self.wires)]
-        return [G(wires=self.wires)] * 3
+        return [copy(self)]
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
