@@ -53,9 +53,9 @@ class TestProbs:
         def circuit():
             return qml.probs(wires=0)
 
-        circuit()
+        tape = qml.workflow.construct_tape(circuit)()
 
-        assert isinstance(circuit.tape[0], ProbabilityMP)
+        assert isinstance(tape[0], ProbabilityMP)
 
     def test_numeric_type(self):
         """Test that the numeric type is correct."""
@@ -205,6 +205,7 @@ class TestProbs:
         wires = qml.wires.Wires(range(1))
         expected = qml.math.array([0.5, 0.5], like=interface)
         calculated_probs = qml.probs().process_density_matrix(dm, wires)
+        assert qml.math.get_interface(calculated_probs) == interface
         assert qml.math.allclose(calculated_probs, expected)
 
     @pytest.mark.all_interfaces
@@ -226,6 +227,7 @@ class TestProbs:
         )
         wires = qml.wires.Wires(range(2))
         subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm, wires)
+        assert qml.math.get_interface(subset_probs) == interface
         assert subset_probs.shape == qml.math.shape(expected)
         assert qml.math.allclose(subset_probs, expected)
 
@@ -261,6 +263,7 @@ class TestProbs:
 
         expected = qml.math.array(expected, like=interface)
         # Check if the calculated probabilities match the expected values
+        assert qml.math.get_interface(subset_probs) == interface
         assert (
             subset_probs.shape == expected.shape
         ), f"Shape mismatch: expected {expected.shape}, got {subset_probs.shape}"
@@ -307,6 +310,7 @@ class TestProbs:
         expected = np.diag(reduced_dm)
         expected = qml.math.array(expected, like=interface)
         # Check if the calculated probabilities match the expected values
+        assert qml.math.get_interface(subset_probs) == interface
         assert (
             subset_probs.shape == expected.shape
         ), f"Shape mismatch: expected {expected.shape}, got {subset_probs.shape}"

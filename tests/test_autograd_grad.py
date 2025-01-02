@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Public/internal API for the pennylane.capture.transforms module.
+Unit tests for qml.grad and qml.jacobian
 """
-from .capture_cancel_inverses import CancelInversesInterpreter
-from .capture_decompose import DecomposeInterpreter
-from .map_wires import MapWiresInterpreter
+import pytest
 
-__all__ = (
-    "CancelInversesInterpreter",
-    "DecomposeInterpreter",
-    "MapWiresInterpreter",
-)
+import pennylane as qml
+
+
+def test_informative_error_on_bad_shape():
+    """Test that an informative error is raised if taking the jacobian of a non-array."""
+
+    def f(x):
+        return (2 * x,)
+
+    with pytest.raises(ValueError, match="autograd can only differentiate with"):
+        qml.jacobian(f)(qml.numpy.array(2.0))

@@ -23,7 +23,7 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
     _rotation_resources,
 )
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
+# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments
 
 params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 
@@ -191,6 +191,7 @@ class TestPauliRotation:
     def test_controlled_decomposition_multi_controlled(
         self, resource_class, local_res, ctrl_wires, ctrl_values, work_wires, general_res
     ):
+        """Test that the controlled docomposition is correct when controlled on multiple wires."""
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
         num_work_wires = len(work_wires)
@@ -328,6 +329,7 @@ class TestRot:
 
 
 class TestPhaseShift:
+    """Test ResourcePhaseShift"""
 
     def test_resources(self):
         """Test the resources method"""
