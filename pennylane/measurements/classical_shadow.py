@@ -486,15 +486,15 @@ class ClassicalShadowMP(MeasurementTransform):
             num_remaining_qubits = num_dev_qubits - active_qubit
             conj_state_first_qubit = ABC[num_remaining_qubits]
             stacked_dim = ABC[num_remaining_qubits + 1]
+            remaining_dim = ABC[:num_remaining_qubits]
 
-            state_str = f"{stacked_dim}{ABC[:num_remaining_qubits]}"
-            conj_state_str = f"{stacked_dim}{conj_state_first_qubit}{ABC[1:num_remaining_qubits]}"
+            state_str = f"{stacked_dim}{remaining_dim}"
+            conj_state_str = f"{conj_state_first_qubit}{remaining_dim[1:num_remaining_qubits]}"
             target_str = f"{stacked_dim}a{conj_state_first_qubit}"
 
             first_qubit_state = np.einsum(
-                f"{state_str},{conj_state_str}->{target_str}",
+                f"{state_str}{conj_state_str}->{target_str}",
                 stacked_state,
-                np.conj(stacked_state),
             )
 
             # sample the observables on the first qubit
