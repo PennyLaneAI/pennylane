@@ -3,8 +3,6 @@
 NumPy interface
 ===============
 
-.. note:: This interface is the default interface supported by PennyLane's :class:`QNode <pennylane.QNode>`.
-
 
 Using the NumPy interface
 -------------------------
@@ -275,10 +273,10 @@ we would get an error message. This is because the `gradient <https://en.wikiped
 only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode
 returns multiple expectation values, the correct differential operator to use is
 the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_.
-This can be accessed in PennyLane as :func:`~.jacobian`.
+This can be accessed in PennyLane as :func:`~pennylane.jacobian`.
 
 As the ``circuit5`` returns a tuple of numpy arrays instead of a single numpy array, the results need
-to be stacked into a single array before use with :func:`~.jacobian`.
+to be stacked into a single array before use with :func:`~pennylane.jacobian`.
 
 >>> j1 = qml.jacobian(lambda x: np.stack(circuit5(x)))
 >>> j1(params)
@@ -286,7 +284,7 @@ array([[ 0.        , -0.98006658],
        [-0.98006658,  0.        ]])
 
 
-The output of :func:`~.jacobian` is a two-dimensional vector, with the first/second element being
+The output of :func:`~pennylane.jacobian` is a two-dimensional vector, with the first/second element being
 the partial derivative of the first/second expectation value with respect to the input parameter.
 
 
