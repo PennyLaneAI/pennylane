@@ -708,6 +708,8 @@ def _sum_terms(
     for c, r in zip(coeffs, res):
         if qml.math.get_interface(r) == "autograd":
             r = qml.math.array(r)
+        if isinstance(r, (list, tuple)):
+            r = qml.math.stack(r)
         dot_products.append(qml.math.dot(c, qml.math.squeeze(r)))
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset

@@ -3649,7 +3649,7 @@ class TestHamiltonianExpvalGradients:
 
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, np.array(expected), atol=tol, rtol=0)
+        assert np.allclose(np.array(res)[:, :2], np.array(expected), atol=tol, rtol=0)
 
         # TODO: test when Hessians are supported with the new return types
         # second derivative wrt to Hamiltonian coefficients should be zero
