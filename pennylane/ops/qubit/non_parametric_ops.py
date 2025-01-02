@@ -1277,6 +1277,7 @@ class G(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
     basis = "X"
@@ -1301,7 +1302,7 @@ class G(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis.
 
         Returns:
@@ -1334,18 +1335,18 @@ class G(Operation):
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Decomposition of G gate into basic gates.
-        
-        G = RZ(π)RY(-π/4)RZ(0)
+
+        G = H @ S @ H
         """
         return [
-            qml.RZ(0, wires=wires),
-            qml.RY(-np.pi/4, wires=wires),
-            qml.RZ(np.pi, wires=wires),
+            Hadamard(wires=wires),
+            S(wires=wires),
+            Hadamard(wires=wires),
         ]
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # G = RZ(\pi) RY(-\pi/4) RZ(0)
-        return [np.pi, -np.pi/4, 0.0]
+        # G = RZ(π/2) RY(π/2) RZ(0)
+        return [np.pi / 2, np.pi / 2, 0.0]
 
 
 class SWAP(Operation):

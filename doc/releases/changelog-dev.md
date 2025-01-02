@@ -43,6 +43,30 @@
   The functionality `qml.poly_to_angles` has been also extended to support GQSP.
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+<h4>New non-parametric quantum gates 🔄</h4>
+
+* Added two new non-parametric quantum gates: V-gate (square root of NOT) and G-gate (square root of Pauli-X with global phase).
+  [(#6746)](https://github.com/PennyLaneAI/pennylane/pull/6746)
+
+  ```python
+  @qml.qnode(qml.device('default.qubit', wires=1))
+  def circuit():
+      qml.V(wires=0)  # V^2 = X, V^4 = I
+      return qml.state()
+
+  @qml.qnode(qml.device('default.qubit', wires=1))
+  def circuit2():
+      qml.G(wires=0)  # G^2 = X, G is self-adjoint
+      return qml.state()
+  ```
+
+  Both gates have complete integration including:
+  - Matrix and eigenvalue computation
+  - Power and adjoint operations
+  - Gate decomposition
+  - Single-qubit rotation angles
+  - Support in default.mixed device
+
 <h4>Generalized Trotter products 🐖</h4>
 
 * Added a function `qml.trotterize` to generalize the Suzuki-Trotter product to arbitrary quantum functions.

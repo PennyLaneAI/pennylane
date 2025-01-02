@@ -106,7 +106,7 @@ STRING_REPR = [
     (qml.Z(3), "Z(3)"),
     (qml.T(0), "T(0)"),
     (qml.S(0), "S(0)"),
-    (qml.SX(0), "SX(0)")
+    (qml.SX(0), "SX(0)"),
 ]
 
 
@@ -945,19 +945,19 @@ class TestMultiControlledX:
         """Test that the adjoint of the V gate is correctly implemented as V^†."""
         v = qml.V(0)
         v_adj = v.adjoint()
-        
+
         # V^† should be the conjugate transpose of V
         v_matrix = v.matrix()
         v_adj_matrix = v_adj.matrix()
-        
+
         # Check that V^† * V = I
         product = v_adj_matrix @ v_matrix
         assert np.allclose(product, np.eye(2), atol=tol)
-        
+
         # Check that V^2 = X
         v2 = v_matrix @ v_matrix
         assert np.allclose(v2, qml.X(0).matrix(), atol=tol)
-        
+
         # Check that V^4 = I
         v4 = v2 @ v2
         assert np.allclose(v4, np.eye(2), atol=tol)
@@ -979,7 +979,7 @@ period_two_ops = [
     qml.CCZ(wires=(0, 1, 2)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
-    qml.MultiControlledX(wires=(0, 1, 2, 3))
+    qml.MultiControlledX(wires=(0, 1, 2, 3)),
 ]
 
 
@@ -1301,7 +1301,7 @@ op_pauli_rep = [
     (qml.PauliX(wires=0), qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X"}): 1})),
     (qml.PauliY(wires="a"), qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
     (qml.PauliZ(wires=4), qml.pauli.PauliSentence({qml.pauli.PauliWord({4: "Z"}): 1})),
-    (qml.Identity(wires="target"), qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1}))
+    (qml.Identity(wires="target"), qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),
 ]
 
 
@@ -1380,19 +1380,19 @@ class TestPauliRep:
         """Test that the adjoint of the V gate is correctly implemented as V^†."""
         v = qml.V(0)
         v_adj = v.adjoint()
-        
+
         # V^† should be the conjugate transpose of V
         v_matrix = v.matrix()
         v_adj_matrix = v_adj.matrix()
-        
+
         # Check that V^† * V = I
         product = v_adj_matrix @ v_matrix
         assert np.allclose(product, np.eye(2), atol=tol)
-        
+
         # Check that V^2 = X
         v2 = v_matrix @ v_matrix
         assert np.allclose(v2, qml.X(0).matrix(), atol=tol)
-        
+
         # Check that V^4 = I
         v4 = v2 @ v2
         assert np.allclose(v4, np.eye(2), atol=tol)

@@ -575,10 +575,10 @@ class TestParameterShiftRule:
         assert isinstance(res, tuple)
         assert len(res) == len(shot_vec)
 
-
         for r in res:
             assert isinstance(r, np.ndarray)
             assert r.shape == (0,)
+
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     def test_Rot_gradient(self, mocker, theta, shift, broadcast):
