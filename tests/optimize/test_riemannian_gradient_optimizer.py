@@ -29,7 +29,7 @@ def circuit_1():
 
 
 def circuit_2():
-    """Simply parameterized circuit."""
+    """Simply parametrized circuit."""
     qml.RX(0.1, wires=[0])
     qml.RY(0.5, wires=[1])
     qml.CNOT(wires=[0, 1])

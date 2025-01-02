@@ -18,11 +18,11 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
+from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import make_qscript
 
 from .symbolicop import SymbolicOp
 
@@ -192,7 +192,7 @@ def _get_adjoint_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    adjoint_prim = jax.core.Primitive("adjoint_transform")
+    adjoint_prim = create_non_interpreted_prim()("adjoint_transform")
     adjoint_prim.multiple_results = True
 
     @adjoint_prim.def_impl
@@ -234,7 +234,11 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # default adjoint transform when capture is not enabled.
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        qscript = make_qscript(qfunc)(*args, **kwargs)
+        qscript = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:
@@ -359,12 +363,13 @@ class Adjoint(SymbolicOp):
         )
 
     def matrix(self, wire_order=None):
-        if isinstance(self.base, qml.ops.Hamiltonian):
-            base_matrix = qml.matrix(self.base, wire_order=wire_order)
-        else:
-            base_matrix = self.base.matrix(wire_order=wire_order)
-
+        base_matrix = self.base.matrix(wire_order=wire_order)
         return moveaxis(conj(base_matrix), -2, -1)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        return self.base.has_sparse_matrix
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -403,10 +408,10 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
-        base = self.base.simplify()
-        if self.base.has_adjoint:
-            return base.adjoint().simplify()
-        return Adjoint(base=base.simplify())
+        base = self.base if qml.capture.enabled() else self.base.simplify()
+        if base.has_adjoint:
+            return base.adjoint() if qml.capture.enabled() else base.adjoint().simplify()
+        return Adjoint(base=base)
 
 
 # pylint: disable=no-member
@@ -479,3 +484,8 @@ class AdjointOpObs(AdjointOperation, Observable):
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)
+
+
+AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointOpObs._primitive = Adjoint._primitive  # pylint: disable=protected-access

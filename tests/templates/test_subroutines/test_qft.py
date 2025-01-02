@@ -38,6 +38,24 @@ class TestQFT:
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
+    def test_QFT_compute_decomposition(self, n_qubits):
+        """Test if the QFT operation is correctly decomposed"""
+        decomp = qml.QFT.compute_decomposition(wires=range(n_qubits))
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        out_states = []
+        for state in np.eye(2**n_qubits):
+            ops = [qml.StatePrep(state, wires=range(n_qubits))] + decomp
+            qs = qml.tape.QuantumScript(ops, [qml.state()])
+            out_states.append(dev.execute(qs))
+
+        reconstructed_unitary = np.array(out_states).T
+        expected_unitary = qml.QFT(wires=range(n_qubits)).matrix()
+
+        assert np.allclose(reconstructed_unitary, expected_unitary)
+
+    @pytest.mark.parametrize("n_qubits", range(2, 6))
     def test_QFT_decomposition(self, n_qubits):
         """Test if the QFT operation is correctly decomposed"""
         op = qml.QFT(wires=range(n_qubits))
@@ -100,3 +118,25 @@ class TestQFT:
             [0.5 + 0.0j, -0.5 + 0.0j, -0.0 - 0.5j, 0.0 + 0.5j],
         ]
         assert np.allclose(res_reordered, expected_permuted, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jit(self):
+        import jax
+        import jax.numpy as jnp
+
+        wires = 3
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit_qft(basis_state):
+            qml.BasisState(basis_state, wires=range(wires))
+            qml.QFT(wires=range(wires))
+            return qml.state()
+
+        jit_qft = jax.jit(circuit_qft)
+
+        res = circuit_qft(jnp.array([1.0, 0.0, 0.0]))
+        res2 = jit_qft(jnp.array([1.0, 0.0, 0.0]))
+
+        assert qml.math.allclose(res, res2)

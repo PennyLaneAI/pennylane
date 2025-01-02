@@ -231,7 +231,7 @@ class TestOperations:
 
 
 class TestParameterFrequencies:
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if not qml.operation.has_gen(op):
@@ -1719,28 +1719,33 @@ class TestEigvals:
         )
         assert np.allclose(op.eigvals(), expected)
 
+    @pytest.mark.parametrize(
+        "interface", ("numpy", pytest.param("tensorflow", marks=pytest.mark.tf))
+    )
     @pytest.mark.parametrize("n_wires", [0, 1, 2])
-    def test_global_phase_eigvals(self, n_wires):
+    def test_global_phase_eigvals(self, n_wires, interface):
         """Test GlobalPhase eigenvalues are correct"""
 
         dim = 2**n_wires
         # test identity for theta=0
-        phi = 0.0
+        phi = qml.math.asarray(0.0, like=interface)
         op = qml.GlobalPhase(phi, wires=list(range(n_wires)))
         assert np.allclose(op.compute_eigvals(phi, n_wires=n_wires), np.ones(dim))
         assert np.allclose(op.eigvals(), np.ones(dim))
 
         # test arbitrary global phase
-        phi = 0.5432
+        phi = qml.math.asarray(0.5432, like=interface)
         op = qml.GlobalPhase(phi, wires=list(range(n_wires)))
-        expected = np.array([np.exp(-1j * phi)] * dim)
+        phi_complex = qml.math.cast_like(phi, 1j)
+        expected = np.array([np.exp(-1j * phi_complex)] * dim)
         assert np.allclose(op.compute_eigvals(phi, n_wires=n_wires), expected)
         assert np.allclose(op.eigvals(), expected)
 
         # test arbitrary broadcasted global phase
-        phi = np.array([0.5, 0.4, 0.3])
+        phi = qml.math.asarray(np.array([0.5, 0.4, 0.3]), like=interface)
+        phi_complex = qml.math.cast_like(phi, 1j)
         op = qml.GlobalPhase(phi, wires=list(range(n_wires)))
-        expected = np.array([np.exp(-1j * p) * np.ones(dim) for p in phi])
+        expected = np.array([np.exp(-1j * p) * np.ones(dim) for p in phi_complex])
         assert np.allclose(op.compute_eigvals(phi, n_wires=n_wires), expected)
         assert np.allclose(op.eigvals(), expected)
 
@@ -2990,7 +2995,7 @@ class TestPauliRot:
 
         with pytest.raises(
             ValueError,
-            match="The given Pauli word has length .*, length .* was expected for wires .*",
+            match=r"The number of wires must be equal to the length of the Pauli word\. The Pauli word .* has length .*, and .* wires were given .*\.",
         ):
             qml.PauliRot(0.3, pauli_word, wires=wires)
 
@@ -3006,7 +3011,6 @@ class TestPauliRot:
             ("IIIXYZ"),
         ],
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_multirz_generator(self, pauli_word):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.PauliRot(0.3, pauli_word, wires=range(len(pauli_word)))
@@ -3049,19 +3053,6 @@ class TestPauliRot:
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
         assert qml.math.allclose(mat, exp)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_pauli_rot_generator_legacy_opmath(self):
-        """Test that the generator of the PauliRot operation
-        is correctly returned."""
-        op = qml.PauliRot(0.65, "ZY", wires=["a", 7])
-        gen, coeff = qml.generator(op)
-        expected = qml.PauliZ("a") @ qml.PauliY(7)
-
-        assert coeff == -0.5
-        assert gen.operands[0].name == expected.obs[0].name
-        assert gen.operands[1].wires == expected.obs[1].wires
-
-    @pytest.mark.usefixtures("use_new_opmath")
     def test_pauli_rot_generator(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""
@@ -3071,6 +3062,24 @@ class TestPauliRot:
 
         assert coeff == -0.5
         assert gen == expected
+
+    @pytest.mark.tf
+    def test_pauli_rot_eigvals_tf(self):
+        """Test that the eigvals of a pauli rot can be computed with tf."""
+
+        import tensorflow as tf
+
+        x = tf.Variable(0.5)
+        eigvals = qml.PauliRot.compute_eigvals(x, "X")
+        assert qml.math.allclose(eigvals[0], qml.math.exp(-0.5j * 0.5))
+        assert qml.math.allclose(eigvals[1], qml.math.exp(0.5j * 0.5))
+
+    def test_pauli_rot_eigvals_identity(self):
+        """Test that the eigvals of a pauli rot can be computed when the word is the identity."""
+
+        eigvals = qml.PauliRot.compute_eigvals(1.2, "II")
+        expected = qml.math.exp(-0.5j * 1.2) * np.ones(4)
+        assert qml.math.allclose(eigvals, expected)
 
 
 class TestMultiRZ:
@@ -3223,7 +3232,6 @@ class TestMultiRZ:
         assert np.allclose(qml.jacobian(circuit)(angle), qml.jacobian(decomp_circuit)(angle))
 
     @pytest.mark.parametrize("qubits", range(3, 6))
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_multirz_generator(self, qubits, mocker):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.MultiRZ(0.3, wires=range(qubits))
@@ -3237,7 +3245,7 @@ class TestMultiRZ:
 
         qml.assert_equal(gen, qml.Hamiltonian([-0.5], [expected_gen]))
 
-        spy = mocker.spy(qml.utils, "pauli_eigs")
+        spy = mocker.spy(qml.pauli.utils, "pauli_eigs")
 
         op.generator()
         spy.assert_not_called()

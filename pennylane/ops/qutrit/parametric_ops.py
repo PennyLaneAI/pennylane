@@ -14,7 +14,7 @@
 # pylint: disable=too-many-arguments
 """
 This submodule contains the discrete-variable quantum operations that are the
-core parameterized gates for qutrits.
+core parametrized gates for qutrits.
 """
 import functools
 

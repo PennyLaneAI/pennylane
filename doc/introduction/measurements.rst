@@ -282,7 +282,7 @@ circuit:
 
 .. code-block:: python
 
-    # fix seed to make results reproducable
+    # fix seed to make results reproducible
     np.random.seed(1)
 
     dev = qml.device("default.qubit", wires=1)

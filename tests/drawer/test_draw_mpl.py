@@ -123,32 +123,6 @@ class TestLevelExpansionStrategy:
 
         plt.close("all")
 
-    @pytest.mark.parametrize(
-        "strategy, initial_strategy, n_lines",
-        [("gradient", "device", 3), ("device", "gradient", 13)],
-    )
-    def test_expansion_strategy(self, strategy, initial_strategy, n_lines):
-        """Test that the expansion strategy keyword controls what operations are drawn."""
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="'expansion_strategy' attribute is deprecated",
-        ):
-
-            @qml.qnode(qml.device("default.qubit"), expansion_strategy=initial_strategy)
-            def circuit():
-                qml.Permute([2, 0, 1], wires=(0, 1, 2))
-                return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
-        ):
-            _, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
-
-        assert len(ax.lines) == n_lines
-        assert circuit.expansion_strategy == initial_strategy
-        plt.close()
-
     def test_draw_at_level_1(self, transforms_circuit):
         """Test that at level one the first transform has been applied, cancelling inverses."""
 
@@ -161,28 +135,14 @@ class TestLevelExpansionStrategy:
         assert len(ax.patches) == 7
         assert len(ax.texts) == 7
 
-    def test_providing_both_level_and_expansion_raises_error(self, transforms_circuit):
-        with pytest.raises(ValueError, match="Either 'level' or 'expansion_strategy'"):
-            qml.draw_mpl(transforms_circuit, level=0, expansion_strategy="device")
-
-    def test_draw_with_qfunc_warns_with_expansion_strategy(self):
-        """Test that draw warns the user about expansion_strategy being ignored."""
+    def test_draw_with_qfunc_warns_with_level(self):
+        """Test that draw warns the user about level being ignored."""
 
         def qfunc():
             qml.PauliZ(0)
 
-        with pytest.warns(
-            UserWarning, match="the expansion_strategy and level arguments are ignored"
-        ):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
-            ):
-                qml.draw_mpl(qfunc, expansion_strategy="gradient")
-
-        with pytest.warns(
-            UserWarning, match="the expansion_strategy and level arguments are ignored"
-        ):
-            qml.draw_mpl(qfunc, level="gradient")
+        with pytest.warns(UserWarning, match="the level argument is ignored"):
+            qml.draw_mpl(qfunc, level=None)
 
     def test_split_tapes_raises_warning(self):
         @qml.transforms.split_non_commuting
@@ -225,6 +185,21 @@ class TestKwargs:
         for l in ax.texts[:3]:  # three labels
             assert l.get_color() == "purple"
             assert l.get_fontsize() == 20
+        plt.close()
+
+    def test_hide_wire_labels(self):
+        """Test that wire labels are skipped with show_wire_labels=False."""
+        fig, ax = qml.draw_mpl(circuit1, show_wire_labels=False)(1.23, 2.34)
+        fig_with_labels, ax_with_labels = qml.draw_mpl(circuit1)(1.23, 2.34)
+
+        # Only PauliX gate labels should be present
+        assert len(ax.texts) == 2
+        assert len(ax_with_labels.texts) == 2 + 3
+        assert ax.texts[0].get_text() == "RX"
+        assert ax.texts[1].get_text() == "RY"
+        assert fig.get_figwidth() == 4
+        assert fig_with_labels.get_figwidth() == 4 + 1
+
         plt.close()
 
     @pytest.mark.parametrize(
@@ -353,6 +328,75 @@ class TestWireBehaviour:
             assert w.get_color() == "black"
             assert w.get_linewidth() == 4
 
+        @qml.qnode(dev)
+        def f_circ(x):
+            """Circuit on ten qubits."""
+            qml.RX(x, wires=0)
+            for w in range(10):
+                qml.Hadamard(w)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        # All wires are orange
+        wire_options = {"color": "orange"}
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for w in ax.lines:
+            assert w.get_color() == "orange"
+
+        # Wires are orange and cyan
+        wire_options = {0: {"color": "orange"}, 1: {"color": "cyan"}}
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        assert ax.lines[0].get_color() == "orange"
+        assert ax.lines[1].get_color() == "cyan"
+        assert ax.lines[2].get_color() == "black"
+
+        # Make all wires cyan and bold,
+        # except for wires 2 and 6, which are dashed and another color
+        wire_options = {
+            "color": "cyan",
+            "linewidth": 5,
+            2: {"linestyle": "--", "color": "red"},
+            6: {"linestyle": "--", "color": "orange", "linewidth": 1},
+        }
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for i, w in enumerate(ax.lines):
+            if i == 2:
+                assert w.get_color() == "red"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            elif i == 6:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 1
+            else:
+                assert w.get_color() == "cyan"
+                assert w.get_linestyle() == "-"
+                assert w.get_linewidth() == 5
+
+        wire_options = {
+            "linewidth": 5,
+            2: {"linestyle": "--", "color": "red"},
+            6: {"linestyle": "--", "color": "orange"},
+        }
+
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for i, w in enumerate(ax.lines):
+            if i == 2:
+                assert w.get_color() == "red"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            elif i == 6:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            else:
+                assert w.get_color() == "black"
+                assert w.get_linestyle() == "-"
+                assert w.get_linewidth() == 5
+
         plt.close()
 
 
@@ -444,20 +488,14 @@ def test_draw_mpl_supports_qfuncs():
     plt.close()
 
 
-def test_draw_mpl_with_qfunc_warns_with_expansion_strategy():
-    """Test that draw warns the user about expansion_strategy being ignored."""
+def test_draw_mpl_with_qfunc_warns_with_level():
+    """Test that draw warns the user about level being ignored."""
 
     def qfunc():
         qml.PauliZ(0)
 
-    with pytest.warns(UserWarning, match="the expansion_strategy and level arguments are ignored"):
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
-        ):
-            qml.draw_mpl(qfunc, expansion_strategy="gradient")
-
-    with pytest.warns(UserWarning, match="the expansion_strategy and level arguments are ignored"):
-        qml.draw_mpl(qfunc, level="gradient")
+    with pytest.warns(UserWarning, match="the level argument is ignored"):
+        qml.draw_mpl(qfunc, level=None)
 
 
 def test_qnode_mid_circuit_measurement_not_deferred_device_api(mocker):

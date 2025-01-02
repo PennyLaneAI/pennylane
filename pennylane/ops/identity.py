@@ -27,6 +27,7 @@ from pennylane.operation import (
     Operation,
     SparseMatrixUndefinedError,
 )
+from pennylane.wires import WiresLike
 
 
 class Identity(CVObservable, Operation):
@@ -61,15 +62,16 @@ class Identity(CVObservable, Operation):
     ev_order = 1
 
     @classmethod
-    def _primitive_bind_call(cls, wires=None, **kwargs):  # pylint: disable=arguments-differ
-        wires = [] if wires is None else wires
+    def _primitive_bind_call(
+        cls, wires: WiresLike = (), **kwargs
+    ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(wires=wires, **kwargs)
 
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
-    def __init__(self, wires=None, id=None):
-        super().__init__(wires=[] if wires is None else wires, id=id)
+    def __init__(self, wires: WiresLike = (), id=None):
+        super().__init__(wires=wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
 
@@ -80,10 +82,12 @@ class Identity(CVObservable, Operation):
         """String representation."""
         if len(self.wires) == 0:
             return "I()"
-        wire = self.wires[0]
-        if isinstance(wire, str):
-            return f"I('{wire}')"
-        return f"I({wire})"
+        if len(self.wires) == 1:
+            wire = self.wires[0]
+            if isinstance(wire, str):
+                return f"I('{wire}')"
+            return f"I({wire})"
+        return f"I({self.wires.tolist()})"
 
     @property
     def name(self):
@@ -306,12 +310,13 @@ class GlobalPhase(Operation):
     grad_method = None
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires=None, **kwargs):  # pylint: disable=arguments-differ
-        wires = [] if wires is None else wires
+    def _primitive_bind_call(
+        cls, phi, wires: WiresLike = (), **kwargs
+    ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
-    def __init__(self, phi, wires=None, id=None):
-        super().__init__(phi, wires=[] if wires is None else wires, id=id)
+    def __init__(self, phi, wires: WiresLike = (), id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -336,10 +341,10 @@ class GlobalPhase(Operation):
         >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17+1.j, 6.123234e-17+1.j])
         """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
         exp = qml.math.exp(-1j * phi)
         ones = qml.math.ones(2**n_wires, like=phi)
-        if qml.math.get_interface(phi) == "tensorflow":
-            ones = qml.math.cast_like(ones, 1j)
 
         if qml.math.ndim(phi) == 0:
             return exp * ones
@@ -410,7 +415,9 @@ class GlobalPhase(Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(phi, wires=None):  # pylint:disable=arguments-differ,unused-argument
+    def compute_decomposition(
+        phi, wires: WiresLike = ()
+    ):  # pylint:disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::

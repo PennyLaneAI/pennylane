@@ -81,6 +81,15 @@ mp3 = MidMeasureMP(Wires(2), id="m2")
 class TestMeasurementValueManipulation:
     """Test all the dunder methods associated with the MeasurementValue class"""
 
+    def test_error_on_boolean_conversion(self):
+        """Test that an error is raised if a measurement value if used as a boolean."""
+
+        m = MeasurementValue([mp1], lambda v: v)
+
+        with pytest.raises(ValueError, match="The truth value of a MeasurementValue"):
+            if m:
+                return
+
     def test_apply_function_to_measurement(self):
         """Test the general _apply method that can apply an arbitrary function to a measurement."""
 

@@ -159,12 +159,11 @@ You can also see the const variable `a` as argument `e:i32[]` to the inner neste
 ### Pytree handling
 
 Evaluating a jaxpr requires accepting and returning a flat list of tensor-like inputs and outputs.
-list of tensor-like outputs.  These long lists can be hard to manage and are very
-restrictive on the allowed functions, but we can take advantage of pytrees to allow handling
-arbitrary functions.
+These long lists can be hard to manage and are very restrictive on the allowed functions, but we
+can take advantage of pytrees to allow handling arbitrary functions.
 
 To start, we import the `FlatFn` helper. This class converts a function to one that caches
-the resulting result pytree into `flat_fn.out_tree` when executed. This can be used to repack the
+the result pytree into `flat_fn.out_tree` when executed. This can be used to repack the
 results into the correct shape. It also returns flattened results. This does not particularly
 matter for program capture, as we will only be producing jaxpr from the function, not calling
 it directly.

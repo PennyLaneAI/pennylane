@@ -20,12 +20,12 @@ from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
+from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
-from pennylane.tape import make_qscript
 
 
 class ConditionalTransformError(ValueError):
@@ -219,52 +219,47 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         cond_prim = _get_cond_qfunc_prim()
 
         elifs = (
-            (self.orig_elifs,)
+            [self.orig_elifs]
             if len(self.orig_elifs) > 0 and not isinstance(self.orig_elifs[0], tuple)
-            else self.orig_elifs
+            else list(self.orig_elifs)
         )
+        flat_true_fn = FlatFn(self.true_fn)
+        branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
-        flat_fn = FlatFn(functools.partial(self.true_fn, **kwargs))
-        jaxpr_true = jax.make_jaxpr(flat_fn)(*args)
-        jaxpr_false = (
-            jax.make_jaxpr(functools.partial(self.otherwise_fn, **kwargs))(*args)
-            if self.otherwise_fn
-            else None
-        )
+        end_const_ind = len(
+            branches
+        )  # consts go after the len(branches) conditions, first const at len(branches)
+        conditions = []
+        jaxpr_branches = []
+        consts = []
+        consts_slices = []
 
-        # We extract each condition (or predicate) from the elifs argument list
-        # since these are traced by JAX and are passed as positional arguments to the primitive
-        elifs_conditions = []
-        jaxpr_elifs = []
-
-        for pred, elif_fn in elifs:
-            elifs_conditions.append(pred)
-            jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
-
-        conditions = [self.condition, *elifs_conditions, True]
-
-        jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
-        jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
-
-        # We need to flatten the constants since JAX does not allow
-        # to pass lists as positional arguments
-        consts_flat = [const for sublist in jaxpr_consts for const in sublist]
-        n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
+        for pred, fn in branches:
+            conditions.append(pred)
+            if fn is None:
+                jaxpr_branches.append(None)
+                consts_slices.append(slice(0, 0))
+            else:
+                jaxpr = jax.make_jaxpr(functools.partial(fn, **kwargs))(*args)
+                jaxpr_branches.append(jaxpr.jaxpr)
+                consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
+                consts += jaxpr.consts
+                end_const_ind += len(jaxpr.consts)
 
         flat_args, _ = jax.tree_util.tree_flatten(args)
         results = cond_prim.bind(
             *conditions,
+            *consts,
             *flat_args,
-            *consts_flat,
             jaxpr_branches=jaxpr_branches,
-            n_consts_per_branch=n_consts_per_branch,
-            n_args=len(flat_args),
+            consts_slices=consts_slices,
+            args_slice=slice(end_const_ind, None),
         )
-        assert flat_fn.out_tree is not None
-        if flat_fn.out_tree.num_leaves != len(results):
+        assert flat_true_fn.out_tree is not None
+        if flat_true_fn.out_tree.num_leaves != len(results):
             # undefined false fn leads to empty results
             return results
-        return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
+        return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
 
@@ -620,7 +615,7 @@ def cond(
                     QueuingManager.remove(op)
 
             # 1. Apply true_fn conditionally
-            qscript = make_qscript(true_fn)(*args, **kwargs)
+            qscript = qml.tape.make_qscript(true_fn)(*args, **kwargs)
 
             if qscript.measurements:
                 raise ConditionalTransformError(with_meas_err)
@@ -630,7 +625,7 @@ def cond(
 
             if false_fn is not None:
                 # 2. Apply false_fn conditionally
-                else_qscript = make_qscript(false_fn)(*args, **kwargs)
+                else_qscript = qml.tape.make_qscript(false_fn)(*args, **kwargs)
 
                 if else_qscript.measurements:
                     raise ConditionalTransformError(with_meas_err)
@@ -688,19 +683,20 @@ def _get_cond_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    cond_prim = jax.core.Primitive("cond")
+    cond_prim = create_non_interpreted_prim()("cond")
     cond_prim.multiple_results = True
 
     @cond_prim.def_impl
-    def _(*all_args, jaxpr_branches, n_consts_per_branch, n_args):
+    def _(*all_args, jaxpr_branches, consts_slices, args_slice):
         n_branches = len(jaxpr_branches)
         conditions = all_args[:n_branches]
-        args = all_args[n_branches : n_branches + n_args]
-        consts_flat = all_args[n_branches + n_args :]
+        args = all_args[args_slice]
 
         # Find predicates that use mid-circuit measurements. We don't check the last
         # condition as that is always `True`.
-        mcm_conditions = [pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue)]
+        mcm_conditions = tuple(
+            pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue)
+        )
         if len(mcm_conditions) != 0:
             if len(mcm_conditions) != len(conditions) - 1:
                 raise ConditionalTransformError(
@@ -709,32 +705,30 @@ def _get_cond_qfunc_prim():
                 )
             conditions = _get_mcm_predicates(mcm_conditions)
 
-        start = 0
-        for pred, jaxpr, n_consts in zip(conditions, jaxpr_branches, n_consts_per_branch):
-            consts = consts_flat[start : start + n_consts]
-            start += n_consts
-            if pred and jaxpr is not None:
-                if isinstance(pred, qml.measurements.MeasurementValue):
-                    with qml.queuing.AnnotatedQueue() as q:
-                        out = jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
+        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+            consts = all_args[const_slice]
+            if jaxpr is None:
+                continue
+            if isinstance(pred, qml.measurements.MeasurementValue):
+                with qml.queuing.AnnotatedQueue() as q:
+                    out = jax.core.eval_jaxpr(jaxpr, consts, *args)
 
-                    if len(out) != 0:
-                        raise ConditionalTransformError(
-                            "Only quantum functions without return values can be applied "
-                            "conditionally with mid-circuit measurement predicates."
-                        )
-                    for wrapped_op in q:
-                        Conditional(pred, wrapped_op.obj)
-
-                else:
-                    return jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
+                if len(out) != 0:
+                    raise ConditionalTransformError(
+                        "Only quantum functions without return values can be applied "
+                        "conditionally with mid-circuit measurement predicates."
+                    )
+                for wrapped_op in q:
+                    Conditional(pred, wrapped_op.obj)
+            elif pred:
+                return jax.core.eval_jaxpr(jaxpr, consts, *args)
 
         return ()
 
     @cond_prim.def_abstract_eval
     def _(*_, jaxpr_branches, **__):
 
-        outvals_true = jaxpr_branches[0].out_avals
+        outvals_true = [out.aval for out in jaxpr_branches[0].outvars]
 
         for idx, jaxpr_branch in enumerate(jaxpr_branches):
             if idx == 0:
@@ -748,7 +742,7 @@ def _get_cond_qfunc_prim():
                 # this is tested, but coverage does not pick it up
                 continue  # pragma: no cover
 
-            outvals_branch = jaxpr_branch.out_avals
+            outvals_branch = [out.aval for out in jaxpr_branch.outvars]
             branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
             _validate_abstract_values(outvals_branch, outvals_true, branch_type, idx - 1)
 

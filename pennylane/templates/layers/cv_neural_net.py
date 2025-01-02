@@ -26,7 +26,7 @@ class CVNeuralNetLayers(Operation):
     The layer consists
     of interferometers, displacement and squeezing gates mimicking the linear transformation of
     a neural network in the x-basis of the quantum system, and uses a Kerr gate
-    to introduce a 'quantum' nonlinearity.
+    to introduce a 'quantum' non-linearity.
 
     The layers act on the :math:`M` modes given in ``wires``,
     and include interferometers of :math:`K=M(M-1)/2` beamsplitters. The different weight parameters

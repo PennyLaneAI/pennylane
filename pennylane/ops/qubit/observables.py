@@ -100,9 +100,6 @@ class Hermitian(Observable):
                 f"a matrix with shape {A.shape[0]}x{A.shape[0]} was passed."
             )
 
-        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
-            raise ValueError("Observable must be Hermitian.")
-
     def label(
         self,
         decimals: Optional[int] = None,
@@ -136,6 +133,10 @@ class Hermitian(Observable):
         A = qml.math.asarray(A)
         Hermitian._validate_input(A)
         return A
+
+    @staticmethod
+    def compute_sparse_matrix(A) -> csr_matrix:  # pylint: disable=arguments-differ
+        return csr_matrix(Hermitian.compute_matrix(A))
 
     @property
     def eigendecomposition(self) -> dict[str, TensorLike]:
@@ -283,8 +284,8 @@ class SparseHamiltonian(Observable):
 
     Sparse Hamiltonians can be constructed directly with a SciPy-compatible sparse matrix.
 
-    Alternatively, you can construct your Hamiltonian as usual using :class:`~.Hamiltonian`, and then use
-    :meth:`~.Hamiltonian.sparse_matrix` to construct the sparse matrix that serves as the input
+    Alternatively, you can construct your Hamiltonian as usual using :class:`~.LinearCombination`, and then use
+    :meth:`~.LinearCombination.sparse_matrix` to construct the sparse matrix that serves as the input
     to ``SparseHamiltonian``:
 
     >>> wires = range(20)

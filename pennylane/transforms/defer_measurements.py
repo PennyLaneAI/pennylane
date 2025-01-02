@@ -39,7 +39,7 @@ def _check_tape_validity(tape: QuantumScript):
 
     for mp in tape.measurements:
         if isinstance(mp, (CountsMP, ProbabilityMP, SampleMP)) and not (
-            mp.obs or mp._wires or mp.mv
+            mp.obs or mp._wires or mp.mv is not None
         ):
             raise ValueError(
                 f"Cannot use {mp.__class__.__name__} as a measurement without specifying wires "
@@ -103,7 +103,7 @@ def null_postprocessing(results):
 
 @transform
 def defer_measurements(
-    tape: QuantumScript, reduce_postselected: bool = True, **kwargs
+    tape: QuantumScript, reduce_postselected: bool = True, allow_postselect: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
@@ -125,7 +125,7 @@ def defer_measurements(
 
     .. note::
 
-        Devices that inherit from :class:`~pennylane.QubitDevice` **must** be initialized
+        Devices that inherit from :class:`~pennylane.devices.QubitDevice` **must** be initialized
         with an additional wire for each mid-circuit measurement after which the measured
         wire is reused or reset for ``defer_measurements`` to transform the quantum tape
         correctly.
@@ -156,12 +156,15 @@ def defer_measurements(
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
-        reduce_postselected (bool): Whether or not to use postselection information to
-            reduce the number of operations and control wires in the output tape. Active by default.
+        reduce_postselected (bool): Whether to use postselection information to reduce the number
+            of operations and control wires in the output tape. Active by default.
+        allow_postselect (bool): Whether postselection is allowed. In order to perform postselection
+            with ``defer_measurements``, the device must support the :class:`~.Projector` operation.
+            Defaults to ``True``.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
-        transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         ValueError: If custom wire labels are used with qubit reuse or reset
@@ -199,7 +202,7 @@ def defer_measurements(
     >>> qml.grad(qnode)(par)
     tensor(-0.49622252, requires_grad=True)
 
-    Reusing and reseting measured wires will work as expected with the
+    Reusing and resetting measured wires will work as expected with the
     ``defer_measurements`` transform:
 
     .. code-block:: python3
@@ -268,13 +271,10 @@ def defer_measurements(
 
         There is only one controlled gate with only one control wire.
     """
-
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
     _check_tape_validity(tape)
-
-    device = kwargs.get("device", None)
 
     new_operations = []
 
@@ -286,8 +286,11 @@ def defer_measurements(
         is_postselecting,
     ) = _collect_mid_measure_info(tape)
 
-    if is_postselecting and device is not None and not isinstance(device, qml.devices.DefaultQubit):
-        raise ValueError(f"Postselection is not supported on the {device} device.")
+    if is_postselecting and not allow_postselect:
+        raise ValueError(
+            "Postselection is not allowed on the device with deferred measurements. The device "
+            "must support the Projector gate to apply postselection."
+        )
 
     if len(reused_measurement_wires) > 0 and not all(isinstance(w, int) for w in tape.wires):
         raise ValueError(
@@ -369,26 +372,13 @@ def defer_measurements(
             new_mp = mp
         new_measurements.append(new_mp)
 
-    new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
 
     if is_postselecting and new_tape.batch_size is not None:
         # Split tapes if broadcasting with postselection
         return qml.transforms.broadcast_expand(new_tape)
 
     return [new_tape], null_postprocessing
-
-
-@defer_measurements.custom_qnode_transform
-def _defer_measurements_qnode(self, qnode, targs, tkwargs):
-    """Custom qnode transform for ``defer_measurements``."""
-    if tkwargs.get("device", None):
-        raise ValueError(
-            "Cannot provide a 'device' value directly to the defer_measurements decorator "
-            "when transforming a QNode."
-        )
-
-    tkwargs.setdefault("device", qnode.device)
-    return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
 def _add_control_gate(op, control_wires, reduce_postselected):

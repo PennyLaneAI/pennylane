@@ -45,7 +45,7 @@ class TestQNodeIntegration:
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.mixed", wires=1)
-        cap = dev.capabilities()
+        cap = dev.target_device.capabilities()
         capabilities = {
             "model": "qubit",
             "supports_finite_shots": True,
@@ -69,7 +69,7 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.mixed"
-        assert dev.capabilities()["passthru_devices"]["autograd"] == "default.mixed"
+        assert dev.target_device.capabilities()["passthru_devices"]["autograd"] == "default.mixed"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
@@ -85,7 +85,6 @@ class TestQNodeIntegration:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -267,7 +266,6 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.gradient_fn == "backprop"
         res = circuit(weights)
 
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
@@ -339,9 +337,6 @@ class TestPassthruIntegration:
         res = circuit1(p)
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
-
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         grad_fn = qml.jacobian(circuit1, 0)
         res = grad_fn(p)
@@ -548,14 +543,6 @@ class TestPassthruIntegration:
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
         assert np.allclose(res, expected_cost, atol=tol, rtol=0)
-
-        # Check that the correct differentiation method is being used.
-        if diff_method == "backprop":
-            assert circuit.gradient_fn == "backprop"
-        elif diff_method == "parameter-shift":
-            assert circuit.gradient_fn is qml.gradients.param_shift
-        else:
-            assert circuit.gradient_fn is qml.gradients.finite_diff
 
         res = qml.grad(cost)(params)
         expected_grad = (

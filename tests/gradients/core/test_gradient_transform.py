@@ -250,11 +250,12 @@ class TestGradientTransformIntegration:
         else:
             assert np.allclose(res, expected, atol=atol, rtol=0)
 
-    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 2e-1), ([1000, 1500], 2e-1)])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
-    def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol):
+    def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol, seed):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -280,9 +281,9 @@ class TestGradientTransformIntegration:
             ]
         )
         if isinstance(shots, list):
-            assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
+            assert all(np.allclose(r, expected, atol=atol) for r in res)
         else:
-            assert np.allclose(res, expected, atol=atol, rtol=0)
+            assert np.allclose(res, expected, atol=atol)
 
     @pytest.mark.xfail(reason="Gradient transforms are not compatible with shots and mixed shapes")
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
@@ -613,20 +614,15 @@ class TestGradientTransformIntegration:
         assert np.allclose(res[0][0], expected[0], atol=10e-2, rtol=0)
         assert np.allclose(res[1][0], expected[1], atol=10e-2, rtol=0)
 
-    @pytest.mark.parametrize("strategy", ["gradient", "device"])
-    def test_template_integration(self, strategy, tol):
+    def test_template_integration(self, tol):
         """Test that the gradient transform acts on QNodes
         correctly when the QNode contains a template"""
         dev = qml.device("default.qubit", wires=3)
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' attribute is deprecated"
-        ):
-
-            @qml.qnode(dev, expansion_strategy=strategy)
-            def circuit(weights):
-                qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-                return qml.probs(wires=[0, 1])
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1])
 
         weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
         res = qml.gradients.param_shift(circuit)(weights)

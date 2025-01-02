@@ -24,7 +24,7 @@ from pennylane.typing import PostprocessingFn
 
 @transform
 def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Append parameterized gates to an existing tape.
+    """Append parametrized gates to an existing tape.
 
     Args:
         tape (QuantumTape or QNode or Callable): quantum circuit to transform by adding gates
@@ -43,7 +43,7 @@ def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch,
         g.data = new_params
         new_operations.append(g)
 
-    new_tape = type(tape)(tape.operations + new_operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=tape.operations + new_operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -79,12 +79,12 @@ class AdaptiveOptimizer:
     adaptive circuit for the :math:`\text{H}_3^+` cation.
 
     >>> import pennylane as qml
-    >>> from pennylane import numpy as pnp
+    >>> from pennylane import numpy as np
 
     The molecule is defined and the Hamiltonian is computed with:
 
     >>> symbols = ["H", "H", "H"]
-    >>> geometry = pnp.array([[0.01076341, 0.04449877, 0.0],
+    >>> geometry = np.array([[0.01076341, 0.04449877, 0.0],
     ...                      [0.98729513, 1.63059094, 0.0],
     ...                      [1.87262415, -0.00815842, 0.0]], requires_grad=False)
     >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge = 1)
@@ -156,7 +156,7 @@ class AdaptiveOptimizer:
 
     @staticmethod
     def _circuit(params, gates, initial_circuit):
-        """Append parameterized gates to an existing circuit.
+        """Append parametrized gates to an existing circuit.
 
         Args:
             params (array[float]): parameters of the gates to be added
@@ -199,6 +199,7 @@ class AdaptiveOptimizer:
         """
         cost = circuit()
         qnode = copy.copy(circuit)
+        tape = qml.workflow.construct_tape(qnode)()
 
         if drain_pool:
             operator_pool = [
@@ -206,7 +207,7 @@ class AdaptiveOptimizer:
                 for gate in operator_pool
                 if all(
                     gate.name != operation.name or gate.wires != operation.wires
-                    for operation in circuit.tape.operations
+                    for operation in tape.operations
                 )
             ]
 

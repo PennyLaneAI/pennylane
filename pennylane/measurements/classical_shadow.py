@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
 
@@ -89,7 +89,7 @@ def shadow_expval(H, k=1, seed=None):
     return ShadowExpvalMP(H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed=None):
+def classical_shadow(wires: WiresLike, seed=None):
     """
     The classical shadow measurement protocol.
 
@@ -227,7 +227,10 @@ class ClassicalShadowMP(MeasurementTransform):
     """
 
     def __init__(
-        self, wires: Optional[Wires] = None, seed: Optional[int] = None, id: Optional[str] = None
+        self,
+        wires: Optional[WiresLike] = None,
+        seed: Optional[int] = None,
+        id: Optional[str] = None,
     ):
         self.seed = seed
         super().__init__(wires=wires, id=id)
@@ -274,7 +277,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         Args:
             tape (QuantumTape): the quantum tape to be processed
-            device (pennylane.Device): the device used to process the quantum tape
+            device (pennylane.devices.LegacyDevice): the device used to process the quantum tape
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -284,7 +287,11 @@ class ClassicalShadowMP(MeasurementTransform):
         n_snapshots = device.shots
         seed = self.seed
 
-        with qml.workflow.set_shots(device, shots=1):
+        original_shots = device.shots
+        original_shot_vector = device._shot_vector  # pylint: disable=protected-access
+
+        try:
+            device.shots = 1
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(device.map_wires(wires))
@@ -311,6 +318,9 @@ class ClassicalShadowMP(MeasurementTransform):
                 device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
+        finally:
+            device.shots = original_shots
+            device._shot_vector = original_shot_vector  # pylint: disable=protected-access
 
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
@@ -472,7 +482,7 @@ class ClassicalShadowMP(MeasurementTransform):
 class ShadowExpvalMP(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
-    Please refer to :func:`shadow_expval` for detailed documentation.
+    Please refer to :func:`~pennylane.shadow_expval` for detailed documentation.
 
     Args:
         H (Operator, Sequence[Operator]): Operator or list of Operators to compute the expectation value over.

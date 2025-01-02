@@ -68,7 +68,6 @@ details and resource information:
  'depth': 4,
  'num_device_wires': 4,
  'device_name': 'default.qubit',
- 'expansion_strategy': 'gradient',
  'gradient_options': {},
  'interface': 'auto',
  'diff_method': 'parameter-shift',
@@ -223,7 +222,7 @@ the circuit in execution:
 
     [pldb] qml.debug_state()
     array([0.81677345+0.j        , 0.        +0.j        ,
-           0.        -0.57695852j, 0.        +0.j        ])
+           1.        -0.57695852j, 0.        +0.j        ])
     [pldb] continue
     > /Users/your/path/to/script.py(13)circuit()
     -> qml.CNOT(wires=[0, 1])
@@ -280,6 +279,7 @@ or to check whether two gates causally influence each other.
 
     import pennylane as qml
     from pennylane import CircuitGraph
+    from pennylane.workflow import construct_tape
 
     dev = qml.device('lightning.qubit', wires=(0,1,2,3))
 
@@ -293,7 +293,7 @@ or to check whether two gates causally influence each other.
 
 
     circuit()
-    tape = circuit.qtape
+    tape = construct_tape(circuit)() 
     ops = tape.operations
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)
@@ -332,7 +332,7 @@ Using the above example, we get:
 <class 'networkx.classes.multidigraph.MultiDiGraph'>
 >>> for k, v in g2.adjacency():
 ...    print(k, v)
-Hadamard(wires=[0]) {expval(Z(0)): {0: {'wire': 0}}}
+H(0) {expval(Z(0)): {0: {'wire': 0}}}
 CNOT(wires=[1, 2]) {CNOT(wires=[2, 3]): {0: {'wire': 2}}, CNOT(wires=[3, 1]): {0: {'wire': 1}}}
 CNOT(wires=[2, 3]) {CNOT(wires=[3, 1]): {0: {'wire': 3}}}
 CNOT(wires=[3, 1]) {}

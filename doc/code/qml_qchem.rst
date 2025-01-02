@@ -71,7 +71,7 @@ The generated Hamiltonian can be used in a circuit where the molecular geometry,
 parameters, and the circuit parameters are optimized simultaneously. Further information about
 molecular geometry optimization with PennyLane is provided in this
 `paper <https://arxiv.org/abs/2106.13840>`__ and this
-`demo <https://pennylane.ai/qml/demos/tutorial_mol_geo_opt.html>`__.
+`demo <https://pennylane.ai/qml/demos/tutorial_mol_geo_opt>`__.
 
 .. code-block:: python3
 

@@ -490,7 +490,7 @@ def param_shift_hessian(
         in the QNode execution.
 
 
-        Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
+        Note: By default a QNode with the keyword ``hybrid=True`` computes derivatives with respect to
         QNode arguments, which can include classical computations on those arguments before they are
         passed to quantum operations. The "purely quantum" Hessian can instead be obtained with
         ``hybrid=False``, which is then computed with respect to the gate arguments and produces a
@@ -521,8 +521,7 @@ def param_shift_hessian(
         the parameter-shifted tapes and a post-processing function to combine the execution
         results of these tapes into the Hessian:
 
-        >>> circuit(x)  # generate the QuantumTape inside the QNode
-        >>> tape = circuit.qtape
+        >>> tape = qml.workflow.construct_tape(circuit)(x)
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
         >>> len(hessian_tapes)
         13

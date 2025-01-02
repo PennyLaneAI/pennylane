@@ -16,7 +16,8 @@
 import numpy as np
 
 import pennylane as qml
-from pennylane.utils import _flatten, unflatten
+
+from .qng import _flatten_np, _unflatten_np
 
 
 class RotoselectOptimizer:
@@ -132,11 +133,11 @@ class RotoselectOptimizer:
         Returns:
             array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
         """
-        x_flat = np.fromiter(_flatten(x), dtype=float)
+        x_flat = np.fromiter(_flatten_np(x), dtype=float)
         # wrap the objective function so that it accepts the flattened parameter array
         # pylint:disable=unnecessary-lambda-assignment
         objective_fn_flat = lambda x_flat, gen: objective_fn(
-            unflatten(x_flat, x), generators=gen, **kwargs
+            _unflatten_np(x_flat, x), generators=gen, **kwargs
         )
 
         try:
@@ -151,7 +152,7 @@ class RotoselectOptimizer:
                 objective_fn_flat, x_flat, generators, d
             )
 
-        return unflatten(x_flat, x), generators
+        return _unflatten_np(x_flat, x), generators
 
     def _find_optimal_generators(self, objective_fn, x, generators, d):
         r"""Optimizer for the generators.

@@ -15,14 +15,10 @@
 
 from typing import Any, Optional
 
-from pennylane.data.data_manager.progress._default import (
-    make_progress as make_progress_default,
-)
+from pennylane.data.data_manager.progress._default import make_progress as make_progress_default
 
 try:
-    from pennylane.data.data_manager.progress._rich import (
-        make_progress as make_progress_rich,
-    )
+    from pennylane.data.data_manager.progress._rich import make_progress as make_progress_rich
 except ImportError:  # pragma: no cover
     make_progress_rich = None
 

@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
-# pylint: disable=too-many-arguments
-import itertools
 import warnings
 from collections.abc import Iterable
 from copy import copy
 from functools import reduce
+
+# pylint: disable=too-many-arguments
+from itertools import product
 from typing import Union
 
 import numpy as np
+import scipy
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -131,15 +133,19 @@ def lie_closure(
 
     epoch = 0
     old_length = 0  # dummy value
-    new_length = len(vspace)
+    new_length = initial_length = len(vspace)
 
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose:
             print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
 
-        for ps1, ps2 in itertools.combinations(vspace.basis, 2):
+        # compute all commutators. We compute the commutators between all newly added operators
+        # and all original generators. This limits the number of commutators added in each
+        # iteration, but it gives us a correspondence between the while loop iteration and the
+        # nesting level of the commutators.
+        for ps1, ps2 in product(vspace.basis[old_length:], vspace.basis[:initial_length]):
             com = ps1.commutator(ps2)
-            com.simplify()
+            com.simplify(tol=vspace.tol)
 
             if len(com) == 0:  # skip because operators commute
                 continue
@@ -415,20 +421,22 @@ class PauliVSpace:
             for pw, value in pauli_sentence.items():
                 M[new_pw_to_idx[pw], rank] = value
 
+            M[:, rank] /= np.linalg.norm(M[:, rank])
+
             return M, new_pw_to_idx, rank + 1, new_num_pw, True
 
         # Add new PauliSentence entries to matrix
         for pw, value in pauli_sentence.items():
             M[pw_to_idx[pw], rank] = value
 
-        # Check if new vector is linearly dependent on the current basis
-        v = M[:, -1].copy()  # remove copy to normalize M
-        v /= np.linalg.norm(v)
-        A = M[:, :-1]
-        v = v - A @ qml.math.linalg.solve(qml.math.conj(A.T) @ A, A.conj().T) @ v
+        M[:, rank] /= np.linalg.norm(M[:, rank])
 
-        if np.linalg.norm(v) > tol:
-            return M, pw_to_idx, rank + 1, new_num_pw, True
+        # Check if new vector is linearly dependent on the current basis
+        s = scipy.linalg.svdvals(M)
+        new_rank = np.count_nonzero(s > tol)
+
+        if rank + 1 == new_rank:
+            return M, pw_to_idx, new_rank, new_num_pw, True
 
         return M[:num_pw, :rank], pw_to_idx, rank, num_pw, False
 

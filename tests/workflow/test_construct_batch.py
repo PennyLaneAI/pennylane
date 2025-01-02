@@ -64,8 +64,8 @@ class TestTransformProgramGetter:
         with pytest.raises(ValueError, match=r"level bah not recognized."):
             get_transform_program(circuit, level="bah")
 
-    def test_get_transform_program_gradient_fn_transform(self):
-        """Tests for the transform program when the gradient_fn is a transform."""
+    def test_get_transform_program_diff_method_transform(self):
+        """Tests for the transform program when the diff_method is a transform."""
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -105,9 +105,9 @@ class TestTransformProgramGetter:
         p_none = get_transform_program(circuit, None)
         assert p_dev == p_default
         assert p_none == p_dev
-        assert len(p_dev) == 8
+        assert len(p_dev) == 9
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
-        assert p_dev == p_grad + dev.preprocess(config)[0]
+        assert p_dev == p_grad + dev.preprocess_transforms(config)
 
         # slicing
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
@@ -116,7 +116,7 @@ class TestTransformProgramGetter:
         assert p_sliced[1].transform == qml.devices.preprocess.validate_device_wires.transform
         assert p_sliced[2].transform == qml.devices.preprocess.decompose.transform
 
-    def test_gradient_fn_device_gradient(self):
+    def test_diff_method_device_gradient(self):
         """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
 
         @qml.transforms.cancel_inverses
@@ -140,14 +140,14 @@ class TestTransformProgramGetter:
             return qml.expval(qml.PauliZ(0))
 
         full_prog = get_transform_program(circuit)
-        assert len(full_prog) == 12
+        assert len(full_prog) == 13
 
         config = qml.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),
             gradient_method="adjoint",
             use_device_jacobian_product=False,
         )
-        dev_program = dev.preprocess(config)[0]
+        dev_program = dev.preprocess_transforms(config)
 
         expected = TransformProgram()
         expected.add_transform(qml.transforms.split_non_commuting)
@@ -157,7 +157,7 @@ class TestTransformProgramGetter:
     def test_get_transform_program_legacy_device_interface(self):
         """Test the contents of the transform program with the legacy device interface."""
 
-        dev = qml.device("default.qubit.legacy", wires=5)
+        dev = qml.device("default.mixed", wires=5)
 
         @qml.transforms.merge_rotations
         @qml.qnode(dev, diff_method="backprop")
@@ -203,7 +203,9 @@ class TestTransformProgramGetter:
 
         dev_program = get_transform_program(circuit, level="device")
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
-        assert len(dev_program) == 4 + len(circuit.device.preprocess(config)[0])  # currently 8
+        assert len(dev_program) == 4 + len(
+            circuit.device.preprocess_transforms(config)
+        )  # currently 8
         assert dev_program[-1].transform == qml.metric_tensor.transform
 
         full_program = get_transform_program(circuit)
@@ -334,7 +336,7 @@ class TestConstructBatch:
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit.legacy", wires=2, shots=50))
+        @qml.qnode(qml.device("default.mixed", wires=2, shots=50))
         def circuit(order):
             qml.Permute(order, wires=(0, 1, 2))
             qml.X(0)

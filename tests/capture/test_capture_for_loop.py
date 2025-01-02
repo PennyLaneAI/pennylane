@@ -15,30 +15,20 @@
 Tests for capturing for loops into jaxpr.
 """
 
-# pylint: disable=no-value-for-parameter
-# pylint: disable=too-few-public-methods
-# pylint: disable=too-many-arguments
-# pylint: disable=no-self-use
+# pylint: disable=no-value-for-parameter, too-few-public-methods, no-self-use
+# pylint: disable=too-many-positional-arguments, too-many-arguments
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
 from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-import-position
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    """Enable and disable the PennyLane JAX capture context manager."""
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 class TestCaptureForLoop:
@@ -135,6 +125,44 @@ class TestCaptureForLoop:
         jaxpr = jax.make_jaxpr(fn)(array)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    def test_for_loop_grad(self):
+        """Test simple for-loop primitive with gradient."""
+        from pennylane.capture.primitives import grad_prim
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def inner_func(x):
+
+            @qml.for_loop(0, 2)
+            def loop(w):
+                qml.RX(x * w, w)
+
+            loop()
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        def func_qml(x):
+            return qml.grad(inner_func)(x)
+
+        def func_jax(x):
+            return jax.grad(inner_func)(x)
+
+        x = 0.7
+        jax_out = func_jax(x)
+        assert qml.math.allclose(func_qml(x), jax_out)
+
+        # Check overall jaxpr properties
+        jaxpr = jax.make_jaxpr(func_qml)(x)
+        assert len(jaxpr.eqns) == 1  # a single grad equation
+
+        grad_eqn = jaxpr.eqns[0]
+        assert grad_eqn.primitive == grad_prim
+        assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h"}
+        assert grad_eqn.params["argnum"] == [0]
+        assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
+        assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
+
+        manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        assert qml.math.allclose(manual_eval, jax_out)
 
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_shared_indbidx(self, array):

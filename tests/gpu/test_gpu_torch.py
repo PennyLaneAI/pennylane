@@ -180,57 +180,27 @@ class TestTorchDevice:
 
 
 @pytest.mark.skipif(not torch_cuda.is_available(), reason="no cuda support")
-class TestQnnTorchLayer:
-    def test_torch_device_cuda_if_tensors_on_cuda(self):
-        """Test that if any tensor passed to operators is on the GPU then CUDA
-        is set internally as a device option for 'default.qubit.torch'."""
+def test_qnn_torchlayer():
+    """Test if TorchLayer can be run on GPU"""
 
-        n_qubits = 3
-        n_layers = 1
+    n_qubits = 4
+    dev = qml.device("default.qubit", wires=n_qubits)
 
-        dev = qml.device("default.qubit", wires=n_qubits)
+    @qml.qnode(dev, interface="torch")
+    def circuit(inputs, weights):
+        qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+        qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
+        return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
 
-        @qml.qnode(dev)
-        def circuit(inputs, weights):
-            qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
-            qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
+    n_layers = 1
+    weight_shapes = {"weights": (n_layers, n_qubits)}
 
-        weight_shapes = {"weights": (n_layers, n_qubits)}
+    qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
 
-        qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
+    x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
+    res = qlayer(x)
+    assert res.is_cuda
 
-        x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
-        res = qlayer(x)
-        assert circuit.device.short_name == "default.qubit.torch"
-        assert "cuda" in circuit.device._torch_device
-        assert res.is_cuda
-
-        loss = torch.sum(res).squeeze()
-        loss.backward()
-        assert loss.is_cuda
-
-    def test_qnn_torchlayer(self):
-        """Test if TorchLayer can be run on GPU"""
-
-        n_qubits = 4
-        dev = qml.device("default.qubit", wires=n_qubits)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit(inputs, weights):
-            qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
-            qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
-
-        n_layers = 1
-        weight_shapes = {"weights": (n_layers, n_qubits)}
-
-        qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
-
-        x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
-        res = qlayer(x)
-        assert res.is_cuda
-
-        loss = torch.sum(res).squeeze()
-        loss.backward()
-        assert loss.is_cuda
+    loss = torch.sum(res).squeeze()
+    loss.backward()
+    assert loss.is_cuda

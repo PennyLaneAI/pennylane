@@ -294,11 +294,25 @@ class MPLDrawer:
         if wire_options is None:
             wire_options = {}
 
-        # adding wire lines
-        self._wire_lines = [
-            plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_options)
-            for wire in range(self.n_wires)
-        ]
+        # Separate global options from per wire options
+        global_options = {k: v for k, v in wire_options.items() if not isinstance(v, dict)}
+        wire_specific_options = {k: v for k, v in wire_options.items() if isinstance(v, dict)}
+
+        # Adding wire lines with individual styles based on wire_options
+        self._wire_lines = []
+        for wire in range(self.n_wires):
+            specific_options = wire_specific_options.get(wire, {})
+            line_options = {**global_options, **specific_options}
+
+            # Create Line2D with the combined options
+            line = plt.Line2D(
+                (-1, self.n_layers),
+                (wire, wire),
+                zorder=1,
+                **line_options,
+            )
+            self._wire_lines.append(line)
+
         for line in self._wire_lines:
             self._ax.add_line(line)
 
@@ -1112,3 +1126,10 @@ class MPLDrawer:
 
         for line in lines:
             self._ax.add_line(line)
+
+    def crop_wire_labels(self):
+        """Crop away the wire labels and resize figure accordingly."""
+        xlim = self._ax.get_xlim()
+        self._ax.set_xlim((-1, xlim[1]))
+        factor = (self.n_layers + 2) / (self.n_layers + 3)
+        self._fig.set_figwidth(self._fig.get_figwidth() * factor)

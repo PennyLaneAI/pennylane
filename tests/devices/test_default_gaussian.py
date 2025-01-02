@@ -77,6 +77,7 @@ U2 = np.array(
     ]
 )
 
+
 H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
 hbar = 2
@@ -728,7 +729,7 @@ class TestDefaultGaussianIntegration:
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.gaussian", wires=1)
-        cap = dev.capabilities()
+        cap = dev.target_device.capabilities()
         capabilities = {
             "model": "cv",
             "supports_finite_shots": True,

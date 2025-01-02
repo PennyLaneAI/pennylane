@@ -67,7 +67,7 @@ Here, the ``grad_fn`` was called once for each output quantity. Each time ``grad
 is called, we are forced to reproduce the calculation for ``exponent * x ** (exponent-1)``,
 only to multiply it by a different vector. When executing quantum circuits, that quantity
 can potentially be quite expensive. Autograd would naively
-request indepedent vjps for each entry in the output, even though the internal circuits will be
+request independent vjps for each entry in the output, even though the internal circuits will be
 exactly the same.
 
 When caching is enabled, the expensive part (re-executing identical circuits) is
@@ -147,6 +147,21 @@ def autograd_execute(
     return _execute(parameters, tuple(tapes), execute_fn, jpc)
 
 
+def _to_autograd(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
+    """Converts an arbitrary result batch to one with autograd arrays.
+    Args:
+        result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays
+    Returns:
+        ResultBatch: a nested structure of tuples, dicts, and jax arrays
+    """
+    if isinstance(result, dict):
+        return result
+    # pylint: disable=no-member
+    if isinstance(result, (list, tuple, autograd.builtins.tuple, autograd.builtins.list)):
+        return tuple(_to_autograd(r) for r in result)
+    return autograd.numpy.array(result)
+
+
 @autograd.extend.primitive
 def _execute(
     parameters,
@@ -165,7 +180,7 @@ def _execute(
             for the input tapes.
 
     """
-    return execute_fn(tapes)
+    return _to_autograd(execute_fn(tapes))
 
 
 # pylint: disable=unused-argument

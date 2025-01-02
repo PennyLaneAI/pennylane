@@ -14,6 +14,7 @@
 """
 Tests for the ``default.mixed`` device for the JAX interface
 """
+
 # pylint: disable=protected-access
 from functools import partial
 
@@ -43,7 +44,7 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.mixed"
-        assert dev.capabilities()["passthru_devices"]["jax"] == "default.mixed"
+        assert dev.target_device.capabilities()["passthru_devices"]["jax"] == "default.mixed"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
@@ -59,7 +60,6 @@ class TestQNodeIntegration:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -132,15 +132,15 @@ class TestQNodeIntegration:
         grad_fn = jax.jit(jax.grad(circuit, argnums=[0, 1, 2]))
         res1 = grad_fn(a, b, c)
 
-        # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1, 2, 3]
+        assert len(res1) == 3
         assert all(isinstance(r_, jax.Array) for r_ in res1)
 
         # make the second QNode argument a constant
         grad_fn = jax.grad(circuit, argnums=[0, 1])
         res2 = grad_fn(a, b, c)
 
-        assert circuit.qtape.trainable_params == [0, 1]
+        assert len(res2) == 2
+        assert all(isinstance(r_, jax.Array) for r_ in res2)
         assert qml.math.allclose(res1[:2], res2)
 
     @pytest.mark.parametrize("gradient_func", [qml.gradients.param_shift, None])
@@ -155,7 +155,7 @@ class TestQNodeIntegration:
                 qml.RX(x, wires=0)
                 qml.expval(qml.PauliZ(0))
             tape = qml.tape.QuantumScript.from_queue(q)
-            return qml.execute([tape], dev, gradient_fn=gradient_func)
+            return qml.execute([tape], dev, diff_method=gradient_func)
 
         assert jnp.allclose(wrapper(jnp.array(0.0))[0], 1.0)
 
@@ -405,7 +405,6 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.gradient_fn == "backprop"
         res = decorator(circuit)(weights)
 
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
@@ -476,9 +475,6 @@ class TestPassthruIntegration:
 
         res = decorator(circuit1)(p_jax)
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
-
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = decorator(jacobian_fn(circuit1, 0))(p_jax)
         assert np.allclose(res, jax.jacobian(circuit2)(p), atol=tol, rtol=0)
@@ -710,14 +706,6 @@ class TestPassthruIntegration:
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
         assert np.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        # Check that the correct differentiation method is being used.
-        if diff_method == "backprop":
-            assert circuit.gradient_fn == "backprop"
-        elif diff_method == "parameter-shift":
-            assert circuit.gradient_fn is qml.gradients.param_shift
-        else:
-            assert circuit.gradient_fn is qml.gradients.finite_diff
-
         res = jax.grad(cost)(params)
 
         expected_grad = (
@@ -789,10 +777,6 @@ class TestPassthruIntegration:
     def test_batching(self, jacobian_fn, decorator, tol):
         """Tests that the gradient of the qnode is correct with batching"""
         dev = qml.device("default.mixed", wires=2)
-
-        if decorator == jax.jit:
-            # TODO: https://github.com/PennyLaneAI/pennylane/issues/2762
-            pytest.xfail("Parameter broadcasting currently not supported for JAX jit")
 
         @partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method="backprop", interface="jax")

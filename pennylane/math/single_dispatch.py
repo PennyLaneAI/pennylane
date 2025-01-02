@@ -22,7 +22,8 @@ import numpy as np
 from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
 
-from .utils import get_deep_interface, is_abstract
+from .interface_utils import get_deep_interface
+from .utils import is_abstract
 
 
 def _i(name):
@@ -246,6 +247,10 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experime
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "ravel"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "vstack"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "unstack"] = "tensorflow"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "gather"] = "tensorflow"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "concat"] = "tensorflow"
+
 
 tf_fft_functions = [
     "fft",
@@ -268,7 +273,14 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 
 
 def _coerce_tensorflow_diag(x, **kwargs):
-    return ar.autoray.tensorflow_diag(_tf_convert_to_tensor(x), **kwargs)
+    x = _tf_convert_to_tensor(x)
+    tf = _i("tf")
+    nd = len(x.shape)
+    if nd == 2:
+        return tf.linalg.diag_part(x, **kwargs)
+    if nd == 1:
+        return tf.linalg.diag(x, **kwargs)
+    raise ValueError("Input must be 1- or 2-d.")
 
 
 ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
@@ -289,10 +301,12 @@ ar.register_function(
 )
 
 
-def _tf_convert_to_tensor(x, **kwargs):
+def _tf_convert_to_tensor(x, requires_grad=False, **kwargs):
     if isinstance(x, _i("tf").Tensor) and "dtype" in kwargs:
-        return _i("tf").cast(x, **kwargs)
-    return _i("tf").convert_to_tensor(x, **kwargs)
+        out = _i("tf").cast(x, **kwargs)
+    else:
+        out = _i("tf").convert_to_tensor(x, **kwargs)
+    return _i("tf").Variable(out) if requires_grad else out
 
 
 ar.register_function("tensorflow", "asarray", _tf_convert_to_tensor)
@@ -529,7 +543,7 @@ def _to_numpy_torch(x):
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
 
 
-def _asarray_torch(x, dtype=None, **kwargs):
+def _asarray_torch(x, dtype=None, requires_grad=False, **kwargs):
     import torch
 
     dtype_map = {
@@ -544,9 +558,9 @@ def _asarray_torch(x, dtype=None, **kwargs):
         np.complex128: torch.complex128,
         "float64": torch.float64,
     }
-
-    if dtype in dtype_map:
-        return torch.as_tensor(x, dtype=dtype_map[dtype], **kwargs)
+    dtype = dtype_map.get(dtype, dtype)
+    if requires_grad:
+        return torch.tensor(x, dtype=dtype, **kwargs, requires_grad=True)
 
     return torch.as_tensor(x, dtype=dtype, **kwargs)
 
@@ -793,13 +807,21 @@ ar.register_function(
     "jax",
     "take",
     lambda x, indices, axis=None, **kwargs: _i("jax").numpy.take(
-        x, np.array(indices), axis=axis, **kwargs
+        x, _i("jax").numpy.asarray(indices), axis=axis, **kwargs
     ),
 )
 ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+# pylint: disable=unused-argument
+def _asarray_jax(x, dtype=None, requires_grad=False, **kwargs):
+    return _i("jax").numpy.array(x, dtype=dtype, **kwargs)
+
+
+ar.register_function("jax", "asarray", _asarray_jax)
 
 
 def _ndim_jax(x):
