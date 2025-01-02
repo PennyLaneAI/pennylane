@@ -116,7 +116,6 @@ class TestQNode:
         def cost(x, y):
             return qml.numpy.hstack(circuit(x, y))
 
-        assert circuit.qtape.trainable_params == [0, 1]
         assert isinstance(res, tuple)
         assert len(res) == 2
 

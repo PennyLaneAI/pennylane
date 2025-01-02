@@ -25,6 +25,7 @@ from scipy.linalg import block_diag
 import pennylane as qml
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
+from pennylane.wires import WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
@@ -119,22 +120,61 @@ class ControlledQubitUnitary(ControlledOp):
             data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
         )
 
+    # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
+    @classmethod
+    def _primitive_bind_call(
+        cls,
+        base,
+        control_wires: WiresLike,
+        wires: WiresLike = (),
+        control_values=None,
+        unitary_check=False,
+        work_wires: WiresLike = (),
+    ):
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+
+        if hasattr(base, "wires") and len(wires) != 0:
+            warnings.warn(
+                "base operator already has wires; values specified through wires kwarg will be ignored."
+            )
+            wires = Wires(())
+
+        all_wires = control_wires + wires
+        return cls._primitive.bind(
+            base, control_wires=all_wires, control_values=control_values, work_wires=work_wires
+        )
+
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         base,
-        control_wires,
-        wires=None,
+        control_wires: WiresLike,
+        wires: WiresLike = (),
         control_values=None,
         unitary_check=False,
-        work_wires=None,
+        work_wires: WiresLike = (),
     ):
-        if getattr(base, "wires", False) and wires is not None:
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+        control_wires = Wires(control_wires)
+
+        if hasattr(base, "wires") and len(wires) != 0:
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
+            wires = Wires(())
 
         if isinstance(base, Iterable):
+            if len(wires) == 0:
+                if len(control_wires) > 1:
+                    num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+                    wires = control_wires[-num_base_wires:]
+                    control_wires = control_wires[:-num_base_wires]
+                else:
+                    raise TypeError(
+                        "Must specify a set of wires. None is not a valid `wires` label."
+                    )
             # We use type.__call__ instead of calling the class directly so that we don't bind the
             # operator primitive when new program capture is enabled
             base = type.__call__(qml.QubitUnitary, base, wires=wires, unitary_check=unitary_check)
@@ -1115,7 +1155,16 @@ class MultiControlledX(ControlledOp):
         )
 
     # pylint: disable=too-many-arguments
-    def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
+    def __init__(
+        self,
+        control_wires: WiresLike = (),
+        wires: WiresLike = (),
+        control_values=None,
+        work_wires: WiresLike = (),
+    ):
+        control_wires = Wires(() if control_wires is None else control_wires)
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         # First raise deprecation warnings regardless of the validity of other arguments
         if isinstance(control_values, str):
@@ -1124,22 +1173,19 @@ class MultiControlledX(ControlledOp):
                 "supported in future releases, Use a list of booleans or integers instead.",
                 qml.PennyLaneDeprecationWarning,
             )
-        if control_wires is not None:
+        if len(control_wires) > 0:
             warnings.warn(
                 "The control_wires keyword for MultiControlledX is deprecated, and will "
                 "be removed soon. Use wires = (*control_wires, target_wire) instead.",
                 UserWarning,
             )
 
-        if wires is None:
+        if len(wires) == 0:
             raise ValueError("Must specify the wires where the operation acts on")
 
-        wires = wires if isinstance(wires, Wires) else Wires(wires)
-
-        if control_wires is not None:
+        if len(control_wires) > 0:
             if len(wires) != 1:
                 raise ValueError("MultiControlledX accepts a single target wire.")
-            control_wires = Wires(control_wires)
         else:
             if len(wires) < 2:
                 raise ValueError(
@@ -1172,7 +1218,7 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
-    def compute_matrix(control_wires, control_values=None, **kwargs):
+    def compute_matrix(control_wires: WiresLike, control_values=None, **kwargs):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1215,7 +1261,9 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
-    def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
+    def compute_decomposition(
+        wires: WiresLike = None, work_wires: WiresLike = None, control_values=None, **kwargs
+    ):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1242,6 +1290,7 @@ class MultiControlledX(ControlledOp):
         Toffoli(wires=[0, 1, 'aux'])]
 
         """
+        wires = Wires(() if wires is None else wires)
 
         if len(wires) < 2:
             raise ValueError(f"Wrong number of wires. {len(wires)} given. Need at least 2.")
@@ -1317,7 +1366,7 @@ class CRX(ControlledOp):
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi, wires: WiresLike, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.RX, phi, wires=wires[1:])
@@ -1334,7 +1383,7 @@ class CRX(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires, id=None):
+    def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @staticmethod
@@ -1385,7 +1434,7 @@ class CRX(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(phi, wires: WiresLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.

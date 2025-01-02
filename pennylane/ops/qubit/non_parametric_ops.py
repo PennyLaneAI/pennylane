@@ -57,6 +57,9 @@ class Hadamard(Observable, Operation):
 
     _queue_category = "_ops"
 
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
+
     def label(
         self,
         decimals: Optional[int] = None,
@@ -249,7 +252,7 @@ class PauliX(Observable, Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: Optional[WiresLike] = None, id: Optional[str] = None):
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
 
     def label(

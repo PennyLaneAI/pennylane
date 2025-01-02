@@ -301,10 +301,12 @@ ar.register_function(
 )
 
 
-def _tf_convert_to_tensor(x, **kwargs):
+def _tf_convert_to_tensor(x, requires_grad=False, **kwargs):
     if isinstance(x, _i("tf").Tensor) and "dtype" in kwargs:
-        return _i("tf").cast(x, **kwargs)
-    return _i("tf").convert_to_tensor(x, **kwargs)
+        out = _i("tf").cast(x, **kwargs)
+    else:
+        out = _i("tf").convert_to_tensor(x, **kwargs)
+    return _i("tf").Variable(out) if requires_grad else out
 
 
 ar.register_function("tensorflow", "asarray", _tf_convert_to_tensor)
@@ -541,7 +543,7 @@ def _to_numpy_torch(x):
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
 
 
-def _asarray_torch(x, dtype=None, **kwargs):
+def _asarray_torch(x, dtype=None, requires_grad=False, **kwargs):
     import torch
 
     dtype_map = {
@@ -556,9 +558,9 @@ def _asarray_torch(x, dtype=None, **kwargs):
         np.complex128: torch.complex128,
         "float64": torch.float64,
     }
-
-    if dtype in dtype_map:
-        return torch.as_tensor(x, dtype=dtype_map[dtype], **kwargs)
+    dtype = dtype_map.get(dtype, dtype)
+    if requires_grad:
+        return torch.tensor(x, dtype=dtype, **kwargs, requires_grad=True)
 
     return torch.as_tensor(x, dtype=dtype, **kwargs)
 
@@ -812,6 +814,14 @@ ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+# pylint: disable=unused-argument
+def _asarray_jax(x, dtype=None, requires_grad=False, **kwargs):
+    return _i("jax").numpy.array(x, dtype=dtype, **kwargs)
+
+
+ar.register_function("jax", "asarray", _asarray_jax)
 
 
 def _ndim_jax(x):
