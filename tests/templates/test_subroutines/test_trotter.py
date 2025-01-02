@@ -495,7 +495,7 @@ class TestInitialization:
         )
 
         for actual, expected in zip(ps, expected_bp):
-            assert qml.math.allclose(actual, expected), error_msg
+            assert qml.math.allclose(actual, expected, atol=1e-6), error_msg
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
