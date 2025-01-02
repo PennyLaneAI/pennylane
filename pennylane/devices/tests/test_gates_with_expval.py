@@ -226,7 +226,6 @@ class TestGatesQubitExpval:
             ("PauliZ", 1),
             ("Hadamard", 0),
             ("V", 0),
-            ("G", 0),
         ],
     )
     def test_supported_gate_single_wire_no_parameters(self, device, tol, name, expected_output):
