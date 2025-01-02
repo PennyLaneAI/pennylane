@@ -1396,3 +1396,35 @@ class TestPauliRep:
         # Check that V^4 = I
         v4 = v2 @ v2
         assert np.allclose(v4, np.eye(2), atol=tol)
+
+
+def same_up_to_phase(A, B, atol=1e-7):
+    """Check if 2x2 arrays A,B differ by only a global phase e^{i phi}."""
+    ref_val = None
+    for i in range(A.shape[0]):
+        for j in range(A.shape[1]):
+            if abs(B[i, j]) > 1e-12:
+                ref_val = (i, j)
+                break
+        if ref_val is not None:
+            break
+
+    if ref_val is None:
+        return np.allclose(A, B, atol=atol)
+
+    i0, j0 = ref_val
+    ratio = A[i0, j0] / B[i0, j0]
+    return np.allclose(A, ratio * B, atol=atol)
+
+
+def test_g_gate_matrix_decomp(tol):
+    """Test that G gate matrix matches its decomposition up to global phase."""
+    G_mat = qml.G.compute_matrix()
+    ops = qml.G.compute_decomposition(wires=0)
+
+    product = np.eye(2, dtype=complex)
+    for op in ops:
+        product = product @ op.matrix()
+
+    # Allow a global phase difference
+    assert same_up_to_phase(G_mat, product, atol=tol), "Mismatch beyond global phase!"
