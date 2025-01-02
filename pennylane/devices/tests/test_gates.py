@@ -146,6 +146,8 @@ H = np.array([[1, 1], [1, -1]]) / sqrt(2)
 S = np.diag([1, 1j])
 T = np.diag([1, np.exp(1j * np.pi / 4)])
 SX = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+V = 1/sqrt(2) * np.array([[1, -1j], [-1j, 1]], dtype=complex)
+G = 1/sqrt(2) * np.array([[1, -1], [1, 1]], dtype=complex)
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 ISWAP = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 ECR = np.array(
@@ -287,6 +289,8 @@ single_qubit = [
     (qml.S, S),
     (qml.T, T),
     (qml.SX, SX),
+    (qml.V, V),
+    (qml.G, G),
     adjoint_tuple(qml.S, S),
     adjoint_tuple(qml.T, T),
     adjoint_tuple(qml.SX, SX),

@@ -536,7 +536,6 @@ class TestParameterShiftRule:
 
         shot_vec_manual_res = dev.execute([tape_fwd, tape_bwd])
 
-        # Parameter axis is the first - reorder the results from execute
         shot_vec_len = len(shot_vec)
         shot_vec_manual_res = [
             tuple(comp[l] for comp in shot_vec_manual_res) for l in range(shot_vec_len)
@@ -555,6 +554,31 @@ class TestParameterShiftRule:
         for a_val, n_val in zip(autograd_val, numeric_val):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
+    @pytest.mark.parametrize("G", [qml.V, qml.G])
+    def test_non_parametric_gates(self, G, broadcast):
+        """Tests that non-parametric gates (V and G) work correctly."""
+        shot_vec = many_shots_shot_vector
+        dev = qml.device("default.qubit", wires=1, shots=shot_vec)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            G(wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)
+        tape.trainable_params = set()
+
+        tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
+        assert len(tapes) == 0
+
+        res = fn(dev.execute(tapes))
+        assert isinstance(res, tuple)
+        assert len(res) == len(shot_vec)
+
+
+        for r in res:
+            assert isinstance(r, np.ndarray)
+            assert r.shape == (0,)
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     def test_Rot_gradient(self, mocker, theta, shift, broadcast):
