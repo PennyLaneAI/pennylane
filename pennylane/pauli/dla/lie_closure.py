@@ -155,6 +155,7 @@ def lie_closure(
             for pw, val in com.items():
                 com[pw] = val.imag / 2
 
+            print(com)
             vspace.add(com, tol=tol)
 
         # Updated number of linearly independent PauliSentences from previous and current step
@@ -375,7 +376,9 @@ class PauliVSpace:
         return is_independent
 
     @staticmethod
-    def _check_independence(M, pauli_sentence, pw_to_idx, rank, num_pw, tol):
+    def _check_independence(
+        M, pauli_sentence, pw_to_idx, rank, num_pw, tol
+    ):  # pylint: disable=too-many-positional-arguments
         r"""
         Checks if :class:`~PauliSentence` ``pauli_sentence`` is linearly independent and provides the updated class attributes in case the vector is added.
 

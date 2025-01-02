@@ -51,7 +51,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     In particular, :math:`a = \sum_j c_j a_j` is decomposed in terms of commuting operators :math:`a_j \in \mathfrak{a}`.
     This allows for the immediate decomposition
 
-    .. math:: e^{-i t H} = K_c e^{-i t a} K_c^\dagger = K_c \prod_j \left[ e^{-i t c_j a_j} \left] K_c^\dagger.
+    .. math:: e^{-i t H} = K_c e^{-i t a} K_c^\dagger = K_c \left(\prod_j e^{-i t c_j a_j} \right) K_c^\dagger.
 
     The result is provided in terms of the adjoint vector representation of :math:`a \in \mathfrak{a}`
     (see :func:`adjvec_to_op`), i.e. the ordered coefficients :math:`c_j` in :math:`a = \sum_j c_j m_j` with the basis elements :math:`m_j \in (\tilde{\mathfrak{m}} \oplus \mathfrak{a})` and
