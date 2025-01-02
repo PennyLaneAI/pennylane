@@ -1202,7 +1202,7 @@ class V(Operation):
     r"""V(wires)
     The V gate, which is the square root of the X gate.
 
-    .. math:: V = \frac{1}{2}\begin{bmatrix} 1+i & 1-i\\ 1-i & 1+i\end{bmatrix}
+    .. math:: V = \frac{1}{2}\begin{bmatrix} 1+i & 1-i \\ 1-i & 1+i \end{bmatrix}
 
     **Details:**
 
@@ -1230,7 +1230,7 @@ class V(Operation):
     def compute_decomposition(wires):
         r"""Representation of the operator as a product of other operators (static method).
 
-        .. math:: V = RZ(\pi/2)RY(\pi/4)RZ(-\pi/2)
+        .. math:: V = H S H
 
         Args:
             wires (Any, Wires): Wire that the operator acts on.
@@ -1239,9 +1239,9 @@ class V(Operation):
             list[Operator]: decomposition of the operator
         """
         return [
-            qml.RZ(np.pi/2, wires=wires),
-            qml.RY(np.pi/4, wires=wires),
-            qml.RZ(-np.pi/2, wires=wires),
+            qml.Hadamard(wires=wires),
+            qml.S(wires=wires),
+            qml.Hadamard(wires=wires),
         ]
 
     @staticmethod
@@ -1547,7 +1547,7 @@ class ISWAP(Operation):
                     qml.pauli.PauliWord({}): 0.5,
                     qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j,
                     qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j,
-                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
+                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5
                 }
             )
         return self._pauli_rep
