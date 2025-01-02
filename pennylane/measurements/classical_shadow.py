@@ -438,6 +438,86 @@ class ClassicalShadowMP(MeasurementTransform):
 
         return np.stack([outcomes, recipes]).astype(np.int8)
 
+    def process_density_matrix_with_shots(
+        self, state: Sequence[complex], wire_order: Wires, shots: int, rng=None
+    ):
+        wire_map = {w: i for i, w in enumerate(wire_order)}
+        mapped_wires = [wire_map[w] for w in self.wires]
+        n_qubits = len(mapped_wires)
+        num_dev_qubits = (len(state.shape)//2)
+
+        # seed the random measurement generation so that recipes
+        # are the same for different executions with the same seed
+        recipe_rng = np.random.RandomState(self.seed)
+        recipes = recipe_rng.randint(0, 3, size=(shots, n_qubits))
+
+        bit_rng = np.random.default_rng(rng)
+
+        obs_list = np.stack(
+            [
+                qml.X.compute_matrix(),
+                qml.Y.compute_matrix(),
+                qml.Z.compute_matrix(),
+            ]
+        )
+
+        # the diagonalizing matrices corresponding to the Pauli observables above
+        diag_list = np.stack(
+            [
+                qml.Hadamard.compute_matrix(),
+                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
+                qml.Identity.compute_matrix(),
+            ]
+        )
+        obs = obs_list[recipes]
+        diagonalizers = diag_list[recipes]
+
+        # transpose the state so that the measured wires appear first
+        unmeasured_wires = [i for i in range(num_dev_qubits) if i not in mapped_wires]
+        transposed_state = np.transpose(state, axes=mapped_wires + unmeasured_wires + [w + num_dev_qubits for w in mapped_wires] + [w + num_dev_qubits for w in unmeasured_wires])
+
+        outcomes = np.zeros((shots, n_qubits))
+        stacked_state = np.repeat(transposed_state[np.newaxis, ...], shots, axis=0)
+
+        for active_qubit in range(n_qubits):
+            # stacked_state loses a dimension each loop
+
+            # trace out every qubit except the first
+            num_remaining_qubits = num_dev_qubits - active_qubit
+            conj_state_first_qubit = ABC[num_remaining_qubits]
+            stacked_dim = ABC[num_remaining_qubits + 1]
+
+            state_str = f"{stacked_dim}{ABC[:num_remaining_qubits]}"
+            conj_state_str = f"{stacked_dim}{conj_state_first_qubit}{ABC[1:num_remaining_qubits]}"
+            target_str = f"{stacked_dim}a{conj_state_first_qubit}"
+
+            first_qubit_state = np.einsum(
+                f"{state_str},{conj_state_str}->{target_str}",
+                stacked_state,
+                np.conj(stacked_state),
+            )
+
+            # sample the observables on the first qubit
+            probs = (np.einsum("abc,acb->a", first_qubit_state, obs[:, active_qubit]) + 1) / 2
+            samples = bit_rng.random(size=probs.shape) > probs
+            outcomes[:, active_qubit] = samples
+
+            # collapse the state of the remaining qubits; the next qubit in line
+            # becomes the first qubit for the next iteration
+            rotated_state = np.einsum(
+                "ab...,acb->ac...", stacked_state, diagonalizers[:, active_qubit]
+            )
+            stacked_state = rotated_state[np.arange(shots), samples.astype(np.int8)]
+
+            # re-normalize the collapsed state
+            sum_indices = tuple(range(1, num_remaining_qubits))
+            state_squared = np.abs(stacked_state) ** 2
+            norms = np.sqrt(np.sum(state_squared, sum_indices, keepdims=True))
+            stacked_state /= norms
+
+        return np.stack([outcomes, recipes]).astype(np.int8)
+        
+
     @property
     def samples_computational_basis(self):
         return False
