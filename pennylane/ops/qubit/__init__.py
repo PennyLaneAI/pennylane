@@ -58,7 +58,6 @@ __ops__ = {
     "T",
     "SX",
     "V",
-    "G",
     "SWAP",
     "ISWAP",
     "SISWAP",

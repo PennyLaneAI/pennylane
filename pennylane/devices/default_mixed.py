@@ -112,7 +112,6 @@ operations_mixed = {
     "T",
     "SX",
     "V",
-    "G",
     "CNOT",
     "SWAP",
     "ISWAP",

@@ -1200,10 +1200,9 @@ class SX(Operation):
 
 class V(Operation):
     r"""V(wires)
-    The V operator, sometimes called the fourth root of X gate, satisfies V^2 = X and V^4 = I.
+    The V gate, which is the square root of the X gate.
 
-    V is unitary but not Hermitian. Its matrix definition (with no extra phase) is chosen
-    so that V^2 exactly matches the PauliX operator, and V^\dagger * V = I.
+    .. math:: V = \frac{1}{2}\begin{bmatrix} 1+i & 1-i\\ 1-i & 1+i\end{bmatrix}
 
     **Details:**
 
@@ -1216,46 +1215,85 @@ class V(Operation):
 
     num_wires = 1
     num_params = 0
-    _queue_category = "_ops"
+    basis = None
 
     @staticmethod
-    @lru_cache()
-    def compute_matrix() -> np.ndarray:
-        return 0.5 * np.array(
-            [
-                [1.0 + 1.0j, 1.0 - 1.0j],
-                [1.0 - 1.0j, 1.0 + 1.0j],
-            ],
-            dtype=complex,
-        )
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        Returns:
+            ndarray: matrix
+        """
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]], dtype=complex)
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: V = RZ(\pi/2)RY(\pi/4)RZ(-\pi/2)
+
+        Args:
+            wires (Any, Wires): Wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition of the operator
+        """
+        return [
+            qml.RZ(np.pi/2, wires=wires),
+            qml.RY(np.pi/4, wires=wires),
+            qml.RZ(-np.pi/2, wires=wires),
+        ]
+
+    @staticmethod
+    def compute_eigvals():
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        Returns:
+            array: eigenvalues
+        """
+        return np.array([1, 1j])
+
+    def adjoint(self):
+        r"""Returns the adjoint (conjugate transpose) of the gate.
+
+        Returns:
+            Operation: the adjoint of the gate
+        """
+        adj = V(wires=self.wires)
+        adj._inverse = not getattr(self, "_inverse", False)
+        return adj
 
     def matrix(self, wire_order=None):
-        """Return the matrix of V. If self._inverse is True, return V† = (V)⁻¹."""
-        mat = self.compute_matrix()
+        r"""Return the matrix representation of the gate.
 
+        Args:
+            wire_order (Sequence[int]): the order of the wires to use when expanding the matrix
+
+        Returns:
+            array: matrix representation
+        """
+        mat = self.compute_matrix()
         if getattr(self, "_inverse", False):
             mat = mat.conj().T
+        return expand_matrix(mat, self.wires, wire_order)
 
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+    def pow(self, z):
+        r"""Returns the gate raised to a power.
 
-    def adjoint(self) -> "V":
-        new_op = V(self.wires)
-        new_op._inverse = not getattr(self, "_inverse", False)
-        return new_op
+        Args:
+            z (float): the power to raise the gate to
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
-        """Only integer powers are well-defined for V so that powers cycle with period 4."""
-        if not float(z).is_integer():
-            raise qml.operation.PowUndefinedError(self, z)
-
-        z_int = int(z) % 4
-        if z_int == 0:
+        Returns:
+            list[Operation]: a list of operations that implement the power
+        """
+        z_mod4 = z % 4
+        if z_mod4 == 0:
             return []
-        if z_int == 1:
-            return [copy(self)]
-        if z_int == 2:
+        if z_mod4 == 1:
+            return [self]
+        if z_mod4 == 2:
             return [qml.PauliX(wires=self.wires)]
-        return [qml.PauliX(wires=self.wires), copy(self)]
+        return [self.adjoint()]
 
 
 class SWAP(Operation):
@@ -1756,70 +1794,10 @@ class SISWAP(Operation):
         return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
 
 
-V_mat = 0.5 * np.array(
-    [
-        [1.0 + 1.0j, 1.0 - 1.0j],
-        [1.0 - 1.0j, 1.0 + 1.0j],
-    ],
-    dtype=complex,
-)
-
-class G(qml.operation.Operation):
-    r"""G(wires)
-    A single-qubit gate satisfying G^2 = V and G^4 = X.
-    """
-
-    num_wires = 1
-    num_params = 0
-    _queue_category = "_ops"
-
-    @staticmethod
-    @lru_cache()
-    def compute_matrix() -> np.ndarray:
-        r"""The G gate matrix:
-        [[0.85355339+0.35355339j, 0.14644661-0.35355339j],
-         [0.14644661-0.35355339j, 0.85355339+0.35355339j]]
-        """
-        return np.array([
-            [0.85355339+0.35355339j, 0.14644661-0.35355339j],
-            [0.14644661-0.35355339j, 0.85355339+0.35355339j]
-        ])
-
-    def matrix(self, wire_order=None):
-        mat = self.compute_matrix()
-        if getattr(self, "_inverse", False):
-            mat = mat.conj().T  # G^\dagger if inverse
-        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
-
-    @staticmethod
-    def compute_decomposition(wires):
-        r"""
-        One valid decomposition of G, which reproduces the above matrix
-        (up to a global phase) when multiplied out in left-to-right order.
-        """
-        return [
-            qml.RZ(0.0, wires=wires),
-            qml.RX(np.pi/4, wires=wires),
-            qml.RZ(0.0, wires=wires),
-        ]
-
-    def adjoint(self):
-        new_op = G(self.wires)
-        new_op._inverse = not getattr(self, "_inverse", False)
-        return new_op
-
-    def pow(self, z):
-        if not float(z).is_integer():
-            raise qml.operation.PowUndefinedError(self, z)
-        z_int = int(z) % 4
-        if z_int == 0:
-            return []
-        if z_int == 1:
-            return [copy.copy(self)]
-        if z_int == 2:
-            return [qml.V(wires=self.wires)]  # G^2 = V
-        # z_int == 3
-        return [qml.V(wires=self.wires), copy.copy(self)]
-
-
+# Aliases
 SQISW = SISWAP
+"""SQISW = SISWAP
+The square root of i-swap operator.
+
+See :class:`~.SISWAP` for more details.
+"""

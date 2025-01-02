@@ -21,7 +21,6 @@ from .identity import (
 from .qubit import (
     ResourceDoubleExcitation,
     ResourceFermionicSWAP,
-    ResourceG,
     ResourceHadamard,
     ResourceIsingXX,
     ResourceIsingXY,

@@ -204,25 +204,3 @@ class ResourceV(qml.V, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
-
-
-class ResourceG(qml.G, re.ResourceOperator):
-    """Resource class for the G gate."""
-
-    @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        s = re.ResourceS.resource_rep(**kwargs)
-        h = re.ResourceHadamard.resource_rep(**kwargs)
-
-        gate_types = {}
-        gate_types[s] = 2
-        gate_types[h] = 1
-
-        return gate_types
-
-    def resource_params(self) -> dict:
-        return {}
-
-    @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(cls, {})
