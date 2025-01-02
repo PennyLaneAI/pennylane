@@ -143,23 +143,3 @@ class TestV:
         """Test that the compact representation is correct"""
         expected = re.CompressedResourceOp(re.ResourceV, {})
         assert re.ResourceV.resource_rep() == expected
-
-
-class TestG:
-    """Tests for ResourceG"""
-
-    def test_resources(self):
-        """Test that ResourceG does not implement a decomposition"""
-        op = re.ResourceG(0)
-        with pytest.raises(re.ResourcesNotDefined):
-            op.resources()
-
-    def test_resource_params(self):
-        """Test that the resource params are correct"""
-        op = re.ResourceG(0)
-        assert op.resource_params() == {}
-
-    def test_resource_rep(self):
-        """Test that the compact representation is correct"""
-        expected = re.CompressedResourceOp(re.ResourceG, {})
-        assert re.ResourceG.resource_rep() == expected
