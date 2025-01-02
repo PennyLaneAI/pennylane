@@ -907,8 +907,6 @@ class S(Operation):
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
 
         .. seealso:: :meth:`~.S.decomposition`.
 
@@ -1037,8 +1035,6 @@ class T(Operation):
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
 
         .. seealso:: :meth:`~.T.decomposition`.
 
@@ -1165,8 +1161,6 @@ class SX(Operation):
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
 
 
         .. seealso:: :meth:`~.SX.decomposition`.
@@ -1784,90 +1778,35 @@ class G(Operation):
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:
-        return G_num
+        r"""The G gate matrix is:
+        [[0.85355339+0.35355339j, 0.14644661-0.35355339j],
+         [0.14644661-0.35355339j, 0.85355339+0.35355339j]]
+        """
+        return np.array([
+            [0.85355339+0.35355339j, 0.14644661-0.35355339j],
+            [0.14644661-0.35355339j, 0.85355339+0.35355339j]
+        ])
 
     def matrix(self, wire_order=None):
         mat = self.compute_matrix()
         if getattr(self, "_inverse", False):
             mat = mat.conj().T
         return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
-
-    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
-        """Decompose the G gate into a sequence of rotations.
-
-        The G gate matrix is:
-        [[0.85355339+0.35355339j, 0.14644661-0.35355339j],
-         [0.14644661-0.35355339j, 0.85355339+0.35355339j]]
-
-        We can achieve this with a sequence of RZ-RY-RZ rotations.
-        """
-        return [
-            qml.RZ(np.pi / 2, wires=wires),
-            qml.RY(-np.pi / 4, wires=wires),
-            qml.RZ(-np.pi / 2, wires=wires),
-        ]
-
-    def adjoint(self) -> "G":
-        new_op = G(self.wires)
-        new_op._inverse = not getattr(self, "_inverse", False)
-        return new_op
-
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
-        if not float(z).is_integer():
-            raise qml.operation.PowUndefinedError(self, z)
-        z_int = int(z) % 4
-        if z_int == 0:
-            return []
-        if z_int == 1:
-            return [copy(self)]
-        if z_int == 2:
-            return [qml.V(wires=self.wires)]
-        return [qml.V(wires=self.wires), copy(self)]
-
-
-V_mat = 0.5 * np.array(
-    [
-        [1.0 + 1.0j, 1.0 - 1.0j],
-        [1.0 - 1.0j, 1.0 + 1.0j],
-    ],
-    dtype=complex,
-)
-G_num = sqrtm(V_mat)
-
-
-class G(Operation):
-    r"""G(wires)
-    A gate satisfying :math:`G^2 = V` and :math:`G^4 = X`.
-    """
-
-    num_wires = 1
-    num_params = 0
-    _queue_category = "_ops"
 
     @staticmethod
-    @lru_cache()
-    def compute_matrix() -> np.ndarray:
-        return G_num
-
-    def matrix(self, wire_order=None):
-        mat = self.compute_matrix()
-        if getattr(self, "_inverse", False):
-            mat = mat.conj().T
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
-
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         """Decompose the G gate into a sequence of rotations.
-
+        
         The G gate matrix is:
         [[0.85355339+0.35355339j, 0.14644661-0.35355339j],
          [0.14644661-0.35355339j, 0.85355339+0.35355339j]]
-
+        
         We can achieve this with a sequence of RZ-RY-RZ rotations.
         """
         return [
-            qml.RZ(np.pi / 2, wires=wires),
-            qml.RY(-np.pi / 4, wires=wires),
-            qml.RZ(-np.pi / 2, wires=wires),
+            qml.RZ(np.pi/2, wires=wires),
+            qml.RY(-np.pi/4, wires=wires),
+            qml.RZ(-np.pi/2, wires=wires)
         ]
 
     def adjoint(self) -> "G":
