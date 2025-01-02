@@ -1260,9 +1260,7 @@ class V(Operation):
 
     def adjoint(self) -> "V":
         r"""The adjoint operator is V^3 since V^4 = I."""
-        adj = copy(self)
-        adj._matrix = 0.5 * np.array([[1 - 1j, 1 + 1j], [1 + 1j, 1 - 1j]], dtype=complex)
-        return adj
+        return self.pow(3)[0]
 
     def pow(self, z: Union[int, float]):
         r"""Implement the power operation for the V gate."""
