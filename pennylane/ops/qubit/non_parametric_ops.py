@@ -25,7 +25,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import Observable, Operation
+from pennylane.operation import Observable, Operation, expand_matrix
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -1205,9 +1205,10 @@ class SX(Operation):
 
 class V(Operation):
     r"""V(wires)
-    The V operator (square root of NOT)
+    The V operator, sometimes called the fourth root of X gate, satisfies V^2 = X and V^4 = I.
 
-    .. math:: V = \frac{1+i}{2} \begin{bmatrix} 1 & 1\\ 1 & 1\end{bmatrix}.
+    V is unitary but not Hermitian. Its matrix definition (with no extra phase) is chosen
+    so that V^2 exactly matches the PauliX operator, and V^\dagger * V = I.
 
     **Details:**
 
@@ -1217,82 +1218,49 @@ class V(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
     num_wires = 1
     num_params = 0
-    basis = "X"
-
-    @property
-    def pauli_rep(self):
-        if self._pauli_rep is None:
-            self._pauli_rep = qml.pauli.PauliSentence(
-                {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): (0.5 - 0.5j),
-                    qml.pauli.PauliWord({self.wires[0]: "X"}): (0.5 + 0.5j),
-                }
-            )
-        return self._pauli_rep
-
-    def __repr__(self) -> str:
-        """String representation."""
-        wire = self.wires[0]
-        if isinstance(wire, str):
-            return f"V('{wire}')"
-        return f"V({wire})"
+    _queue_category = "_ops"
 
     @staticmethod
     @lru_cache()
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis.
+    def compute_matrix() -> np.ndarray:
+        return 0.5 * np.array(
+            [
+                [1.0 + 1.0j, 1.0 - 1.0j],
+                [1.0 - 1.0j, 1.0 + 1.0j],
+            ],
+            dtype=complex,
+        )
 
-        Returns:
-            ndarray: matrix representation
-        """
-        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]], dtype=complex)
+    def matrix(self, wire_order=None):
+        """Return the matrix of V. If self._inverse is True, return V† = (V)⁻¹."""
+        mat = self.compute_matrix()
 
-    @staticmethod
-    def compute_eigvals() -> np.ndarray:
-        r"""Eigenvalues of the operator in the computational basis.
+        if getattr(self, "_inverse", False):
+            mat = mat.conj().T
 
-        Returns:
-            array: eigenvalues
-        """
-        return np.array([1, 1j])
+        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
     def adjoint(self) -> "V":
-        r"""The adjoint operator is V^3 since V^4 = I."""
-        return self.pow(3)[0]
+        new_op = V(self.wires)
+        new_op._inverse = not getattr(self, "_inverse", False)
+        return new_op
 
-    def pow(self, z: Union[int, float]):
-        r"""Implement the power operation for the V gate."""
-        if not isinstance(z, int):
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+        """Only integer powers are well-defined for V so that powers cycle with period 4."""
+        if not float(z).is_integer():
             raise qml.operation.PowUndefinedError(self, z)
-        z_mod4 = z % 4
-        if z_mod4 == 0 or z_mod4 == 2:  # For even powers (0 or 2 mod 4)
+
+        z_int = int(z) % 4
+        if z_int == 0:
             return []
-        elif z_mod4 == 1:
+        if z_int == 1:
             return [copy(self)]
-        else:  # z_mod4 == 3
-            # This is the adjoint V^†
-            # Create a new V gate and modify its matrix to be V^†
-            adj = copy(self)
-            adj._matrix = 0.5 * np.array([[1 - 1j, 1 + 1j], [1 + 1j, 1 - 1j]], dtype=complex)
-            return [adj]
-
-    @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
-        r"""Decomposition of V gate into basic gates.
-        
-        V = RZ(-π/2)RY(π/2)RZ(π/2)
-        """
-        return [
-            qml.RZ(np.pi/2, wires=wires),
-            qml.RY(np.pi/2, wires=wires),
-            qml.RZ(-np.pi/2, wires=wires),
-        ]
-
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # V = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
-        return [np.pi/2, np.pi/2, -np.pi/2]
+        if z_int == 2:
+            return [qml.PauliX(wires=self.wires)]
+        return [qml.PauliX(wires=self.wires), copy(self)]
 
 
 class G(Operation):
