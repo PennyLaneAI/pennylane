@@ -1207,7 +1207,7 @@ class V(Operation):
     r"""V(wires)
     The V operator (square root of NOT)
 
-    .. math:: V = \frac{1+i}{2} \begin{bmatrix} 1 & 1\\ 1 & 1\end{bmatrix}.
+    .. math:: V = \frac{1}{2} \begin{bmatrix} 1+i & 1-i\\ 1-i & 1+i\end{bmatrix}.
 
     **Details:**
 
@@ -1220,24 +1220,6 @@ class V(Operation):
     num_wires = 1
     num_params = 0
     basis = "X"
-
-    @property
-    def pauli_rep(self):
-        if self._pauli_rep is None:
-            self._pauli_rep = qml.pauli.PauliSentence(
-                {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): (0.5 - 0.5j),
-                    qml.pauli.PauliWord({self.wires[0]: "X"}): (0.5 + 0.5j),
-                }
-            )
-        return self._pauli_rep
-
-    def __repr__(self) -> str:
-        """String representation."""
-        wire = self.wires[0]
-        if isinstance(wire, str):
-            return f"V('{wire}')"
-        return f"V({wire})"
 
     @staticmethod
     @lru_cache()
@@ -1266,14 +1248,10 @@ class V(Operation):
         r"""Implement the power operation for the V gate."""
         if not isinstance(z, int):
             raise qml.operation.PowUndefinedError(self, z)
-        z_mod4 = z % 4
-        if z_mod4 == 0:
+        z_mod2 = z % 2
+        if z_mod2 == 0:
             return []
-        if z_mod4 == 1:
-            return [copy(self)]
-        if z_mod4 == 2:
-            return [qml.PauliX(wires=self.wires)]
-        return [V(wires=self.wires)] * 3
+        return [copy(self)]
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
@@ -1651,10 +1629,12 @@ class ISWAP(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({}): 0.5,
-                    qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j,
-                    qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j,
-                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
+                    qml.pauli.PauliWord({self.wires[0]: "I", self.wires[1]: "I"}): 0.5
+                    + 0.5 * INV_SQRT2,
+                    qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j * INV_SQRT2,
+                    qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j * INV_SQRT2,
+                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5
+                    - 0.5 * INV_SQRT2,
                 }
             )
         return self._pauli_rep
@@ -1668,6 +1648,7 @@ class ISWAP(Operation):
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         .. seealso:: :meth:`~.ISWAP.matrix`
+
 
         Returns:
             ndarray: matrix
