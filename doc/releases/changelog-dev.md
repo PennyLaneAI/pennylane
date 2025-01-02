@@ -4,8 +4,147 @@
 
 <h3>New features since last release</h3>
 
+<h4>Efficient state preparation methods 🦾</h4>
+
 * Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
   [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
+
+* Users can prepare a linear combination of basis states using `qml.Superposition`.
+  [(#6670)](https://github.com/PennyLaneAI/pennylane/pull/6670)
+
+  ```python
+  coeffs = np.array([0.70710678, 0.70710678])
+  basis =  np.array([[0, 0], [1, 0]])
+
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Superposition(coeffs, basis)
+      return qml.state()
+  ```
+  ```
+  >>> circuit()
+  tensor([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j], requires_grad=True)
+  ```
+
+  This template is also JAX-jit compatible!
+
+<h4>Enhanced QSVT functionality 🤩</h4>
+
+* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
+  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
+  [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
+
+* The `qml.qsvt` function has been improved to be more user-friendly. Old functionality is moved to `qml.qsvt_legacy`
+  and it will be deprecated in release v0.40.
+  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
+  [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
+
+* New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
+  The functionality `qml.poly_to_angles` has been also extended to support GQSP.
+  [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
+<h4>Generalized Trotter products 🐖</h4>
+
+* Added a function `qml.trotterize` to generalize the Suzuki-Trotter product to arbitrary quantum functions.
+  [(#6627)](https://github.com/PennyLaneAI/pennylane/pull/6627)
+
+  ```python
+  def my_custom_first_order_expansion(time, theta, phi, wires, flip):
+    "This is the first order expansion (U_1)."
+    qml.RX(time*theta, wires[0])
+    qml.RY(time*phi, wires[1])
+    if flip:
+        qml.CNOT(wires=wires[:2])
+
+  @qml.qnode(qml.device("default.qubit"))
+  def my_circuit(time, angles, num_trotter_steps):
+      TrotterizedQfunc(
+          time,
+          *angles,
+          qfunc=my_custom_first_order_expansion,
+          n=num_trotter_steps,
+          order=2,
+          wires=['a', 'b'],
+          flip=True,
+      )
+      return qml.state()
+  ```
+  ```pycon
+  >>> time = 0.1
+  >>> angles = (0.12, -3.45)
+  >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
+  a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
+  b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+  ```
+
+<h4>Bosonic operators 🎈</h4>
+
+* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
+
+* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
+* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
+  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
+
+* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
+  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
+
+<h4>Construct vibrational Hamiltonians 🫨</h4>
+
+* Added submodule for calculating vibrational Hamiltonians
+  * Implemented helper functions for geometry optimization, harmonic analysis,
+    and normal-mode localization.
+    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
+  * Implemented helper functions for calculating one-mode PES, two-mode PES, and
+    three-mode PES.
+    [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+    [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
+  * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
+    for storing the data.
+    [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+  * Implemented functions for generating the vibrational Hamiltonian in VSCF basis
+    [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
+
+* Added support to build a vibrational Hamiltonian in Taylor form.
+  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+
+<h3>Improvements 🛠</h3>
+
+<h4>QChem improvements</h4>
+
+* The `qml.qchem.factorize` function now supports new methods for double factorization:
+  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
+  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
+  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
+
+* Added `qml.qchem.symmetry_shift` function to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
+
+* Added JAX support for the differentiable Hartree-Fock workflow.
+  [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
+  [(#6707)](https://github.com/PennyLaneAI/pennylane/pull/6707)
+
+<h4>Transform for combining GlobalPhase instances</h4>
+
+* Added a new `qml.transforms.combine_global_phases` transform to combine all `qml.GlobalPhase` gates in a circuit into a single one applied at the end.
+  This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
+  decompositions that include `qml.GlobalPhase` gates, etc.
+  [(#6686)](https://github.com/PennyLaneAI/pennylane/pull/6686)
+
+<h4>Better drawing functionality</h4>
+
+* Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
+  visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
+  [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
+
+<h4>New device capabilities 💾</h4>
 
 * Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
   class. Device developers are encouraged to override these two methods separately instead of the
@@ -53,83 +192,16 @@
   [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
-* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via Autograph.
-  Autograph conversion is now used by default in `make_plxpr`, but can be skipped with the keyword arg `autograph=False`.
-  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
-  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
-  [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
-  [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
-  [(#6685)](https://github.com/PennyLaneAI/pennylane/pull/6685)
-
-* New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
-    The functionality `qml.poly_to_angles` has been also extended to support GQSP.
-    [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
-
-* Added a new `qml.transforms.combine_global_phases` transform to combine all `qml.GlobalPhase` gates in a circuit into a single one applied at the end.
-  This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
-  decompositions that include `qml.GlobalPhase` gates, etc.
-  [(#6686)](https://github.com/PennyLaneAI/pennylane/pull/6686)
-
-* Added support to build a vibrational Hamiltonian in Taylor form.
-  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
-
-* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
-  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
-
-* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
-  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
-
-* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
-  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
-  [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
-
-* Added a function `qml.trotterize` to generalize the Suzuki-Trotter product to arbitrary quantum functions.
-  [(#6627)](https://github.com/PennyLaneAI/pennylane/pull/6627)
-
-  ```python
-  def my_custom_first_order_expansion(time, theta, phi, wires, flip):
-    "This is the first order expansion (U_1)."
-    qml.RX(time*theta, wires[0])
-    qml.RY(time*phi, wires[1])
-    if flip:
-        qml.CNOT(wires=wires[:2])
-
-  @qml.qnode(qml.device("default.qubit"))
-  def my_circuit(time, angles, num_trotter_steps):
-      TrotterizedQfunc(
-          time,
-          *angles,
-          qfunc=my_custom_first_order_expansion,
-          n=num_trotter_steps,
-          order=2,
-          wires=['a', 'b'],
-          flip=True,
-      )
-      return qml.state()
-  ```
-  ```pycon
-  >>> time = 0.1
-  >>> angles = (0.12, -3.45)
-  >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
-  a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-  b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
-  ```
-
-
-<h4>New API for Qubit Mixed</h4>
+<h4>New API for Default mixed</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
 
   * Two density matrix contraction methods using `einsum` and `tensordot`
-
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
   
-* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
-  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
-
 * Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
   [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
 
@@ -146,84 +218,23 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
   [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
 
-* Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
-  [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
-
 * Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
 new device API of `default_mixed` should be able to take the stochastic arguments
 such as `shots`, `rng` and `prng_key`.
 [(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
 
-* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
-  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
-
-* The `qml.qchem.factorize` function now supports new methods for double factorization:
-  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
-  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
-  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
-
-* Added `qml.qchem.symmetry_shift` function to perform the
-  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
-  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
-
-* Added submodule for calculating vibrational Hamiltonians
-  * Implemented helper functions for geometry optimization, harmonic analysis,
-    and normal-mode localization.
-    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
-    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
-  * Implemented helper functions for calculating one-mode PES, two-mode PES, and
-    three-mode PES.
-    [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
-    [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
-  * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
-    for storing the data.
-    [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
-  * Implemented functions for generating the vibrational Hamiltonian in VSCF basis
-    [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
-
-<h3>Improvements 🛠</h3>
-
-* `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
-  [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
-
-* Remove redundant commutator computations from `qml.lie_closure`.
-  [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
-
-* Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
-  arguments and `interface="auto"`.
-  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
-
-* Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
-  visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
-  [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
-
-* Added Pauli String representations for the gates X, Y, Z, S, T, SX, SWAP, ISWAP, ECR, SISWAP. Fixed a shape error in the matrix conversion of `PauliSentence`s with list or array input.
-  [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
-  [(#6587)](https://github.com/PennyLaneAI/pennylane/pull/6587)
-  
-* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
-  [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
-
-* Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
-  [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
-
-* Added JAX support for the differentiable Hartree-Fock workflow.
-  [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
-  [(#6707)](https://github.com/PennyLaneAI/pennylane/pull/6707)
-
-* Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
-  [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
-
-* The `diagonalize_measurements` transform no longer raises an error for unknown observables. Instead,
-  they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
-  observables that are also unsupported by the device.
-  [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
-
-* A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as 
-  JAX array elements.
-  [(#6699)](https://github.com/PennyLaneAI/pennylane/pull/6699)
+* Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
+  [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via Autograph.
+  Autograph conversion is now used by default in `make_plxpr`, but can be skipped with the keyword arg `autograph=False`.
+  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
+  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
+  [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
+  [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
+  [(#6685)](https://github.com/PennyLaneAI/pennylane/pull/6685)
 
 * `qml.transform` now accepts a `plxpr_transform` argument. This argument must be a function that can transform plxpr.
   Note that executing a transformed function will currently raise a `NotImplementedError`. To see more details, check
@@ -327,15 +338,53 @@ such as `shots`, `rng` and `prng_key`.
 * `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
-* The `qml.qsvt` function has been improved to be more user-friendly. Old functionality is moved to `qml.qsvt_legacy`
-  and it will be deprecated in release v0.40.
-  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
-  [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
-
 <h4>Other Improvements</h4>
+
+* `qml.math.grad` and `qml.math.jacobian` added to differentiate a function with inputs of any
+  interface in a jax-like manner.
+  [(#6741)](https://github.com/PennyLaneAI/pennylane/pull/6741)
+
+* `qml.GroverOperator` now has a `work_wires` property.
+  [(#6738)](https://github.com/PennyLaneAI/pennylane/pull/6738)
+
+* `Wires` object usage across Pennylane source code has been tidied up.
+  [(#6689)](https://github.com/PennyLaneAI/pennylane/pull/6689)
+
+* `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
+  [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
+
+* Remove redundant commutator computations from `qml.lie_closure`.
+  [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
+
+* Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
+  arguments and `interface="auto"`.
+  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
+
+* Added Pauli String representations for the gates X, Y, Z, S, T, SX, SWAP, ISWAP, ECR, SISWAP. Fixed a shape error in the matrix conversion of `PauliSentence`s with list or array input.
+  [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
+  [(#6587)](https://github.com/PennyLaneAI/pennylane/pull/6587)
+  
+* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
+  [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
+
+* Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
+  [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
+
+* Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
+  [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
+
+* The `diagonalize_measurements` transform no longer raises an error for unknown observables. Instead,
+  they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
+  observables that are also unsupported by the device.
+  [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
+
+* A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as 
+  JAX array elements.
+  [(#6699)](https://github.com/PennyLaneAI/pennylane/pull/6699)
 
 * PennyLane is compatible with `quimb 1.10.0`.
   [(#6630)](https://github.com/PennyLaneAI/pennylane/pull/6630)
+  [(#6736)](https://github.com/PennyLaneAI/pennylane/pull/6736)
 
 * Add developer focused `run` function to `qml.workflow` module.
   [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
@@ -405,10 +454,7 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
-* Added support to build a vibrational Hamiltonian in the Christiansen form.
-  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
-
-<h4>New `pennylane.labs.dla` module for handling (dynamical) Lie algebras (DLAs)</h4>
+<h4>Functionality for handling dynamical Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
@@ -564,6 +610,9 @@ same information.
 
 * Updated the documentation of `QSVT` to include examples for different block encodings.
   [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
+
+* The link to `qml.ops.one_qubit_transform` was fixed in the `QubitUnitary` docstring.
+  [(#6745)](https://github.com/PennyLaneAI/pennylane/pull/6745)
 
 <h3>Bug fixes 🐛</h3>
 
