@@ -466,7 +466,6 @@ class TestInitialization:
         time, n, order = (4.2, 10, 4)
 
         dev = qml.device("default.qubit")
-        time = qml.numpy.array(time)
         coeffs, ops = hamiltonian.terms()
 
         @qml.qnode(dev, diff_method="backprop")
@@ -485,8 +484,16 @@ class TestInitialization:
             qml.TrotterProduct(hamiltonian, time, n, order)
             return qml.probs()
 
+        coeffs = qml.numpy.array(coeffs)
+        time = qml.numpy.array(time)
+
         expected_bp = qml.jacobian(circ_bp)(coeffs, time)
+        assert expected_bp[0].shape == (2**hamiltonian.num_wires, len(coeffs))
+        assert expected_bp[1].shape == (2**hamiltonian.num_wires,)
+
         ps = qml.jacobian(circ_ps)(coeffs, time)
+        assert ps[0].shape == (2**hamiltonian.num_wires, len(coeffs))
+        assert ps[1].shape == (2**hamiltonian.num_wires,)
 
         error_msg = (
             "Parameter-shift does not produce the same Jacobian as with backpropagation. "
