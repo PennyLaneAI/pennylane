@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Provides a transform to remove all ``qml.GlobalPhase`` gates in a circuit. 
+Provides a transform to remove all ``qml.GlobalPhase`` gates in a circuit.
 """
 
 import pennylane as qml
