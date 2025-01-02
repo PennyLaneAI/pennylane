@@ -1266,14 +1266,10 @@ class V(Operation):
         r"""Implement the power operation for the V gate."""
         if not isinstance(z, int):
             raise qml.operation.PowUndefinedError(self, z)
-        z_mod4 = z % 4
-        if z_mod4 == 0:
+        z_mod2 = z % 2
+        if z_mod2 == 0:
             return []
-        if z_mod4 == 1:
-            return [copy(self)]
-        if z_mod4 == 2:
-            return [qml.PauliX(wires=self.wires)]
-        return [V(wires=self.wires)] * 3
+        return [qml.PauliX(wires=self.wires)]
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
