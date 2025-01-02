@@ -1260,7 +1260,7 @@ class V(Operation):
 
     def adjoint(self) -> "V":
         r"""The adjoint operator is V^3 since V^4 = I."""
-        return self.pow(3)[0]
+        return V(wires=self.wires)
 
     def pow(self, z: Union[int, float]):
         r"""Implement the power operation for the V gate."""
@@ -1269,7 +1269,7 @@ class V(Operation):
         z_mod2 = z % 2
         if z_mod2 == 0:
             return []
-        return [qml.PauliX(wires=self.wires)]
+        return [copy(self)]
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
