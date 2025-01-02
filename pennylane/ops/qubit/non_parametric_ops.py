@@ -1763,12 +1763,10 @@ V_mat = 0.5 * np.array(
     ],
     dtype=complex,
 )
-G_num = sqrtm(V_mat)
 
-
-class G(Operation):
+class G(qml.operation.Operation):
     r"""G(wires)
-    A gate satisfying :math:`G^2 = V` and :math:`G^4 = X`.
+    A single-qubit gate satisfying G^2 = V and G^4 = X.
     """
 
     num_wires = 1
@@ -1778,7 +1776,7 @@ class G(Operation):
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:
-        r"""The G gate matrix is:
+        r"""The G gate matrix:
         [[0.85355339+0.35355339j, 0.14644661-0.35355339j],
          [0.14644661-0.35355339j, 0.85355339+0.35355339j]]
         """
@@ -1790,41 +1788,38 @@ class G(Operation):
     def matrix(self, wire_order=None):
         mat = self.compute_matrix()
         if getattr(self, "_inverse", False):
-            mat = mat.conj().T
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+            mat = mat.conj().T  # G^\dagger if inverse
+        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
-        """Decompose the G gate into a sequence of rotations.
-        
-        The G gate matrix is:
-        [[0.85355339+0.35355339j, 0.14644661-0.35355339j],
-         [0.14644661-0.35355339j, 0.85355339+0.35355339j]]
-        
-        We can achieve this with a sequence of RZ-RY-RZ rotations.
+    def compute_decomposition(wires):
+        r"""
+        One valid decomposition of G, which reproduces the above matrix
+        (up to a global phase) when multiplied out in left-to-right order.
         """
         return [
-            qml.RZ(np.pi/2, wires=wires),
-            qml.RY(-np.pi/4, wires=wires),
-            qml.RZ(-np.pi/2, wires=wires)
+            qml.RZ(0.0, wires=wires),
+            qml.RX(np.pi/4, wires=wires),
+            qml.RZ(0.0, wires=wires),
         ]
 
-    def adjoint(self) -> "G":
+    def adjoint(self):
         new_op = G(self.wires)
         new_op._inverse = not getattr(self, "_inverse", False)
         return new_op
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z):
         if not float(z).is_integer():
             raise qml.operation.PowUndefinedError(self, z)
         z_int = int(z) % 4
         if z_int == 0:
             return []
         if z_int == 1:
-            return [copy(self)]
+            return [copy.copy(self)]
         if z_int == 2:
-            return [qml.V(wires=self.wires)]
-        return [qml.V(wires=self.wires), copy(self)]
+            return [qml.V(wires=self.wires)]  # G^2 = V
+        # z_int == 3
+        return [qml.V(wires=self.wires), copy.copy(self)]
 
 
 SQISW = SISWAP
