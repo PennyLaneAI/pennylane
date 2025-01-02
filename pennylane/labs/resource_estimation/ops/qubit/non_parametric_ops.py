@@ -296,16 +296,16 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        """
-        The resources are defined using the identity: 
+        r"""
+        The resources are defined using the identity:
 
-        .. math:: 
+        .. math::
 
             \begin{align}
                 \hat{Y} &= \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}, \\
                 \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
                 \hat{Z} &= \hat{S}^{2}, \\
-                \hat{S}^{\dagger} &= 3 \hat{S}. 
+                \hat{S}^{\dagger} &= 3 \hat{S}.
             \end{align}
 
         """

@@ -18,7 +18,7 @@ import pytest
 
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
+# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments
 
 
 class TestResourceCH:

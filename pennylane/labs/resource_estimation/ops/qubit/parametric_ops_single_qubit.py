@@ -317,7 +317,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
                 ctrl: ─────╭●─────────╭●─────────┤
                 trgt: ──RZ─╰X──RZ──RY─╰X──RY──RZ─┤
-            
+
             The :code:`CNOT` gates are replaced with multi-controlled X gates to generalize to the multi-controlled case.
 
         """
