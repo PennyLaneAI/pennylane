@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Experimental Lie theory features
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Experimental functionality to handle (dynamical) Lie algebras (DLAs)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.labs.dla
 
