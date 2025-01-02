@@ -465,7 +465,7 @@ class Sum(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qml.QueuingManager.stop_recording():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [pauli.operation(self.wires) for pauli in pr.keys()]
             return list(pr.values()), ops
 
         with qml.QueuingManager.stop_recording():
