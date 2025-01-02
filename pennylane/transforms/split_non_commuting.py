@@ -589,7 +589,7 @@ def _processing_fn_no_grouping(
     res: ResultBatch,
     single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[Union[float, TensorLike]]]],
     offsets: list[Union[float, TensorLike]],
-    batch_size: None | int,
+    batch_size: Union[None, int],
 ):
     """Postprocessing function for the split_non_commuting transform without grouping.
 
