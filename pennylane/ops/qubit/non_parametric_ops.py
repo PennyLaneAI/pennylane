@@ -1226,8 +1226,8 @@ class V(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
-                    qml.pauli.PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): (0.5 - 0.5j),
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): (0.5 + 0.5j),
                 }
             )
         return self._pauli_rep
@@ -1266,10 +1266,14 @@ class V(Operation):
         r"""Implement the power operation for the V gate."""
         if not isinstance(z, int):
             raise qml.operation.PowUndefinedError(self, z)
-        z_mod2 = z % 2
-        if z_mod2 == 0:
+        z_mod4 = z % 4
+        if z_mod4 == 0:
             return []
-        return [copy(self)]
+        if z_mod4 == 1:
+            return [copy(self)]
+        if z_mod4 == 2:
+            return [qml.PauliX(wires=self.wires)]
+        return [V(wires=self.wires)] * 3
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
