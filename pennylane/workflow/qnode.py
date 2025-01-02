@@ -968,7 +968,7 @@ class QNode:
         else:
             shots = self.device.shots if shots == "device" else shots
         if qml.capture.enabled():
-            return capture_qnode(self, *args, **kwargs)
+            return capture_qnode(self, *args, shots=shots, **kwargs)
         return self._impl_call(*args, shots=shots, **kwargs)
 
 
