@@ -467,18 +467,21 @@ class TestInitialization:
 
         dev = qml.device("default.qubit")
         time = qml.numpy.array(time)
-        coeffs, _ = hamiltonian.terms()
+        coeffs, ops = hamiltonian.terms()
 
-        # FIXME: setting private attribute `_coeffs` as work around
         @qml.qnode(dev, diff_method="backprop")
         def circ_bp(coeffs, time):
-            hamiltonian._coeffs = coeffs
+            with qml.queuing.QueuingManager.stop_recording():
+                hamiltonian = qml.dot(coeffs, ops)
+
             qml.TrotterProduct(hamiltonian, time, n, order)
             return qml.probs()
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circ_ps(coeffs, time):
-            hamiltonian._coeffs = coeffs
+            with qml.queuing.QueuingManager.stop_recording():
+                hamiltonian = qml.dot(coeffs, ops)
+
             qml.TrotterProduct(hamiltonian, time, n, order)
             return qml.probs()
 
