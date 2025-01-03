@@ -105,6 +105,7 @@ Symbolic Operators
     ~ResourceAdjoint
     ~ResourceControlled
     ~ResourcePow
+    ~ResourceProd
 
 Templates
 ~~~~~~~~~
@@ -138,6 +139,7 @@ Exceptions
 
     ~ResourcesNotDefined
 """
+from .compact_objects import CompactLCU, CompactState
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
 from .resource_tracking import DefaultGateSet, get_resources, resource_config
@@ -183,6 +185,7 @@ from .ops import (
     ResourceOrbitalRotation,
     ResourcePauliRot,
     ResourcePow,
+    ResourceProd,
     ResourcePSWAP,
     ResourcePhaseShift,
     ResourceRot,
