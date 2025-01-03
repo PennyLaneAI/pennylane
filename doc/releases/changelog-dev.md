@@ -652,6 +652,9 @@ same information.
 * Fixed `Identity.__repr__` to return correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
 
+* Fixed parameter filtering on `qml.data.load_interactive()`
+  [(#6725)](https://github.com/PennyLaneAI/pennylane/pull/6725)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -659,6 +662,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Shiwen An,
 Utkarsh Azad,
+Jack Brown,
 Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
