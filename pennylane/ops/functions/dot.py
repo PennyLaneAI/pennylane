@@ -142,10 +142,12 @@ def dot(
                 f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
             )
 
-    if len(coeffs) != len(ops):
-        raise ValueError("Number of coefficients and operators does not match.")
-    if len(coeffs) == 0 and len(ops) == 0:
-        raise ValueError("Cannot compute the dot product of an empty sequence.")
+    # tensorflow variables have no len
+    if qml.math.get_interface(coeffs) != "tensorflow":
+        if len(coeffs) != len(ops):
+            raise ValueError("Number of coefficients and operators does not match.")
+        if len(coeffs) == 0 and len(ops) == 0:
+            raise ValueError("Cannot compute the dot product of an empty sequence.")
 
     for t in (Operator, PauliWord, PauliSentence):
         if isinstance(ops, t):

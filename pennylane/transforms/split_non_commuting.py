@@ -608,7 +608,6 @@ def _processing_fn_no_grouping(
     coeffs_for_each_mp = [[] for _ in offsets]
 
     for smp_idx, (_, (mp_indices, coeffs)) in enumerate(single_term_obs_mps.items()):
-
         for mp_idx, coeff in zip(mp_indices, coeffs):
             res_batch_for_each_mp[mp_idx].append(res[smp_idx])
             coeffs_for_each_mp[mp_idx].append(coeff)
@@ -620,7 +619,6 @@ def _processing_fn_no_grouping(
         _sum_terms(_sub_res, coeffs, offset, result_shape)
         for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
     ]
-
     # res_for_each_mp should have shape (n_mps, [,n_shots] [,batch_size])
     if len(res_for_each_mp) == 1:
         return res_for_each_mp[0]
@@ -713,7 +711,6 @@ def _sum_terms(
         dot_products.append(qml.math.dot(c, qml.math.squeeze(r)))
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset
-
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
     if qml.math.get_interface(offset) == "autograd" and qml.math.requires_grad(summed_dot_products):
         offset = qml.math.array(offset)
