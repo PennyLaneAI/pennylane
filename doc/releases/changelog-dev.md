@@ -616,6 +616,9 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes incorrect differentiation of `TrotterProduct` when using `diff_method="parameter-shift"`.
+  [(#6432)](https://github.com/PennyLaneAI/pennylane/pull/6432)
+
 * `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
   [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
 
