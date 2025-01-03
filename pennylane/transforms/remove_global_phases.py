@@ -73,9 +73,7 @@ def remove_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postp
     new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumScript``.
-        """
+        """A postprocesing function returned by a transform that only converts the batch of results into a result for a single ``QuantumScript``."""
         return results[0]
 
     return (new_tape,), null_postprocessing
