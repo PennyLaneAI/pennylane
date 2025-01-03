@@ -221,7 +221,11 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
 new device API of `default_mixed` should be able to take the stochastic arguments
 such as `shots`, `rng` and `prng_key`.
-[(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
+  [(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
+
+* Converted current tests that used `default.mixed` to use other equivalent devices in-place.
+  [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
+
 
 * Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
   [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)

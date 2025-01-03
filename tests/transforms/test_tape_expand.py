@@ -745,41 +745,6 @@ class TestCreateCustomDecompExpandFn:
         # check that new instances of the operator are not affected by the modifications made to get the decomposition
         assert [op1 == op2 for op1, op2 in zip(CustomOp(0).decomposition(), original_decomp)]
 
-    def test_custom_decomp_in_separate_context_legacy_opmath(self):
-        """Test that the set_decomposition context manager works."""
-
-        dev = qml.device("default.mixed", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=0))
-
-        # Initial test
-        ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
-
-        assert len(ops) == 1
-        assert ops[0].name == "CNOT"
-        assert dev.custom_expand_fn is None
-
-        # Test within the context manager
-        with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev):
-            ops_in_context = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
-
-            assert dev.custom_expand_fn is not None
-
-        assert len(ops_in_context) == 3
-        assert ops_in_context[0].name == "Hadamard"
-        assert ops_in_context[1].name == "CZ"
-        assert ops_in_context[2].name == "Hadamard"
-
-        # Check that afterwards, the device has gone back to normal
-        ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
-
-        assert len(ops) == 1
-        assert ops[0].name == "CNOT"
-        assert dev.custom_expand_fn is None
-
     def test_custom_decomp_in_separate_context(self, mocker):
         """Test that the set_decomposition context manager works for the new device API."""
 
