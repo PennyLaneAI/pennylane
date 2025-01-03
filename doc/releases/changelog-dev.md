@@ -340,7 +340,7 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
-* Added a new `qml.transforms.remove_global_phases` transform to remove all `qml.GlobalPhase` gates in a circuit if appropriate.
+* Added a new `qml.transforms.remove_global_phases` transform to remove all `qml.GlobalPhase` gates in a circuit (if appropriate).
   This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
   decompositions involving `qml.GlobalPhase` gates, etc.
   [(#6753)](https://github.com/PennyLaneAI/pennylane/pull/6753)
