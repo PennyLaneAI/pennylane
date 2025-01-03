@@ -441,6 +441,24 @@ class ClassicalShadowMP(MeasurementTransform):
     def process_density_matrix_with_shots(
         self, state: Sequence[complex], wire_order: Wires, shots: int, rng=None
     ):
+        """Process the given quantum state (density matrix) with the given number of shots
+
+        Args:
+            state (Sequence[complex]): quantum density matrix given as a rank-N tensor, where
+                each dim has size 2 and N is twice the number of wires.
+            wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+                dimension :math:`2^n` acts on a subspace of :math:`n` wires
+            shots (int): The number of shots
+            rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+                seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+                If no value is provided, a default RNG will be used. The random measurement outcomes
+                in the form of bits will be generated from this argument, while the random recipes will be
+                created from the ``seed`` argument provided to ``.ClassicalShadowsMP``.
+
+        Returns:
+            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
+            the measured bits and the second represents the recipes used.
+        """
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         n_qubits = len(mapped_wires)
