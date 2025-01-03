@@ -25,7 +25,7 @@ from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatc
 
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
 
-CotransfromCache = namedtuple("CotransformCache", ("qnode", "args", "kwargs"))
+CotransformCache = namedtuple("CotransformCache", ("qnode", "args", "kwargs"))
 
 
 def _get_interface(qnode, args, kwargs):
@@ -267,7 +267,7 @@ class TransformProgram:
     def __init__(
         self,
         initial_program: Optional[Sequence[TransformContainer]] = None,
-        cotransform_cache: Optional[CotransfromCache] = None,
+        cotransform_cache: Optional[CotransformCache] = None,
     ):
         self._transform_program = list(initial_program) if initial_program else []
         self.cotransform_cache = cotransform_cache
@@ -477,7 +477,7 @@ class TransformProgram:
         """Set the classical jacobians and argnums if the transform is hybrid with a classical cotransform."""
         # pylint: disable=no-member
         if self.has_classical_cotransform() and self[-1].kwargs.get("hybrid", True):
-            self.cotransform_cache = CotransfromCache(qnode, args, kwargs)
+            self.cotransform_cache = CotransformCache(qnode, args, kwargs)
 
     def prune_dynamic_transform(self, type_to_keep=1):
         """Ensures that only one or none ``dynamic_one_shot`` is applied.

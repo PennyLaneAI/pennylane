@@ -26,7 +26,7 @@ from pennylane.transforms.core import (
     transform,
 )
 from pennylane.transforms.core.transform_program import (
-    CotransfromCache,
+    CotransformCache,
     _apply_postprocessing_stack,
     _batch_postprocessing,
     null_postprocessing,
@@ -587,13 +587,13 @@ class TestClassicalCotransfroms:
         )
         program2 = TransformProgram((hybrid_t,))
         program2.set_classical_component(f, (1,), {"a": 2})
-        assert program2.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+        assert program2.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
 
         program3 = program1 + program2
-        assert program3.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+        assert program3.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
 
         program4 = program2 + program1
-        assert program4.cotransform_cache == CotransfromCache(f, (1,), {"a": 2})
+        assert program4.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
 
         with pytest.raises(ValueError, match=r"programs with cotransform caches"):
             _ = program2 + program2
