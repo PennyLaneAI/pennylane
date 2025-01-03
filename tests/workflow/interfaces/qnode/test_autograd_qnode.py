@@ -510,11 +510,9 @@ class TestShotsIntegration:
             np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
         )
 
-    def test_update_diff_method(self, mocker):
+    def test_update_diff_method(self):
         """Test that temporarily setting the shots updates the diff method"""
         a, b = np.array([0.543, -0.654], requires_grad=True)
-
-        spy = mocker.spy(qml, "execute")
 
         dev = DefaultQubit()
 
@@ -525,14 +523,15 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        cost_fn(a, b, shots=100)
-        # since we are using finite shots, parameter-shift will
-        # be chosen
-        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
+        with dev.tracker:
+            qml.grad(cost_fn)(a, b, shots=100)
+        # since we are using finite shots, use parameter shift
+        assert dev.tracker.totals["executions"] == 5
 
         # if we use the default shots value of None, backprop can now be used
-        cost_fn(a, b)
-        assert spy.call_args[1]["diff_method"] == "backprop"
+        with dev.tracker:
+            qml.grad(cost_fn)(a, b)
+        assert dev.tracker.totals["executions"] == 1
 
 
 @pytest.mark.parametrize(

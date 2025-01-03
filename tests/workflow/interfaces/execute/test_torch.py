@@ -172,6 +172,9 @@ test_matrix = [
         Shots((100000, 100000)),
         "reference.qubit",
     ),
+    ({"diff_method": "best"}, Shots(100000), "default.qubit"),
+    ({"diff_method": "best"}, Shots(None), "default.qubit"),
+    ({"diff_method": "best"}, Shots(None), "reference.qubit"),
 ]
 
 

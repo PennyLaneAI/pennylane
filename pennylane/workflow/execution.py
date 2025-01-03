@@ -31,7 +31,7 @@ from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
 from ._setup_transform_program import _setup_transform_program
-from .resolution import _resolve_interface
+from .resolution import _resolve_execution_config, _resolve_interface
 from .run import run
 
 logger = logging.getLogger(__name__)
@@ -187,21 +187,13 @@ def execute(
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
+    if not tapes:
+        return ()
+
     ### Specifying and preprocessing variables ####
 
     interface = _resolve_interface(interface, tapes)
     # Only need to calculate derivatives with jax when we know it will be executed later.
-    if interface in {Interface.JAX, Interface.JAX_JIT}:
-        grad_on_execution = grad_on_execution if isinstance(diff_method, Callable) else False
-
-    if (
-        device_vjp
-        and isinstance(device, qml.devices.LegacyDeviceFacade)
-        and "lightning" not in getattr(device, "short_name", "").lower()
-    ):
-        raise qml.QuantumFunctionError(
-            "device provided jacobian products are not compatible with the old device interface."
-        )
 
     gradient_kwargs = gradient_kwargs or {}
     mcm_config = mcm_config or {}
@@ -215,7 +207,9 @@ def execute(
             gradient_keyword_arguments=gradient_kwargs,
             derivative_order=max_diff,
         )
-        config = device.setup_execution_config(config)
+        config = _resolve_execution_config(
+            config, device, tapes, transform_program=transform_program
+        )
 
     config = replace(
         config,
@@ -224,6 +218,7 @@ def execute(
     )
 
     if transform_program is None or inner_transform is None:
+        transform_program = transform_program or qml.transforms.core.TransformProgram()
         transform_program, inner_transform = _setup_transform_program(
             transform_program, device, config, cache, cachesize
         )

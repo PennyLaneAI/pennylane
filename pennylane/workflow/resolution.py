@@ -14,9 +14,9 @@
 """This module contains the necessary helper functions for setting up the workflow for execution.
 
 """
-
+from collections.abc import Callable
 from dataclasses import replace
-from typing import Literal, Union, get_args
+from typing import Literal, Optional, Union, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -86,7 +86,9 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
+def _resolve_interface(
+    interface: Union[str, Interface, None], tapes: QuantumScriptBatch
+) -> Interface:
     """Helper function to resolve an interface based on a set of tapes.
 
     Args:
@@ -226,7 +228,7 @@ def _resolve_execution_config(
     execution_config: "qml.devices.ExecutionConfig",
     device: "qml.devices.Device",
     tapes: QuantumScriptBatch,
-    transform_program: TransformProgram,
+    transform_program: Optional[TransformProgram] = None,
 ) -> "qml.devices.ExecutionConfig":
     """Resolves the execution configuration for non-device specific properties.
 
@@ -242,14 +244,26 @@ def _resolve_execution_config(
     updated_values = {}
     updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
 
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
+        execution_config.gradient_method, Callable
+    ):
+        updated_values["grad_on_execution"] = False
+
+    if execution_config.use_device_jacobian_product and isinstance(
+        device, qml.devices.LegacyDeviceFacade
+    ):
+        raise qml.QuantumFunctionError(
+            "device provided jacobian products are not compatible with the old device interface."
+        )
+
     if (
         "lightning" in device.name
-        and qml.metric_tensor in transform_program
+        and (transform_program and qml.metric_tensor in transform_program)
         and execution_config.gradient_method == "best"
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-    else:
-        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+
+    execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device

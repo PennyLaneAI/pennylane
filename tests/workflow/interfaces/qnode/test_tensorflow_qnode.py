@@ -499,12 +499,10 @@ class TestShotsIntegration:
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_update_diff_method(self, mocker, interface):
+    def test_update_diff_method(self, interface):
         """Test that temporarily setting the shots updates the diff method"""
         dev = DefaultQubit()
         weights = tf.Variable([0.543, -0.654], dtype=tf.float64)
-
-        spy = mocker.spy(qml, "execute")
 
         @qnode(dev, interface=interface)
         def circuit(weights):
@@ -513,14 +511,19 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        circuit(weights, shots=100)  # pylint:disable=unexpected-keyword-arg
-        # since we are using finite shots, parameter-shift will
-        # be chosen
-        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
+        with dev.tracker:
+            with tf.GradientTape() as tape:
+                res = circuit(weights, shots=100)
+            tape.gradient(res, weights)
+        # since we are using finite shots, use parameter shift
+        assert dev.tracker.totals["executions"] == 5
 
         # if we use the default shots value of None, backprop can now be used
-        circuit(weights)
-        assert spy.call_args[1]["diff_method"] == "backprop"
+        with dev.tracker:
+            with tf.GradientTape() as tape:
+                res = circuit(weights)
+            tape.gradient(res, weights)
+        assert dev.tracker.totals["executions"] == 1
 
 
 @pytest.mark.parametrize(

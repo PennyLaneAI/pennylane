@@ -15,6 +15,7 @@
 # pylint: disable=no-member
 
 import pytest
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -25,6 +26,7 @@ from pennylane.transforms.core import (
     transform,
 )
 from pennylane.transforms.core.transform_program import (
+    CotransformCache,
     _apply_postprocessing_stack,
     _batch_postprocessing,
     null_postprocessing,
@@ -563,6 +565,55 @@ class TestTransformProgram:
             TransformError, match="The transform program already has a terminal transform."
         ):
             transform_program.push_back(transform2)
+
+
+class TestClassicalCotransfroms:
+    """Test for handling the classical cotransform component."""
+
+    def test_classical_cotransform_caching(self):
+        """Tests for setting the classical cotransform."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def f(*_, **__):
+            return qml.state()
+
+        program1 = TransformProgram()  # no hybrid transforms
+        assert program1.cotransform_cache is None
+        program1.set_classical_component(f, (1,), {"a": 2})
+        assert program1.cotransform_cache is None
+
+        hybrid_t = TransformContainer(
+            qml.gradients.param_shift, (), {"hybrid": True}, classical_cotransform=lambda *args: 0
+        )
+        program2 = TransformProgram((hybrid_t,))
+        program2.set_classical_component(f, (1,), {"a": 2})
+        assert program2.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
+
+        program3 = program1 + program2
+        assert program3.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
+
+        program4 = program2 + program1
+        assert program4.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
+
+        with pytest.raises(ValueError, match=r"programs with cotransform caches"):
+            _ = program2 + program2
+
+    @pytest.mark.parametrize("arg", (0.5, rx.PyGraph()))
+    def test_error_on_numpy_qnode(self, arg):
+        """Test an error is raised if there are no trainable parameters for a hybrid program."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        program = TransformProgram()
+        program.add_transform(qml.gradients.param_shift, hybrid=True)
+        program.set_classical_component(circuit, (arg,), {})
+
+        tape = qml.tape.QuantumScript([], [])
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters"):
+            program((tape,))
 
 
 class TestTransformProgramCall:

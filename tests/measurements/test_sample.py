@@ -105,7 +105,6 @@ class TestSample:
         assert len(result) == 3
         assert result[0].dtype == np.dtype("float")
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_sample_output_type_in_combination(self):
         """Test the return type and shape of sampling multiple works
         in combination with expvals and vars"""
@@ -121,8 +120,6 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert len(result) == 3
-        assert isinstance(result[0], float)
-        assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
 

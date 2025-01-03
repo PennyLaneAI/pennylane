@@ -850,12 +850,10 @@ class TestShotsIntegration:
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)
 
-    def test_update_diff_method(self, mocker, interface):
+    def test_update_diff_method(self, interface):
         """Test that temporarily setting the shots updates the diff method"""
         # pylint: disable=unused-argument
         a, b = jax.numpy.array([0.543, -0.654])
-
-        spy = mocker.spy(qml, "execute")
 
         dev = DefaultQubit()
 
@@ -866,14 +864,15 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        cost_fn(a, b, shots=100)  # pylint:disable=unexpected-keyword-arg
-        # since we are using finite shots, parameter-shift will
-        # be chosen
-        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
+        with dev.tracker:
+            jax.grad(cost_fn)(a, b, shots=100)
+        # since we are using finite shots, use parameter shift
+        assert dev.tracker.totals["executions"] == 3
 
-        cost_fn(a, b)
-        # if we set the shots to None, backprop can now be used
-        assert spy.call_args[1]["diff_method"] == "backprop"
+        # if we use the default shots value of None, backprop can now be used
+        with dev.tracker:
+            jax.grad(cost_fn)(a, b)
+        assert dev.tracker.totals["executions"] == 1
 
     @pytest.mark.local_salt(2)
     @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])

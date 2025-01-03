@@ -80,6 +80,13 @@ class TestLogging:
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
             ),
             (
+                "pennylane.workflow.execution",
+                [
+                    "device=<default.qubit device (wires=2)",
+                    "diff_method=None, interface=numpy",
+                ],
+            ),
+            (
                 "pennylane.workflow.resolution",
                 ["Calling <_resolve_diff_method("],
             ),
@@ -91,20 +98,12 @@ class TestLogging:
                 "pennylane.devices.default_qubit",
                 ["Calling <preprocess(self=<default.qubit device (wires=2)"],
             ),
-            (
-                "pennylane.workflow.execution",
-                [
-                    "device=<default.qubit device (wires=2)",
-                    "diff_method=None, interface=None",
-                ],
-            ),
         ]
 
         for expected, actual in zip(log_records_expected, caplog.records[:5]):
-            print(expected)
-            print(actual, "\n")
             assert expected[0] in actual.name
-            assert all(msg in actual.getMessage() for msg in expected[1])
+            for msg in expected[1]:
+                assert msg in actual.getMessage()
 
     @pytest.mark.parametrize(
         "diff_method,num_records", [("parameter-shift", 24), ("backprop", 15), ("adjoint", 19)]

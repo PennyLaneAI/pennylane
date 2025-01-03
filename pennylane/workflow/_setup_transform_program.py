@@ -87,7 +87,9 @@ def _setup_transform_program(
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
-    full_transform_program = qml.transforms.core.TransformProgram(user_transform_program)
+    full_transform_program = qml.transforms.core.TransformProgram(
+        user_transform_program, cotransform_cache=user_transform_program.cotransform_cache
+    )
     inner_transform_program = qml.transforms.core.TransformProgram()
 
     # Add the gradient expand to the program if necessary
