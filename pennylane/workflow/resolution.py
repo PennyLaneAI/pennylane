@@ -14,9 +14,9 @@
 """This module contains the necessary helper functions for setting up the workflow for execution.
 
 """
-
+from collections.abc import Callable
 from dataclasses import replace
-from typing import Callable, Literal, Optional, Union, get_args
+from typing import Literal, Optional, Union, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
