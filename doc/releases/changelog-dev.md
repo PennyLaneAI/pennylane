@@ -435,6 +435,10 @@ such as `shots`, `rng` and `prng_key`.
 * Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
   [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
 
+* Optimized `diagonalize_measurements` transform by using `frozenset` for immutable and faster lookups,
+  precomputing measurement observables to avoid redundant iterations, and streamlining functions to reduce computational overhead.
+  [(#6742)](https://github.com/PennyLaneAI/pennylane/pull/6742)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 <h4>Resource estimation</h4>
@@ -677,6 +681,7 @@ Pietropaolo Frisoni,
 Simone Gasperini,
 Diego Guala, 
 Austin Huang,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
 Alan Martin,
