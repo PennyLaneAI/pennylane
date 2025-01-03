@@ -41,20 +41,22 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     r"""
     Variational KaK decomposition of Hermitian ``H`` using the adjoint representation.
 
-    Given a Cartan decomposition (:func:`~cartan_decomp`) :math:`\mathfrak{g} = \mathfrak{k} \oplus (\tilde{\mathfrak{m}} \oplus \mathfrak{a})`
-    and a Hermitian operator :math:`H \in \tilde{\mathfrak{m}} \oplus \mathfrak{a}`, this function computes
+    Given a Cartan decomposition (:func:`~cartan_decomp`) :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`,
+    a Hermitian operator :math:`H \in \mathfrak{m}`,
+    and a horizontal Cartan subalgebra (:func:`~cartan_subalgebra`) :math:`\mathfrak{a} \subset \mathfrak{m}`,
+    this function computes
     :math:`a \in \mathfrak{a}` and :math:`K_c \in e^{i\mathfrak{k}}` such that
 
     .. math:: H = K_c a K_c^\dagger.
 
-    :math:`\mathfrak{a}` is a maximal Abelian subalgebra of :math:`\mathfrak{g}` (i.e., a :func:`~cartan_subalgebra`).
     In particular, :math:`a = \sum_j c_j a_j` is decomposed in terms of commuting operators :math:`a_j \in \mathfrak{a}`.
     This allows for the immediate decomposition
 
-    .. math:: e^{-i t H} = K_c e^{-i t a} K_c^\dagger = K_c \prod_j \left[ e^{-i t c_j a_j} \left] K_c^\dagger.
+    .. math:: e^{-i t H} = K_c e^{-i t a} K_c^\dagger = K_c \left(\prod_j e^{-i t c_j a_j} \right) K_c^\dagger.
 
     The result is provided in terms of the adjoint vector representation of :math:`a \in \mathfrak{a}`
-    (see :func:`adjvec_to_op`), i.e. the ordered coefficients :math:`c_j` in :math:`a = \sum_j c_j m_j` with the basis elements :math:`m_j \in (\tilde{\mathfrak{m}} \oplus \mathfrak{a})` and
+    (see :func:`adjvec_to_op`), i.e. the ordered coefficients :math:`c_j` in :math:`a = \sum_j c_j m_j`
+    with the basis elements :math:`m_j \in (\tilde{\mathfrak{m}} \oplus \mathfrak{a})` and
     the optimal parameters :math:`\theta` such that
 
     .. math:: K_c = \prod_{j=|\mathfrak{k}|}^{1} e^{-i \theta_j k_j}
@@ -76,11 +78,11 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     .. math:: f(\theta) = \langle H, K(\theta) e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta)^\dagger \rangle,
 
-    see eq. (6) therein and our `demo <https://pennylane.ai/qml/demos/tutorial_fdhs>`__ for more details.
+    see eq. (6) therein and our `demo <https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__ for more details.
     Instead of relying on having Pauli words, we use the adjoint representation
     for a more general evaluation of the cost function. The rest is the same.
 
-    .. seealso:: `Theory demo on KAK theorem <https://pennylane.ai/qml/demos/tutorial_kak_theorem>`__, `demo on KAK decomposition in practice <https://pennylane.ai/qml/demos/tutorial_fdhs>`__,
+    .. seealso:: `Theory demo on KAK theorem <https://pennylane.ai/qml/demos/tutorial_kak_theorem>`__, `demo on KAK decomposition in practice <https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__,
 
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
