@@ -37,21 +37,21 @@ def _is_independent(v, A, tol=1e-14):
     return np.linalg.norm(v) > tol
 
 
-def _orthogonal_complement_basis(h, m, tol):
-    """find mtilde = m - h"""
-    # Step 1: Find the span of h
-    h = np.array(h)
+def _orthogonal_complement_basis(a, m, tol):
+    """find mtilde = m - a"""
+    # Step 1: Find the span of a
+    a = np.array(a)
     m = np.array(m)
 
-    # Compute the orthonormal basis of h using QR decomposition
+    # Compute the orthonormal basis of a using QR decomposition
 
-    Q = _gram_schmidt(h)
+    Q = _gram_schmidt(a)
 
-    # Step 2: Project each vector in m onto the orthogonal complement of span(h)
+    # Step 2: Project each vector in m onto the orthogonal complement of span(a)
     projections = m - np.dot(np.dot(m, Q.T), Q)
     assert np.allclose(
-        np.tensordot(h, projections, axes=[[1], [1]]), 0.0
-    ), f"{np.tensordot(h, projections, axes=[[1], [1]])}"
+        np.tensordot(a, projections, axes=[[1], [1]]), 0.0
+    ), f"{np.tensordot(a, projections, axes=[[1], [1]])}"
 
     # Step 3: Find a basis for the non-zero projections
     # We'll use SVD to find the basis
@@ -61,8 +61,8 @@ def _orthogonal_complement_basis(h, m, tol):
     rank = np.sum(S > tol)
     basis = U[:, :rank]
     assert np.allclose(
-        np.tensordot(h, basis, axes=[[1], [0]]), 0.0
-    ), f"{np.tensordot(h, basis, axes=[[1], [0]])}"
+        np.tensordot(a, basis, axes=[[1], [0]]), 0.0
+    ), f"{np.tensordot(a, basis, axes=[[1], [0]])}"
 
     return basis.T  # Transpose to get row vectors
 
@@ -71,7 +71,7 @@ def cartan_subalgebra(
     g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
 ):
     r"""
-    Compute a Cartan subalgebra (CSA) :math:`\mathfrak{h} \subseteq \mathfrak{m}`.
+    Compute a Cartan subalgebra (CSA) :math:`\mathfrak{a} \subseteq \mathfrak{m}`.
 
     A non-unique CSA is a maximal Abelian subalgebra in the horizontal subspace :math:`\mathfrak{m}` of a Cartan decomposition.
     Note that this is sometimes called a horizontal CSA, and is different from the definition of a CSA on `Wikipedia <https://en.wikipedia.org/wiki/Cartan_subalgebra>`__.
@@ -93,9 +93,9 @@ def cartan_subalgebra(
 
     Returns:
         Tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray): A tuple of adjoint vector representations
-        ``(newg, k, mtilde, h, new_adj)``, corresponding to
-        :math:`\mathfrak{g}`, :math:`\mathfrak{k}`, :math:`\tilde{\mathfrak{m}}`, :math:`\mathfrak{h}` and the new adjoint representation.
-        The dimensions are ``(|g|, |g|)``, ``(|k|, |g|)``, ``(|mtilde|, |g|)``, ``(|h|, |g|)`` and ``(|g|, |g|, |g|)``, respectively.
+        ``(newg, k, mtilde, a, new_adj)``, corresponding to
+        :math:`\mathfrak{g}`, :math:`\mathfrak{k}`, :math:`\tilde{\mathfrak{m}}`, :math:`\mathfrak{a}` and the new adjoint representation.
+        The dimensions are ``(|g|, |g|)``, ``(|k|, |g|)``, ``(|mtilde|, |g|)``, ``(|a|, |g|)`` and ``(|g|, |g|, |g|)``, respectively.
 
     **Example**
 
@@ -109,26 +109,26 @@ def cartan_subalgebra(
     >>> k, m = cartan_decomp(g, even_odd_involution)
     >>> g = k + m # re-order g to separate k and m
     >>> adj = qml.structure_constants(g)
-    >>> newg, k, mtilde, h, new_adj = cartan_subalgebra(g, k, m, adj)
-    >>> newg == k + mtilde + h
+    >>> newg, k, mtilde, a, new_adj = cartan_subalgebra(g, k, m, adj)
+    >>> newg == k + mtilde + a
     True
-    >>> h
-    [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
+    >>> a
+    [-1.0 * Z(0) @ Z(1), 1.0 * Y(0) @ Y(1), -1.0 * X(0) @ X(1)]
 
     We can confirm that these all commute with each other, as the CSA is Abelian (= all operators commute).
 
     >>> from pennylane.labs.dla import check_all_commuting
-    >>> check_all_commuting(h)
+    >>> check_all_commuting(a)
     True
 
     We can opt-in to return what we call adjoint vectors of dimension :math:`|\mathfrak{g}|`, where each component corresponds to an entry in (the ordered) ``g``.
-    The adjoint vectors for the Cartan subalgebra are in ``np_h``.
+    The adjoint vectors for the Cartan subalgebra are in ``np_a``.
 
-    >>> np_newg, np_k, np_mtilde, np_h, new_adj = cartan_subalgebra(g, k, m, adj, return_adjvec=True)
+    >>> np_newg, np_k, np_mtilde, np_a, new_adj = cartan_subalgebra(g, k, m, adj, return_adjvec=True)
 
     We can reconstruct an operator by computing :math:`\hat{O}_v = \sum_i v_i g_i` for an adjoint vector :math:`v` and :math:`g_i \in \mathfrak{g}`.
 
-    >>> v = np_h[0]
+    >>> v = np_a[0]
     >>> op = sum(v_i * g_i for v_i, g_i in zip(v, g))
     >>> op.simplify()
     >>> op
@@ -137,9 +137,9 @@ def cartan_subalgebra(
     For convenience, we provide a helper function :func:`~adjvec_to_op` for the collections of adjoint vectors in the returns.
 
     >>> from pennylane.labs.dla import adjvec_to_op
-    >>> h = adjvec_to_op(np_h, g)
-    >>> h
-    [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
+    >>> a = adjvec_to_op(np_a, g)
+    >>> a
+    [-1.0 * Z(0) @ Z(1), 1.0 * Y(0) @ Y(1), -1.0 * X(0) @ X(1)]
 
     .. details::
         :title: Usage Details
@@ -177,21 +177,21 @@ def cartan_subalgebra(
         >>> g = np.vstack([k, m]) # re-order g to separate k and m operators
         >>> adj = structure_constants_dense(g) # compute adjoint representation of g
 
-        Finally, we can compute a Cartan subalgebra :math:`\mathfrak{h}`, a maximal Abelian subalgebra of :math:`\mathfrak{m}`.
+        Finally, we can compute a Cartan subalgebra :math:`\mathfrak{a}`, a maximal Abelian subalgebra of :math:`\mathfrak{m}`.
 
-        >>> newg, k, mtilde, h, new_adj = cartan_subalgebra(g, k, m, adj, start_idx=3)
+        >>> newg, k, mtilde, a, new_adj = cartan_subalgebra(g, k, m, adj, start_idx=3)
 
-        The new DLA ``newg`` is just the concatenation of ``k``, ``mtilde``, ``h``. Each component is returned in the original input format.
+        The new DLA ``newg`` is just the concatenation of ``k``, ``mtilde``, ``a``. Each component is returned in the original input format.
         Here we obtain collections of :math:`8\times 8` matrices (``numpy`` arrays), as this is what we started from.
 
-        >>> newg.shape, k.shape, mtilde.shape, h.shape, new_adj.shape
+        >>> newg.shape, k.shape, mtilde.shape, a.shape, new_adj.shape
         ((15, 8, 8), (6, 8, 8), (6, 8, 8), (3, 8, 8), (15, 15, 15))
 
         We can also let the function return what we call adjoint representation vectors.
 
         >>> kwargs = {"start_idx": 3, "return_adjvec": True}
-        >>> np_newg, np_k, np_mtilde, np_h, new_adj = cartan_subalgebra(g, k, m, adj, **kwargs)
-        >>> np_newg.shape, np_k.shape, np_mtilde.shape, np_h.shape, new_adj.shape
+        >>> np_newg, np_k, np_mtilde, np_a, new_adj = cartan_subalgebra(g, k, m, adj, **kwargs)
+        >>> np_newg.shape, np_k.shape, np_mtilde.shape, np_a.shape, new_adj.shape
         ((15, 15), (6, 15), (6, 15), (3, 15), (15, 15, 15))
 
         These are dense vector representations of dimension :math:`|\mathfrak{g}|`, in which each entry corresponds to the respective operator in :math:`\mathfrak{g}`.
@@ -202,8 +202,8 @@ def cartan_subalgebra(
         Because we used dense matrices in this example, we transform the operators back to PennyLane operators using :func:`~pauli_decompose`.
 
         >>> from pennylane.labs.dla import adjvec_to_op
-        >>> h = adjvec_to_op(np_h, g)
-        >>> h_op = [qml.pauli_decompose(op).pauli_rep for op in h]
+        >>> a = adjvec_to_op(np_a, g)
+        >>> h_op = [qml.pauli_decompose(op).pauli_rep for op in a]
         >>> h_op
         [-1.0 * Y(1) @ Y(2), -1.0 * Z(1) @ Z(2), 1.0 * X(1) @ X(2)]
 
@@ -217,14 +217,14 @@ def cartan_subalgebra(
 
     g_copy = copy.deepcopy(g)
     np_m = op_to_adjvec(m, g, is_orthogonal=is_orthogonal)
-    np_h = op_to_adjvec([m[start_idx]], g, is_orthogonal=is_orthogonal)
+    np_a = op_to_adjvec([m[start_idx]], g, is_orthogonal=is_orthogonal)
 
     iteration = 1
     while True:
         if verbose:
-            print(f"iteration {iteration}: Found {len(np_h)} independent Abelian operators.")
+            print(f"iteration {iteration}: Found {len(np_a)} independent Abelian operators.")
         kernel_intersection = np_m
-        for h_i in np_h:
+        for h_i in np_a:
 
             # obtain adjoint rep of candidate h_i
             adjoint_of_h_i = np.tensordot(ad, h_i, axes=[[1], [0]])
@@ -236,8 +236,8 @@ def cartan_subalgebra(
 
         kernel_intersection = _gram_schmidt(kernel_intersection)  # orthogonalize
         for vec in kernel_intersection:
-            if _is_independent(vec, np.array(np_h).T, tol):
-                np_h = np.vstack([np_h, vec])
+            if _is_independent(vec, np.array(np_a).T, tol):
+                np_a = np.vstack([np_a, vec])
                 break
         else:
             # No new vector was added from all the kernels
@@ -245,15 +245,15 @@ def cartan_subalgebra(
 
         iteration += 1
 
-    np_h = _gram_schmidt(np_h)  # orthogonalize Abelian subalgebra
+    np_a = _gram_schmidt(np_a)  # orthogonalize Abelian subalgebra
     np_k = op_to_adjvec(
         k, g, is_orthogonal=is_orthogonal
     )  # adjoint vectors of k space for re-ordering
     np_oldg = np.vstack([np_k, np_m])
     np_k = _gram_schmidt(np_k)
 
-    np_mtilde = _orthogonal_complement_basis(np_h, np_m, tol=tol)  # the "rest" of m without h
-    np_newg = np.vstack([np_k, np_mtilde, np_h])
+    np_mtilde = _orthogonal_complement_basis(np_a, np_m, tol=tol)  # the "rest" of m without a
+    np_newg = np.vstack([np_k, np_mtilde, np_a])
 
     # Instead of recomputing the adjoint representation, take the basis transformation
     # oldg -> newg and transform the adjoint representation accordingly
@@ -261,11 +261,11 @@ def cartan_subalgebra(
     new_adj = change_basis_ad_rep(ad, basis_change)
 
     if return_adjvec:
-        return np_newg, np_k, np_mtilde, np_h, new_adj
+        return np_newg, np_k, np_mtilde, np_a, new_adj
 
-    newg, k, mtilde, h = [
+    newg, k, mtilde, a = [
         adjvec_to_op(adjvec, g_copy, is_orthogonal=is_orthogonal)
-        for adjvec in [np_newg, np_k, np_mtilde, np_h]
+        for adjvec in [np_newg, np_k, np_mtilde, np_a]
     ]
 
-    return newg, k, mtilde, h, new_adj
+    return newg, k, mtilde, a, new_adj
