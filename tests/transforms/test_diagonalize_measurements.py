@@ -531,6 +531,7 @@ class TestDiagonalizeTapeMeasurements:
 
     def test_mixed_pauli_and_non_pauli_observables(self):
         """Test that diagonalize_measurements correctly handles a mix of Pauli and non-Pauli observables"""
+        assert qml.Hadamard(1).pauli_rep is None
         measurements = [qml.expval(X(0)), qml.expval(qml.Hadamard(1))]
         tape = QuantumScript(
             [qml.RX(1.2, wires=0), qml.RY(2.34, wires=1)], measurements=measurements
