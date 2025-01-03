@@ -341,6 +341,7 @@ such as `shots`, `rng` and `prng_key`.
 <h4>Other Improvements</h4>
 
 * `qml.transforms.cancel_inverses` is now better at handling cancellation of `Adjoint` operators.
+  [(#6752)](https://github.com/PennyLaneAI/pennylane/pull/6752)
 
 * `qml.math.grad` and `qml.math.jacobian` added to differentiate a function with inputs of any
   interface in a jax-like manner.
