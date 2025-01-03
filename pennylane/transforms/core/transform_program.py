@@ -28,7 +28,7 @@ from .transform_dispatcher import TransformContainer, TransformDispatcher, Trans
 CotransformCache = namedtuple("CotransformCache", ("qnode", "args", "kwargs"))
 
 
-def _get_interface(qnode, args, kwargs):
+def _get_interface(qnode, args, kwargs) -> str:
     if qnode.interface == "auto":
         interface = qml.math.get_interface(*args, *list(kwargs.values()))
         try:
@@ -216,8 +216,8 @@ class TransformProgram:
     The order of execution is the order in the list containing the containers.
 
     Args:
-        initial_program (Optional[Sequence[TransformContainer]]): A sequence of transforms to
-            initialize the program with
+        initial_program (Optional[Sequence[TransformContainer]]): A sequence of transforms with
+            which to initialize the program.
         cotransform_cache (Optional[CotransformCache]): A named tuple containing the ``qnode``,
             ``args``, and ``kwargs`` required to compute classical cotransforms.
 
