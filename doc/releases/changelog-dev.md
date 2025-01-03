@@ -625,6 +625,8 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* Adds validation so the device vjp is only used when the device actually supports it.
+
 * `qml.counts` returns all outcomes when the `all_outcomes` argument is `True` and mid-circuit measurements are present.
   [(#6732)](https://github.com/PennyLaneAI/pennylane/pull/6732)
 
