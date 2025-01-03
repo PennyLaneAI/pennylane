@@ -864,8 +864,7 @@ class TestCatalystMCMs:
     @pytest.mark.parametrize(
         "measure_f",
         [
-            # https://github.com/PennyLaneAI/pennylane/issues/6700
-            pytest.param(qml.counts, marks=pytest.mark.xfail),
+            qml.counts,
             qml.expval,
             qml.probs,
         ],
@@ -898,7 +897,7 @@ class TestCatalystMCMs:
             meas_key = "wires" if isinstance(meas_obj, list) else "op"
             meas_value = m0 if isinstance(meas_obj, str) else meas_obj
             kwargs = {meas_key: meas_value}
-            if measure_f == qml.counts:
+            if measure_f is qml.counts:
                 kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
@@ -919,17 +918,20 @@ class TestCatalystMCMs:
             meas_key = "wires" if isinstance(meas_obj, list) else "op"
             meas_value = m0 if isinstance(meas_obj, str) else meas_obj
             kwargs = {meas_key: meas_value}
-            if measure_f == qml.counts:
+            if measure_f is qml.counts:
                 kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
         params = jnp.pi / 4 * jnp.ones(2)
         results0 = ref_func(*params)
         results1 = func(*params)
-        if measure_f == qml.counts:
-            ndim = 2  # both [0] and m0 are on one wire only
-            results1 = {format(int(state), f"0{ndim}b"): count for state, count in zip(*results1)}
-        if measure_f == qml.sample:
+        if measure_f is qml.counts:
+
+            def fname(x):
+                return format(x, f"0{len(meas_obj)}b") if isinstance(meas_obj, list) else x
+
+            results1 = {fname(int(state)): count for state, count in zip(*results1)}
+        if measure_f is qml.sample:
             results0 = results0[results0 != fill_in_value]
             results1 = results1[results1 != fill_in_value]
         mcm_utils.validate_measurements(measure_f, shots, results1, results0)

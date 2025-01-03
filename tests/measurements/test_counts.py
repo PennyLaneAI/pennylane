@@ -396,6 +396,35 @@ class TestProcessSamples:
 class TestCountsIntegration:
     # pylint:disable=too-many-public-methods,not-an-iterable
 
+    def test_counts_all_outcomes_with_mcm(self):
+        """Test that all outcomes are present in results if requested."""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", shots=n_sample)
+
+        @qml.qnode(device=dev, mcm_method="one-shot")
+        def single_mcm():
+            m = qml.measure(0)
+            return qml.counts(m, all_outcomes=True)
+
+        res = single_mcm()
+
+        assert list(res.keys()) == [0.0, 1.0]
+        assert sum(res.values()) == n_sample
+        assert res[0.0] == n_sample
+
+        @qml.qnode(device=dev, mcm_method="one-shot")
+        def double_mcm():
+            m1 = qml.measure(0)
+            m2 = qml.measure(1)
+            return qml.counts([m1, m2], all_outcomes=True)
+
+        res = double_mcm()
+
+        assert list(res.keys()) == ["00", "01", "10", "11"]
+        assert sum(res.values()) == n_sample
+        assert res["00"] == n_sample
+
     def test_counts_dimension(self):
         """Test that the counts function outputs counts of the right size"""
         n_sample = 10
