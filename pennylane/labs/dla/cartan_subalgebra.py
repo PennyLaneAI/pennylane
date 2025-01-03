@@ -113,7 +113,7 @@ def cartan_subalgebra(
     >>> newg == k + mtilde + a
     True
     >>> a
-    [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
+    [-1.0 * Z(0) @ Z(1), 1.0 * Y(0) @ Y(1), -1.0 * X(0) @ X(1)]
 
     We can confirm that these all commute with each other, as the CSA is Abelian (= all operators commute).
 
@@ -139,7 +139,7 @@ def cartan_subalgebra(
     >>> from pennylane.labs.dla import adjvec_to_op
     >>> a = adjvec_to_op(np_a, g)
     >>> a
-    [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
+    [-1.0 * Z(0) @ Z(1), 1.0 * Y(0) @ Y(1), -1.0 * X(0) @ X(1)]
 
     .. details::
         :title: Usage Details
