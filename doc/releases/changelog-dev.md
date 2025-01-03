@@ -459,7 +459,7 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
-<h4>Functionality for handling dynamical Lie algebras (DLAs)</h4>
+<h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
@@ -488,6 +488,10 @@ such as `shots`, `rng` and `prng_key`.
 * Added a `variational_kak_adj` function to compute a KaK decomposition of a Hamiltonian given a Cartan
   decomposition and the ordered adjoint representation of the Lie algebra.
   [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
+
+* Improved documentation by fixing broken links and latex issues. Also consistently use `$\mathfrak{a}$`
+  for the horizontal Cartan subalgebra instead of `$\mathfrak{h}$`.
+  [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
 
 <h3>Breaking changes 💔</h3>
 
