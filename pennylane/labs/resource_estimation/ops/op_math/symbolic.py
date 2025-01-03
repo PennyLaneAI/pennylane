@@ -286,11 +286,11 @@ def _resources_from_pauli_word(pauli_word, num_wires):
 
     if len_str == 1:
         if pauli_string == "X":
-            return {re.CompressedResourceOp(re.ResourceRX, {}): 1}
+            return {re.ResourceRX.resource_rep({}): 1}
         if pauli_string == "Y":
-            return {re.CompressedResourceOp(re.ResourceRY, {}): 1}
+            return {re.ResourceRY.resource_rep({}): 1}
         if pauli_string == "Z":
-            return {re.CompressedResourceOp(re.ResourceRZ, {}): 1}
+            return {re.ResourceRZ.resource_rep({}): 1}
 
     counter = {"X": 0, "Y": 0, "Z": 0}
     for c in pauli_string:
@@ -299,10 +299,10 @@ def _resources_from_pauli_word(pauli_word, num_wires):
     num_x = counter["X"]
     num_y = counter["Y"]
 
-    s = re.CompressedResourceOp(re.ResourceS, {})
-    h = re.CompressedResourceOp(re.ResourceHadamard, {})
-    rz = re.CompressedResourceOp(re.ResourceRZ, {})
-    cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+    s = re.ResourceS.resource_rep({})
+    h = re.ResourceHadamard.resource_rep({})
+    rz = re.ResourceRZ.resource_rep({})
+    cnot = re.ResourceCNOT.resource_rep({})
 
     gate_types = {}
     gate_types[rz] = 1
@@ -315,9 +315,9 @@ def _resources_from_pauli_word(pauli_word, num_wires):
 
 def _resources_from_pauli_sentence(pauli_sentence):
     gate_types = defaultdict(int)
-    rx = re.CompressedResourceOp(re.ResourceRX, {})
-    ry = re.CompressedResourceOp(re.ResourceRY, {})
-    rz = re.CompressedResourceOp(re.ResourceRZ, {})
+    rx = re.ResourceRX.resource_rep({})
+    ry = re.ResourceRY.resource_rep({})
+    rz = re.ResourceRZ.resource_rep({})
 
     for pauli_word in iter(pauli_sentence.keys()):
         num_wires = len(pauli_word.wires)
