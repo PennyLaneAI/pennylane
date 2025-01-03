@@ -27,8 +27,7 @@ from pennylane.typing import PostprocessingFn
 def remove_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Remove all ``qml.GlobalPhase`` gates present in a quantum circuit.
 
-    This transform returns a new circuit where all ``qml.GlobalPhase`` gates in the original circuit (if exists)
-    are removed.
+    This transform returns a new circuit where all ``qml.GlobalPhase`` gates in the original circuit (if exists) are removed.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
