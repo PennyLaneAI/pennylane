@@ -191,7 +191,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
             tape, supported_base_obs, to_eigvals=to_eigvals
         )
 
-    # Concatenate operations without creating a new list
+    # Concatenate diagonalizing gates to operations
     new_operations = tape.operations + diagonalizing_gates
 
     new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
