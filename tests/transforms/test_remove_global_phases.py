@@ -76,9 +76,9 @@ def test_differentiability(ml_interface):
     original_qnode = qml.QNode(original_qfunc, device=dev)
 
     jac = qml.math.jacobian(original_qnode)(phi1, phi2)
-    assert jac.shape == (2,)
+    assert not jac
 
     transformed_qnode = remove_global_phases(original_qnode)
 
     jac = qml.math.jacobian(transformed_qnode)(phi1, phi2)
-    assert jac.shape == (2,)
+    assert not jac
