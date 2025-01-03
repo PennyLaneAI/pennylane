@@ -270,7 +270,7 @@ def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
 
     .. code-block:: python
 
-        @cancel_inverses
+        @qml.transforms.cancel_inverses
         @qml.qnode(device=dev)
         def circuit(x, y, z):
             qml.Hadamard(wires=0)
@@ -286,7 +286,7 @@ def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
             return qml.expval(qml.Z(0))
 
     >>> circuit(0.1, 0.2, 0.3)
-    0.999999999999999
+    1.0
 
     .. details::
         :title: Usage Details
@@ -321,7 +321,7 @@ def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
         second qubit that should cancel. We can obtain a simplified circuit by running
         the ``cancel_inverses`` transform:
 
-        >>> optimized_qfunc = cancel_inverses(qfunc)
+        >>> optimized_qfunc = qml.transforms.cancel_inverses(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)(1, 2, 3))
         0: ──RZ(3.00)───────────╭●─┤  <Z>
