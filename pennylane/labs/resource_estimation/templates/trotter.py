@@ -14,9 +14,9 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
-from typing import Dict
-from functools import wraps
 from collections import defaultdict
+from functools import wraps
+from typing import Dict
 
 import pennylane as qml
 from pennylane.labs.resource_estimation import (
