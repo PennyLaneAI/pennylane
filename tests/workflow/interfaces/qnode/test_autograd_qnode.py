@@ -50,7 +50,7 @@ class TestQNode:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = pnp.array(0.1, requires_grad=True)
+        a = pqml.numpy.array(0.1, requires_grad=True)
         res = circuit(a)
 
         assert isinstance(res, (np.ndarray, float))
@@ -76,7 +76,7 @@ class TestQNode:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = pnp.array(0.1, requires_grad=True)
+        a = pqml.numpy.array(0.1, requires_grad=True)
         res = circuit(a)
         assert isinstance(res, (np.ndarray, float))
         grad = qml.grad(circuit)(a)
@@ -99,8 +99,8 @@ class TestQNode:
             kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
-        a = pnp.array(0.1, requires_grad=True)
-        b = pnp.array(0.2, requires_grad=True)
+        a = pqml.numpy.array(0.1, requires_grad=True)
+        b = pqml.numpy.array(0.2, requires_grad=True)
 
         dev = get_device(device_name, wires=3, seed=seed)
 
@@ -151,8 +151,8 @@ class TestQNode:
             kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
-        a = pnp.array(0.1, requires_grad=True)
-        b = pnp.array(0.2, requires_grad=True)
+        a = pqml.numpy.array(0.1, requires_grad=True)
+        b = pqml.numpy.array(0.2, requires_grad=True)
 
         dev = get_device(device_name, wires=3, seed=seed)
 
@@ -173,8 +173,8 @@ class TestQNode:
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         # call the Jacobian with new parameters
-        a = pnp.array(0.6, requires_grad=True)
-        b = pnp.array(0.832, requires_grad=True)
+        a = pqml.numpy.array(0.6, requires_grad=True)
+        b = pqml.numpy.array(0.832, requires_grad=True)
 
         res = jac_fn(a, b)
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
@@ -255,270 +255,270 @@ class TestQNode:
         y = qml.numpy.array(0.8, requires_grad=True)
         circuit(x, y)
 
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp", generate_test_matrix()
+    )
+    def test_classical_processing(self, device_name, diff_method, grad_on_execution, device_vjp):
+        """Test classical processing within the quantum tape"""
 
-#     def test_classical_processing(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp
-#     ):
-#         """Test classical processing within the quantum tape"""
-#         a = np.array(0.1, requires_grad=True)
-#         b = np.array(0.2, requires_grad=False)
-#         c = np.array(0.3, requires_grad=True)
-#
-#         @qnode(
-#             dev,
-#             diff_method=diff_method,
-#             interface=interface,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#         def circuit(a, b, c):
-#             qml.RY(a * c, wires=0)
-#             qml.RZ(b, wires=0)
-#             qml.RX(c + c**2 + np.sin(a), wires=0)
-#             return qml.expval(qml.PauliZ(0))
-#
-#         res = qml.jacobian(circuit)(a, b, c)
-#
-#         assert circuit.qtape.trainable_params == [0, 2]
-#         tape_params = np.array(circuit.qtape.get_parameters())
-#         assert np.all(tape_params == [a * c, c + c**2 + np.sin(a)])
-#
-#         assert isinstance(res, tuple) and len(res) == 2
-#         assert res[0].shape == ()
-#         assert res[1].shape == ()
-#
-#     def test_no_trainable_parameters(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp
-#     ):
-#         """Test evaluation and Jacobian if there are no trainable parameters"""
-#
-#         @qnode(
-#             dev,
-#             diff_method=diff_method,
-#             interface=interface,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#         def circuit(a, b):
-#             qml.RY(a, wires=0)
-#             qml.RX(b, wires=0)
-#             qml.CNOT(wires=[0, 1])
-#             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-#
-#         a = np.array(0.1, requires_grad=False)
-#         b = np.array(0.2, requires_grad=False)
-#
-#         res = circuit(a, b)
-#
-#         if diff_method == "finite-diff":
-#             assert circuit.qtape.trainable_params == []
-#
-#         assert len(res) == 2
-#         assert isinstance(res, tuple)
-#
-#         def cost(x, y):
-#             return autograd.numpy.hstack(circuit(x, y))
-#
-#         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-#             assert not qml.jacobian(cost)(a, b)
-#
-#         def cost2(a, b):
-#             return np.sum(circuit(a, b))
-#
-#         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-#             grad = qml.grad(cost2)(a, b)
-#
-#         assert grad == tuple()
-#
-#     def test_matrix_parameter(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp, tol
-#     ):
-#         """Test that the autograd interface works correctly
-#         with a matrix parameter"""
-#         U = np.array([[0, 1], [1, 0]], requires_grad=False)
-#         a = np.array(0.1, requires_grad=True)
-#
-#         @qnode(
-#             dev,
-#             diff_method=diff_method,
-#             interface=interface,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#         def circuit(U, a):
-#             qml.QubitUnitary(U, wires=0)
-#             qml.RY(a, wires=0)
-#             return qml.expval(qml.PauliZ(0))
-#
-#         res = circuit(U, a)
-#
-#         if diff_method == "finite-diff":
-#             assert circuit.qtape.trainable_params == [1]
-#
-#         res = qml.grad(circuit)(U, a)
-#         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
-#
-#     def test_gradient_non_differentiable_exception(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp
-#     ):
-#         """Test that an exception is raised if non-differentiable data is
-#         differentiated"""
-#
-#         @qnode(
-#             dev,
-#             interface=interface,
-#             diff_method=diff_method,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#         def circuit(data1):
-#             qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
-#             return qml.expval(qml.PauliZ(0))
-#
-#         grad_fn = qml.grad(circuit, argnum=0)
-#         data1 = np.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
-#
-#         with pytest.raises(qml.numpy.NonDifferentiableError, match="is non-differentiable"):
-#             grad_fn(data1)
-#
-#     def test_differentiable_expand(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
-#     ):
-#         """Test that operation and nested tape expansion
-#         is differentiable"""
-#         kwargs = dict(
-#             diff_method=diff_method,
-#             interface=interface,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#
-#         if diff_method == "spsa":
-#             kwargs["sampler_rng"] = np.random.default_rng(seed)
-#             kwargs["num_directions"] = 10
-#             tol = TOL_FOR_SPSA
-#
-#         # pylint: disable=too-few-public-methods
-#         class U3(qml.U3):
-#             """Custom U3."""
-#
-#             def decomposition(self):
-#                 theta, phi, lam = self.data
-#                 wires = self.wires
-#                 return [
-#                     qml.Rot(lam, theta, -lam, wires=wires),
-#                     qml.PhaseShift(phi + lam, wires=wires),
-#                 ]
-#
-#         a = np.array(0.1, requires_grad=False)
-#         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
-#
-#         @qnode(dev, **kwargs)
-#         def circuit(a, p):
-#             qml.RX(a, wires=0)
-#             U3(p[0], p[1], p[2], wires=0)
-#             return qml.expval(qml.PauliX(0))
-#
-#         res = circuit(a, p)
-#         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-#             np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-#         )
-#         # assert isinstance(res, np.ndarray)
-#         # assert res.shape == ()
-#         assert np.allclose(res, expected, atol=tol, rtol=0)
-#
-#         res = qml.grad(circuit)(a, p)
-#
-#         # assert isinstance(res, np.ndarray)
-#         # assert len(res) == 3
-#
-#         expected = np.array(
-#             [
-#                 np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-#                 np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-#                 - np.sin(p[1])
-#                 * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-#                 np.sin(a)
-#                 * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-#             ]
-#         )
-#         assert np.allclose(res, expected, atol=tol, rtol=0)
-#
-#
-# class TestShotsIntegration:
-#     """Test that the QNode correctly changes shot value, and
-#     remains differentiable."""
-#
-#     def test_changing_shots(self):
-#         """Test that changing shots works on execution"""
-#         dev = DefaultQubit()
-#         a, b = np.array([0.543, -0.654], requires_grad=True)
-#
-#         @qnode(dev, diff_method=qml.gradients.param_shift)
-#         def circuit(a, b):
-#             qml.RY(a, wires=0)
-#             qml.RX(b, wires=1)
-#             qml.CNOT(wires=[0, 1])
-#             return qml.sample(wires=(0, 1))
-#
-#         # execute with device default shots (None)
-#         with pytest.raises(qml.DeviceError):
-#             res = circuit(a, b)
-#
-#         # execute with shots=100
-#         res = circuit(a, b, shots=100)
-#         assert res.shape == (100, 2)  # pylint: disable=comparison-with-callable
-#
-#     @pytest.mark.xfail(reason="Param shift and shot vectors.")
-#     def test_gradient_integration(self):
-#         """Test that temporarily setting the shots works
-#         for gradient computations"""
-#         dev = DefaultQubit()
-#         a, b = np.array([0.543, -0.654], requires_grad=True)
-#
-#         @qnode(dev, diff_method=qml.gradients.param_shift)
-#         def cost_fn(a, b):
-#             qml.RY(a, wires=0)
-#             qml.RX(b, wires=1)
-#             qml.CNOT(wires=[0, 1])
-#             return qml.expval(qml.PauliY(1))
-#
-#         # TODO: fix the shot vectors issue
-#         res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
-#         assert dev.shots is None
-#         assert isinstance(res, tuple) and len(res) == 2
-#         assert all(r.shape == (3,) for r in res)
-#
-#         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-#         assert all(
-#             np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
-#         )
-#
-#     def test_update_diff_method(self, mocker):
-#         """Test that temporarily setting the shots updates the diff method"""
-#         a, b = np.array([0.543, -0.654], requires_grad=True)
-#
-#         spy = mocker.spy(qml, "execute")
-#
-#         dev = DefaultQubit()
-#
-#         @qnode(dev)
-#         def cost_fn(a, b):
-#             qml.RY(a, wires=0)
-#             qml.RX(b, wires=1)
-#             qml.CNOT(wires=[0, 1])
-#             return qml.expval(qml.PauliY(1))
-#
-#         cost_fn(a, b, shots=100)
-#         # since we are using finite shots, parameter-shift will
-#         # be chosen
-#         assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
-#
-#         # if we use the default shots value of None, backprop can now be used
-#         cost_fn(a, b)
-#         assert spy.call_args[1]["diff_method"] == "backprop"
-#
-#
+        x = qml.numpy.array(0.1, requires_grad=True)
+        y = qml.numpy.array(0.2, requires_grad=False)
+        z = qml.numpy.array(0.3, requires_grad=True)
+
+        dev = get_device(device_name, wires=2)
+
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            interface="autograd",
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+        def circuit(a, b, c):
+            qml.RY(a * c, wires=0)
+            qml.RZ(b, wires=0)
+            qml.RX(c + c**2 + qml.math.sin(a), wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = qml.jacobian(circuit)(x, y, z)
+
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == ()
+        assert res[1].shape == ()
+
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp", generate_test_matrix()
+    )
+    def test_no_trainable_parameters(self, device_name, diff_method, grad_on_execution, device_vjp):
+        """Test evaluation and Jacobian if there are no trainable parameters"""
+
+        dev = get_device(device_name, wires=3)
+
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            interface="autograd",
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+        def circuit(x, y):
+            qml.RY(x, wires=0)
+            qml.RX(y, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        a = qml.numpy.array(0.1, requires_grad=False)
+        b = qml.numpy.array(0.2, requires_grad=False)
+
+        res = circuit(a, b)
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+
+        def cost(x, y):
+            return qml.numpy.hstack(circuit(x, y))
+
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            assert not qml.jacobian(cost)(a, b)
+
+        def cost2(x, y):
+            return np.sum(circuit(x, y))
+
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            grad = qml.grad(cost2)(a, b)
+
+        assert grad == tuple()
+
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp", generate_test_matrix()
+    )
+    def test_matrix_parameter(self, device_name, diff_method, grad_on_execution, device_vjp, tol):
+        """Test that the autograd interface works correctly
+        with a matrix parameter"""
+
+        U = qml.numpy.array([[0, 1], [1, 0]], requires_grad=False)
+        a = qml.numpy.array(0.1, requires_grad=True)
+
+        @qnode(
+            get_device(device_name, wires=2),
+            diff_method=diff_method,
+            interface="autograd",
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+        def circuit(U, a):
+            qml.QubitUnitary(U, wires=0)
+            qml.RY(a, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = qml.grad(circuit)(U, a)
+        assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp", generate_test_matrix()
+    )
+    def test_gradient_non_differentiable_exception(
+        self, device_name, diff_method, grad_on_execution, device_vjp
+    ):
+        """Test that an exception is raised if non-differentiable data is
+        differentiated"""
+
+        @qnode(
+            get_device(device_name, wires=3),
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+        def circuit(data):
+            qml.templates.AmplitudeEmbedding(data, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        grad_fn = qml.grad(circuit, argnum=0)
+        data1 = qml.numpy.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
+
+        with pytest.raises(qml.numpy.NonDifferentiableError, match="is non-differentiable"):
+            grad_fn(data1)
+
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp", generate_test_matrix()
+    )
+    def test_differentiable_expand(
+        self, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
+    ):
+        """Test that operation and nested tape expansion
+        is differentiable"""
+
+        dev = get_device(device_name, wires=2)
+
+        kwargs = dict(
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+
+        if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            kwargs["num_directions"] = 10
+            tol = TOL_FOR_SPSA
+
+        # pylint: disable=too-few-public-methods
+        class U3(qml.U3):
+            """Custom U3."""
+
+            def decomposition(self):
+                theta, phi, lam = self.data
+                wires = self.wires
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
+
+        a = qml.numpy.array(0.1, requires_grad=False)
+        p = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        @qnode(dev, **kwargs)
+        def circuit(a, p):
+            qml.RX(a, wires=0)
+            U3(p[0], p[1], p[2], wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        res = circuit(a, p)
+        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = qml.grad(circuit)(a, p)
+        expected = np.array(
+            [
+                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                - np.sin(p[1])
+                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                np.sin(a)
+                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            ]
+        )
+        assert qml.math.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestShotsIntegration:
+    """Test that the QNode correctly changes shot value, and
+    remains differentiable."""
+
+    def test_changing_shots(self):
+        """Test that changing shots works on execution"""
+
+        dev = qml.device("default.qubit")
+        a, b = qml.numpy.array([0.543, -0.654], requires_grad=True)
+
+        @qnode(dev, diff_method=qml.gradients.param_shift)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(wires=(0, 1))
+
+        # execute with device default shots (None)
+        with pytest.raises(qml.DeviceError):
+            res = circuit(a, b)
+            assert res.shape == ()
+
+        # execute with shots=100
+        res = circuit(a, b, shots=100)
+        assert res.shape == (100, 2)  # pylint: disable=comparison-with-callable
+
+    @pytest.mark.xfail(reason="Param shift and shot vectors.")
+    def test_gradient_integration(self):
+        """Test that temporarily setting the shots works
+        for gradient computations"""
+
+        dev = qml.device("default.qubit")
+        a, b = qml.numpy.array([0.543, -0.654], requires_grad=True)
+
+        @qnode(dev, diff_method=qml.gradients.param_shift)
+        def cost_fn(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliY(1))
+
+        # TODO: fix the shot vectors issue
+        res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
+        assert dev.shots is None
+        assert isinstance(res, tuple) and len(res) == 2
+        assert all(r.shape == (3,) for r in res)
+
+        expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
+        assert all(
+            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
+        )
+
+    def test_update_diff_method(self, mocker):
+        """Test that temporarily setting the shots updates the diff method"""
+        a, b = qml.numpy.array([0.543, -0.654], requires_grad=True)
+
+        spy = mocker.spy(qml, "execute")
+
+        dev = qml.device("default.qubit")
+
+        @qnode(dev)
+        def cost_fn(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliY(1))
+
+        cost_fn(a, b, shots=100)
+        # since we are using finite shots, parameter-shift will
+        # be chosen
+        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
+
+        # if we use the default shots value of None, backprop can now be used
+        cost_fn(a, b)
+        assert spy.call_args[1]["diff_method"] == "backprop"
+
+
 # @pytest.mark.parametrize(
 #     "device_name, diff_method, grad_on_execution, device_vjp",
 #     generate_test_matrix(),
@@ -545,8 +545,8 @@ class TestQNode:
 #             kwargs["sampler_rng"] = np.random.default_rng(seed)
 #             tol = TOL_FOR_SPSA
 #
-#         x = np.array(0.543, requires_grad=True)
-#         y = np.array(-0.654, requires_grad=True)
+#         x = qml.numpy.array(0.543, requires_grad=True)
+#         y = qml.numpy.array(-0.654, requires_grad=True)
 #
 #         @qnode(dev, **kwargs)
 #         def circuit(x, y):
@@ -582,8 +582,8 @@ class TestQNode:
 #             kwargs["sampler_rng"] = np.random.default_rng(seed)
 #             tol = TOL_FOR_SPSA
 #
-#         x = np.array(0.543, requires_grad=True)
-#         y = np.array(-0.654, requires_grad=True)
+#         x = qml.numpy.array(0.543, requires_grad=True)
+#         y = qml.numpy.array(-0.654, requires_grad=True)
 #
 #         @qnode(dev, **kwargs)
 #         def circuit(x, y):
@@ -649,8 +649,8 @@ class TestQNode:
 #             kwargs["sampler_rng"] = np.random.default_rng(seed)
 #             tol = TOL_FOR_SPSA
 #
-#         x = np.array(0.543, requires_grad=True)
-#         y = np.array(-0.654, requires_grad=True)
+#         x = qml.numpy.array(0.543, requires_grad=True)
+#         y = qml.numpy.array(-0.654, requires_grad=True)
 #
 #         @qnode(dev, **kwargs)
 #         def circuit(x, y):
@@ -702,8 +702,8 @@ class TestQNode:
 #         elif diff_method == "hadamard":
 #             pytest.skip("Hadamard gradient does not support variances.")
 #
-#         x = np.array(0.543, requires_grad=True)
-#         y = np.array(-0.654, requires_grad=True)
+#         x = qml.numpy.array(0.543, requires_grad=True)
+#         y = qml.numpy.array(-0.654, requires_grad=True)
 #
 #         @qnode(dev, **kwargs)
 #         def circuit(x, y):
@@ -847,12 +847,12 @@ class TestQNode:
 #         grad_fn = qml.grad(cost)
 #
 #         # Set the first parameter of circuit1 as non-differentiable.
-#         a = np.array(0.4, requires_grad=False)
+#         a = qml.numpy.array(0.4, requires_grad=False)
 #
 #         # The remaining free parameters are all differentiable.
-#         b = np.array(0.5, requires_grad=True)
-#         c = np.array(0.1, requires_grad=True)
-#         weights = np.array([0.2, 0.3], requires_grad=True)
+#         b = qml.numpy.array(0.5, requires_grad=True)
+#         c = qml.numpy.array(0.1, requires_grad=True)
+#         weights = qml.numpy.array([0.2, 0.3], requires_grad=True)
 #
 #         res = grad_fn(a, b, c, weights)
 #
@@ -921,7 +921,7 @@ class TestQNode:
 #             qml.RX(x[1], wires=0)
 #             return qml.expval(qml.PauliZ(0))
 #
-#         x = np.array([1.0, 2.0], requires_grad=True)
+#         x = qml.numpy.array([1.0, 2.0], requires_grad=True)
 #         res = circuit(x)
 #         g = qml.grad(circuit)(x)
 #         g2 = qml.grad(lambda x: np.sum(qml.grad(circuit)(x)))(x)
@@ -962,7 +962,7 @@ class TestQNode:
 #             qml.RX(x[1], wires=0)
 #             return qml.expval(qml.PauliZ(0))
 #
-#         x = np.array([1.0, 2.0], requires_grad=True)
+#         x = qml.numpy.array([1.0, 2.0], requires_grad=True)
 #         res = circuit(x)
 #
 #         a, b = x
@@ -1016,7 +1016,7 @@ class TestQNode:
 #             qml.RY(x[0], wires=0)
 #             return qml.expval(qml.PauliZ(0))
 #
-#         x = np.array([1.0, 2.0], requires_grad=True)
+#         x = qml.numpy.array([1.0, 2.0], requires_grad=True)
 #         res = circuit(x)
 #
 #         a, _ = x
@@ -1059,7 +1059,7 @@ class TestQNode:
 #             qml.RX(x[1], wires=0)
 #             return qml.probs(wires=0)
 #
-#         x = np.array([1.0, 2.0], requires_grad=True)
+#         x = qml.numpy.array([1.0, 2.0], requires_grad=True)
 #         res = circuit(x)
 #
 #         a, b = x
@@ -1126,7 +1126,7 @@ class TestQNode:
 #         def cost_fn(x):
 #             return x @ autograd.numpy.hstack(circuit(x))
 #
-#         x = np.array([0.76, -0.87], requires_grad=True)
+#         x = qml.numpy.array([0.76, -0.87], requires_grad=True)
 #         res = cost_fn(x)
 #
 #         a, b = x
@@ -1177,8 +1177,8 @@ class TestQNode:
 #             qml.RX(b, wires=0)
 #             return qml.probs(wires=0)
 #
-#         a = np.array(1.0, requires_grad=True)
-#         b = np.array(2.0, requires_grad=True)
+#         a = qml.numpy.array(1.0, requires_grad=True)
+#         b = qml.numpy.array(2.0, requires_grad=True)
 #         res = circuit(a, b)
 #
 #         expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
@@ -1249,7 +1249,7 @@ class TestQNode:
 #             qml.RX(x[1], wires=1)
 #             return qml.expval(qml.PauliZ(0)), qml.probs(wires=1)
 #
-#         x = np.array([1.0, 2.0], requires_grad=True)
+#         x = qml.numpy.array([1.0, 2.0], requires_grad=True)
 #
 #         a, b = x
 #
@@ -1294,8 +1294,8 @@ class TestQNode:
 #         if "lightning" in getattr(dev, "name", "").lower():
 #             pytest.xfail("Lightning does not support state adjoint diff.")
 #
-#         x = np.array(0.543, requires_grad=True)
-#         y = np.array(-0.654, requires_grad=True)
+#         x = qml.numpy.array(0.543, requires_grad=True)
+#         y = qml.numpy.array(-0.654, requires_grad=True)
 #
 #         @qnode(
 #             dev,
@@ -1354,8 +1354,8 @@ class TestQNode:
 #         elif diff_method == "hadamard":
 #             pytest.skip("Hadamard gradient does not support variances.")
 #
-#         P = np.array(state, requires_grad=False)
-#         x, y = np.array([0.765, -0.654], requires_grad=True)
+#         P = qml.numpy.array(state, requires_grad=False)
+#         x, y = qml.numpy.array([0.765, -0.654], requires_grad=True)
 #
 #         @qnode(dev, **kwargs)
 #         def circuit(x, y):
@@ -1427,8 +1427,8 @@ class TestQNode:
 #             qml.RX(theta, wires=1)
 #             return qml.expval(qml.PauliZ(1))
 #
-#         phi = np.array(1.23, requires_grad=True)
-#         theta = np.array(4.56, requires_grad=True)
+#         phi = qml.numpy.array(1.23, requires_grad=True)
+#         theta = qml.numpy.array(4.56, requires_grad=True)
 #
 #         assert np.allclose(circuit(phi, theta), expected_circuit(theta))
 #
@@ -1477,8 +1477,8 @@ class TestQNode:
 #             PhaseShift(2 * y, wires=0)
 #             return qml.expval(qml.PauliX(0))
 #
-#         x = np.array(0.5, requires_grad=True)
-#         y = np.array(0.7, requires_grad=False)
+#         x = qml.numpy.array(0.5, requires_grad=True)
+#         y = qml.numpy.array(0.7, requires_grad=False)
 #         circuit(x, y)
 #
 #         _ = qml.grad(circuit)(x, y)
@@ -1512,9 +1512,9 @@ class TestQNode:
 #             qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
 #             return qml.expval(qml.Hamiltonian(coeffs, obs))
 #
-#         d = np.array([0.1, 0.2], requires_grad=False)
-#         w = np.array([0.654, -0.734], requires_grad=True)
-#         c = np.array([-0.6543, 0.24, 0.54], requires_grad=True)
+#         d = qml.numpy.array([0.1, 0.2], requires_grad=False)
+#         w = qml.numpy.array([0.654, -0.734], requires_grad=True)
+#         c = qml.numpy.array([-0.6543, 0.24, 0.54], requires_grad=True)
 #
 #         # test output
 #         res = circuit(d, w, c)
@@ -1592,9 +1592,9 @@ class TestQNode:
 #             H.compute_grouping()
 #             return qml.expval(H)
 #
-#         d = np.array([0.1, 0.2], requires_grad=False)
-#         w = np.array([0.654, -0.734], requires_grad=True)
-#         c = np.array([-0.6543, 0.24, 0.54], requires_grad=True)
+#         d = qml.numpy.array([0.1, 0.2], requires_grad=False)
+#         w = qml.numpy.array([0.654, -0.734], requires_grad=True)
+#         c = qml.numpy.array([-0.6543, 0.24, 0.54], requires_grad=True)
 #
 #         # test output
 #         res = circuit(d, w, c, shots=50000)
@@ -1633,7 +1633,7 @@ class TestQNode:
 #
 #     def test_backprop_error(self):
 #         """Test that sampling in backpropagation grad_on_execution raises an error"""
-#         dev = DefaultQubit()
+#         dev = qml.device("default.qubit")
 #
 #         @qnode(dev, diff_method="backprop")
 #         def circuit():
@@ -1649,7 +1649,7 @@ class TestQNode:
 #         """Test that the sample function outputs samples of the right size"""
 #         n_sample = 10
 #
-#         dev = DefaultQubit()
+#         dev = qml.device("default.qubit")
 #
 #         @qnode(dev, diff_method=None)
 #         def circuit():
@@ -1672,7 +1672,7 @@ class TestQNode:
 #
 #         n_sample = 10
 #
-#         dev = DefaultQubit()
+#         dev = qml.device("default.qubit")
 #
 #         @qnode(dev, diff_method="parameter-shift")
 #         def circuit():
@@ -1694,7 +1694,7 @@ class TestQNode:
 #         """Test the return type and shape of sampling a single wire"""
 #         n_sample = 10
 #
-#         dev = DefaultQubit()
+#         dev = qml.device("default.qubit")
 #
 #         @qnode(dev, diff_method=None)
 #         def circuit():
@@ -1712,7 +1712,7 @@ class TestQNode:
 #         where a rectangular array is expected"""
 #         n_sample = 10
 #
-#         dev = DefaultQubit()
+#         dev = qml.device("default.qubit")
 #
 #         @qnode(dev, diff_method=None)
 #         def circuit():
@@ -1757,7 +1757,7 @@ class TestQNode:
 #             qml.RX(0.2, wires=0)
 #             return qml.expval(qml.PauliZ(0))
 #
-#         a = np.array(0.1, requires_grad=True)
+#         a = qml.numpy.array(0.1, requires_grad=True)
 #
 #         grad = qml.grad(circuit)(a)
 #
@@ -1780,8 +1780,8 @@ class TestQNode:
 #             qml.RX(b, wires=0)
 #             return qml.expval(qml.PauliZ(0))
 #
-#         a = np.array(0.1, requires_grad=True)
-#         b = np.array(0.2, requires_grad=True)
+#         a = qml.numpy.array(0.1, requires_grad=True)
+#         b = qml.numpy.array(0.2, requires_grad=True)
 #
 #         grad = qml.grad(circuit)(a, b)
 #
@@ -1807,7 +1807,7 @@ class TestQNode:
 #             qml.RX(a[1], wires=0)
 #             return qml.expval(qml.PauliZ(0))
 #
-#         a = np.array([0.1, 0.2], requires_grad=True)
+#         a = qml.numpy.array([0.1, 0.2], requires_grad=True)
 #
 #         grad = qml.grad(circuit)(a)
 #
@@ -1833,7 +1833,7 @@ class TestQNode:
 #             qml.RX(0.2, wires=0)
 #             return qml.probs(wires=[0, 1])
 #
-#         a = np.array(0.1, requires_grad=True)
+#         a = qml.numpy.array(0.1, requires_grad=True)
 #
 #         jac = qml.jacobian(circuit)(a)
 #
@@ -1858,8 +1858,8 @@ class TestQNode:
 #             qml.RX(b, wires=0)
 #             return qml.probs(wires=[0, 1])
 #
-#         a = np.array(0.1, requires_grad=True)
-#         b = np.array(0.2, requires_grad=True)
+#         a = qml.numpy.array(0.1, requires_grad=True)
+#         b = qml.numpy.array(0.2, requires_grad=True)
 #
 #         jac = qml.jacobian(circuit)(a, b)
 #
@@ -1888,7 +1888,7 @@ class TestQNode:
 #             qml.RX(a[1], wires=0)
 #             return qml.probs(wires=[0, 1])
 #
-#         a = np.array([0.1, 0.2], requires_grad=True)
+#         a = qml.numpy.array([0.1, 0.2], requires_grad=True)
 #         jac = qml.jacobian(circuit)(a)
 #
 #         assert isinstance(jac, np.ndarray)
@@ -1911,7 +1911,7 @@ class TestQNode:
 #             qml.RX(0.2, wires=0)
 #             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 #
-#         a = np.array(0.1, requires_grad=True)
+#         a = qml.numpy.array(0.1, requires_grad=True)
 #
 #         def cost(x):
 #             return anp.hstack(circuit(x))
@@ -1938,8 +1938,8 @@ class TestQNode:
 #             qml.RX(b, wires=0)
 #             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 #
-#         a = np.array(0.1, requires_grad=True)
-#         b = np.array(0.2, requires_grad=True)
+#         a = qml.numpy.array(0.1, requires_grad=True)
+#         b = qml.numpy.array(0.2, requires_grad=True)
 #
 #         def cost(x, y):
 #             return anp.hstack(circuit(x, y))
@@ -1972,7 +1972,7 @@ class TestQNode:
 #             qml.RX(a[1], wires=0)
 #             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 #
-#         a = np.array([0.1, 0.2], requires_grad=True)
+#         a = qml.numpy.array([0.1, 0.2], requires_grad=True)
 #
 #         def cost(x):
 #             return anp.hstack(circuit(x))
@@ -2276,7 +2276,7 @@ class TestQNode:
 #     """Test that the return value of the QNode matches in the interface
 #     even if there are no ops"""
 #
-#     dev = DefaultQubit()
+#     dev = qml.device("default.qubit")
 #
 #     @qml.qnode(dev, interface="autograd")
 #     def circuit():

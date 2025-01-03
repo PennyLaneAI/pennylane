@@ -90,6 +90,13 @@ def generate_test_matrix(
             if device_name == "reference.qubit" and (grad_on_execution or device_vjp):
                 continue  # no support for device gradient on reference.qubit
 
+            if (
+                (device_vjp or grad_on_execution)
+                and diff_method not in ("adjoint", "backprop")
+                and not (device_name == "param_shift.qubit" and diff_method == "parameter-shift")
+            ):
+                continue  # only relevant for device gradients
+
             params = device_name, diff_method, grad_on_execution, device_vjp
             filtered_params = tuple(p for p in params if p is not None)
             if xfail_reason := _first_reason(xfail_conditions, params):
