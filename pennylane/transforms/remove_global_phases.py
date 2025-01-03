@@ -71,7 +71,7 @@ def remove_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postp
 
     if any(isinstance(mp, StateMP) for mp in tape.measurements):
         raise qml.QuantumFunctionError(
-            "The quantum circuit cannot contain a state measurement. Removing GlobalPhase operators in this case can cause errors."
+            "The quantum circuit cannot contain a state measurement. Removing GlobalPhase operators in this case can lead to incorrect measurement results.."
         )
 
     operations = filter(lambda op: op.name != "GlobalPhase", tape.operations)
