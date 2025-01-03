@@ -21,6 +21,7 @@
       qml.Superposition(coeffs, basis)
       return qml.state()
   ```
+
   ```
   >>> circuit()
   tensor([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j], requires_grad=True)
@@ -69,6 +70,7 @@
       )
       return qml.state()
   ```
+
   ```pycon
   >>> time = 0.1
   >>> angles = (0.12, -3.45)
@@ -181,6 +183,7 @@
 
       ...
   ```
+
   ```pycon
   >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
   True
@@ -218,7 +221,7 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
   [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
 
-* Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
+* Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the
 new device API of `default_mixed` should be able to take the stochastic arguments
 such as `shots`, `rng` and `prng_key`.
 [(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
@@ -261,6 +264,7 @@ such as `shots`, `rng` and `prng_key`.
       qml.CRY(y, [1, 2])
       return qml.expval(qml.Z(2))
   ```
+
   ```pycon
   >>> qml.capture.make_plxpr(circuit)(1.2, 3.4)
   { lambda ; a:f32[] b:f32[]. let
@@ -340,6 +344,11 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
+* Added new method `process_density_matrix_with_shots` for `ClassicalShadowMP`. This new method
+  uses iterative algorithm similar to `process_state_with_shots` and gains much more performance
+  than `process`.
+  [(#6748)](https://github.com/PennyLaneAI/pennylane/pull/6748)
+
 * `qml.math.grad` and `qml.math.jacobian` added to differentiate a function with inputs of any
   interface in a jax-like manner.
   [(#6741)](https://github.com/PennyLaneAI/pennylane/pull/6741)
@@ -378,7 +387,7 @@ such as `shots`, `rng` and `prng_key`.
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
-* A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as 
+* A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as
   JAX array elements.
   [(#6699)](https://github.com/PennyLaneAI/pennylane/pull/6699)
 
@@ -389,13 +398,13 @@ such as `shots`, `rng` and `prng_key`.
 * Add developer focused `run` function to `qml.workflow` module.
   [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
 
-* Standardize supported interfaces to an internal `Enum` object. 
+* Standardize supported interfaces to an internal `Enum` object.
   [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
   [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
 
-* Added PyTree support for measurements in a circuit. 
+* Added PyTree support for measurements in a circuit.
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
 
   ```python
@@ -407,6 +416,7 @@ such as `shots`, `rng` and `prng_key`.
       qml.CNOT([0,1])
       return {"Probabilities": qml.probs(), "State": qml.state()}
   ```
+
   ```pycon
   >>> circuit()
   {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])}
@@ -486,7 +496,7 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Breaking changes 💔</h3>
 
-* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` for grouping observables was changed 
+* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` for grouping observables was changed
   from `"rlf"` to `"lf"`. Internally, `qml.pauli.group_observables` has been replaced with `qml.pauli.compute_partition_indices`
   in several places to improve efficiency.
   [(#6706)](https://github.com/PennyLaneAI/pennylane/pull/6706)
@@ -591,7 +601,7 @@ same information.
 
 <h3>Documentation 📝</h3>
 
-* The docstrings for `qml.qchem.Molecule` and `qml.qchem.molecular_hamiltonian` have been updated to include a 
+* The docstrings for `qml.qchem.Molecule` and `qml.qchem.molecular_hamiltonian` have been updated to include a
   note that says that they are not compatible with qjit or jit.  
   [(#6702)](https://github.com/PennyLaneAI/pennylane/pull/6702)
 
@@ -616,10 +626,10 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
+* `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled.
   [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
 
-* The `Wires` object throws a `TypeError` if `wires=None`. 
+* The `Wires` object throws a `TypeError` if `wires=None`.
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
   [(#6720)](https://github.com/PennyLaneAI/pennylane/pull/6720)
 
