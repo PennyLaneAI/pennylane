@@ -29,6 +29,11 @@ def remove_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postp
 
     This transform returns a new circuit where all ``qml.GlobalPhase`` gates in the original circuit (if exists) are removed.
 
+    .. warning::
+
+        This transformation can not be used if the circuit contains a state measurement. Application of this transform
+        with state vector measurements will lead to incorrect results.
+
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
 
