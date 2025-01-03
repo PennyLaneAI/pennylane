@@ -8,17 +8,6 @@ import pennylane as qml
 from pennylane.transforms import remove_global_phases
 
 
-def original_qfunc(phi1, phi2):
-    qml.Hadamard(wires=1)
-    qml.GlobalPhase(phi1, wires=[0, 1])
-    qml.PauliY(wires=0)
-    qml.PauliX(wires=2)
-    qml.CNOT(wires=[1, 2])
-    qml.GlobalPhase(phi2, wires=1)
-    qml.CNOT(wires=[2, 0])
-    return qml.expval(qml.Z(0) @ qml.X(1))
-
-
 def test_global_phase_removal_error():
     """Test that an error is raised if the transform is applied to a circuit with no measurements."""
     qscript = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)], [qml.state()])
@@ -72,13 +61,21 @@ def test_differentiability(ml_interface):
     phi1 = qml.math.asarray(0.25, like=ml_interface)
     phi2 = qml.math.asarray(-0.6, like=ml_interface)
 
-    dev = qml.device("default.qubit", wires=3)
-    original_qnode = qml.QNode(original_qfunc, device=dev)
+    @qml.qnode(qml.device("default.qubit", wires=3))
+    def circuit(phi1, phi2):
+        qml.Hadamard(wires=1)
+        qml.GlobalPhase(phi1, wires=[0, 1])
+        qml.PauliY(wires=0)
+        qml.PauliX(wires=2)
+        qml.CNOT(wires=[1, 2])
+        qml.GlobalPhase(phi2, wires=1)
+        qml.CNOT(wires=[2, 0])
+        return qml.expval(qml.Z(0) @ qml.X(1))
 
-    jac = qml.math.jacobian(original_qnode)(phi1, phi2)
+    jac = qml.math.jacobian(circuit)(phi1, phi2)
     assert not jac
 
-    transformed_qnode = remove_global_phases(original_qnode)
+    transformed_qnode = remove_global_phases(circuit)
 
     jac = qml.math.jacobian(transformed_qnode)(phi1, phi2)
     assert not jac
