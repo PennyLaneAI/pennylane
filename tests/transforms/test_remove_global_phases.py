@@ -57,24 +57,26 @@ def test_remove_global_phase_gates():
 )
 def test_differentiability(ml_interface):
     """Test that differentiability holds before and after the transform."""
-    phi1 = qml.math.asarray(0.25, like=ml_interface)
-    phi2 = qml.math.asarray(-0.6, like=ml_interface)
 
-    @qml.qnode(qml.device("default.qubit", wires=3))
-    def circuit(phi1, phi2):
-        qml.Hadamard(wires=1)
-        qml.GlobalPhase(phi1, wires=[0, 1])
-        qml.PauliY(wires=0)
-        qml.PauliX(wires=2)
-        qml.CNOT(wires=[1, 2])
-        qml.GlobalPhase(phi2, wires=1)
-        qml.CNOT(wires=[2, 0])
-        return qml.expval(qml.Z(0) @ qml.X(1))
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit(weights):
+        qml.GlobalPhase(weights[0, 0, 0])
+        qml.RX(weights[0, 0, 0], wires=0)
+        qml.RY(weights[0, 0, 1], wires=1)
+        qml.GlobalPhase(weights[1, 0, 2])
+        qml.RZ(weights[1, 0, 2], wires=0)
+        return qml.probs()
 
-    jac = qml.math.jacobian(circuit)(phi1, phi2)
-    assert not jac
+    weights = qml.math.asarray(
+        [[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]], like=ml_interface, requires_grad=True
+    )
+
+    jac1 = qml.math.jacobian(circuit)(weights)
+    assert jac1.shape == (4, 2, 1, 3)
 
     transformed_qnode = remove_global_phases(circuit)
 
-    jac = qml.math.jacobian(transformed_qnode)(phi1, phi2)
-    assert not jac
+    jac2 = qml.math.jacobian(transformed_qnode)(weights)
+    assert jac2.shape == (4, 2, 1, 3)
+
+    qml.math.allclose(jac1, jac2)
