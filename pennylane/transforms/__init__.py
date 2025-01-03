@@ -55,6 +55,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.transpile
     ~transforms.decompose
     ~transforms.combine_global_phases
+    ~transforms.remove_global_phases
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -307,6 +308,7 @@ from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
 from .combine_global_phases import combine_global_phases
+from .remove_global_phases import remove_global_phases
 
 from .mitigate import (
     mitigate_with_zne,
