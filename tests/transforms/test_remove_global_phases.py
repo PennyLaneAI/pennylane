@@ -133,11 +133,11 @@ def test_differentiability_tensorflow():
     dev = qml.device("default.qubit", wires=3)
     original_qnode = qml.QNode(original_qfunc, device=dev)
 
-    phi1 = tf.Variable(0.25, dtype=tf.float64)
-    phi2 = tf.Variable(-0.6, dtype=tf.float64)
+    phi1 = tf.Variable(0.25)
+    phi2 = tf.Variable(-0.6)
     with tf.GradientTape() as tape:
         transformed_qnode = remove_global_phases(original_qnode)(phi1, phi2)
-    grad1, grad2 = tape.jacobian(transformed_qnode, (phi1, phi2))
+    grad1, grad2 = tape.jacobian(transformed_qnode, ())
 
     assert qml.math.isclose(grad1, 0.0)
     assert qml.math.isclose(grad2, 0.0)
