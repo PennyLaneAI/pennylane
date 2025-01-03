@@ -8,16 +8,15 @@ import pennylane as qml
 from pennylane.transforms import remove_global_phases
 
 
-def test_global_phase_removal_error():
+@pytest.mark.parametrize("measurements", ([qml.state()], [qml.state(), qml.probs()]))
+def test_global_phase_removal_error(measurements):
     """Test that an error is raised if the transform is applied to a circuit with no measurements."""
-    qscript = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)], [qml.state()])
+    qscript = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)], measurements)
 
-    expected_qscript = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)], [qml.state()])
     with pytest.raises(
         qml.QuantumFunctionError, match="The quantum circuit cannot contain a state measurement"
     ):
-        (transformed_qscript,), _ = remove_global_phases(qscript)
-        qml.assert_equal(transformed_qscript, expected_qscript)
+        remove_global_phases(qscript)
 
 
 def test_no_global_phase_gate():
