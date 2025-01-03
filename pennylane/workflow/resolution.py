@@ -14,9 +14,9 @@
 """This module contains the necessary helper functions for setting up the workflow for execution.
 
 """
-
+from collections.abc import Callable
 from dataclasses import replace
-from typing import Callable, Literal, Optional, Union, get_args
+from typing import Literal, Optional, Union, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -254,8 +254,7 @@ def _resolve_execution_config(
         and execution_config.gradient_method == "best"
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-    else:
-        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+    execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.use_device_jacobian_product and not device.supports_vjp(
         execution_config, tapes[0]
