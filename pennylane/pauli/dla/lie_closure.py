@@ -375,7 +375,9 @@ class PauliVSpace:
         return is_independent
 
     @staticmethod
-    def _check_independence(M, pauli_sentence, pw_to_idx, rank, num_pw, tol):
+    def _check_independence(
+        M, pauli_sentence, pw_to_idx, rank, num_pw, tol
+    ):  # pylint: disable=too-many-positional-arguments
         r"""
         Checks if :class:`~PauliSentence` ``pauli_sentence`` is linearly independent and provides the updated class attributes in case the vector is added.
 
