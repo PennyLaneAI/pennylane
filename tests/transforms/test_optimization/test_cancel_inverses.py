@@ -194,6 +194,26 @@ class TestCancelInverses:
 
         assert len(ops) == 0
 
+    @pytest.mark.parametrize("adjoint_first", [True, False])
+    def test_symmetric_over_all_wires(self, adjoint_first):
+        """Test that adjacent adjoint ops are cancelled due to wire symmetry."""
+
+        def qfunc(x):
+            if adjoint_first:
+                qml.adjoint(qml.MultiRZ(x, [2, 0, 1]))
+                qml.MultiRZ(x, [0, 1, 2])
+            else:
+                qml.MultiRZ(x, [2, 0, 1])
+                qml.adjoint(qml.MultiRZ(x, [0, 1, 2]))
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        ops = qml.tape.make_qscript(transformed_qfunc)(1.5).operations
+
+        names_expected = []
+        wires_expected = []
+        compare_operation_lists(ops, names_expected, wires_expected)
+
 
 # Example QNode and device for interface testing
 dev = qml.device("default.qubit", wires=3)

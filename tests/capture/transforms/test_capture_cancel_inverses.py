@@ -90,15 +90,21 @@ class TestCancelInversesInterpreter:
         jaxpr = jax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 0
 
-    def test_cancel_inverses_symmetric_wires(self):
+    @pytest.mark.parametrize("adjoint_first", [True, False])
+    def test_cancel_inverses_symmetric_wires(self, adjoint_first):
         """Test that operations that are inverses regardless of wire order are cancelled."""
 
         @CancelInversesInterpreter()
-        def f():
-            qml.CCZ([0, 1, 2])
-            qml.CCZ([2, 0, 1])
+        def f(x):
+            if adjoint_first:
+                qml.adjoint(qml.MultiRZ(x, [2, 0, 1]))
+                qml.MultiRZ(x, [0, 1, 2])
+            else:
+                qml.MultiRZ(x, [2, 0, 1])
+                qml.adjoint(qml.MultiRZ(x, [0, 1, 2]))
 
-        jaxpr = jax.make_jaxpr(f)()
+        args = (1.5,)
+        jaxpr = jax.make_jaxpr(f)(*args)
         assert len(jaxpr.eqns) == 0
 
     def test_cancel_inverses_symmetric_control_wires(self):
