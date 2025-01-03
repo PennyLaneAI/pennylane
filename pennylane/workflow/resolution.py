@@ -16,7 +16,7 @@
 """
 
 from dataclasses import replace
-from typing import Literal, Optional, Union, get_args
+from typing import Callable, Literal, Optional, Union, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -241,6 +241,11 @@ def _resolve_execution_config(
     """
     updated_values = {}
     updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
+
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
+        execution_config.gradient_method, Callable
+    ):
+        updated_values["grad_on_execution"] = False
 
     if (
         "lightning" in device.name
