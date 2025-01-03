@@ -873,6 +873,7 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -1169,6 +1170,27 @@ class TestIntegration:
         tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
         res = qml.execute([tape], dev)
         assert qml.math.get_interface(res) == "numpy"
+
+    def test_error_device_vjp_unsuppoprted(self):
+        """Test that an error is raised in the device_vjp is unsupported."""
+
+        class DummyDev(qml.devices.Device):
+
+            def execute(self, circuits, execution_config=qml.devices.ExecutionConfig()):
+                return 0
+
+            def supports_derivatives(self, execution_config=None, circuit=None):
+                return execution_config and execution_config.gradient_method == "vjp_grad"
+
+            def supports_vjp(self, execution_config=None, circuit=None) -> bool:
+                return execution_config and execution_config.gradient_method == "vjp_grad"
+
+        @qml.qnode(DummyDev(), diff_method="parameter-shift", device_vjp=True)
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="device_vjp=True is not supported"):
+            circuit()
 
 
 class TestShots:
