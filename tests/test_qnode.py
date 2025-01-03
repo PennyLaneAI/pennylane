@@ -1179,6 +1179,9 @@ class TestIntegration:
             def execute(self, circuits, execution_config=qml.devices.ExecutionConfig()):
                 return 0
 
+            def supports_derivatives(self, execution_config=None, circuit=None):
+                return execution_config and execution_config.gradient_method == "vjp_grad"
+
             def supports_vjp(self, execution_config=None, circuit=None) -> bool:
                 return execution_config and execution_config.gradient_method == "vjp_grad"
 
