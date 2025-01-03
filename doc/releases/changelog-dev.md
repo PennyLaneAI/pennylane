@@ -192,40 +192,6 @@
   [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
-<h4>New device API for Default Mixed</h4>
-
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
-
-  * Two density matrix contraction methods using `einsum` and `tensordot`
-  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
-
-* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
-  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
-  
-* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
-  [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
-
-* Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
-  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
-
-* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
-  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
-
-* Added submodule `devices.qubit_mixed.simulate` as a necessary step for the new API,
-featuring a `simulate` function for simulating mixed states in analytic mode.
-  [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
-
-* Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
-  [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
-
-* Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
-new device API of `default_mixed` should be able to take the stochastic arguments
-such as `shots`, `rng` and `prng_key`.
-[(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
-
-* Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
-  [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
-
 <h4>Capturing and representing hybrid programs</h4>
 
 * Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via Autograph.
@@ -437,7 +403,39 @@ such as `shots`, `rng` and `prng_key`.
 * Improved documentation for the `dynamic_one_shot` transform, and a warning is raised when a user-applied `dynamic_one_shot` transform is ignored in favour of the existing transform in a device's preprocessing transform program.
   [(#6701)](https://github.com/PennyLaneAI/pennylane/pull/6701)
 
-<h3>Labs 🧪</h3>
+* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
+
+  * Two density matrix contraction methods using `einsum` and `tensordot`
+  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
+
+* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
+  
+* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
+  [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
+
+* Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
+  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
+
+* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
+  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
+
+* Added submodule `devices.qubit_mixed.simulate` as a necessary step for the new API,
+featuring a `simulate` function for simulating mixed states in analytic mode.
+  [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
+
+* Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
+  [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
+
+* Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
+new device API of `default_mixed` should be able to take the stochastic arguments
+such as `shots`, `rng` and `prng_key`.
+[(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
+
+* Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
+  [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
+
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 <h4>Resource estimation</h4>
 
@@ -668,12 +666,15 @@ Shiwen An,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
+Isaac De Vlugt,
 Diksha Dhawan,
 Lasse Dierich,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Diego Guala, 
 Austin Huang,
+Anton Naim Ibrahim,
 Korbinian Kottmann,
 Christina Lee,
 Alan Martin,
