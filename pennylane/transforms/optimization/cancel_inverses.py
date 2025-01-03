@@ -29,40 +29,6 @@ from pennylane.wires import Wires
 from .optimization_utils import find_next_gate
 
 
-def _ops_equal(op1, op2):
-    """Checks if two operators are equal up to class, data, and hyperparameters"""
-    return (
-        op1.__class__ is op2.__class__
-        and (op1.data == op2.data)
-        and (op1.hyperparameters == op2.hyperparameters)
-    )
-
-
-def _are_inverses(op1, op2):
-    """Checks if two operators are inverses of each other
-
-    Args:
-        op1 (~.Operator)
-        op2 (~.Operator)
-
-    Returns:
-        Bool
-    """
-    # op1 is self-inverse and the next gate is also op1
-    if op1 in self_inverses and op1.name == op2.name:
-        return True
-
-    # op1 is an `Adjoint` class and its base is equal to op2
-    if isinstance(op1, Adjoint) and _ops_equal(op1.base, op2):
-        return True
-
-    # op2 is an `Adjoint` class and its base is equal to op1
-    if isinstance(op2, Adjoint) and _ops_equal(op2.base, op1):
-        return True
-
-    return False
-
-
 def _can_cancel_ops(op1, op2):
     """Checks if two operators can be cancelled
 
@@ -73,11 +39,19 @@ def _can_cancel_ops(op1, op2):
     Returns:
         Bool
     """
-    if _are_inverses(op1, op2):
-        # Make sure that if one of the ops is Adjoint, it is always op2 by swapping
-        # the ops if op1 is Adjoint
-        if isinstance(op1, Adjoint):
-            op1, op2 = op2, op1
+    # Make sure that if one of the ops is Adjoint, it is always op2 by swapping
+    # the ops if op1 is Adjoint
+    if isinstance(op1, Adjoint):
+        op1, op2 = op2, op1
+
+    are_self_inverses_without_wires = op1 in self_inverses and op1.name == op2.name
+    are_inverses_without_wires = (
+        isinstance(op2, Adjoint)
+        and op1.__class__ == op2.base.__class__
+        and op1.data == op2.base.data
+        and op1.hyperparameters == op2.base.hyperparameters
+    )
+    if are_self_inverses_without_wires or are_inverses_without_wires:
 
         # If the wires are the same, then we can safely cancel both
         if op1.wires == op2.wires:
