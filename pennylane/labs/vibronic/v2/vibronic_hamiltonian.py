@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+from scipy.sparse import csr_matrix
 from vibronic_matrix import VibronicMatrix, commutator
 from vibronic_term import VibronicTerm, VibronicWord
 from vibronic_tree import Node
@@ -79,6 +80,10 @@ class VibronicHamiltonian:
             operator += self._fragment(i)
 
         return operator
+
+    def matrix(self, gridpoints: int) -> csr_matrix:
+        """Return a csr matrix representation of the Hamiltonian"""
+        return self.block_operator().matrix(gridpoints)
 
     def epsilon(self, delta) -> VibronicMatrix:
         # pylint: disable=arguments-out-of-order

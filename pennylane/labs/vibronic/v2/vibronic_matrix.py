@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
-from scipy.sparse import csr_matrix
+import numpy as np
+import scipy as sp
+from matrix_ops import _kron, _zeros, word_to_matrix
 from vibronic_term import VibronicWord
 
 
@@ -33,9 +35,27 @@ class VibronicMatrix:
 
         self._blocks[(row, col)] = word
 
-    def matrix(self, gridpoints: int) -> csr_matrix:
+    def matrix(
+        self, gridpoints: int, sparse: bool = False
+    ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
         """Returns a sparse matrix representing the operator discretized on the given number of gridpoints"""
-        raise NotImplementedError
+        dim = self.states * gridpoints**self.modes
+        matrix = _zeros((dim, dim), sparse=sparse)
+
+        for index, word in self._blocks.items():
+            if sparse:
+                data = np.array([1])
+                indices = (np.array([index[0]]), np.array([index[1]]))
+                shape = (self.states, self.states)
+                indicator = sp.sparse.csr_matrix((data, indices), shape=shape)
+            else:
+                indicator = np.zeros(shape=(self.states, self.states))
+                indicator[index] = 1
+
+            block = word_to_matrix(word, self.modes, gridpoints, sparse=sparse)
+            matrix += _kron(indicator, block)
+
+        return matrix
 
     def __add__(self, other: VibronicMatrix) -> VibronicMatrix:
         if self.states != other.states:
@@ -50,7 +70,7 @@ class VibronicMatrix:
 
         new_blocks = {}
         l_keys = set(self._blocks.keys())
-        r_keys = set(self._blocks.keys())
+        r_keys = set(other._blocks.keys())
 
         for key in l_keys.intersection(r_keys):
             new_blocks[key] = self._blocks[key] + other._blocks[key]
@@ -59,7 +79,7 @@ class VibronicMatrix:
             new_blocks[key] = self._blocks[key]
 
         for key in r_keys.difference(l_keys):
-            new_blocks[key] = other.blocks[key]
+            new_blocks[key] = other._blocks[key]
 
         return VibronicMatrix(self.states, self.modes, new_blocks)
 
@@ -76,7 +96,7 @@ class VibronicMatrix:
 
         new_blocks = {}
         l_keys = set(self._blocks.keys())
-        r_keys = set(self._blocks.keys())
+        r_keys = set(other._blocks.keys())
 
         for key in l_keys.intersection(r_keys):
             new_blocks[key] = self._blocks[key] - other._blocks[key]
@@ -85,7 +105,7 @@ class VibronicMatrix:
             new_blocks[key] = self._blocks[key]
 
         for key in r_keys.difference(l_keys):
-            new_blocks[key] = (-1) * other.blocks[key]
+            new_blocks[key] = (-1) * other._blocks[key]
 
         return VibronicMatrix(self.states, self.modes, new_blocks)
 
