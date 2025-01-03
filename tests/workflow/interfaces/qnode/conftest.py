@@ -84,6 +84,12 @@ def generate_test_matrix(
             if diff_method not in ("adjoint", "backprop") and grad_on_execution:
                 continue  # Gradient transforms cannot be used with grad_on_execution=True
 
+            if diff_method == "backprop" and device_name != "default.qubit":
+                continue  # Only DQ supports backprop
+
+            if device_name == "reference.qubit" and (grad_on_execution or device_vjp):
+                continue  # no support for device gradient on reference.qubit
+
             params = device_name, diff_method, grad_on_execution, device_vjp
             filtered_params = tuple(p for p in params if p is not None)
             if xfail_reason := _first_reason(xfail_conditions, params):

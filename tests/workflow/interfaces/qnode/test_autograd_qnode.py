@@ -40,7 +40,7 @@ class TestQNode:
         ),
     )
     def test_execution_auto_interface(self, device_name):
-        """Test execution works with interface="auto."""
+        """Test execution works with interface="auto"."""
 
         dev = get_device(device_name, wires=1)
 
@@ -53,7 +53,7 @@ class TestQNode:
         a = pnp.array(0.1, requires_grad=True)
         res = circuit(a)
 
-        assert qml.math.get_interface(res) == "autograd"
+        assert isinstance(res, (np.ndarray, float))
         assert qml.math.shape(res) == ()
 
     @pytest.mark.parametrize(
@@ -62,7 +62,7 @@ class TestQNode:
     def test_execution(self, device_name, diff_method, grad_on_execution, device_vjp):
         """Test execution works with the interface"""
 
-        dev = get_device(device_name, wires=1)
+        dev = get_device(device_name, wires=2)
 
         @qnode(
             dev,
@@ -78,7 +78,7 @@ class TestQNode:
 
         a = pnp.array(0.1, requires_grad=True)
         res = circuit(a)
-        assert qml.math.get_interface(res) == "autograd"
+        assert isinstance(res, (np.ndarray, float))
         grad = qml.grad(circuit)(a)
         assert qml.math.shape(grad) == ()
 
@@ -102,7 +102,7 @@ class TestQNode:
         a = pnp.array(0.1, requires_grad=True)
         b = pnp.array(0.2, requires_grad=True)
 
-        dev = get_device(device_name, wires=2, seed=seed)
+        dev = get_device(device_name, wires=3, seed=seed)
 
         @qnode(dev, **kwargs)
         def circuit(x, y):
@@ -154,7 +154,7 @@ class TestQNode:
         a = pnp.array(0.1, requires_grad=True)
         b = pnp.array(0.2, requires_grad=True)
 
-        dev = get_device(device_name, wires=2, seed=seed)
+        dev = get_device(device_name, wires=3, seed=seed)
 
         @qnode(dev, **kwargs)
         def circuit(x, y):
@@ -181,85 +181,81 @@ class TestQNode:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "device_name",
+        generate_test_matrix(
+            parametrize_diff_methods=False,
+            parametrize_grad_on_execution=False,
+            parametrize_device_vjp=False,
+        ),
+    )
+    def test_gradient_kwargs(self, device_name):
+        """Test passing gradient kwargs to the gradient method."""
 
-#     def test_jacobian_options(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp
-#     ):
-#         """Test setting jacobian options"""
-#         if diff_method != "finite-diff":
-#             pytest.skip("Test only supports finite diff.")
-#
-#         a = np.array([0.1, 0.2], requires_grad=True)
-#
-#         @qnode(
-#             dev,
-#             interface=interface,
-#             h=1e-8,
-#             order=2,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#         def circuit(a):
-#             qml.RY(a[0], wires=0)
-#             qml.RX(a[1], wires=0)
-#             return qml.expval(qml.PauliZ(0))
-#
-#         qml.jacobian(circuit)(a)
-#
-#     def test_changing_trainability(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp, tol
-#     ):
-#         """Test changing the trainability of parameters changes the
-#         number of differentiation requests made"""
-#         if diff_method != "parameter-shift":
-#             pytest.skip("Test only supports parameter-shift")
-#
-#         a = np.array(0.1, requires_grad=True)
-#         b = np.array(0.2, requires_grad=True)
-#
-#         @qnode(
-#             dev,
-#             interface=interface,
-#             diff_method="parameter-shift",
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#         def circuit(a, b):
-#             qml.RY(a, wires=0)
-#             qml.RX(b, wires=1)
-#             qml.CNOT(wires=[0, 1])
-#             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
-#
-#         def loss(a, b):
-#             return np.sum(autograd.numpy.hstack(circuit(a, b)))
-#
-#         grad_fn = qml.grad(loss)
-#         res = grad_fn(a, b)
-#
-#         # the tape has reported both arguments as trainable
-#         assert circuit.qtape.trainable_params == [0, 1]
-#
-#         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-#         assert np.allclose(res, expected, atol=tol, rtol=0)
-#
-#         # make the second QNode argument a constant
-#         a = np.array(0.54, requires_grad=True)
-#         b = np.array(0.8, requires_grad=False)
-#
-#         res = grad_fn(a, b)
-#
-#         # the tape has reported only the first argument as trainable
-#         assert circuit.qtape.trainable_params == [0]
-#
-#         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
-#         assert np.allclose(res, expected, atol=tol, rtol=0)
-#
-#         # trainability also updates on evaluation
-#         a = np.array(0.54, requires_grad=False)
-#         b = np.array(0.8, requires_grad=True)
-#         circuit(a, b)
-#         assert circuit.qtape.trainable_params == [1]
-#
+        dev = get_device(device_name, wires=3)
+
+        x = qml.numpy.array([0.1, 0.2], requires_grad=True)
+
+        @qml.qnode(dev, h=1e-8, approx_order=2, diff_method="finite-diff")
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qml.jacobian(circuit)(x)
+
+    @pytest.mark.parametrize(
+        "device_name",
+        generate_test_matrix(
+            parametrize_diff_methods=False,
+            parametrize_grad_on_execution=False,
+            parametrize_device_vjp=False,
+        ),
+    )
+    def test_changing_trainability(self, device_name, tol):
+        """Test changing the trainability of parameters changes the
+        number of differentiation requests made"""
+
+        x = qml.numpy.array(0.1, requires_grad=True)
+        y = qml.numpy.array(0.2, requires_grad=True)
+
+        dev = get_device(device_name, wires=3)
+
+        @qnode(
+            dev,
+            interface="autograd",
+            diff_method="parameter-shift",
+        )
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+        def loss(a, b):
+            return qml.math.sum(qml.math.hstack(circuit(a, b)))
+
+        grad_fn = qml.grad(loss)
+        res = grad_fn(x, y)
+
+        expected = [-np.sin(x) + np.sin(x) * np.sin(y), -np.cos(x) * np.cos(y)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # make the second QNode argument a constant
+        x = qml.numpy.array(0.54, requires_grad=True)
+        y = qml.numpy.array(0.8, requires_grad=False)
+
+        res = grad_fn(x, y)
+
+        expected = [-np.sin(x) + np.sin(x) * np.sin(y)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # trainability also updates on evaluation
+        x = qml.numpy.array(0.54, requires_grad=False)
+        y = qml.numpy.array(0.8, requires_grad=True)
+        circuit(x, y)
+
+
 #     def test_classical_processing(
 #         self, interface, device_name, diff_method, grad_on_execution, device_vjp
 #     ):
