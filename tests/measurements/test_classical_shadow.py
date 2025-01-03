@@ -318,51 +318,61 @@ class TestProcessDensityMatrix:
         assert np.all(res1[1] == res2[1])
         assert np.all(res1[0] == res2[0])
 
-    # def test_expval_shape_and_val(self):
-    #     """Test that shadow expval measurements work as expected"""
-    #     mp = qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)
-    #     state = np.ones((2, 2)) / 2
+    def test_expval_shape_and_val(self):
+        """Test that shadow expval measurements work as expected"""
+        mp = qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)
+        state = np.ones((2, 2)) / 2
+        dm = np.outer(state, state).reshape((2,) * 4)
+        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=1000, rng=100)
 
-    #     dm = np.outer(state, state).reshape((2,)*4)
-    #     res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=1000, rng=100
-    #     )
+        assert res.shape == ()
+        assert np.allclose(res, 1.0, atol=0.05)
 
-    #     assert res.shape == ()
-    #     assert np.allclose(res, 1.0, atol=0.05)
+    def test_expval_wire_order(self):
+        """Test that shadow expval respects the wire order"""
+        state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
 
-    # def test_expval_wire_order(self):
-    #     """Test that shadow expval respects the wire order"""
-    #     state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
+        dm = np.outer(state, state).reshape((2,) * 4)
 
-    #     mp = qml.shadow_expval(qml.PauliZ(0), seed=200)
-    #     res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=3000, rng=100)
+        mp = qml.shadow_expval(qml.PauliZ(0), seed=200)
+        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=3000, rng=100)
 
-    #     assert res.shape == ()
-    #     assert np.allclose(res, 1.0, atol=0.05)
+        assert res.shape == ()
+        assert np.allclose(res, 1.0, atol=0.05)
 
-    #     res = mp.process_state_with_shots(state, qml.wires.Wires([1, 0]), shots=3000, rng=100)
+        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([1, 0]), shots=3000, rng=100)
 
-    #     assert res.shape == ()
-    #     assert np.allclose(res, 0.0, atol=0.05)
+        assert res.shape == ()
+        assert np.allclose(res, 0.0, atol=0.05)
 
-    # def test_expval_same_rng(self):
-    #     """Test expval results when the rng is the same"""
-    #     state = np.ones((2, 2)) / 2
+    def test_expval_same_rng(self):
+        """Test expval results when the rng is the same"""
+        state = np.ones((2, 2)) / 2
 
-    #     mp1 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
-    #     mp2 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
+        dm = np.outer(state, state).reshape((2,) * 4)
 
-    #     res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=100)
-    #     res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=200)
+        mp1 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
+        mp2 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
 
-    #     # test results are different
-    #     assert res1 != res2
+        res1 = mp1.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=100
+        )
+        res2 = mp2.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=200
+        )
 
-    #     res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=456)
-    #     res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=456)
+        # test results are different
+        assert res1 != res2
 
-    #     # now test that results are the same
-    #     assert res1 == res2
+        res1 = mp1.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=456
+        )
+        res2 = mp2.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=456
+        )
+
+        # now test that results are the same
+        assert res1 == res2
 
 
 @pytest.mark.parametrize("wires", wires_list)
