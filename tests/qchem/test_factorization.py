@@ -314,14 +314,14 @@ def test_empty_error(two_tensor):
             [  # computed manually
                 [
                     qml.PauliZ(wires=[0]),
-                    qml.Identity(wires=[0]),
+                    qml.Identity(wires=[0, 1, 2, 3]),
                     qml.PauliZ(wires=[1]),
                     qml.PauliZ(wires=[2]),
                     qml.PauliZ(wires=[3]),
                 ],
                 [
                     qml.PauliZ(wires=[0]),
-                    qml.Identity(wires=[0]),
+                    qml.Identity(wires=[0, 1, 2, 3]),
                     qml.PauliZ(wires=[1]),
                     qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
                     qml.PauliZ(wires=[2]),
@@ -338,12 +338,12 @@ def test_empty_error(two_tensor):
                     qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
                     qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
                     qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.Identity(wires=[2]),
+                    qml.Identity(wires=[0, 1, 2, 3]),
                     qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
                 ],
                 [
                     qml.PauliZ(wires=[0]),
-                    qml.Identity(wires=[0]),
+                    qml.Identity(wires=[0, 1, 2, 3]),
                     qml.PauliZ(wires=[1]),
                     qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
                     qml.PauliZ(wires=[2]),
@@ -392,12 +392,12 @@ def test_empty_error(two_tensor):
         ),
     ],
 )
+# pylint: disable = too-many-positional-arguments
 def test_basis_rotation_output(
     one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref, eigvecs_ref
 ):
     r"""Test that basis_rotation function returns the correct values."""
     coeffs, ops, eigvecs = qml.qchem.basis_rotation(one_matrix, two_tensor, tol_factor)
-
     for i, coeff in enumerate(coeffs):
         assert np.allclose(np.sort(coeff), np.sort(coeffs_ref[i]))
 

@@ -300,6 +300,17 @@ class TestInitialization:
 
         assert q.queue == [op]
 
+    def test_identity_wires_are_preserved(self):
+        """Test that Identity wires are preserved after calling Sum.terms method."""
+        hamiltonian = qml.dot([1, 0.5], [qml.Identity(wires=[0, 1]), qml.PauliZ(0)])
+        coeffs, operators = hamiltonian.terms()
+        assert coeffs == [1, 0.5]
+        op1, op2 = operators
+        assert op1.name == "Identity"
+        assert op2.name == "PauliZ"
+        assert op1.wires == Wires([0, 1])
+        assert op2.wires == Wires([0])
+
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
