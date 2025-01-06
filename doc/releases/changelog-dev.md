@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The coefficients of observables now has improved differentiation.
+  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -17,3 +20,5 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Christina Lee
