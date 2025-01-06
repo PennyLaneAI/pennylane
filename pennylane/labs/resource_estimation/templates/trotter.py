@@ -153,7 +153,8 @@ class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
     def _resource_decomp(base, time, n, order, **kwargs) -> Dict[CompressedResourceOp, int]:
         k = order // 2
         first_order_expansion = [
-            ResourceExp.resource_rep(op, (time / n) * 1j, num_steps=1) for op in base.operands
+            ResourceExp(op, (time / n) * 1j, num_steps=1).resource_rep_from_op()
+            for op in base.operands
         ]
 
         if order == 1:

@@ -200,23 +200,18 @@ class ResourceExp(Exp, re.ResourceOperator):
     """Resource class for Exp"""
 
     @staticmethod
-    def _resource_decomp(base_class, coeff, num_steps, **kwargs):
-
-        while isinstance(base_class, SProd):
-            coeff *= base_class.scalar
-            base_class = base_class.base
+    def _resource_decomp(base_class, base_params, coeff, num_steps, **kwargs):
 
         # Custom exponential operator resources:
-        if isinstance(base_class, re.ResourceOperator):
+        if issubclass(base_class, re.ResourceOperator):
             try:
-                return base_class.exp_resource_decomp(coeff, num_steps, **kwargs)
+                return base_class.exp_resource_decomp(coeff, num_steps, **base_params)
             except re.ResourcesNotDefined:
                 pass
 
-        # PauliRot resource decomp:
-        if (pauli_sentence := base_class.pauli_rep) and math.real(coeff) == 0:
-            if qml.pauli.is_pauli_word(base_class):
-                num_wires = len(base_class.wires)
+        if (pauli_sentence := base_params["pauli_rep"]) and math.real(coeff) == 0:
+            if len(pauli_sentence) == 1:
+                num_wires = len(pauli_sentence.wires)
                 pauli_word = tuple(pauli_sentence.keys())[0]  # only one term in the sum
                 return _resources_from_pauli_word(pauli_word, num_wires)
 
@@ -228,26 +223,51 @@ class ResourceExp(Exp, re.ResourceOperator):
         raise re.ResourcesNotDefined
 
     def resource_params(self):
+        pauli_rep = self.base.pauli_rep
+        isinstance_resource_op = isinstance(self.base, re.ResourceOperator)
+
+        if not isinstance_resource_op and (pauli_rep is None):
+            raise ValueError(
+                f"Cannot obtain resources for the exponential of {self.base}, if it is not a ResourceOperator and it doesn't have a Pauli decomposition."
+            )
+
+        base_class = type(self.base)
+        base_params = self.base.resource_params() if isinstance_resource_op else {}
+
+        base_params["pauli_rep"] = pauli_rep
+
         return {
-            "base_class": self.base,
+            "base_class": base_class,
+            "base_params": base_params,
             "coeff": self.scalar,
             "num_steps": self.num_steps,
         }
 
     @classmethod
-    def resource_rep(cls, base_class, coeff, num_steps, **kwargs):
-        name = f"Exp({base_class.__class__.__name__}, {coeff}, num_steps={num_steps})".replace(
-            "Resource", ""
+    def resource_rep(cls, base_class, base_params, coeff, num_steps, **kwargs):
+        base_name = (
+            base_class.tracking_name(**base_params)
+            if issubclass(base_class, re.ResourceOperator)
+            else base_class.__name__
         )
+
+        name = f"Exp({base_name}, {coeff}, num_steps={num_steps})".replace("Resource", "")
         return re.CompressedResourceOp(
-            cls, {"base_class": base_class, "coeff": coeff, "num_steps": num_steps}, name=name
+            cls,
+            {
+                "base_class": base_class,
+                "base_params": base_params,
+                "coeff": coeff,
+                "num_steps": num_steps,
+            },
+            name=name,
         )
 
     @classmethod
     def pow_resource_decomp(
-        cls, z0, base_class, coeff, num_steps
+        cls, z0, base_class, base_params, coeff, num_steps
     ) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(base_class, z0 * coeff, num_steps): 1}
+        return {cls.resource_rep(base_class, base_params, z0 * coeff, num_steps): 1}
 
     @classmethod
     def controlled_resource_decomp(
@@ -256,6 +276,7 @@ class ResourceExp(Exp, re.ResourceOperator):
         num_ctrl_values,
         num_work_wires,
         base_class,
+        base_params,
         coeff,
         num_steps,
     ) -> Dict[re.CompressedResourceOp, int]:
@@ -264,7 +285,7 @@ class ResourceExp(Exp, re.ResourceOperator):
         if (p_rep := base_class.pauli_rep) and math.real(coeff) == 0:
 
             if qml.pauli.is_pauli_word(base_class) and len(p_rep) > 1:
-                base_gate_types = cls.resources(base_class, coeff, num_steps)
+                base_gate_types = cls.resources(base_class, base_params, coeff, num_steps)
 
                 rz_counts = base_gate_types.pop(re.ResourceRZ.resource_rep())
                 ctrl_rz = re.ResourceControlled.resource_rep(
@@ -286,11 +307,11 @@ def _resources_from_pauli_word(pauli_word, num_wires):
 
     if len_str == 1:
         if pauli_string == "X":
-            return {re.ResourceRX.resource_rep({}): 1}
+            return {re.ResourceRX.resource_rep(): 1}
         if pauli_string == "Y":
-            return {re.ResourceRY.resource_rep({}): 1}
+            return {re.ResourceRY.resource_rep(): 1}
         if pauli_string == "Z":
-            return {re.ResourceRZ.resource_rep({}): 1}
+            return {re.ResourceRZ.resource_rep(): 1}
 
     counter = {"X": 0, "Y": 0, "Z": 0}
     for c in pauli_string:
@@ -299,10 +320,10 @@ def _resources_from_pauli_word(pauli_word, num_wires):
     num_x = counter["X"]
     num_y = counter["Y"]
 
-    s = re.ResourceS.resource_rep({})
-    h = re.ResourceHadamard.resource_rep({})
-    rz = re.ResourceRZ.resource_rep({})
-    cnot = re.ResourceCNOT.resource_rep({})
+    s = re.ResourceS.resource_rep()
+    h = re.ResourceHadamard.resource_rep()
+    rz = re.ResourceRZ.resource_rep()
+    cnot = re.ResourceCNOT.resource_rep()
 
     gate_types = {}
     gate_types[rz] = 1
@@ -315,9 +336,9 @@ def _resources_from_pauli_word(pauli_word, num_wires):
 
 def _resources_from_pauli_sentence(pauli_sentence):
     gate_types = defaultdict(int)
-    rx = re.ResourceRX.resource_rep({})
-    ry = re.ResourceRY.resource_rep({})
-    rz = re.ResourceRZ.resource_rep({})
+    rx = re.ResourceRX.resource_rep()
+    ry = re.ResourceRY.resource_rep()
+    rz = re.ResourceRZ.resource_rep()
 
     for pauli_word in iter(pauli_sentence.keys()):
         num_wires = len(pauli_word.wires)
