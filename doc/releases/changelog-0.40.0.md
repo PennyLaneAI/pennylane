@@ -435,6 +435,15 @@ such as `shots`, `rng` and `prng_key`.
 * Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
   [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
 
+* Add reporting of test warnings as failures.
+  [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
+
+* Add a warning message to Gradients and training documentation about ComplexWarnings.
+  [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
+
+* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
+  [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 <h4>Resource estimation</h4>
@@ -495,63 +504,68 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Breaking changes 💔</h3>
 
-* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` for grouping observables was changed 
-  from `"rlf"` to `"lf"`. Internally, `qml.pauli.group_observables` has been replaced with `qml.pauli.compute_partition_indices`
-  in several places to improve efficiency.
+* The default graph coloring method of `qml.dot`, `qml.sum`, and `qml.pauli.optimize_measurements` 
+  for grouping observables was changed from `"rlf"` to `"lf"`. Internally, 
+  `qml.pauli.group_observables` has been replaced with `qml.pauli.compute_partition_indices` in 
+  several places to improve efficiency.
   [(#6706)](https://github.com/PennyLaneAI/pennylane/pull/6706)
 
-* `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
+* `qml.fourier.qnode_spectrum` no longer automatically converts pure Numpy parameters to the
   Autograd framework. As the function uses automatic differentiation for validation, parameters
-  from an autodiff framework have to be used.
+  from such a framework have to be used.
   [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
 
-* `qml.math.jax_argnums_to_tape_trainable` is moved and made private to avoid a qnode dependency
-  in the math module.
+* `qml.math.jax_argnums_to_tape_trainable` has been moved and made private to avoid an unecessary 
+  QNode dependency in the `qml.math` module.
   [(#6609)](https://github.com/PennyLaneAI/pennylane/pull/6609)
 
-* Gradient transforms are now applied after the user's transform program.
+* Gradient transforms are now applied after the user's transform program. This ensures user 
+  transforms work as expected on initial structures (e.g., embeddings or entangling layers), 
+  guarantees that gradient transforms only process compatible operations, aligns transform order 
+  with user expectations, and avoids confusion.
   [(#6590)](https://github.com/PennyLaneAI/pennylane/pull/6590)
 
-* Legacy operator arithmetic has been removed. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
-  `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
-  Note that `qml.Hamiltonian` will continue to dispatch to `qml.ops.LinearCombination`. For more information,
-  check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
+* Legacy operator arithmetic has been removed. This includes `qml.ops.Hamiltonian`, 
+  `qml.operation.Tensor`, `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and 
+  `qml.operation.convert_to_legacy_H`. Note that `qml.Hamiltonian` will continue to dispatch to 
+  `qml.ops.LinearCombination`. For more information, check out the 
+  [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
   [(#6602)](https://github.com/PennyLaneAI/pennylane/pull/6602)
   [(#6589)](https://github.com/PennyLaneAI/pennylane/pull/6589)
 
-* The developer-facing `qml.utils` module has been removed. Specifically, the
-following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
+* The developer-facing `qml.utils` module has been removed. 
+  [(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
 
-  * `qml.utils._flatten`, `qml.utils.unflatten` has been moved and renamed to `qml.optimize.qng._flatten_np` and `qml.optimize.qng._unflatten_np` respectively.
+  Specifically, the following 4 sets of functions have been either moved or removed:
+    * `qml.utils._flatten`, `qml.utils.unflatten` has been moved and renamed to `qml.optimize.qng._flatten_np` and `qml.optimize.qng._unflatten_np` respectively.
+    * `qml.utils._inv_dict` and `qml._get_default_args` have been removed.
+    * `qml.utils.pauli_eigs` has been moved to `qml.pauli.utils`.
+    * `qml.utils.expand_vector` has been moved to `qml.math.expand_vector`.
 
-  * `qml.utils._inv_dict` and `qml._get_default_args` have been removed.
-
-  * `qml.utils.pauli_eigs` has been moved to `qml.pauli.utils`.
-
-  * `qml.utils.expand_vector` has been moved to `qml.math.expand_vector`.
-
-* The `qml.qinfo` module has been removed. Please see the respective functions in the `qml.math` and `qml.measurements`
-  modules instead.
+* The `qml.qinfo` module has been removed. Please use the corresponding functions in the `qml.math` 
+  and `qml.measurements` modules instead.
   [(#6584)](https://github.com/PennyLaneAI/pennylane/pull/6584)
 
 * Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they
-  are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
-  respectively.
+  are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and 
+  `qml.devices.QutritDevice`, respectively.
   [(#6537)](https://github.com/PennyLaneAI/pennylane/pull/6537)
 
-* The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
+* The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` 
+  argument.
   [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
 
 * The `qml.BasisStatePreparation` template has been removed. Instead, use `qml.BasisState`.
   [(#6528)](https://github.com/PennyLaneAI/pennylane/pull/6528)
 
-* The `qml.workflow.set_shots` helper function has been removed. We no longer interact with the legacy device interface in our code.
-  Instead, shots should be specified on the tape, and the device should use these shots.
+* The `qml.workflow.set_shots` helper function has been removed. We no longer interact with the 
+  legacy device interface in our code. Instead, shots should be specified on the tape, and the 
+  device should use these shots.
   [(#6534)](https://github.com/PennyLaneAI/pennylane/pull/6534)
 
-* `QNode.gradient_fn` has been removed. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
-  process the diff method.
+* `QNode.gradient_fn` has been removed. Please use `QNode.diff_method` instead. 
+  `QNode.get_gradient_fn` can also be used to process the differentiation method.
   [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
 
 * The `qml.QubitStateVector` template has been removed. Instead, use `qml.StatePrep`.
@@ -573,51 +587,42 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 
 <h3>Deprecations 👋</h3>
 
-* The `tape` and `qtape` properties of `QNode` have been deprecated.
-  Instead, use the `qml.workflow.construct_tape` function.
+* The `tape` and `qtape` properties of `QNode` have been deprecated. Instead, use the 
+  `qml.workflow.construct_tape` function.
   [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
   [(#6650)](https://github.com/PennyLaneAI/pennylane/pull/6650)
 
-* The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
+* The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be 
+  removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
-* The `decomp_depth` argument in `qml.transforms.set_decomposition` is deprecated and will be removed in v0.41.
+* The `decomp_depth` argument in `qml.transforms.set_decomposition` is deprecated and will be 
+  removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
-* The `output_dim` property of `qml.tape.QuantumScript` has been deprecated.
-Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the
-same information.
+* The `output_dim` property of `qml.tape.QuantumScript` has been deprecated. Instead, use method 
+  `shape` of `QuantumScript` or `MeasurementProcess` to get the same information.
   [(#6577)](https://github.com/PennyLaneAI/pennylane/pull/6577)
 
-* The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated.
-  Instead, use the `qml.workflow.get_best_diff_method` function.
+* The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. Instead, use 
+  the `qml.workflow.get_best_diff_method` function.
   [(#6418)](https://github.com/PennyLaneAI/pennylane/pull/6418)
 
-* The `qml.execute` `gradient_fn` keyword argument has been renamed `diff_method`,
-  to better align with the termionology used by the `QNode`.
-  `gradient_fn` will be removed in v0.41.
+* The `qml.execute` `gradient_fn` keyword argument has been renamed to `diff_method` to better 
+  align with the termionology used by the QNode. `gradient_fn` will be removed in v0.41.
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
 
 <h3>Documentation 📝</h3>
 
-* The docstrings for `qml.qchem.Molecule` and `qml.qchem.molecular_hamiltonian` have been updated to include a 
-  note that says that they are not compatible with qjit or jit.  
+* The docstrings for `qml.qchem.Molecule` and `qml.qchem.molecular_hamiltonian` have been updated to 
+  include a note that says that they are not compatible with `qjit` or `jit`.  
   [(#6702)](https://github.com/PennyLaneAI/pennylane/pull/6702)
 
-* Updated the documentation of `TrotterProduct` to include the impact of the operands in the
-  Hamiltonian on the strucutre of the created circuit. Included an illustrative example on this.
+* The documentation of `TrotterProduct` has been updated to include the impact of the operands in 
+  the Hamiltonian on the strucutre of the created circuit.
   [(#6629)](https://github.com/PennyLaneAI/pennylane/pull/6629)
 
-* Add reporting of test warnings as failures.
-  [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
-
-* Add a warning message to Gradients and training documentation about ComplexWarnings.
-  [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
-
-* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
-  [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
-
-* Updated the documentation of `QSVT` to include examples for different block encodings.
+* The documentation of `QSVT` has been updated to include examples for different block encodings.
   [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
 
 * The link to `qml.ops.one_qubit_transform` was fixed in the `QubitUnitary` docstring.
@@ -625,7 +630,8 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.counts` returns all outcomes when the `all_outcomes` argument is `True` and mid-circuit measurements are present.
+* `qml.counts` now returns all outcomes when the `all_outcomes` argument is `True` and mid-circuit 
+  measurements are present.
   [(#6732)](https://github.com/PennyLaneAI/pennylane/pull/6732)
 
 * `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
@@ -635,29 +641,29 @@ same information.
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
   [(#6720)](https://github.com/PennyLaneAI/pennylane/pull/6720)
 
-* The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
-  The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
+* The `qml.Hermitian` class no longer checks that the provided matrix is hermitian. The reason for
+  this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
   [(#6642)](https://github.com/PennyLaneAI/pennylane/pull/6642)
 
-* Subclasses of `qml.ops.Controlled` no longer bind the primitives of their base operators when program capture
-  is enabled.
+* Subclasses of `qml.ops.Controlled` no longer bind the primitives of their base operators when 
+  program capture is enabled.
   [(#6672)](https://github.com/PennyLaneAI/pennylane/pull/6672)
 
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply the complex conjugate
   of the unitaries instead of the adjoint, providing the correct result.
   [(#6604)](https://github.com/PennyLaneAI/pennylane/pull/6604)
 
-* `QNode` return behaviour is now consistent for lists and tuples.
+* QNode return behaviour is now consistent for lists and tuples.
   [(#6568)](https://github.com/PennyLaneAI/pennylane/pull/6568)
 
-* `qml.QNode` now accepts arguments with types defined in libraries that are not necessarily
-  in the list of supported interfaces, such as the `Graph` class defined in `networkx`.
+* QNode now accepts arguments with types defined in libraries that are not necessarily in the list 
+  of supported interfaces, such as the `Graph` class defined in `networkx`.
   [(#6600)](https://github.com/PennyLaneAI/pennylane/pull/6600)
 
-* `qml.math.get_deep_interface` now works properly for autograd arrays.
+* `qml.math.get_deep_interface` now works properly for Autograd arrays.
   [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
 
-* Fixed `Identity.__repr__` to return correct wires list.
+* Fixed `Identity.__repr__` to return the correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
 
 <h3>Contributors ✍️</h3>
