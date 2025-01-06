@@ -176,6 +176,9 @@ test_matrix = [
         Shots((50000, 50000)),
         "reference.qubit",
     ),
+    ({"diff_method": "best"}, Shots(10000), "default.qubit"),
+    ({"diff_method": "best"}, Shots(None), "default.qubit"),
+    ({"diff_method": "best"}, Shots(None), "reference.qubit"),
 ]
 
 
@@ -340,7 +343,11 @@ class TestAutogradExecuteIntegration:
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device_name, seed):
         """Test that tapes wit different can be executed and differentiated."""
 
-        if execute_kwargs["diff_method"] == "backprop":
+        if (
+            execute_kwargs["diff_method"] == "backprop"
+            or execute_kwargs["diff_method"] == "best"
+            and not shots
+        ):
             pytest.xfail("backprop is not compatible with something about this situation.")
 
         device = get_device(device_name, seed=seed)
