@@ -6,11 +6,62 @@
 
 <h4>Efficient state preparation methods 🦾</h4>
 
-* Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
+* State preparation tailored for matrix product states (MPS) is now supported with 
+  :class:`~.MPSPrep` on the `lightning.tensor` device.
   [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
 
-* Users can prepare a linear combination of basis states using `qml.Superposition`.
+  Given a list of :math:`n` tensors that represents an MPS, :math:`[A^{(0)}, ..., A^{(n-1)}]`, 
+  :class:`~.MPSPrep` lets you directly inject the MPS into a QNode as the initial state of the 
+  circuit without any need for pre-processing. The first and last tensors in the list must be 
+  rank-2, while all intermediate tensors should be rank-3.
+
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  mps = [
+      np.array([[0.0, 0.107], [0.994, 0.0]]),
+      np.array(
+          [
+              [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+              [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+          ]
+      ),
+      np.array(
+          [
+              [[-1.0, 0.0], [0.0, 0.0]],
+              [[0.0, 0.0], [0.0, 1.0]],
+              [[0.0, -1.0], [0.0, 0.0]],
+              [[0.0, 0.0], [1.0, 0.0]],
+          ]
+      ),
+      np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+  ]
+
+  dev = qml.device("lightning.tensor", wires = 3)
+  @qml.qnode(dev)
+  def circuit():
+      qml.MPSPrep(mps, wires = [0,1,2])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(circuit())
+  [ 0.    +0.j  0.    +0.j  0.    +0.j -0.1066+0.j  0.    +0.j  0.    +0.j
+    0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j
+    0.9943+0.j  0.    +0.j  0.    +0.j  0.    +0.j]
+  ```
+
+  At this time, :class:`~.MPSPrep` is only supported on the `lightning.tensor` device.
+
+* Custom-made state preparation for linear combinations of quantum states is now available with 
+  :class:`~.Superposition`.
   [(#6670)](https://github.com/PennyLaneAI/pennylane/pull/6670)
+
+  Given a list of :math:`m` coefficients :math:`c_i` and basic states :math:`|b_i\rangle`, 
+  :class:`~.Superposition` prepares :math:`|\phi\rangle = \sum_i^m c_i |b_i\rangle`. Here is a 
+  simple example showing how to use :class:`~.Superposition` to prepare 
+  :math:`\tfrac{1}{\sqrt{2}} |00\rangle + \tfrac{1}{\sqrt{2}} |10\rangle`.
 
   ```python
   coeffs = np.array([0.70710678, 0.70710678])
@@ -26,7 +77,7 @@
   tensor([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j], requires_grad=True)
   ```
 
-  This template is also JAX-jit compatible!
+  :class:`~.Superposition` is also JAX-jit compatible.
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
