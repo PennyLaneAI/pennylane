@@ -1,11 +1,11 @@
 # Copyright 2018-2024 Xanadu Quantum Technologies Inc.
-
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,7 @@ from pennylane.transforms.core import transform
 
 # pylint: disable=protected-access,unused-argument
 
-_default_supported_obs = (qml.Z, qml.Identity)
+_default_supported_obs = frozenset((qml.Z, qml.Identity))
 
 
 def null_postprocessing(results):
@@ -148,9 +148,9 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         [expval(X(0) + Z(1)), expval(X(0) + 0.2 * Z(1)), var(Y(2) + X(0))]
     """
 
-    bad_obs_input = [
-        o for o in supported_base_obs if o not in {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-    ]
+    # Convert supported_base_obs to a frozenset once for faster membership checks
+    supported_base_obs = frozenset(supported_base_obs)
+    bad_obs_input = supported_base_obs - {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
 
     if bad_obs_input:
         raise ValueError(
@@ -158,20 +158,23 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
             f"but received {list(bad_obs_input)}"
         )
 
-    diagonalize_all = set(supported_base_obs).issubset(set(_default_supported_obs))
+    diagonalize_all = supported_base_obs.issubset(_default_supported_obs)
 
     if to_eigvals and not diagonalize_all:
         raise ValueError(
             "Using to_eigvals=True requires diagonalizing all observables to the "
             "measurement basis. Observables "
-            f"{set(supported_base_obs)-set(_default_supported_obs)} can't "
+            f"{supported_base_obs - _default_supported_obs} can't "
             "be supported when using eigvals."
         )
 
-    if (
-        all(m.obs.pauli_rep is not None for m in tape.measurements if m.obs is not None)
-        and diagonalize_all
-    ):
+    # Precompute measurement observables that have a Pauli representation
+    # measurements with observable with no pauli_rep are not compatible with the default method
+    incompatible_measurements = [
+        m for m in tape.measurements if m.obs is not None and m.obs.pauli_rep is None
+    ]
+
+    if not incompatible_measurements and diagonalize_all:
         try:
             if tape.samples_computational_basis and len(tape.measurements) > 1:
                 _validate_computational_basis_sampling(tape)
@@ -179,17 +182,16 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
                 tape, to_eigvals=to_eigvals
             )
         except qml.QuantumFunctionError:
-            # the pauli_rep based method sometimes fails unnecessarily -
-            # if it fails, fall back on the less efficient method (which may also fail)
+            # Fallback to subset diagonalization if the primary method fails
             diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
                 tape, supported_base_obs, to_eigvals=to_eigvals
             )
-
     else:
         diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
             tape, supported_base_obs, to_eigvals=to_eigvals
         )
 
+    # Concatenate diagonalizing gates to operations
     new_operations = tape.operations + diagonalizing_gates
 
     new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
@@ -208,12 +210,12 @@ def _diagonalize_all_pauli_obs(tape, to_eigvals=False):
 
     Returns:
         diagonalizing_gates: A list of operations to be applied to diagonalize the observable
-        new_measurements: the relevant measurement to perform after applying diagonalzing_gates to get the
+        new_measurements: the relevant measurement to perform after applying diagonalizing_gates to get the
             correct measurement output
     """
+    diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
     new_measurements = []
 
-    diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
     for m in diagonal_measurements:
         if m.obs is not None:
             gates, new_obs = _change_obs_to_Z(m.obs)
@@ -245,22 +247,26 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
 
     Returns:
         diagonalizing_gates: A list of operations to be applied to diagonalize the observable
-        new_measurements: the relevant measurement to perform after applying diagonalzing_gates to get the
+        new_measurements: the relevant measurement to perform after applying diagonalizing_gates to get the
             correct measurement output
 
     Raises:
-        ValueError: if non-commuting observables are ecountered on the tape
+        ValueError: if non-commuting observables are encountered on the tape
 
     """
-    supported_base_obs = set(list(supported_base_obs) + [qml.Z, qml.Identity])
+    # Include Z and Identity in supported observables
+    supported_base_obs = supported_base_obs | {qml.Z, qml.Identity}
 
-    wires_sampled_in_computational_basis = []
+    # Precompute wires sampled in the computational basis
     comp_basis_sampling_meas = [m for m in tape.measurements if m.samples_computational_basis]
     if any(m.wires == qml.wires.Wires([]) for m in comp_basis_sampling_meas):
-        wires_sampled_in_computational_basis = tape.wires
+        wires_sampled_in_computational_basis = set(tape.wires)
     elif comp_basis_sampling_meas:
-        for m in comp_basis_sampling_meas:
-            wires_sampled_in_computational_basis.extend(list(m.wires))
+        wires_sampled_in_computational_basis = {
+            wire for m in comp_basis_sampling_meas for wire in m.wires
+        }
+    else:
+        wires_sampled_in_computational_basis = set()
 
     _visited_obs = (
         set(qml.Z(w) for w in wires_sampled_in_computational_basis),
@@ -288,6 +294,14 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
 
 @singledispatch
 def _change_obs_to_Z(observable):
+    """Default method to change an observable to Z basis using diagonalize_qwc_pauli_words.
+
+    Args:
+        observable: The observable to change.
+
+    Returns:
+        A tuple containing the diagonalizing gates and the new observable.
+    """
     diagonalizing_gates, new_observable = diagonalize_qwc_pauli_words([observable])
 
     return diagonalizing_gates, new_observable[0]
@@ -295,10 +309,17 @@ def _change_obs_to_Z(observable):
 
 @_change_obs_to_Z.register
 def _change_symbolic_op(observable: SymbolicOp):
+    """Change a SymbolicOp to the Z basis.
+
+    Args:
+        observable (SymbolicOp): The symbolic observable to change.
+
+    Returns:
+        A tuple containing the diagonalizing gates and the new observable.
+    """
     diagonalizing_gates, [new_base] = diagonalize_qwc_pauli_words([observable.base])
 
-    params, hyperparams = observable.parameters, observable.hyperparameters
-    hyperparams = copy(hyperparams)
+    params, hyperparams = observable.parameters, copy(observable.hyperparameters)
     hyperparams["base"] = new_base
 
     new_observable = observable.__class__(*params, **hyperparams)
@@ -308,6 +329,14 @@ def _change_symbolic_op(observable: SymbolicOp):
 
 @_change_obs_to_Z.register
 def _change_linear_combination(observable: LinearCombination):
+    """Change a LinearCombination observable to the Z basis.
+
+    Args:
+        observable (LinearCombination): The linear combination observable to change.
+
+    Returns:
+        A tuple containing the diagonalizing gates and the new observable.
+    """
     coeffs, obs = observable.terms()
 
     diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(obs)
@@ -319,6 +348,14 @@ def _change_linear_combination(observable: LinearCombination):
 
 @_change_obs_to_Z.register
 def _change_composite_op(observable: CompositeOp):
+    """Change a CompositeOp observable to the Z basis.
+
+    Args:
+        observable (CompositeOp): The composite observable to change.
+
+    Returns:
+        A tuple containing the diagonalizing gates and the new observable.
+    """
     diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(observable.operands)
 
     new_observable = observable.__class__(*new_operands)
@@ -344,20 +381,17 @@ def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
     """
 
     if obs in _visited_obs[0] or isinstance(obs, qml.Identity):
-        # its already been encountered before, and if need be, diagonalized - we will
-        # not be applying any gates or updating _visited_obs
-        # same if it's just an Identity
+        # Already diagonalized or is Identity; no action needed
         return False, _visited_obs
 
-    # a different observable has been diagonalized on the same wire - error
+    # Check if the wire has already been used
     if obs.wires[0] in _visited_obs[1]:
         raise ValueError(
             f"Expected measurements on the same wire to commute, but {obs} "
             f"overlaps with another non-commuting observable on the tape."
         )
 
-    # we diagonalize if it's an operator we are switching the basis for
-    # we update _visited_obs to indicate that we've encountered that observable regardless
+    # Mark the observable and wire as visited
     _visited_obs[0].add(obs)
     _visited_obs[1].add(obs.wires[0])
 
@@ -384,7 +418,7 @@ def _diagonalize_observable(
 
     Returns:
         diagonalizing_gates: A list of operations to be applied to diagonalize the observable
-        new_obs: the relevant measurement to perform after applying diagonalzing_gates to get the
+        new_obs: the relevant measurement to perform after applying diagonalizing_gates to get the
             correct measurement output
         _visited_obs: an up-to-date record of the observables and wires
             encountered on the tape so far
@@ -398,11 +432,11 @@ def _diagonalize_observable(
             observable, _visited_obs, supported_base_obs=supported_base_obs
         )
 
-    # also validates that the wire hasn't already been diagonalized and updated _visited_obs
+    # Determine if basis switching is needed
     switch_basis = type(observable) not in supported_base_obs
     diagonalize, _visited_obs = _check_if_diagonalizing(observable, _visited_obs, switch_basis)
 
-    if isinstance(observable, qml.Z):  # maybe kind of redundant
+    if isinstance(observable, qml.Z):
         return [], observable, _visited_obs
 
     new_obs = qml.Z(wires=observable.wires) if switch_basis else observable
@@ -413,7 +447,18 @@ def _diagonalize_observable(
 
 def _get_obs_and_gates(obs_list, _visited_obs, supported_base_obs=_default_supported_obs):
     """Calls _diagonalize_observable on each observable in a list, and returns the full result
-    for the list of observables"""
+    for the list of observables
+
+    Args:
+        obs_list: List of observables to diagonalize
+        _visited_obs: Current state of visited observables and wires
+        supported_base_obs: Set of supported base observables
+
+    Returns:
+        diagonalizing_gates: List of gates required for diagonalization
+        new_obs: List of new observables after diagonalization
+        _visited_obs: Updated visited observables and wires
+    """
 
     new_obs = []
     diagonalizing_gates = []
@@ -438,6 +483,15 @@ def _diagonalize_non_basic_observable(
     the basis of an observable whose diagonalizing gates have not already been applied.
     For other observables, simply skips and returns the observable as is.
 
+    Args:
+        observable: The observable to diagonalize
+        _visited_obs: Current state of visited observables and wires
+        supported_base_obs: Set of supported base observables
+
+    Returns:
+        diagonalizing_gates: Gates to apply for diagonalization
+        observable: The (possibly unchanged) observable
+        _visited_obs: Updated visited observables and wires
     """
     _visited_obs[0].add(observable)
     _visited_obs[1].add(observable.wires[0])
@@ -448,12 +502,23 @@ def _diagonalize_non_basic_observable(
 def _diagonalize_symbolic_op(
     observable: SymbolicOp, _visited_obs, supported_base_obs=_default_supported_obs
 ):
+    """Diagonalizes a SymbolicOp observable.
+
+    Args:
+        observable (SymbolicOp): The symbolic observable to diagonalize
+        _visited_obs: Current state of visited observables and wires
+        supported_base_obs: Set of supported base observables
+
+    Returns:
+        diagonalizing_gates: Gates to apply for diagonalization
+        new_observable: The diagonalized observable
+        _visited_obs: Updated visited observables and wires
+    """
     diagonalizing_gates, new_base, _visited_obs = _diagonalize_observable(
         observable.base, _visited_obs, supported_base_obs
     )
 
-    params, hyperparams = observable.parameters, observable.hyperparameters
-    hyperparams = copy(hyperparams)
+    params, hyperparams = observable.parameters, copy(observable.hyperparameters)
     hyperparams["base"] = new_base
 
     new_observable = observable.__class__(*params, **hyperparams)
@@ -463,9 +528,22 @@ def _diagonalize_symbolic_op(
 
 @_diagonalize_non_basic_observable.register
 def _diagonalize_linear_combination(
-    observable: LinearCombination, _visited_obs, supported_base_obs=_default_supported_obs
+    observable: LinearCombination,
+    _visited_obs,
+    supported_base_obs=_default_supported_obs,
 ):
+    """Diagonalizes a LinearCombination observable.
 
+    Args:
+        observable (LinearCombination): The linear combination observable to diagonalize
+        _visited_obs: Current state of visited observables and wires
+        supported_base_obs: Set of supported base observables
+
+    Returns:
+        diagonalizing_gates: Gates to apply for diagonalization
+        new_observable: The diagonalized observable
+        _visited_obs: Updated visited observables and wires
+    """
     coeffs, obs = observable.terms()
 
     diagonalizing_gates, new_obs, _visited_obs = _get_obs_and_gates(
@@ -481,6 +559,18 @@ def _diagonalize_linear_combination(
 def _diagonalize_composite_op(
     observable: CompositeOp, _visited_obs, supported_base_obs=_default_supported_obs
 ):
+    """Diagonalizes a CompositeOp observable.
+
+    Args:
+        observable (CompositeOp): The composite observable to diagonalize
+        _visited_obs: Current state of visited observables and wires
+        supported_base_obs: Set of supported base observables
+
+    Returns:
+        diagonalizing_gates: Gates to apply for diagonalization
+        new_observable: The diagonalized observable
+        _visited_obs: Updated visited observables and wires
+    """
     diagonalizing_gates, new_operands, _visited_obs = _get_obs_and_gates(
         observable.operands, _visited_obs, supported_base_obs
     )
