@@ -20,6 +20,7 @@ import numpy as _np
 # pylint: disable=import-outside-toplevel
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
+from packaging.version import Version
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .interface_utils import get_interface
@@ -279,7 +280,11 @@ def is_abstract(tensor, like=None):
             # Tracer objects will be used when computing gradients or applying transforms.
             # If the value of the tracer is known, it will contain a ConcreteArray.
             # Otherwise, it will be abstract.
-            return not isinstance(tensor.aval, jax.core.ConcreteArray)
+            return (
+                not isinstance(tensor.aval, jax.core.ConcreteArray)
+                if Version(jax.__version__) < Version("0.4.36")
+                else not jax.core.is_concrete(tensor.aval)
+            )
 
         return isinstance(tensor, DynamicJaxprTracer)
 
