@@ -45,22 +45,50 @@
 
 <h4>Generalized Trotter products 🐖</h4>
 
-* Added a function `qml.trotterize` to generalize the Suzuki-Trotter product to arbitrary quantum functions.
+* Trotter products that work on exponentiated operators directly instead of full system hamiltonians 
+  can now be encoded into circuits with the addition of 
+  :class:`qml.TrotterizedQfunc <~.TrotterizedQfunc>` and :func:`qml.trotterize <~.trotterize>`. This
+  allows for custom specification of the first-order expansion of the Suzuki-Trotter product formula
+  and extrapolating it to the :math:`n^{\text{th}}` order.
   [(#6627)](https://github.com/PennyLaneAI/pennylane/pull/6627)
+
+  If the first-order of the Suzuki-Trotter product formula for a given problem is known, 
+  :class:`qml.TrotterizedQfunc <~.TrotterizedQfunc>` and :func:`qml.trotterize <~.trotterize>`
+  let you implement the :math:`n^{\text{th}}`-order product formula by only having to specify the 
+  first-order term as a quantum function.
 
   ```python
   def my_custom_first_order_expansion(time, theta, phi, wires, flip):
-    "This is the first order expansion (U_1)."
-    qml.RX(time*theta, wires[0])
-    qml.RY(time*phi, wires[1])
+    qml.RX(time * theta, wires[0])
+    qml.RY(time * phi, wires[1])
     if flip:
         qml.CNOT(wires=wires[:2])
+  ```
 
+  :func:`qml.trotterize <~.trotterize>` requires the quantum function representing the first-order
+  product formula, the number of Trotter steps, and the desired order. It returns a function with 
+  the same call signature as the first-order product formula quantum function:
+
+  ```python
   @qml.qnode(qml.device("default.qubit"))
-  def my_circuit(time, angles, num_trotter_steps):
+  def my_circuit(time, theta, phi, num_trotter_steps):
+      qml.trotterize(
+          first_order_expansion,
+          n=num_trotter_steps,
+          order=2,
+      )(time, theta, phi, wires=['a', 'b'], flip=True)
+      return qml.state()
+  ```
+  
+  Alternatively, :class:`qml.TrotterizedQfunc <~.TrotterizedQfunc>` can be used as follows:
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"))
+  def my_circuit(time, theta, phi, num_trotter_steps):
       TrotterizedQfunc(
           time,
-          *angles,
+          theta,
+          phi,
           qfunc=my_custom_first_order_expansion,
           n=num_trotter_steps,
           order=2,
@@ -69,13 +97,17 @@
       )
       return qml.state()
   ```
+
   ```pycon
   >>> time = 0.1
   >>> angles = (0.12, -3.45)
-  >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
+  >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
   a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
   b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
   ```
+
+  Both ways produce the same results, but offer different UIs based on the application or overall
+  preference.
 
 <h4>Bosonic operators 🎈</h4>
 
