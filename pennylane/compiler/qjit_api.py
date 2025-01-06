@@ -633,16 +633,17 @@ def _get_for_loop_qfunc_prim():
 
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
-    def _(start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice):
+    def _(start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice):
 
         consts = args[consts_slice]
         init_state = args[args_slice]
+        abstract_shapes = args[abstract_shapes_slice]
 
         # in case start >= stop, return the initial state
         fn_res = init_state
 
         for i in range(start, stop, step):
-            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn, consts, i, *fn_res)
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
 
         return fn_res
 
@@ -692,11 +693,18 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
 
         for_loop_prim = _get_for_loop_qfunc_prim()
 
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes((0, *init_state))
+
         flat_fn = FlatFn(self.body_fn)
-        jaxpr_body_fn = jax.make_jaxpr(flat_fn)(0, *init_state)
+        jaxpr_body_fn = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(0, *init_state)
 
         consts_slice = slice(0, len(jaxpr_body_fn.consts))
-        args_slice = slice(len(jaxpr_body_fn.consts), None)
+        args_slice = slice(
+            len(jaxpr_body_fn.consts), -len(abstract_shapes) if abstract_shapes else None
+        )
+        abstract_shapes_slice = (
+            slice(-len(abstract_shapes), None) if abstract_shapes else slice(0, 0)
+        )
 
         flat_args, _ = jax.tree_util.tree_flatten(init_state)
 
@@ -706,9 +714,11 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
             self.step,
             *jaxpr_body_fn.consts,
             *flat_args,
+            *abstract_shapes,
             jaxpr_body_fn=jaxpr_body_fn.jaxpr,
             consts_slice=consts_slice,
             args_slice=args_slice,
+            abstract_shapes_slice=abstract_shapes_slice,
         )
         assert flat_fn.out_tree is not None
         return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)

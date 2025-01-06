@@ -170,6 +170,7 @@ from .capture_measurements import (
 )
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr, run_autograph
+from .dynamic_shapes import determine_abstracted_axes
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)

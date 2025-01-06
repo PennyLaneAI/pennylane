@@ -382,12 +382,15 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
 
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
-def handle_for_loop(self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice):
+def handle_for_loop(
+    self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+):
     """Handle a for loop primitive."""
     init_state = args[args_slice]
+    abstract_shapes = args[abstract_shapes_slice]
 
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        copy(self), jaxpr_body_fn, args[consts_slice], start, *init_state
+        copy(self), jaxpr_body_fn, args[consts_slice], *abstract_shapes, start, *init_state
     )
 
     return for_loop_prim.bind(
@@ -398,6 +401,7 @@ def handle_for_loop(self, start, stop, step, *args, jaxpr_body_fn, consts_slice,
         jaxpr_body_fn=new_jaxpr_body_fn,
         consts_slice=consts_slice,
         args_slice=args_slice,
+        abstract_shapes_slice=abstract_shapes_slice,
     )
 
 
@@ -512,14 +516,17 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 
-def flattened_for(self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice):
+def flattened_for(
+    self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+):
     """Handle the for loop by a flattened python strategy."""
     consts = invals[consts_slice]
     init_state = invals[args_slice]
+    abstract_shapes = invals[abstract_shapes_slice]
 
     res = init_state
     for i in range(start, stop, step):
-        res = copy(self).eval(jaxpr_body_fn, consts, i, *res)
+        res = copy(self).eval(jaxpr_body_fn, consts, *abstract_shapes, i, *res)
 
     return res
 
