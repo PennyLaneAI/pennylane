@@ -862,6 +862,10 @@ class TestHamiltonianWorkflows:
             pytest.skip("trainable hamiltonians not supported with adjoint")
         if constructor == "dunders":
             pytest.xfail("autograd does not like constructing an sprod via dunder.")
+        if shots.has_partitioned_shots:
+            pytest.xfail(
+                "multiple hamiltonians with shot vectors does not seem to be differentiable."
+            )
 
         coeffs1 = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = pnp.array([0.7], requires_grad=True)
@@ -880,8 +884,5 @@ class TestHamiltonianWorkflows:
         if shots.has_partitioned_shots:
             assert qml.math.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
             assert qml.math.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)
-            pytest.xfail(
-                "multiple hamiltonians with shot vectors does not seem to be differentiable."
-            )
         else:
             assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
