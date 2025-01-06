@@ -141,6 +141,9 @@ test_matrix = [
     ({"diff_method": param_shift}, no_shots, "reference.qubit"),  # 7
     ({"diff_method": param_shift}, shots_10k, "reference.qubit"),  # 8
     ({"diff_method": param_shift}, shots_2_10k, "reference.qubit"),  # 9
+    ({"diff_method": "best"}, shots_10k, "default.qubit"),  # 10
+    ({"diff_method": "best"}, no_shots, "default.qubit"),  # 11
+    ({"diff_method": "best"}, no_shots, "reference.qubit"),  # 12
 ]
 
 
@@ -500,20 +503,7 @@ class TestJaxExecuteIntegration:
                 [qml.expval(qml.PauliX(0))],
                 shots=shots,
             )
-            diff_method = execute_kwargs["diff_method"]
-            if diff_method is None:
-                _gradient_method = None
-            elif isinstance(diff_method, str):
-                _gradient_method = diff_method
-            else:
-                _gradient_method = "gradient-transform"
-            conf = qml.devices.ExecutionConfig(
-                interface="autograd",
-                gradient_method=_gradient_method,
-                grad_on_execution=execute_kwargs.get("grad_on_execution", None),
-            )
-            program = device.preprocess_transforms(execution_config=conf)
-            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
+            return execute([tape], device, **execute_kwargs)[0]
 
         a = jnp.array(0.1)
         p = jnp.array([0.1, 0.2, 0.3])

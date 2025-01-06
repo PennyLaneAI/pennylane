@@ -192,40 +192,6 @@
   [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
-<h4>New API for Default mixed</h4>
-
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
-
-  * Two density matrix contraction methods using `einsum` and `tensordot`
-  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
-
-* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
-  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
-  
-* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
-  [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
-
-* Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
-  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
-
-* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
-  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
-
-* Added submodule `devices.qubit_mixed.simulate` as a necessary step for the new API,
-featuring a `simulate` function for simulating mixed states in analytic mode.
-  [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
-
-* Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
-  [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
-
-* Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
-new device API of `default_mixed` should be able to take the stochastic arguments
-such as `shots`, `rng` and `prng_key`.
-[(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
-
-* Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
-  [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
-
 <h4>Capturing and representing hybrid programs</h4>
 
 * Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via Autograph.
@@ -395,6 +361,11 @@ such as `shots`, `rng` and `prng_key`.
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
   [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
 
+* `qml.execute` can now be used with `diff_method="best"`.
+  Classical cotransform information is now handled lazily by the workflow. Gradient method
+  validation and program setup is now handled inside of `qml.execute`, instead of in `QNode`.
+  [(#6716)](https://github.com/PennyLaneAI/pennylane/pull/6716)
+
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
 
@@ -432,7 +403,41 @@ such as `shots`, `rng` and `prng_key`.
 * Improved documentation for the `dynamic_one_shot` transform, and a warning is raised when a user-applied `dynamic_one_shot` transform is ignored in favour of the existing transform in a device's preprocessing transform program.
   [(#6701)](https://github.com/PennyLaneAI/pennylane/pull/6701)
 
-<h3>Labs 🧪</h3>
+* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
+
+  * Two density matrix contraction methods using `einsum` and `tensordot`
+  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
+
+* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
+  
+* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
+  [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
+
+* Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
+  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
+
+* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
+  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
+
+* Added submodule `devices.qubit_mixed.simulate` as a necessary step for the new API,
+featuring a `simulate` function for simulating mixed states in analytic mode.
+  [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
+
+* Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
+  [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
+
+* Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
+new device API of `default_mixed` should be able to take the stochastic arguments
+such as `shots`, `rng` and `prng_key`.
+[(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
+
+* Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
+  [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
+
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+<h4>Resource estimation</h4>
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
@@ -454,7 +459,7 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
-<h4>Functionality for handling dynamical Lie algebras (DLAs)</h4>
+<h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
@@ -483,6 +488,10 @@ such as `shots`, `rng` and `prng_key`.
 * Added a `variational_kak_adj` function to compute a KaK decomposition of a Hamiltonian given a Cartan
   decomposition and the ordered adjoint representation of the Lie algebra.
   [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
+
+* Improved documentation by fixing broken links and latex issues. Also consistently use `$\mathfrak{a}$`
+  for the horizontal Cartan subalgebra instead of `$\mathfrak{h}$`.
+  [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
 
 <h3>Breaking changes 💔</h3>
 
@@ -616,6 +625,9 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.counts` returns all outcomes when the `all_outcomes` argument is `True` and mid-circuit measurements are present.
+  [(#6732)](https://github.com/PennyLaneAI/pennylane/pull/6732)
+
 * `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
   [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
 
@@ -657,17 +669,20 @@ Shiwen An,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
+Isaac De Vlugt,
 Diksha Dhawan,
 Lasse Dierich,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Diego Guala, 
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Alan Martin,
 William Maxwell,
+Anton Naim Ibrahim,
 Andrija Paurevic,
 Justin Pickering,
 Jay Soni,
-David Wierichs,
+David Wierichs.
