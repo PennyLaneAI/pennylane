@@ -306,6 +306,9 @@
 
 <h4>Other Improvements</h4>
 
+* `qml.transforms.cancel_inverses` now has improved handling of `Adjoint` operator cancellation.
+  [(#6752)](https://github.com/PennyLaneAI/pennylane/pull/6752)
+
 * `qml.math.grad` and `qml.math.jacobian` added to differentiate a function with inputs of any
   interface in a jax-like manner.
   [(#6741)](https://github.com/PennyLaneAI/pennylane/pull/6741)
