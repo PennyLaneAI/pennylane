@@ -448,7 +448,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     device via the :func:`~.pennylane.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-    >>> qml.execute([tape], dev, gradient_fn=None)
+    >>> qml.execute([tape], dev, diff_method=None)
     [array([0.77750694])]
 
     A new tape can be created by passing new parameters along with the indices
