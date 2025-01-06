@@ -79,7 +79,7 @@
 
 <h4>Bosonic operators 🎈</h4>
 
-A new module, :module:`qml.bose <~.bose>`, for bosonic function is available in PennyLane with the 
+A new module, :doc:`qml.bose <~.bose>`, for bosonic function is available in PennyLane with the 
 following features.
 
 * Bosonic operators analogous to `FermiWord` and `FermiSentence` are now available with 
