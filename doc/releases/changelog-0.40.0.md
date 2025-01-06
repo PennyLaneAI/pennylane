@@ -637,7 +637,7 @@ such as `shots`, `rng` and `prng_key`.
 * `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
   [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
 
-* The `Wires` object throws a `TypeError` if `wires=None`. 
+* The `Wires` object now throws a `TypeError` if `wires=None`. 
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
   [(#6720)](https://github.com/PennyLaneAI/pennylane/pull/6720)
 
