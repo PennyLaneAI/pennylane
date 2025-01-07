@@ -193,7 +193,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
             ret += str(self.r_child, level + 1)
             ret += ")"
 
-        if self.node_type == NodeType.SUM:
+        if self.node_type == NodeType.HADAMARD:
             ret += "(HADAMARD, \n"
             ret += str(self.l_child, level + 1) + ",\n"
             ret += str(self.r_child, level + 1)
@@ -205,7 +205,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         """Compute the coefficient at the given index"""
 
         if not self._validate_index(index):
-            raise ValueError(f"Given index {index} is not of shape {self.shape}")
+            raise ValueError(f"Given index {index} is not compatible with shape {self.shape}")
 
         if self.node_type == NodeType.TENSOR:
             return self.tensor[index]

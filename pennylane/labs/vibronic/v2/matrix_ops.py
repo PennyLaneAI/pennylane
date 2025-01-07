@@ -136,3 +136,8 @@ def _zeros(shape: Tuple[int], sparse: bool = False):
         return sp.sparse.csr_matrix(shape)
 
     return np.zeros(shape, dtype=np.complex128)
+
+
+def op_norm(gridpoints: int) -> float:
+    """The norm of P and Q"""
+    return np.sqrt(gridpoints * np.pi / 2)
