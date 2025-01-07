@@ -210,6 +210,24 @@ class JacobianProductCalculator(abc.ABC):
         """
 
 
+class NoGradients(JacobianProductCalculator):
+    """A jacobian product calculator that raises errors when a vjp or jvp is requested."""
+
+    def compute_jacobian(self, tapes: QuantumScriptBatch) -> tuple:
+        raise ValueError("Derivatives cannot be calculated with diff_method=None")
+
+    def compute_vjp(self, tapes: QuantumScriptBatch, dy: Sequence[Sequence[TensorLike]]) -> tuple:
+        raise ValueError("Derivatives cannot be calculated with diff_method=None")
+
+    def execute_and_compute_jvp(
+        self, tapes: QuantumScriptBatch, tangents: Sequence[Sequence[TensorLike]]
+    ) -> tuple[ResultBatch, tuple]:
+        raise ValueError("Derivatives cannot be calculated with diff_method=None")
+
+    def execute_and_compute_jacobian(self, tapes: QuantumScriptBatch) -> tuple[ResultBatch, tuple]:
+        raise ValueError("Derivatives cannot be calculated with diff_method=None")
+
+
 class TransformJacobianProducts(JacobianProductCalculator):
     """Compute VJPs, JVPs and Jacobians via a gradient transform :class:`~.TransformDispatcher`.
 
