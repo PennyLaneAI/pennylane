@@ -68,7 +68,7 @@ FermiWord and FermiSentence
 ---------------------------
 
 Fermi words and Fermi sentences can also be constructed directly with
-:class:`~pennylane.FermiWord` and :class:`~pennylane.FermiSentence` by passing
+:class:`~pennylane.fermi.FermiWord` and :class:`~pennylane.fermi.FermiSentence` by passing
 dictionaries that define the fermionic operators.
 
 For Fermi words, the dictionary items define the fermionic creation and annihilation operators.
