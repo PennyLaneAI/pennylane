@@ -32,7 +32,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible integrals
 
     Returns:
-        FermiSentence: fermionic observable
+        ~.FermiSentence: fermionic observable
 
     **Example**
 

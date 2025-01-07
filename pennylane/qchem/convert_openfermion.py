@@ -56,7 +56,7 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
         tol (float): Tolerance for discarding negligible coefficients.
 
     Returns:
-        Union[FermiWord, FermiSentence, LinearCombination]: PennyLane operator.
+        Union[~.FermiWord, ~.FermiSentence, LinearCombination]: PennyLane operator.
 
     **Example**
 
