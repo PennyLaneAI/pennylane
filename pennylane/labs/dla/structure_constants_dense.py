@@ -32,7 +32,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qml/demos/tutorial_liesim/#lie-algebra-basics>`__.
 
     Args:
-        g (np.array): The (dynamical) Lie algebra provided as dense matrices, as generated from :func:`pennylane.labs.lie.lie_closure_dense`.
+        g (np.array): The (dynamical) Lie algebra provided as dense matrices, as generated from :func:`~lie_closure_dense`.
             ``g`` should have shape ``(d, 2**n, 2**n)`` where ``d`` is the dimension of the algebra and ``n`` is the number of qubits. Each matrix ``g[i]`` should be Hermitian.
         is_orthonormal (bool): Whether or not the matrices in ``g`` are orthonormal with respect to the Hilbert-Schmidt inner product on
             (skew-)Hermitian matrices. If the inputs are orthonormal, it is recommended to set ``is_orthonormal`` to ``True`` to reduce
