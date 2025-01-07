@@ -363,7 +363,7 @@
 
 * `qml.execute` can now be used with `diff_method="best"`.
   Classical cotransform information is now handled lazily by the workflow. Gradient method
-  validation and program setup is now handled inside of `qml.execute`, instead of in `QNode`.
+  validation and program setup are now handled inside of `qml.execute`, instead of in `QNode`.
   [(#6716)](https://github.com/PennyLaneAI/pennylane/pull/6716)
 
 * Added PyTree support for measurements in a circuit. 
