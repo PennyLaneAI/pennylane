@@ -160,7 +160,7 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     def __call__(self, fn: Callable, data: Sequence):
         exec_cls = self._exec_backend()
         chunksize = max(len(data) // self._size, 1)
-        with exec_cls(max_workers=self._size) as executor:
+        with exec_cls(self._size) as executor:
             output_f = executor.map(fn, data, chunksize=chunksize)
         return output_f
 
@@ -171,6 +171,18 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     @classmethod
     @abc.abstractmethod
     def _exec_backend(cls): ...
+
+
+class MPPoolExec(PyNativeExecABC):
+    """
+    concurrent.futures.ProcessPoolExecutor abstraction class functor.
+    """
+
+    @classmethod
+    def _exec_backend(cls):
+        from multiprocessing import Pool as exec
+
+        return exec
 
 
 class ProcPoolExec(PyNativeExecABC):
