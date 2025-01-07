@@ -113,7 +113,7 @@ def to_openfermion(
     `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__.
 
     Args:
-        pennylane_op (~ops.op_math.Sum, ~ops.op_math.LinearCombination, FermiWord, FermiSentence):
+        pennylane_op (~ops.op_math.Sum, ~ops.op_math.LinearCombination, ~.FermiWord, ~.FermiSentence):
             PennyLane operator
         wires (dict): Custom wire mapping used to convert a PennyLane qubit operator
             to the external operator.
