@@ -385,6 +385,17 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
     """
     if isinstance(measurement, CountsMP):
         tmp = Counter()
+
+        if measurement.all_outcomes:
+            if isinstance(measurement.mv, Sequence):
+                values = [list(m.branches.values()) for m in measurement.mv]
+                values = list(itertools.product(*values))
+                tmp = Counter({"".join(map(str, v)): 0 for v in values})
+            else:
+                values = [list(measurement.mv.branches.values())]
+                values = list(itertools.product(*values))
+                tmp = Counter({float(*v): 0 for v in values})
+
         for i, d in enumerate(samples):
             tmp.update(
                 {k if isinstance(k, str) else float(k): v * is_valid[i] for k, v in d.items()}
