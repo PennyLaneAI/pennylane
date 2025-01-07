@@ -330,7 +330,7 @@ def _measure_with_samples_diagonalizing_gates(
             prng_key=prng_key,
         )
     except ValueError as e:
-        if str(e) != "probabilities contain NaN":
+        if "robabilities contain NaN" not in str(e):  # capitalization might differ
             raise e
         samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
