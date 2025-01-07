@@ -340,7 +340,7 @@
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
 * The `diagonalize_measurements` transform no longer raises an error for unknown observables. Instead,
-  they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
+  they are left un-diagonalized, with the expectation that observable validation will catch any un-diagonalized
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
