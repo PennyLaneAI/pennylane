@@ -168,8 +168,8 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         Args:
             file_path (str): The path to the TOML file.
             runtime_interface (str): The runtime execution interface to get the capabilities for.
-                Acceptable values are "pennylane" and "qjit". Use "pennylane" for capabilities of
-                the device's implementation of `Device.execute`, and "qjit" for capabilities of
+                Acceptable values are ``"pennylane"`` and ``"qjit"``. Use ``"pennylane"`` for capabilities of
+                the device's implementation of `Device.execute`, and ``"qjit"`` for capabilities of
                 the runtime execution function used by a qjit-compiled workflow.
 
         """
