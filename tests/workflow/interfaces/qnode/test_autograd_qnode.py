@@ -50,7 +50,7 @@ class TestQNode:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = pqml.numpy.array(0.1, requires_grad=True)
+        a = qml.numpy.array(0.1, requires_grad=True)
         res = circuit(a)
 
         assert isinstance(res, (np.ndarray, float))
@@ -76,7 +76,7 @@ class TestQNode:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = pqml.numpy.array(0.1, requires_grad=True)
+        a = qml.numpy.array(0.1, requires_grad=True)
         res = circuit(a)
         assert isinstance(res, (np.ndarray, float))
         grad = qml.grad(circuit)(a)
@@ -99,8 +99,8 @@ class TestQNode:
             kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
-        a = pqml.numpy.array(0.1, requires_grad=True)
-        b = pqml.numpy.array(0.2, requires_grad=True)
+        a = qml.numpy.array(0.1, requires_grad=True)
+        b = qml.numpy.array(0.2, requires_grad=True)
 
         dev = get_device(device_name, wires=3, seed=seed)
 
@@ -151,8 +151,8 @@ class TestQNode:
             kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
-        a = pqml.numpy.array(0.1, requires_grad=True)
-        b = pqml.numpy.array(0.2, requires_grad=True)
+        a = qml.numpy.array(0.1, requires_grad=True)
+        b = qml.numpy.array(0.2, requires_grad=True)
 
         dev = get_device(device_name, wires=3, seed=seed)
 
@@ -173,8 +173,8 @@ class TestQNode:
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         # call the Jacobian with new parameters
-        a = pqml.numpy.array(0.6, requires_grad=True)
-        b = pqml.numpy.array(0.832, requires_grad=True)
+        a = qml.numpy.array(0.6, requires_grad=True)
+        b = qml.numpy.array(0.832, requires_grad=True)
 
         res = jac_fn(a, b)
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
@@ -520,287 +520,319 @@ class TestShotsIntegration:
         assert dev.tracker.totals["executions"] == 1
 
 
-# @pytest.mark.parametrize(
-#     "device_name, diff_method, grad_on_execution, device_vjp",
-#     generate_test_matrix(),
-# )
-# class TestQubitIntegration:
-#     """Tests that ensure various qubit circuits integrate correctly"""
-#
-#     def test_probability_differentiation(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
-#     ):
-#         """Tests correct output shape and evaluation for a tape
-#         with a single prob output"""
-#         if "lightning" in getattr(dev, "name", "").lower():
-#             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
-#
-#         kwargs = dict(
-#             diff_method=diff_method,
-#             interface=interface,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#
-#         if diff_method == "spsa":
-#             kwargs["sampler_rng"] = np.random.default_rng(seed)
-#             tol = TOL_FOR_SPSA
-#
-#         x = qml.numpy.array(0.543, requires_grad=True)
-#         y = qml.numpy.array(-0.654, requires_grad=True)
-#
-#         @qnode(dev, **kwargs)
-#         def circuit(x, y):
-#             qml.RX(x, wires=[0])
-#             qml.RY(y, wires=[1])
-#             qml.CNOT(wires=[0, 1])
-#             return qml.probs(wires=[1])
-#
-#         res = qml.jacobian(circuit)(x, y)
-#         assert isinstance(res, tuple) and len(res) == 2
-#
-#         expected = (
-#             np.array([-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2]),
-#             np.array([-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
-#         )
-#         assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
-#
-#     def test_multiple_probability_differentiation(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
-#     ):
-#         """Tests correct output shape and evaluation for a tape
-#         with multiple prob outputs"""
-#         if "lightning" in getattr(dev, "name", "").lower():
-#             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
-#         kwargs = dict(
-#             diff_method=diff_method,
-#             interface=interface,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#
-#         if diff_method == "spsa":
-#             kwargs["sampler_rng"] = np.random.default_rng(seed)
-#             tol = TOL_FOR_SPSA
-#
-#         x = qml.numpy.array(0.543, requires_grad=True)
-#         y = qml.numpy.array(-0.654, requires_grad=True)
-#
-#         @qnode(dev, **kwargs)
-#         def circuit(x, y):
-#             qml.RX(x, wires=[0])
-#             qml.RY(y, wires=[1])
-#             qml.CNOT(wires=[0, 1])
-#             return qml.probs(wires=[0]), qml.probs(wires=[1])
-#
-#         res = circuit(x, y)
-#
-#         expected = np.array(
-#             [
-#                 [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2],
-#                 [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2],
-#             ]
-#         )
-#         assert np.allclose(res, expected, atol=tol, rtol=0)
-#
-#         def cost(x, y):
-#             return autograd.numpy.hstack(circuit(x, y))
-#
-#         res = qml.jacobian(cost)(x, y)
-#
-#         assert isinstance(res, tuple) and len(res) == 2
-#         assert res[0].shape == (4,)
-#         assert res[1].shape == (4,)
-#
-#         expected = (
-#             np.array(
-#                 [
-#                     [
-#                         -np.sin(x) / 2,
-#                         np.sin(x) / 2,
-#                         -np.sin(x) * np.cos(y) / 2,
-#                         np.sin(x) * np.cos(y) / 2,
-#                     ],
-#                 ]
-#             ),
-#             np.array(
-#                 [
-#                     [0, 0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
-#                 ]
-#             ),
-#         )
-#         assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
-#
-#     def test_ragged_differentiation(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
-#     ):
-#         """Tests correct output shape and evaluation for a tape
-#         with prob and expval outputs"""
-#         if "lightning" in getattr(dev, "name", "").lower():
-#             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
-#
-#         kwargs = dict(
-#             diff_method=diff_method,
-#             interface=interface,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#
-#         if diff_method == "spsa":
-#             kwargs["sampler_rng"] = np.random.default_rng(seed)
-#             tol = TOL_FOR_SPSA
-#
-#         x = qml.numpy.array(0.543, requires_grad=True)
-#         y = qml.numpy.array(-0.654, requires_grad=True)
-#
-#         @qnode(dev, **kwargs)
-#         def circuit(x, y):
-#             qml.RX(x, wires=[0])
-#             qml.RY(y, wires=[1])
-#             qml.CNOT(wires=[0, 1])
-#             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
-#
-#         res = circuit(x, y)
-#         assert isinstance(res, tuple)
-#         expected = [np.cos(x), [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]]
-#         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-#         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
-#
-#         def cost(x, y):
-#             return autograd.numpy.hstack(circuit(x, y))
-#
-#         res = qml.jacobian(cost)(x, y)
-#         assert isinstance(res, tuple)
-#         assert len(res) == 2
-#
-#         assert res[0].shape == (3,)
-#         assert res[1].shape == (3,)
-#
-#         expected = (
-#             np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
-#             np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
-#         )
-#         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-#         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
-#
-#     def test_ragged_differentiation_variance(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
-#     ):
-#         """Tests correct output shape and evaluation for a tape
-#         with prob and variance outputs"""
-#         if "lightning" in getattr(dev, "name", "").lower():
-#             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
-#         kwargs = dict(
-#             diff_method=diff_method,
-#             interface=interface,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#
-#         if diff_method == "spsa":
-#             kwargs["sampler_rng"] = np.random.default_rng(seed)
-#             tol = TOL_FOR_SPSA
-#         elif diff_method == "hadamard":
-#             pytest.skip("Hadamard gradient does not support variances.")
-#
-#         x = qml.numpy.array(0.543, requires_grad=True)
-#         y = qml.numpy.array(-0.654, requires_grad=True)
-#
-#         @qnode(dev, **kwargs)
-#         def circuit(x, y):
-#             qml.RX(x, wires=[0])
-#             qml.RY(y, wires=[1])
-#             qml.CNOT(wires=[0, 1])
-#             return qml.var(qml.PauliZ(0)), qml.probs(wires=[1])
-#
-#         res = circuit(x, y)
-#
-#         expected_var = np.array(np.sin(x) ** 2)
-#         expected_probs = np.array(
-#             [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
-#         )
-#
-#         assert isinstance(res, tuple)
-#         assert len(res) == 2
-#
-#         # assert isinstance(res[0], np.ndarray)
-#         # assert res[0].shape == ()
-#         assert np.allclose(res[0], expected_var, atol=tol, rtol=0)
-#
-#         # assert isinstance(res[1], np.ndarray)
-#         # assert res[1].shape == (2,)
-#         assert np.allclose(res[1], expected_probs, atol=tol, rtol=0)
-#
-#         def cost(x, y):
-#             return autograd.numpy.hstack(circuit(x, y))
-#
-#         jac = qml.jacobian(cost)(x, y)
-#         assert isinstance(res, tuple) and len(res) == 2
-#
-#         expected = (
-#             np.array([np.sin(2 * x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
-#             np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
-#         )
-#
-#         assert isinstance(jac, tuple)
-#         assert len(jac) == 2
-#
-#         # assert isinstance(jac[0], np.ndarray)
-#         # assert jac[0].shape == (3,)
-#         assert np.allclose(jac[0], expected[0], atol=tol, rtol=0)
-#
-#         # assert isinstance(jac[1], np.ndarray)
-#         # assert jac[1].shape == (3,)
-#         assert np.allclose(jac[1], expected[1], atol=tol, rtol=0)
-#
-#     def test_chained_qnodes(
-#         self, interface, device_name, diff_method, grad_on_execution, device_vjp
-#     ):
-#         """Test that the gradient of chained QNodes works without error"""
-#
-#         # pylint: disable=too-few-public-methods
-#         class Template(qml.templates.StronglyEntanglingLayers):
-#             """Custom template."""
-#
-#             def decomposition(self):
-#                 return [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
-#
-#         @qnode(
-#             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
-#         )
-#         def circuit1(weights):
-#             Template(weights, wires=[0, 1])
-#             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-#
-#         @qnode(
-#             dev,
-#             interface=interface,
-#             diff_method=diff_method,
-#             grad_on_execution=grad_on_execution,
-#             device_vjp=device_vjp,
-#         )
-#         def circuit2(data, weights):
-#             qml.templates.AngleEmbedding(data, wires=[0, 1])
-#             Template(weights, wires=[0, 1])
-#             return qml.expval(qml.PauliX(0))
-#
-#         def cost(w1, w2):
-#             c1 = circuit1(w1)
-#             c2 = circuit2(c1, w2)
-#             return np.sum(c2) ** 2
-#
-#         w1 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
-#         w2 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
-#
-#         weights = [
-#             np.random.random(w1, requires_grad=True),
-#             np.random.random(w2, requires_grad=True),
-#         ]
-#
-#         grad_fn = qml.grad(cost)
-#         res = grad_fn(*weights)
-#
-#         assert len(res) == 2
+def _lightning_with_adjoint(device_name, diff_method, *_):
+    """Skip if device is lightning and diff method is adjoint."""
+
+    if device_name == "lightning.qubit" and diff_method == "adjoint":
+        return "lightning does not support measuring probabilities with adjoint."
+    return False
+
+
+def _hadamard_gradient(_, diff_method, *__):
+    """Skip hadamard gradient for var"""
+
+    if diff_method == "hadamard":
+        return "Hadamard gradient does not support variances."
+    return False
+
+
+class TestQubitIntegration:
+    """Tests that ensure various qubit circuits integrate correctly"""
+
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp",
+        generate_test_matrix(xfail_conditions=[_lightning_with_adjoint]),
+    )
+    def test_probability_differentiation(
+        self, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
+    ):
+        """Tests correct output shape and evaluation for a tape
+        with a single prob output"""
+
+        kwargs = dict(
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+
+        if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            tol = TOL_FOR_SPSA
+
+        x = qml.numpy.array(0.543, requires_grad=True)
+        y = qml.numpy.array(-0.654, requires_grad=True)
+
+        dev = get_device(device_name, wires=3, seed=seed)
+
+        @qnode(dev, **kwargs)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[1])
+
+        res = qml.jacobian(circuit)(x, y)
+        assert isinstance(res, tuple) and len(res) == 2
+
+        expected = (
+            np.array([-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2]),
+            np.array([-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
+        )
+        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp",
+        generate_test_matrix(xfail_conditions=[_lightning_with_adjoint]),
+    )
+    def test_multiple_probability_differentiation(
+        self, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
+    ):
+        """Tests correct output shape and evaluation for a tape
+        with multiple prob outputs"""
+
+        kwargs = dict(
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+
+        if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            tol = TOL_FOR_SPSA
+
+        x = qml.numpy.array(0.543, requires_grad=True)
+        y = qml.numpy.array(-0.654, requires_grad=True)
+
+        dev = get_device(device_name, wires=3, seed=seed)
+
+        @qnode(dev, **kwargs)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0]), qml.probs(wires=[1])
+
+        res = circuit(x, y)
+
+        expected = np.array(
+            [
+                [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2],
+                [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        def cost(x, y):
+            return qml.numpy.hstack(circuit(x, y))
+
+        res = qml.jacobian(cost)(x, y)
+
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (4,)
+        assert res[1].shape == (4,)
+
+        expected = (
+            np.array(
+                [
+                    [
+                        -np.sin(x) / 2,
+                        np.sin(x) / 2,
+                        -np.sin(x) * np.cos(y) / 2,
+                        np.sin(x) * np.cos(y) / 2,
+                    ],
+                ]
+            ),
+            np.array(
+                [
+                    [0, 0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                ]
+            ),
+        )
+        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp",
+        generate_test_matrix(xfail_conditions=[_lightning_with_adjoint]),
+    )
+    def test_ragged_differentiation(
+        self, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
+    ):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+
+        kwargs = dict(
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+
+        if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            tol = TOL_FOR_SPSA
+
+        x = qml.numpy.array(0.543, requires_grad=True)
+        y = qml.numpy.array(-0.654, requires_grad=True)
+
+        dev = get_device(device_name, wires=3, seed=seed)
+
+        @qnode(dev, **kwargs)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
+
+        res = circuit(x, y)
+        assert isinstance(res, tuple)
+        expected = [np.cos(x), [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]]
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+
+        def cost(x, y):
+            return qml.numpy.hstack(circuit(x, y))
+
+        res = qml.jacobian(cost)(x, y)
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert res[0].shape == (3,)
+        assert res[1].shape == (3,)
+
+        expected = (
+            np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
+            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
+        )
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp",
+        generate_test_matrix(
+            xfail_conditions=[_lightning_with_adjoint],
+            skip_conditions=[_hadamard_gradient],
+        ),
+    )
+    def test_ragged_differentiation_variance(
+        self, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
+    ):
+        """Tests correct output shape and evaluation for a tape
+        with prob and variance outputs"""
+
+        kwargs = dict(
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+
+        if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            tol = TOL_FOR_SPSA
+
+        x = qml.numpy.array(0.543, requires_grad=True)
+        y = qml.numpy.array(-0.654, requires_grad=True)
+
+        dev = get_device(device_name, wires=3, seed=seed)
+
+        @qnode(dev, **kwargs)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0)), qml.probs(wires=[1])
+
+        res = circuit(x, y)
+
+        expected_var = np.array(np.sin(x) ** 2)
+        expected_probs = np.array(
+            [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
+        )
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        # assert isinstance(res[0], np.ndarray)
+        # assert res[0].shape == ()
+        assert np.allclose(res[0], expected_var, atol=tol, rtol=0)
+
+        # assert isinstance(res[1], np.ndarray)
+        # assert res[1].shape == (2,)
+        assert np.allclose(res[1], expected_probs, atol=tol, rtol=0)
+
+        def cost(x, y):
+            return qml.numpy.hstack(circuit(x, y))
+
+        jac = qml.jacobian(cost)(x, y)
+        assert isinstance(res, tuple) and len(res) == 2
+
+        expected = (
+            np.array([np.sin(2 * x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
+            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
+        )
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
+
+        # assert isinstance(jac[0], np.ndarray)
+        # assert jac[0].shape == (3,)
+        assert np.allclose(jac[0], expected[0], atol=tol, rtol=0)
+
+        # assert isinstance(jac[1], np.ndarray)
+        # assert jac[1].shape == (3,)
+        assert np.allclose(jac[1], expected[1], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "device_name, diff_method, grad_on_execution, device_vjp", generate_test_matrix()
+    )
+    def test_chained_qnodes(self, device_name, diff_method, grad_on_execution, device_vjp):
+        """Test that the gradient of chained QNodes works without error"""
+
+        dev = get_device(device_name, wires=3)
+
+        # pylint: disable=too-few-public-methods
+        class Template(qml.templates.StronglyEntanglingLayers):
+            """Custom template."""
+
+            def decomposition(self):
+                return [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
+
+        @qnode(
+            dev, interface="autograd", diff_method=diff_method, grad_on_execution=grad_on_execution
+        )
+        def circuit1(weights):
+            Template(weights, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        @qnode(
+            dev,
+            interface="autograd",
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+        def circuit2(data, weights):
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            Template(weights, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        def cost(w1, w2):
+            c1 = circuit1(w1)
+            c2 = circuit2(c1, w2)
+            return np.sum(c2) ** 2
+
+        w1 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
+        w2 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
+
+        weights = [
+            pnp.random.random(w1, requires_grad=True),
+            pnp.random.random(w2, requires_grad=True),
+        ]
+
+        grad_fn = qml.grad(cost)
+        res = grad_fn(*weights)
+
+        assert len(res) == 2
+
+
 #
 #     def test_chained_gradient_value(
 #         self, interface, device_name, diff_method, grad_on_execution, device_vjp, tol, seed
