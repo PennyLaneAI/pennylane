@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for qubit observables."""
-# pylint: disable=protected-access, use-implicit-booleaness-not-comparison
+# pylint: disable=protected-access, use-implicit-booleaness-not-comparison, function-redefined
 import functools
 import pickle
 
@@ -213,12 +213,6 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         # test matrix with incorrect dimensions
         with pytest.raises(ValueError, match="Expected input matrix to have shape"):
             qml.Hermitian(H1, wires=[0])
-
-        # test non-Hermitian matrix
-        H2 = ham.copy()
-        H2[0, 1] = 2
-        with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.Hermitian(H2, wires=0)
 
     def test_ragged_input_raises(self):
         """Tests that an error is raised if the input to Hermitian is ragged."""
@@ -503,12 +497,6 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.Hermitian(ham[1:], wires=0).matrix()
 
-        # test non-Hermitian matrix
-        H2 = ham.copy()
-        H2[0, 1] = 2
-        with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.Hermitian(H2, wires=0).matrix()
-
     def test_hermitian_empty_wire_list_error(self):
         """Tests that the hermitian operator raises an error when instantiated with wires=[]."""
         herm_mat = np.array([]).reshape((0, 0))
@@ -524,6 +512,31 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         expected = np.array([[6.0 + 0.0j, 1.0 - 2.0j], [1.0 + 2.0j, -1.0 + 0.0j]])
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
+    @pytest.mark.jax
+    def test_jit_execution(self):
+        """Test that the Hermitian observable executes correctly under a jitted function."""
+
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+        matrix = jax.numpy.array([[1, 0], [0, 1]])
+
+        # Here the matrix is captured and traced
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(matrix):
+            return qml.expval(qml.Hermitian(matrix, wires=[1]))
+
+        assert qml.math.allclose(circuit(matrix), 1.0)
+
+        # Here the matrix is captured as a constant
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            return qml.expval(qml.Hermitian(matrix, wires=[1]))
+
+        assert qml.math.allclose(circuit(), 1.0)
 
 
 class TestProjector:

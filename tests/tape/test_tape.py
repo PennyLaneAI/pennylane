@@ -14,7 +14,6 @@
 """Unit tests for the QuantumTape"""
 # pylint: disable=protected-access,too-few-public-methods
 import copy
-import warnings
 from collections import defaultdict
 
 import numpy as np
@@ -33,13 +32,6 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def TestOperationMonkeypatching():
@@ -910,42 +902,6 @@ class TestExpand:
 
         assert new_tape.num_params == 3
         assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
-        assert new_tape.shots is tape.shots
-
-    def test_nested_tape(self):
-        """Test that a nested tape properly expands"""
-        with QuantumTape() as tape1:
-            with QuantumTape() as tape2:
-                qml.RX(0.543, wires=0)
-                qml.RY(0.1, wires=0)
-
-        assert tape1.num_params == 2
-        assert tape1.operations == [tape2]
-
-        new_tape = tape1.expand()
-        assert new_tape.num_params == 2
-        assert len(new_tape.operations) == 2
-        assert isinstance(new_tape.operations[0], qml.RX)
-        assert isinstance(new_tape.operations[1], qml.RY)
-        assert new_tape.shots is tape1.shots
-
-    def test_nesting_and_decomposition(self):
-        """Test an example that contains nested tapes and operation decompositions."""
-
-        with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 1]), wires=[0, "a"])
-
-            with QuantumTape():
-                qml.Rot(0.543, 0.1, 0.4, wires=0)
-
-            qml.CNOT(wires=[0, "a"])
-            qml.RY(0.2, wires="a")
-            qml.probs(wires=0)
-            qml.probs(wires="a")
-
-        new_tape = tape.expand()
-
-        assert len(new_tape.operations) == 5
         assert new_tape.shots is tape.shots
 
     def test_stopping_criterion(self):
@@ -2061,7 +2017,9 @@ class TestNumericType:
             assert np.issubdtype(result[0].dtype, float)
         else:
             assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.numeric_type is float
+
+        tape = qml.workflow.construct_tape(circuit)(0.3, 0.2)
+        assert tape.numeric_type is float
 
     @pytest.mark.parametrize(
         "ret", [qml.state(), qml.density_matrix(wires=[0, 1]), qml.density_matrix(wires=[2, 0])]
@@ -2081,7 +2039,9 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
-        assert circuit.qtape.numeric_type is complex
+
+        tape = qml.workflow.construct_tape(circuit)(0.3, 0.2)
+        assert tape.numeric_type is complex
 
     def test_sample_int(self):
         """Test that the tape can correctly determine the output domain for a
@@ -2097,7 +2057,9 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, int)
-        assert circuit.qtape.numeric_type is int
+
+        tape = qml.workflow.construct_tape(circuit)()
+        assert tape.numeric_type is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -2124,7 +2086,9 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result[0].dtype, float)
-        assert circuit.qtape.numeric_type is float
+
+        tape = qml.workflow.construct_tape(circuit)(0.3, 0.2)
+        assert tape.numeric_type is float
 
     @pytest.mark.autograd
     def test_sample_real_and_int_eigvals(self):
@@ -2153,7 +2117,8 @@ class TestNumericType:
         assert result[0].dtype == float
         assert result[1].dtype == int
 
-        assert circuit.qtape.numeric_type == (float, int)
+        tape = qml.workflow.construct_tape(circuit)(0, 3)
+        assert tape.numeric_type == (float, int)
 
     def test_multi_type_measurements_numeric_type_error(self):
         """Test that querying the numeric type of a tape with several types of

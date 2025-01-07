@@ -14,7 +14,6 @@
 """Unit tests for the classical shadows measurement processes"""
 
 import copy
-import warnings
 
 import autograd.numpy
 import pytest
@@ -23,14 +22,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 # pylint: disable=dangerous-default-value, too-many-arguments
 
@@ -262,9 +253,9 @@ class TestClassicalShadow:
         shots = 100
 
         circuit = get_circuit(wires, shots, True)
-        circuit.construct((), {})
+        tape = qml.workflow.construct_tape(circuit)()
 
-        res = qml.execute([circuit.tape], circuit.device, None)[0]
+        res = qml.execute([tape], circuit.device, None)[0]
         expected_shape = qml.classical_shadow(wires=range(wires)).shape(shots, wires)
 
         assert res.shape == expected_shape
@@ -458,9 +449,9 @@ class TestExpvalMeasurement:
         H = qml.PauliZ(0)
 
         circuit = hadamard_circuit(wires, shots)
-        circuit.construct((H,), {})
+        tape = qml.workflow.construct_tape(circuit)(H)
 
-        res = qml.execute([circuit.tape], circuit.device, None)[0]
+        res = qml.execute([tape], circuit.device, None)[0]
         expected_shape = qml.shadow_expval(H).shape(shots, wires)
 
         assert res.shape == expected_shape
@@ -497,7 +488,7 @@ class TestExpvalMeasurement:
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+            return qml.shadow_expval(qml.PauliZ(0), seed=seed), qml.expval(qml.PauliZ(0))
 
         res = circuit()
         assert isinstance(res, tuple)
@@ -800,9 +791,8 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
         wires, basis=circuit_basis, shots=shots, interface=interface, device=device
     )
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
-    new_bits, new_recipes = circuit.tape.measurements[0].process(
-        circuit.tape, circuit.device.target_device
-    )
+    tape = qml.workflow.construct_tape(circuit)()
+    new_bits, new_recipes = tape.measurements[0].process(tape, circuit.device.target_device)
 
     # test that the recipes follow a rough uniform distribution
     ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
@@ -849,8 +839,8 @@ def test_hadamard_expval(k=1, obs=obs_hadamard, expected=expected_hadamard):
     circuit = hadamard_circuit_legacy(3, shots=50000)
     actual = circuit(obs, k=k)
 
-    print(circuit.tape)
-    new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device.target_device)
+    tape = qml.workflow.construct_tape(circuit)(obs, k=k)
+    new_actual = tape.measurements[0].process(tape, circuit.device.target_device)
 
     assert actual.shape == (len(obs_hadamard),)
     assert actual.dtype == np.float64

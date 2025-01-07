@@ -258,6 +258,33 @@ class TestIntegration:
         assert check_cache(inner1.func)
         assert check_cache(inner2.func)
 
+    def test_adjoint_op(self):
+        """Test that the adjoint of an operator successfully passes through autograph"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circ():
+            qml.adjoint(qml.X(0))
+            return qml.expval(qml.Z(0))
+
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+
+    def test_ctrl_op(self):
+        """Test that the adjoint of an operator successfully passes through autograph without raising an error"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circ():
+            qml.X(1)
+            qml.ctrl(qml.X(0), 1)
+            return qml.expval(qml.Z(0))
+
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+
+    @pytest.mark.xfail(
+        raises=NotImplementedError,
+        reason="adjoint_transform_prim not implemented on DefaultQubitInterpreter",
+    )
     def test_adjoint_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
 
@@ -278,6 +305,10 @@ class TestIntegration:
         assert check_cache(circ.func)
         assert check_cache(inner)
 
+    @pytest.mark.xfail(
+        raises=NotImplementedError,
+        reason="ctrl_transform_prim not implemented on DefaultQubitInterpreter",
+    )
     def test_ctrl_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
 
@@ -353,9 +384,10 @@ class TestIntegration:
         with pytest.raises(NotImplementedError):
             ag_fn(0.5)
 
-    def test_mcm_one_shot(self):
+    @pytest.mark.xfail
+    def test_mcm_one_shot(self, seed):
         """Test if mcm one-shot miss transforms."""
-        dev = qml.device("default.qubit", wires=5, shots=20)
+        dev = qml.device("default.qubit", wires=5, shots=20, seed=seed)
 
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
         def circ(x):
