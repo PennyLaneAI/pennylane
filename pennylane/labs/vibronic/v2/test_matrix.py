@@ -1,8 +1,7 @@
 """Test matrix operations"""
-import pytest
 
 import numpy as np
-
+import pytest
 from matrix_ops import op_norm
 from vibronic_matrix import VibronicMatrix
 from vibronic_term import VibronicTerm, VibronicWord
@@ -27,6 +26,7 @@ vmat3 = VibronicMatrix(2, 2, blocks3)
 blocks4 = {(0, 0): vword2a, (0, 1): vword2a, (1, 0): vword2b, (1, 1): vword2b}
 vmat4 = VibronicMatrix(2, 2, blocks4)
 
+
 class TestMatrix:
     """Test properties of the VibronicMatrix class"""
 
@@ -35,12 +35,12 @@ class TestMatrix:
         (vmat0, 4, 0.5),
         (vmat1, 2, op_norm(2)),
         (vmat1, 4, op_norm(4)),
-        (vmat2, 2, 6*op_norm(2)**2),
-        (vmat2, 4, 6*op_norm(4)**2),
-        (vmat3, 2, np.sqrt(18*op_norm(2)**3)),
-        (vmat3, 4, np.sqrt(18*op_norm(4)**3)),
-        (vmat4, 2, 6*op_norm(2)**2 + np.sqrt(18*op_norm(2)**3)),
-        (vmat4, 4, 6*op_norm(4)**2 + np.sqrt(18*op_norm(4)**3)),
+        (vmat2, 2, 6 * op_norm(2) ** 2),
+        (vmat2, 4, 6 * op_norm(4) ** 2),
+        (vmat3, 2, np.sqrt(18 * op_norm(2) ** 3)),
+        (vmat3, 4, np.sqrt(18 * op_norm(4) ** 3)),
+        (vmat4, 2, 6 * op_norm(2) ** 2 + np.sqrt(18 * op_norm(2) ** 3)),
+        (vmat4, 4, 6 * op_norm(4) ** 2 + np.sqrt(18 * op_norm(4) ** 3)),
     ]
 
     @pytest.mark.parametrize("vmatrix, gridpoints, expected", params)
@@ -61,6 +61,7 @@ class TestMatrix:
         (vmat4, 2),
         (vmat4, 4),
     ]
+
     @pytest.mark.parametrize("vmatrix, gridpoints", params)
     def test_norm_against_numpy(self, vmatrix: VibronicMatrix, gridpoints: int):
         """Test that .norm is an upper bound on the true norm"""
