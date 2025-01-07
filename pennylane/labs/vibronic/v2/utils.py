@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def coeffs(states, modes):
+def coeffs(states: int, modes: int):
     """Produce random coefficients for input"""
 
     alphas = np.random.random(size=(states, states, modes))
@@ -26,3 +26,11 @@ def coeffs(states, modes):
             symmetric_lambdas[i, j] = (lambdas[i, j] + lambdas[j, i]) / 2
 
     return symmetric_alphas, symmetric_betas, symmetric_lambdas, omegas
+
+
+def is_pow_2(k: int) -> bool:
+    """Test if k is a power of two"""
+    if (k & (k - 1) == 0) or k == 0:
+        return True
+
+    return False

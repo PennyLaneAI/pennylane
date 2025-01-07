@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import math
 from itertools import product
 from typing import Dict, Tuple, Union
 
 import numpy as np
 import scipy as sp
-from matrix_ops import _kron, _zeros, word_to_matrix
+from matrix_ops import _kron, _zeros, op_norm, word_to_matrix
+from utils import is_pow_2
 from vibronic_term import VibronicWord
 
 
@@ -17,6 +19,10 @@ class VibronicMatrix:
     def __init__(
         self, states: int, modes: int, blocks: Dict[Tuple[int, int], VibronicWord] = None
     ) -> VibronicMatrix:
+
+        if not is_pow_2(states) or states == 0:
+            raise ValueError(f"The number of states must be a power of 2, got {states}.")
+
         if blocks is None:
             blocks = {}
 
@@ -26,12 +32,24 @@ class VibronicMatrix:
 
     def block(self, row: int, col: int) -> VibronicWord:
         """Return the block indexed at (row, col)"""
+        if row < 0 or col < 0:
+            raise IndexError(f"Index cannot be negative, got {(row, col)}.")
+        if row >= self.states or col >= self.states:
+            raise IndexError(
+                f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
+            )
         return self._blocks.get((row, col), VibronicWord(tuple()))
 
     def set_block(self, row: int, col: int, word: VibronicWord) -> None:
         """Set the value of the block indexed at (row, col)"""
         if not isinstance(word, VibronicWord):
             raise TypeError(f"Block value must be VibronicWord. Got {type(word)}.")
+        if row < 0 or col < 0:
+            raise IndexError(f"Index cannot be negative, got {(row, col)}.")
+        if row >= self.states or col >= self.states:
+            raise IndexError(
+                f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
+            )
 
         self._blocks[(row, col)] = word
 
@@ -56,6 +74,52 @@ class VibronicMatrix:
             matrix += _kron(indicator, block)
 
         return matrix
+
+    def norm(self, gridpoints: int) -> float:
+        """Compute the spectral norm"""
+
+        if not is_pow_2(gridpoints) or gridpoints <= 0:
+            raise ValueError(
+                f"Number of gridpoints must be a positive power of 2, got {gridpoints}."
+            )
+
+        return self._norm(gridpoints)
+
+    def _norm(self, gridpoints: int) -> float:
+        # pylint: disable=protected-access
+        if len(self._blocks) == 0:
+            return 0
+
+        if self.states == 1:
+            return self._norm_base_case(gridpoints)
+
+        top_left, top_right, bottom_left, bottom_right = self._partition_into_quadrants()
+
+        norm1 = max(top_left._norm(gridpoints), bottom_right._norm(gridpoints))
+        norm2 = np.sqrt(top_right._norm(gridpoints) * bottom_left._norm(gridpoints))
+
+        return norm1 + norm2
+
+    def _norm_base_case(self, gridpoints: int) -> float:
+        if self.states != 1:
+            raise RuntimeError("Base case called on VibronicMatrix with >1 state")
+
+        if len(self._blocks) == 0:
+            return 0
+
+        word = self._blocks[(0, 0)]
+        norm = 0
+
+        for term in word.terms:
+            term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
+            coeff_sum = sum(
+                term.coeffs.compute(index)
+                for index in product(range(self.modes), repeat=len(term.ops))
+            )
+
+            norm += coeff_sum * term_op_norm
+
+        return norm
 
     def __add__(self, other: VibronicMatrix) -> VibronicMatrix:
         if self.states != other.states:
@@ -149,6 +213,29 @@ class VibronicMatrix:
             return False
 
         return True
+
+    def _partition_into_quadrants(self) -> Tuple[VibronicMatrix]:
+        # pylint: disable=chained-comparison
+        half = self.states // 2
+
+        top_left = VibronicMatrix(half, self.modes, {})
+        top_right = VibronicMatrix(half, self.modes, {})
+        bottom_left = VibronicMatrix(half, self.modes, {})
+        bottom_right = VibronicMatrix(half, self.modes, {})
+
+        for index, word in self._blocks.items():
+            x, y = index
+
+            if x < half and y < half:
+                top_left.set_block(x, y, word)
+            if x < half and y >= half:
+                top_right.set_block(x, y - half, word)
+            if x >= half and y < half:
+                bottom_left.set_block(x - half, y, word)
+            if x >= half and y >= half:
+                bottom_right.set_block(x - half, y - half, word)
+
+        return top_left, top_right, bottom_left, bottom_right
 
 
 def commutator(a: VibronicMatrix, b: VibronicMatrix):

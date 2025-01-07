@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 from scipy.sparse import csr_matrix
+from utils import is_pow_2
 from vibronic_matrix import VibronicMatrix, commutator
 from vibronic_term import VibronicTerm, VibronicWord
 from vibronic_tree import Node
@@ -21,14 +22,23 @@ class VibronicHamiltonian:
         lambdas: np.ndarray,
         omegas: np.ndarray,
     ):
+        if not is_pow_2(states) or states == 0:
+            raise ValueError(f"States must be a positive power of 2, got {states} states.")
+
         if alphas.shape != (states, states, modes):
-            raise TypeError
+            raise TypeError(
+                f"Alphas must have shape {(states, states, modes)}, got shape {alphas.shape}."
+            )
         if betas.shape != (states, states, modes, modes):
-            raise TypeError
+            raise TypeError(
+                f"Betas must have shape {(states, states, modes, modes)}, got shape {betas.shape}."
+            )
         if lambdas.shape != (states, states):
-            raise TypeError
+            raise TypeError(
+                f"Lambdas must have shape {(states, states)}, got shape {lambdas.shape}."
+            )
         if omegas.shape != (modes,):
-            raise TypeError
+            raise TypeError(f"Omegas must have shape {(modes,)}, got shape {omegas.shape}.")
 
         self.states = states
         self.modes = modes
