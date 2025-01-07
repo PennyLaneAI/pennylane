@@ -125,7 +125,7 @@ def run_autograph(fn):
     ).
 
     Args:
-        fn (Callable): the callable to be converted. This could be a function, a QNode, or another callable object.
+        fn (Callable): The callable to be converted. This could be a function, a QNode, or another callable object.
             For a QNode, the ``Qnode.func`` will be converted. For another callable object, a function calling the
             object will be converted.
 
