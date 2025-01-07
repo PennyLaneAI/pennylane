@@ -16,10 +16,10 @@ Contains concurrent executor abstractions for task-based workloads.
 """
 
 import abc
-from collections.abc import Callable, Sequence
-from functools import singledispatchmethod
 import os
 import sys
+from collections.abc import Callable, Sequence
+from functools import singledispatchmethod
 from types import NoneType
 
 
@@ -113,7 +113,10 @@ class DaskExec(ExtExecABC):
     Dask distributed abstraction class functor.
     """
 
-    from dask.distributed.deploy import Cluster
+    try:
+        from dask.distributed.deploy import Cluster
+    except:
+        Cluster = None
 
     @singledispatchmethod
     def __init__(self, client_provider=None, max_workers=4):
@@ -144,15 +147,8 @@ class DaskExec(ExtExecABC):
         return self._size
 
 
-class ProcPoolExec(IntExecABC):
-    """
-    concurrent.futures.ProcessPoolExecutor abstraction class functor.
-    """
-
+class PyNativeExecABC(IntExecABC, abc.ABC):
     def __init__(self, max_workers=None):
-        from concurrent.futures import ProcessPoolExecutor
-
-        self._exec_backend = ProcessPoolExecutor
         if max_workers:
             self._size = max_workers
         elif sys.version_info.minor >= 13:
@@ -161,13 +157,42 @@ class ProcPoolExec(IntExecABC):
             self._size = os.cpu_count()
 
     def __call__(self, fn: Callable, data: Sequence):
-        with self._exec_backend(max_workers=self._size) as executor:
+        exec_cls = self._exec_backend()
+        with exec_cls(max_workers=self._size) as executor:
             output_f = executor.map(fn, data)
         return output_f
 
     @property
     def size(self):
         return self._size
+
+    @classmethod
+    @abc.abstractmethod
+    def _exec_backend(cls): ...
+
+
+class ProcPoolExec(PyNativeExecABC):
+    """
+    concurrent.futures.ProcessPoolExecutor abstraction class functor.
+    """
+
+    @classmethod
+    def _exec_backend(cls):
+        from concurrent.futures import ProcessPoolExecutor as exec
+
+        return exec
+
+
+class ThreadPoolExec(PyNativeExecABC):
+    """
+    concurrent.futures.ThreadPoolExecutor abstraction class functor.
+    """
+
+    @classmethod
+    def _exec_backend(cls):
+        from concurrent.futures import ThreadPoolExecutor as exec
+
+        return exec
 
 
 class RayExec(ExtExecABC):
