@@ -311,7 +311,7 @@ class Device(abc.ABC):
                     program.add_transform(my_preprocessing_transform)
                     return program, config
 
-        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
+        .. seealso:: :func:`~pennylane.transform.core.transform` and :class:`~pennylane.transform.core.TransformProgram`
 
         .. details::
             :title: Post processing function and derivatives

@@ -167,7 +167,7 @@
     True
   ```
 
-* Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
+* A device that extends `qml.devices.Device` now has an optional class attribute `capabilities`
   that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
   file if it exists. Otherwise, it is set to `None`.
   [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
