@@ -614,4 +614,4 @@ class TransformProgram:
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 
         # Reset classical jacobians
-        return tuple(tapes), postprocessing_fn>>
+        return tuple(tapes), postprocessing_fn
