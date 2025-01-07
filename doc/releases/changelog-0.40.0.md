@@ -403,10 +403,11 @@
 * Improved documentation for the `dynamic_one_shot` transform, and a warning is raised when a user-applied `dynamic_one_shot` transform is ignored in favour of the existing transform in a device's preprocessing transform program.
   [(#6701)](https://github.com/PennyLaneAI/pennylane/pull/6701)
 
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
+* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces an `apply_operation` helper function that features:
 
   * Two density matrix contraction methods using `einsum` and `tensordot`
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
+  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
 
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
