@@ -348,7 +348,7 @@ class FermiWord(dict):
 
         **Example**
 
-        >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w = qml.FermiWord({(0, 0): '+', (1, 1): '-'})
         >>> w.shift_operator(0, 1)
         -1 * a(1) a⁺(0)
         """

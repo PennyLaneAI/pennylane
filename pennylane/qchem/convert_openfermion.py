@@ -126,9 +126,9 @@ def to_openfermion(
     **Example**
 
     >>> import pennylane as qml
-    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
-    >>> fermi_s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> fermi_s = qml.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> of_fermi_op = qml.to_openfermion(fermi_s)
     >>> of_fermi_op
     1.2 [0^ 1] +

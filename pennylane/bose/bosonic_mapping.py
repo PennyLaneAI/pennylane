@@ -65,7 +65,7 @@ def binary_mapping(
 
     **Example**
 
-    >>> w = qml.bose.BoseWord({(0, 0): "+"})
+    >>> w = qml.BoseWord({(0, 0): "+"})
     >>> qml.binary_mapping(w, n_states=4)
     0.6830127018922193 * X(0)
     + -0.1830127018922193 * X(0) @ Z(1)
@@ -188,7 +188,7 @@ def unary_mapping(
 
     **Example**
 
-    >>> w = qml.bose.BoseWord({(0, 0): "+"})
+    >>> w = qml.BoseWord({(0, 0): "+"})
     >>> qml.unary_mapping(w, n_states=4)
     0.25 * X(0) @ X(1)
     + -0.25j * X(0) @ Y(1)

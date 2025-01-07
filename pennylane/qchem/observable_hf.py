@@ -107,9 +107,9 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
 
     **Example**
 
-    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> s = qml.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> print(qubit_observable(s))
     -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
     """
