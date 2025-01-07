@@ -63,17 +63,18 @@ class MPIPoolExec(ExtExecABC):
     MPIPoolExecutor abstraction class functor.
     """
 
-    def __init__(self):
+    def __init__(self, max_workers=None):
         from mpi4py import MPI  # Required to call MPI_Init
         from mpi4py.futures import MPIPoolExecutor as executor
 
         self._exec_backend = executor
-        self._size = MPI.COMM_WORLD.Get_size()
+        self._size = MPI.COMM_WORLD.Get_size() if max_workers is None else max_workers
 
     def __call__(self, fn: Callable, data: Sequence):
         kwargs = {"use_pkl5": True}
-        with self._exec_backend(**kwargs) as executor:
-            output_f = executor.map(fn, data)
+        chunksize = max(len(data) // self._size, 1)
+        with self._exec_backend(max_workers=self.size, **kwargs) as executor:
+            output_f = executor.map(fn, data, chunksize=chunksize)
         return output_f
 
     @property
@@ -83,7 +84,7 @@ class MPIPoolExec(ExtExecABC):
 
 class MPICommExec(ExtExecABC):
     """
-    MPICommExecutor abstraction class functor. To be used in dynamic process spawning required by MPIPoolExec is unsupported by the MPI implementation.
+    MPICommExecutor abstraction class functor. To be used if dynamic process spawning required by MPIPoolExec is unsupported by the MPI implementation.
     """
 
     def __init__(self):
@@ -96,9 +97,11 @@ class MPICommExec(ExtExecABC):
 
     def __call__(self, fn: Callable, data: Sequence):
         kwargs = {"use_pkl5": True}
+        chunksize = max(len(data) // self._size, 1)
+
         with self._exec_backend(self._comm, root=0) as executor:
             if executor is not None:
-                output_f = executor.map(fn, data)
+                output_f = executor.map(fn, data, chunksize=chunksize)
             else:
                 raise RuntimeError(f"Failed to start executor {self._exec_backend}")
         return output_f
@@ -118,24 +121,22 @@ class DaskExec(ExtExecABC):
     except:
         Cluster = None
 
-    @singledispatchmethod
-    def __init__(self, client_provider=None, max_workers=4):
+    def __init__(self, max_workers=4, client_provider=None):
         from dask.distributed import Client, LocalCluster
 
-        cluster = LocalCluster(n_workers=max_workers, processes=True)
-        self._exec_backend = Client(cluster)
-        self._size = max_workers
+        if client_provider is None:
+            cluster = LocalCluster(n_workers=max_workers, processes=True)
+            self._exec_backend = Client(cluster)
 
-    @__init__.register
-    def _url_scheduler(self, client_provider: str):
-        from dask.distributed import Client
+        # Note: urllib does not validate
+        # (see https://docs.python.org/3/library/urllib.parse.html#url-parsing-security),
+        # so branch on str as URL
+        elif isinstance(client_provider, str):
+            self._exec_backend = Client(client_provider)
 
-        self._exec_backend = Client(client_provider)
-        self._size = len(self._exec_backend.scheduler_info()["workers"])
+        elif isinstance(client_provider, Cluster):
+            self._exec_backend = client_provider.get_client()
 
-    @__init__.register
-    def _cluster_provider(self, client_provider: Cluster):
-        self._exec_backend = client_provider.get_client()
         self._size = len(self._exec_backend.scheduler_info()["workers"])
 
     def __call__(self, fn: Callable, data: Sequence):
@@ -158,8 +159,9 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
 
     def __call__(self, fn: Callable, data: Sequence):
         exec_cls = self._exec_backend()
+        chunksize = max(len(data) // self._size, 1)
         with exec_cls(max_workers=self._size) as executor:
-            output_f = executor.map(fn, data)
+            output_f = executor.map(fn, data, chunksize=chunksize)
         return output_f
 
     @property
