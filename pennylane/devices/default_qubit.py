@@ -581,6 +581,11 @@ class DefaultQubit(Device):
         """
         updated_values = {}
 
+        updated_values["convert_to_numpy"] = (
+            execution_config.interface.value not in {"jax", "jax-jit"}
+            or execution_config.gradient_method == "adjoint"
+        )
+
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")
@@ -616,7 +621,6 @@ class DefaultQubit(Device):
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         self.reset_prng_key()
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (

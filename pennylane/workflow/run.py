@@ -208,7 +208,7 @@ def _get_ml_boundary_execute(
         elif interface == Interface.TORCH:
             from .interfaces.torch import execute as ml_boundary
 
-        elif interface == Interface.JAX_JIT:
+        elif interface == Interface.JAX_JIT and resolved_execution_config.convert_to_numpy:
             from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
 
         else:  # interface is jax

@@ -389,8 +389,7 @@ class TestJaxIntegration:
         results1 = func1(*params)
 
         jaxpr = str(jax.make_jaxpr(func)(*params))
-        assert "pure_callback" in jaxpr
-        pytest.xfail("QNode cannot be compiled with jax.jit.")
+        assert "pure_callback" not in jaxpr
 
         func2 = jax.jit(func)
         results2 = func2(*params)
