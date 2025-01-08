@@ -17,7 +17,7 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
-from pennylane.math import get_canonical_interface_name
+from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
 
@@ -87,7 +87,7 @@ class ExecutionConfig:
     device_options: Optional[dict] = None
     """Various options for the device executing a quantum circuit"""
 
-    interface: Optional[str] = None
+    interface: Interface = Interface.NUMPY
     """The machine learning framework to use"""
 
     derivative_order: int = 1
@@ -95,6 +95,13 @@ class ExecutionConfig:
 
     mcm_config: MCMConfig = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
+
+    convert_to_numpy: bool = True
+    """Whether or not to convert parameters to numpy before execution.
+    
+    If ``False`` and using the jax-jit, no pure callback will occur and the device
+    execution itself will be jitted.
+    """
 
     def __post_init__(self):
         """
@@ -124,7 +131,7 @@ class ExecutionConfig:
             )
 
         if isinstance(self.mcm_config, dict):
-            self.mcm_config = MCMConfig(**self.mcm_config)
+            self.mcm_config = MCMConfig(**self.mcm_config)  # pylint: disable=not-a-mapping
 
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
