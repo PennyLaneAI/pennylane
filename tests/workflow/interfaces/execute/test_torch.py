@@ -867,8 +867,6 @@ class TestHamiltonianWorkflows:
 
         res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        print(res)
-        print(expected)
         if shots.has_partitioned_shots:
             assert torch.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
             assert torch.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
@@ -877,8 +875,6 @@ class TestHamiltonianWorkflows:
 
         res = torch.hstack(torch.autograd.functional.jacobian(cost_fn, (weights, coeffs1, coeffs2)))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
-        print(res)
-        print(expected)
         if shots.has_partitioned_shots:
             assert torch.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
             assert torch.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)

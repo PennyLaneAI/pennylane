@@ -280,7 +280,6 @@ class TestJaxExecuteIntegration:
                 [qml.RY(jnp.array(0.5), 0)], [qml.probs(wires=[0, 1])], shots=shots
             )
             res = execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
-            print(res)
             res = jax.tree_util.tree_leaves(res)
             out = sum(jnp.hstack(res))
             if shots.has_partitioned_shots:

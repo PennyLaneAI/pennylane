@@ -2078,8 +2078,6 @@ class TestHamiltonianExpvalGradients:
             b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
         ]
         for res in all_res:
-            print(res)
-            # assert isinstance(res, tuple)
             assert len(res) == 2
             assert res[0].shape == ()
             assert res[1].shape == ()
