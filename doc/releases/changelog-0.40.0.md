@@ -48,8 +48,11 @@
   [-6.86858347  1.87079633 -0.28539816]
   ```
 
-* The `qml.qsvt` function has been improved to be more user-friendly,
-  handling block encoding and solving for angles automatically:
+* The `qml.qsvt` function has been improved to be more user-friendly.
+  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520)
+  [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
+
+  Now, block encoding and angle computation are all handled automatically:
   ```python
   # P(x) = -x + 0.5 x^3 + 0.5 x^5
   poly = np.array([0, -1, 0, 0.5, 0, 0.5])
@@ -72,8 +75,6 @@
   ```
   * The old `qml.qsvt` functionality is moved to `qml.qsvt_legacy`
     and it will be deprecated in release v0.40.
-    [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
-    [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
 
 * A new `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
