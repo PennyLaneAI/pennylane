@@ -1053,7 +1053,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         routine (str): the routine for which the angles are computed. Must be either ``"QSP"`` or ``"QSVT"``.
 
         angle_solver (str): the method used to calculate the angles. Default is ``"root-finding"``.
-            `"root-finding"`` is currently the only supported method.
+            ``"root-finding"`` is currently the only supported method.
 
     Returns:
         (tensor-like): computed angles for the specified routine
