@@ -34,14 +34,73 @@
   to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
 
-* The `qml.qsvt` function has been improved to be more user-friendly. Old functionality is moved to `qml.qsvt_legacy`
+  ```pycon
+  >>> poly = [0, 1.0, 0, -1/2, 0, 1/3]
+  >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
+  >>> print(qsvt_angles)
+  [-5.49778714  1.57079633  1.57079633  0.5833829   1.61095884  0.74753829]
+  ```
+  ```pycon
+  >>> qsp_angles = np.array([0.2, 0.3, 0.5])
+  >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
+  >>> print(qsvt_angles)
+  [-6.86858347  1.87079633 -0.28539816]
+  ```
+
+* The `qml.qsvt` function has been improved to be more user-friendly,
+  handling block encoding and solving for angles automatically.
+* Old functionality is moved to `qml.qsvt_legacy`
   and it will be deprecated in release v0.40.
   [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
   [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
 
+  ```python
+  # P(x) = -x + 0.5 x^3 + 0.5 x^5
+  poly = np.array([0, -1, 0, 0.5, 0, 0.5])
+  hamiltonian = qml.dot([0.3, 0.7], [qml.Z(1), qml.X(1) @ qml.Z(2)])
+  
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit():
+      qml.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep")
+      return qml.state()
+  
+  matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
+  ```
+  ```pycon
+  >>> print(matrix[:4, :4].real)
+  [[-0.1625  0.     -0.3793  0.    ]
+   [ 0.     -0.1625  0.      0.3793]
+   [-0.3793  0.      0.1625  0.    ]
+   [ 0.      0.3793  0.      0.1625]]
+  ```
+
 * New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
   The functionality `qml.poly_to_angles` has been also extended to support GQSP.
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
+  ```python
+  # P(x) = 0.1 + 0.2j x + 0.3 x^2
+  poly = [0.1, 0.2j, 0.3]
+  angles = qml.poly_to_angles(poly, "GQSP")
+  
+  @qml.prod # transforms the qfunc into an Operator
+  def unitary(wires):
+      qml.RX(0.3, wires)
+  
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit(angles):
+      qml.GQSP(unitary(wires = 1), angles, control = 0)
+      return qml.state()
+  
+  matrix = qml.matrix(circuit, wire_order=[0, 1])(angles)
+  ```
+  ```pycon
+  >>> print(np.round(matrix,3)[:2, :2])
+  [[0.387+0.198j 0.03 -0.089j]
+  [0.03 -0.089j 0.387+0.198j]]
+  ```
 
 <h4>Generalized Trotter products 🐖</h4>
 
