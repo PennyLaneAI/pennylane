@@ -98,7 +98,7 @@ class ExecutionConfig:
 
     convert_to_numpy: bool = True
     """Whether or not to convert parameters to numpy before execution.
-    
+
     If ``False`` and using the jax-jit, no pure callback will occur and the device
     execution itself will be jitted.
     """
