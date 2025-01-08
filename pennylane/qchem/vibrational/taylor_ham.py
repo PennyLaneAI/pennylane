@@ -665,15 +665,15 @@ def taylor_hamiltonian(
     ...                           8.85e-02, 4.94e-03, 3.96e-05])
     >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
     >>> pes_object = qml.qchem.VibrationalPES(
-            freqs=np.array([0.025]),
-            grid=grid,
-            uloc=np.array([[1.0]]),
-            gauss_weights=gauss_weights,
-            pes_data=[pes_onemode, pes_twomode],
-            dipole_data=[dipole_onemode],
-            localized=True,
-            dipole_level=1,
-        )
+    ...     freqs=np.array([0.025]),
+    ...     grid=grid,
+    ...     uloc=np.array([[1.0]]),
+    ...     gauss_weights=gauss_weights,
+    ...     pes_data=[pes_onemode, pes_twomode],
+    ...     dipole_data=[dipole_onemode],
+    ...     localized=True,
+    ...     dipole_level=1,
+    ... )
     >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
     (
         -0.003833496032473659 * X(0)
