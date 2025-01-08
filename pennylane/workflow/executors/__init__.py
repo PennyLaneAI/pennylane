@@ -16,4 +16,4 @@
 This module provides abstractions for task-based parallel workloads within the PennyLane internals.
 """
 
-from .exec_backend import ExecBackends, create_executor
+from .executors import ExecBackends, create_executor
