@@ -655,7 +655,7 @@ class Device(abc.ABC):
             >>> dev.execute([tape])
             (array(1.0),)
 
-            If the script has multiple measurments, then the device should return a tuple of measurements.
+            If the script has multiple measurements, then the device should return a tuple of measurements.
 
             >>> tape = qml.tape.QuantumTape(measurements=[qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
             >>> tape.shape(dev)
