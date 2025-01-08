@@ -79,10 +79,10 @@
 
 <h4>Bosonic operators 🎈</h4>
 
-A new module, :mod:`qml.bose <pennylane.bose>`, for bosonic function is available in PennyLane with the 
+A new module, `qml.bose <pennylane.bose>` for bosonic function is available in PennyLane with the 
 following features.
 
-* Bosonic operators analogous to `FermiWord` and `FermiSentence` are now available with 
+* Bosonic operators analogous to `qml.FermiWord` and `qml.FermiSentence` are now available with 
   :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
@@ -110,7 +110,7 @@ following features.
   ```
 
 * Functionality for converting bosonic operators to qubit operators is available with 
-  :func:`qml.unary_mapping <pennylane.unary_mapping>`, :func:`qml.binary_mapping <pennylane..binary_mapping>`, and
+  :func:`qml.unary_mapping <pennylane.unary_mapping>`, :func:`qml.binary_mapping <pennylane.binary_mapping>`, and
   :func:`qml.christiansen_mapping <pennylane.christiansen_mapping>`.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
