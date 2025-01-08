@@ -403,7 +403,7 @@ class DefaultTensor(Device):
         # options for TN
         self._local_simplify = kwargs.get("local_simplify", "ADCRS")
 
-        # options both for MPS and TN
+        # options for both MPS and TN
         self._contraction_optimizer = kwargs.get("contraction_optimizer", "auto-hq")
         self._contract = None
 
