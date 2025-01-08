@@ -74,7 +74,7 @@
    [ 0.      0.3793  0.      0.1625]]
   ```
   * The old `qml.qsvt` functionality is moved to `qml.qsvt_legacy`
-    and it will be deprecated in release v0.40.
+    and is now deprecated. It will be removed in v0.41.
 
 * A new `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
@@ -658,6 +658,11 @@ same information.
   to better align with the termionology used by the `QNode`.
   `gradient_fn` will be removed in v0.41.
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
+
+* The old `qml.qsvt` functionality is moved to `qml.qsvt_legacy`
+  and is now deprecated. It will be removed in v0.41.
+  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520)
+  
 
 <h3>Documentation 📝</h3>
 
