@@ -73,8 +73,6 @@
    [-0.3793  0.      0.1625  0.    ]
    [ 0.      0.3793  0.      0.1625]]
   ```
-  * The old `qml.qsvt` functionality is moved to `qml.qsvt_legacy`
-    and is now deprecated. It will be removed in v0.41.
 
 * A new `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
