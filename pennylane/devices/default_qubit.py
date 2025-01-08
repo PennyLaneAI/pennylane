@@ -162,6 +162,14 @@ def _conditional_broastcast_expand(tape):
 
 
 @qml.transform
+def no_counts(tape):
+    """Throws an error on counts measurements."""
+    if any(isinstance(mp, qml.measurements.CountsMP) for mp in tape.measurements):
+        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+    return (tape,), null_postprocessing
+
+
+@qml.transform
 def adjoint_state_measurements(
     tape: QuantumScript, device_vjp=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -535,6 +543,8 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
+        if config.interface == qml.math.Interface.JAX_JIT:
+            transform_program.add_transform(no_counts)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config
