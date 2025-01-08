@@ -7,11 +7,11 @@
 <h4>Efficient state preparation methods 🦾</h4>
 
 * State preparation tailored for matrix product states (MPS) is now supported with 
-  :class:`qml.MPSPrep <~.MPSPrep>` on the `lightning.tensor` device.
+  :class:`qml.MPSPrep <pennylane.MPSPrep>` on the `lightning.tensor` device.
   [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
 
   Given a list of :math:`n` tensors that represents an MPS, :math:`[A^{(0)}, ..., A^{(n-1)}]`, 
-  :class:`qml.MPSPrep <~.MPSPrep>` lets you directly inject the MPS into a QNode as the initial 
+  :class:`qml.MPSPrep <pennylane.MPSPrep>` lets you directly inject the MPS into a QNode as the initial 
   state of the circuit without any need for pre-processing. The first and last tensors in the list 
   must be rank-2, while all intermediate tensors should be rank-3.
 
@@ -52,16 +52,16 @@
     0.9943+0.j  0.    +0.j  0.    +0.j  0.    +0.j]
   ```
 
-  At this time, :class:`qml.MPSPrep <~.MPSPrep>` is only supported on the `lightning.tensor` device.
+  At this time, :class:`qml.MPSPrep <pennylane.MPSPrep>` is only supported on the `lightning.tensor` device.
 
 * Custom-made state preparation for linear combinations of quantum states is now available with 
-  :class:`qml.Superposition <~.Superposition>`.
+  :class:`qml.Superposition <pennylane.Superposition>`.
   [(#6670)](https://github.com/PennyLaneAI/pennylane/pull/6670)
 
   Given a list of :math:`m` coefficients :math:`c_i` and basic states :math:`|b_i\rangle`, 
-  :class:`qml.Superposition <~.Superposition>` prepares 
+  :class:`qml.Superposition <pennylane.Superposition>` prepares 
   :math:`|\phi\rangle = \sum_i^m c_i |b_i\rangle`. Here is a simple example showing how to use 
-  :class:`qml.Superposition <~.Superposition>` to prepare 
+  :class:`qml.Superposition <pennylane.Superposition>` to prepare 
   :math:`\tfrac{1}{\sqrt{2}} |00\rangle + \tfrac{1}{\sqrt{2}} |10\rangle`.
 
   ```python
@@ -78,7 +78,7 @@
   tensor([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j], requires_grad=True)
   ```
 
-  :class:`qml.Superposition <~.Superposition>` is also JAX-jit compatible.
+  :class:`qml.Superposition <pennylane.Superposition>` is also JAX-jit compatible.
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
