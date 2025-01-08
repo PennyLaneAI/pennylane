@@ -47,13 +47,13 @@
 
 * Trotter products that work on exponentiated operators directly instead of full system hamiltonians 
   can now be encoded into circuits with the addition of 
-  :class:`qml.TrotterizedQfunc <~.TrotterizedQfunc>` and :func:`qml.trotterize <~.trotterize>`. This
+  :class:`qml.TrotterizedQfunc <pennylane.TrotterizedQfunc>` and :func:`qml.trotterize <pennylane.trotterize>`. This
   allows for custom specification of the first-order expansion of the Suzuki-Trotter product formula
   and extrapolating it to the :math:`n^{\text{th}}` order.
   [(#6627)](https://github.com/PennyLaneAI/pennylane/pull/6627)
 
   If the first-order of the Suzuki-Trotter product formula for a given problem is known, 
-  :class:`qml.TrotterizedQfunc <~.TrotterizedQfunc>` and :func:`qml.trotterize <~.trotterize>`
+  :class:`qml.TrotterizedQfunc <pennylane.TrotterizedQfunc>` and :func:`qml.trotterize <pennylane.trotterize>`
   let you implement the :math:`n^{\text{th}}`-order product formula by only having to specify the 
   first-order term as a quantum function.
 
@@ -65,7 +65,7 @@
         qml.CNOT(wires=wires[:2])
   ```
 
-  :func:`qml.trotterize <~.trotterize>` requires the quantum function representing the first-order
+  :func:`qml.trotterize <pennylane.trotterize>` requires the quantum function representing the first-order
   product formula, the number of Trotter steps, and the desired order. It returns a function with 
   the same call signature as the first-order product formula quantum function:
 
@@ -80,7 +80,7 @@
       return qml.state()
   ```
   
-  Alternatively, :class:`qml.TrotterizedQfunc <~.TrotterizedQfunc>` can be used as follows:
+  Alternatively, :class:`qml.TrotterizedQfunc <pennylane.TrotterizedQfunc>` can be used as follows:
 
   ```python
   @qml.qnode(qml.device("default.qubit"))
