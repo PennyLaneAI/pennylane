@@ -6,7 +6,7 @@
 
 <h4>Efficient state preparation methods 🦾</h4>
 
-* Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
+* Added new ``MPSPrep`` template to prepare quantum states in tensor network simulators.
   [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
 
 * Users can prepare a linear combination of basis states using `qml.Superposition`.
