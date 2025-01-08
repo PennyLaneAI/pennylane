@@ -927,7 +927,6 @@ class TestJitAllCounts:
                 assert qml.math.allclose(ri[val], 0)
 
 
-@pytest.mark.xfail(reason="Need to figure out how to handle this case in a less ambiguous manner")
 def test_diff_method_None_jit():
     """Test that jitted execution works when `diff_method=None`."""
 
