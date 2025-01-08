@@ -31,16 +31,16 @@
 <h4>Enhanced QSVT functionality 🤩</h4>
 
 * New functionality to calculate angles for QSP and QSVT has been added.
-  This includes the function `qml.poly_to_angles` to obtain angles directly, given a polynomial,
-  and the function `qml.transform_angles` can be used to convert angles from one subroutine to another.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
 
+  This includes the function `qml.poly_to_angles` to obtain angles directly, given a polynomial:
   ```pycon
   >>> poly = [0, 1.0, 0, -1/2, 0, 1/3]
   >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
   >>> print(qsvt_angles)
   [-5.49778714  1.57079633  1.57079633  0.5833829   1.61095884  0.74753829]
   ```
+  And `qml.transform_angles` can be used to convert angles from one subroutine to another:
   ```pycon
   >>> qsp_angles = np.array([0.2, 0.3, 0.5])
   >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
