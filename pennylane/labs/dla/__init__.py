@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Experimental Lie theory features
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Experimental dynamical Lie algebra (DLA) functionality
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.labs.dla
 
@@ -25,6 +25,7 @@ Experimental Lie theory features
     ~cartan_decomp
     ~recursive_cartan_decomp
     ~cartan_subalgebra
+    ~variational_kak_adj
 
 
 Utility functions
@@ -46,6 +47,9 @@ Utility functions
     ~check_all_commuting
     ~check_cartan_decomp
     ~change_basis_ad_rep
+    ~validate_kak
+    ~run_opt
+
 
 Involutions
 ~~~~~~~~~~~
@@ -111,5 +115,5 @@ from .involutions import (
     DIII,
     ClassB,
 )
-
 from .cartan_subalgebra import cartan_subalgebra
+from .variational_kak import validate_kak, variational_kak_adj, run_opt

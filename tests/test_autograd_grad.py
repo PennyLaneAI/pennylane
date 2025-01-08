@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,12 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
-Public/internal API for the Transforms module.
+Unit tests for qml.grad and qml.jacobian
 """
+import pytest
 
-from .map_wires import MapWiresInterpreter
+import pennylane as qml
 
 
-__all__ = ("MapWiresInterpreter",)
+def test_informative_error_on_bad_shape():
+    """Test that an informative error is raised if taking the jacobian of a non-array."""
+
+    def f(x):
+        return (2 * x,)
+
+    with pytest.raises(ValueError, match="autograd can only differentiate with"):
+        qml.jacobian(f)(qml.numpy.array(2.0))

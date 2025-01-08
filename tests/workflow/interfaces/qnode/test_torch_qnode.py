@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
-import warnings
 
 # pylint: disable=too-many-arguments,unexpected-keyword-arg,no-member,comparison-with-callable, no-name-in-module
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-lambda-assignment, use-dict-literal
@@ -23,14 +22,6 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 pytestmark = pytest.mark.torch
 
@@ -103,9 +94,6 @@ class TestQNode:
 
         assert isinstance(res, torch.Tensor)
         assert res.shape == ()
-
-        # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         res.backward()
@@ -205,8 +193,6 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == [0, 1]
-
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -264,7 +250,6 @@ class TestQNode:
         res = circuit(a, b)
 
         assert circuit.interface == interface
-        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -337,9 +322,6 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        # the tape has reported both gate arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1]
-
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
 
         assert np.allclose(res[0].detach().numpy(), expected[0], atol=tol, rtol=0)
@@ -362,9 +344,6 @@ class TestQNode:
         b = torch.tensor(b_val, dtype=torch.float64, requires_grad=False)
 
         res = circuit(a, b)
-
-        # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == [0]
 
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
 
@@ -404,10 +383,6 @@ class TestQNode:
 
         res = circuit(a, b, c)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [0, 2]
-            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + torch.sin(a)]
-
         res.backward()
 
         assert isinstance(a.grad, torch.Tensor)
@@ -441,9 +416,6 @@ class TestQNode:
         b = torch.tensor(0.2, dtype=torch.float64, requires_grad=False)
 
         res = circuit(a, b)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == []
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -494,9 +466,6 @@ class TestQNode:
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(U, a)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
 
         assert np.allclose(res.detach(), -np.cos(a_val), atol=tol, rtol=0)
 
@@ -636,12 +605,9 @@ class TestShotsIntegration:
         expected = torch.tensor([torch.sin(a) * torch.sin(b), -torch.cos(a) * torch.cos(b)])
         assert torch.allclose(weights.grad, expected, atol=tol, rtol=0)
 
-    def test_update_diff_method(self, mocker):
+    def test_update_diff_method(self):
         """Test that temporarily setting the shots updates the diff method"""
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
-
-        spy = mocker.spy(qml, "execute")
-
         dev = DefaultQubit()
 
         @qnode(dev, interface="torch")
@@ -651,14 +617,17 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        cost_fn(a, b, shots=100)
-        # since we are using finite shots, parameter-shift will
-        # be chosen
-        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
+        with dev.tracker:
+            res = cost_fn(a, b, shots=100)
+            res.backward()
+        # since we are using finite shots, use parameter shift
+        assert dev.tracker.totals["executions"] == 5
 
         # if we use the default shots value of None, backprop can now be used
-        cost_fn(a, b)
-        assert spy.call_args[1]["diff_method"] == "backprop"
+        with dev.tracker:
+            res = cost_fn(a, b)
+            res.backward()
+        assert dev.tracker.totals["executions"] == 1
 
 
 @pytest.mark.parametrize(

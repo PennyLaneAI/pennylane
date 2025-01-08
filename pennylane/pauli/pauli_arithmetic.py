@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 I = "I"
 X = "X"
@@ -504,7 +504,7 @@ class PauliWord(dict):
             current_size *= 2
         return indices
 
-    def operation(self, wire_order=None):
+    def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
             return Identity(wires=wire_order)
@@ -1001,7 +1001,7 @@ class PauliSentence(dict):
         matrix.eliminate_zeros()
         return matrix
 
-    def operation(self, wire_order=None):
+    def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
             return qml.s_prod(0, Identity(wires=wire_order))

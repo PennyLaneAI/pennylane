@@ -14,7 +14,6 @@
 """Integration tests for using the JAX-Python interface with a QNode"""
 # pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-implicit-booleaness-not-comparison
 
-import warnings
 from itertools import product
 
 import numpy as np
@@ -23,13 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def get_device(device_name, wires, seed):
@@ -97,14 +89,9 @@ class TestQNode:
 
         assert circuit.interface == interface
 
-        # jax doesn't set trainable parameters on regular execution
-        assert circuit.qtape.trainable_params == []
-
         # gradients should work
         grad = jax.grad(circuit)(a)
         assert isinstance(grad, jax.Array)
-        # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == [0]
         assert grad.shape == ()
 
     def test_changing_trainability(
@@ -132,18 +119,12 @@ class TestQNode:
         grad_fn = jax.grad(circuit, argnums=[0, 1])
         res = grad_fn(a, b)
 
-        # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1]
-
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # make the second QNode argument a constant
         grad_fn = jax.grad(circuit, argnums=0)
         res = grad_fn(a, b)
-
-        # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == [0]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -171,9 +152,6 @@ class TestQNode:
 
         res = jax.grad(circuit, argnums=[0, 2])(a, b, c)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [0, 2]
-
         assert len(res) == 2
 
     def test_matrix_parameter(
@@ -198,9 +176,6 @@ class TestQNode:
 
         res = jax.grad(circuit, argnums=1)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
 
     def test_differentiable_expand(
         self, dev_name, diff_method, grad_on_execution, interface, device_vjp, tol, seed
@@ -317,7 +292,6 @@ class TestVectorValuedQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == []
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -327,7 +301,6 @@ class TestVectorValuedQNode:
 
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
-        assert circuit.qtape.trainable_params == [0, 1]
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -788,11 +761,9 @@ class TestShotsIntegration:
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)
 
-    def test_update_diff_method(self, interface, mocker):
+    def test_update_diff_method(self, interface):
         """Test that temporarily setting the shots updates the diff method"""
         a, b = jax.numpy.array([0.543, -0.654])
-
-        spy = mocker.spy(qml, "execute")
 
         dev = DefaultQubit()
 
@@ -803,14 +774,15 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        cost_fn(a, b, shots=100)
-        # since we are using finite shots, parameter-shift will
-        # be chosen
-        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
+        with dev.tracker:
+            jax.grad(cost_fn)(a, b, shots=100)
+        # since we are using finite shots, use parameter shift
+        assert dev.tracker.totals["executions"] == 3
 
         # if we use the default shots value of None, backprop can now be used
-        cost_fn(a, b)
-        assert spy.call_args[1]["diff_method"] == "backprop"
+        with dev.tracker:
+            jax.grad(cost_fn)(a, b)
+        assert dev.tracker.totals["executions"] == 1
 
 
 @pytest.mark.parametrize(
