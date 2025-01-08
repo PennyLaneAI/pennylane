@@ -303,8 +303,8 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     >>> pes_twomode = np.zeros((1, 1, 9, 9))
     >>> dipole_onemode = np.zeros((1, 9, 3))
     >>> gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-                                  4.33e-01, 7.20e-01, 4.33e-01,
-                                  8.85e-02, 4.94e-03, 3.96e-05])
+                                4.33e-01, 7.20e-01, 4.33e-01,
+                                8.85e-02, 4.94e-03, 3.96e-05])
     >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
     >>> pes_object = qml.qchem.VibrationalPES(
             freqs=np.array([0.025]),
@@ -359,7 +359,7 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
     >>> freqs = np.array([0.01885397])
     >>> grid, weights = np.polynomial.hermite.hermgauss(9)
     >>> pes_onebody = np.array([[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
-                                 0.00584504, 0.02881817, 0.08483433, 0.22025702]])
+                                0.00584504, 0.02881817, 0.08483433, 0.22025702]])
     >>> pes_twobody = None
     >>> dipole_onebody = np.array([[[-1.92201700e-16,  1.45397041e-16, -1.40451549e-01],
                                     [-1.51005108e-16,  9.53185441e-17, -1.03377032e-01],
@@ -372,8 +372,8 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
                                     [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]])
     >>>
     >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
-                                 uloc = None, pes_data=[pes_onebody, pes_twobody],
-                                 dipole_data=[dipole_onebody], localized=False)
+                                uloc = None, pes_data=[pes_onebody, pes_twobody],
+                                dipole_data=[dipole_onebody], localized=False)
     >>>
     >>> x, y, z = qml.qchem.taylor_dipole_coeffs(vib_obj, 4, 2)
     >>> print(z)
@@ -657,8 +657,8 @@ def taylor_hamiltonian(
     >>> pes_twomode = np.zeros((1, 1, 9, 9))
     >>> dipole_onemode = np.zeros((1, 9, 3))
     >>> gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-                                  4.33e-01, 7.20e-01, 4.33e-01,
-                                  8.85e-02, 4.94e-03, 3.96e-05])
+                                4.33e-01, 7.20e-01, 4.33e-01,
+                                8.85e-02, 4.94e-03, 3.96e-05])
     >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
     >>> pes_object = qml.qchem.VibrationalPES(
             freqs=np.array([0.025]),
