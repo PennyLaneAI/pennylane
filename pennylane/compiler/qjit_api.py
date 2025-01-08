@@ -411,16 +411,26 @@ def _get_while_loop_qfunc_prim():
     while_loop_prim.multiple_results = True
 
     @while_loop_prim.def_impl
-    def _(*args, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice):
+    def _(
+        *args,
+        jaxpr_body_fn,
+        jaxpr_cond_fn,
+        body_slice,
+        cond_slice,
+        args_slice,
+        abstract_shapes_slice,
+    ):
 
         jaxpr_consts_body = args[body_slice]
         jaxpr_consts_cond = args[cond_slice]
         init_state = args[args_slice]
-
+        abstract_shapes = args[abstract_shapes_slice]
         # If cond_fn(*init_state) is False, return the initial state
         fn_res = init_state
         while jax.core.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *fn_res)[0]:
-            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn, jaxpr_consts_body, *fn_res)
+            fn_res = jax.core.eval_jaxpr(
+                jaxpr_body_fn, jaxpr_consts_body, *abstract_shapes, *fn_res
+            )
 
         return fn_res
 
@@ -461,26 +471,32 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
         while_loop_prim = _get_while_loop_qfunc_prim()
 
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(init_state)
+
         flat_body_fn = FlatFn(self.body_fn)
-        jaxpr_body_fn = jax.make_jaxpr(flat_body_fn)(*init_state)
-        jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn)(*init_state)
+        jaxpr_body_fn = jax.make_jaxpr(flat_body_fn, abstracted_axes=abstracted_axes)(*init_state)
+        jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn, abstracted_axes=abstracted_axes)(*init_state)
 
         n_bf_c = len(jaxpr_body_fn.consts)
         n_cf_c = len(jaxpr_cond_fn.consts)
+        end_abstract_shapes = -len(abstract_shapes) if abstract_shapes else None
         body_consts = slice(0, n_bf_c)
         cond_consts = slice(n_bf_c, n_bf_c + n_cf_c)
-        args_slice = slice(n_cf_c + n_bf_c, None)
+        args_slice = slice(n_cf_c + n_bf_c, end_abstract_shapes)
+        abstract_shapes_slice = slice(end_abstract_shapes, None) if abstract_shapes else slice(0, 0)
 
         flat_args, _ = jax.tree_util.tree_flatten(init_state)
         results = while_loop_prim.bind(
             *jaxpr_body_fn.consts,
             *jaxpr_cond_fn.consts,
             *flat_args,
+            *abstract_shapes,
             jaxpr_body_fn=jaxpr_body_fn.jaxpr,
             jaxpr_cond_fn=jaxpr_cond_fn.jaxpr,
             body_slice=body_consts,
             cond_slice=cond_consts,
             args_slice=args_slice,
+            abstract_shapes_slice=abstract_shapes_slice,
         )
         assert flat_body_fn.out_tree is not None, "Should be set when constructing the jaxpr"
         return jax.tree_util.tree_unflatten(flat_body_fn.out_tree, results)
