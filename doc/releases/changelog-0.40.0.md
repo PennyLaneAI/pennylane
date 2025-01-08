@@ -446,6 +446,28 @@ such as `shots`, `rng` and `prng_key`.
   resource operation. Additionally added some standard gatesets `DefaultGateSet` to track resources with respect to.
   [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
 
+  ```python
+  import copy
+  import pennylane.labs.resource_estimation as re
+  
+  def my_circuit():
+      for w in range(2):
+          re.ResourceHadamard(w)
+      re.ResourceCNOT([0, 1])
+      re.ResourceRX(1.23, 0)
+      re.ResourceRY(-4.56, 1)
+      re.ResourceQFT(wires=[0, 1, 2])
+      return qml.expval(re.ResourceHadamard(2))
+  ```
+  ```pycon
+  >>> res = re.get_resources(my_circuit)()
+  >>> print(res)
+  wires: 3
+  gates: 202
+  gate_types:
+  {'Hadamard': 5, 'CNOT': 10, 'T': 187}
+  ```
+
 * Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
 
