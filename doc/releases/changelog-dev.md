@@ -12,8 +12,12 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated documentation for vibrational Hamiltonians
+  [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
+
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+Diksha Dhawan
