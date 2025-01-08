@@ -37,7 +37,6 @@ jobs:
       default_runner: ubuntu-latest
 
   sphinx:
-    if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
