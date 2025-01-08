@@ -30,8 +30,9 @@
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
-* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
-  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
+* New functionality to calculate angles for QSP and QSVT has been added.
+  This includes the function `qml.poly_to_angles` to obtain angles directly, given a polynomial,
+  and the function `qml.transform_angles` can be used to convert angles from one subroutine to another.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
 
   ```pycon
@@ -48,12 +49,7 @@
   ```
 
 * The `qml.qsvt` function has been improved to be more user-friendly,
-  handling block encoding and solving for angles automatically.
-* Old functionality is moved to `qml.qsvt_legacy`
-  and it will be deprecated in release v0.40.
-  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
-  [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
-
+  handling block encoding and solving for angles automatically:
   ```python
   # P(x) = -x + 0.5 x^3 + 0.5 x^5
   poly = np.array([0, -1, 0, 0.5, 0, 0.5])
@@ -74,10 +70,15 @@
    [-0.3793  0.      0.1625  0.    ]
    [ 0.      0.3793  0.      0.1625]]
   ```
+  * The old `qml.qsvt` functionality is moved to `qml.qsvt_legacy`
+    and it will be deprecated in release v0.40.
+    [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
+    [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
 
-* New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
-  The functionality `qml.poly_to_angles` has been also extended to support GQSP.
+* A new `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
+  You can also use `qml.poly_to_angles` to obtain angles for GQSP!
 
   ```python
   # P(x) = 0.1 + 0.2j x + 0.3 x^2
