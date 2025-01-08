@@ -76,7 +76,7 @@ def cartan_subalgebra(
     A non-unique CSA is a maximal Abelian subalgebra in the horizontal subspace :math:`\mathfrak{m}` of a Cartan decomposition.
     Note that this is sometimes called a horizontal CSA, and is different from the definition of a CSA on `Wikipedia <https://en.wikipedia.org/wiki/Cartan_subalgebra>`__.
 
-    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, `The KAK theorem (demo) <https://pennylane.ai/qml/demos/tutorial_kak_theorem>`__
+    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, `The KAK theorem (demo) <https://pennylane.ai/qml/demos/tutorial_kak_decomposition>`__
 
     Args:
         g (List[Union[PauliSentence, np.ndarray]]): Lie algebra :math:`\mathfrak{g}`, which is assumed to be ordered as :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
