@@ -389,6 +389,7 @@
 
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+  [(#6779)](https://github.com/PennyLaneAI/pennylane/pull/6779)
 
 * The Jaxpr primitives for `for_loop`, `while_loop` and `cond` now store slices instead of
   numbers of args.
