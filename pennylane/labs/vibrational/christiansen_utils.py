@@ -18,7 +18,6 @@ from pathlib import Path
 import h5py
 import numpy as np
 from mpi4py import MPI
-
 from scipy.special import factorial
 
 comm = MPI.COMM_WORLD
