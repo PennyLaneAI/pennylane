@@ -149,6 +149,7 @@ class TestUpdate:
         new_circuit = self.dummy_qn.update(func=circuit)
         assert new_circuit.func is not None
 
+    @pytest.mark.torch
     def test_update_kwargs(self):
         """Test that keyword arguments can be updated"""
 
