@@ -106,7 +106,7 @@
   b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
   ```
 
-  Both methods produce the same results, but offer different UIs based on the application or overall
+  Both methods produce the same results, but offer different interfaces based on the application or overall
   preference.
 
 <h4>Bosonic operators 🎈</h4>
