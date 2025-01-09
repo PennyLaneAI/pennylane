@@ -113,6 +113,7 @@
 
 * Added support to build a vibrational Hamiltonian in the Christiansen form.
   [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+  [(#6792)](https://github.com/PennyLaneAI/pennylane/pull/6792)
 
 <h3>Improvements 🛠</h3>
 
