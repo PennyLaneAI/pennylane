@@ -78,7 +78,6 @@
   tensor([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j], requires_grad=True)
   ```
 
-  :class:`qml.Superposition <pennylane.Superposition>` is also JAX-jit compatible.
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
