@@ -54,7 +54,7 @@
 
   If the first-order of the Suzuki-Trotter product formula for a given problem is known, 
   :class:`qml.TrotterizedQfunc <pennylane.TrotterizedQfunc>` and :func:`qml.trotterize <pennylane.trotterize>`
-  let you implement the :math:`n^{\text{th}}`-order product formula by only having to specify the 
+  let you implement the :math:`n^{\text{th}}`-order product formula while only specifying the 
   first-order term as a quantum function.
 
   ```python
@@ -85,7 +85,7 @@
   ```python
   @qml.qnode(qml.device("default.qubit"))
   def my_circuit(time, theta, phi, num_trotter_steps):
-      TrotterizedQfunc(
+      qml.TrotterizedQfunc(
           time,
           theta,
           phi,
@@ -100,13 +100,13 @@
 
   ```pycon
   >>> time = 0.1
-  >>> angles = (0.12, -3.45)
+  >>> theta, phi = (0.12, -3.45)
   >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
   a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
   b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
   ```
 
-  Both ways produce the same results, but offer different UIs based on the application or overall
+  Both methods produce the same results, but offer different UIs based on the application or overall
   preference.
 
 <h4>Bosonic operators 🎈</h4>
