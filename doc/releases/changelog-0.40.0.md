@@ -68,16 +68,17 @@
   coeffs = np.array([0.70710678, 0.70710678])
   basis =  np.array([[0, 0], [1, 0]])
 
-  @qml.qnode(qml.device('default.qubit', wires=2))
+  @qml.qnode(qml.device('default.qubit'))
   def circuit():
-      qml.Superposition(coeffs, basis)
+      qml.Superposition(coeffs, basis, wires=[0, 1], work_wire=[2])
       return qml.state()
   ```
+
   ```
   >>> circuit()
-  tensor([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j], requires_grad=True)
+  Array([0.7071068 +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
+         0.70710677+0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j],      dtype=complex64)
   ```
-
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
