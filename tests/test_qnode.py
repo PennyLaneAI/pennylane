@@ -162,6 +162,29 @@ class TestUpdate:
         new_circuit = self.dummy_qn.update(func=circuit).update(interface="torch")
         assert qml.math.get_interface(new_circuit(1)) == "torch"
 
+    def test_update_gradient_kwargs(self):
+
+        @qml.qnode(self.dev, atol=1)
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert len(circuit.gradient_kwargs) == 1
+        assert list(circuit.gradient_kwargs.keys()) == ["atol"]
+
+        new_atol_circuit = circuit.update(atol=2)
+        assert len(new_atol_circuit.gradient_kwargs) == 1
+        assert list(new_atol_circuit.gradient_kwargs.keys()) == ["atol"]
+        assert new_atol_circuit.gradient_kwargs["atol"] == 2
+
+        new_kwarg_circuit = circuit.update(h=1)
+        assert len(new_kwarg_circuit.gradient_kwargs) == 2
+        assert list(new_kwarg_circuit.gradient_kwargs.keys()) == ["atol", "h"]
+        assert new_kwarg_circuit.gradient_kwargs["atol"] == 1
+        assert new_kwarg_circuit.gradient_kwargs["h"] == 1
+
 
 class TestInitialization:
     """Testing the initialization of the qnode."""

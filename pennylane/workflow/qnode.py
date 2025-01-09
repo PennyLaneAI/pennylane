@@ -514,7 +514,6 @@ class QNode:
     ):
         self.init_args = locals()
         del self.init_args["self"]
-        del self.init_args["gradient_kwargs"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -638,12 +637,18 @@ class QNode:
     def update(self, **kwargs) -> "QNode":
         """Return a new QNode instance."""
         if not kwargs:
-            valid_params = set(self.init_args) | qml.gradients.SUPPORTED_GRADIENT_KWARGS
+            valid_params = (
+                set(self.init_args.copy().pop("gradient_kwargs"))
+                | qml.gradients.SUPPORTED_GRADIENT_KWARGS
+            )
             raise ValueError(
                 f"Must specify kwargs to update the QNode. Valid parameters are: {valid_params}."
             )
-        self.init_args.update(kwargs)
-        return type(self)(**self.init_args)
+        original_init_args = self.init_args.copy()
+        gradient_kwargs = original_init_args.pop("gradient_kwargs")
+        original_init_args.update(gradient_kwargs)
+        original_init_args.update(kwargs)
+        return type(self)(**original_init_args)
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
