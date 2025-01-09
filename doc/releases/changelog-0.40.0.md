@@ -168,94 +168,118 @@ qubit operators.
   [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
   [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
 
-* Added `qml.qchem.symmetry_shift` function to perform the
-  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+* A new function for performing the [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) 
+  on electronic integrals has been added with `qml.qchem.symmetry_shift`.
   [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
 
-* Added JAX support for the differentiable Hartree-Fock workflow.
+* The differentiable Hartree-Fock workflow is now compatible with JAX.
   [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
   [(#6707)](https://github.com/PennyLaneAI/pennylane/pull/6707)
 
 <h4>Transform for combining GlobalPhase instances</h4>
 
-* Added a new `qml.transforms.combine_global_phases` transform to combine all `qml.GlobalPhase` gates in a circuit into a single one applied at the end.
-  This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
-  decompositions that include `qml.GlobalPhase` gates, etc.
+* A new transform called `qml.transforms.combine_global_phases` has been added. It combines all 
+  `qml.GlobalPhase` gates in a circuit into a single one applied at the end. This can be useful for 
+  circuits that include a lot of `qml.GlobalPhase` gates that are introduced directly during 
+  circuit creation, decompositions that include `qml.GlobalPhase` gates, etc.
   [(#6686)](https://github.com/PennyLaneAI/pennylane/pull/6686)
 
 <h4>Better drawing functionality</h4>
 
-* Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
-  visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
+* `qml.draw_mpl` now has a `wire_options` keyword argument, which allows for global- and per-wire 
+  customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
+
+  Here is an example that would make all wires cyan and bold except for wires 2 and 6, which are 
+  dashed and a different colour.
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit(x):
+      for w in range(5):
+          qml.Hadamard(w) 
+      return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+  wire_options = {"color": "cyan", 
+                  "linewidth": 5, 
+                  2: {"linestyle": "--", "color": "red"}, 
+                  6: {"linestyle": "--", "color": "orange"}
+              }
+  print(qml.draw_mpl(circuit, wire_options=wire_options)(0.52))
+  ```
 
 <h4>New device capabilities 💾</h4>
 
-* Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
-  class. Device developers are encouraged to override these two methods separately instead of the
+* Two new methods, `setup_execution_config` and `preprocess_transforms`, have been added to the 
+  `Device` class. Device developers are encouraged to override these two methods separately instead of the
   `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these
   two methods or `preprocess`, but not both. In the long term, we will slowly phase out the use of
   `preprocess` in favour of these two methods for better separation of concerns.
   [(#6617)](https://github.com/PennyLaneAI/pennylane/pull/6617)
 
 * Developers of plugin devices now have the option of providing a TOML-formatted configuration file
-  to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
+  to declare the capabilities of the device. See
+  [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) 
+  for details.
 
-* An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
-  data class, as well as functions that load and parse the TOML-formatted configuration files.
+* An internal module called `qml.devices.capabilities` has been added that defines a new 
+  `DeviceCapabilites` data class, as well as functions that load and parse the TOML-formatted 
+  configuration files.
   [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
   ```pycon
-    >>> from pennylane.devices.capabilities import DeviceCapabilities
-    >>> capabilities = DeviceCapabilities.from_toml_file("my_device.toml")
-    >>> isinstance(capabilities, DeviceCapabilities)
-    True
+  >>> from pennylane.devices.capabilities import DeviceCapabilities
+  >>> capabilities = DeviceCapabilities.from_toml_file("my_device.toml")
+  >>> isinstance(capabilities, DeviceCapabilities)
+  True
   ```
 
-* Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
-  that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
-  file if it exists. Otherwise, it is set to `None`.
+* Devices that extend `qml.devices.Device` now have an optional class attribute called 
+  `capabilities`, which is an instance of the `DeviceCapabilities` data class constructed from the 
+  configuration file if it exists. Otherwise, it is set to `None`.
   [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
   ```python
   from pennylane.devices import Device
 
   class MyDevice(Device):
-
       config_filepath = "path/to/config.toml"
-
       ...
   ```
+
   ```pycon
   >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
   True
   ```
 
 * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms`
-  are added to the device API for devices that provides a TOML configuration file and thus have
-  a `capabilities` property.
+  have been added to the device API for devices that provide a TOML configuration file and, thus, 
+  have a `capabilities` property.
   [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via Autograph.
-  Autograph conversion is now used by default in `make_plxpr`, but can be skipped with the keyword arg `autograph=False`.
+* Support has been added for `if`/`else` statements and `for` and `while` loops in circuits executed 
+  with `qml.capture.enabled`, via Autograph. Autograph conversion is now used by default in 
+  `make_plxpr`, but can be skipped with `autograph=False`.
   [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
   [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
   [(#6685)](https://github.com/PennyLaneAI/pennylane/pull/6685)
 
-* `qml.transform` now accepts a `plxpr_transform` argument. This argument must be a function that can transform plxpr.
-  Note that executing a transformed function will currently raise a `NotImplementedError`. To see more details, check
-  out the documentation of `qml.transform`.
+* `qml.transform` now accepts a `plxpr_transform` argument. This argument must be a function that 
+  can transform plxpr. Note that executing a transformed function will currently raise a 
+  `NotImplementedError`. To see more details, check out the 
+  :func:`documentation of qml.transform <pennylane.transform>`.
   [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
   [(#6722)](https://github.com/PennyLaneAI/pennylane/pull/6722)
 
-* Users can now apply transforms with program capture enabled. Transformed functions cannot be executed by default. To apply
-  the transforms (and be able to execute the function), it must be decorated with the new `qml.capture.expand_plxpr_transforms`
-  function, which accepts a callable as input and returns a new function to which all present transforms have been applied.
+* Users can now apply transforms with program capture enabled. Transformed functions cannot be
+  executed by default. To apply the transforms (and to be able to execute the function), it must be 
+  decorated with the new `qml.capture.expand_plxpr_transforms` function, which accepts a callable as 
+  input and returns a new function for which all present transforms have been applied.
   [(#6722)](https://github.com/PennyLaneAI/pennylane/pull/6722)
 
   ```python
@@ -300,29 +324,31 @@ qubit operators.
     in (d,) }
   ```
 
-* The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
+* The `qml.iterative_qpe` function can now be compactly captured into plxpr.
   [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
 
-* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.CancelInterpreter`
-  when program capture is enabled. This class cancels operators appearing consecutively that are adjoints of each
-  other, and follows the same API as `qml.transforms.cancel_inverses`.
-  [(#6692)](https://github.com/PennyLaneAI/pennylane/pull/6692)
+* Three new plxpr interpreters have been added that allow for functions and plxpr to be natively 
+  transformed with the same API as the corresponding existing transforms in PennyLane when program
+  capture is enabled:
 
-* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
-  when program capture is enabled. This class decomposes pennylane operators following the same API as
-  `qml.transforms.decompose`.
-  [(#6691)](https://github.com/PennyLaneAI/pennylane/pull/6691)
+  * `qml.capture.transforms.CancelInterpreter`:this class cancels operators appearing consecutively 
+    that are adjoints of each other following the same API as `qml.transforms.cancel_inverses`.
+    [(#6692)](https://github.com/PennyLaneAI/pennylane/pull/6692)
 
-* Implemented a `MapWiresInterpreter` class that can be used as a quantum transform to map
-  operator and measurement wires with capture enabled.
-  [(#6697)](https://github.com/PennyLaneAI/pennylane/pull/6697)
+  * `qml.capture.transforms.DecomposeInterpreter`: this class decomposes pennylane operators 
+    following the same API as `qml.transforms.decompose`.
+    [(#6691)](https://github.com/PennyLaneAI/pennylane/pull/6691)
 
-* A `qml.tape.plxpr_to_tape` function can now convert plxpr to a tape.
+  * `qml.capture.transforms.MapWiresInterpreter`: this class maps wires to new values following the 
+    same API as `qml.map_wires`.
+    [(#6697)](https://github.com/PennyLaneAI/pennylane/pull/6697)
+
+* A `qml.tape.plxpr_to_tape` function is now available that converts plxpr to a tape.
   [(#6343)](https://github.com/PennyLaneAI/pennylane/pull/6343)
 
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
-  captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
-  only works with a reduced feature set.
+  captured plxpr to the device. Since it no longer falls back to the old pipeline, execution only 
+  works with a reduced feature set.
   [(#6655)](https://github.com/PennyLaneAI/pennylane/pull/6655)
   [(#6596)](https://github.com/PennyLaneAI/pennylane/pull/6596)
 
@@ -334,16 +360,17 @@ qubit operators.
   [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
   [(#6668)](https://github.com/PennyLaneAI/pennylane/pull/6668)
 
-* `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
-  pennylane variant jaxpr.
+* A `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution 
+  of plxpr.
   [(#6141)](https://github.com/PennyLaneAI/pennylane/pull/6141)
 
-* A `DefaultQubitInterpreter` class has been added to provide plxpr execution using python based tools,
-  and the `DefaultQubit.eval_jaxpr` method is now implemented.
+* A `DefaultQubitInterpreter` class has been added to provide plxpr execution using python based 
+  tools, and the `DefaultQubit.eval_jaxpr` method has been implemented.
   [(#6594)](https://github.com/PennyLaneAI/pennylane/pull/6594)
   [(#6328)](https://github.com/PennyLaneAI/pennylane/pull/6328)
 
-* An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
+* An optional method, `eval_jaxpr`, has been added to the device API for native execution of plxpr 
+  programs.
   [(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
 
 * `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
@@ -351,37 +378,41 @@ qubit operators.
 
 <h4>Other Improvements</h4>
 
-* `qml.math.grad` and `qml.math.jacobian` added to differentiate a function with inputs of any
-  interface in a jax-like manner.
+* `qml.math.grad` and `qml.math.jacobian` have been added to differentiate a function with inputs of 
+  any interface in a JAX-like manner.
   [(#6741)](https://github.com/PennyLaneAI/pennylane/pull/6741)
 
 * `qml.GroverOperator` now has a `work_wires` property.
   [(#6738)](https://github.com/PennyLaneAI/pennylane/pull/6738)
 
-* `Wires` object usage across Pennylane source code has been tidied up.
+* The `Wires` object's usage across Pennylane source code has been tidied up for internal 
+  consistency.
   [(#6689)](https://github.com/PennyLaneAI/pennylane/pull/6689)
 
-* `qml.equal` now supports `PauliWord` and `PauliSentence` instances.
+* `qml.equal` now supports `qml.PauliWord` and `qml.PauliSentence` instances.
   [(#6703)](https://github.com/PennyLaneAI/pennylane/pull/6703)
 
-* Remove redundant commutator computations from `qml.lie_closure`.
+* Redundant commutator computations from `qml.lie_closure` have been removed.
   [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
 
-* Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
+* A comprehensive error is now raised when using `qml.fourier.qnode_spectrum` with standard Numpy
   arguments and `interface="auto"`.
   [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
 
-* Added Pauli String representations for the gates X, Y, Z, S, T, SX, SWAP, ISWAP, ECR, SISWAP. Fixed a shape error in the matrix conversion of `PauliSentence`s with list or array input.
+* Pauli string representations for the gates `{X, Y, Z, S, T, SX, SWAP, ISWAP, ECR, SISWAP}` have 
+  been added, and a shape error in the matrix conversion of `qml.PauliSentence`s with `list` or 
+  `array` inputs has been fixed.
   [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
   [(#6587)](https://github.com/PennyLaneAI/pennylane/pull/6587)
   
-* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
+* `qml.QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
   [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
 
-* Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
+* The string representations for the `qml.S`, `qml.T`, and `qml.SX` have been shortened.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 
-* Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
+* Internal class functions and dunder methods have been added to allow for multiplying Resources 
+  objects in series and in parallel.
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
 * The `diagonalize_measurements` transform no longer raises an error for unknown observables. Instead,
