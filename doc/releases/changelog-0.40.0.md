@@ -437,17 +437,35 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+This new module in PennyLane will house research software 🔬 Feature here may be useful
+for state of the art research and provide a sneak peek into *potential* new features before they are
+released. These features are **experimental**. That means they may not integrate with other 
+PennyLane staples like differentiability or jax-jit compatibility and they may have sharp bits 🔪
+that don't run as expected. Labs is not included during `pip` installation of PennyLane.
+Please follow instructions for
+[installing PennyLane from source](https://pennylane.ai/install) to access Labs features.
+
 <h4>Resource estimation</h4>
 
-* Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
-  [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+* Refactored resource estimation functionality in Labs is focused on light-weight and flexible
+  resource estimation. The Labs `resource_estimation` module involves modifications that reduce the
+  memory requirements and computational time of resource estimation. These include new or modified
+  base classes [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428):
+  * `Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
+    and `shots`
+  * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions 
+  * `CompressedResourceOp` - A new class with the minimum information required to estimate resources:
+    the operator type and parameters
+  one new function [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500):
+  * `get_resources()` - A new entry point to obtain the resources from a quantum circuit
+  and `ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
+  `ResourceHadamard`, and `ResourceCNOT` [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+  [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
+  [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
+  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592).
 
-* Added `get_resources()` functionality which allows users to extract resources from a quantum function, tape or
-  resource operation. Additionally added some standard gatesets `DefaultGateSet` to track resources with respect to.
-  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
-
+  We can estimate resources quickly, using 
   ```python
-  import copy
   import pennylane.labs.resource_estimation as re
   
   def my_circuit():
@@ -467,19 +485,6 @@ such as `shots`, `rng` and `prng_key`.
   gate_types:
   {'Hadamard': 5, 'CNOT': 10, 'T': 187}
   ```
-
-* Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
-  [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
-
-* Added native `ResourceOperator` subclasses for each of the controlled operators.
-  [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
-
-* Added native `ResourceOperator` subclasses for each of the multi qubit operators.
-  [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
-
-* Added abstract `ResourceOperator` subclasses for Adjoint, Controlled, and Pow
-  symbolic operation classes.
-  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
 <h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
 
