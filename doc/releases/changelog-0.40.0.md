@@ -450,19 +450,19 @@ sharp bits 🔪 and errors ❌.
 
 <h4>Resource estimation</h4>
 
-* Refactored resource estimation functionality in Labs is focused on being light-weight and flexible. 
-   The Labs `resource_estimation` module involves modifications to core PennyLane that reduce the
+* Resource estimation functionality in Labs is focused on being light-weight and flexible. 
+  The Labs `resource_estimation` module involves modifications to core PennyLane that reduce the
   memory requirements and computational time of resource estimation. These include new or modified
-  base classes [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428):
+  base classes and one new function:
   * `Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
-    and `shots`
-  * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions 
+    and `shots` [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+  * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
   * `CompressedResourceOp` - A new class with the minimum information to estimate resources:
-  the operator type and the parameters needed to decompose it
-  one new function [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500):
+  the operator type and the parameters needed to decompose it [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
   * `get_resources()` - A new entry point to obtain the resources from a quantum circuit
   and `ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
   `ResourceHadamard`, and `ResourceCNOT` [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592).
