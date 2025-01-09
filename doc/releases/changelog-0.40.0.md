@@ -458,7 +458,7 @@ sharp bits 🔪 and errors.
     and `shots`
   * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions 
   * `CompressedResourceOp` - A new class with the minimum information required to estimate resources:
-    the operator type and parameters
+    the operator type and the parameters (required to decompose it further)
   one new function [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500):
   * `get_resources()` - A new entry point to obtain the resources from a quantum circuit
   and `ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
