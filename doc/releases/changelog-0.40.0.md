@@ -437,13 +437,16 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-This new module in PennyLane will house research software 🔬 Feature here may be useful
-for state of the art research and provide a sneak peek into *potential* new features before they are
-released. These features are **experimental**. That means they may not integrate with other 
-PennyLane staples like differentiability or jax-jit compatibility and they may have sharp bits 🔪
-that don't run as expected. Labs is not included during `pip` installation of PennyLane.
-Please follow instructions for
-[installing PennyLane from source](https://pennylane.ai/install) to access Labs features.
+🚨 Warning: this module is **experimental**, breaking changes and removals will happen without warning 🚨
+🚨 Do not use these features for projects that require long-term support 🚨
+
+This new module in PennyLane will house experimental research software 🔬 Features here may be useful
+for state of the art research and to beta test or get a sneak peek into *potential* new features before
+they are added to PennyLane.
+
+The experimental nature of this module means features may not integrate well with other 
+PennyLane staples like differentiability or jax-jit compatibility. There may also be unexpected
+sharp bits 🔪 and errors.
 
 <h4>Resource estimation</h4>
 
@@ -507,37 +510,53 @@ Please follow instructions for
 
 <h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
 
-* Added a dense implementation of computing the Lie closure in a new function
-  `lie_closure_dense` in `pennylane.labs.dla`.
-  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
-  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
-
-* Added a dense implementation of computing the structure constants in a new function
-  `structure_constants_dense` in `pennylane.labs.dla`.
-  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
-
-* Added utility functions for handling dense matrices and advanced functionality in the Lie theory context.
-  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
-* Added a ``cartan_decomp`` function along with two standard involutions ``even_odd_involution`` and ``concurrence_involution``.
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-
-* Added a `recursive_cartan_decomp` function and all canonical Cartan involutions.
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
-* Added a `cartan_subalgebra` function to compute the (horizontal) Cartan subalgebra of a Cartan decomposition.
+* Use the `dla` module to perform the
+  [KAK decomposition](https://pennylane.ai/qml/demos/tutorial_kak_decomposition) via the following functions:
+  * `variational_kak_adj`: decompose a Hermitian using a **Cartan decomposition** and the adjoint
+  representation of a horizontal **Cartan subalgebra**.
+  [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446),
+  * `cartan_subalgebra` and `structure_constants_dense`: obtain the adjoint representation of a Lie algebra or **Cartan subalgebra**.
   [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376),
+  * `cartan_decomp`  and `recursive_cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** 
+  via an **involution**.
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)[(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396), 
+  * `lie_closure_dense`: obtain a dynamical **Lie algebra** [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
+  * **involutions** like `concurrence_involution`, `even_odd_involution` and canonical Cartan involutions
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) 
 
-* Added a `variational_kak_adj` function to compute a KaK decomposition of a Hamiltonian given a Cartan
-  decomposition and the ordered adjoint representation of the Lie algebra.
-  [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
+  ```python
+  # Generate a Hamiltonian
+  n = 3
 
-* Improved documentation by fixing broken links and latex issues. Also consistently use `$\mathfrak{a}$`
-  for the horizontal Cartan subalgebra instead of `$\mathfrak{h}$`.
-  [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
+  gens = [qml.X(i) @ qml.X(i + 1) for i in range(n - 1)]
+  gens += [qml.Z(i) for i in range(n)]
+  H = qml.sum(*gens)
+
+  # Generate the corresponding Lie algebra
+  g = qml.lie_closure(gens)
+  g = [op.pauli_rep for op in g]
+
+  # Choose an involution
+  involution = dla.concurrence_involution
+
+  # Define a new Lie algebra based on Cartan decomposition via involution
+  k, m = dla.cartan_decomp(g, involution=involution)
+  g = k + m
+
+  # Obtain the adjoint representation of the Lie algebra
+  adj = qml.structure_constants(g)
+
+  # Obtain adjoint vector representations that define a corresponding Cartan subalgebra
+  g, k, mtilde, a, adj = dla.cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
+
+  # Use the subalgebra to obtain a KAK decomposition of the Hamiltonian
+  dims = (len(k), len(mtilde), len(a))
+  adjvec_a, theta_opt = dla.variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
+  ```
+
 
 <h3>Breaking changes 💔</h3>
 
