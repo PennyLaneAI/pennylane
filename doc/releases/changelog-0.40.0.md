@@ -80,6 +80,8 @@
          0.70710677+0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j],      dtype=complex64)
   ```
 
+  Note that specification of one `work_wire` is required.
+
 <h4>Enhanced QSVT functionality 🤩</h4>
 
 * New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
