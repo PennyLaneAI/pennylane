@@ -38,7 +38,7 @@
       np.array([[-1.0, -0.0], [-0.0, -1.0]]),
   ]
 
-  dev = qml.device("lightning.tensor", wires = 3)
+  dev = qml.device("lightning.tensor", wires = [0, 1, 2, 3])
   @qml.qnode(dev)
   def circuit():
       qml.MPSPrep(mps, wires = [0,1,2])
