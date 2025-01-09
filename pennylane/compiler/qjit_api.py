@@ -427,7 +427,7 @@ def _get_while_loop_qfunc_prim():
         abstract_shapes = args[abstract_shapes_slice]
         # If cond_fn(*init_state) is False, return the initial state
         fn_res = init_state
-        while jax.core.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *fn_res)[0]:
+        while jax.core.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *abstract_shapes, *fn_res)[0]:
             fn_res = jax.core.eval_jaxpr(
                 jaxpr_body_fn, jaxpr_consts_body, *abstract_shapes, *fn_res
             )

@@ -186,6 +186,23 @@ class TestAdjointQfunc:
         out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
         assert qml.math.isclose(out, qml.math.sin(-(0.5 + 0.3)))
 
+    def test_dynamic_shape_input(self):
+        """Test that the adjoint transform can accept arrays with dynamic shapes."""
+        jax.config.update("jax_dynamic_shapes", True)
+        try:
+
+            def f(x):
+                qml.adjoint(qml.RX)(x, 0)
+
+            jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
+
+            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
+            expected = qml.adjoint(qml.RX(jax.numpy.arange(2), 0))
+            qml.assert_equal(tape[0], expected)
+
+        finally:
+            jax.config.update("jax_dynamic_shapes", False)
+
 
 class TestCtrlQfunc:
     """Tests for the ctrl primitive."""
@@ -361,3 +378,20 @@ class TestCtrlQfunc:
 
         out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
         assert qml.math.isclose(out, -0.5 * qml.math.sin(0.5 + 0.3))
+
+    def test_dynamic_shape_input(self):
+        """Test that ctrl can accept dynamic shape inputs."""
+        jax.config.update("jax_dynamic_shapes", True)
+        try:
+
+            def f(x):
+                qml.ctrl(qml.RX, (2, 3))(x, 0)
+
+            jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
+
+            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
+            expected = qml.ctrl(qml.RX(jax.numpy.arange(2), 0), (2, 3))
+            qml.assert_equal(tape[0], expected)
+
+        finally:
+            jax.config.update("jax_dynamic_shapes", False)

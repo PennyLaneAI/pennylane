@@ -23,14 +23,35 @@ except ImportError:
     has_jax = False
 
 
-def determine_abstracted_axes(args, structure=None):
-    """Computed the abstracted axes and extracing the abstract shapes from the arguments."""
+def determine_abstracted_axes(args):
+    """Computed the abstracted axes and extracing the abstract shapes from the arguments.
+
+    Args:
+        args (tuple): the arguments for a higher order primitive
+
+    Returns:
+        tuple, tuple: the corresponding abstracted axes and dynamic shapes
+
+    See the ``intro_to_dynamic_shapes.md`` document for more information on how dynamic shapes work.
+
+    To make jaxpr from arguments with dynamic shapes, the ``abstracted_axes`` keyword argument must be set.
+    Then, when calling the jaxpr, variables for the dynamic shapes must be passed.
+
+    ```
+    def f(n):
+        x = jax.numpy.ones((n,))
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes((x,))
+        jaxpr = jax.make_jaxpr(jax.numpy.sum, abstracted_axes=abstracted_axes)(x)
+        return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
+    ```
+
+    """
     if not has_jax:
         raise ImportError("jax must be installed to use determine_abstracted_axes")
     if not jax.config.jax_dynamic_shapes:
         return None, tuple()
-    if structure is None:
-        args, structure = jax.tree_util.tree_flatten(args)
+
+    args, structure = jax.tree_util.tree_flatten(args)
     abstracted_axes = []
     abstract_shapes = []
     for l in args:
