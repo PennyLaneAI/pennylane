@@ -59,7 +59,7 @@ class TestWiresToJson:
             (0, 1, 2),
             range(3),
             ["a", "b"],
-            ["a", 0, 1, None],
+            ["a", 0, 1, "b"],
             1,
             "a",
             np.int64(3),
