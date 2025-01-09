@@ -71,4 +71,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git checkout ${{ env.tmp_branch }}
-          gh pr create --title "Daily rc sync to master" --body "" --reviewer "mudit2812,albi3ro"
+          gh pr create --title "Daily rc sync to master" --body "" --reviewer "PietropaoloFrisoni,albi3ro"
