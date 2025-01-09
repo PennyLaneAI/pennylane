@@ -30,10 +30,12 @@
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
-* New functionality to calculate and convert phase angles for QSP and QSVT has been added with :func:`qml.poly_to_angles <pennylane.poly_to_angles>` and :func:`qml.transform_angles <pennylane.transform_angles>`.
+* New functionality to calculate and convert phase angles for QSP and QSVT has been added
+  with :func:`qml.poly_to_angles <pennylane.poly_to_angles>` and :func:`qml.transform_angles <pennylane.transform_angles>`.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
 
-  The :func:`qml.poly_to_angles <pennylane.poly_to_angles>` function calculates phase angles directly given polynomial coefficients and the routine in which the angles will be used (`"QSVT"` or `"QSP"`):
+  The :func:`qml.poly_to_angles <pennylane.poly_to_angles>` function calculates phase angles directly
+  given polynomial coefficients and the routine in which the angles will be used (`"QSVT"` or `"QSP"`):
   ```pycon
   >>> poly = [0, 1.0, 0, -1/2, 0, 1/3]
   >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
@@ -53,7 +55,10 @@
   [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520)
   [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
 
-  Now, block encoding and angle computation are all handled automatically:
+  Block encoding and phase angle computation are now handled automatically,
+  given a matrix to encode, polynomial coefficients, and a block encoding method
+  (`"prepselprep"`, `"qubitization"`, `"embedding"`, or `"fable"`),
+  all implemented with their corresponding operators in PennyLane).
   ```python
   # P(x) = -x + 0.5 x^3 + 0.5 x^5
   poly = np.array([0, -1, 0, 0.5, 0, 0.5])
@@ -74,9 +79,13 @@
    [-0.3793  0.      0.1625  0.    ]
    [ 0.      0.3793  0.      0.1625]]
   ```
+  The old :func:`qml.qsvt <pennylane.qsvt>` functionality can be accessed
+  with :func:`qml.qsvt_legacy <pennylane.qsvt_legacy>`
 
 * A new :class:`qml.GQSP <pennylane.GQSP>` template has been added to perform Generalized Quantum Signal Processing (GQSP).
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+  Similar to QSVT, GQSP is an algorithm that polynomially transforms an input unitary operator,
+  but with fewer restrictions on the chosen polynomial.
 
   You can also use :func:`qml.poly_to_angles <pennylane.poly_to_angles>` to obtain angles for GQSP!
 
