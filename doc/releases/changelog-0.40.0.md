@@ -464,7 +464,9 @@ Please follow instructions for
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592).
 
-  We can estimate resources quickly, using 
+  Using new Resource versions of existing operations and `get_resources`, we can estimate
+  resources quickly:
+
   ```python
   import pennylane.labs.resource_estimation as re
   
@@ -485,6 +487,23 @@ Please follow instructions for
   gate_types:
   {'Hadamard': 5, 'CNOT': 10, 'T': 187}
   ```
+  We can also set custom gate sets for decompositions:
+  ```pycon
+  >>> gate_set={"Hadamard","CNOT","RZ", "RX", "RY", "SWAP"}
+  >>> res = re.get_resources(my_circuit, gate_set=gate_set)()
+  >>> print(res)
+  wires: 3
+  gates: 24
+  gate_types:
+  {'Hadamard': 5, 'CNOT': 7, 'RX': 1, 'RY': 1, 'SWAP': 1, 'RZ': 9}
+  ```
+  Alternatively, it is possible to manually substitute associated resources:
+  ```pycon
+  >>> new_resources = re.substitute(res, "SWAP", re.Resources(2, 3, {"CNOT":3}))
+  >>> print(new_resources)
+  {'Hadamard': 5, 'CNOT': 10, 'RX': 1, 'RY': 1, 'RZ': 9}
+  ```
+
 
 <h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
 
