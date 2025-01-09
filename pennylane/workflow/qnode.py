@@ -512,6 +512,9 @@ class QNode:
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         **gradient_kwargs,
     ):
+        self.init_args = locals()
+        del self.init_args["self"]
+        del self.init_args["gradient_kwargs"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -631,6 +634,16 @@ class QNode:
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         self._transform_program.push_back(transform_container=transform_container)
+
+    def update(self, **kwargs) -> "QNode":
+        """Return a new QNode instance."""
+        if not kwargs:
+            valid_params = set(self.init_args) | qml.gradients.SUPPORTED_GRADIENT_KWARGS
+            raise ValueError(
+                f"Must specify kwargs to update the QNode. Valid parameters are: {valid_params}."
+            )
+        self.init_args.update(kwargs)
+        return type(self)(**self.init_args)
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod

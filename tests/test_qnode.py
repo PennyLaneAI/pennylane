@@ -121,6 +121,48 @@ def test_copy():
     assert copied_qn.diff_method == qn.diff_method
 
 
+class TestUpdate:
+    """Tests the update instance method of QNode"""
+
+    dev = qml.device("default.qubit")
+    dummy_qn = qml.QNode(dummyfunc, dev)
+
+    def test_new_object_creation(self):
+        """Test that a new object is created rather than mutated"""
+        updated_qn = self.dummy_qn.update(device=self.dummy_qn.device)
+        assert updated_qn is not self.dummy_qn
+
+    def test_empty_update(self):
+        """Test that providing no update parameters throws an error."""
+        with pytest.raises(ValueError, match="Must specify kwargs"):
+            self.dummy_qn.update()
+
+    def test_update_args(self):
+        """Test that arguments of QNode can be updated"""
+
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        new_circuit = self.dummy_qn.update(func=circuit)
+        assert new_circuit.func is not None
+
+    def test_update_kwargs(self):
+        """Test that keyword arguments can be updated"""
+
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert self.dummy_qn.interface == "auto"
+        new_circuit = self.dummy_qn.update(func=circuit).update(interface="torch")
+        assert qml.math.get_interface(new_circuit(1)) == "torch"
+
+
 class TestInitialization:
     """Testing the initialization of the qnode."""
 
