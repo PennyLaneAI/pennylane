@@ -54,7 +54,7 @@ class TestWires:
         [
             [qml.RX, qml.RY],
             [qml.PauliX],
-            (None, qml.expval),
+            (qml.H(0), qml.expval),
             (
                 qml.device("default.qubit", wires=range(3)),
                 qml.device("default.gaussian", wires=[qml.RX, 3]),
@@ -79,9 +79,7 @@ class TestWires:
         wires = Wires([Wires([0]), Wires([1]), Wires([2])])
         assert wires.labels == (Wires([0]), Wires([1]), Wires([2]))
 
-    @pytest.mark.parametrize(
-        "iterable", [[1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "ancilla"]]
-    )
+    @pytest.mark.parametrize("iterable", [[1, 0, 4], ["a", "b", "c"], ["a", 1, "ancilla"]])
     def test_creation_from_different_wire_types(self, iterable):
         """Tests that a Wires object can be created from iterables of different
         objects representing a single wire index."""
@@ -148,11 +146,10 @@ class TestWires:
     ):
         """Tests the __contains__() method."""
 
-        wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
+        wires = Wires([0, 1, 2, 3, Wires([4, 5])])
 
         assert 0 in wires
         assert Wires([4, 5]) in wires
-        assert None in wires
         assert Wires([1]) not in wires
         assert Wires([0, 3]) not in wires
         assert Wires([0, 4]) not in wires
@@ -165,10 +162,10 @@ class TestWires:
     ):
         """Tests the dedicated contains_wires() method."""
 
-        wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
+        wires = Wires([0, 1, 2, 3, Wires([4, 5])])
 
         assert wires.contains_wires(Wires([0, 3]))
-        assert wires.contains_wires(Wires([1, 2, None]))
+        assert wires.contains_wires(Wires([1, 2]))
         assert wires.contains_wires(Wires([Wires([4, 5])]))  # Wires([4, 5]) is just a label!
 
         assert not wires.contains_wires(0)  # wrong type
