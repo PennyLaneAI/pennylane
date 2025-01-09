@@ -79,16 +79,17 @@
 
 <h4>Bosonic operators 🎈</h4>
 
-A new module, `qml.bose <pennylane.bose>` for bosonic function is available in PennyLane with the 
-following features.
+A new module, :mod:`qml.bose <pennylane.bose>`, has been added to PennyLane that includes support 
+for constructing and manipulating Bosonic operators and converting between Bosonic operators and 
+qubit operators.
 
 * Bosonic operators analogous to `qml.FermiWord` and `qml.FermiSentence` are now available with 
   :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
-  :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>` work very 
-  similarly compared to their fermionic counterparts. To create a Bose word, a dictionary is 
-  required as input, where the keys are tuples of boson indicies and values are `'+/-'` (denoting 
+  :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>` 
+  work very similarly compared to their fermionic counterparts. To create a Bose word, a dictionary 
+  is required as input, where the keys are tuples of boson indicies and values are `'+/-'` (denoting 
   the bosonic creation/annihilation operators). For example, the :math:`b^{\dagger}_0 b_1` can be 
   constructed as follows.
 
@@ -110,8 +111,8 @@ following features.
   ```
 
 * Functionality for converting bosonic operators to qubit operators is available with 
-  :func:`qml.unary_mapping <pennylane.unary_mapping>`, :func:`qml.binary_mapping <pennylane.binary_mapping>`, and
-  :func:`qml.christiansen_mapping <pennylane.christiansen_mapping>`.
+  :func:`qml.unary_mapping <pennylane.unary_mapping>`, :func:`qml.binary_mapping <pennylane.binary_mapping>`, 
+  and :func:`qml.christiansen_mapping <pennylane.christiansen_mapping>`.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
