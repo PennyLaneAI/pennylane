@@ -437,21 +437,21 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-🚨 Warning: this module is **experimental**, breaking changes and removals will happen without warning 🚨
-🚨 Do not use these features for projects that require long-term support 🚨
+.. warning:: 
+    This module is **experimental**! Breaking changes and removals will happen without warning. Do not use these features for projects that require long-term support.
 
-This new module in PennyLane will house experimental research software 🔬 Features here may be useful
-for state of the art research and to beta test or get a sneak peek into *potential* new features before
+This new module in PennyLane—accessed under the `qml.labs` namespace—will house experimental research software 🔬. Features here may be useful
+for state-of-the art research, beta testing, or getting a sneak peek into *potential* new features before
 they are added to PennyLane.
 
 The experimental nature of this module means features may not integrate well with other 
 PennyLane staples like differentiability or jax-jit compatibility. There may also be unexpected
-sharp bits 🔪 and errors.
+sharp bits 🔪 and errors ❌.
 
 <h4>Resource estimation</h4>
 
-* Refactored resource estimation functionality in Labs is focused on light-weight and flexible
-  resource estimation. The Labs `resource_estimation` module involves modifications that reduce the
+* Refactored resource estimation functionality in Labs is focused on being light-weight and flexible. 
+   The Labs `resource_estimation` module involves modifications to core PennyLane that reduce the
   memory requirements and computational time of resource estimation. These include new or modified
   base classes [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428):
   * `Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
@@ -527,7 +527,7 @@ sharp bits 🔪 and errors.
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) 
 
-  To use this functionality we start by defining a Hermitian:
+  To use this functionality we start with a Hermitian operator,
 
   ```pycon
   >>> n = 3
@@ -535,34 +535,34 @@ sharp bits 🔪 and errors.
   >>> gens += [qml.Z(i) for i in range(n)]
   >>> H = qml.sum(*gens)
   ```
-  Then generate a Lie algebra:
+  then generate a Lie algebra,
   ```pycon
   >>> g = qml.lie_closure(gens)
   >>> g = [op.pauli_rep for op in g]
   >>> print(g)
   [1 * X(0) @ X(1), 1 * X(1) @ X(2), 1.0 * Z(0), ...]
   ```
-  Choose an involution:
+  choose an involution,
   ```pycon
   >>> involution = dla.concurrence_involution
   ```
 
-  Use the involution to define a new Lie algebra based on Cartan decomposition
+  define a new Lie algebra based on Cartan decomposition via involution,
   ```pycon
   >>> k, m = dla.cartan_decomp(g, involution=involution)
   >>> g = k + m
   ```
-  Obtain the adjoint representation of the Lie algebra
+  obtain the adjoint representation of the Lie algebra,
   ```pycon
   >>> adj = qml.structure_constants(g)
   ```
 
-  Obtain adjoint vector representations that define a corresponding Cartan subalgebra
+  obtain adjoint vector representations that define a corresponding Cartan subalgebra,
   ```pycon
   >>> g, k, mtilde, a, adj = dla.cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
   ```
 
-  Use the subalgebra to obtain a KAK decomposition of the Hamiltonian
+  and, finally, use the subalgebra to obtain a KAK decomposition of the Hamiltonian,
   ```pycon
   >>> dims = (len(k), len(mtilde), len(a))
   >>> adjvec_a, theta_opt = dla.variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
