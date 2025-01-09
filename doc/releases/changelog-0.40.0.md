@@ -164,7 +164,7 @@
     True
   ```
 
-* Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
+* A device that extends `qml.devices.Device` now has an optional class attribute `capabilities`
   that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
   file if it exists. Otherwise, it is set to `None`.
   [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
@@ -184,7 +184,7 @@
   ```
 
 * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms`
-  are added to the device API for devices that provides a TOML configuration file and thus have
+  are added to the device API for devices that provide a TOML configuration file, thereby having
   a `capabilities` property.
   [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
@@ -337,7 +337,7 @@
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
 * The `diagonalize_measurements` transform no longer raises an error for unknown observables. Instead,
-  they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
+  they are left un-diagonalized, with the expectation that observable validation will catch any un-diagonalized
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
@@ -360,7 +360,7 @@
 
 * `qml.execute` can now be used with `diff_method="best"`.
   Classical cotransform information is now handled lazily by the workflow. Gradient method
-  validation and program setup is now handled inside of `qml.execute`, instead of in `QNode`.
+  validation and program setup are now handled inside of `qml.execute`, instead of in `QNode`.
   [(#6716)](https://github.com/PennyLaneAI/pennylane/pull/6716)
 
 * Added PyTree support for measurements in a circuit. 
