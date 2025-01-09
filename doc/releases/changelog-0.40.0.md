@@ -143,10 +143,7 @@ qubit operators.
     and normal-mode localization.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
     [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
-  * Implemented helper functions for calculating one-mode PES, two-mode PES, and
-    three-mode PES.
-    [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
-    [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
+
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
@@ -155,9 +152,6 @@ qubit operators.
 
 * Added support to build a vibrational Hamiltonian in Taylor form.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
-
-* Added support to build a vibrational Hamiltonian in the Christiansen form.
-  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Improvements 🛠</h3>
 
@@ -578,6 +572,16 @@ such as `shots`, `rng` and `prng_key`.
 * Improved documentation by fixing broken links and latex issues. Also consistently use `$\mathfrak{a}$`
   for the horizontal Cartan subalgebra instead of `$\mathfrak{h}$`.
   [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
+
+<h4>Construct vibrational Hamiltonians 🫨</h4>
+
+* Implemented helper functions for calculating one-mode PES, two-mode PES, and
+three-mode PES.
+  [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+  [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
+
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Breaking changes 💔</h3>
 
