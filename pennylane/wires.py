@@ -129,7 +129,7 @@ class Wires(Sequence):
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
-        if wires is None:
+        if wires is None or (isinstance(wires, Sequence) and any(w is None for w in wires)):
             raise TypeError("Must specify a set of wires. None is not a valid wire label.")
         if _override:
             self._labels = wires
