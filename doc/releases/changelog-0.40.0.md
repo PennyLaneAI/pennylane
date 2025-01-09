@@ -527,32 +527,41 @@ sharp bits 🔪 and errors.
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) 
 
-  ```python
-  # Generate a Hamiltonian
-  n = 3
+  To use this functionality we start with a Hermitian:
 
+  ```pycon
+  n = 3
   gens = [qml.X(i) @ qml.X(i + 1) for i in range(n - 1)]
   gens += [qml.Z(i) for i in range(n)]
   H = qml.sum(*gens)
-
-  # Generate the corresponding Lie algebra
+  ```
+  Then generate a Lie algebra:
+  ```pycon
   g = qml.lie_closure(gens)
   g = [op.pauli_rep for op in g]
-
-  # Choose an involution
+  ```
+  Choose an involution:
+  ```pycon
   involution = dla.concurrence_involution
+  ```
 
-  # Define a new Lie algebra based on Cartan decomposition via involution
+  Define a new Lie algebra based on Cartan decomposition via involution
+  ```pycon
   k, m = dla.cartan_decomp(g, involution=involution)
   g = k + m
-
-  # Obtain the adjoint representation of the Lie algebra
+  ```
+  Obtain the adjoint representation of the Lie algebra
+  ```pycon
   adj = qml.structure_constants(g)
+  ```
 
-  # Obtain adjoint vector representations that define a corresponding Cartan subalgebra
+  Obtain adjoint vector representations that define a corresponding Cartan subalgebra
+  ```pycon
   g, k, mtilde, a, adj = dla.cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
+  ```
 
-  # Use the subalgebra to obtain a KAK decomposition of the Hamiltonian
+  Use the subalgebra to obtain a KAK decomposition of the Hamiltonian
+  ```pycon
   dims = (len(k), len(mtilde), len(a))
   adjvec_a, theta_opt = dla.variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
   ```
