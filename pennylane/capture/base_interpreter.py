@@ -92,17 +92,16 @@ class PlxprInterpreter:
     ...     return qml.expval(qml.X(0) + qml.X(0))
     >>> simplified_f = interpreter(f)
     >>> print(qml.draw(simplified_f)(0.5))
-    0: ──RX(1.00)──Z─┤  <𝓗>
+    0: ──RX(1.00)──Z─┤  <2.00*X>
     >>> jaxpr = jax.make_jaxpr(f)(0.5)
     >>> interpreter.eval(jaxpr.jaxpr, [], 0.5)
-    [expval(X(0) + X(0))]
+    [expval(2.0 * X(0))]
 
     **Handling higher order primitives:**
 
     Two main strategies exist for handling higher order primitives (primitives with jaxpr as metadata).
-
-    1) Structure preserving. Tracing the execution preserves the higher order primitive.
-    2) Structure flattening. Tracing the execution eliminates the higher order primitive.
+    The first one is structure preserving (tracing the execution preserves the higher order primitive),
+    and the second one is structure flattening (tracing the execution eliminates the higher order primitive).
 
     Compilation transforms, like the above ``SimplifyInterpreter``, may prefer to handle higher order primitives
     via a structure-preserving method. After transforming the jaxpr, the `for_loop` still exists. This maintains
@@ -118,20 +117,18 @@ class PlxprInterpreter:
     >>> jax.make_jaxpr(interpreter(g))(0.5)
     { lambda ; a:f32[]. let
         _:f32[] = for_loop[
-        args_slice=slice(0, None, None)
-        consts_slice=slice(0, 0, None)
-        jaxpr_body_fn={ lambda ; b:i32[] c:f32[]. let
+          args_slice=slice(0, None, None)
+          consts_slice=slice(0, 0, None)
+          jaxpr_body_fn={ lambda ; b:i32[] c:f32[]. let
             d:f32[] = convert_element_type[new_dtype=float32 weak_type=True] b
             e:f32[] = mul c d
             _:AbstractOperator() = RX[n_wires=1] e 0
-            in (c,) }
+          in (c,) }
         ] 0 3 1 1.0
         f:AbstractOperator() = PauliZ[n_wires=1] 0
-        g:AbstractOperator() = PauliZ[n_wires=1] 0
-        h:AbstractOperator() = SProd 3 g
-        i:AbstractOperator() = Sum[_grouping_indices=None] f h
-        j:AbstractMeasurement(n_wires=None) = expval_obs i
-    in (j,) }
+        g:AbstractOperator() = SProd[_pauli_rep=4.0 * Z(0)] 4.0 f
+        h:AbstractMeasurement(n_wires=None) = expval_obs g
+      in (h,) }
 
     Accumulation transforms, like device execution or conversion to tapes, may need to flatten out
     the higher order primitive to execute it.
