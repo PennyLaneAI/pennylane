@@ -403,6 +403,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
         tuple: a tuple containing:
             - list[TensorLike[float]]: List of Hamiltonian integrals in VSCF basis for up to 3 coupled vibrational modes.
             - list[TensorLike[float]]: List of dipole integrals in VSCF basis for up to 3 coupled vibrational modes.
+
         ``None`` is returned if ``d_integrals`` is ``None``.
 
     **Example**
