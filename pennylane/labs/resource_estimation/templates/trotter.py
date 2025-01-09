@@ -19,6 +19,7 @@ from functools import wraps
 from typing import Dict
 
 import pennylane as qml
+from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation import (
     CompressedResourceOp,
     ResourceExp,
@@ -150,12 +151,10 @@ class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(base, time, n, order, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(
+        n, order, first_order_expansion, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
         k = order // 2
-        first_order_expansion = [
-            ResourceExp(op, (time / n) * 1j, num_steps=1).resource_rep_from_op()
-            for op in base.operands
-        ]
 
         if order == 1:
             return defaultdict(int, {cp_rep: n for cp_rep in first_order_expansion})
@@ -171,20 +170,29 @@ class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
         return gate_types
 
     def resource_params(self) -> dict:
+        n = self.hyperparameters["n"]
+        base = self.hyperparameters["base"]
+        order = self.hyperparameters["order"]
+
+        first_order_expansion = [
+            ResourceExp.resource_rep(
+                **re.ops.op_math.symbolic._extract_exp_params(op, scalar=1j, num_steps=1)
+            )
+            for op in base.operands
+        ]
+
         return {
-            "n": self.hyperparameters["n"],
-            "time": self.parameters[-1],
-            "base": self.hyperparameters["base"],
-            "order": self.hyperparameters["order"],
+            "n": n,
+            "order": order,
+            "first_order_expansion": first_order_expansion,
         }
 
     @classmethod
-    def resource_rep(cls, base, time, n, order) -> CompressedResourceOp:
+    def resource_rep(cls, n, order, first_order_expansion) -> CompressedResourceOp:
         params = {
             "n": n,
-            "time": time,
-            "base": base,
             "order": order,
+            "first_order_expansion": first_order_expansion,
         }
         return CompressedResourceOp(cls, params)
 

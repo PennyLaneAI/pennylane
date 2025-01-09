@@ -223,25 +223,7 @@ class ResourceExp(Exp, re.ResourceOperator):
         raise re.ResourcesNotDefined
 
     def resource_params(self):
-        pauli_rep = self.base.pauli_rep
-        isinstance_resource_op = isinstance(self.base, re.ResourceOperator)
-
-        if not isinstance_resource_op and (pauli_rep is None):
-            raise ValueError(
-                f"Cannot obtain resources for the exponential of {self.base}, if it is not a ResourceOperator and it doesn't have a Pauli decomposition."
-            )
-
-        base_class = type(self.base)
-        base_params = self.base.resource_params() if isinstance_resource_op else {}
-
-        base_params["pauli_rep"] = pauli_rep
-
-        return {
-            "base_class": base_class,
-            "base_params": base_params,
-            "coeff": self.scalar,
-            "num_steps": self.num_steps,
-        }
+        return _extract_exp_params(self.base, self.scalar, self.num_steps)
 
     @classmethod
     def resource_rep(cls, base_class, base_params, coeff, num_steps, **kwargs):
@@ -282,9 +264,9 @@ class ResourceExp(Exp, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         """The controlled exponential decomposition of a Pauli hamiltonian is symmetric, thus we only need to control
         on the RZ gate in the middle."""
-        if (p_rep := base_class.pauli_rep) and math.real(coeff) == 0:
+        if (pauli_sentence := base_params["pauli_rep"]) and math.real(coeff) == 0:
 
-            if qml.pauli.is_pauli_word(base_class) and len(p_rep) > 1:
+            if len(pauli_sentence) > 1:
                 base_gate_types = cls.resources(base_class, base_params, coeff, num_steps)
 
                 rz_counts = base_gate_types.pop(re.ResourceRZ.resource_rep())
@@ -298,12 +280,34 @@ class ResourceExp(Exp, re.ResourceOperator):
         raise re.ResourcesNotDefined
 
 
+def _extract_exp_params(base_op, scalar, num_steps):
+    pauli_rep = base_op.pauli_rep
+    isinstance_resource_op = isinstance(base_op, re.ResourceOperator)
+
+    if not isinstance_resource_op and (pauli_rep is None):
+        raise ValueError(
+            f"Cannot obtain resources for the exponential of {base_op}, if it is not a ResourceOperator and it doesn't have a Pauli decomposition."
+        )
+
+    base_class = type(base_op)
+    base_params = base_op.resource_params() if isinstance_resource_op else {}
+
+    base_params["pauli_rep"] = pauli_rep
+
+    return {
+        "base_class": base_class,
+        "base_params": base_params,
+        "coeff": scalar,
+        "num_steps": num_steps,
+    }
+
+
 def _resources_from_pauli_word(pauli_word, num_wires):
     pauli_string = "".join((str(v) for v in pauli_word.values()))
     len_str = len(pauli_string)
 
     if len_str == 0:
-        return {}  # Identity operation has no resources.
+        return {re.ResourceGlobalPhase.resource_rep(): 1}
 
     if len_str == 1:
         if pauli_string == "X":

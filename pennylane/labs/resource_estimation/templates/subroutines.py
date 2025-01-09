@@ -88,7 +88,10 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
 
     @classmethod
     def resource_rep(
-        cls, base_class, base_params, num_estimation_wires, **kwargs
+        cls,
+        base_class,
+        base_params,
+        num_estimation_wires,
     ) -> CompressedResourceOp:
         params = {
             "base_class": base_class,
@@ -98,8 +101,9 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
         return CompressedResourceOp(cls, params)
 
     @staticmethod
-    def tracking_name(base_class, base_params, num_estimation_wires, **kwargs) -> str:
-        return f"QuantumPhaseEstimation({base_class}, {num_estimation_wires})"
+    def tracking_name(base_class, base_params, num_estimation_wires) -> str:
+        base_name = base_class.tracking_name(**base_params)
+        return f"QuantumPhaseEstimation({base_name}, {num_estimation_wires})"
 
 
 ResourceQPE = ResourceQuantumPhaseEstimation  # Alias for ease of typing
