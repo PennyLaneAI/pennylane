@@ -594,8 +594,9 @@ class DefaultQubit(Device):
         updated_values["convert_to_numpy"] = (
             execution_config.interface.value not in {"jax", "jax-jit"}
             or execution_config.gradient_method == "adjoint"
+            # need numpy to use caching, and need caching higher order derivatives
+            or execution_config.derivative_order > 1
         )
-
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")
