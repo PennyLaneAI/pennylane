@@ -79,17 +79,62 @@
 
 <h4>Bosonic operators 🎈</h4>
 
-* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
-  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
+A new module, :mod:`qml.bose <pennylane.bose>`, has been added to PennyLane that includes support 
+for constructing and manipulating Bosonic operators and converting between Bosonic operators and 
+qubit operators.
 
-* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
+* Bosonic operators analogous to `qml.FermiWord` and `qml.FermiSentence` are now available with 
+  :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>`.
+  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
+
+  :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>` 
+  operate similarly to their fermionic counterparts. To create a Bose word, a dictionary 
+  is required as input, where the keys are tuples of boson indicies and values are `'+/-'` (denoting 
+  the bosonic creation/annihilation operators). For example, the :math:`b^{\dagger}_0 b_1` can be 
+  constructed as follows.
+
+  ```pycon
+  >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+  >>> print(w)
+  b⁺(0) b(1)
+  ```
+
+  Multiple Bose words can then be combined to form a Bose sentence:
+
+  ```pycon
+  >>> w1 = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+  >>> w2 = qml.BoseWord({(0, 1) : '+', (1, 2) : '-'})
+  >>> s = qml.BoseSentence({w1 : 1.2, w2: 3.1})
+  >>> print(s)
+  1.2 * b⁺(0) b(1)
+  + 3.1 * b⁺(1) b(2)
+  ```
+
+* Functionality for converting bosonic operators to qubit operators is available with 
+  :func:`qml.unary_mapping <pennylane.unary_mapping>`, :func:`qml.binary_mapping <pennylane.binary_mapping>`, 
+  and :func:`qml.christiansen_mapping <pennylane.christiansen_mapping>`.
+  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
-* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
-  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
+  All three mappings follow the same syntax, where a :class:`qml.BoseWord <pennylane.BoseWord>` or 
+  :class:`qml.BoseSentence <pennylane.BoseSentence>` is required as input.
 
-* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
-  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
+  ```python
+  >>> w = qml.BoseWord({(0, 0): "+"})
+  >>> qml.binary_mapping(w, n_states=4)
+  0.6830127018922193 * X(0)
+  + -0.1830127018922193 * X(0) @ Z(1)
+  + -0.6830127018922193j * Y(0)
+  + 0.1830127018922193j * Y(0) @ Z(1)
+  + 0.3535533905932738 * X(0) @ X(1)
+  + -0.3535533905932738j * X(0) @ Y(1)
+  + 0.3535533905932738j * Y(0) @ X(1)
+  + (0.3535533905932738+0j) * Y(0) @ Y(1)
+  ```
+
+  Additional fine-tuning is available within each function, such as the maximum number of allowed
+  bosonic states and a tolerance for discarding imaginary parts of the coefficients.
 
 <h4>Construct vibrational Hamiltonians 🫨</h4>
 
