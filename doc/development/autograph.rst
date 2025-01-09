@@ -80,7 +80,7 @@ Python control flow:
 
         return qml.expval(qml.PauliZ(0) + qml.PauliZ(3))
 
-While this function cannot be captured directly because there is control flow that depends on the function's inputs' values—the inputs are treated as JAX tracers at capture time, which don't have concrete values—it can be captured by converting to native PennyLane syntax
+While this function cannot be captured directly because there is control flow that depends on the values of the function's inputs (the inputs are treated as JAX tracers at capture time, which don't have concrete values) it can be captured by converting to native PennyLane syntax
 via AutoGraph. This is the default behaviour of :func:`~.autograph.make_plxpr`.
 
 >>> weights = jnp.linspace(-1, 1, 20).reshape([5, 4])
@@ -351,7 +351,7 @@ For example, using a ``for`` loop with static bounds to index a JAX array is str
 However, indexing within a ``for`` loop with AutoGraph will require that the object indexed is
 a JAX array or dynamic runtime variable.
 
-If the array you are indexing within the for loop is not a JAX array
+If the array you are indexing within the ``for`` loop is not a JAX array
 or dynamic variable, an error will be raised:
 
 >>> @qml.qnode(dev)
@@ -378,7 +378,7 @@ a JAX array:
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
 [Array(0.99500417, dtype=float64)]
 
-If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this for loop.
+If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this ``for`` loop.
 
 If you are updating elements of the array, this must be done using the JAX ``.at`` and ``.set`` syntax.
 
@@ -440,7 +440,7 @@ However, like with conditionals, a similar restriction applies: variables
 which are updated across iterations of the loop must have a JAX compilable
 type (Booleans, Python numeric types, and JAX arrays).
 
-You can also utilize temporary variables within a for loop:
+You can also utilize temporary variables within a ``for`` loop:
 
 >>> def f(x):
 ...     for y in [0, 4, 5]:
@@ -520,7 +520,7 @@ To allow AutoGraph conversion to work in this case, simply convert the list to a
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
 [Array(0.99500417, dtype=float64)]
 
-If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this for loop.
+If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this ``while`` loop.
 
 If you are updating elements of the array, this must be done using the JAX ``.at`` and ``.set`` syntax.
 
