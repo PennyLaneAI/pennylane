@@ -646,6 +646,8 @@ same information.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
   [(#6642)](https://github.com/PennyLaneAI/pennylane/pull/6642)
 
+bleh
+
 * Subclasses of `qml.ops.Controlled` no longer bind the primitives of their base operators when program capture
   is enabled.
   [(#6672)](https://github.com/PennyLaneAI/pennylane/pull/6672)
