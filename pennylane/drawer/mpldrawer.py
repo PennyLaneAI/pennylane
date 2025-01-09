@@ -25,6 +25,8 @@ try:
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
 
+# pylint: disable=too-many-positional-arguments
+
 
 def _to_tuple(a):
     """Converts int or iterable to tuple"""
@@ -255,7 +257,7 @@ class MPLDrawer:
     _cwire_scaling = 0.25
     """The distance between successive control wires."""
 
-    def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None, fig=None):
+    def __init__(self, n_layers, wires, c_wires=0, wire_options=None, figsize=None, fig=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
@@ -263,7 +265,7 @@ class MPLDrawer:
             )
 
         self.n_layers = n_layers
-        self.n_wires = n_wires
+        self.n_wires = wires if isinstance(wires, int) else len(wires)
 
         ## Creating figure and ax
 
@@ -297,17 +299,18 @@ class MPLDrawer:
         # Separate global options from per wire options
         global_options = {k: v for k, v in wire_options.items() if not isinstance(v, dict)}
         wire_specific_options = {k: v for k, v in wire_options.items() if isinstance(v, dict)}
+        wire_order = wires if isinstance(wires, Iterable) else range(wires)
 
         # Adding wire lines with individual styles based on wire_options
         self._wire_lines = []
-        for wire in range(self.n_wires):
+        for i, wire in enumerate(wire_order):
             specific_options = wire_specific_options.get(wire, {})
             line_options = {**global_options, **specific_options}
 
             # Create Line2D with the combined options
             line = plt.Line2D(
                 (-1, self.n_layers),
-                (wire, wire),
+                (i, i),
                 zorder=1,
                 **line_options,
             )
