@@ -30,7 +30,7 @@
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
-* New functionality to calculate angles for QSP and QSVT has been added.
+* New functionality to calculate and convert phase angles for QSP and QSVT has been added with :func:`qml.poly_to_angles <pennylane.poly_to_angles>` and :func:`qml.transform_angles <pennylane.transform_angles>`.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
 
   The :func:`qml.poly_to_angles <pennylane.poly_to_angles>` function calculates phase angles directly given polynomial coefficients and the routine in which the angles will be used (`"QSVT"` or `"QSP"`):
