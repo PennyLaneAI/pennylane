@@ -88,7 +88,7 @@ qubit operators.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
   :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>` 
-  work very similarly compared to their fermionic counterparts. To create a Bose word, a dictionary 
+  operate similarly to their fermionic counterparts. To create a Bose word, a dictionary 
   is required as input, where the keys are tuples of boson indicies and values are `'+/-'` (denoting 
   the bosonic creation/annihilation operators). For example, the :math:`b^{\dagger}_0 b_1` can be 
   constructed as follows.
@@ -133,7 +133,7 @@ qubit operators.
   + (0.3535533905932738+0j) * Y(0) @ Y(1)
   ```
 
-  Additional tweakability is available within each function, such as the maximum number of allowed
+  Additional fine-tuning is available within each function, such as the maximum number of allowed
   bosonic states and a tolerance for discarding imaginary parts of the coefficients.
 
 <h4>Construct vibrational Hamiltonians 🫨</h4>
