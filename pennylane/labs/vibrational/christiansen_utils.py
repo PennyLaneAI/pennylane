@@ -13,11 +13,12 @@
 # limitations under the License.
 """Utility functions related to the construction of the taylor form Hamiltonian."""
 import itertools
+from pathlib import Path
 
 import h5py
 import numpy as np
 from mpi4py import MPI
-from pathlib import Path
+
 from scipy.special import factorial
 
 comm = MPI.COMM_WORLD
