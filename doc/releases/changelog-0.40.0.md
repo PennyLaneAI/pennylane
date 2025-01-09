@@ -572,7 +572,7 @@ such as `shots`, `rng` and `prng_key`.
   for the horizontal Cartan subalgebra instead of `$\mathfrak{h}$`.
   [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
 
-<h4>Construct vibrational Hamiltonians 🫨</h4>
+<h4>Vibrational Hamiltonians</h4>
 
 * Implemented helper functions for calculating one-mode PES, two-mode PES, and
 three-mode PES.
