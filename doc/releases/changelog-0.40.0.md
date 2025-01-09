@@ -187,7 +187,7 @@
   ```
 
 * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms`
-  are added to the device API for devices that provide a TOML configuration file and thus have
+  are added to the device API for devices that provide a TOML configuration file, thereby having
   a `capabilities` property.
   [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
