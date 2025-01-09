@@ -143,7 +143,6 @@ qubit operators.
     and normal-mode localization.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
     [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
-
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
