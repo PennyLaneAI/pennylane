@@ -57,8 +57,8 @@
 
   Block encoding and phase angle computation are now handled automatically,
   given a matrix to encode, polynomial coefficients, and a block encoding method
-  (`"prepselprep"`, `"qubitization"`, `"embedding"`, or `"fable"`),
-  all implemented with their corresponding operators in PennyLane).
+  (`"prepselprep"`, `"qubitization"`, `"embedding"`, or `"fable"`, all implemented with their 
+  corresponding operators in PennyLane).
   ```python
   # P(x) = -x + 0.5 x^3 + 0.5 x^5
   poly = np.array([0, -1, 0, 0.5, 0, 0.5])
