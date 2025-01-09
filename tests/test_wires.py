@@ -39,6 +39,9 @@ class TestWires:
         with pytest.raises(TypeError, match="Must specify a set of wires."):
             Wires(None)
 
+        with pytest.raises(TypeError, match="Must specify a set of wires."):
+            Wires([None, 1])
+
     @pytest.mark.parametrize("iterable", [np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)])
     def test_creation_from_common_iterables(self, iterable):
         """Tests that a Wires object can be created from standard iterable inputs."""
