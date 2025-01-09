@@ -33,14 +33,15 @@
 * New functionality to calculate angles for QSP and QSVT has been added.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
 
-  This includes the function :func:`qml.poly_to_angles <pennylane.poly_to_angles>` to obtain angles directly, given a polynomial:
+  The :func:`qml.poly_to_angles <pennylane.poly_to_angles>` function calculates phase angles directly given polynomial coefficients and the routine in which the angles will be used (`"QSVT"` or `"QSP"`):
   ```pycon
   >>> poly = [0, 1.0, 0, -1/2, 0, 1/3]
   >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
   >>> print(qsvt_angles)
   [-5.49778714  1.57079633  1.57079633  0.5833829   1.61095884  0.74753829]
   ```
-  And :func:`qml.transform_angles <pennylane.transform_angles>` can be used to convert angles from one subroutine to another:
+
+  The :func:`qml.transform_angles <pennylane.transform_angles>` function can be used to convert angles from one routine to another:
   ```pycon
   >>> qsp_angles = np.array([0.2, 0.3, 0.5])
   >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
