@@ -111,9 +111,6 @@
 * Added support to build a vibrational Hamiltonian in Taylor form.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
-* Added support to build a vibrational Hamiltonian in the Christiansen form.
-  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
-
 <h3>Improvements 🛠</h3>
 
 <h4>QChem improvements</h4>
@@ -389,6 +386,7 @@
 
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+  [(#6779)](https://github.com/PennyLaneAI/pennylane/pull/6779)
 
 * The Jaxpr primitives for `for_loop`, `while_loop` and `cond` now store slices instead of
   numbers of args.
@@ -492,6 +490,12 @@ such as `shots`, `rng` and `prng_key`.
 * Improved documentation by fixing broken links and latex issues. Also consistently use `$\mathfrak{a}$`
   for the horizontal Cartan subalgebra instead of `$\mathfrak{h}$`.
   [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
+
+<h4>Construct vibrational Hamiltonians 🫨</h4>
+
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+  [(#6792)](https://github.com/PennyLaneAI/pennylane/pull/6792)
 
 <h3>Breaking changes 💔</h3>
 
@@ -624,6 +628,9 @@ same information.
   [(#6745)](https://github.com/PennyLaneAI/pennylane/pull/6745)
 
 <h3>Bug fixes 🐛</h3>
+
+* Adds validation so the device vjp is only used when the device actually supports it.
+  [(#6755)](https://github.com/PennyLaneAI/pennylane/pull/6755/)
 
 * `qml.counts` returns all outcomes when the `all_outcomes` argument is `True` and mid-circuit measurements are present.
   [(#6732)](https://github.com/PennyLaneAI/pennylane/pull/6732)
