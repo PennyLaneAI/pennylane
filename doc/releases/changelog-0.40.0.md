@@ -457,8 +457,8 @@ sharp bits 🔪 and errors.
   * `Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
     and `shots`
   * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions 
-  * `CompressedResourceOp` - A new class with the minimum information required to estimate resources:
-    the operator type and the parameters (required to decompose it further)
+  * `CompressedResourceOp` - A new class with the minimum information to estimate resources:
+  the operator type and the parameters needed to decompose it
   one new function [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500):
   * `get_resources()` - A new entry point to obtain the resources from a quantum circuit
   and `ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
@@ -527,43 +527,45 @@ sharp bits 🔪 and errors.
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) 
 
-  To use this functionality we start with a Hermitian:
+  To use this functionality we start by defining a Hermitian:
 
   ```pycon
-  n = 3
-  gens = [qml.X(i) @ qml.X(i + 1) for i in range(n - 1)]
-  gens += [qml.Z(i) for i in range(n)]
-  H = qml.sum(*gens)
+  >>> n = 3
+  >>> gens = [qml.X(i) @ qml.X(i + 1) for i in range(n - 1)]
+  >>> gens += [qml.Z(i) for i in range(n)]
+  >>> H = qml.sum(*gens)
   ```
   Then generate a Lie algebra:
   ```pycon
-  g = qml.lie_closure(gens)
-  g = [op.pauli_rep for op in g]
+  >>> g = qml.lie_closure(gens)
+  >>> g = [op.pauli_rep for op in g]
+  >>> print(g)
+  [1 * X(0) @ X(1), 1 * X(1) @ X(2), 1.0 * Z(0), ...]
   ```
   Choose an involution:
   ```pycon
-  involution = dla.concurrence_involution
+  >>> involution = dla.concurrence_involution
   ```
 
-  Define a new Lie algebra based on Cartan decomposition via involution
+  Use the involution to define a new Lie algebra based on Cartan decomposition
   ```pycon
-  k, m = dla.cartan_decomp(g, involution=involution)
-  g = k + m
+  >>> k, m = dla.cartan_decomp(g, involution=involution)
+  >>> g = k + m
   ```
   Obtain the adjoint representation of the Lie algebra
   ```pycon
-  adj = qml.structure_constants(g)
+  >>> adj = qml.structure_constants(g)
   ```
 
   Obtain adjoint vector representations that define a corresponding Cartan subalgebra
   ```pycon
-  g, k, mtilde, a, adj = dla.cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
+  >>> g, k, mtilde, a, adj = dla.cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
   ```
 
   Use the subalgebra to obtain a KAK decomposition of the Hamiltonian
   ```pycon
-  dims = (len(k), len(mtilde), len(a))
-  adjvec_a, theta_opt = dla.variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
+  >>> dims = (len(k), len(mtilde), len(a))
+  >>> adjvec_a, theta_opt = dla.variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
   ```
 
 
