@@ -136,21 +136,62 @@ qubit operators.
   Additional fine-tuning is available within each function, such as the maximum number of allowed
   bosonic states and a tolerance for discarding imaginary parts of the coefficients.
 
-<h4>Construct vibrational Hamiltonians 🫨</h4>
+<h4>Construct vibrational Hamiltonians 🔨</h4>
 
-* Added submodule for calculating vibrational Hamiltonians
-  * Implemented helper functions for geometry optimization, harmonic analysis,
-    and normal-mode localization.
-    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
-    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
-  * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
-    for storing the data.
-    [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
-  * Implemented functions for generating the vibrational Hamiltonian in VSCF basis
-    [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
+* The new `pennylane.qchem.vibrational` submodule contains several features to help with the
+construction of vibrational Hamiltonians. This includes:
+  * The `VibrationalPES` class to store potential energy surface information. 
+  [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+  ```python
+  pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
+  pes_twomode = np.zeros((1, 1, 9, 9))
+  dipole_onemode = np.zeros((1, 9, 3))
+  gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
+                                  4.33e-01, 7.20e-01, 4.33e-01,
+                                  8.85e-02, 4.94e-03, 3.96e-05])
+  grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
+  pes_object = qml.qchem.VibrationalPES(
+          freqs=np.array([0.025]),
+          grid=grid,
+          uloc=np.array([[1.0]]),
+          gauss_weights=gauss_weights,
+          pes_data=[pes_onemode, pes_twomode],
+          dipole_data=[dipole_onemode],
+          localized=False,
+          dipole_level=1,
+      )
+  ```
+  * The `taylor_hamiltonian` function to build a Taylor Hamiltonian from a `VibrationalPES` object
+  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523):
 
-* Added support to build a vibrational Hamiltonian in Taylor form.
+  ```pycon
+  >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
+  (
+      0.016867926879358452 * I(0)
+    + -0.007078617919572303 * Z(0)
+    + 0.0008679410939323631 * X(0)
+  )
+  ```
+
+  * The `taylor_bosonic` to build a Taylor Hamiltonian in terms of Bosonic operators:
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+  ```pycon
+  >>> coeffs_arr = qml.qchem.taylor_coeffs(pes_object)
+  >>> bose_op = qml.qchem.taylor_bosonic(coeffs_arr, pes_object.freqs, is_local=pes_object.localized, uloc=pes_object.uloc)
+  >>> type(bose_op)
+  pennylane.bose.bosonic.BoseSentence
+  ```
+
+  * Convert Christiansen Hamiltonian integrals in the harmonic oscillator basis to 
+  integrals in the vibrational self-consistent field (VSCF) basis with the `vscf_integrals`
+  function. [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
+
+  * Optimize molecular geometries with `optimize_geometry`
+  [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+  [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
+
+  * Localize normal modes with `localize_normal_modes`
+  [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
 
 <h3>Improvements 🛠</h3>
 
