@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add `QNode.update` as an instance method for `QNode`, allowing the creation of a new instance with modified constructor arguments.
+  [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -20,4 +23,5 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-Diksha Dhawan
+Diksha Dhawan,
+Andrija Paurevic
