@@ -303,12 +303,18 @@ base classes and one new function:
 
 <h4>Vibrational Hamiltonians</h4>
 
-* Implemented helper functions for calculating one-mode PES, two-mode PES, and
-three-mode PES.
+* New functionality in labs helps with the construction of vibrational Hamiltonians.
+  * Generate potential energy surfaces (PES) with `vibrational_pes`.
   [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
   [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
-
-* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  ```pycon
+  >>> symbols  = ['H', 'F']
+  >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+  >>> mol = qml.qchem.Molecule(symbols, geometry)
+  >>> pes = vibrational_pes(mol)
+  ```
+  * Use the `christiansen_hamiltonian` function and potential energy surfaces 
+  to generate Hamiltonians in the Christiansen form.
   [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Improvements 🛠</h3>
