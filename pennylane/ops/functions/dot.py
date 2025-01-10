@@ -52,7 +52,7 @@ def dot(
         method (str): The graph colouring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
             ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
-            This keyword argument is ignored if ``grouping_type`` is ``None``.
+            This keyword argument is ignored if ``grouping_type`` is ``None``. Defaults to ``'lf'`` if no method is provided.
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty

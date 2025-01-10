@@ -6,7 +6,7 @@
 
 <h4>Efficient state preparation methods 🦾</h4>
 
-* Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
+* Added new ``MPSPrep`` template to prepare quantum states in tensor network simulators.
   [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
 
 * Users can prepare a linear combination of basis states using `qml.Superposition`.
@@ -409,7 +409,7 @@ qubit operators.
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
 * The `diagonalize_measurements` transform no longer raises an error for unknown observables. Instead,
-  they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
+  they are left un-diagonalized, with the expectation that observable validation will catch any un-diagonalized
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
@@ -434,7 +434,7 @@ qubit operators.
 
 * `qml.execute` can now be used with `diff_method="best"`.
   Classical cotransform information is now handled lazily by the workflow. Gradient method
-  validation and program setup is now handled inside of `qml.execute`, instead of in `QNode`.
+  validation and program setup are now handled inside of `qml.execute`, instead of in `QNode`.
   [(#6716)](https://github.com/PennyLaneAI/pennylane/pull/6716)
 
 * PyTree support for measurements in a circuit has been added.
@@ -460,6 +460,7 @@ qubit operators.
 
 * The `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+  [(#6779)](https://github.com/PennyLaneAI/pennylane/pull/6779)
 
 * The Jaxpr primitives for `for_loop`, `while_loop` and `cond` now store slices instead of
   numbers of arguments. This helps with keeping track of what order the arguments come in.
@@ -717,6 +718,10 @@ three-mode PES.
   [(#6745)](https://github.com/PennyLaneAI/pennylane/pull/6745)
 
 <h3>Bug fixes 🐛</h3>
+
+* Validation has been added to ensure that the device vjp is only used when the device actually 
+  supports it.
+  [(#6755)](https://github.com/PennyLaneAI/pennylane/pull/6755/)
 
 * `qml.counts` now returns all outcomes when the `all_outcomes` argument is `True` and mid-circuit 
   measurements are present.
