@@ -419,7 +419,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> tape.num_params
     3
 
-    The existing circuit is overriden upon exiting a recording context.
+    The existing circuit is overridden upon exiting a recording context.
 
     Iterating over the quantum circuit can be done by iterating over the tape
     object:

@@ -579,7 +579,7 @@ class DefaultClifford(Device):
         tableau_simulator.do_circuit(stim_circuit)
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
 
-        # Perform measurments based on whether shots are provided
+        # Perform measurements based on whether shots are provided
         if circuit.shots:
             meas_results = self.measure_statistical(circuit, stim_circuit, seed=seed)
         else:

@@ -6,7 +6,7 @@
 
 <h4>Efficient state preparation methods 🦾</h4>
 
-* Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
+* Added new ``MPSPrep`` template to prepare quantum states in tensor network simulators.
   [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
 
 * Users can prepare a linear combination of basis states using `qml.Superposition`.
@@ -111,9 +111,6 @@
 * Added support to build a vibrational Hamiltonian in Taylor form.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
-* Added support to build a vibrational Hamiltonian in the Christiansen form.
-  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
-
 <h3>Improvements 🛠</h3>
 
 <h4>QChem improvements</h4>
@@ -167,7 +164,7 @@
     True
   ```
 
-* Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
+* A device that extends `qml.devices.Device` now has an optional class attribute `capabilities`
   that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
   file if it exists. Otherwise, it is set to `None`.
   [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
@@ -187,7 +184,7 @@
   ```
 
 * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms`
-  are added to the device API for devices that provides a TOML configuration file and thus have
+  are added to the device API for devices that provide a TOML configuration file, thereby having
   a `capabilities` property.
   [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
@@ -340,7 +337,7 @@
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
 * The `diagonalize_measurements` transform no longer raises an error for unknown observables. Instead,
-  they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
+  they are left un-diagonalized, with the expectation that observable validation will catch any un-diagonalized
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
@@ -363,7 +360,7 @@
 
 * `qml.execute` can now be used with `diff_method="best"`.
   Classical cotransform information is now handled lazily by the workflow. Gradient method
-  validation and program setup is now handled inside of `qml.execute`, instead of in `QNode`.
+  validation and program setup are now handled inside of `qml.execute`, instead of in `QNode`.
   [(#6716)](https://github.com/PennyLaneAI/pennylane/pull/6716)
 
 * Added PyTree support for measurements in a circuit. 
@@ -389,6 +386,7 @@
 
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+  [(#6779)](https://github.com/PennyLaneAI/pennylane/pull/6779)
 
 * The Jaxpr primitives for `for_loop`, `while_loop` and `cond` now store slices instead of
   numbers of args.
@@ -492,6 +490,12 @@ such as `shots`, `rng` and `prng_key`.
 * Improved documentation by fixing broken links and latex issues. Also consistently use `$\mathfrak{a}$`
   for the horizontal Cartan subalgebra instead of `$\mathfrak{h}$`.
   [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
+
+<h4>Construct vibrational Hamiltonians 🫨</h4>
+
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+  [(#6792)](https://github.com/PennyLaneAI/pennylane/pull/6792)
 
 <h3>Breaking changes 💔</h3>
 
@@ -624,6 +628,9 @@ same information.
   [(#6745)](https://github.com/PennyLaneAI/pennylane/pull/6745)
 
 <h3>Bug fixes 🐛</h3>
+
+* Adds validation so the device vjp is only used when the device actually supports it.
+  [(#6755)](https://github.com/PennyLaneAI/pennylane/pull/6755/)
 
 * `qml.counts` returns all outcomes when the `all_outcomes` argument is `True` and mid-circuit measurements are present.
   [(#6732)](https://github.com/PennyLaneAI/pennylane/pull/6732)
