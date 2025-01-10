@@ -170,23 +170,23 @@ sharp bits 🔪 and errors ❌.
 <h4>Resource estimation</h4>
 
 * Resource estimation functionality in Labs is focused on being light-weight and flexible. 
-The Labs `resource_estimation` module involves modifications to core PennyLane that reduce the
+The Labs :mod:`qml.labs.resource_estimation <pennylane.labs.resource_estimation>` module involves modifications to core PennyLane that reduce the
 memory requirements and computational time of resource estimation. These include new or modified
 base classes and one new function:
-  * `Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
+  * :class:`~.labs.resource_estimation.Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
   and `shots`. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-  * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-  * `CompressedResourceOp` - A new class with the minimum information to estimate resources:
+  * :class:`~.labs.resource_estimation.ResourceOperator` - Replaces :class:`~.resource.ResourceOperation`, expanded to include decompositions. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+  * :class:`~.labs.resource_estimation.CompressedResourceOp` - A new class with the minimum information to estimate resources:
   the operator type and the parameters needed to decompose it. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-  * `ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
-  `ResourceHadamard`, and `ResourceCNOT`. [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+  * :class:`~.labs.resource_estimation.ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
+  :class:`~.labs.resource_estimation.ResourceHadamard`, and :class:`~.labs.resource_estimation.ResourceCNOT`. [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592).
-  * `get_resources()` - The new entry point to efficiently obtain the resources of quantum circuits.
+  * :func:`~.labs.resource_estimation.get_resources()` - The new entry point to efficiently obtain the resources of quantum circuits.
   [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
 
-  Using new Resource versions of existing operations and `get_resources`, we can estimate
+  Using new Resource versions of existing operations and :func:`~.labs.resource_estimation.get_resources`, we can estimate
   resources quickly:
   ```python
   import pennylane.labs.resource_estimation as re
@@ -231,16 +231,16 @@ base classes and one new function:
 
 <h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
 
-* Use the `pennylane.labs.dla` module to perform the
+* Use the :mod:`qml.labs.dla <pennylane.labs.dla>` module to perform the
   [KAK decomposition](https://pennylane.ai/qml/demos/tutorial_kak_decomposition):
-  * `cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** via an **involution**.
+  * :func:`~.labs.dla.cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** via an **involution**.
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-  * We provide a variety of **involutions** like `concurrence_involution`, `even_odd_involution` and canonical Cartan involutions.
+  * We provide a variety of **involutions** like :func:`~.labs.dla.concurrence_involution`, :func:`~.labs.dla.even_odd_involution` and canonical Cartan involutions.
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-  * `cartan_subalgebra`: compute a horizontal **Cartan subalgebra**.
+  * :func:`~.labs.dla.cartan_subalgebra`: compute a horizontal **Cartan subalgebra**.
   [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
-  * ``variational_kak_adj``: compute a [variational KAK decomposition](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition) of a Hermitian operator using a **Cartan decomposition** and the adjoint
+  * :func:`~.labs.dla.variational_kak_adj` : compute a [variational KAK decomposition](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition) of a Hermitian operator using a **Cartan decomposition** and the adjoint
   representation of a horizontal **Cartan subalgebra**.
   [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
 
@@ -262,7 +262,7 @@ base classes and one new function:
   [1 * X(0) @ X(1), 1 * X(1) @ X(2), 1.0 * Z(0), ...]
   ```
 
-  We then choose an involution (e.g. `concurrence_involution`) that defines a Cartan decomposition `g = k + m`. `k` is the vertical subalgebra, and `m` its horizontal complement (not a subalgebra).
+  We then choose an involution (e.g. :func:`~.labs.dla.concurrence_involution`) that defines a Cartan decomposition `g = k + m`. `k` is the vertical subalgebra, and `m` its horizontal complement (not a subalgebra).
 
   ```pycon
   >>> from pennylane.labs.dla import concurrence_involution, cartan_decomp
@@ -292,12 +292,12 @@ base classes and one new function:
   ```
 
 * We also provide some additional features that are useful for handling dynamical Lie algebras.
-  * `recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions.
+  * :func:`~.labs.dla.recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions.
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-  * `lie_closure_dense`: extension of `qml.lie_closure` using dense matrices.
+  * :func:`~.labs.dla.lie_closure_dense`: extension of `qml.lie_closure` using dense matrices.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
   [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
-  * `structure_constants_dense`: extension of `qml.structure_constants` using dense matrices.
+  * :func:`~.labs.dla.structure_constants_dense`: extension of `qml.structure_constants` using dense matrices.
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
 
 
