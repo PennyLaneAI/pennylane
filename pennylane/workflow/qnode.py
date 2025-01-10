@@ -512,8 +512,8 @@ class QNode:
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         **gradient_kwargs,
     ):
-        self.init_args = locals()
-        del self.init_args["self"]
+        self._init_args = locals()
+        del self._init_args["self"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -638,18 +638,17 @@ class QNode:
         """Return a new QNode instance with updated constructor arguments."""
         if not kwargs:
             valid_params = (
-                set(self.init_args.copy().pop("gradient_kwargs"))
+                set(self._init_args.copy().pop("gradient_kwargs"))
                 | qml.gradients.SUPPORTED_GRADIENT_KWARGS
             )
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
-        original_init_args = self.init_args.copy()
-        gradient_kwargs = original_init_args.pop("gradient_kwargs")
-        original_init_args.update(gradient_kwargs)
-        original_init_args.update(kwargs)
-        return QNode(**original_init_args)
-
+        original__init_args = self._init_args.copy()
+        gradient_kwargs = original__init_args.pop("gradient_kwargs")
+        original__init_args.update(gradient_kwargs)
+        original__init_args.update(kwargs)
+        return QNode(**original__init_args)
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
