@@ -635,7 +635,8 @@ class QNode:
         self._transform_program.push_back(transform_container=transform_container)
 
     def update(self, **kwargs) -> "QNode":
-        """Return a new QNode instance."""
+        """Return a new QNode instance with updated constructor arguments."""
+
         if not kwargs:
             valid_params = (
                 set(self.init_args.copy().pop("gradient_kwargs"))
