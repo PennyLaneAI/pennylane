@@ -319,7 +319,7 @@ class TestWireBehaviour:
         assert ax.texts[2].get_text() == "0"
         plt.close()
 
-    def test_wire_options(self):
+    def test_uniform_wire_options(self):
         """Test wire options modifies wire styling"""
 
         _, ax = qml.draw_mpl(circuit1, wire_options={"color": "black", "linewidth": 4})(1.23, 2.34)
@@ -327,6 +327,11 @@ class TestWireBehaviour:
         for w in ax.lines[:3]:  # three wires
             assert w.get_color() == "black"
             assert w.get_linewidth() == 4
+
+        plt.close()
+
+    def test_individual_wire_options(self):
+        """Test wire option styling when individual wires have their own options specified"""
 
         @qml.qnode(dev)
         def f_circ(x):
@@ -398,6 +403,14 @@ class TestWireBehaviour:
                 assert w.get_linewidth() == 5
 
         plt.close()
+
+    def individual_wire_options_with_string_labels(self):
+        """Test that individual wire options work with string wire labels"""
+        raise RuntimeError
+
+    def wire_options_and_wire_order(self):
+        """Test that individual wire options work with specifying a wire_order"""
+        raise RuntimeError
 
 
 class TestMPLIntegration:
