@@ -186,6 +186,12 @@ class TestUpdate:
         assert new_kwarg_circuit.gradient_kwargs["atol"] == 1
         assert new_kwarg_circuit.gradient_kwargs["h"] == 1
 
+        with pytest.warns(
+            UserWarning,
+            match="Received gradient_kwarg blah, which is not included in the list of standard qnode gradient kwargs.",
+        ):
+            circuit.update(blah=1)
+
 
 class TestInitialization:
     """Testing the initialization of the qnode."""
