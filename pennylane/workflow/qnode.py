@@ -642,7 +642,7 @@ class QNode:
                 | qml.gradients.SUPPORTED_GRADIENT_KWARGS
             )
             raise ValueError(
-                f"Must specify a configuration property to update the QNode. Valid properties are: {valid_params}."
+                f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
         original_init_args = self.init_args.copy()
         gradient_kwargs = original_init_args.pop("gradient_kwargs")

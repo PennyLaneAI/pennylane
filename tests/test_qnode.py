@@ -124,21 +124,26 @@ def test_copy():
 class TestUpdate:
     """Tests the update instance method of QNode"""
 
-    dev = qml.device("default.qubit")
-    dummy_qn = qml.QNode(dummyfunc, dev)
-
     def test_new_object_creation(self):
         """Test that a new object is created rather than mutated"""
-        updated_qn = self.dummy_qn.update(device=self.dummy_qn.device)
-        assert updated_qn is not self.dummy_qn
+        dev = qml.device("default.qubit")
+        dummy_qn = qml.QNode(dummyfunc, dev)
+        updated_qn = dummy_qn.update(device=dummy_qn.device)
+        assert updated_qn is not dummy_qn
 
     def test_empty_update(self):
         """Test that providing no update parameters throws an error."""
-        with pytest.raises(ValueError, match="Must specify kwargs"):
-            self.dummy_qn.update()
+        dev = qml.device("default.qubit")
+        dummy_qn = qml.QNode(dummyfunc, dev)
+        with pytest.raises(
+            ValueError, match="Must specify at least one configuration property to update."
+        ):
+            dummy_qn.update()
 
     def test_update_args(self):
         """Test that arguments of QNode can be updated"""
+        dev = qml.device("default.qubit")
+        dummy_qn = qml.QNode(dummyfunc, dev)
 
         def circuit(x):
             qml.RZ(x, wires=0)
@@ -146,12 +151,14 @@ class TestUpdate:
             qml.RY(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        new_circuit = self.dummy_qn.update(func=circuit)
+        new_circuit = dummy_qn.update(func=circuit)
         assert new_circuit.func is not None
 
     @pytest.mark.torch
     def test_update_kwargs(self):
         """Test that keyword arguments can be updated"""
+        dev = qml.device("default.qubit")
+        dummy_qn = qml.QNode(dummyfunc, dev)
 
         def circuit(x):
             qml.RZ(x, wires=0)
@@ -159,13 +166,15 @@ class TestUpdate:
             qml.RY(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        assert self.dummy_qn.interface == "auto"
-        new_circuit = self.dummy_qn.update(func=circuit).update(interface="torch")
+        assert dummy_qn.interface == "auto"
+        new_circuit = dummy_qn.update(func=circuit).update(interface="torch")
         assert qml.math.get_interface(new_circuit(1)) == "torch"
 
     def test_update_gradient_kwargs(self):
+        """Test that gradient kwargs are updated correctly"""
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(self.dev, atol=1)
+        @qml.qnode(dev, atol=1)
         def circuit(x):
             qml.RZ(x, wires=0)
             qml.CNOT(wires=[0, 1])
