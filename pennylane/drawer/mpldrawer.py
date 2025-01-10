@@ -78,7 +78,7 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        drawer = qml.drawer.MPLDrawer(n_wires=5, n_layers=6)
+        drawer = qml.drawer.MPLDrawer(wire_map={i: i for i in range(5)}, n_layers=6)
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
@@ -167,7 +167,7 @@ class MPLDrawer:
     .. code-block:: python
 
         wire_options = {"color": "indigo", "linewidth": 4}
-        drawer = MPLDrawer(n_wires=2, n_layers=4, wire_options=wire_options)
+        drawer = MPLDrawer(wire_map={0: 0, 1: 1}, n_layers=4, wire_options=wire_options)
 
         label_options = {"fontsize": "x-large", 'color': 'indigo'}
         drawer.label(["0", "a"], text_options=label_options)
@@ -205,7 +205,7 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        drawer = MPLDrawer(2, 2)
+        drawer = MPLDrawer(2, {0:0, 1:1})
         drawer.box_gate(layer=0, wires=1, text="X")
         drawer.box_gate(layer=1, wires=1, text="Y")
 
@@ -351,7 +351,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
             drawer.label(["a", "b"])
 
         .. figure:: ../../_static/drawer/labels.png
@@ -365,7 +365,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
             drawer.label(["a", "b"], text_options={"color": "indigo", "fontsize": "xx-large"})
 
         .. figure:: ../../_static/drawer/labels_formatted.png
@@ -421,7 +421,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
 
             drawer.box_gate(layer=0, wires=(0, 1), text="CY")
 
@@ -443,7 +443,7 @@ class MPLDrawer:
             box_options = {'facecolor': 'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
             text_options = {'fontsize': 'xx-large', 'color': 'maroon'}
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
 
             drawer.box_gate(layer=0, wires=(0, 1), text="CY",
                 box_options=box_options, text_options=text_options)
@@ -458,7 +458,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_layers=4, n_wires=2)
+            drawer = MPLDrawer(n_layers=4, wire_map={0:0, 1:1})
 
             drawer.box_gate(layer=0, wires=0, text="A longer label")
             drawer.box_gate(layer=0, wires=1, text="Label")
@@ -617,7 +617,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=3)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=3)
 
             drawer.ctrl(layer=0, wires=0, wires_target=1)
             drawer.ctrl(layer=1, wires=(0, 1), control_values=[0, 1])
@@ -716,7 +716,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=2)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=2)
 
             drawer.CNOT(0, (0, 1))
 
@@ -780,7 +780,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=2)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=2)
 
             drawer.SWAP(0, (0, 1))
 
@@ -850,7 +850,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
             drawer.measure(layer=0, wires=0)
 
             measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
@@ -998,7 +998,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=3, n_layers=4)
+            drawer = MPLDrawer(wire_map={0:0, 1:1, 2:2}, n_layers=4)
 
             drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
 
