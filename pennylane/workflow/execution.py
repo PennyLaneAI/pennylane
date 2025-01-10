@@ -53,9 +53,9 @@ def execute(
     cachesize=10000,
     max_diff=1,
     device_vjp=False,
-    mcm_config="unset",
     mcm_method=None,
     postselect_mode=None,
+    mcm_config="unset",
     gradient_fn="unset",
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
