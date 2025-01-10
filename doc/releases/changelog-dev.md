@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.execute` no longer accepts `mcm_config` argument. Instead, use `mcm_method` and `postselect_mode` instead.
+  [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -20,4 +23,5 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-Diksha Dhawan
+Diksha Dhawan,
+Andrija Paurevic
