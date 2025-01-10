@@ -566,7 +566,9 @@ def _molecular_hamiltonian(
         if use_jax:
             coeffs = qml.math.real(qml.math.array(list(h_as_ps.values()), like="jax"))
         else:
-            coeffs = qml.math.real(qml.math.array(list(h_as_ps.values())))
+            coeffs = qml.math.real(
+                qml.math.array(list(h_as_ps.values()), like="autograd", requires_grad=requires_grad)
+            )
         h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
         h = qml.s_prod(0, qml.Identity(h.wires[0])) if len(h_as_ps) == 0 else h_as_ps.operation()
 
