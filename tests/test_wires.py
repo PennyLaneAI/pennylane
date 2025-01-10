@@ -34,13 +34,11 @@ else:
 class TestWires:
     """Tests for the ``Wires`` class."""
 
-    def test_error_if_wires_none(self):
+    @pytest.mark.parametrize("wires", [None, [None, 1]])
+    def test_error_if_wires_none(self, wires):
         """Tests that a TypeError is raised if None is given as wires."""
         with pytest.raises(TypeError, match="Must specify a set of wires."):
-            Wires(None)
-
-        with pytest.raises(TypeError, match="Must specify a set of wires."):
-            Wires([None, 1])
+            Wires(wires)
 
     @pytest.mark.parametrize("iterable", [np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)])
     def test_creation_from_common_iterables(self, iterable):
