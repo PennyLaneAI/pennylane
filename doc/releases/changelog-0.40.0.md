@@ -459,13 +459,14 @@ sharp bits 🔪 and errors ❌.
   * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
   * `CompressedResourceOp` - A new class with the minimum information to estimate resources:
   the operator type and the parameters needed to decompose it [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-  * `get_resources()` - A new entry point to obtain the resources from a quantum circuit
-  and `ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
+  * `ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
   `ResourceHadamard`, and `ResourceCNOT` [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
-  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592).
+  * `get_resources()` - A new entry point to obtain the resources from quantum circuits.
+  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
+
 
   Using new Resource versions of existing operations and `get_resources`, we can estimate
   resources quickly:
@@ -519,7 +520,7 @@ sharp bits 🔪 and errors ❌.
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
   * `cartan_subalgebra`: compute a horizontal **Cartan subalgebra**
   [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
-  * `variational_kak_adj`: compute a [variational KAK decomposition](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition) of a Hermitian operator using a **Cartan decomposition** and the adjoint
+  * ``variational_kak_adj``: compute a [variational KAK decomposition](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition) of a Hermitian operator using a **Cartan decomposition** and the adjoint
   representation of a horizontal **Cartan subalgebra**
   [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
 
