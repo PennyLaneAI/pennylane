@@ -155,7 +155,7 @@ qubit operators.
 <h3>Labs: a place for unified and rapid prototyping of research software 🧑‍🔬</h3>
 
 The new `qml.labs` module will house experimental research software 🔬. Features here may be useful
-for state-of-the art research, beta testing, or getting a sneak peek into *potential* new features before
+for state-of-the-art research, beta testing, or getting a sneak peek into *potential* new features before
 they are added to PennyLane.
 
 The experimental nature of this module means features may not integrate well with other 
@@ -291,7 +291,7 @@ base classes and one new function:
   >>> adjvec_a, theta_opt = variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
   ```
 
-* We also provide some additional functionality that are useful for handling dynamical Lie algebras.
+* We also provide some additional features that are useful for handling dynamical Lie algebras.
   * `recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions.
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
   * `lie_closure_dense`: extension of `qml.lie_closure` using dense matrices.
@@ -307,6 +307,7 @@ base classes and one new function:
   * Generate potential energy surfaces (PES) with `vibrational_pes`.
   [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
   [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
+  
   ```pycon
   >>> symbols  = ['H', 'F']
   >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
