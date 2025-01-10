@@ -650,7 +650,6 @@ class QNode:
         original_init_args.update(kwargs)
         return QNode(**original_init_args)
 
-
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
     @debug_logger
