@@ -30,18 +30,90 @@
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
-* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
-  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
+* New functionality to calculate and convert phase angles for QSP and QSVT has been added
+  with :func:`qml.poly_to_angles <pennylane.poly_to_angles>` and 
+  :func:`qml.transform_angles <pennylane.transform_angles>`.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
 
-* The `qml.qsvt` function has been improved to be more user-friendly. Old functionality is moved to `qml.qsvt_legacy`
-  and it will be deprecated in release v0.40.
-  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
+  The :func:`qml.poly_to_angles <pennylane.poly_to_angles>` function calculates phase angles 
+  directly given polynomial coefficients and the routine in which the angles will be used (`"QSVT"`, 
+  `"QSP"`, or `"GQSP"`):
+  ```pycon
+  >>> poly = [0, 1.0, 0, -1/2, 0, 1/3]
+  >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
+  >>> print(qsvt_angles)
+  [-5.49778714  1.57079633  1.57079633  0.5833829   1.61095884  0.74753829]
+  ```
+
+  The :func:`qml.transform_angles <pennylane.transform_angles>` function can be used to convert 
+  angles from one routine to another:
+  ```pycon
+  >>> qsp_angles = np.array([0.2, 0.3, 0.5])
+  >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
+  >>> print(qsvt_angles)
+  [-6.86858347  1.87079633 -0.28539816]
+  ```
+
+* The :func:`qml.qsvt <pennylane.qsvt>` function has been improved to be more user-friendly,
+with enhanced capabilities.
+  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520)
   [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
 
-* New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
-  The functionality `qml.poly_to_angles` has been also extended to support GQSP.
+  Block encoding and phase angle computation are now handled automatically,
+  given a matrix to encode, polynomial coefficients, and a block encoding method
+  (`"prepselprep"`, `"qubitization"`, `"embedding"`, or `"fable"`, all implemented with their 
+  corresponding operators in PennyLane).
+  ```python
+  # P(x) = -x + 0.5 x^3 + 0.5 x^5
+  poly = np.array([0, -1, 0, 0.5, 0, 0.5])
+  hamiltonian = qml.dot([0.3, 0.7], [qml.Z(1), qml.X(1) @ qml.Z(2)])
+  
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit():
+      qml.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep")
+      return qml.state()
+  
+  matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
+  ```
+  ```pycon
+  >>> print(matrix[:4, :4].real)
+  [[-0.1625  0.     -0.3793  0.    ]
+   [ 0.     -0.1625  0.      0.3793]
+   [-0.3793  0.      0.1625  0.    ]
+   [ 0.      0.3793  0.      0.1625]]
+  ```
+  The old functionality can be still be accessed with :func:`qml.qsvt_legacy <pennylane.qsvt_legacy>`.
+
+* A new :class:`qml.GQSP <pennylane.GQSP>` template has been added to perform Generalized Quantum Signal Processing (GQSP).
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+  Similar to QSVT, GQSP is an algorithm that polynomially transforms an input unitary operator,
+  but with fewer restrictions on the chosen polynomial.
+
+  You can also use :func:`qml.poly_to_angles <pennylane.poly_to_angles>` to obtain angles for GQSP!
+
+  ```python
+  # P(x) = 0.1 + 0.2j x + 0.3 x^2
+  poly = [0.1, 0.2j, 0.3]
+  angles = qml.poly_to_angles(poly, "GQSP")
+  
+  @qml.prod # transforms the qfunc into an Operator
+  def unitary(wires):
+      qml.RX(0.3, wires)
+  
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit(angles):
+      qml.GQSP(unitary(wires = 1), angles, control = 0)
+      return qml.state()
+  
+  matrix = qml.matrix(circuit, wire_order=[0, 1])(angles)
+  ```
+  ```pycon
+  >>> print(np.round(matrix,3)[:2, :2])
+  [[0.387+0.198j 0.03 -0.089j]
+  [0.03 -0.089j 0.387+0.198j]]
+  ```
 
 <h4>Generalized Trotter products 🐖</h4>
 
@@ -700,6 +772,11 @@ three-mode PES.
 * The `qml.execute` `gradient_fn` keyword argument has been renamed to `diff_method` to better 
   align with the termionology used by the QNode. `gradient_fn` will be removed in v0.41.
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
+
+* The old `qml.qsvt` functionality is moved to `qml.qsvt_legacy`
+  and is now deprecated. It will be removed in v0.41.
+  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520)
+  
 
 <h3>Documentation 📝</h3>
 
