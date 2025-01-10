@@ -404,13 +404,57 @@ class TestWireBehaviour:
 
         plt.close()
 
-    def individual_wire_options_with_string_labels(self):
+    def test_individual_wire_options_with_string_labels(self):
         """Test that individual wire options work with string wire labels"""
-        raise RuntimeError
 
-    def wire_options_and_wire_order(self):
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.X("a")
+            qml.Y("b")
+            return qml.expval(qml.Z("a"))
+
+        wire_options = {
+            "color": "teal",
+            "linewidth": 5,
+            "b": {"color": "orange", "linestyle": "--"},
+        }
+        _, ax = qml.draw_mpl(circuit, wire_options=wire_options)()
+
+        for i, w in enumerate(ax.lines):
+            assert w.get_linewidth() == 5
+            if i == 0:
+                assert w.get_color() == "teal"
+                assert w.get_linestyle() == "-"
+            if i == 1:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+
+    def test_wire_options_and_wire_order(self):
         """Test that individual wire options work with specifying a wire_order"""
-        raise RuntimeError
+
+        device = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(device)
+        def circuit():
+            for w in device.wires:
+                qml.X(w)
+            return qml.expval(qml.Z(0))
+
+        wire_options = {
+            "color": "teal",
+            "linewidth": 5,
+            3: {"color": "orange", "linestyle": "--"},  # wire 3 should be orange and dashed
+        }
+        _, ax = qml.draw_mpl(circuit, wire_order=[1, 3, 0, 2], wire_options=wire_options)()
+
+        for i, w in enumerate(ax.lines):
+            assert w.get_linewidth() == 5
+            if i == 1:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+            else:
+                assert w.get_color() == "teal"
+                assert w.get_linestyle() == "-"
 
 
 class TestMPLIntegration:
