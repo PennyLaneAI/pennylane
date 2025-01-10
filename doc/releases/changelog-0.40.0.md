@@ -111,9 +111,6 @@
 * Added support to build a vibrational Hamiltonian in Taylor form.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
-* Added support to build a vibrational Hamiltonian in the Christiansen form.
-  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
-
 <h3>Improvements 🛠</h3>
 
 <h4>QChem improvements</h4>
@@ -493,6 +490,12 @@ such as `shots`, `rng` and `prng_key`.
 * Improved documentation by fixing broken links and latex issues. Also consistently use `$\mathfrak{a}$`
   for the horizontal Cartan subalgebra instead of `$\mathfrak{h}$`.
   [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
+
+<h4>Construct vibrational Hamiltonians 🫨</h4>
+
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+  [(#6792)](https://github.com/PennyLaneAI/pennylane/pull/6792)
 
 <h3>Breaking changes 💔</h3>
 
