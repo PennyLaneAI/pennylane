@@ -575,6 +575,12 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
   [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
   [(#6561)](https://github.com/PennyLaneAI/pennylane/pull/6561)
 
+* The developer-facing ``qml.drawer.MPLDrawer`` argument `n_wires` has been replaced with `wires`. 
+  It can now accept a list of all wire labels. Providing an integer number of wires continues to 
+  work as before, but is not compatible with the new functionality to specify `wire_options` for 
+  specific wires.
+  [(#6805)](https://github.com/PennyLaneAI/pennylane/pull/6805)
+
 <h3>Deprecations 👋</h3>
 
 * The `tape` and `qtape` properties of `QNode` have been deprecated.
