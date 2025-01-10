@@ -421,13 +421,15 @@ qubit operators.
   [(#6630)](https://github.com/PennyLaneAI/pennylane/pull/6630)
   [(#6736)](https://github.com/PennyLaneAI/pennylane/pull/6736)
 
-* Add developer focused `run` function to `qml.workflow` module.
+* A developer focused `run` function has been added to the `qml.workflow` module for a cleaner and 
+  standardized approach to executing tapes on an ML interface.
   [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
 
-* Standardize supported interfaces to an internal `Enum` object. 
+* Internal changes have been made to standardize execution interfaces, which resolves ambiguities in 
+  how the `interface` value is handled during execution.
   [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
-* Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
+* All interface handling logic has been moved to `interface_utils.py` in the `qml.math` module.
   [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
 
 * `qml.execute` can now be used with `diff_method="best"`.
@@ -435,7 +437,7 @@ qubit operators.
   validation and program setup is now handled inside of `qml.execute`, instead of in `QNode`.
   [(#6716)](https://github.com/PennyLaneAI/pennylane/pull/6716)
 
-* Added PyTree support for measurements in a circuit. 
+* PyTree support for measurements in a circuit has been added.
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
 
   ```python
@@ -452,66 +454,72 @@ qubit operators.
   {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])}
   ```
 
-* `_cache_transform` transform has been moved to its own file located
-  at `qml.workflow._cache_transform.py`.
+* The `_cache_transform` transform has been moved to its own file located in 
+  `pennylane/workflow/_cache_transform.py`.
   [(#6624)](https://github.com/PennyLaneAI/pennylane/pull/6624)
 
-* `qml.BasisRotation` template is now JIT compatible.
+* The `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
 
 * The Jaxpr primitives for `for_loop`, `while_loop` and `cond` now store slices instead of
-  numbers of args.
+  numbers of arguments. This helps with keeping track of what order the arguments come in.
   [(#6521)](https://github.com/PennyLaneAI/pennylane/pull/6521)
 
-* Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
+* The `ExecutionConfig.gradient_method` function has been expanded to store `TransformDispatcher` 
+  type.
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
-* Fix the string representation of `Resources` instances to match the attribute names.
+* The string representation of `Resources` instances has been improved to match the attribute names.
   [(#6581)](https://github.com/PennyLaneAI/pennylane/pull/6581)
 
-* Improved documentation for the `dynamic_one_shot` transform, and a warning is raised when a user-applied `dynamic_one_shot` transform is ignored in favour of the existing transform in a device's preprocessing transform program.
+* The documentation for the `dynamic_one_shot` transform has been improved, and a warning is raised 
+  when a user-applied `dynamic_one_shot` transform is ignored in favour of the existing transform in 
+  a device's preprocessing transform program.
   [(#6701)](https://github.com/PennyLaneAI/pennylane/pull/6701)
 
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces an `apply_operation` helper function that features:
-
+* A `qml.devices.qubit_mixed` module has been added for mixed-state qubit device support. This 
+  module introduces an `apply_operation` helper function that features:
   * Two density matrix contraction methods using `einsum` and `tensordot`
-  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
+  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX 
+    (controlled-X), Multi-controlled X gates, Grover operators
   [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
 
-* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
+* A function called `create_initial_state` has been added to allow for initializing a circuit with a 
+  density matrix using `qml.StatePrep` or `qml.QubitDensityMatrix`.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
-  
-* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
-  [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
 
-* Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
-  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
+* Several additions have been made to eventually migrate the `"default.mixed"` device to the new 
+  device API:
+  * A `preprocess` method has been added to the `QubitMixed` device class to preprocess the quantum 
+    circuit before execution.
+    [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
+  * A new class called `DefaultMixedNewAPI` has been addded to the `qml.devices.qubit_mixed` module, 
+    which will replace the legacy `DefaultMixed`. 
+    [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
+  * A new submodule called `devices.qubit_mixed.measure` has been added, featuring a `measure` 
+    function for measuring qubits in mixed-state devices.
+    [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
+  * A new submodule called `devices.qubit_mixed.simulate` has been added, featuring a `simulate` 
+    function for simulating mixed states in analytic mode.
+    [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
+  * A new submodule called `devices.qubit_mixed.sampling` has been added, featuring functions 
+    `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state 
+    devices.
+    [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
+  * The finite-shot branch of `devices.qubit_mixed.simulate` has been added, which allows for 
+    accepting stochastic arguments such as `shots`, `rng` and `prng_key`.
+    [(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
+  * Support for `qml.Snapshot` has been added.
+    [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
 
-* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
-  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
-
-* Added submodule `devices.qubit_mixed.simulate` as a necessary step for the new API,
-featuring a `simulate` function for simulating mixed states in analytic mode.
-  [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
-
-* Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
-  [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
-
-* Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
-new device API of `default_mixed` should be able to take the stochastic arguments
-such as `shots`, `rng` and `prng_key`.
-[(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
-
-* Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
-  [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
-
-* Add reporting of test warnings as failures.
+* Reporting of test warnings as failures has been added
   [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
-* Add a warning message to Gradients and training documentation about ComplexWarnings.
+* A warning message in the Gradients and training documentation has been added that pertains to 
+  `ComplexWarning`s.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
-* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
+* A new figure was added to the landing page of the PennyLane website.
   [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
@@ -714,7 +722,7 @@ three-mode PES.
   measurements are present.
   [(#6732)](https://github.com/PennyLaneAI/pennylane/pull/6732)
 
-* `qml.ControlledQubitUnitary` has consistent behaviour with program capture enabled. 
+* `qml.ControlledQubitUnitary` now has consistent behaviour with program capture enabled. 
   [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
 
 * The `Wires` object now throws a `TypeError` if `wires=None`. 
@@ -736,14 +744,14 @@ three-mode PES.
 * QNode return behaviour is now consistent for lists and tuples.
   [(#6568)](https://github.com/PennyLaneAI/pennylane/pull/6568)
 
-* QNode now accepts arguments with types defined in libraries that are not necessarily in the list 
+* QNodes now accept arguments with types defined in libraries that are not necessarily in the list 
   of supported interfaces, such as the `Graph` class defined in `networkx`.
   [(#6600)](https://github.com/PennyLaneAI/pennylane/pull/6600)
 
 * `qml.math.get_deep_interface` now works properly for Autograd arrays.
   [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
 
-* Fixed `Identity.__repr__` to return the correct wires list.
+* Printing instances of `qml.Identity` now returns the correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
 
 <h3>Contributors ✍️</h3>
