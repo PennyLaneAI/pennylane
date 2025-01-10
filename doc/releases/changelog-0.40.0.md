@@ -138,9 +138,10 @@ qubit operators.
 
 <h4>Construct vibrational Hamiltonians 🔨</h4>
 
-* The new `pennylane.qchem.vibrational` submodule contains several features to help with the
-construction of vibrational Hamiltonians. This includes:
-  * The `VibrationalPES` class to store potential energy surface information. 
+* Several new features are available in the
+:mod:`qml.qchem <pennylane.qchem>` module to help with the construction of vibrational
+Hamiltonians. This includes:
+  * The :class:`~.qchem.VibrationalPES` class to store potential energy surface information. 
   [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
 
   ```python
@@ -163,7 +164,8 @@ construction of vibrational Hamiltonians. This includes:
       )
   ```
 
-  * The :func:`~.qchem.taylor_hamiltonian` function to build a Taylor Hamiltonian from a :class:`~.VibrationalPES` object.
+  * The :func:`~.qchem.taylor_hamiltonian` function to build a Taylor Hamiltonian from a
+  :class:`~.VibrationalPES` object.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
   ```pycon
@@ -175,7 +177,8 @@ construction of vibrational Hamiltonians. This includes:
   )
   ```
 
-  * The :func:`~.qchem.taylor_bosonic` function to build a Taylor Hamiltonian in terms of Bosonic operators.
+  * The :func:`~.qchem.taylor_bosonic` function to build a Taylor Hamiltonian in terms of Bosonic
+  operators.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
   ```pycon
