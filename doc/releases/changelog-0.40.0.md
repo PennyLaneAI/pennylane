@@ -154,7 +154,7 @@ qubit operators.
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧑‍🔬</h3>
 
-This new module in PennyLane—accessed under the `qml.labs` namespace—will house experimental research software 🔬. Features here may be useful
+The new `qml.labs` module will house experimental research software 🔬. Features here may be useful
 for state-of-the art research, beta testing, or getting a sneak peek into *potential* new features before
 they are added to PennyLane.
 
