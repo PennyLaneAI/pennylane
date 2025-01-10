@@ -644,11 +644,12 @@ class QNode:
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
-        original__init_args = self._init_args.copy()
+        original_init_args = self._init_args.copy()
         gradient_kwargs = original__init_args.pop("gradient_kwargs")
-        original__init_args.update(gradient_kwargs)
-        original__init_args.update(kwargs)
+        original_init_args.update(gradient_kwargs)
+        original_init_args.update(kwargs)
         return QNode(**original__init_args)
+
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
