@@ -511,26 +511,17 @@ sharp bits 🔪 and errors ❌.
 <h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
 
 * Use the `pennylane.labs.dla` module to perform the
-  [KAK decomposition](https://pennylane.ai/qml/demos/tutorial_kak_decomposition) via the following functions:
-  * `cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** via an **involution**.
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392),
+  [KAK decomposition](https://pennylane.ai/qml/demos/tutorial_kak_decomposition):
+  * `cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** via an **involution**
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
   * We provide a variety of **involutions** like `concurrence_involution`, `even_odd_involution` and canonical Cartan involutions
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)  
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
   * `cartan_subalgebra`: compute a horizontal **Cartan subalgebra**
   [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
   * `variational_kak_adj`: compute a [variational KAK decomposition](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition) of a Hermitian operator using a **Cartan decomposition** and the adjoint
-  representation of a horizontal **Cartan subalgebra**.
+  representation of a horizontal **Cartan subalgebra**
   [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
-
-* We also provide some additional functionality that are useful for handling dynamical Lie algebras.
-  * `recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions.
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-  * `lie_closure_dense`: extension of `qml.lie_closure` using dense matrices [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
-  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
-  * `structure_constants_dense`: extension of `qml.structure_constants` using dense matrices
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376),
-
 
   To use this functionality we start with a set of Hermitian operators.
 
@@ -540,40 +531,53 @@ sharp bits 🔪 and errors ❌.
   >>> gens += [qml.Z(i) for i in range(n)]
   >>> H = qml.sum(*gens)
   ```
+
   We then generate its Lie algebra by computing the Lie closure.
+
   ```pycon
   >>> g = qml.lie_closure(gens)
   >>> g = [op.pauli_rep for op in g]
   >>> print(g)
   [1 * X(0) @ X(1), 1 * X(1) @ X(2), 1.0 * Z(0), ...]
   ```
-  We then choose an involution (e.g. $\Theta(x) = -x^T$, the `concurrence_involution`) that defines a Cartan decomposition $\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}$. $\mathfrak{k}$ is the vertical subalgebra, and $\mathfrak{m}$ its horizontal complement (not a subalgebra).
+
+  We then choose an involution (e.g. `concurrence_involution`) that defines a Cartan decomposition `g = k + m`. `k` is the vertical subalgebra, and `m` its horizontal complement (not a subalgebra).
+
   ```pycon
-  >>> from pennylane.labs.dla import concurrence_involution.
-  >>> involution = dla.concurrence_involution
-  >>> k, m = dla.cartan_decomp(g, involution=involution)
+  >>> from pennylane.labs.dla import concurrence_involution, cartan_decomp
+  >>> involution = concurrence_involution
+  >>> k, m = cartan_decomp(g, involution=involution)
   ```
 
   The next step is just re-ordering the basis elements in `g` and computing its `structure_constants`.
+
   ```pycon
   >>> g = k + m
   >>> adj = qml.structure_constants(g)
   ```
 
-  We can then compute a (horizontal) Cartan subalgebra $\mathfrak{a}$, that is, a maximal Abelian subalgebra of $\mathfrak{m}$.
+  We can then compute a (horizontal) Cartan subalgebra `a`, that is, a maximal Abelian subalgebra of `m`.
   ```pycon
   >>> from pennylane.labs.dla import cartan_subalgebra
   >>> g, k, mtilde, a, adj = cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
   ```
 
-  Having determined both subalgebras $\mathfrak{k}$ and $\mathfrak{a}$, we can compute the KAK decomposition variationally like in [2104.00728](https://arxiv.org/abs/2104.00728), see our [demo on KAK decomposition in practice](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition).
+  Having determined both subalgebras `k` and `a`, we can compute the KAK decomposition variationally like in [2104.00728](https://arxiv.org/abs/2104.00728), see our [demo on KAK decomposition in practice](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition).
+
   ```pycon
   >>> from pennylane.labs.dla import variational_kak_adj
   >>> dims = (len(k), len(mtilde), len(a))
   >>> adjvec_a, theta_opt = variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
   ```
 
-  For the full mathematical background, check out our other demo on the [KAK decomposition](https://pennylane.ai/qml/demos/tutorial_KAK_decomposition).
+* We also provide some additional functionality that are useful for handling dynamical Lie algebras.
+  * `recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396).
+  * `lie_closure_dense`: extension of `qml.lie_closure` using dense matrices
+  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
+  * `structure_constants_dense`: extension of `qml.structure_constants` using dense matrices
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
 
 
 <h3>Breaking changes 💔</h3>
