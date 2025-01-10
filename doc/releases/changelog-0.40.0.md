@@ -530,11 +530,11 @@ sharp bits 🔪 and errors ❌.
 <h4>Resource estimation</h4>
 
 * Resource estimation functionality in Labs is focused on being light-weight and flexible. 
-  The Labs `resource_estimation` module involves modifications to core PennyLane that reduce the
-  memory requirements and computational time of resource estimation. These include new or modified
-  base classes and one new function:
+The Labs `resource_estimation` module involves modifications to core PennyLane that reduce the
+memory requirements and computational time of resource estimation. These include new or modified
+base classes and one new function:
   * `Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
-    and `shots` [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+  and `shots` [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
   * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
   * `CompressedResourceOp` - A new class with the minimum information to estimate resources:
   the operator type and the parameters needed to decompose it [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
@@ -546,10 +546,8 @@ sharp bits 🔪 and errors ❌.
   * `get_resources()` - A new entry point to obtain the resources from quantum circuits.
   [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
 
-
   Using new Resource versions of existing operations and `get_resources`, we can estimate
   resources quickly:
-
   ```python
   import pennylane.labs.resource_estimation as re
   
@@ -570,8 +568,10 @@ sharp bits 🔪 and errors ❌.
   gate_types:
   {'Hadamard': 5, 'CNOT': 10, 'T': 187}
   ```
+
   We can also set custom gate sets for decompositions:
-  ```pycon
+
+  ````pycon
   >>> gate_set={"Hadamard","CNOT","RZ", "RX", "RY", "SWAP"}
   >>> res = re.get_resources(my_circuit, gate_set=gate_set)()
   >>> print(res)
@@ -579,14 +579,15 @@ sharp bits 🔪 and errors ❌.
   gates: 24
   gate_types:
   {'Hadamard': 5, 'CNOT': 7, 'RX': 1, 'RY': 1, 'SWAP': 1, 'RZ': 9}
-  ```
+  ````
+
   Alternatively, it is possible to manually substitute associated resources:
+
   ```pycon
   >>> new_resources = re.substitute(res, "SWAP", re.Resources(2, 3, {"CNOT":3}))
   >>> print(new_resources)
   {'Hadamard': 5, 'CNOT': 10, 'RX': 1, 'RY': 1, 'RZ': 9}
   ```
-
 
 <h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
 
