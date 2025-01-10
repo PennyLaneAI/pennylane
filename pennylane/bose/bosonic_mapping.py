@@ -65,7 +65,7 @@ def binary_mapping(
 
     **Example**
 
-    >>> w = qml.bose.BoseWord({(0, 0): "+"})
+    >>> w = qml.BoseWord({(0, 0): "+"})
     >>> qml.binary_mapping(w, n_states=4)
     (
         0.6830127018922193 * X(0)
@@ -95,7 +95,7 @@ def binary_mapping(
 @singledispatch
 def _binary_mapping_dispatch(bose_operator, n_states, tol):
     """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
-    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
+    raise TypeError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
 
 
 @_binary_mapping_dispatch.register
@@ -190,7 +190,7 @@ def unary_mapping(
 
     **Example**
 
-    >>> w = qml.bose.BoseWord({(0, 0): "+"})
+    >>> w = qml.BoseWord({(0, 0): "+"})
     >>> qml.unary_mapping(w, n_states=4)
     (
         0.25 * X(0) @ X(1)
@@ -224,7 +224,7 @@ def unary_mapping(
 @singledispatch
 def _unary_mapping_dispatch(bose_operator, n_states, ps=False, wires_map=None, tol=None):
     """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
-    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
+    raise TypeError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
 
 
 @_unary_mapping_dispatch.register
@@ -367,7 +367,7 @@ def christiansen_mapping(
 @singledispatch
 def _christiansen_mapping_dispatch(bose_operator, tol):
     """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
-    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
+    raise TypeError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
 
 
 @_christiansen_mapping_dispatch.register
