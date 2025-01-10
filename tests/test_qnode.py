@@ -1905,14 +1905,17 @@ class TestMCMConfiguration:
             return mp(qml.PauliZ(0))
 
         _ = circuit(1.8, qml.expval, shots=10)
-        assert circuit.execute_kwargs["mcm_config"] == original_config
+        assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
+        assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
         if mcm_method != "one-shot":
             _ = circuit(1.8, qml.expval)
-            assert circuit.execute_kwargs["mcm_config"] == original_config
+            assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
+            assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
         _ = circuit(1.8, qml.expval, shots=10)
-        assert circuit.execute_kwargs["mcm_config"] == original_config
+        assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
+        assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
 
 class TestTapeExpansion:

@@ -53,7 +53,9 @@ def execute(
     cachesize=10000,
     max_diff=1,
     device_vjp=False,
-    mcm_config=None,
+    mcm_config="unset",
+    mcm_method=None,
+    postselect_mode=None,
     gradient_fn="unset",
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
@@ -90,8 +92,14 @@ def execute(
             (classical) computational overhead during the backwards pass.
         device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
             product if it is available.
-        mcm_config (dict): Dictionary containing configuration options for handling
-            mid-circuit measurements.
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. Default is ``None``.
+        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements.
+            ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
+            the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
+            otherwise. For usage details, please refer to the
+            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed
             ``diff_method`` and will be removed in v0.41.
 
@@ -164,6 +172,14 @@ def execute(
         )
         diff_method = gradient_fn
 
+    if mcm_config != "unset":
+        warn(
+            "mcm_config is no longer supported, use mcm_method and postselect_mode instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        mcm_method = mcm_config.mcm_method
+        postselect_mode = mcm_config.postselect_mode
+
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             (
@@ -196,7 +212,7 @@ def execute(
     # Only need to calculate derivatives with jax when we know it will be executed later.
 
     gradient_kwargs = gradient_kwargs or {}
-    mcm_config = mcm_config or {}
+    mcm_config = qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
     if not config:
         config = qml.devices.ExecutionConfig(
             interface=interface,
