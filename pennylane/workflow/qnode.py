@@ -651,7 +651,6 @@ class QNode:
         return QNode(**original_init_args)
 
 
-
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
     @debug_logger
