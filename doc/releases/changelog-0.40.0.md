@@ -82,8 +82,7 @@
    [-0.3793  0.      0.1625  0.    ]
    [ 0.      0.3793  0.      0.1625]]
   ```
-  The old :func:`qml.qsvt <pennylane.qsvt>` functionality can be accessed
-  with :func:`qml.qsvt_legacy <pennylane.qsvt_legacy>`
+  The old functionality can be still be accessed with :func:`qml.qsvt_legacy <pennylane.qsvt_legacy>`
 
 * A new :class:`qml.GQSP <pennylane.GQSP>` template has been added to perform Generalized Quantum Signal Processing (GQSP).
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
