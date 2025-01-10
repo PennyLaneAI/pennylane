@@ -514,7 +514,7 @@ such as `shots`, `rng` and `prng_key`.
 * Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
   [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
 
-<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+<h3>Labs: a place for unified and rapid prototyping of research software 🧑‍🔬</h3>
 
 .. warning:: 
     This module is **experimental**! Breaking changes and removals will happen without warning. Do not use these features for projects that require long-term support.
