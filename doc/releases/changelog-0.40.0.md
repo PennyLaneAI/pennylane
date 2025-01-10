@@ -163,7 +163,7 @@ construction of vibrational Hamiltonians. This includes:
       )
   ```
 
-  * The `taylor_hamiltonian` function to build a Taylor Hamiltonian from a `VibrationalPES` object.
+  * The :func:`~.qchem.taylor_hamiltonian` function to build a Taylor Hamiltonian from a :class:`~.VibrationalPES` object.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
   ```pycon
@@ -175,7 +175,7 @@ construction of vibrational Hamiltonians. This includes:
   )
   ```
 
-  * The `taylor_bosonic` function to build a Taylor Hamiltonian in terms of Bosonic operators.
+  * The :func:`~.qchem.taylor_bosonic` function to build a Taylor Hamiltonian in terms of Bosonic operators.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
   ```pycon
@@ -185,18 +185,19 @@ construction of vibrational Hamiltonians. This includes:
   pennylane.bose.bosonic.BoseSentence
   ```
 
-* The `pennylane.qchem.vibrational` submodule also includes functionality to optimize molecular
+  The `pennylane.qchem.vibrational` submodule also includes functionality to optimize molecular
   geometries and convert between representations:
   * Convert Christiansen Hamiltonian integrals in the harmonic oscillator basis to 
-  integrals in the vibrational self-consistent field (VSCF) basis with the `vscf_integrals`
-  function. [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
+  integrals in the vibrational self-consistent field (VSCF) basis with the :func:`~.qchem.vscf_integrals`
+  function. 
+  [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
 
-  * Find the lowest energy configuration of molecules with `optimize_geometry`.
-  [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
-  [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
+  * Find the lowest energy configuration of molecules with :func:`~.qchem.optimize_geometry`.
+    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
 
-  * Separate normal mode frequencies and localize them with `localize_normal_modes`.
-  [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+  * Separate normal mode frequencies and localize them with :func:`~.qchem.localize_normal_modes`.
+    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
 
 <h3>Improvements 🛠</h3>
 
