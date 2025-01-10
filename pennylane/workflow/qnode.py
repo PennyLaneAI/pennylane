@@ -636,14 +636,13 @@ class QNode:
 
     def update(self, **kwargs) -> "QNode":
         """Return a new QNode instance with updated constructor arguments."""
-
         if not kwargs:
             valid_params = (
                 set(self.init_args.copy().pop("gradient_kwargs"))
                 | qml.gradients.SUPPORTED_GRADIENT_KWARGS
             )
             raise ValueError(
-                f"Must specify kwargs to update the QNode. Valid parameters are: {valid_params}."
+                f"Must specify a configuration property to update the QNode. Valid properties are: {valid_params}."
             )
         original_init_args = self.init_args.copy()
         gradient_kwargs = original_init_args.pop("gradient_kwargs")
