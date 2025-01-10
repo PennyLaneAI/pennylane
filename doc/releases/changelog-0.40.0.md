@@ -534,12 +534,12 @@ The Labs `resource_estimation` module involves modifications to core PennyLane t
 memory requirements and computational time of resource estimation. These include new or modified
 base classes and one new function:
   * `Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
-  and `shots` [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-  * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+  and `shots`. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+  * `ResourceOperator` - Replaces `ResourceOperation`, expanded to include decompositions. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
   * `CompressedResourceOp` - A new class with the minimum information to estimate resources:
-  the operator type and the parameters needed to decompose it [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+  the operator type and the parameters needed to decompose it. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
   * `ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
-  `ResourceHadamard`, and `ResourceCNOT` [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+  `ResourceHadamard`, and `ResourceCNOT`. [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592).
