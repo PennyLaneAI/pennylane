@@ -543,7 +543,7 @@ base classes and one new function:
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592).
-  * `get_resources()` - A new entry point to obtain the resources from quantum circuits.
+  * `get_resources()` - The new entry point to efficiently obtain the resources of quantum circuits.
   [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
 
   Using new Resource versions of existing operations and `get_resources`, we can estimate
@@ -593,15 +593,15 @@ base classes and one new function:
 
 * Use the `pennylane.labs.dla` module to perform the
   [KAK decomposition](https://pennylane.ai/qml/demos/tutorial_kak_decomposition):
-  * `cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** via an **involution**
+  * `cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** via an **involution**.
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-  * We provide a variety of **involutions** like `concurrence_involution`, `even_odd_involution` and canonical Cartan involutions
+  * We provide a variety of **involutions** like `concurrence_involution`, `even_odd_involution` and canonical Cartan involutions.
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-  * `cartan_subalgebra`: compute a horizontal **Cartan subalgebra**
+  * `cartan_subalgebra`: compute a horizontal **Cartan subalgebra**.
   [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
   * ``variational_kak_adj``: compute a [variational KAK decomposition](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition) of a Hermitian operator using a **Cartan decomposition** and the adjoint
-  representation of a horizontal **Cartan subalgebra**
+  representation of a horizontal **Cartan subalgebra**.
   [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
 
   To use this functionality we start with a set of Hermitian operators.
@@ -652,12 +652,12 @@ base classes and one new function:
   ```
 
 * We also provide some additional functionality that are useful for handling dynamical Lie algebras.
-  * `recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions
+  * `recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions.
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-  * `lie_closure_dense`: extension of `qml.lie_closure` using dense matrices
+  * `lie_closure_dense`: extension of `qml.lie_closure` using dense matrices.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
   [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
-  * `structure_constants_dense`: extension of `qml.structure_constants` using dense matrices
+  * `structure_constants_dense`: extension of `qml.structure_constants` using dense matrices.
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
 
 
