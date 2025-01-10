@@ -78,15 +78,15 @@ the orbital it acts on. The values of the dictionary are one of ``'+'`` or ``'-'
 denote creation and annihilation operators, respectively. The operator
 :math:`a^{\dagger}_0 a_3 a^{\dagger}_1` can then be constructed with
 
->>> qml.fermi.FermiWord({(0, 0): '+', (1, 3): '-', (2, 1): '+'})
+>>> qml.FermiWord({(0, 0): '+', (1, 3): '-', (2, 1): '+'})
 a⁺(0) a(3) a⁺(1)
 
 A Fermi sentence can be constructed directly by passing a dictionary of Fermi words and their
 corresponding coefficients to the :class:`~pennylane.fermi.FermiSentence` class. For instance, the
 Fermi sentence :math:`1.2 a^{\dagger}_0 a_0  + 2.3 a^{\dagger}_3 a_3` can be constructed as
 
->>> fw1 = qml.fermi.FermiWord({(0, 0): '+', (1, 0): '-'})
->>> fw2 = qml.fermi.FermiWord({(0, 3): '+', (1, 3): '-'})
->>> qml.fermi.FermiSentence({fw1: 1.2, fw2: 2.3})
+>>> fw1 = qml.FermiWord({(0, 0): '+', (1, 0): '-'})
+>>> fw2 = qml.FermiWord({(0, 3): '+', (1, 3): '-'})
+>>> qml.FermiSentence({fw1: 1.2, fw2: 2.3})
 1.2 * a⁺(0) a(0)
 + 2.3 * a⁺(3) a(3)

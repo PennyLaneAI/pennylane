@@ -35,6 +35,8 @@ import pennylane.qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
+    FermiWord,
+    FermiSentence,
     jordan_wigner,
     parity_transform,
     bravyi_kitaev,

@@ -813,7 +813,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 # Some measurements are not observable based.
                 continue
 
-            if mp.obs.name == "LinearCombination" and not self.supports_observable("Hamiltonian"):
+            if mp.obs.name == "LinearCombination" and not (
+                self.supports_observable("Hamiltonian")
+                or self.supports_observable("LinearCombination")
+            ):
                 return False
 
             if mp.obs.name in (
