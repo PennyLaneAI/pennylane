@@ -17,9 +17,6 @@ from .vibronic_term import VibronicWord
 class VibronicMatrix:
     """The VibronicMatrix class"""
 
-    ### for testing
-    _norm_base_case_count = 0
-
     def __init__(
         self, states: int, modes: int, blocks: Dict[Tuple[int, int], VibronicWord] = None
     ) -> VibronicMatrix:
