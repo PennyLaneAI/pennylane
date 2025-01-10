@@ -556,9 +556,6 @@ def _molecular_hamiltonian(
 
         requires_grad = args is not None
         use_jax = any(qml.math.get_deep_interface(x) == "jax" for x in [coordinates, alpha, coeff])
-        interface_args = [{"like": "autograd", "requires_grad": requires_grad}, {"like": "jax"}][
-            use_jax
-        ]
         h = (
             qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
             if requires_grad
@@ -566,7 +563,10 @@ def _molecular_hamiltonian(
         )
 
         h_as_ps = qml.pauli.pauli_sentence(h)
-        coeffs = qml.math.real(qml.math.array(list(h_as_ps.values()), **interface_args))
+        if use_jax:
+            coeffs = qml.math.real(qml.math.array(list(h_as_ps.values()), like="jax"))
+        else:
+            coeffs = qml.math.real(qml.math.array(list(h_as_ps.values())))
         h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
         h = qml.s_prod(0, qml.Identity(h.wires[0])) if len(h_as_ps) == 0 else h_as_ps.operation()
 
