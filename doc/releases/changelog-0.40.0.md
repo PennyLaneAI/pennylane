@@ -559,7 +559,7 @@ sharp bits 🔪 and errors ❌.
   We can then compute a (horizontal) Cartan subalgebra `a`, that is, a maximal Abelian subalgebra of `m`.
   ```pycon
   >>> from pennylane.labs.dla import cartan_subalgebra
-  >>> g, k, mtilde, a, adj = cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
+  >>> g, k, mtilde, a, adj = cartan_subalgebra(g, k, m, adj)
   ```
 
   Having determined both subalgebras `k` and `a`, we can compute the KAK decomposition variationally like in [2104.00728](https://arxiv.org/abs/2104.00728), see our [demo on KAK decomposition in practice](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition).
@@ -572,7 +572,7 @@ sharp bits 🔪 and errors ❌.
 
 * We also provide some additional functionality that are useful for handling dynamical Lie algebras.
   * `recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396).
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
   * `lie_closure_dense`: extension of `qml.lie_closure` using dense matrices
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
   [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
