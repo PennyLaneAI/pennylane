@@ -142,9 +142,10 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
 
 
 class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
+    """Resource class for BasisRotations."""
 
     @staticmethod
-    def _resource_decomp(dim_N, **kargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(dim_N, **kwargs) -> Dict[CompressedResourceOp, int]:
         gate_types = {}
         phase_shift = re.ResourcePhaseShift.resource_rep()
         single_excitation = re.ResourceSingleExcitation.resource_rep()
@@ -201,6 +202,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
 
 
 class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
+    """Resource class for PrepSelPrep."""
 
     @staticmethod
     def _resource_decomp(cmpr_ops, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -230,6 +232,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
 
 
 class ResourceReflection(qml.Reflection, ResourceOperator):
+    """Resource class for Reflection."""
 
     @staticmethod
     def _resource_decomp(base, num_ref_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -265,6 +268,8 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
 
 
 class ResourceQubitization(qml.Qubitization, ResourceOperator):
+    """Resource class for Qubitization."""
+
     @staticmethod
     def _resource_decomp(cmpr_ops, num_ctrl_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         gate_types = {}

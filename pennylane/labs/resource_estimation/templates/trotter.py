@@ -287,22 +287,22 @@ def resource_trotterize(qfunc, n=1, order=2, reverse=False):
 
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
-    Suppose we have direct access to the operators which represent the exponentiated terms of 
+    Suppose we have direct access to the operators which represent the exponentiated terms of
     a hamiltonian:
 
     .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} | for j \in [1, N] \}.
-    
+
     Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
     first order expansion :math:`S_{1}(t)`; this function expands it to any higher order Suzuki-Trotter product.
 
     .. warning::
 
-        :code:`trotterize()` requires the :code:`qfunc` argument is a function with a very specific call 
-        signature. The first argument should be a time parameter which will be modified according to the 
-        Suzuki-Trotter product formula. The wires required by the circuit should be either the last 
-        explicit argument or the first keyword argument. 
+        :code:`trotterize()` requires the :code:`qfunc` argument is a function with a very specific call
+        signature. The first argument should be a time parameter which will be modified according to the
+        Suzuki-Trotter product formula. The wires required by the circuit should be either the last
+        explicit argument or the first keyword argument.
         :code:`qfunc((time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n))`
-    
+
     Args:
         qfunc (Callable): the first-order expansion given as a callable function which queues operations
         n (int): an integer representing the number of Trotter steps to perform
@@ -310,11 +310,11 @@ def resource_trotterize(qfunc, n=1, order=2, reverse=False):
         reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
         name (str): an optional name for the instance
         **non_trainable_kwargs (dict): non-trainable keyword arguments of the first-order expansion function
-    
+
     Returns:
-        Callable: a function with the same signature as :code:`qfunc`, when called it queues an instance of 
+        Callable: a function with the same signature as :code:`qfunc`, when called it queues an instance of
             :class:`~.TrotterizedQfunc`
-    
+
     **Example**
 
     .. code-block:: python3
@@ -334,9 +334,9 @@ def resource_trotterize(qfunc, n=1, order=2, reverse=False):
                 order=2,
             )(time, theta, phi, wires=['a', 'b', 'c'], flip=True)
             return qml.state()
-        
+
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
-            
+
         >>> time = 0.1
         >>> theta, phi = (0.12, -3.45)
         >>> print(qml.draw(my_circuit, level=3)(time, theta, phi, num_trotter_steps=1))

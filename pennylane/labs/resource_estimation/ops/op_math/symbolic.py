@@ -15,7 +15,6 @@ r"""Resource operators for symbolic operations."""
 from collections import defaultdict
 from typing import Dict
 
-import pennylane as qml
 import pennylane.labs.resource_estimation as re
 from pennylane import math
 from pennylane.labs.resource_estimation.resource_container import _combine_dict, _scale_dict
@@ -23,7 +22,6 @@ from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.exp import Exp
 from pennylane.ops.op_math.pow import PowOperation
-from pennylane.ops.op_math.sprod import SProd
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
 
