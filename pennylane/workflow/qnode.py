@@ -645,10 +645,11 @@ class QNode:
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
         original_init_args = self._init_args.copy()
-        gradient_kwargs = original__init_args.pop("gradient_kwargs")
+        gradient_kwargs = original_init_args.pop("gradient_kwargs")
         original_init_args.update(gradient_kwargs)
         original_init_args.update(kwargs)
-        return QNode(**original__init_args)
+        return QNode(**original_init_args)
+
 
 
     # pylint: disable=too-many-return-statements, unused-argument
