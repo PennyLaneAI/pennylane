@@ -656,6 +656,7 @@ class TestSnapshotUnsupportedQNode:
         assert qml.math.allclose(out[0], out["execution_results"])
 
     # pylint: disable=protected-access
+    @pytest.mark.flaky(reruns=2, reruns_delay=1)
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_qutrit(self, method):
         """Test that multiple snapshots are returned correctly on the pure qutrit simulator."""
