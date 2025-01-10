@@ -65,13 +65,13 @@ class MPLDrawer:
 
     Args:
         n_layers (int): the number of layers
-        n_wires (int): the number of wires
+        wire_map (dict): the wires to be drawn. A dict mapping wire label to index (from top to bottom) in the figure
 
     Keyword Args:
         c_wires=0 (int): the number of classical wires to leave space for.
         wire_options=None (dict): matplotlib configuration options for drawing the wire lines
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
-            to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
+            to scale with the size of the circuit via ``n_layers`` and ``len(wire_map)``.
         fig=None (matplotlib Figure): Allows users to specify the figure window to plot to.
 
     **Example**
