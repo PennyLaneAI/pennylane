@@ -152,7 +152,7 @@ class TestUpdate:
             return qml.expval(qml.PauliZ(1))
 
         new_circuit = dummy_qn.update(func=circuit)
-        assert new_circuit.func is not None
+        assert new_circuit.func is circuit
 
     @pytest.mark.torch
     def test_update_kwargs(self):
