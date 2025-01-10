@@ -17,6 +17,9 @@ from .vibronic_term import VibronicWord
 class VibronicMatrix:
     """The VibronicMatrix class"""
 
+    ### for testing
+    _norm_base_case_count = 0
+
     def __init__(
         self, states: int, modes: int, blocks: Dict[Tuple[int, int], VibronicWord] = None
     ) -> VibronicMatrix:
@@ -39,7 +42,8 @@ class VibronicMatrix:
             raise IndexError(
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
-        return self._blocks.get((row, col), VibronicWord(tuple()))  # TODO: This is not zero...
+
+        return self._blocks.get((row, col), VibronicWord.zero_word())
 
     def set_block(self, row: int, col: int, word: VibronicWord) -> None:
         """Set the value of the block indexed at (row, col)"""
@@ -88,9 +92,6 @@ class VibronicMatrix:
 
     def _norm(self, gridpoints: int) -> float:
         # pylint: disable=protected-access
-        if len(self._blocks) == 0:
-            return 0
-
         if self.states == 1:
             return self._norm_base_case(gridpoints)
 
@@ -105,20 +106,13 @@ class VibronicMatrix:
         if self.states != 1:
             raise RuntimeError("Base case called on VibronicMatrix with >1 state")
 
-        if len(self._blocks) == 0:
-            return 0
-
-        word = self._blocks[(0, 0)]
+        word = self.block(0, 0)
         norm = 0
 
         for term in word.terms:
             term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
-            coeff_sum = sum(
-                term.coeffs.compute(index)
-                for index in product(range(self.modes), repeat=len(term.ops))
-            )
-
-            norm += coeff_sum * term_op_norm
+            scalar = term.coeffs.compute_average() * (self.modes ** len(term.ops))
+            norm += scalar * term_op_norm
 
         return norm
 
@@ -198,7 +192,7 @@ class VibronicMatrix:
 
         for i, j in product(range(self.states), repeat=2):
             block_products = [self.block(i, k) @ other.block(k, j) for k in range(self.states)]
-            block_sum = sum(block_products, VibronicWord(tuple()))
+            block_sum = sum(block_products, VibronicWord.zero_word())
             product_matrix.set_block(i, j, block_sum)
 
         return product_matrix

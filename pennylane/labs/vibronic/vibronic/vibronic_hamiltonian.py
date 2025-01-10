@@ -113,8 +113,8 @@ class VibronicHamiltonian:
         return epsilon
 
     def _commute_fragments(self, i: int, j: int, k: int) -> VibronicMatrix:
-        if i == self.states and j < self.states and k == self.states:
-            return self._commute_hN_hm_hN(j)
+        # if i == self.states and j < self.states and k == self.states:
+        #    return self._commute_hN_hm_hN(j)
 
         return commutator(self.fragment(i), commutator(self.fragment(j), self.fragment(k)))
 

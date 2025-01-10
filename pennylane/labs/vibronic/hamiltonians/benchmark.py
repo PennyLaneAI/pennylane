@@ -1,1 +1,44 @@
-import vibronic.v2
+"""Benchmark the norm"""
+
+import time
+
+from pickled_ham import get_coeffs as coeffs2
+from spin_vibronic_ham import get_coeffs as coeffs1
+
+from pennylane.labs.vibronic import VibronicHamiltonian
+
+N_STATES_1 = 8
+N_MODES_1 = 10
+
+vham1 = VibronicHamiltonian(N_STATES_1, N_MODES_1, *coeffs1())
+
+N_STATES_2 = 8
+N_MODES_2 = 21
+
+vham2 = VibronicHamiltonian(N_STATES_2, N_MODES_2, *coeffs2())
+
+
+def time_norm(vham: VibronicHamiltonian):
+    start = time.time()
+    res = vham.block_operator().norm(4)
+    end = time.time()
+
+    return end - start, res
+
+
+def time_norm_ep(vham: VibronicHamiltonian):
+    start = time.time()
+    res = vham.epsilon(1).norm(4)
+    end = time.time()
+
+    return end - start, res
+
+
+if __name__ == "__main__":
+    # print("Ham norms")
+    # print(time_norm(vham1))
+    # print(time_norm(vham2))
+
+    print("Eps norms")
+    print(time_norm_ep(vham1))
+    print(time_norm_ep(vham2))

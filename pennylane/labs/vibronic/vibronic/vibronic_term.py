@@ -5,6 +5,8 @@ from __future__ import annotations
 from itertools import product
 from typing import Sequence, Tuple
 
+import numpy as np
+
 from .vibronic_tree import Node
 
 
@@ -19,22 +21,37 @@ class VibronicTerm:
         if self.ops != other.ops:
             raise ValueError(f"Cannot add term {self.ops} with term {other.ops}.")
 
+        if self.is_zero():
+            return other
+
+        if other.is_zero():
+            return self
+
         return VibronicTerm(self.ops, Node.sum_node(self.coeffs, other.coeffs))
 
     def __sub__(self, other: VibronicTerm) -> VibronicTerm:
         if self.ops != other.ops:
             raise ValueError(f"Cannot subtract term {self.ops} with term {other.ops}.")
 
+        if other.is_zero():
+            return self
+
         return VibronicTerm(
             self.ops, Node.sum_node(self.coeffs, Node.scalar_node(-1, other.coeffs))
         )
 
     def __mul__(self, scalar: float) -> VibronicTerm:
+        if np.isclose(scalar, 0):
+            return self
+
         return VibronicTerm(self.ops, Node.scalar_node(scalar, self.coeffs))
 
     __rmul__ = __mul__
 
     def __matmul__(self, other: VibronicTerm) -> VibronicTerm:
+        if other.is_zero():
+            return self
+
         return VibronicTerm(self.ops + other.ops, Node.outer_node(self.coeffs, other.coeffs))
 
     def __repr__(self) -> str:
@@ -45,6 +62,15 @@ class VibronicTerm:
             return False
 
         return self.coeffs == other.coeffs
+
+    def is_zero(self) -> bool:
+        """If is_zero returns true the term evaluates to zero, however there are false negatives"""
+        return self.coeffs.is_zero()
+
+    @classmethod
+    def zero_term(cls) -> VibronicTerm:
+        """Returns a VibronicTerm representing 0"""
+        return VibronicTerm(tuple(), Node.tensor_node(np.array(0)))
 
 
 class VibronicWord:
@@ -106,3 +132,12 @@ class VibronicWord:
 
     def __eq__(self, other: VibronicWord) -> bool:
         return self._lookup == other._lookup
+
+    def is_zero(self) -> bool:
+        """If is_zero returns true the term evaluates to zero, however there are false negatives"""
+        return all(term.is_zero for term in self.terms)
+
+    @classmethod
+    def zero_word(cls) -> VibronicWord:
+        """Return a VibronicWord representing 0"""
+        return VibronicWord([VibronicTerm.zero_term()])

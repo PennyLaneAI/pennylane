@@ -26,18 +26,20 @@ def get_coeffs():
     n_blocks = int(pow(2, ceil(log2(n_states))))
 
     # frequencies (eV)
-    omegas = [
-        0.00297,
-        0.00306,
-        0.00571,
-        0.00970,
-        0.02257,
-        0.03193,
-        0.04514,
-        0.05004,
-        0.05107,
-        0.05240,
-    ]
+    omegas = np.array(
+        [
+            0.00297,
+            0.00306,
+            0.00571,
+            0.00970,
+            0.02257,
+            0.03193,
+            0.04514,
+            0.05004,
+            0.05107,
+            0.05240,
+        ]
+    )
 
     # Vertical excitation energies
     equilibrium_energies = np.array([3.33, 3.86, 3.90, 3.95, 2.74, 3.35])
@@ -182,6 +184,7 @@ def get_coeffs():
     gammas[Psis["T1"], Qs["24"]] = -0.00060
     gammas[Psis["T2"], Qs["23"]] = -0.00134
 
+    """
     epsilons[Psis["S1"], Qs["11"]] = 0.00064
     epsilons[Psis["S2"], Qs["11"]] = 0.00073
     epsilons[Psis["S3"], Qs["11"]] = 0.00040
@@ -238,6 +241,7 @@ def get_coeffs():
     epsilons[Psis["T2"], Qs["23"]] = 0.00034
     epsilons[Psis["T1"], Qs["24"]] = 0.00015
     epsilons[Psis["T2"], Qs["24"]] = 0.00003
+    """
 
     betas = np.zeros((n_blocks, n_blocks, n_modes, n_modes))
 

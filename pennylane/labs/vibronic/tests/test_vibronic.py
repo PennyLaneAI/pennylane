@@ -6,8 +6,10 @@ import numpy as np
 import pytest
 
 from pennylane.labs.vibronic import (
+    Node,
     VibronicHamiltonian,
     VibronicMatrix,
+    VibronicTerm,
     VibronicWord,
     coeffs,
     commutator,
@@ -53,30 +55,33 @@ class TestVibronic:
         """Test that the fragments have correct block structure"""
         vham = VibronicHamiltonian(states, modes, *coeffs(states, modes))
 
+        zero_word = VibronicWord([VibronicTerm(tuple(), Node.tensor_node(np.array(0)))])
+
         for i in range(states):
             h = vham.fragment(i)
             for j, k in zip(range(states), range(states)):
                 if k == i ^ j:
                     assert h.block(j, k) == vham.v_word(j, k)
                 else:
-                    assert h.block(j, k) == VibronicWord(tuple())
+                    assert h.block(j, k) == zero_word
 
-    @pytest.mark.parametrize("states, modes", states_modes)
-    def test_commute_h0_h1(self, states, modes):
+    @pytest.mark.parametrize("modes", range(5))
+    def test_commute_h0_h1_on_two_states(self, modes):
         """Test that Y = [H_0, H_1] is correct"""
+        states = 2
 
         vham = VibronicHamiltonian(states, modes, *coeffs(states, modes))
         h0 = vham.fragment(0)
         h1 = vham.fragment(1)
         y = commutator(h0, h1)
 
-        mat1 = (vham.v_word(0, 0) @ vham.v_word(0, 1)) - (vham.v_word(0, 1) @ vham.v_word(1, 1))
-        mat2 = (vham.v_word(1, 1) @ vham.v_word(0, 1)) - (vham.v_word(0, 1) @ vham.v_word(0, 0))
+        word1 = (vham.v_word(0, 0) @ vham.v_word(0, 1)) - (vham.v_word(0, 1) @ vham.v_word(1, 1))
+        word2 = (vham.v_word(1, 1) @ vham.v_word(0, 1)) - (vham.v_word(0, 1) @ vham.v_word(0, 0))
 
-        assert y.block(0, 0) == VibronicWord({})
-        assert y.block(0, 1) == mat1
-        assert y.block(1, 0) == mat2
-        assert y.block(1, 1) == VibronicWord({})
+        assert y.block(0, 0).is_zero()
+        assert y.block(0, 1) == word1
+        assert y.block(1, 0) == word2
+        assert y.block(1, 1).is_zero()
 
 
 class TestMatrix:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Tuple
 
-from numpy import allclose, ndarray
+from numpy import allclose, average, ndarray, zeros
 
 
 class NodeType(Enum):
@@ -29,6 +29,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         l_shape: Tuple[int] = tuple(),
         r_shape: Tuple[int] = tuple(),
         tensor: ndarray = None,
+        average: float = None,
         scalar: float = None,
     ) -> Node:
 
@@ -38,6 +39,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         self.l_shape = l_shape
         self.r_shape = r_shape
         self.tensor = tensor
+        self.average = average
         self.scalar = scalar
 
         if node_type == NodeType.SUM:
@@ -105,7 +107,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def tensor_node(cls, tensor: ndarray) -> Node:
         """Construct a TENSOR node"""
-        return cls(node_type=NodeType.TENSOR, tensor=tensor)
+        return cls(node_type=NodeType.TENSOR, tensor=tensor, average=average(tensor))
 
     @classmethod
     def scalar_node(cls, scalar: float, child: Node) -> Node:
@@ -171,35 +173,40 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
 
-    # def __str__(self, level: int = 0) -> str:
-    #    ret = "\t" * level
-    #    if self.node_type == NodeType.TENSOR:
-    #        ret += f"(TENSOR, {self.tensor})"
+    def __str__(self) -> str:
+        return self._str(0)
 
-    #    if self.node_type == NodeType.SCALAR:
-    #        ret += f"(SCALAR, {self.scalar}, \n"
-    #        ret += str(self.l_child, level + 1)
-    #        ret += ")"
+    def _str(self, level: int = 0) -> str:
+        # pylint: disable=protected-access
 
-    #    if self.node_type == NodeType.OUTER:
-    #        ret += f"(OUTER, {self.l_shape}, {self.r_shape}, \n"
-    #        ret += str(self.l_child, level + 1) + ",\n"
-    #        ret += str(self.r_child, level + 1)
-    #        ret += ")"
+        ret = "\t" * level
+        if self.node_type == NodeType.TENSOR:
+            ret += f"(TENSOR, {self.tensor})"
 
-    #    if self.node_type == NodeType.SUM:
-    #        ret += "(SUM, \n"
-    #        ret += str(self.l_child, level + 1) + ",\n"
-    #        ret += str(self.r_child, level + 1)
-    #        ret += ")"
+        if self.node_type == NodeType.SCALAR:
+            ret += f"(SCALAR, {self.scalar}, \n"
+            ret += self.l_child._str(level + 1)
+            ret += ")"
 
-    #    if self.node_type == NodeType.HADAMARD:
-    #        ret += "(HADAMARD, \n"
-    #        ret += str(self.l_child, level + 1) + ",\n"
-    #        ret += str(self.r_child, level + 1)
-    #        ret += ")"
+        if self.node_type == NodeType.OUTER:
+            ret += f"(OUTER, {self.l_shape}, {self.r_shape}, \n"
+            ret += self.l_child._str(level + 1) + ",\n"
+            ret += self.r_child._str(level + 1)
+            ret += ")"
 
-    #    return ret
+        if self.node_type == NodeType.SUM:
+            ret += "(SUM, \n"
+            ret += self.l_child._str(level + 1) + ",\n"
+            ret += self.r_child._str(level + 1)
+            ret += ")"
+
+        if self.node_type == NodeType.HADAMARD:
+            ret += "(HADAMARD, \n"
+            ret += self.l_child._str(level + 1) + ",\n"
+            ret += self.r_child._str(level + 1)
+            ret += ")"
+
+        return ret
 
     def compute(self, index: Tuple[int]) -> float:
         """Compute the coefficient at the given index"""
@@ -223,6 +230,46 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         if self.node_type == NodeType.HADAMARD:
             return self.l_child.compute(index) * self.r_child.compute(index)
+
+        raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
+
+    def compute_average(self) -> float:
+        """Compute the average of the term's coefficients"""
+
+        if self.node_type == NodeType.TENSOR:
+            return self.average
+
+        if self.node_type == NodeType.SCALAR:
+            return self.scalar * self.l_child.compute_average()
+
+        if self.node_type == NodeType.SUM:
+            return (self.l_child.compute_average() + self.r_child.compute_average()) / 2
+
+        if self.node_type == NodeType.OUTER:
+            return self.l_child.compute_average() * self.r_child.compute_average()
+
+        if self.node_type == NodeType.HADAMARD:
+            raise NotImplementedError("HADAMARD nodes not supported")
+
+        raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
+
+    def is_zero(self) -> bool:
+        """Returning true means the tree computes zero on every index, however there are false negatives"""
+
+        if self.node_type == NodeType.TENSOR:
+            return allclose(self.tensor, zeros(self.tensor.shape))
+
+        if self.node_type == NodeType.SCALAR:
+            return self.scalar == 0 or self.l_child.is_zero()
+
+        if self.node_type == NodeType.SUM:
+            return self.l_child.is_zero() and self.r_child.is_zero()
+
+        if self.node_type == NodeType.OUTER:
+            return self.l_child.is_zero() or self.r_child.is_zero()
+
+        if self.node_type == NodeType.HADAMARD:
+            return self.l_child.is_zero() or self.r_child.is_zero()
 
         raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
 
