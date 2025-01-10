@@ -188,8 +188,8 @@ Hamiltonians. This includes:
   pennylane.bose.bosonic.BoseSentence
   ```
 
-  The `pennylane.qchem.vibrational` submodule also includes functionality to optimize molecular
-  geometries and convert between representations:
+  Additional functionality is also available to optimize molecular geometries and convert between
+  representations:
   * Convert Christiansen Hamiltonian integrals in the harmonic oscillator basis to 
   integrals in the vibrational self-consistent field (VSCF) basis with the :func:`~.qchem.vscf_integrals`
   function. 
