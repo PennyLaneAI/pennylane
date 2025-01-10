@@ -524,7 +524,7 @@ for state-of-the art research, beta testing, or getting a sneak peek into *poten
 they are added to PennyLane.
 
 The experimental nature of this module means features may not integrate well with other 
-PennyLane staples like differentiability or jax-jit compatibility. There may also be unexpected
+PennyLane staples like differentiability, JAX, or JIT compatibility. There may also be unexpected
 sharp bits 🔪 and errors ❌.
 
 <h4>Resource estimation</h4>
