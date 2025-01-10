@@ -142,6 +142,7 @@ qubit operators.
 construction of vibrational Hamiltonians. This includes:
   * The `VibrationalPES` class to store potential energy surface information. 
   [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+
   ```python
   pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
   pes_twomode = np.zeros((1, 1, 9, 9))
@@ -161,8 +162,9 @@ construction of vibrational Hamiltonians. This includes:
           dipole_level=1,
       )
   ```
-  * The `taylor_hamiltonian` function to build a Taylor Hamiltonian from a `VibrationalPES` object
-  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523):
+
+  * The `taylor_hamiltonian` function to build a Taylor Hamiltonian from a `VibrationalPES` object.
+  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
   ```pycon
   >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
@@ -173,8 +175,9 @@ construction of vibrational Hamiltonians. This includes:
   )
   ```
 
-  * The `taylor_bosonic` to build a Taylor Hamiltonian in terms of Bosonic operators:
+  * The `taylor_bosonic` function to build a Taylor Hamiltonian in terms of Bosonic operators.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+
   ```pycon
   >>> coeffs_arr = qml.qchem.taylor_coeffs(pes_object)
   >>> bose_op = qml.qchem.taylor_bosonic(coeffs_arr, pes_object.freqs, is_local=pes_object.localized, uloc=pes_object.uloc)
@@ -182,15 +185,17 @@ construction of vibrational Hamiltonians. This includes:
   pennylane.bose.bosonic.BoseSentence
   ```
 
+* The `pennylane.qchem.vibrational` submodule also includes functionality to optimize molecular
+  geometries and convert between representations:
   * Convert Christiansen Hamiltonian integrals in the harmonic oscillator basis to 
   integrals in the vibrational self-consistent field (VSCF) basis with the `vscf_integrals`
   function. [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
 
-  * Optimize molecular geometries with `optimize_geometry`
+  * Find the lowest energy configuration of molecules with `optimize_geometry`.
   [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
   [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
 
-  * Localize normal modes with `localize_normal_modes`
+  * Separate normal mode frequencies and localize them with `localize_normal_modes`.
   [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
 
 <h3>Improvements 🛠</h3>
