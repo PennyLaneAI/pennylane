@@ -174,6 +174,19 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
+def _get_new_signature(qfunc):
+    initial_signature = inspect.signature(qfunc)
+    if "shots" in initial_signature.parameters:
+        return initial_signature
+    params = list(initial_signature.parameters.values())
+    shots_par = inspect.Parameter("shots", default="device", kind=inspect.Parameter.KEYWORD_ONLY)
+    if len(params) == 0 or params[-1].kind != params[-1].VAR_KEYWORD:
+        params.append(shots_par)
+    else:
+        params.insert(-1, shots_par)
+    return inspect.Signature(params, return_annotation=qml.typing.Result)
+
+
 # pylint: disable=too-many-instance-attributes
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
@@ -579,6 +592,7 @@ class QNode:
 
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
+        self.__signature__ = _get_new_signature(func)
 
         # validation check.  Will raise error if bad diff_method
         if diff_method is not None:
@@ -903,10 +917,15 @@ class QNode:
 
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
-    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+    def __call__(self, *args, shots="device", **kwargs) -> qml.typing.Result:
+        if self._qfunc_uses_shots_arg:
+            sig_p = inspect.signature(self.func).parameters
+            shots = sig_p["shots"].default if shots == "device" else shots
+        else:
+            shots = self.device.shots if shots == "device" else shots
         if qml.capture.enabled():
-            return capture_qnode(self, *args, **kwargs)
-        return self._impl_call(*args, **kwargs)
+            return capture_qnode(self, *args, shots=shots, **kwargs)
+        return self._impl_call(*args, shots=shots, **kwargs)
 
 
 def qnode(device, **kwargs):
