@@ -108,7 +108,7 @@ def test_result_has_correct_interface(op, interface):
 
 # pylint: disable=too-few-public-methods
 class TestStatePrepBase:
-    """Tests integration with various state prep methods."""
+    """Tests with state prep methods."""
 
     def test_basis_state(self):
         """Test that the BasisState operator prepares the desired state."""
