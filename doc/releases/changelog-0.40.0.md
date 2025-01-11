@@ -651,7 +651,6 @@ base classes and one new function:
 
   ```python
   from functools import partial
-  import jax
 
   qml.capture.enable()
   wire_map = {0: 3, 1: 6, 2: 9}
@@ -815,8 +814,6 @@ base classes and one new function:
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
 
   ```python
-  import pennylane as qml
-
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
       qml.Hadamard(0)
