@@ -360,6 +360,172 @@ Hamiltonians. This includes:
   * Separate normal mode frequencies and localize them with :func:`~.qchem.localize_normal_modes`.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
 
+<h3>Labs: a place for unified and rapid prototyping of research software 🧑‍🔬</h3>
+
+The new :mod:`qml.labs <pennylane.labs>` module will house experimental research software 🔬. Features here may be useful
+for state-of-the-art research, beta testing, or getting a sneak peek into *potential* new features before
+they are added to PennyLane.
+
+The experimental nature of this module means features may not integrate well with other 
+PennyLane staples like differentiability, JAX, or JIT compatibility. There may also be unexpected
+sharp bits 🔪 and errors ❌.
+
+.. warning:: 
+    This module is **experimental**! Breaking changes and removals will happen without warning.
+    Please use these features carefully and let us know your thoughts. Your feedback will inform
+    how these features become a part of mainline PennyLane.
+
+<h4>Resource estimation</h4>
+
+* Resource estimation functionality in Labs is focused on being light-weight and flexible. 
+The Labs :mod:`qml.labs.resource_estimation <pennylane.labs.resource_estimation>` module involves modifications to core PennyLane that reduce the
+memory requirements and computational time of resource estimation. These include new or modified
+base classes and one new function:
+  * :class:`~.labs.resource_estimation.Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
+  and `shots`. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+  * :class:`~.labs.resource_estimation.ResourceOperator` - Replaces :class:`~.resource.ResourceOperation`, expanded to include decompositions. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+  * :class:`~.labs.resource_estimation.CompressedResourceOp` - A new class with the minimum information to estimate resources:
+  the operator type and the parameters needed to decompose it. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+  * :class:`~.labs.resource_estimation.ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
+  :class:`~.labs.resource_estimation.ResourceHadamard`, and :class:`~.labs.resource_estimation.ResourceCNOT`. [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+  [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
+  [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
+  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592).
+  * :func:`~.labs.resource_estimation.get_resources()` - The new entry point to efficiently obtain the resources of quantum circuits.
+  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
+
+  Using new Resource versions of existing operations and :func:`~.labs.resource_estimation.get_resources`, we can estimate
+  resources quickly:
+  ```python
+  import pennylane.labs.resource_estimation as re
+  
+  def my_circuit():
+      for w in range(2):
+          re.ResourceHadamard(w)
+      re.ResourceCNOT([0, 1])
+      re.ResourceRX(1.23, 0)
+      re.ResourceRY(-4.56, 1)
+      re.ResourceQFT(wires=[0, 1, 2])
+      return qml.expval(re.ResourceHadamard(2))
+  ```
+  ```pycon
+  >>> res = re.get_resources(my_circuit)()
+  >>> print(res)
+  wires: 3
+  gates: 202
+  gate_types:
+  {'Hadamard': 5, 'CNOT': 10, 'T': 187}
+  ```
+
+  We can also set custom gate sets for decompositions:
+
+  ````pycon
+  >>> gate_set={"Hadamard","CNOT","RZ", "RX", "RY", "SWAP"}
+  >>> res = re.get_resources(my_circuit, gate_set=gate_set)()
+  >>> print(res)
+  wires: 3
+  gates: 24
+  gate_types:
+  {'Hadamard': 5, 'CNOT': 7, 'RX': 1, 'RY': 1, 'SWAP': 1, 'RZ': 9}
+  ````
+
+  Alternatively, it is possible to manually substitute associated resources:
+
+  ```pycon
+  >>> new_resources = re.substitute(res, "SWAP", re.Resources(2, 3, {"CNOT":3}))
+  >>> print(new_resources)
+  {'Hadamard': 5, 'CNOT': 10, 'RX': 1, 'RY': 1, 'RZ': 9}
+  ```
+
+<h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
+
+* Use the :mod:`qml.labs.dla <pennylane.labs.dla>` module to perform the
+  [KAK decomposition](https://pennylane.ai/qml/demos/tutorial_kak_decomposition):
+  * :func:`~.labs.dla.cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** via an **involution**.
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+  * We provide a variety of **involutions** like :func:`~.labs.dla.concurrence_involution`, :func:`~.labs.dla.even_odd_involution` and canonical Cartan involutions.
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+  * :func:`~.labs.dla.cartan_subalgebra`: compute a horizontal **Cartan subalgebra**.
+  [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
+  * :func:`~.labs.dla.variational_kak_adj` : compute a [variational KAK decomposition](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition) of a Hermitian operator using a **Cartan decomposition** and the adjoint
+  representation of a horizontal **Cartan subalgebra**.
+  [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
+
+  To use this functionality we start with a set of Hermitian operators.
+
+  ```pycon
+  >>> n = 3
+  >>> gens = [qml.X(i) @ qml.X(i + 1) for i in range(n - 1)]
+  >>> gens += [qml.Z(i) for i in range(n)]
+  >>> H = qml.sum(*gens)
+  ```
+
+  We then generate its Lie algebra by computing the Lie closure.
+
+  ```pycon
+  >>> g = qml.lie_closure(gens)
+  >>> g = [op.pauli_rep for op in g]
+  >>> print(g)
+  [1 * X(0) @ X(1), 1 * X(1) @ X(2), 1.0 * Z(0), ...]
+  ```
+
+  We then choose an involution (e.g. :func:`~.labs.dla.concurrence_involution`) that defines a Cartan decomposition `g = k + m`. `k` is the vertical subalgebra, and `m` its horizontal complement (not a subalgebra).
+
+  ```pycon
+  >>> from pennylane.labs.dla import concurrence_involution, cartan_decomp
+  >>> involution = concurrence_involution
+  >>> k, m = cartan_decomp(g, involution=involution)
+  ```
+
+  The next step is just re-ordering the basis elements in `g` and computing its `structure_constants`.
+
+  ```pycon
+  >>> g = k + m
+  >>> adj = qml.structure_constants(g)
+  ```
+
+  We can then compute a (horizontal) Cartan subalgebra `a`, that is, a maximal Abelian subalgebra of `m`.
+  ```pycon
+  >>> from pennylane.labs.dla import cartan_subalgebra
+  >>> g, k, mtilde, a, adj = cartan_subalgebra(g, k, m, adj)
+  ```
+
+  Having determined both subalgebras `k` and `a`, we can compute the KAK decomposition variationally like in [2104.00728](https://arxiv.org/abs/2104.00728), see our [demo on KAK decomposition in practice](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition).
+
+  ```pycon
+  >>> from pennylane.labs.dla import variational_kak_adj
+  >>> dims = (len(k), len(mtilde), len(a))
+  >>> adjvec_a, theta_opt = variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
+  ```
+
+* We also provide some additional features that are useful for handling dynamical Lie algebras.
+  * :func:`~.labs.dla.recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions.
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+  * :func:`~.labs.dla.lie_closure_dense`: extension of `qml.lie_closure` using dense matrices.
+  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
+  * :func:`~.labs.dla.structure_constants_dense`: extension of `qml.structure_constants` using dense matrices.
+  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
+
+
+<h4>Vibrational Hamiltonians</h4>
+
+* New functionality in labs helps with the construction of vibrational Hamiltonians.
+  * Generate potential energy surfaces (PES) with `qml.labs.vibrational.vibrational_pes`.
+  [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+  [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
+  
+  ```pycon
+  >>> symbols  = ['H', 'F']
+  >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+  >>> mol = qml.qchem.Molecule(symbols, geometry)
+  >>> pes = vibrational_pes(mol)
+  ```
+  * Use the `qml.labs.vibrational.christiansen_hamiltonian` function and potential energy surfaces 
+  to generate Hamiltonians in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+
 <h3>Improvements 🛠</h3>
 
 <h4>QChem improvements</h4>
@@ -730,74 +896,6 @@ Hamiltonians. This includes:
 
 * A new figure was added to the landing page of the PennyLane website.
   [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
-
-<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
-
-<h4>Resource estimation</h4>
-
-* Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
-  [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-
-* Added `get_resources()` functionality which allows users to extract resources from a quantum function, tape or
-  resource operation. Additionally added some standard gatesets `DefaultGateSet` to track resources with respect to.
-  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
-
-* Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
-  [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
-
-* Added native `ResourceOperator` subclasses for each of the controlled operators.
-  [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
-
-* Added native `ResourceOperator` subclasses for each of the multi qubit operators.
-  [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
-
-* Added abstract `ResourceOperator` subclasses for Adjoint, Controlled, and Pow
-  symbolic operation classes.
-  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
-
-<h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
-
-* Added a dense implementation of computing the Lie closure in a new function
-  `lie_closure_dense` in `pennylane.labs.dla`.
-  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
-  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
-
-* Added a dense implementation of computing the structure constants in a new function
-  `structure_constants_dense` in `pennylane.labs.dla`.
-  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
-
-* Added utility functions for handling dense matrices and advanced functionality in the Lie theory context.
-  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
-* Added a ``cartan_decomp`` function along with two standard involutions ``even_odd_involution`` and ``concurrence_involution``.
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-
-* Added a `recursive_cartan_decomp` function and all canonical Cartan involutions.
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
-* Added a `cartan_subalgebra` function to compute the (horizontal) Cartan subalgebra of a Cartan decomposition.
-  [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
-
-* Added a `variational_kak_adj` function to compute a KaK decomposition of a Hamiltonian given a Cartan
-  decomposition and the ordered adjoint representation of the Lie algebra.
-  [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
-
-* Improved documentation by fixing broken links and latex issues. Also consistently use `$\mathfrak{a}$`
-  for the horizontal Cartan subalgebra instead of `$\mathfrak{h}$`.
-  [(#6747)](https://github.com/PennyLaneAI/pennylane/pull/6747)
-
-<h4>Vibrational Hamiltonians</h4>
-
-* Implemented helper functions for calculating one-mode PES, two-mode PES, and
-three-mode PES.
-  [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
-  [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
-
-* Added support to build a vibrational Hamiltonian in the Christiansen form.
-  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Breaking changes 💔</h3>
 
