@@ -304,7 +304,7 @@ base classes and one new function:
 <h4>Vibrational Hamiltonians</h4>
 
 * New functionality in labs helps with the construction of vibrational Hamiltonians.
-  * Generate potential energy surfaces (PES) with `vibrational_pes`.
+  * Generate potential energy surfaces (PES) with `qml.labs.vibrational.vibrational_pes`.
   [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
   [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
   
@@ -314,7 +314,7 @@ base classes and one new function:
   >>> mol = qml.qchem.Molecule(symbols, geometry)
   >>> pes = vibrational_pes(mol)
   ```
-  * Use the `christiansen_hamiltonian` function and potential energy surfaces 
+  * Use the `qml.labs.vibrational.christiansen_hamiltonian` function and potential energy surfaces 
   to generate Hamiltonians in the Christiansen form.
   [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
