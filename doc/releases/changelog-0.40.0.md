@@ -386,7 +386,7 @@ base classes and one new function:
   * :class:`~.labs.resource_estimation.ResourceOperator` - Replaces :class:`~.resource.ResourceOperation`, expanded to include decompositions. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
   * :class:`~.labs.resource_estimation.CompressedResourceOp` - A new class with the minimum information to estimate resources:
   the operator type and the parameters needed to decompose it. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-  * :class:`~.labs.resource_estimation.ResourceOperator` versions of many existing PennyLane operations, like Pauli operators,
+  * :class:`~.labs.resource_estimation.ResourceOperator` - versions of many existing PennyLane operations, like Pauli operators,
   :class:`~.labs.resource_estimation.ResourceHadamard`, and :class:`~.labs.resource_estimation.ResourceCNOT`. [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
