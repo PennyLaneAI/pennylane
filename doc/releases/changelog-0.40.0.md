@@ -390,7 +390,7 @@ base classes and one new function:
   :class:`~.labs.resource_estimation.ResourceHadamard`, and :class:`~.labs.resource_estimation.ResourceCNOT`. [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
-  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592).
+  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
   * :func:`~.labs.resource_estimation.get_resources()` - The new entry point to efficiently obtain the resources of quantum circuits.
   [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
 
@@ -884,7 +884,7 @@ base classes and one new function:
   * Support for `qml.Snapshot` has been added.
     [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
 
-* Reporting of test warnings as failures has been added
+* Reporting of test warnings as failures has been added.
   [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
 * A warning message in the Gradients and training documentation has been added that pertains to 
