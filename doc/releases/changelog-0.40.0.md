@@ -1021,7 +1021,7 @@ base classes and one new function:
   [(#6702)](https://github.com/PennyLaneAI/pennylane/pull/6702)
 
 * The documentation of `TrotterProduct` has been updated to include the impact of the operands in 
-  the Hamiltonian on the strucutre of the created circuit.
+  the Hamiltonian on the structure of the created circuit.
   [(#6629)](https://github.com/PennyLaneAI/pennylane/pull/6629)
 
 * The documentation of `QSVT` has been updated to include examples for different block encodings.
