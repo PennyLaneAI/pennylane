@@ -47,15 +47,6 @@ Pending deprecations
   - Deprecated in v0.40
   - Will be removed in v0.41
 
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-  
-* The ``QubitStateVector`` template is deprecated.
-  Instead, use ``StatePrep``.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
   :meth:`~.Operator.terms` instead.
 
@@ -70,7 +61,6 @@ Pending deprecations
   values with a bit string. In the future, it will no longer accepts strings as control values.
 
   - Deprecated in v0.36
-  - Will be removed in v0.37
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------

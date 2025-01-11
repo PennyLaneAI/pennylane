@@ -51,8 +51,8 @@ def binary_mapping(
     The mapping procedure is described in equations :math:`27-29` in `arXiv:1507.03271 <https://arxiv.org/pdf/1507.03271>`_.
 
     Args:
-        bose_operator(BoseWord, BoseSentence): the bosonic operator
-        n_states(int): maximum number of allowed bosonic states
+        bose_operator (BoseWord, BoseSentence): the bosonic operator
+        n_states (int): Maximum number of allowed bosonic states. Defaults to ``2``.
         ps (bool): Whether to return the result as a ``PauliSentence`` instead of an
             operator. Defaults to ``False``.
         wire_map (dict): A dictionary defining how to map the states of
@@ -61,7 +61,7 @@ def binary_mapping(
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-        Union[PauliSentence, Operator]: A linear combination of qubit operators
+        Union[PauliSentence, Operator]: a linear combination of qubit operators
 
     **Example**
 
@@ -175,16 +175,16 @@ def unary_mapping(
 
     Args:
         bose_operator(BoseWord, BoseSentence): the bosonic operator
-        n_states(int): maximum number of allowed bosonic states
-        ps (bool): Whether to return the result as a PauliSentence instead of an
-            operator. Defaults to False.
+        n_states(int): Maximum number of allowed bosonic states. Defaults to ``2``.
+        ps (bool): Whether to return the result as a ``PauliSentence`` instead of an
+            operator. Defaults to ``False``.
         wire_map (dict): A dictionary defining how to map the states of
-            the Bose operator to qubit wires. If None, integers used to
-            label the bosonic states will be used as wire labels. Defaults to None.
+            the Bose operator to qubit wires. If ``None``, integers used to
+            label the bosonic states will be used as wire labels. Defaults to ``None``.
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-        Union[PauliSentence, Operator]: A linear combination of qubit operators.
+        Union[PauliSentence, Operator]: a linear combination of qubit operators
 
     **Example**
 
@@ -325,15 +325,15 @@ def christiansen_mapping(
 
     Args:
         bose_operator(BoseWord, BoseSentence): the bosonic operator
-        ps (bool): Whether to return the result as a PauliSentence instead of an
-            operator. Defaults to False.
+        ps (bool): Whether to return the result as a ``PauliSentence`` instead of an
+            operator. Defaults to ``False``.
         wire_map (dict): A dictionary defining how to map the states of
-            the Bose operator to qubit wires. If None, integers used to
-            label the bosonic states will be used as wire labels. Defaults to None.
+            the Bose operator to qubit wires. If ``None``, integers used to
+            label the bosonic states will be used as wire labels. Defaults to ``None``.
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-        Union[PauliSentence, Operator]: A linear combination of qubit operators.
+        Union[PauliSentence, Operator]: a linear combination of qubit operators
     """
 
     qubit_operator = _christiansen_mapping_dispatch(bose_operator, tol)
