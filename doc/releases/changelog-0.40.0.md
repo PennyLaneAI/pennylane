@@ -865,7 +865,7 @@ base classes and one new function:
   * A `preprocess` method has been added to the `QubitMixed` device class to preprocess the quantum 
     circuit before execution.
     [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
-  * A new class called `DefaultMixedNewAPI` has been addded to the `qml.devices.qubit_mixed` module, 
+  * A new class called `DefaultMixedNewAPI` has been added to the `qml.devices.qubit_mixed` module, 
     which will replace the legacy `DefaultMixed`. 
     [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
   * A new submodule called `devices.qubit_mixed.measure` has been added, featuring a `measure` 
