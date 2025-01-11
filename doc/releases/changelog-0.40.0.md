@@ -247,7 +247,7 @@ qubit operators.
 
   :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>` 
   operate similarly to their fermionic counterparts. To create a Bose word, a dictionary 
-  is required as input, where the keys are tuples of boson indicies and values are `'+/-'` (denoting 
+  is required as input, where the keys are tuples of boson indices and values are `'+/-'` (denoting 
   the bosonic creation/annihilation operators). For example, the :math:`b^{\dagger}_0 b_1` can be 
   constructed as follows.
 
