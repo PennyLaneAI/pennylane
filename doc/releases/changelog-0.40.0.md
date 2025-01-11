@@ -907,7 +907,7 @@ base classes and one new function:
   from such a framework have to be used.
   [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
 
-* `qml.math.jax_argnums_to_tape_trainable` has been moved and made private to avoid an unecessary 
+* `qml.math.jax_argnums_to_tape_trainable` has been moved and made private to avoid an unnecessary 
   QNode dependency in the `qml.math` module.
   [(#6609)](https://github.com/PennyLaneAI/pennylane/pull/6609)
 
