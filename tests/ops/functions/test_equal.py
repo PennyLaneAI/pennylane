@@ -2598,7 +2598,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, atol=1e-5)
         assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
 
-        with pytest.raises(AssertionError, match="The hyperparameter unitary_matrix is not equal"):
+        with pytest.raises(AssertionError, match="op1 and op2 have different data"):
             assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
@@ -2629,7 +2629,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, check_interface=False)
         assert qml.equal(op, other_op) is False
 
-        with pytest.raises(AssertionError, match=r"has different interfaces for op1 and op2"):
+        with pytest.raises(AssertionError, match=r"have different interfaces"):
             assert_equal(op, other_op)
 
 
