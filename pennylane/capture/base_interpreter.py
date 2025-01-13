@@ -84,13 +84,14 @@ class PlxprInterpreter:
 
     Now the interpreter can be used to transform functions and jaxpr:
 
+    >>> qml.capture.enable()
     >>> interpreter = SimplifyInterpreter()
     >>> def f(x):
     ...     qml.RX(x, 0)**2
     ...     qml.adjoint(qml.Z(0))
     ...     return qml.expval(qml.X(0) + qml.X(0))
     >>> simplified_f = interpreter(f)
-    >>> print(qml.draw(simplified_f)(0.5)
+    >>> print(qml.draw(simplified_f)(0.5))
     0: ──RX(1.00)──Z─┤  <2.00*X>
     >>> jaxpr = jax.make_jaxpr(f)(0.5)
     >>> interpreter.eval(jaxpr.jaxpr, [], 0.5)
@@ -98,13 +99,12 @@ class PlxprInterpreter:
 
     **Handling higher order primitives:**
 
-    Two main strategies exist for handling higher order primitives (primitives with jaxpr as metatdata).
-
-    1) Structure preserving. Tracing the execution preserves the higher order primitive.
-    2) Structure flattening. Tracing the execution eliminates the higher order primitive.
+    Two main strategies exist for handling higher order primitives (primitives with jaxpr as metadata).
+    The first one is structure preserving (tracing the execution preserves the higher order primitive),
+    and the second one is structure flattening (tracing the execution eliminates the higher order primitive).
 
     Compilation transforms, like the above ``SimplifyInterpreter``, may prefer to handle higher order primitives
-    via a structure preserving method. After transforming the jaxpr, the `for_loop` still exists. This maintains
+    via a structure-preserving method. After transforming the jaxpr, the `for_loop` still exists. This maintains
     the compact structure of the jaxpr and reduces the size of the program. This behavior is the default.
 
     >>> def g(x):
@@ -117,22 +117,25 @@ class PlxprInterpreter:
     >>> jax.make_jaxpr(interpreter(g))(0.5)
     { lambda ; a:f32[]. let
         _:f32[] = for_loop[
-        jaxpr_body_fn={ lambda ; b:i32[] c:f32[]. let
+          args_slice=slice(0, None, None)
+          consts_slice=slice(0, 0, None)
+          jaxpr_body_fn={ lambda ; b:i32[] c:f32[]. let
             d:f32[] = convert_element_type[new_dtype=float32 weak_type=True] b
             e:f32[] = mul c d
             _:AbstractOperator() = RX[n_wires=1] e 0
-            in (c,) }
-        n_consts=0
+          in (c,) }
         ] 0 3 1 1.0
         f:AbstractOperator() = PauliZ[n_wires=1] 0
         g:AbstractOperator() = SProd[_pauli_rep=4.0 * Z(0)] 4.0 f
         h:AbstractMeasurement(n_wires=None) = expval_obs g
-    in (h,) }
+      in (h,) }
 
     Accumulation transforms, like device execution or conversion to tapes, may need to flatten out
     the higher order primitive to execute it.
 
     .. code-block:: python
+
+        import copy
 
         class AccumulateOps(PlxprInterpreter):
 
@@ -152,14 +155,14 @@ class PlxprInterpreter:
             state = invals[args_slice]
 
             for i in range(start, stop, step):
-                state = copy(self).eval(jaxpr_body_fn, consts, i, *state)
+                state = copy.copy(self).eval(jaxpr_body_fn, consts, i, *state)
             return state
 
     >>> @qml.for_loop(3)
     ... def loop(i, x):
     ...     qml.RX(x, i)
     ...     return x
-    >>> accumulator = AccumlateOps()
+    >>> accumulator = AccumulateOps()
     >>> accumulator(loop)(0.5)
     >>> accumulator.ops
     [RX(0.5, wires=[0]), RX(0.5, wires=[1]), RX(0.5, wires=[2])]
@@ -222,7 +225,7 @@ class PlxprInterpreter:
     def cleanup(self) -> None:
         """Perform any final steps after iterating through all equations.
 
-        Blank by default, this method can clean up instance variables. Particularily,
+        Blank by default, this method can clean up instance variables. Particularly,
         this method can be used to deallocate qubits and registers when converting to
         a Catalyst variant jaxpr.
         """

@@ -141,7 +141,7 @@ class QuantumScript:
     using the :func:`~.pennylane.execute` function:
 
     >>> dev = qml.device('default.qubit', wires=(0,'a'))
-    >>> qml.execute([qscript], dev, gradient_fn=None)
+    >>> qml.execute([qscript], dev, diff_method=None)
     [array([-0.77750694])]
 
     Quantum scripts can also store information about the number and batches of

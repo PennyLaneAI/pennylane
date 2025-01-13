@@ -90,19 +90,19 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     measurements to be in the Z basis, so the original circuit
 
     >>> print(qml.draw(circuit, level=0)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)─┤ ╭<X@Z> ╭Var[(0.50*Y)+X]
+    0: ──RY(0.79)─┤ ╭<X@Z> ╭Var[𝓗(0.50)]
     1: ──RX(0.79)─┤ ╰<X@Z> │
-    2: ───────────┤        ╰Var[(0.50*Y)+X]
+    2: ───────────┤        ╰Var[𝓗(0.50)]
 
     becomes
 
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)──H────┤ ╭<Z@Z> ╭Var[(0.50*Z)+Z]
+    0: ──RY(0.79)──H────┤ ╭<Z@Z> ╭Var[𝓗(0.50)]
     1: ──RX(0.79)───────┤ ╰<Z@Z> │
-    2: ──Z─────────S──H─┤        ╰Var[(0.50*Z)+Z]
+    2: ──Z─────────S──H─┤        ╰Var[𝓗(0.50)]
 
     >>> circuit([np.pi/4, np.pi/4])
-    (tensor(0.5, requires_grad=True), tensor(0.75, requires_grad=True))
+    (0.5, 0.75)
 
     .. details::
         :title: Usage Details
@@ -116,7 +116,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
                 qml.expval(qml.X(0) + qml.Hermitian([[1, 0], [0, 1]], wires=[1]))
             ]
             tape = qml.tape.QuantumScript(measurements=measurements)
-            tapes, processsing_fn = diagnalize_measurements(tape)
+            tapes, processsing_fn = diagonalize_measurements(tape)
 
         >>> tapes[0].operations
         [H(0)]

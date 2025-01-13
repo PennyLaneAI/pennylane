@@ -634,7 +634,7 @@ class QubitDevice(Device):
         results = []
 
         for m in measurements:
-            # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
+            # TODO: Remove this when all overridden measurements support the `MeasurementProcess` class
             if isinstance(m.mv, list):
                 # MeasurementProcess stores information needed for processing if terminal measurement
                 # uses a list of mid-circuit measurement values
@@ -642,7 +642,7 @@ class QubitDevice(Device):
             else:
                 obs = m.obs or m.mv
                 obs = m if obs is None else obs
-            # Check if there is an overriden version of the measurement process
+            # Check if there is an overridden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
                     result = method(tape=circuit)

@@ -197,7 +197,7 @@ def calculate_variance(
         to simulate readout errors.
 
     Returns:
-        TensorLike: the variance of the observable wrt the state.
+        TensorLike: the variance of the observable with respect to the state.
     """
     probs = calculate_probability(measurementprocess, state, is_state_batched, readout_errors)
     eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
@@ -222,7 +222,7 @@ def calculate_expval_sum_of_terms(
         to simulate readout errors.
 
     Returns:
-        TensorLike: the expectation value of the sum of Hamiltonian observable wrt the state.
+        TensorLike: the expectation value of the sum of Hamiltonian observable with respect to the state.
     """
     # Recursively call measure on each term, so that the best measurement method can
     # be used for each term

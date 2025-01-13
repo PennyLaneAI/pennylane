@@ -55,7 +55,7 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
         interface (str): The machine learning interface to create the initial state with
 
     Returns:
-        Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
+        tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
             whether the state has a batch dimension.
 
     """

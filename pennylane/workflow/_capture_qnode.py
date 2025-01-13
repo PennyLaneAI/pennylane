@@ -27,12 +27,12 @@ associated with a circuit. Dynamically mutating objects is not compatible with j
 and reshape the outputs from measurements on the device when multiple measurements are present.
 
 **Gradients other than default qubit backprop**. We managed to get backprop of default qubit for
-free, but no other gradients methods have support yet.
+free, but no other gradient methods have support yet.
 
-**MCM methods other than single branch statistics**. Mid circuit measurements
+**MCM methods other than single branch statistics**. Mid-circuit measurements
 are only handled via a "single branch statistics" algorithm, which will lead to unexpected
 results. Even on analytic devices, one branch will be randomly chosen on each execution.
-Returning measurements based on mid circuit measurements, ``qml.sample(m0)``,
+Returning measurements based on mid-circuit measurements, ``qml.sample(m0)``,
 is also not yet supported on default qubit or lightning.
 
 >>> @qml.qnode(qml.device('default.qubit', wires=1))
@@ -76,8 +76,8 @@ TypeError: RX(): incompatible function arguments. The following argument types a
     2. (self: pennylane_lightning.lightning_qubit_ops.StateVectorC128, arg0: list[int], arg1: list[bool], arg2: list[int], arg3: bool, arg4: list[float]) -> None
 
 **Grouping commuting measurements and/or splitting up non-commuting measurements.** Currently, each
-measurment is fully independent and generated from different raw samples than every other measurement.
-To generate multiple measurments from the same samples, we need a way of denoting which measurements
+measurement is fully independent and generated from different raw samples than every other measurement.
+To generate multiple measurement from the same samples, we need a way of denoting which measurements
 should be taken together. A "Combination measurement process" higher order primitive, or something like it.
 We will also need to figure out how to implement splitting up a circuit with non-commuting measurements into
 multiple circuits.
