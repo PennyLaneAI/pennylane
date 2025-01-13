@@ -167,3 +167,13 @@ See our `introduction to Dynamical Lie Algebras for quantum practitioners <https
     ~lie_closure
     ~structure_constants
     ~center
+
+Utility functions
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.pauli
+
+.. autosummary::
+    :toctree: api
+
+    ~trace_inner_product
