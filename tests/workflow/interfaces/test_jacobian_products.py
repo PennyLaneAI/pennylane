@@ -273,7 +273,7 @@ class TestJacobianProductResults:
             pytest.skip("jpc does not work with finite shots.")
         if jpc is hadamard_grad_jpc and qml.measurements.Shots(shots).has_partitioned_shots:
             pytest.skip(
-                "hadamard gradient does not support multiple measurments with partitioned shots."
+                "hadamard gradient does not support multiple measurements with partitioned shots."
             )
 
         x = 0.385

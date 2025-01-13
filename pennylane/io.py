@@ -107,7 +107,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         ``measurements=None``.
 
     If an existing ``QuantumCircuit`` already contains measurements, ``from_qiskit``
-    will return those measurements, provided that they are not overriden as shown above.
+    will return those measurements, provided that they are not overridden as shown above.
     These measurements can be used, e.g., for conditioning with
     :func:`qml.cond() <~.cond>`, or simply included directly within the QNode's return:
 
