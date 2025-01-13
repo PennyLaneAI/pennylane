@@ -34,11 +34,17 @@ def time_norm_ep(vham: VibronicHamiltonian):
     return end - start, res
 
 
-if __name__ == "__main__":
-    # print("Ham norms")
-    # print(time_norm(vham1))
-    # print(time_norm(vham2))
+def time_coefficients(vham: VibronicHamiltonian):
+    print("computing epsilon...")
+    ep = vham.epsilon(1)
 
-    print("Eps norms")
-    print(time_norm_ep(vham1))
+    print("iterating over coefficients...")
+    start = time.time()
+    ep.coefficients()
+    end = time.time()
+
+    return end - start
+
+
+if __name__ == "__main__":
     print(time_norm_ep(vham2))

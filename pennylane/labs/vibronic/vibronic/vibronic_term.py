@@ -21,10 +21,10 @@ class VibronicTerm:
         if self.ops != other.ops:
             raise ValueError(f"Cannot add term {self.ops} with term {other.ops}.")
 
-        if self.is_zero():
+        if self.is_zero:
             return other
 
-        if other.is_zero():
+        if other.is_zero:
             return self
 
         return VibronicTerm(self.ops, Node.sum_node(self.coeffs, other.coeffs))
@@ -33,7 +33,7 @@ class VibronicTerm:
         if self.ops != other.ops:
             raise ValueError(f"Cannot subtract term {self.ops} with term {other.ops}.")
 
-        if other.is_zero():
+        if other.is_zero:
             return self
 
         return VibronicTerm(
@@ -42,14 +42,21 @@ class VibronicTerm:
 
     def __mul__(self, scalar: float) -> VibronicTerm:
         if np.isclose(scalar, 0):
-            return self
+            return VibronicTerm.zero_term()
 
         return VibronicTerm(self.ops, Node.scalar_node(scalar, self.coeffs))
 
     __rmul__ = __mul__
 
+    def __imul__(self, scalar: float) -> VibronicTerm:
+        if np.isclose(scalar, 0):
+            return VibronicTerm.zero_term()
+
+        self.coeffs = Node.scalar_node(scalar, self.coeffs)
+        return self
+
     def __matmul__(self, other: VibronicTerm) -> VibronicTerm:
-        if other.is_zero():
+        if other.is_zero:
             return self
 
         return VibronicTerm(self.ops + other.ops, Node.outer_node(self.coeffs, other.coeffs))
@@ -63,9 +70,10 @@ class VibronicTerm:
 
         return self.coeffs == other.coeffs
 
+    @property
     def is_zero(self) -> bool:
         """If is_zero returns true the term evaluates to zero, however there are false negatives"""
-        return self.coeffs.is_zero()
+        return self.coeffs.is_zero
 
     @classmethod
     def zero_term(cls) -> VibronicTerm:
@@ -77,8 +85,10 @@ class VibronicWord:
     """The VibronicWord class"""
 
     def __init__(self, terms: Sequence[VibronicTerm]) -> VibronicWord:
-        self.terms = tuple(terms)
-        self._lookup = {term.ops: term for term in terms}
+        self.terms = tuple(filter(lambda term: not term.is_zero, terms))
+        self._lookup = {term.ops: term for term in self.terms}
+
+        self.is_zero = len(self.terms) == 0
 
     def __add__(self, other: VibronicWord) -> VibronicWord:
         l_ops = {term.ops for term in self.terms}
@@ -119,6 +129,12 @@ class VibronicWord:
 
     __rmul__ = __mul__
 
+    def __imul__(self, scalar: float) -> VibronicWord:
+        for term in self.terms:
+            term *= scalar
+
+        return self
+
     def __matmul__(self, other: VibronicWord) -> VibronicWord:
         return VibronicWord(
             [
@@ -132,10 +148,6 @@ class VibronicWord:
 
     def __eq__(self, other: VibronicWord) -> bool:
         return self._lookup == other._lookup
-
-    def is_zero(self) -> bool:
-        """If is_zero returns true the term evaluates to zero, however there are false negatives"""
-        return all(term.is_zero for term in self.terms)
 
     @classmethod
     def zero_word(cls) -> VibronicWord:

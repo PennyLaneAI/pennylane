@@ -53,6 +53,9 @@ class VibronicMatrix:
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
 
+        if word.is_zero:
+            return
+
         self._blocks[(row, col)] = word
 
     def matrix(
@@ -100,6 +103,23 @@ class VibronicMatrix:
         return norm1 + norm2
 
     def _norm_base_case(self, gridpoints: int) -> float:
+        if self.states != 1:
+            raise RuntimeError("Base case called on VibronicMatrix with >1 state")
+
+        word = self.block(0, 0)
+        norm = 0
+
+        for term in word.terms:
+            term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
+            coeff_sum = sum(
+                abs(term.coeffs.compute(index))
+                for index in product(range(self.modes), repeat=len(term.ops))
+            )
+            norm += coeff_sum * term_op_norm
+
+        return norm
+
+    def _norm_base_case_bad(self, gridpoints: int) -> float:
         if self.states != 1:
             raise RuntimeError("Base case called on VibronicMatrix with >1 state")
 
@@ -174,6 +194,12 @@ class VibronicMatrix:
 
     __rmul__ = __mul__
 
+    def __imul__(self, scalar: float) -> VibronicMatrix:
+        for key in self._blocks.keys():
+            self._blocks[key] *= scalar
+
+        return self
+
     def __matmul__(self, other: VibronicMatrix) -> VibronicMatrix:
         if self.states != other.states:
             raise ValueError(
@@ -228,6 +254,22 @@ class VibronicMatrix:
                 bottom_right.set_block(x - half, y - half, word)
 
         return top_left, top_right, bottom_left, bottom_right
+
+    def num_coeffs(self) -> int:
+        """Find number of coefficients"""
+
+        term_count = 0
+        zero_count = 0
+        coeffs = 0
+        for _, word in self._blocks.items():
+            print(word.is_zero, len(word.terms))
+            for term in word.terms:
+                coeffs += self.modes ** len(term.ops)
+                term_count += 1
+                if term.is_zero:
+                    zero_count += 1
+
+        print(f"{zero_count}/{term_count}", coeffs)
 
 
 def commutator(a: VibronicMatrix, b: VibronicMatrix):

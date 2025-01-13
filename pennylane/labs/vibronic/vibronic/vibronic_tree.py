@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Tuple
 
-from numpy import allclose, average, ndarray, zeros
+from numpy import allclose, average, isclose, ndarray, zeros
 
 
 class NodeType(Enum):
@@ -31,6 +31,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         tensor: ndarray = None,
         average: float = None,
         scalar: float = None,
+        is_zero: bool = None,
     ) -> Node:
 
         self.node_type = node_type
@@ -41,6 +42,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         self.tensor = tensor
         self.average = average
         self.scalar = scalar
+        self.is_zero = is_zero
 
         if node_type == NodeType.SUM:
             self.shape = l_child.shape
@@ -67,6 +69,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
             r_child=r_child,
             l_shape=l_child.shape,
             r_shape=r_child.shape,
+            is_zero=l_child.is_zero and r_child.is_zero,
         )
 
     @classmethod
@@ -82,6 +85,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
             r_child=r_child,
             l_shape=l_child.shape,
             r_shape=r_child.shape,
+            is_zero=l_child.is_zero or r_child.is_zero,
         )
 
     @classmethod
@@ -102,17 +106,29 @@ class Node:  # pylint: disable=too-many-instance-attributes
             r_child=r_child,
             l_shape=l_child.shape,
             r_shape=r_child.shape,
+            is_zero=l_child.is_zero or r_child.is_zero,
         )
 
     @classmethod
     def tensor_node(cls, tensor: ndarray) -> Node:
         """Construct a TENSOR node"""
-        return cls(node_type=NodeType.TENSOR, tensor=tensor, average=average(tensor))
+        return cls(
+            node_type=NodeType.TENSOR,
+            tensor=tensor,
+            average=average(tensor),
+            is_zero=allclose(tensor, zeros(tensor.shape)),
+        )
 
     @classmethod
     def scalar_node(cls, scalar: float, child: Node) -> Node:
         """Construct a SCALAR node"""
-        return cls(node_type=NodeType.SCALAR, l_child=child, l_shape=child.shape, scalar=scalar)
+        return cls(
+            node_type=NodeType.SCALAR,
+            l_child=child,
+            l_shape=child.shape,
+            scalar=scalar,
+            is_zero=child.is_zero or isclose(scalar, 0),
+        )
 
     def __add__(self, other: Node) -> Node:
         return self.__class__.sum_node(self, other)
