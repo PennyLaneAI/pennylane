@@ -648,7 +648,10 @@ class QNode:
         gradient_kwargs = original_init_args.pop("gradient_kwargs")
         original_init_args.update(gradient_kwargs)
         original_init_args.update(kwargs)
-        return QNode(**original_init_args)
+        updated_qn = QNode(**original_init_args)
+        # pylint: disable=protected-access
+        updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        return updated_qn
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod

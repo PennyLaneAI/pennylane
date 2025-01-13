@@ -202,6 +202,7 @@ class TestUpdate:
             circuit.update(blah=1)
 
     def test_update_multiple_arguments(self):
+        """Test that multiple parameters can be updated at once."""
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev, atol=1)
@@ -216,6 +217,25 @@ class TestUpdate:
         new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)
         assert new_circuit.diff_method == "adjoint"
         assert new_circuit.execute_kwargs["device_vjp"]
+
+    def test_update_transform_program(self):
+        """Test that the transform program is properly preserved"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.transforms.combine_global_phases
+        @qml.qnode(dev, atol=1)
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.GlobalPhase(phi=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert qml.transforms.combine_global_phases in circuit.transform_program
+        assert len(circuit.transform_program) == 1
+        new_circuit = circuit.update(diff_method="parameter-shift")
+        assert new_circuit.diff_method == "parameter-shift"
+        assert circuit.transform_program == new_circuit.transform_program
 
 
 class TestInitialization:
