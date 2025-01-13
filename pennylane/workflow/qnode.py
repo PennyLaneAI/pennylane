@@ -662,6 +662,7 @@ class QNode:
         True
 
         Similarly, if we wish to re-configure the interface used for execution,
+
         >>> new_circuit= circuit.update(interface="torch")
         >>> new_circuit(1)
         tensor(0.5403, dtype=torch.float64)
