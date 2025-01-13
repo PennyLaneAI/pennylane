@@ -242,6 +242,25 @@ or the :func:`~.pennylane.draw_mpl` transform:
 
 .. _intro_vcirc_decorator:
 
+Re-configuration
+^^^^^^^^^^^^^^^^
+
+There is often a need to tweak an existing QNode setup to test a new configuration. This includes,
+but is not limited to, executing on a different quantum device, using a new differentiation method or 
+machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
+way to make these adjustments.
+
+If we want to use a different device, we can simply update the configuration with, 
+
+>>> new_dev = qml.device('lightning.qubit', wires=dev_unique_wires.wires)
+>>> new_circuit = circuit.update(device = new_dev)
+>>> print(new_circuit.device.name)
+lightning.qubit
+>>> print(qml.draw(new_circuit)(np.pi/4, 0.7))
+aux: ───────────╭●─┤     
+ q1: ──RZ(0.79)─╰X─┤     
+ q2: ──RY(0.70)────┤  <Z>
+
 The QNode decorator
 -------------------
 
