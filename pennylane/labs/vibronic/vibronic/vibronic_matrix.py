@@ -8,6 +8,7 @@ from typing import Dict, Tuple, Union
 
 import numpy as np
 import scipy as sp
+from jax import jit
 
 from pennylane.labs.vibronic.utils import _kron, _zeros, is_pow_2, op_norm, word_to_matrix
 
@@ -111,8 +112,9 @@ class VibronicMatrix:
 
         for term in word.terms:
             term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
+            compiled = jit(term.coeffs.compute)
             coeff_sum = sum(
-                abs(term.coeffs.compute(index))
+                abs(compiled(index))
                 for index in product(range(self.modes), repeat=len(term.ops))
             )
             norm += coeff_sum * term_op_norm
@@ -255,23 +257,23 @@ class VibronicMatrix:
 
         return top_left, top_right, bottom_left, bottom_right
 
-    def num_coeffs(self) -> int:
+    def iterate_over_coeffs(self) -> int:
         """Find number of coefficients"""
+        import time
 
-        term_count = 0
-        zero_count = 0
-        coeffs = 0
         for _, word in self._blocks.items():
-            print(word.is_zero, len(word.terms))
-            for term in word.terms:
-                coeffs += self.modes ** len(term.ops)
-                term_count += 1
-                if term.is_zero:
-                    zero_count += 1
+            for count, term in enumerate(word.terms):
+                compiled = jax.jit(term.coeffs.compute)
 
-        print(f"{zero_count}/{term_count}", coeffs)
+                start = time.time()
+                for index in product(range(self.modes), repeat=len(term.ops)):
+                    compiled(index)
+                end = time.time()
+
+                print(f"{count}/{len(word.terms)}", self.modes ** len(term.ops), end - start)
 
 
+@jit
 def commutator(a: VibronicMatrix, b: VibronicMatrix):
     """Return the commutator [a, b] = ab - ba"""
     return a @ b - b @ a

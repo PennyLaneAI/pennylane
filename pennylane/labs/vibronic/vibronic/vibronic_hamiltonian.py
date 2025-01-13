@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import jax.numpy as jnp
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -44,10 +45,10 @@ class VibronicHamiltonian:
 
         self.states = states
         self.modes = modes
-        self.alphas = alphas
-        self.betas = betas
-        self.lambdas = lambdas
-        self.omegas = omegas
+        self.alphas = jnp.array(alphas)
+        self.betas = jnp.array(betas)
+        self.lambdas = jnp.array(lambdas)
+        self.omegas = jnp.array(omegas)
 
     def fragment(self, index: int) -> VibronicMatrix:
         """Return the fragment at the given index"""
@@ -75,7 +76,7 @@ class VibronicHamiltonian:
         )
 
     def _p_fragment(self) -> VibronicMatrix:
-        term = VibronicTerm(("P", "P"), Node.tensor_node(np.diag(self.omegas) / 2))
+        term = VibronicTerm(("P", "P"), Node.tensor_node(jnp.diag(self.omegas) / 2))
         word = VibronicWord((term,))
         blocks = {(i, i): word for i in range(self.states)}
         return VibronicMatrix(self.states, self.modes, blocks)
