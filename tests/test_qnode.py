@@ -201,6 +201,22 @@ class TestUpdate:
         ):
             circuit.update(blah=1)
 
+    def test_update_multiple_arguments(self):
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev, atol=1)
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert circuit.diff_method == "best"
+        assert not circuit.execute_kwargs["device_vjp"]
+        new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)
+        assert new_circuit.diff_method == "adjoint"
+        assert new_circuit.execute_kwargs["device_vjp"]
+
 
 class TestInitialization:
     """Testing the initialization of the qnode."""
