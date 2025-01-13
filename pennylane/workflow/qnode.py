@@ -652,8 +652,8 @@ class QNode:
                 qml.RY(x, wires=1)
                 return qml.expval(qml.PauliZ(1))
 
-        Without having to create a new object, we can update the differentiation
-        method and execution arguments by using the ``QNode.update`` method,
+        If we wish to try out a new object configuration, we can use the ``QNode.update``
+        method to reconfigure the differentiation method and execution arguments,
 
         >>> new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)
         >>> print(new_circuit.diff_method)
@@ -661,7 +661,7 @@ class QNode:
         >>> print(new_circuit.execute_kwargs["device_vjp"])
         True
 
-        Similarly, we can create another object with an updated interface,
+        Similarly, if we wish to re-configure the interface used for execution,
         >>> new_circuit= circuit.update(interface="torch")
         >>> new_circuit(1)
         tensor(0.5403, dtype=torch.float64)
