@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
+  Instead, use ``mcm_method`` and ``postselect_mode`` instead.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``qsvt_legacy`` function has been deprecated.
   Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
 
