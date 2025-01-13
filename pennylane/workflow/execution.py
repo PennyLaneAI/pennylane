@@ -100,6 +100,8 @@ def execute(
             the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
             otherwise. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
+        mcm_config="unset": **DEPRECATED**. This keyword argument has been replaced by ``postselect_mode``
+            and ``mcm_method`` and will be removed in v0.42.
         gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed
             ``diff_method`` and will be removed in v0.41.
 
