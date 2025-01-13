@@ -637,6 +637,10 @@ class QNode:
     def update(self, **kwargs) -> "QNode":
         """Return a new QNode instance with updated constructor arguments.
 
+        Keyword Args:
+            **kwargs: Signature matches that of the `QNode` constructor method.
+            See list of support gradient keyword arguments :attr:`here <pennylane.gradients.SUPPORTED_GRADIENT_KWARGS>`.
+
         **Example**
 
         Let's begin by defining a ``QNode`` object,
