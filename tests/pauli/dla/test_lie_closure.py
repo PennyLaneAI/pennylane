@@ -786,3 +786,11 @@ class TestLieClosureDense:
         vspace = lie_closure(generators, dense=True)
 
         assert len(vspace) == 4**3
+
+    def test_non_hermitian_error(
+        self,
+    ):
+        """Test that an error is raised for non-Hermitian input"""
+        ops = [np.array([[0.0, 1.0], [0.0, 0.0]])]
+        with pytest.raises(ValueError, match="At least one basis matrix"):
+            _ = qml.lie_closure(ops, dense=True)
