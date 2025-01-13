@@ -33,7 +33,7 @@ from .util import trace_inner_product
 
 def lie_closure(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
-    *,
+    *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
@@ -120,6 +120,18 @@ def lie_closure(
          -1.0 * Y(0) @ Y(1)]
         >>> type(dla[0])
         pennylane.pauli.pauli_arithmetic.PauliSentence
+
+        In the case of large sums of Pauli operators, it is often faster to use the dense representation of the operators rather than
+        the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation. We can force this by using the
+        ``dense`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``.
+
+        >>> dla = qml.lie_closure(ops, dense=True)
+        >>> dla.shape
+        (6, 4, 4)
+
+        You can retrieve a semi-analytic representation again by using :func:`~pauli_decompose`.
+
+        >>> dla_ops = [qml.pauli_decompose(op) for op in dla]
 
     """
     if not all(isinstance(op, (PauliSentence, PauliWord, np.ndarray)) for op in generators):
