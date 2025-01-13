@@ -68,27 +68,27 @@ def execute(
             for the gradient (if supported).
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
+            Available options include ``autograd``, ``torch``, ``tf``, ``jax``, and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
         inner_transform (.TransformProgram): A transform program to be applied to the tapes in
             inner execution, inside the ml interface.
         config (qml.devices.ExecutionConfig): A data structure describing the parameters
             needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed
-            on the execution or not. Only applies
+            on the execution or not. It only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
-            determining the gradients of tapes
+            determining the gradients of tapes.
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
-        cachesize (int): the size of the cache
+        cachesize (int): the size of the cache.
         max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
             the maximum number of derivatives to support. Increasing this value allows
-            for higher order derivatives to be extracted, at the cost of additional
-            (classical) computational overhead during the backwards pass.
-        device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
+            for higher-order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backward pass.
+        device_vjp=False (Optional[bool]): whether or not to use the device-provided Jacobian
             product if it is available.
         mcm_config (dict): Dictionary containing configuration options for handling
             mid-circuit measurements.

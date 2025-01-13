@@ -17,6 +17,7 @@ Contains the QSVT template and qsvt wrapper function.
 # pylint: disable=too-many-arguments
 import copy
 import warnings
+from typing import Literal
 
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
@@ -215,6 +216,8 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
         specified encoding and projector phases.
 
+    .. seealso:: :class:`~.QSVT`
+
     Example:
 
     .. code-block:: python
@@ -326,7 +329,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
     """
 
-    if encoding_wires is None or block_encoding is None or "wires" in kwargs.keys():
+    if encoding_wires is None or block_encoding is None or "wires" in kwargs:
         warnings.warn(
             "You may be trying to use the old `qsvt` functionality (now `qml.qsvt_legacy`).\n"
             "Make sure you pass a polynomial instead of angles.\n"
@@ -1035,7 +1038,7 @@ def transform_angles(angles, routine1, routine2):
     )
 
 
-def poly_to_angles(poly, routine, angle_solver="root-finding"):
+def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding"):
     r"""
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP)
     or quantum singular value transformation (QSVT).
@@ -1050,6 +1053,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
         routine (str): the routine for which the angles are computed. Must be either ``"QSP"`` or ``"QSVT"``.
 
         angle_solver (str): the method used to calculate the angles. Default is ``"root-finding"``.
+            ``"root-finding"`` is currently the only supported method.
 
     Returns:
         (tensor-like): computed angles for the specified routine
