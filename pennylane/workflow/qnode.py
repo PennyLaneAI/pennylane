@@ -364,7 +364,11 @@ class QNode:
         to support it.) A list of supporting operators is available in
         :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting`.
         Whether or not broadcasting delivers an increased performance will depend on whether the
-        used device is a classical simulator and natively supports this.
+        used device is a classical simulator and natively supports this. The latter can be checked
+        with the capabilities of the device:
+
+        >>> dev.capabilities()["supports_broadcasting"]
+        True
 
         If a device does not natively support broadcasting, it will execute broadcasted QNode calls
         by expanding the input arguments into separate executions. That is, every device can
@@ -635,7 +639,7 @@ class QNode:
 
         Keyword Args:
             **kwargs: The provided keyword arguments must match that of :meth:`qml.QNode.__init__`.
-            See list of support gradient keyword arguments :attr:`here <pennylane.gradients.SUPPORTED_GRADIENT_KWARGS>`.
+                See the list of support gradient keyword arguments :attr:`here <pennylane.gradients.SUPPORTED_GRADIENT_KWARGS>`.
 
         **Example**
 
