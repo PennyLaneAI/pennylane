@@ -634,7 +634,7 @@ class QNode:
         """Return a new QNode instance with updated constructor arguments.
 
         Keyword Args:
-            **kwargs: The provided keyword arguments must match that of :meth:`qml.QNode.__init__`.
+            **kwargs: The provided keyword arguments must match that of :meth:`QNode.__init__`.
                 See the list of supported gradient keyword arguments :attr:`here <pennylane.gradients.SUPPORTED_GRADIENT_KWARGS>`.
 
         **Example**
