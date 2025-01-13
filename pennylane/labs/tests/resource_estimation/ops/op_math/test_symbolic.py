@@ -60,6 +60,43 @@ class TestResourceAdjoint:
         name = op.tracking_name_from_op()
         assert name == expected
 
+    @pytest.mark.parametrize(
+        "nested_op, expected_op",
+        [
+            (
+                re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2]))),
+                re.ResourceQFT([0, 1, 2]),
+            ),
+            (
+                re.ResourceAdjoint(
+                    re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])))
+                ),
+                re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])),
+            ),
+            (
+                re.ResourceAdjoint(
+                    re.ResourceAdjoint(
+                        re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])))
+                    )
+                ),
+                re.ResourceQFT([0, 1, 2]),
+            ),
+            (
+                re.ResourceAdjoint(
+                    re.ResourceAdjoint(
+                        re.ResourceAdjoint(
+                            re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])))
+                        )
+                    )
+                ),
+                re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])),
+            ),
+        ],
+    )
+    def test_nested_adjoints(self, nested_op, expected_op):
+        """Test the resources of nested Adjoints."""
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)
+
     expected_resources = [
         re.Resources(gate_types={"Adjoint(QFT)": 1}, num_gates=1, num_wires=2),
         re.Resources(gate_types={"Adjoint(Adjoint(QFT))": 1}, num_gates=1, num_wires=2),
@@ -146,6 +183,27 @@ class TestResourceControlled:
         """Test that the tracking name is correct"""
         name = op.tracking_name_from_op()
         assert name == expected
+
+    @pytest.mark.parametrize(
+        "nested_op, expected_op",
+        [
+            (
+                re.ResourceControlled(
+                    re.ResourceControlled(re.ResourceX(0), control_wires=[1]), control_wires=[2]
+                ),
+                re.ResourceToffoli([0, 1, 2]),
+            ),
+            (
+                re.ResourceControlled(
+                    re.ResourceControlled(re.ResourceX(0), control_wires=[1]), control_wires=[2]
+                ),
+                re.ResourceControlled(re.ResourceX(0), control_wires=[1, 2]),
+            ),
+        ],
+    )
+    def test_nested_controls(self, nested_op, expected_op):
+        """Test the resources for nested Controlled operators."""
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
     expected_resources = [
         re.Resources(gate_types={"C(QFT,1,0,0)": 1}, num_gates=1, num_wires=3),
