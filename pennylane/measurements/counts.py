@@ -304,7 +304,7 @@ class CountsMP(SampleMeasurement):
                     return qml.counts(all_outcomes=True)
 
         """
-
+        samples = qml.math.unwrap(samples)
         outcomes = []
 
         # if an observable was provided, batched samples will have shape (batch_size, shots)

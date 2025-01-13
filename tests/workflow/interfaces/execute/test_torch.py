@@ -736,10 +736,12 @@ class TestHigherOrderDerivatives:
 
         def cost_fn(x):
             ops = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
-            tape1 = qml.tape.QuantumScript(ops, [qml.var(qml.PauliZ(0) @ qml.PauliX(1))])
+            tape1 = qml.tape.QuantumScript(
+                ops, [qml.var(qml.PauliZ(0) @ qml.PauliX(1))], shots=50000
+            )
 
             ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
+            tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)], shots=50000)
 
             result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=1)
             return result[0] + result[1][0]
@@ -747,13 +749,13 @@ class TestHigherOrderDerivatives:
         res = cost_fn(params)
         x, y = params.clone().detach()
         expected = 0.5 * (3 + torch.cos(x) ** 2 * torch.cos(2 * y))
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=2e-2, rtol=0)
 
         res.backward()
         expected = torch.tensor(
             [-torch.cos(x) * torch.cos(2 * y) * torch.sin(x), -torch.cos(x) ** 2 * torch.sin(2 * y)]
         )
-        assert torch.allclose(params.grad, expected, atol=tol, rtol=0)
+        assert torch.allclose(params.grad, expected, atol=2e-2, rtol=0)
 
         res = torch.autograd.functional.hessian(cost_fn, params)
         expected = torch.zeros([2, 2])
