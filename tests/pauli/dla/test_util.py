@@ -66,4 +66,4 @@ def test_trace_inner_product_consistency(op1, op2):
 def test_trace_inner_product_raises_error_wrong_inputs():
     """Test trace_inner_product raises an error when two mismatching inputs are input"""
     with pytest.raises(TypeError, match="Both input operators need"):
-        qml.pauli.trace_inner_product(X(0), qml.matrix(X(0)))
+        _ = qml.pauli.trace_inner_product(X(0), qml.matrix(X(0)))
