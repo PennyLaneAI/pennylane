@@ -205,7 +205,7 @@ class TestUpdate:
         """Test that multiple parameters can be updated at once."""
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, atol=1)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RZ(x, wires=0)
             qml.CNOT(wires=[0, 1])

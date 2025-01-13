@@ -635,7 +635,37 @@ class QNode:
         self._transform_program.push_back(transform_container=transform_container)
 
     def update(self, **kwargs) -> "QNode":
-        """Return a new QNode instance with updated constructor arguments."""
+        """Return a new QNode instance with updated constructor arguments.
+
+        **Example**
+
+        Let's begin by defining a ``QNode`` object,
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(x):
+                qml.RZ(x, wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.RY(x, wires=1)
+                return qml.expval(qml.PauliZ(1))
+
+        Without having to create a new object, we can update the differentiation
+        method and execution arguments by using the ``QNode.update`` method,
+
+        >>> new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)
+        >>> print(new_circuit.diff_method)
+        adjoint
+        >>> print(new_circuit.execute_kwargs["device_vjp"])
+        True
+
+        Similarly, we can create another object with an updated interface,
+        >>> new_circuit= circuit.update(interface="torch")
+        >>> new_circuit(1)
+        tensor(0.5403, dtype=torch.float64)
+        """
         if not kwargs:
             valid_params = (
                 set(self._init_args.copy().pop("gradient_kwargs"))
