@@ -635,7 +635,7 @@ class QNode:
 
         Keyword Args:
             **kwargs: The provided keyword arguments must match that of :meth:`QNode.__init__`.
-                See the list of supported gradient keyword arguments :attr:`here <pennylane.gradients.SUPPORTED_GRADIENT_KWARGS>`.
+                The list of supported gradient keyword arguments can be found at `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
 
         **Example**
 
