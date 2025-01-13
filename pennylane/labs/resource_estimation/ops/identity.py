@@ -79,7 +79,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
 
             This idea can be generalized to a multi-qubit global phase by introducing one
             'clean' auxilliary qubit which gets reset at the end of the computation. In this
-            case, we apply sandwich the phase shift operation with two multi-controlled X gates.
+            case, we sandwich the phase shift operation with two multi-controlled X gates.
         """
         if num_ctrl_wires == 1:
             gate_types = {re.ResourcePhaseShift.resource_rep(): 1}

@@ -281,8 +281,8 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        fermionic_swap = re.ResourceFermionicSWAP.resource_rep(**kwargs)
-        single_excitation = re.ResourceSingleExcitation.resource_rep(**kwargs)
+        fermionic_swap = re.ResourceFermionicSWAP.resource_rep()
+        single_excitation = re.ResourceSingleExcitation.resource_rep()
 
         gate_types = {}
         gate_types[fermionic_swap] = 2
