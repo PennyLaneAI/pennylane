@@ -97,7 +97,7 @@ class VibronicHamiltonian:
         """Return a csr matrix representation of the Hamiltonian"""
         return self.block_operator().matrix(gridpoints)
 
-    def epsilon(self, delta) -> VibronicMatrix:
+    def epsilon(self, delta: float) -> VibronicMatrix:
         # pylint: disable=arguments-out-of-order
         """Compute the error matrix"""
         scalar = -(delta**2) / 24
