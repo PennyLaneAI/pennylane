@@ -97,7 +97,7 @@ def test_pytree_structure_dump(decode):
             "list": ["a", 1],
             "dict": {"a": 1},
             "tuple": ("a", 1),
-            "custom": CustomNode([1, 5, 7], {"wires": Wires([1, "a", 3.4, None])}),
+            "custom": CustomNode([1, 5, 7], {"wires": Wires([1, "a", 3.4, 2])}),
         }
     )
 
@@ -114,7 +114,7 @@ def test_pytree_structure_dump(decode):
                 [None],
             ],
             ["builtins.tuple", None, [None, None]],
-            ["test.CustomNode", {"wires": [1, "a", 3.4, None]}, [None, None, None]],
+            ["test.CustomNode", {"wires": [1, "a", 3.4, 2]}, [None, None, None]],
         ],
     ]
 

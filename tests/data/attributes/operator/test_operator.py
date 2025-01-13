@@ -156,7 +156,7 @@ class TestDatasetOperator:
         [
             qml.RX(1.1, 0),
             qml.FermionicSWAP(1.3, [1, "a"]),
-            qml.Toffoli([1, "a", None]),
+            qml.Toffoli([1, "a", 2]),
             qml.Hamiltonian([], []),
         ],
     )
@@ -180,7 +180,7 @@ class TestDatasetOperator:
         [
             qml.RX(1.1, 0),
             qml.FermionicSWAP(1.3, [1, "a"]),
-            qml.Toffoli([1, "a", None]),
+            qml.Toffoli([1, "a", 2]),
             qml.Hamiltonian([], []),
         ],
     )
@@ -236,8 +236,6 @@ def test_value_init_not_supported():
 
     class NotSupported(Operator):  # pylint: disable=too-few-public-methods, unnecessary-ellipsis
         """An operator."""
-
-        ...
 
     with pytest.raises(
         TypeError, match="Serialization of operator type 'NotSupported' is not supported"
