@@ -60,9 +60,6 @@ def trace_inner_product(
     if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
         return (A.pauli_rep @ B.pauli_rep).trace()
 
-    if not isinstance(A, type(B)):
-        raise TypeError("Both input operators need to be of the same type")
-
     if all(isinstance(op, np.ndarray) for op in A) and all(isinstance(op, np.ndarray) for op in B):
         A = np.array(A)
         B = np.array(B)
