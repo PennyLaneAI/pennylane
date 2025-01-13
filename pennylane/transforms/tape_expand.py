@@ -458,7 +458,9 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
     0: ─╭●─┤  <Z>
     1: ─╰X─┤
 
-    Now let's set up a context where the custom decomposition will be applied:
+    Now let's set up a context where the custom decomposition will be applied.
+    To see our change, the circuit is drawn at the device level where the
+    custom decomposition will be applied.
 
     >>> with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
     ...     print(qml.draw(circuit, level="device")())
