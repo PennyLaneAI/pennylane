@@ -250,7 +250,7 @@ but is not limited to, executing on a different quantum device, using a new diff
 machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
 way to make these adjustments.
 
-If we want to use a different device, we can simply update the configuration with, 
+To use a different quantum device, the configuration can be updated with,
 
 >>> new_dev = qml.device('lightning.qubit', wires=dev_unique_wires.wires)
 >>> new_circuit = circuit.update(device = new_dev)
