@@ -638,7 +638,7 @@ class QNode:
         """Return a new QNode instance with updated constructor arguments.
 
         Keyword Args:
-            **kwargs: Signature matches that of the `QNode` constructor method.
+            **kwargs: The provided keyword arguments must match that of :meth:`qml.QNode.__init__`.
             See list of support gradient keyword arguments :attr:`here <pennylane.gradients.SUPPORTED_GRADIENT_KWARGS>`.
 
         **Example**
