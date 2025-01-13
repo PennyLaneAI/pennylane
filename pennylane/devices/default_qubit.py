@@ -591,8 +591,9 @@ class DefaultQubit(Device):
         """
         updated_values = {}
 
+        jax_interaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
         updated_values["convert_to_numpy"] = (
-            execution_config.interface.value not in {"jax", "jax-jit"}
+            execution_config.interface.value not in jax_interaces
             or execution_config.gradient_method == "adjoint"
             # need numpy to use caching, and need caching higher order derivatives
             or execution_config.derivative_order > 1
