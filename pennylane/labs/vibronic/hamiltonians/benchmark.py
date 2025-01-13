@@ -27,8 +27,10 @@ def time_norm(vham: VibronicHamiltonian):
 
 
 def time_norm_ep(vham: VibronicHamiltonian):
+    ep = vham.epsilon(1)
+
     start = time.time()
-    res = vham.epsilon(1).norm(4)
+    res = ep.norm(4)
     end = time.time()
 
     return end - start, res
@@ -47,4 +49,4 @@ def time_coefficients(vham: VibronicHamiltonian):
 
 
 if __name__ == "__main__":
-    print(time_norm_ep(vham2))
+    print(time_norm_ep(vham1))
