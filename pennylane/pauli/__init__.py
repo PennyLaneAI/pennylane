@@ -51,4 +51,4 @@ from .grouping import (
     compute_partition_indices,
 )
 
-from .dla import PauliVSpace, lie_closure, structure_constants, center
+from .dla import PauliVSpace, lie_closure, structure_constants, center, trace_inner_product
