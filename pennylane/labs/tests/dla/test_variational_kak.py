@@ -24,7 +24,6 @@ from pennylane.labs.dla import (
     cartan_subalgebra,
     check_cartan_decomp,
     concurrence_involution,
-    lie_closure_dense,
     orthonormalize,
     structure_constants_dense,
     validate_kak,
@@ -40,11 +39,9 @@ def test_kak_Ising(n, dense):
     gens += [Z(i) for i in range(n)]
     H = qml.sum(*gens)
 
+    g = qml.lie_closure(gens, dense=dense)
     if not dense:
-        g = qml.lie_closure(gens)
         g = [op.pauli_rep for op in g]
-    else:
-        g = lie_closure_dense(gens)
 
     involution = concurrence_involution
 
@@ -80,11 +77,9 @@ def test_kak_Heisenberg(n, dense):
     gens += [Z(i) @ Z(i + 1) for i in range(n - 1)]
     H = qml.sum(*gens)
 
+    g = qml.lie_closure(gens, dense=dense)
     if not dense:
-        g = qml.lie_closure(gens)
         g = [op.pauli_rep for op in g]
-    else:
-        g = lie_closure_dense(gens)
 
     involution = concurrence_involution
 
@@ -119,11 +114,9 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
     gens = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(n - 1)]
     H = qml.sum(*gens)
 
+    g = qml.lie_closure(gens, dense=dense)
     if not dense:
-        g = qml.lie_closure(gens)
         g = [op.pauli_rep for op in g]
-    else:
-        g = lie_closure_dense(gens)
 
     if is_orthogonal:
         g = orthonormalize(g)

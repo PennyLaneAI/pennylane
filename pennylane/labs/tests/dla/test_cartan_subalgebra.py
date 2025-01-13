@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/dla/lie_closure_dense.py functionality"""
+"""Tests for pennylane/dla/cartan_subalgebra.py functionality"""
 import numpy as np
 
 # pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring

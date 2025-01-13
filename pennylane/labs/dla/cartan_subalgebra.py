@@ -151,13 +151,13 @@ def cartan_subalgebra(
         We start by computing these ingredients using :func:`~cartan_decomp` and :func:`~structure_constants`.
         As an example, we take the Lie algebra of the Heisenberg model with generators :math:`\{X_i X_{i+1}, Y_i Y_{i+1}, Z_i Z_{i+1}\}`.
 
-        >>> from pennylane.labs.dla import lie_closure_dense, cartan_decomp
-        >>> from pennylane import X, Y, Z
+        >>> from pennylane.labs.dla import cartan_decomp
+        >>> from pennylane import X, Y, Z, lie_closure
         >>> n = 3
         >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
         >>> gens += [Y(i) @ Y(i+1) for i in range(n-1)]
         >>> gens += [Z(i) @ Z(i+1) for i in range(n-1)]
-        >>> g = lie_closure_dense(gens)
+        >>> g = lie_closure(gens, dense=True)
 
         Taking the Heisenberg Lie algebra, we can perform the Cartan decomposition. We take the :func:`~even_odd_involution` as a valid Cartan involution.
         The resulting vertical and horizontal subspaces :math:`\mathfrak{k}` and :math:`\mathfrak{m}` need to fulfill the commutation relations
