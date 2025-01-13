@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dynamical Lie algebra functionality"""
-from typing import Union
+from typing import Iterable, Union
 
 import numpy as np
 
@@ -60,14 +60,20 @@ def trace_inner_product(
     if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
         return (A.pauli_rep @ B.pauli_rep).trace()
 
-    if all(isinstance(op, np.ndarray) for op in A) and all(isinstance(op, np.ndarray) for op in B):
-        A = np.array(A)
-        B = np.array(B)
+    if isinstance(A, Iterable) and isinstance(B, Iterable):
 
-    if isinstance(A, np.ndarray):
-        assert A.shape[-2:] == B.shape[-2:]
-        # The axes of the first input are switched, compared to tr[A@B], because we need to
-        # transpose A.
-        return np.tensordot(A, B, axes=[[-1, -2], [-2, -1]]) / A.shape[-1]
+        if all(isinstance(op, np.ndarray) for op in A) and all(
+            isinstance(op, np.ndarray) for op in B
+        ):
+            A = np.array(A)
+            B = np.array(B)
 
-    return NotImplemented
+        if isinstance(A, np.ndarray):
+            assert A.shape[-2:] == B.shape[-2:]
+            # The axes of the first input are switched, compared to tr[A@B], because we need to
+            # transpose A.
+            return np.tensordot(A, B, axes=[[-1, -2], [-2, -1]]) / A.shape[-1]
+
+    raise NotImplementedError(
+        "Inputs to pennylane.pauli.trace_inner_product need to be iterables of dense matrices or operators with a pauli_rep"
+    )

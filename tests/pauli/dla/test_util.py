@@ -61,3 +61,12 @@ def test_trace_inner_product_consistency(op1, op2):
     res3 = trace_inner_product(op1, op2)
     assert np.allclose(res1, res2)
     assert np.allclose(res1, res3)
+
+
+def test_NotImplementedError():
+    """Test that NotImplementedError is raised on non-supported inputs"""
+
+    with pytest.raises(
+        NotImplementedError, match="Inputs to pennylane.pauli.trace_inner_product need"
+    ):
+        _ = qml.pauli.trace_inner_product(qml.CNOT((0, 1)), qml.X(0))
