@@ -21,7 +21,6 @@ import logging
 from collections.abc import Callable
 from dataclasses import replace
 from typing import Optional, Union
-from warnings import warn
 
 from cachetools import Cache
 
@@ -54,7 +53,6 @@ def execute(
     max_diff=1,
     device_vjp=False,
     mcm_config=None,
-    gradient_fn="unset",
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -92,8 +90,6 @@ def execute(
             product if it is available.
         mcm_config (dict): Dictionary containing configuration options for handling
             mid-circuit measurements.
-        gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed
-            ``diff_method`` and will be removed in v0.41.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -156,13 +152,6 @@ def execute(
     """
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
-
-    if gradient_fn != "unset":
-        warn(
-            "gradient_fn has been renamed to diff_method in qml.execute",
-            qml.PennyLaneDeprecationWarning,
-        )
-        diff_method = gradient_fn
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
