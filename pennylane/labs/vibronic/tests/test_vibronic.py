@@ -78,10 +78,10 @@ class TestVibronic:
         word1 = (vham.v_word(0, 0) @ vham.v_word(0, 1)) - (vham.v_word(0, 1) @ vham.v_word(1, 1))
         word2 = (vham.v_word(1, 1) @ vham.v_word(0, 1)) - (vham.v_word(0, 1) @ vham.v_word(0, 0))
 
-        assert y.block(0, 0).is_zero()
+        assert y.block(0, 0).is_zero
         assert y.block(0, 1) == word1
         assert y.block(1, 0) == word2
-        assert y.block(1, 1).is_zero()
+        assert y.block(1, 1).is_zero
 
 
 class TestMatrix:

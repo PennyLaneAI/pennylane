@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from itertools import product
 from typing import Sequence, Tuple
 
@@ -18,23 +19,26 @@ class VibronicTerm:
         self.coeffs = coeffs
 
     def __add__(self, other: VibronicTerm) -> VibronicTerm:
-        if self.ops != other.ops:
-            raise ValueError(f"Cannot add term {self.ops} with term {other.ops}.")
-
         if self.is_zero:
             return other
 
         if other.is_zero:
             return self
 
+        if self.ops != other.ops:
+            raise ValueError(f"Cannot add term {self.ops} with term {other.ops}.")
+
         return VibronicTerm(self.ops, Node.sum_node(self.coeffs, other.coeffs))
 
     def __sub__(self, other: VibronicTerm) -> VibronicTerm:
-        if self.ops != other.ops:
-            raise ValueError(f"Cannot subtract term {self.ops} with term {other.ops}.")
+        if self.is_zero:
+            return (-1) * other
 
         if other.is_zero:
             return self
+
+        if self.ops != other.ops:
+            raise ValueError(f"Cannot subtract term {self.ops} with term {other.ops}.")
 
         return VibronicTerm(
             self.ops, Node.sum_node(self.coeffs, Node.scalar_node(-1, other.coeffs))
@@ -85,10 +89,15 @@ class VibronicWord:
     """The VibronicWord class"""
 
     def __init__(self, terms: Sequence[VibronicTerm]) -> VibronicWord:
-        self.terms = tuple(filter(lambda term: not term.is_zero, terms))
-        self._lookup = {term.ops: term for term in self.terms}
+        terms = tuple(filter(lambda term: not term.is_zero, terms))
+        self.is_zero = len(terms) == 0
 
-        self.is_zero = len(self.terms) == 0
+        self._lookup = defaultdict(lambda: VibronicTerm.zero_term()) #pylint: disable=unnecessary-lambda
+        for term in terms:
+            self._lookup[term.ops] += term
+
+        self.terms = tuple(self._lookup.values())
+
 
     def __add__(self, other: VibronicWord) -> VibronicWord:
         l_ops = {term.ops for term in self.terms}

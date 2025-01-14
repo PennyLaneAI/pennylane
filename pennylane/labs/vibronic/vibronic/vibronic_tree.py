@@ -29,7 +29,6 @@ class Node:  # pylint: disable=too-many-instance-attributes
         l_shape: Tuple[int] = tuple(),
         r_shape: Tuple[int] = tuple(),
         tensor: ndarray = None,
-        average: float = None,
         scalar: float = None,
         is_zero: bool = None,
     ) -> Node:
@@ -40,7 +39,6 @@ class Node:  # pylint: disable=too-many-instance-attributes
         self.l_shape = l_shape
         self.r_shape = r_shape
         self.tensor = tensor
-        self.average = average
         self.scalar = scalar
         self.is_zero = is_zero
 
@@ -115,7 +113,6 @@ class Node:  # pylint: disable=too-many-instance-attributes
         return cls(
             node_type=NodeType.TENSOR,
             tensor=tensor,
-            average=average(tensor),
             is_zero=allclose(tensor, zeros(tensor.shape)),
         )
 
