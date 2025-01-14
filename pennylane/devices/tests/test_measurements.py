@@ -555,8 +555,8 @@ class TestTensorExpval:
         circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
 
         assert np.allclose(
-            circ_base_label(wire_labels=range(3)),
             circ_custom_label(wire_labels=label_map),
+            circ_base_label(wire_labels=range(3)),
             atol=tol(dev.shots),
             rtol=0,
         )
