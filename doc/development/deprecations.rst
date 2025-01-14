@@ -9,12 +9,6 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``qsvt_legacy`` function has been deprecated.
-  Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been deprecated. 
   Instead, use the ``qml.workflow.construct_tape`` function.
 
@@ -89,6 +83,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``qsvt_legacy`` function has been removed.
+  Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
+
+  - Deprecated in v0.40
+  - Removed in v0.41
 
 * The ``qml.qinfo`` module has been removed. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
   modules instead.

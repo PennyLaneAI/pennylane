@@ -8,6 +8,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Removed method `qsvt_legacy` along with its private helper `_qsp_to_qsvt`
+  [(#6827)](https://github.com/PennyLaneAI/pennylane/pull/6827)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
