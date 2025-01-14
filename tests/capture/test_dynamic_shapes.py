@@ -20,7 +20,7 @@ import pytest
 
 from pennylane.capture import determine_abstracted_axes
 
-marks = pytest.mark.jax
+pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
