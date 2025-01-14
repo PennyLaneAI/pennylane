@@ -317,7 +317,6 @@ class TestUpdate:
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
             _ = tape.batch_size
-            
 
     def test_lazy_batch_size_and_output_dim(self):
         """Test that batch_size and output_dim are computed lazily."""
