@@ -638,7 +638,8 @@ class QNode:
                 The list of supported gradient keyword arguments can be found at ``qml.gradients.SUPPORTED_GRADIENT_KWARGS``.
 
         Returns:
-            qnode (QNode): new object with updated configuration
+            qnode (QNode): new QNode with updated settings
+
 
         Raises:
             ValueError: if provided keyword arguments are invalid
