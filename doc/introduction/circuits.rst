@@ -245,12 +245,13 @@ or the :func:`~.pennylane.draw_mpl` transform:
 Re-configuration
 ^^^^^^^^^^^^^^^^
 
-There is often a need to tweak an existing QNode setup to test a new configuration. This includes,
+There is often a need to modify an existing QNode setup to test a new configuration. This includes,
 but is not limited to, executing on a different quantum device, using a new differentiation method or 
 machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
-way to make these adjustments.
+way to make these adjustments. To update one or more QNode settings, simply give a new value to the 
+QNode keyword argument you want to change (e.g., `mcm_method=...`, `diff_method=...`, etc.).
 
-To use a different quantum device, the configuration can be updated with,
+For instance, to use a different quantum device, the configuration can be updated with,
 
 >>> new_dev = qml.device('lightning.qubit', wires=dev_unique_wires.wires)
 >>> new_circuit = circuit.update(device = new_dev)
