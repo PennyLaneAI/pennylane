@@ -48,36 +48,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             is used for sampling.
 
     Returns:
-        Tuple[TensorLike, bool]: A tuple containing:
-            - Tensor-like final state of the quantum script.
-            - A boolean indicating whether the final state includes a batch dimension.
-
-    Raises:
-        ValueError: If the circuit contains invalid or unsupported operations.
-
-    .. seealso::
-        :func:`~.apply_operation`, :class:`~.QuantumScript`
-
-    **Example**
-
-    Simulate a simple quantum script to obtain its final state:
-
-    .. code-block:: python
-
-        from pennylane.devices.qubit_mixed import get_final_state
-        from pennylane.tape import QuantumScript
-        from pennylane.ops import RX, CNOT
-
-        circuit = QuantumScript([RX(0.5, wires=0), CNOT(wires=[0, 1])])
-        final_state, is_batched = get_final_state(circuit)
-        print(final_state, is_batched)
-
-    .. details::
-        :title: Usage Details
-
-        This function supports multiple execution backends and random number generators,
-        such as NumPy and JAX. It initializes the quantum state, applies all operations in
-        the circuit, and returns the final state tensor and batching information.
+        tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
+            whether the state has a batch dimension.
 
     """
 

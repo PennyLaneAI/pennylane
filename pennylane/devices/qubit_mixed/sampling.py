@@ -66,7 +66,7 @@ def _measure_with_samples_diagonalizing_gates(
 
     Args:
         mp (~.measurements.SampleMeasurement): The sample measurement to perform
-        state (TensorLike): The state vector to sample from
+        state (TensorLike): The density matrix to sample from
         shots (~.measurements.Shots): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
@@ -319,7 +319,7 @@ def sample_state(
     """Returns a series of computational basis samples of a state.
 
     Args:
-        state (array[complex]): A state vector to be sampled
+        state (array[complex]): A density matrix to be sampled
         shots (int): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
         wires (Sequence[int]): The wires to sample
@@ -364,7 +364,7 @@ def measure_with_samples(
 
     Args:
         mp (SampleMeasurement): The sample measurement to perform
-        state (np.ndarray[complex]): The state vector to sample from
+        state (np.ndarray[complex]): The density matrix to sample from
         shots (Shots): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A

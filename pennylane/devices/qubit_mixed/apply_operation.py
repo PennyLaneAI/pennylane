@@ -339,7 +339,7 @@ def apply_operation(
     .. code-block:: python
 
         @apply_operation.register
-        def _(op: type_op, state):
+        def _(op: type_op, state, is_state_batched=False, **kwargs):
             # custom op application method here
 
     **Example:**

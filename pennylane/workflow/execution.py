@@ -31,7 +31,7 @@ from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
 from ._setup_transform_program import _setup_transform_program
-from .resolution import _resolve_interface
+from .resolution import _resolve_execution_config, _resolve_interface
 from .run import run
 
 logger = logging.getLogger(__name__)
@@ -68,27 +68,27 @@ def execute(
             for the gradient (if supported).
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
+            Available options include ``autograd``, ``torch``, ``tf``, ``jax``, and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
         inner_transform (.TransformProgram): A transform program to be applied to the tapes in
             inner execution, inside the ml interface.
         config (qml.devices.ExecutionConfig): A data structure describing the parameters
             needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed
-            on the execution or not. Only applies
+            on the execution or not. It only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
-            determining the gradients of tapes
+            determining the gradients of tapes.
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
-        cachesize (int): the size of the cache
+        cachesize (int): the size of the cache.
         max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
             the maximum number of derivatives to support. Increasing this value allows
-            for higher order derivatives to be extracted, at the cost of additional
-            (classical) computational overhead during the backwards pass.
-        device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
+            for higher-order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backward pass.
+        device_vjp=False (Optional[bool]): whether or not to use the device-provided Jacobian
             product if it is available.
         mcm_config (dict): Dictionary containing configuration options for handling
             mid-circuit measurements.
@@ -187,21 +187,13 @@ def execute(
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
+    if not tapes:
+        return ()
+
     ### Specifying and preprocessing variables ####
 
     interface = _resolve_interface(interface, tapes)
     # Only need to calculate derivatives with jax when we know it will be executed later.
-    if interface in {Interface.JAX, Interface.JAX_JIT}:
-        grad_on_execution = grad_on_execution if isinstance(diff_method, Callable) else False
-
-    if (
-        device_vjp
-        and isinstance(device, qml.devices.LegacyDeviceFacade)
-        and "lightning" not in getattr(device, "short_name", "").lower()
-    ):
-        raise qml.QuantumFunctionError(
-            "device provided jacobian products are not compatible with the old device interface."
-        )
 
     gradient_kwargs = gradient_kwargs or {}
     mcm_config = mcm_config or {}
@@ -215,7 +207,9 @@ def execute(
             gradient_keyword_arguments=gradient_kwargs,
             derivative_order=max_diff,
         )
-        config = device.setup_execution_config(config)
+        config = _resolve_execution_config(
+            config, device, tapes, transform_program=transform_program
+        )
 
     config = replace(
         config,
@@ -224,6 +218,7 @@ def execute(
     )
 
     if transform_program is None or inner_transform is None:
+        transform_program = transform_program or qml.transforms.core.TransformProgram()
         transform_program, inner_transform = _setup_transform_program(
             transform_program, device, config, cache, cachesize
         )

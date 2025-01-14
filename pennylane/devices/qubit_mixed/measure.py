@@ -214,7 +214,7 @@ def sum_of_terms_method(
         is_state_batched (bool): whether the state is batched or not
 
     Returns:
-        TensorLike: the result of the measurement
+        TensorLike: the expectation value of the sum of Hamiltonian observable with respect to the state.
     """
     # Recursively call measure on each term, so that the best measurement method can
     # be used for each term

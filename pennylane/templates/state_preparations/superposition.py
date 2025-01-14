@@ -140,6 +140,9 @@ class Superposition(Operation):
 
     .. code-block::
 
+        import pennylane as qml
+        import numpy as np
+
         coeffs = np.sqrt(np.array([1/3, 1/3, 1/3]))
         bases = np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]])
         wires = [0, 1, 2]
@@ -265,7 +268,7 @@ class Superposition(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(coefs, bases, wires, work_wire):  # pylint: disable=arguments-differ
+    def compute_decomposition(coeffs, bases, wires, work_wire):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -289,7 +292,7 @@ class Superposition(Operation):
 
         """
 
-        dic_state = dict(zip(bases, coefs))
+        dic_state = dict(zip(bases, coeffs))
         perms = _assign_states(bases)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
@@ -304,7 +307,7 @@ class Superposition(Operation):
         op_list.append(
             qml.StatePrep(
                 qml.math.stack(sorted_coefficients),
-                wires=wires[-int(qml.math.ceil(qml.math.log2(len(coefs)))) :],
+                wires=wires[-int(qml.math.ceil(qml.math.log2(len(coeffs)))) :],
                 pad_with=0,
             )
         )

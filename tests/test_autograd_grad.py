@@ -11,9 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
-Version number (major.minor.patch[-label])
+Unit tests for qml.grad and qml.jacobian
 """
+import pytest
 
-__version__ = "0.41.0-dev6"
+import pennylane as qml
+
+
+def test_informative_error_on_bad_shape():
+    """Test that an informative error is raised if taking the jacobian of a non-array."""
+
+    def f(x):
+        return (2 * x,)
+
+    with pytest.raises(ValueError, match="autograd can only differentiate with"):
+        qml.jacobian(f)(qml.numpy.array(2.0))
