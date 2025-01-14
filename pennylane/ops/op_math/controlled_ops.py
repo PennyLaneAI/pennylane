@@ -1162,6 +1162,10 @@ class MultiControlledX(ControlledOp):
         control_values=None,
         work_wires: WiresLike = (),
     ):
+        if isinstance(control_wires, str):  # pragma: no-cover
+            raise ValueError(
+                "Specifiying control wires of MultiControlledX using a string is not supported."
+            )
         control_wires = Wires(() if control_wires is None else control_wires)
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)

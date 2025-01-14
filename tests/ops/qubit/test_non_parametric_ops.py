@@ -606,6 +606,14 @@ class TestMultiControlledX:
 
     X = np.array([[0, 1], [1, 0]])
 
+    def test_str_control_wires_disabled(self):
+        """Tests that control_wires specified with a string is not allowed"""
+        with pytest.raises(
+            ValueError,
+            match="Specifiying control wires of MultiControlledX using a string is not supported",
+        ):
+            _ = qml.MultiControlledX(control_wires="01", wires=2, control_values=[0, 1])
+
     def test_str_control_values_deprecation(self):
         """Tests that control_values specified with a bit string is deprecated."""
         with pytest.warns(
