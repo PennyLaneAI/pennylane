@@ -720,22 +720,6 @@ def apply_density_matrix(
     # Cast density_matrix to the same type and device as state
     density_matrix = math.cast_like(density_matrix, state)
 
-    # Validate shape
-    if math.shape(density_matrix) != (expected_dim, expected_dim):
-        raise ValueError(
-            f"Density matrix must have shape {(expected_dim, expected_dim)}, "
-            f"but got {math.shape(density_matrix)}."
-        )
-
-    # Validate Hermiticity
-    if not math.allclose(density_matrix, math.conjugate(math.transpose(density_matrix))):
-        raise ValueError("Density matrix must be Hermitian.")
-
-    # Validate trace
-    one = math.asarray(1.0 + 0.0j, like=density_matrix)
-    if not math.allclose(math.trace(density_matrix), one):
-        raise ValueError("Density matrix must have a trace of 1.")
-
     # Extract total wires
     num_state_wires = _get_num_wires(state, is_state_batched)
     all_wires = list(range(num_state_wires))
