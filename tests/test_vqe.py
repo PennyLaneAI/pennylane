@@ -415,9 +415,9 @@ class TestVQE:
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
         ]
 
-        coefs = (np.random.rand(len(obs)) - 0.5) * 2
-        hamiltonian1 = qml.Hamiltonian(coefs, obs)
-        hamiltonian2 = qml.Hamiltonian(coefs, obs)
+        coeffs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian1 = qml.Hamiltonian(coeffs, obs)
+        hamiltonian2 = qml.Hamiltonian(coeffs, obs)
         hamiltonian1.compute_grouping()
 
         cost = generate_cost_fn(
@@ -471,9 +471,9 @@ class TestVQE:
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
         ]
 
-        coefs = (np.random.rand(len(obs)) - 0.5) * 2
-        hamiltonian1 = qml.Hamiltonian(coefs, obs)
-        hamiltonian2 = qml.Hamiltonian(coefs, obs)
+        coeffs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian1 = qml.Hamiltonian(coeffs, obs)
+        hamiltonian2 = qml.Hamiltonian(coeffs, obs)
         hamiltonian1.compute_grouping()
 
         cost = generate_cost_fn(
@@ -527,9 +527,9 @@ class TestVQE:
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
         ]
 
-        coefs = (np.random.rand(len(obs)) - 0.5) * 2
-        hamiltonian1 = qml.Hamiltonian(coefs, obs)
-        hamiltonian2 = qml.Hamiltonian(coefs, obs)
+        coeffs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian1 = qml.Hamiltonian(coeffs, obs)
+        hamiltonian2 = qml.Hamiltonian(coeffs, obs)
         hamiltonian1.compute_grouping()
 
         cost = generate_cost_fn(
