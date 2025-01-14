@@ -213,10 +213,10 @@ class TestTransformContainer:
         assert not container.final_transform
 
 
-@pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
 class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     @pytest.mark.catalyst
     @pytest.mark.external
     def test_error_on_qjit(self):
