@@ -25,7 +25,7 @@ from functools import cached_property
 from typing import Any, Optional, TypeVar, Union
 
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess, ProbabilityMP, StateMP
+from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Observable, Operation, Operator
 from pennylane.pytrees import register_pytree
