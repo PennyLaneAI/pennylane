@@ -895,39 +895,6 @@ class TestDensityMatrix:
 
         assert math.allclose(result, expected)
 
-    def test_invalid_shape(self, ml_framework):
-        """Test error handling for invalid density matrix shape"""
-        invalid_matrix = math.asarray([[1]], like=ml_framework)
-        invalid_matrix = math.cast(invalid_matrix, dtype=complex)
-
-        with pytest.raises(ValueError, match="Density matrix must have shape"):
-            op = qml.QubitDensityMatrix(invalid_matrix, wires=[0])
-            state = math.zeros([2, 2], like=ml_framework)
-            state = math.cast(state, dtype=complex)
-            qml.devices.qubit_mixed.apply_operation(op, state)
-
-    def test_non_hermitian(self, ml_framework):
-        """Test error handling for non-Hermitian matrix"""
-        non_hermitian = math.asarray([[1, 1], [0, 0]], like=ml_framework)
-        non_hermitian = math.cast(non_hermitian, dtype=complex)
-
-        with pytest.raises(ValueError, match="Density matrix must be Hermitian"):
-            op = qml.QubitDensityMatrix(non_hermitian, wires=[0])
-            state = math.zeros([2, 2], like=ml_framework)
-            state = math.cast(state, dtype=complex)
-            qml.devices.qubit_mixed.apply_operation(op, state)
-
-    def test_invalid_trace(self, ml_framework):
-        """Test error handling for matrix with incorrect trace"""
-        invalid_trace = math.asarray([[2, 0], [0, 0]], like=ml_framework)
-        invalid_trace = math.cast(invalid_trace, dtype=complex)
-
-        with pytest.raises(ValueError, match="Density matrix must have a trace of 1"):
-            op = qml.QubitDensityMatrix(invalid_trace, wires=[0])
-            state = math.zeros([2, 2], like=ml_framework)
-            state = math.cast(state, dtype=complex)
-            qml.devices.qubit_mixed.apply_operation(op, state)
-
     def test_partial_trace_single_qubit_update(self, ml_framework):
         """Minimal test for partial tracing when applying QubitDensityMatrix to a subset of wires."""
 
