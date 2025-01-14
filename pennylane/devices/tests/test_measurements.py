@@ -524,7 +524,7 @@ class TestTensorExpval:
             sub_routine(label_map=range(3))
             return qml.expval(ob)
 
-        assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
+        assert np.allclose(circ(permuted_obs), circ(base_obs), atol=tol(dev.shots), rtol=0)
 
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
