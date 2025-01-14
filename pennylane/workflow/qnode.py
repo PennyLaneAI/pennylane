@@ -631,7 +631,7 @@ class QNode:
         self._transform_program.push_back(transform_container=transform_container)
 
     def update(self, **kwargs) -> "QNode":
-        """Return a new QNode instance with updated constructor arguments.
+        """Returns a new, identical QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
 
         Keyword Args:
             **kwargs: The provided keyword arguments must match that of :meth:`QNode.__init__`.
