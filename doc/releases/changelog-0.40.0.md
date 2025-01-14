@@ -296,106 +296,162 @@ qubit operators.
 
 <h4>Construct vibrational Hamiltonians 🔨</h4>
 
-* Several new features are available in the
-:mod:`qml.qchem <pennylane.qchem>` module to help with the construction of vibrational
-Hamiltonians. This includes:
-  * The :class:`~.qchem.VibrationalPES` class to store potential energy surface information. 
-  [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+* Several new features are available in the :mod:`qml.qchem <pennylane.qchem>` module to help with 
+  the construction of vibrational Hamiltonians. This includes:
 
-  ```python
-  pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
-  pes_twomode = np.zeros((1, 1, 9, 9))
-  dipole_onemode = np.zeros((1, 9, 3))
-  gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-                                  4.33e-01, 7.20e-01, 4.33e-01,
-                                  8.85e-02, 4.94e-03, 3.96e-05])
-  grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
-  pes_object = qml.qchem.VibrationalPES(
-          freqs=np.array([0.025]),
-          grid=grid,
-          uloc=np.array([[1.0]]),
-          gauss_weights=gauss_weights,
-          pes_data=[pes_onemode, pes_twomode],
-          dipole_data=[dipole_onemode],
-          localized=False,
-          dipole_level=1,
-      )
-  ```
+  * The :class:`~.qchem.VibrationalPES` class to store potential energy surface information. 
+    [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+
+    ```python
+    pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
+    pes_twomode = np.zeros((1, 1, 9, 9))
+    dipole_onemode = np.zeros((1, 9, 3))
+    gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
+                                    4.33e-01, 7.20e-01, 4.33e-01,
+                                    8.85e-02, 4.94e-03, 3.96e-05])
+    grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
+    pes_object = qml.qchem.VibrationalPES(
+            freqs=np.array([0.025]),
+            grid=grid,
+            uloc=np.array([[1.0]]),
+            gauss_weights=gauss_weights,
+            pes_data=[pes_onemode, pes_twomode],
+            dipole_data=[dipole_onemode],
+            localized=False,
+            dipole_level=1,
+        )
+    ```
 
   * The :func:`~.qchem.taylor_hamiltonian` function to build a Taylor Hamiltonian from a
-  :class:`~.VibrationalPES` object.
-  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+    :class:`~.qchem.VibrationalPES` object.
+    [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
-  ```pycon
-  >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
-  (
-      0.016867926879358452 * I(0)
-    + -0.007078617919572303 * Z(0)
-    + 0.0008679410939323631 * X(0)
-  )
-  ```
+    ```pycon
+    >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
+    (
+        0.016867926879358452 * I(0)
+      + -0.007078617919572303 * Z(0)
+      + 0.0008679410939323631 * X(0)
+    )
+    ```
 
   * The :func:`~.qchem.taylor_bosonic` function to build a Taylor Hamiltonian in terms of Bosonic
-  operators.
-  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+    operators.
+    [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
-  ```pycon
-  >>> coeffs_arr = qml.qchem.taylor_coeffs(pes_object)
-  >>> bose_op = qml.qchem.taylor_bosonic(coeffs_arr, pes_object.freqs, is_local=pes_object.localized, uloc=pes_object.uloc)
-  >>> type(bose_op)
-  pennylane.bose.bosonic.BoseSentence
-  ```
+    ```pycon
+    >>> coeffs_arr = qml.qchem.taylor_coeffs(pes_object)
+    >>> bose_op = qml.qchem.taylor_bosonic(coeffs_arr, pes_object.freqs, is_local=pes_object.localized, uloc=pes_object.uloc)
+    >>> type(bose_op)
+    pennylane.bose.bosonic.BoseSentence
+    ```
 
   Additional functionality is also available to optimize molecular geometries and convert between
   representations:
-  * Convert Christiansen Hamiltonian integrals in the harmonic oscillator basis to 
-  integrals in the vibrational self-consistent field (VSCF) basis with the :func:`~.qchem.vscf_integrals`
-  function. 
-  [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
+
+  * Convert Christiansen Hamiltonian integrals in the harmonic oscillator basis to integrals in the 
+    vibrational self-consistent field (VSCF) basis with the :func:`~.qchem.vscf_integrals` function. 
+    [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
+
+    ```pycon
+    >>> h1 = np.array([[[0.00968289, 0.00233724, 0.0007408,  0.00199125],
+                        [0.00233724, 0.02958449, 0.00675431, 0.0021936],
+                        [0.0007408,  0.00675431, 0.0506012,  0.01280986],
+                        [0.00199125, 0.0021936,  0.01280986, 0.07282307]]])
+    >>> qml.qchem.vscf_integrals(h_integrals=[h1], modals=[4,4,4])
+    (
+      [array([[[ 9.36124041e-03,  3.63798208e-19, -3.42019607e-19,
+        -3.83743044e-19],
+        [ 9.59982270e-19,  2.77803512e-02,  5.18290259e-18,
+        -4.82000376e-18],
+        [-2.73826508e-19,  4.88583546e-18,  4.63297357e-02,
+        -2.87022759e-18],
+        [-1.94549340e-19, -5.48544743e-18, -1.41379640e-18,
+          7.92203227e-02]]])], None
+    )
+    ```
 
   * Find the lowest energy configuration of molecules with :func:`~.qchem.optimize_geometry`.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
     [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
 
+    ```pycon
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0,  1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> eq_geom = qml.qchem.optimize_geometry(mol)
+    >>> eq_geom
+    array([[ 0.        ,  0.        , -0.40277116],
+           [ 0.        ,  0.        ,  1.40277116]])
+    ```
+
   * Separate normal mode frequencies and localize them with :func:`~.qchem.localize_normal_modes`.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
 
+    ```pycon
+    >>> freqs = np.array([1326.66001461, 2297.26736859, 2299.65032901])
+    >>> vectors = np.array([[[ 5.71518696e-18, -4.55642350e-01,  5.20920552e-01],
+                            [ 1.13167924e-17,  4.55642350e-01,  5.20920552e-01],
+                            [-1.23163569e-17,  5.09494945e-12, -3.27565762e-02]],
+                            [[-4.53008817e-17,  4.90364125e-01,  4.90363894e-01],
+                            [-1.98591028e-16,  4.90361513e-01, -4.90361744e-01],
+                            [-2.78235498e-18, -3.08350419e-02, -6.75886679e-08]],
+                            [[ 5.75393451e-17,  5.37047963e-01,  4.41957355e-01],
+                            [ 6.53049347e-17, -5.37050348e-01,  4.41959740e-01],
+                            [-5.49709883e-17,  7.49851221e-08, -2.77912798e-02]]])
+    >>> freqs_loc, vecs_loc, uloc = qml.qchem.localize_normal_modes(freqs, vectors)
+    >>> freqs_loc
+    array([1332.62008773, 2296.73455892, 2296.7346082 ])
+    ```
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧑‍🔬</h3>
 
-The new :mod:`qml.labs <pennylane.labs>` module will house experimental research software 🔬. Features here may be useful
-for state-of-the-art research, beta testing, or getting a sneak peek into *potential* new features before
-they are added to PennyLane.
-
-The experimental nature of this module means features may not integrate well with other 
-PennyLane staples like differentiability, JAX, or JIT compatibility. There may also be unexpected
-sharp bits 🔪 and errors ❌.
+The new :mod:`qml.labs <pennylane.labs>` module will house experimental research software 🔬. 
+Features here may be useful for state-of-the-art research, beta testing, or getting a sneak peek 
+into *potential* new features before they are added to PennyLane.
 
 .. warning:: 
-    This module is **experimental**! Breaking changes and removals will happen without warning.
-    Please use these features carefully and let us know your thoughts. Your feedback will inform
-    how these features become a part of mainline PennyLane.
+    This module is **experimental**! This means that features may not integrate well with other 
+    PennyLane staples like differentiability, JAX, or JIT compatibility. There may also be 
+    unexpected sharp bits 🔪 and errors ❌. Breaking changes and removals will happen without 
+    warning.
+
+Please use these features carefully and let us know your thoughts. Your feedback will inform
+how these features become a part of mainline PennyLane.
 
 <h4>Resource estimation</h4>
 
 * Resource estimation functionality in Labs is focused on being light-weight and flexible. 
-The Labs :mod:`qml.labs.resource_estimation <pennylane.labs.resource_estimation>` module involves modifications to core PennyLane that reduce the
-memory requirements and computational time of resource estimation. These include new or modified
-base classes and one new function:
+  The Labs :mod:`qml.labs.resource_estimation <pennylane.labs.resource_estimation>` module involves 
+  modifications to core PennyLane that reduce the memory requirements and computational time of 
+  resource estimation. These include new or modified base classes and one new function:
   * :class:`~.labs.resource_estimation.Resources` - This class is simplified in `labs`, removing the arguments: `gate_sizes`, `depth`,
-  and `shots`. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-  * :class:`~.labs.resource_estimation.ResourceOperator` - Replaces :class:`~.resource.ResourceOperation`, expanded to include decompositions. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-  * :class:`~.labs.resource_estimation.CompressedResourceOp` - A new class with the minimum information to estimate resources:
-  the operator type and the parameters needed to decompose it. [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
-  * :class:`~.labs.resource_estimation.ResourceOperator` - versions of many existing PennyLane operations, like Pauli operators,
-  :class:`~.labs.resource_estimation.ResourceHadamard`, and :class:`~.labs.resource_estimation.ResourceCNOT`. [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
-  [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
-  [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
-  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
-  * :func:`~.labs.resource_estimation.get_resources()` - The new entry point to efficiently obtain the resources of quantum circuits.
-  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
+    and `shots`. 
+    [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
 
-  Using new Resource versions of existing operations and :func:`~.labs.resource_estimation.get_resources`, we can estimate
-  resources quickly:
+  * :class:`~.labs.resource_estimation.ResourceOperator` - Replaces 
+    :class:`~.resource.ResourceOperation`, expanded to include decompositions. 
+    [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+
+  * :class:`~.labs.resource_estimation.CompressedResourceOp` - A new class with the minimum 
+    information to estimate resources: the operator type and the parameters needed to decompose it. 
+    [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+
+  * :class:`~.labs.resource_estimation.ResourceOperator` - versions of many existing PennyLane 
+    operations, like Pauli operators, :class:`~.labs.resource_estimation.ResourceHadamard`, and 
+    :class:`~.labs.resource_estimation.ResourceCNOT`. 
+    [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+    [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
+    [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
+    [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
+
+  * :func:`~.labs.resource_estimation.get_resources()` - The new entry point to efficiently obtain 
+    the resources of quantum circuits.
+    [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
+
+  Using new resource versions of existing operations and 
+  :func:`~.labs.resource_estimation.get_resources`, we can estimate resources quickly:
+
   ```python
   import pennylane.labs.resource_estimation as re
   
@@ -441,16 +497,23 @@ base classes and one new function:
 
 * Use the :mod:`qml.labs.dla <pennylane.labs.dla>` module to perform the
   [KAK decomposition](https://pennylane.ai/qml/demos/tutorial_kak_decomposition):
-  * :func:`~.labs.dla.cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** via an **involution**.
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-  * We provide a variety of **involutions** like :func:`~.labs.dla.concurrence_involution`, :func:`~.labs.dla.even_odd_involution` and canonical Cartan involutions.
-  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+  * :func:`~.labs.dla.cartan_decomp`: obtain a **Cartan decomposition** of an input **Lie algebra** 
+    via an **involution**.
+    [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+
+  * We provide a variety of **involutions** like :func:`~.labs.dla.concurrence_involution`, 
+    :func:`~.labs.dla.even_odd_involution` and canonical Cartan involutions.
+    [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+    [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+
   * :func:`~.labs.dla.cartan_subalgebra`: compute a horizontal **Cartan subalgebra**.
-  [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
-  * :func:`~.labs.dla.variational_kak_adj` : compute a [variational KAK decomposition](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition) of a Hermitian operator using a **Cartan decomposition** and the adjoint
-  representation of a horizontal **Cartan subalgebra**.
-  [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
+    [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
+
+  * :func:`~.labs.dla.variational_kak_adj` : compute a 
+    [variational KAK decomposition](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition) 
+    of a Hermitian operator using a **Cartan decomposition** and the adjoint representation of a 
+    horizontal **Cartan subalgebra**.
+    [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
 
   To use this functionality we start with a set of Hermitian operators.
 
@@ -470,7 +533,9 @@ base classes and one new function:
   [1 * X(0) @ X(1), 1 * X(1) @ X(2), 1.0 * Z(0), ...]
   ```
 
-  We then choose an involution (e.g. :func:`~.labs.dla.concurrence_involution`) that defines a Cartan decomposition `g = k + m`. `k` is the vertical subalgebra, and `m` its horizontal complement (not a subalgebra).
+  We then choose an involution (e.g. :func:`~.labs.dla.concurrence_involution`) that defines a 
+  Cartan decomposition `g = k + m`. `k` is the vertical subalgebra, and `m` its horizontal 
+  complement (not a subalgebra).
 
   ```pycon
   >>> from pennylane.labs.dla import concurrence_involution, cartan_decomp
@@ -478,20 +543,25 @@ base classes and one new function:
   >>> k, m = cartan_decomp(g, involution=involution)
   ```
 
-  The next step is just re-ordering the basis elements in `g` and computing its `structure_constants`.
+  The next step is just re-ordering the basis elements in `g` and computing its 
+  `structure_constants`.
 
   ```pycon
   >>> g = k + m
   >>> adj = qml.structure_constants(g)
   ```
 
-  We can then compute a (horizontal) Cartan subalgebra `a`, that is, a maximal Abelian subalgebra of `m`.
+  We can then compute a (horizontal) Cartan subalgebra `a`, that is, a maximal Abelian subalgebra of 
+  `m`.
+
   ```pycon
   >>> from pennylane.labs.dla import cartan_subalgebra
   >>> g, k, mtilde, a, adj = cartan_subalgebra(g, k, m, adj)
   ```
 
-  Having determined both subalgebras `k` and `a`, we can compute the KAK decomposition variationally like in [2104.00728](https://arxiv.org/abs/2104.00728), see our [demo on KAK decomposition in practice](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition).
+  Having determined both subalgebras `k` and `a`, we can compute the KAK decomposition variationally 
+  like in [2104.00728](https://arxiv.org/abs/2104.00728), see our 
+  [demo on KAK decomposition in practice](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition).
 
   ```pycon
   >>> from pennylane.labs.dla import variational_kak_adj
@@ -501,30 +571,33 @@ base classes and one new function:
 
 * We also provide some additional features that are useful for handling dynamical Lie algebras.
   * :func:`~.labs.dla.recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions.
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+    [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
+
   * :func:`~.labs.dla.lie_closure_dense`: extension of `qml.lie_closure` using dense matrices.
-  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
-  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
-  * :func:`~.labs.dla.structure_constants_dense`: extension of `qml.structure_constants` using dense matrices.
-  [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
+    [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+    [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
+
+  * :func:`~.labs.dla.structure_constants_dense`: extension of `qml.structure_constants` using dense 
+    matrices.
+    [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396) [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
 
 
 <h4>Vibrational Hamiltonians</h4>
 
 * New functionality in labs helps with the construction of vibrational Hamiltonians.
   * Generate potential energy surfaces (PES) with `qml.labs.vibrational.vibrational_pes`.
-  [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
-  [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
+    [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+    [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
   
-  ```pycon
-  >>> symbols  = ['H', 'F']
-  >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-  >>> mol = qml.qchem.Molecule(symbols, geometry)
-  >>> pes = vibrational_pes(mol)
-  ```
+    ```pycon
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = vibrational_pes(mol)
+    ```
   * Use the `qml.labs.vibrational.christiansen_hamiltonian` function and potential energy surfaces 
-  to generate Hamiltonians in the Christiansen form.
-  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+    to generate Hamiltonians in the Ch  ristiansen form.
+    [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Improvements 🛠</h3>
 
