@@ -180,7 +180,8 @@ def compile(
     # don't queue anything as a result of the expansion or transform pipeline
 
     with QueuingManager.stop_recording():
-        basis_set = basis_set or all_ops
+        if basis_set is None:
+            basis_set = all_ops
 
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
