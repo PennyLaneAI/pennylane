@@ -46,7 +46,7 @@ def determine_abstracted_axes(args):
     ```
 
     """
-    if not has_jax:
+    if not has_jax:  # pragma: no cover
         raise ImportError("jax must be installed to use determine_abstracted_axes")
     if not jax.config.jax_dynamic_shapes:
         return None, tuple()
@@ -55,16 +55,19 @@ def determine_abstracted_axes(args):
     abstracted_axes = []
     abstract_shapes = []
     for l in args:
-        l_shape = []
-        for s in getattr(l, "shape", ()):
-            if isinstance(s, int):  # not abstract
-                l_shape.append(())
-            else:
-                l_shape.append(ascii_lowercase[len(abstract_shapes)])
-                if all(s is not x for x in abstract_shapes):
-                    # not already added
+        l_shape = {}
+        for i, s in enumerate(getattr(l, "shape", ())):
+            if not isinstance(s, int):  # not abstract
+                found = False
+                for j, previous_shape in enumerate(abstract_shapes):
+                    if s is previous_shape:
+                        l_shape[i] = ascii_lowercase[j]
+                        found = True
+                        continue
+                if not found:
+                    l_shape[i] = ascii_lowercase[len(abstract_shapes)]
                     abstract_shapes.append(s)
-        abstracted_axes.append(tuple(l_shape))
+        abstracted_axes.append(l_shape)
 
     if not abstract_shapes:
         return None, ()

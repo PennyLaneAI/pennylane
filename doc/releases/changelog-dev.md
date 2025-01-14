@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The higher order primitives in program capture can now accept inputs with abstract shapes.
+  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
