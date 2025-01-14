@@ -52,7 +52,6 @@ class VibronicHamiltonian:
     def fragment(self, index: int) -> VibronicMatrix:
         """Return the fragment at the given index"""
 
-
         if index not in range(self.states + 1):
             raise ValueError("Index out of range")
 

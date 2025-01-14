@@ -92,12 +92,13 @@ class VibronicWord:
         terms = tuple(filter(lambda term: not term.is_zero, terms))
         self.is_zero = len(terms) == 0
 
-        self._lookup = defaultdict(lambda: VibronicTerm.zero_term()) #pylint: disable=unnecessary-lambda
+        self._lookup = defaultdict(
+            lambda: VibronicTerm.zero_term()
+        )  # pylint: disable=unnecessary-lambda
         for term in terms:
             self._lookup[term.ops] += term
 
         self.terms = tuple(self._lookup.values())
-
 
     def __add__(self, other: VibronicWord) -> VibronicWord:
         l_ops = {term.ops for term in self.terms}
