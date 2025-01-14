@@ -19,7 +19,7 @@
     qml.CNOT([0,1])
     return qml.probs()
   ```
-  its configuration can be changed by using the `QNode.update` method,
+  the configuration can be modified by using the `QNode.update` method,
   ```pycon
   >>> print(circuit.diff_method)
   best
