@@ -76,6 +76,7 @@ class TestCatalyst:
         assert qml.compiler.available("catalyst")
         assert qml.compiler.available_compilers() == ["catalyst", "cuda_quantum"]
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_active_compiler(self):
         """Test `qml.compiler.active_compiler` inside a simple circuit"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -91,6 +92,7 @@ class TestCatalyst:
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
         assert jnp.allclose(qml.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_active(self):
         """Test `qml.compiler.active` inside a simple circuit"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -114,6 +116,7 @@ class TestCatalyst:
         qml.compiler.active()
         assert jax.config.jax_enable_x64 is jax_enable_x64
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_qjit_circuit(self):
         """Test JIT compilation of a circuit with 2-qubit"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -128,6 +131,7 @@ class TestCatalyst:
 
         assert jnp.allclose(circuit(0.5), 0.0)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_qjit_aot(self):
         """Test AOT compilation of a circuit with 2-qubit"""
 
@@ -152,6 +156,7 @@ class TestCatalyst:
         )
         assert jnp.allclose(result, expected)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     @pytest.mark.parametrize(
         "_in,_out",
         [
@@ -196,6 +201,7 @@ class TestCatalyst:
         result = workflow1(params1, params2)
         assert jnp.allclose(result, expected)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_return_value_dict(self):
         """Test pytree return values."""
         dev = qml.device("lightning.qubit", wires=2)
@@ -218,6 +224,7 @@ class TestCatalyst:
         assert jnp.allclose(result["w0"], expected["w0"])
         assert jnp.allclose(result["w1"], expected["w1"])
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_qjit_python_if(self):
         """Test JIT compilation with the autograph support"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -235,6 +242,7 @@ class TestCatalyst:
         assert jnp.allclose(circuit(3), 0.0)
         assert jnp.allclose(circuit(5), 1.0)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_compilation_opt(self):
         """Test user-configurable compilation options"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -250,6 +258,7 @@ class TestCatalyst:
         result_header = "func.func public @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_qjit_adjoint(self):
         """Test JIT compilation with adjoint support"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -273,6 +282,7 @@ class TestCatalyst:
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_qjit_adjoint_lazy(self):
         """Test that the lazy kwarg is supported."""
         dev = qml.device("lightning.qubit", wires=2)
@@ -287,6 +297,7 @@ class TestCatalyst:
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_control(self):
         """Test that control works with qjit."""
         dev = qml.device("lightning.qubit", wires=2)
@@ -317,6 +328,7 @@ class TestCatalyst:
 class TestCatalystControlFlow:
     """Test ``qml.qjit`` with Catalyst's control-flow operations"""
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_alternating_while_loop(self):
         """Test simple while loop."""
         dev = qml.device("lightning.qubit", wires=1)
@@ -334,6 +346,7 @@ class TestCatalystControlFlow:
 
         assert jnp.allclose(circuit(1), -1.0)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_nested_while_loops(self):
         """Test nested while loops."""
         dev = qml.device("lightning.qubit", wires=1)
@@ -393,6 +406,7 @@ class TestCatalystControlFlow:
         expected = [qml.PauliX(0) for i in range(4)]
         _ = [qml.assert_equal(i, j) for i, j in zip(tape.operations, expected)]
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_dynamic_wires_for_loops(self):
         """Test for loops with iteration index-dependant wires."""
         dev = qml.device("lightning.qubit", wires=6)
@@ -414,6 +428,7 @@ class TestCatalystControlFlow:
 
         assert jnp.allclose(circuit(6), expected)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_nested_for_loops(self):
         """Test nested for loops."""
         dev = qml.device("lightning.qubit", wires=4)
@@ -445,6 +460,7 @@ class TestCatalystControlFlow:
 
         assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_for_loop_python_fallback(self):
         """Test that qml.for_loop fallsback to Python
         interpretation if Catalyst is not available"""
@@ -496,6 +512,7 @@ class TestCatalystControlFlow:
 
         _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_cond(self):
         """Test condition with simple true_fn"""
         dev = qml.device("lightning.qubit", wires=1)
@@ -514,6 +531,7 @@ class TestCatalystControlFlow:
         assert jnp.allclose(circuit(1.4), 1.0)
         assert jnp.allclose(circuit(1.6), 0.0)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_cond_with_else(self):
         """Test condition with simple true_fn and false_fn"""
         dev = qml.device("lightning.qubit", wires=1)
@@ -535,6 +553,7 @@ class TestCatalystControlFlow:
         assert jnp.allclose(circuit(1.4), 0.16996714)
         assert jnp.allclose(circuit(1.6), 0.0)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_cond_with_elif(self):
         """Test condition with a simple elif branch"""
         dev = qml.device("lightning.qubit", wires=1)
@@ -558,6 +577,7 @@ class TestCatalystControlFlow:
         assert jnp.allclose(circuit(1.2), 0.13042371)
         assert jnp.allclose(circuit(jnp.pi), -1.0)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_cond_with_elifs(self):
         """Test condition with multiple elif branches"""
         dev = qml.device("lightning.qubit", wires=1)
@@ -630,6 +650,7 @@ class TestCatalystControlFlow:
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
 
@@ -647,6 +668,7 @@ class TestCatalystGrad:
 
         assert jnp.allclose(workflow(2.0), -jnp.pi)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_grad_with_postprocessing(self):
         """Test the grad transformation with classical preprocessing and postprocessing."""
         dev = qml.device("lightning.qubit", wires=1)
@@ -665,6 +687,7 @@ class TestCatalystGrad:
 
         assert jnp.allclose(workflow(1.0), 5.04324559)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_grad_with_multiple_qnodes(self):
         """Test the grad transformation with multiple QNodes with their own differentiation methods."""
         dev = qml.device("lightning.qubit", wires=1)
@@ -703,6 +726,7 @@ class TestCatalystGrad:
 
         assert jnp.allclose(dsquare(2.3), 4.6)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_jacobian_diff_method(self):
         """Test the Jacobian transformation with the device diff_method."""
         dev = qml.device("lightning.qubit", wires=1)
@@ -721,6 +745,7 @@ class TestCatalystGrad:
 
         assert jnp.allclose(result, reference)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_jacobian_auto(self):
         """Test the Jacobian transformation with 'auto'."""
         dev = qml.device("lightning.qubit", wires=1)
@@ -740,6 +765,7 @@ class TestCatalystGrad:
 
         assert jnp.allclose(result, reference)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     def test_jacobian_fd(self):
         """Test the Jacobian transformation with 'fd'."""
         dev = qml.device("lightning.qubit", wires=1)
