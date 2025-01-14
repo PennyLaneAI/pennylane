@@ -10,7 +10,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* `qml.execute` no longer accepts `mcm_config` argument. Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
+* The `mcm_method` keyword in `qml.execute` is deprecated. Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
 
 <h3>Documentation 📝</h3>
