@@ -24,6 +24,7 @@
   >>> print(circuit.diff_method)
   best
   >>> new_circuit = circuit.update(diff_method="parameter-shift")
+  >>> print(new_circuit.diff_method)
   'parameter-shift'
   ```
 
