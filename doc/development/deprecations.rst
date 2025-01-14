@@ -84,7 +84,7 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* The ``qsvt_legacy`` function has been removed.
+* The ``qml.qsvt_legacy`` function has been removed.
   Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
 
   - Deprecated in v0.40
