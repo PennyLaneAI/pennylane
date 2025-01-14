@@ -16,7 +16,6 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
-import warnings
 from typing import Literal
 
 import numpy as np
