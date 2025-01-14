@@ -202,6 +202,25 @@ class TestCompileIntegration:
         assert compiled_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1])]
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    def test_compile_empty_basis_set(self, wires):
+        """Test that compiling with empty basis set maximally decomposes the circuit."""
+
+        qfunc = build_qfunc(wires=wires)
+        dev = qml.device("default.qubit", wires=Wires(wires))
+
+        qnode = qml.QNode(qfunc, dev)
+
+        transformed_qfunc = compile(qfunc, basis_set=[])
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        original_result = qnode(0.3, 0.4, 0.5)
+        transformed_result = transformed_qnode(0.3, 0.4, 0.5)
+        assert np.allclose(original_result, transformed_result)
+
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        assert not any(op.has_decomposition for op in tape.operations)
+
+    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
         """Test that using non-default arguments returns the correct results."""
 
