@@ -98,7 +98,7 @@ class VibronicMatrix:
         top_left, top_right, bottom_left, bottom_right = self._partition_into_quadrants()
 
         norm1 = max(top_left._norm(gridpoints), bottom_right._norm(gridpoints))
-        norm2 = np.sqrt(top_right._norm(gridpoints) * bottom_left._norm(gridpoints))
+        norm2 = math.sqrt(top_right._norm(gridpoints) * bottom_left._norm(gridpoints))
 
         return norm1 + norm2
 
@@ -171,6 +171,7 @@ class VibronicMatrix:
             )
 
         new_blocks = {}
+
         l_keys = set(self._blocks.keys())
         r_keys = set(other._blocks.keys())
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from itertools import product
+from math import sqrt
 from typing import TYPE_CHECKING, Tuple, Union
 
 import numpy as np
@@ -144,4 +145,4 @@ def _zeros(shape: Tuple[int], sparse: bool = False):
 
 def op_norm(gridpoints: int) -> float:
     """The norm of P and Q"""
-    return np.sqrt(gridpoints * np.pi / 2)
+    return sqrt(gridpoints * np.pi / 2)
