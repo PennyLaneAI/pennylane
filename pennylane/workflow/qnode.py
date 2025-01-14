@@ -285,9 +285,7 @@ class QNode:
             as the name suggests. If not provided,
             the device will determine the best choice automatically. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-
-    Keyword Args:
-        **kwargs: Any additional keyword arguments provided are passed to the differentiation
+        gradient_kwargs (dict): Any additional keyword arguments provided are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
 
@@ -506,8 +504,16 @@ class QNode:
         device_vjp: Union[None, bool] = False,
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
-        **gradient_kwargs,
+        gradient_kwargs: dict = {},
+        **kwargs,
     ):
+        if kwargs:
+            warnings.warn(
+                f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please \
+                specify all arguments in the gradient_kwargs argument.",
+                qml.PennyLaneDeprecationWarning,
+            )
+            gradient_kwargs = kwargs
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
