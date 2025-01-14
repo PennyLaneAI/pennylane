@@ -28,7 +28,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, unused-argument
 def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
     r"""
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,
