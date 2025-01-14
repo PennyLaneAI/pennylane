@@ -581,4 +581,4 @@ class TestDiagonalizeTapeMeasurements:
             for r_diagonalized, r in zip(res, expected_res):
                 assert np.allclose(r_diagonalized, r, rtol=0.1)
         else:
-            assert np.allclose(expected_res, res, rtol=0.1)
+            assert np.allclose(res, expected_res, rtol=0.1)
