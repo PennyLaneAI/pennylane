@@ -17,9 +17,66 @@ Tests for symbolic resource operators.
 
 import pytest
 
+import pennylane as qml
 import pennylane.labs.resource_estimation as re
+from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
+    _extract_exp_params,
+    _resources_from_pauli_sentence,
+    _resources_from_pauli_word,
+)
+from pennylane.pauli import PauliSentence, PauliWord
 
 # pylint: disable=protected-access,no-self-use
+
+
+class DummyOp(re.ResourceOperator):
+
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b 
+
+    @staticmethod
+    def _resource_decomp(a, b, **kwargs):
+        h = re.ResourceHadamard.resource_rep()
+        cnot = re.ResourceCNOT.resource_rep()
+
+        return {h: a, cnot: b}
+    
+    @classmethod
+    def exp_resource_decomp(cls, coeff, num_steps, **kwargs):
+        return cls.resources(a, b, **kwargs)
+    
+    def resource_params(self) -> dict:
+        return {'a': self.a, 'b': self.b}
+
+    @classmethod
+    def resource_rep(cls, a, b):
+        return re.CompressedResourceOp(cls, {'a':a, 'b':b})
+
+
+lc_op = qml.ops.LinearCombination(
+    [0.12, -3.4, 5], [qml.X(0) @ qml.X(1), qml.Z(2), qml.Y(0) @ qml.Y(1)]
+)
+exp_params_data = (
+    (
+        lc_op,
+        {
+            "base_class": qml.ops.LinearCombination,
+            "base_params": {"pauli_rep": lc_op.pauli_rep},
+            "coeff": 1.2j,
+            "num_steps": 3,
+        },
+    ),
+    (
+        re.ResourceQFT(range(10)),
+        {
+            "base_class": re.ResourceQFT,
+            "base_params": {"num_wires": 10, "pauli_rep": None},
+            "coeff": 1.2j,
+            "num_steps": 3,
+        },
+    ),
+)
 
 
 class TestResourceAdjoint:
@@ -301,3 +358,150 @@ class TestResourcePow:
     def test_nested_pow(self, nested_op, expected_op):
         """Test the resources for nested Pow operators."""
         assert re.get_resources(nested_op) == re.get_resources(expected_op)
+
+
+class TestResourceExp:
+    """Test for ResourceExp"""
+
+    @pytest.mark.parametrize("op, expected", exp_params_data)
+    def test_resource_params(self, op, expected):
+        """Test that the resource_params method produces the expected parameters."""
+        exp_op = re.ResourceExp(op, 1.2j, num_steps=3)
+        extracted_params = exp_op.resource_params()
+        assert extracted_params == expected
+
+    @pytest.mark.parametrize("op, expected_params", exp_params_data)
+    def test_resource_rep(self, op, expected_params):
+        """Test that the resource_rep method produces the correct compressed representation."""
+        exp_op = re.ResourceExp(op, 1.2j, num_steps=3)
+        computed_rep = exp_op.resource_rep(**expected_params)
+        expected_rep = re.CompressedResourceOp(re.ResourceExp, expected_params, name=exp_op.tracking_name_from_op())
+
+        assert expected_rep == computed_rep
+
+    exp_res_data = (
+        (
+            re.ResourceExp(DummyOp(2,3), 0.1j),
+            {
+
+            },
+        ),
+        (
+
+        ),
+    )
+
+    @pytest.mark.parametrize("op, expected_resources", exp_res_data)
+    def test_resources_decomp(self):
+        assert True
+    
+    def test_pow_resources(self):
+        assert True
+    
+    def test_controlled_resources(self):
+        assert True
+
+
+@pytest.mark.parametrize("base_op, expected_params", exp_params_data)
+def test_extract_exp_params(base_op, expected_params):
+    """Test the private _extract_exp_params method behaves as expected"""
+    extracted_params = _extract_exp_params(base_op, scalar=1.2j, num_steps=3)
+    assert extracted_params == expected_params
+
+
+def test_extract_exp_params_raises_error():
+    """Test that the private _extract_exp_params method raises an error if the base operator
+    isnt compatible with ResourceExp."""
+    with pytest.raises(ValueError, match="Cannot obtain resources for the exponential of"):
+        _ = _extract_exp_params(qml.QFT(range(10)), 1j, 5)
+
+
+@pytest.mark.parametrize(
+    "pw, expected_res",
+    (
+        (
+            PauliWord({}),
+            {
+                re.ResourceGlobalPhase.resource_rep(): 1,
+            },
+        ),
+        (
+            PauliWord({0: "X", 2: "X", 3: "X"}),
+            {
+                re.ResourceRZ.resource_rep(): 1,
+                re.ResourceCNOT.resource_rep(): 4,
+                re.ResourceHadamard.resource_rep(): 6,
+            },
+        ),
+        (
+            PauliWord({0: "X", 2: "Y", 3: "Z"}),
+            {
+                re.ResourceS.resource_rep(): 1,
+                re.ResourceRZ.resource_rep(): 1,
+                re.ResourceCNOT.resource_rep(): 4,
+                re.ResourceHadamard.resource_rep(): 4,
+                re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
+            },
+        ),
+        (
+            PauliWord({0: "I", 2: "I", 3: "Y"}),
+            {
+                re.ResourceRY.resource_rep(): 1,
+            },
+        ),
+        (
+            PauliWord({0: "I", 2: "I", 3: "I"}),
+            {
+                re.ResourceGlobalPhase.resource_rep(): 1,
+            },
+        ),
+    ),
+)
+def test_resources_from_pauli_word(pw, expected_res):
+    """Test that the private function resources_from_pauli_word works correcty"""
+    extracted_res = _resources_from_pauli_word(pw)
+    assert extracted_res == expected_res
+
+
+@pytest.mark.parametrize(
+    "ps, expected_res",
+    (
+        (PauliSentence({}), {}),
+        (
+            PauliSentence(
+                {
+                    PauliWord({0: "I", 2: "I", 3: "I"}): 0.12,
+                    PauliWord({0: "X", 2: "I", 3: "I"}): -3.4,
+                    PauliWord({0: "I", 2: "Y", 3: "I"}): 56,
+                    PauliWord({0: "I", 2: "I", 3: "Z"}): 0.78,
+                }
+            ),
+            {
+                re.ResourceRX.resource_rep(): 1,
+                re.ResourceRY.resource_rep(): 1,
+                re.ResourceRZ.resource_rep(): 1,
+                re.ResourceGlobalPhase.resource_rep(): 1,
+            },
+        ),
+        (
+            PauliSentence(
+                {
+                    PauliWord({0: "X", 2: "X", 3: "X"}): 0.12,
+                    PauliWord({0: "Y", 2: "Y", 3: "Y"}): -3.4,
+                    PauliWord({0: "X", 2: "Y", 3: "Z"}): 56,
+                }
+            ),
+            {
+                re.ResourceS.resource_rep(): 4,
+                re.ResourceRZ.resource_rep(): 3,
+                re.ResourceCNOT.resource_rep(): 12,
+                re.ResourceHadamard.resource_rep(): 16,
+                re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 4,
+            },
+        ),
+    ),
+)
+def test_resources_from_pauli_sentence(ps, expected_res):
+    """Test that the private function resources_from_pauli_sentence works correcty"""
+    extracted_res = _resources_from_pauli_sentence(ps)
+    assert extracted_res == expected_res

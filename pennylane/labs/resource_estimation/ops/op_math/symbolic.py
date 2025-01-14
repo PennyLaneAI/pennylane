@@ -208,11 +208,6 @@ class ResourceExp(Exp, re.ResourceOperator):
                 pass
 
         if (pauli_sentence := base_params["pauli_rep"]) and math.real(coeff) == 0:
-            if len(pauli_sentence) == 1:
-                num_wires = len(pauli_sentence.wires)
-                pauli_word = tuple(pauli_sentence.keys())[0]  # only one term in the sum
-                return _resources_from_pauli_word(pauli_word, num_wires)
-
             scalar = num_steps or 1  # 1st-order Trotter-Suzuki with 'num_steps' trotter steps:
             return _scale_dict(
                 _resources_from_pauli_sentence(pauli_sentence), scalar=scalar, in_place=True
@@ -224,14 +219,8 @@ class ResourceExp(Exp, re.ResourceOperator):
         return _extract_exp_params(self.base, self.scalar, self.num_steps)
 
     @classmethod
-    def resource_rep(cls, base_class, base_params, coeff, num_steps, **kwargs):
-        base_name = (
-            base_class.tracking_name(**base_params)
-            if issubclass(base_class, re.ResourceOperator)
-            else base_class.__name__
-        )
-
-        name = f"Exp({base_name}, {coeff}, num_steps={num_steps})".replace("Resource", "")
+    def resource_rep(cls, base_class, base_params, coeff, num_steps):
+        name = cls.tracking_name(base_class, base_params, coeff, num_steps)
         return re.CompressedResourceOp(
             cls,
             {
@@ -277,12 +266,22 @@ class ResourceExp(Exp, re.ResourceOperator):
 
         raise re.ResourcesNotDefined
 
+    @staticmethod
+    def tracking_name(base_class, base_params, coeff, num_steps):
+        base_name = (
+            base_class.tracking_name(**base_params)
+            if issubclass(base_class, re.ResourceOperator)
+            else base_class.__name__
+        )
+
+        return f"Exp({base_name}, {coeff}, num_steps={num_steps})".replace("Resource", "")
+
 
 def _extract_exp_params(base_op, scalar, num_steps):
     pauli_rep = base_op.pauli_rep
     isinstance_resource_op = isinstance(base_op, re.ResourceOperator)
 
-    if not isinstance_resource_op and (pauli_rep is None):
+    if (not isinstance_resource_op) and (pauli_rep is None):
         raise ValueError(
             f"Cannot obtain resources for the exponential of {base_op}, if it is not a ResourceOperator and it doesn't have a Pauli decomposition."
         )
@@ -300,7 +299,7 @@ def _extract_exp_params(base_op, scalar, num_steps):
     }
 
 
-def _resources_from_pauli_word(pauli_word, num_wires):
+def _resources_from_pauli_word(pauli_word):
     pauli_string = "".join((str(v) for v in pauli_word.values()))
     len_str = len(pauli_string)
 
@@ -323,36 +322,28 @@ def _resources_from_pauli_word(pauli_word, num_wires):
     num_y = counter["Y"]
 
     s = re.ResourceS.resource_rep()
+    adj_s = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
     h = re.ResourceHadamard.resource_rep()
     rz = re.ResourceRZ.resource_rep()
     cnot = re.ResourceCNOT.resource_rep()
 
     gate_types = {}
     gate_types[rz] = 1
-    gate_types[s] = 2 * num_y
-    gate_types[h] = 2 * (num_x + num_y)
-    gate_types[cnot] = 2 * (num_wires - 1)
+    if num_y:
+        gate_types[s] = num_y
+        gate_types[adj_s] = num_y
+    if num_x or num_y:
+        gate_types[h] = 2 * (num_x + num_y)
+    gate_types[cnot] = 2 * (len_str - 1)
 
     return gate_types
 
 
 def _resources_from_pauli_sentence(pauli_sentence):
     gate_types = defaultdict(int)
-    rx = re.ResourceRX.resource_rep()
-    ry = re.ResourceRY.resource_rep()
-    rz = re.ResourceRZ.resource_rep()
 
     for pauli_word in iter(pauli_sentence.keys()):
-        num_wires = len(pauli_word.wires)
-
-        if num_wires == 1:
-            pauli_string = "".join((str(v) for v in pauli_word.values()))
-            op_type = {"Z": rz, "X": rx, "Y": ry}[pauli_string]
-            gate_types[op_type] += 1
-
-            continue
-
-        pw_gates = _resources_from_pauli_word(pauli_word, num_wires)
+        pw_gates = _resources_from_pauli_word(pauli_word)
         _ = _combine_dict(gate_types, pw_gates, in_place=True)
 
     return gate_types
