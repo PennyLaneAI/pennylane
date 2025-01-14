@@ -5,13 +5,14 @@
 <h3>New features since last release</h3>
 
 * ``qml.lie_closure`` now accepts and outputs dense inputs using the ``dense`` keyword.
+  Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 <h3>Improvements 🛠</h3>
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Integrated ``lie_closure_dense`` into ``qml.lie_closure`` using ``dense`` keyword
+* ``qml.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 <h3>Breaking changes 💔</h3>
