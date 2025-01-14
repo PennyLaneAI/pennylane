@@ -633,6 +633,9 @@ class QNode:
     def update(self, **kwargs) -> "QNode":
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
 
+        .. note::
+            The QNode`s transform program cannot be updated using this method.
+
         Keyword Args:
             **kwargs: The provided keyword arguments must match that of :meth:`QNode.__init__`.
                 The list of supported gradient keyword arguments can be found at ``qml.gradients.SUPPORTED_GRADIENT_KWARGS``.
