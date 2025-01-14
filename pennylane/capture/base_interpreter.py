@@ -512,11 +512,11 @@ def flatten_while_loop(
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
-    abstract_shapes_slice = invals[abstract_shapes_slice]
+    abstract_shapes = invals[abstract_shapes_slice]
 
     fn_res = init_state
-    while copy(self).eval(jaxpr_cond_fn, consts_cond, *abstract_shapes_slice, *fn_res)[0]:
-        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *abstract_shapes_slice, *fn_res)
+    while copy(self).eval(jaxpr_cond_fn, consts_cond, *abstract_shapes, *fn_res)[0]:
+        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *abstract_shapes, *fn_res)
 
     return fn_res
 
