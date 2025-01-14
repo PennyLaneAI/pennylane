@@ -9,6 +9,24 @@
 * QNodes now have an :meth:`~.pennylane.QNode.update` method that allows for reconfiguring QNode settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
+  After constructing a `QNode`,
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(device=qml.device("default.qubit"))
+  def circuit():
+    qml.H(0)
+    qml.CNOT([0,1])
+    return qml.probs()
+  ```
+  its configuration can be changed by using the `QNode.update` method,
+  ```pycon
+  >>> print(circuit.diff_method)
+  best
+  >>> new_circuit = circuit.update(diff_method="parameter-shift")
+  'parameter-shift'
+  ```
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
