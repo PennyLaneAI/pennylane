@@ -45,8 +45,6 @@ def execute(
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
     interface: Optional[Union[str, Interface]] = Interface.AUTO,
     transform_program=None,
-    inner_transform=None,
-    config=None,
     grad_on_execution="best",
     gradient_kwargs=None,
     cache: Union[None, bool, dict, Cache] = True,
@@ -54,6 +52,8 @@ def execute(
     max_diff=1,
     device_vjp=False,
     mcm_config=None,
+    config="unset",
+    inner_transform="unset",
     gradient_fn="unset",
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
@@ -70,10 +70,6 @@ def execute(
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax``, and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
-        inner_transform (.TransformProgram): A transform program to be applied to the tapes in
-            inner execution, inside the ml interface.
-        config (qml.devices.ExecutionConfig): A data structure describing the parameters
-            needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. It only applies
             if the device is queried for the gradient; gradient transform
@@ -92,6 +88,10 @@ def execute(
             product if it is available.
         mcm_config (dict): Dictionary containing configuration options for handling
             mid-circuit measurements.
+        config="unset": **DEPRECATED**. This keyword argument has been deprecated and
+            will be removed in v0.42.
+        inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
+            and will be removed in v0.42.
         gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed
             ``diff_method`` and will be removed in v0.41.
 
@@ -164,6 +164,20 @@ def execute(
         )
         diff_method = gradient_fn
 
+    if config != "unset":
+        warn(
+            "The config argument has been deprecated and will be removed in v0.42. \
+            Instead, use qml.run with these arguments for a more detailed control over the execution.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
+    if inner_transform != "unset":
+        warn(
+            "The inner_transform argument has been deprecated and will be removed in v0.42. \
+            Instead, use qml.run with these arguments for a more detailed control over the execution.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             (
@@ -195,21 +209,16 @@ def execute(
     interface = _resolve_interface(interface, tapes)
     # Only need to calculate derivatives with jax when we know it will be executed later.
 
-    gradient_kwargs = gradient_kwargs or {}
-    mcm_config = mcm_config or {}
-    if not config:
-        config = qml.devices.ExecutionConfig(
-            interface=interface,
-            gradient_method=diff_method,
-            grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
-            use_device_jacobian_product=device_vjp,
-            mcm_config=mcm_config,
-            gradient_keyword_arguments=gradient_kwargs,
-            derivative_order=max_diff,
-        )
-        config = _resolve_execution_config(
-            config, device, tapes, transform_program=transform_program
-        )
+    config = qml.devices.ExecutionConfig(
+        interface=interface,
+        gradient_method=diff_method,
+        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+        use_device_jacobian_product=device_vjp,
+        mcm_config=mcm_config or {},
+        gradient_keyword_arguments=gradient_kwargs or {},
+        derivative_order=max_diff,
+    )
+    config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
 
     config = replace(
         config,
@@ -217,11 +226,10 @@ def execute(
         derivative_order=max_diff,
     )
 
-    if transform_program is None or inner_transform is None:
-        transform_program = transform_program or qml.transforms.core.TransformProgram()
-        transform_program, inner_transform = _setup_transform_program(
-            transform_program, device, config, cache, cachesize
-        )
+    transform_program = transform_program or qml.transforms.core.TransformProgram()
+    transform_program, inner_transform = _setup_transform_program(
+        transform_program, device, config, cache, cachesize
+    )
 
     #### Executing the configured setup #####
     tapes, post_processing = transform_program(tapes)

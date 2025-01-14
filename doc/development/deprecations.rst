@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` has been deprecated.
+  Instead, use ``qml.run`` with these arguments for a more detailed control over the execution.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``qsvt_legacy`` function has been deprecated.
   Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
 
