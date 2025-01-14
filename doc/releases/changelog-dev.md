@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* The coefficients of observables now has improved differentiation.
+* The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
 <h3>Breaking changes 💔</h3>
