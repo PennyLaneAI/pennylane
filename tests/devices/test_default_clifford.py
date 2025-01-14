@@ -599,7 +599,7 @@ def test_grad_error(circuit):
         return qml.expval(qml.PauliZ(0))
 
     qnode_clfrd = qml.QNode(circuit_fn, dev_c)
-    tape = qml.workflow.construct_tape(qnode_clfrd)
+    tape = qml.workflow.construct_tape(qnode_clfrd)()
 
     conf_c, tape_c = dev_c.setup_execution_config(), tape
 
