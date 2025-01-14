@@ -64,7 +64,6 @@ def test_catalyst_incompatible():
         qml.qjit(circuit)()
 
 
-@pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
 class TestCatalyst:
     """Test ``qml.qjit`` with Catalyst"""
 
@@ -315,7 +314,6 @@ class TestCatalyst:
         )
 
 
-@pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
 class TestCatalystControlFlow:
     """Test ``qml.qjit`` with Catalyst's control-flow operations"""
 
@@ -629,7 +627,6 @@ class TestCatalystControlFlow:
         assert np.allclose(f(-2.5), (-2.5 + 1))
 
 
-@pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 
@@ -841,7 +838,6 @@ class TestCatalystGrad:
             vjp(x, dy)
 
 
-@pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
 class TestCatalystSample:
     """Test qml.sample with Catalyst."""
 
@@ -862,7 +858,6 @@ class TestCatalystSample:
         assert circuit(jnp.pi) == 1
 
 
-@pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
 class TestCatalystMCMs:
     """Test dynamic_one_shot with Catalyst."""
 
