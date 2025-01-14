@@ -19,8 +19,8 @@ from string import ascii_lowercase
 has_jax = True
 try:
     import jax
-except ImportError: # pragma: no cover
-    has_jax = False # pragma: no cover
+except ImportError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 def determine_abstracted_axes(args):

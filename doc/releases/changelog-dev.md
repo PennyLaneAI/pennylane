@@ -23,4 +23,6 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
 Diksha Dhawan
+Christina Lee
