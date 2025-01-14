@@ -596,7 +596,7 @@ def _lie_closure_dense(
 
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose:
-            print(f"epoch {epoch+1} of lie_closure_dense, DLA size is {new_length}")
+            print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
 
         # compute all commutators. We compute the commutators between all newly added operators
         # and all original generators. This limits the amount of vectorization we are doing but

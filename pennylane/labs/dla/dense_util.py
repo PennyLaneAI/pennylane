@@ -514,9 +514,8 @@ def check_orthonormal(g: Iterable[Union[PauliSentence, Operator]], inner_product
     **Example**
 
     >>> from pennylane.labs.dla import orthonormalize, check_orthonormal
-    >>> from pennylane.pauli import trace_inner_product
     >>> ops = [qml.X(0), qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0)]
-    >>> check_orthonormal(ops, trace_inner_product)
+    >>> check_orthonormal(ops, qml.pauli.trace_inner_product)
     False
     >>> ops_orth = orthonormalize(ops)
     >>> check_orthonormal(ops_orth, trace_inner_product)

@@ -152,12 +152,12 @@ def cartan_subalgebra(
         As an example, we take the Lie algebra of the Heisenberg model with generators :math:`\{X_i X_{i+1}, Y_i Y_{i+1}, Z_i Z_{i+1}\}`.
 
         >>> from pennylane.labs.dla import cartan_decomp
-        >>> from pennylane import X, Y, Z, lie_closure
+        >>> from pennylane import X, Y, Z
         >>> n = 3
         >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
         >>> gens += [Y(i) @ Y(i+1) for i in range(n-1)]
         >>> gens += [Z(i) @ Z(i+1) for i in range(n-1)]
-        >>> g = lie_closure(gens, dense=True)
+        >>> g = qml.lie_closure(gens, dense=True)
 
         Taking the Heisenberg Lie algebra, we can perform the Cartan decomposition. We take the :func:`~even_odd_involution` as a valid Cartan involution.
         The resulting vertical and horizontal subspaces :math:`\mathfrak{k}` and :math:`\mathfrak{m}` need to fulfill the commutation relations
