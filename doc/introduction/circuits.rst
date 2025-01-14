@@ -243,7 +243,7 @@ or the :func:`~.pennylane.draw_mpl` transform:
 .. _intro_vcirc_decorator:
 
 Re-configuring QNode settings
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There is often a need to modify an existing QNode setup to test a new configuration. This includes,
 but is not limited to, executing on a different quantum device, using a new differentiation method or 
