@@ -29,7 +29,7 @@ from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
@@ -816,25 +816,6 @@ class QNode:
 
         # only other options at this point are "backprop" or "device"
         return transform
-
-    @property
-    def tape(self) -> QuantumTape:
-        """The quantum tape
-
-        .. warning::
-
-            This property is deprecated in v0.40 and will be removed in v0.41.
-            Instead, use the :func:`qml.workflow.construct_tape <.workflow.construct_tape>` function.
-        """
-
-        warnings.warn(
-            "The tape/qtape property is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.construct_tape function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._tape
-
-    qtape = tape  # for backwards compatibility
 
     @debug_logger
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
