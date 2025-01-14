@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added `QNode.update(**kwargs)`, which allows the creation of a new `QNode` instance with modified constructor arguments. Any arguments not specified will retain their original value.
+* QNodes now have an :meth:`~.pennylane.QNode.update` method that allows for reconfiguring QNode settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
 <h3>Breaking changes 💔</h3>
