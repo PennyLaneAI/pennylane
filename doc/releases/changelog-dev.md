@@ -10,6 +10,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* Specifying gradient keyword arguments is deprecated and will be removed in v0.42. 
+  Instead, please specify all arguments through the ``gradient_kwargs`` argument.
+  [(#6828)](https://github.com/PennyLaneAI/pennylane/pull/6828)
+
 <h3>Documentation 📝</h3>
 
 * Updated documentation for vibrational Hamiltonians
