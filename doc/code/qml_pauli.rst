@@ -169,7 +169,7 @@ See our `introduction to Dynamical Lie Algebras for quantum practitioners <https
     ~center
 
 Utility functions
-~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^
 
 Utility functions for handling Pauli operators in the context of DLA functionality.
 
