@@ -1344,7 +1344,7 @@ class TestDifferentiability:
         for argnum in range(len(weights)):
             expected_full = qml.jacobian(_cost_full, argnum=argnum)(*weights)
             jac = qml.jacobian(cost_full, argnum=argnum)(*weights)
-            assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
+            assert qml.math.allclose(jac, expected_full, atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, diff_method, tol, ansatz, weights):
@@ -1367,7 +1367,7 @@ class TestDifferentiability:
         assert qml.math.allclose(v1, v2, atol=tol, rtol=0)
         jac = jax.jacobian(cost_full)(*weights_jax)
         expected_full = qml.jacobian(_cost_full_autograd)(*weights)
-        assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
+        assert qml.math.allclose(jac, expected_full, atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["auto", "tf"])
@@ -1385,7 +1385,7 @@ class TestDifferentiability:
         _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
         assert qml.math.allclose(_cost_full(*weights), loss_full, atol=tol, rtol=0)
         expected_full = qml.jacobian(_cost_full)(*weights)
-        assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
+        assert qml.math.allclose(jac, expected_full, atol=tol, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])

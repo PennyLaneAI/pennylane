@@ -2305,8 +2305,8 @@ class TestBlockDiagDiffability:
         x, y = 0.2, 1.5
         res = jax.jacobian(f, argnums=[0, 1])(x, y)
         exp = self.expected(x, y)
-        assert fn.allclose(exp[0], res[0])
-        assert fn.allclose(exp[1], res[1])
+        assert fn.allclose(res[0], exp[0])
+        assert fn.allclose(res[1], exp[1])
 
     def test_tf(self):
         """Tests for differentiating the block diagonal function with Tensorflow."""
@@ -2318,8 +2318,8 @@ class TestBlockDiagDiffability:
         exp_0[0, 0, 0, 0] = 1.0
         exp_1 = np.zeros((3, 3, 2, 2))
         exp_1[1, 1, 0, 0] = exp_1[1, 2, 0, 1] = exp_1[2, 1, 1, 0] = exp_1[2, 2, 1, 1] = 1.0
-        assert fn.allclose(exp_0, res[0])
-        assert fn.allclose(exp_1, res[1])
+        assert fn.allclose(res[0], exp_0)
+        assert fn.allclose(res[1], exp_1)
 
     def test_torch(self):
         """Tests for differentiating the block diagonal function with Torch."""
@@ -2333,8 +2333,8 @@ class TestBlockDiagDiffability:
         exp_0[0, 0, 0, 0] = 1.0
         exp_1 = np.zeros((3, 3, 2, 2))
         exp_1[1, 1, 0, 0] = exp_1[1, 2, 0, 1] = exp_1[2, 1, 1, 0] = exp_1[2, 2, 1, 1] = 1.0
-        assert fn.allclose(exp_0, res[0])
-        assert fn.allclose(exp_1, res[1])
+        assert fn.allclose(res[0], exp_0)
+        assert fn.allclose(res[1], exp_1)
 
 
 gather_data = [
@@ -2628,7 +2628,7 @@ class TestExpm:
         orig_mat = qml.RX.compute_matrix(phi)
         exp_mat = qml.math.expm(orig_mat)
 
-        assert qml.math.allclose(exp_mat, self.get_compare_mat(), atol=1e-4)
+        assert qml.math.allclose(self.get_compare_mat(), exp_mat, atol=1e-4)
 
 
 class TestSize:

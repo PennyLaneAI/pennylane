@@ -70,7 +70,7 @@ class TestExpandMatrix:
         res = qml.math.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[2, 0])
 
         expected = np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]])
-        assert np.allclose(expected, res)
+        assert np.allclose(res, expected)
 
     def test_permutation_broadcasted(self):
         """Tests the case where the broadcasted original matrix is permuted"""
@@ -80,17 +80,17 @@ class TestExpandMatrix:
 
         perm = [0, 2, 1, 3]
         expected = self.base_matrix_2_broadcasted[:, perm][:, :, perm]
-        assert np.allclose(expected, res)
+        assert np.allclose(res, expected)
 
     def test_expansion(self):
         """Tests the case where the original matrix is expanded"""
         res = qml.math.expand_matrix(self.base_matrix_1, wires=[2], wire_order=[0, 2])
         expected = np.array([[1, 2, 0, 0], [3, 4, 0, 0], [0, 0, 1, 2], [0, 0, 3, 4]])
-        assert np.allclose(expected, res)
+        assert np.allclose(res, expected)
 
         res = qml.math.expand_matrix(self.base_matrix_1, wires=[2], wire_order=[2, 0])
         expected = np.array([[1, 0, 2, 0], [0, 1, 0, 2], [3, 0, 4, 0], [0, 3, 0, 4]])
-        assert np.allclose(expected, res)
+        assert np.allclose(res, expected)
 
     def test_expansion_broadcasted(self):
         """Tests the case where the broadcasted original matrix is expanded"""
@@ -117,7 +117,7 @@ class TestExpandMatrix:
                 ],
             ]
         )
-        assert np.allclose(expected, res)
+        assert np.allclose(res, expected)
 
         res = qml.math.expand_matrix(self.base_matrix_1_broadcasted, wires=[2], wire_order=[2, 0])
         expected = np.array(
@@ -142,7 +142,7 @@ class TestExpandMatrix:
                 ],
             ]
         )
-        assert np.allclose(expected, res)
+        assert np.allclose(res, expected)
 
     @staticmethod
     def func_for_autodiff(mat):
@@ -851,14 +851,14 @@ class TestExpandMatrixSparse:
                     expected_mat = qml.SWAP(wires=[i, j]).matrix()
                     expected_mat = qml.math.expand_matrix(expected_mat, [i, j], wire_order=range(n))
                     computed_mat = qml.math.matrix_manipulation._sparse_swap_mat(i, j, n).toarray()
-                    assert np.allclose(expected_mat, computed_mat)
+                    assert np.allclose(computed_mat, expected_mat)
 
     def test_sparse_swap_mat_same_index(self):
         """Test that if the indices are the same then the identity is returned."""
         # pylint: disable=protected-access
         computed_mat = qml.math.matrix_manipulation._sparse_swap_mat(2, 2, 3).toarray()
         expected_mat = np.eye(8)
-        assert np.allclose(expected_mat, computed_mat)
+        assert np.allclose(computed_mat, expected_mat)
 
 
 class TestReduceMatrices:

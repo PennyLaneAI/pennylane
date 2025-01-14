@@ -555,7 +555,7 @@ class TestMatrix:
 
         mat = Adjoint(base).matrix()
 
-        assert qml.math.allclose(expected, mat)
+        assert qml.math.allclose(mat, expected)
         assert qml.math.get_interface(mat) == interface
 
     @pytest.mark.autograd

@@ -473,7 +473,7 @@ class TestSumOfTermsDifferentiability:
 
         gradient = qml.grad(self.f)(x, coeffs)
         expected_gradient = qml.grad(self.expected)(x, coeffs)
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qml.math.allclose(gradient, expected_gradient)
 
     @pytest.mark.autograd
     def test_autograd_backprop_coeffs(self):
@@ -485,7 +485,7 @@ class TestSumOfTermsDifferentiability:
         expected_gradient = qml.grad(self.expected)(self.x, coeffs)
 
         assert len(gradient) == 2
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qml.math.allclose(gradient, expected_gradient)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
@@ -506,7 +506,7 @@ class TestSumOfTermsDifferentiability:
 
         gradient = jax.grad(f)(x, coeffs)
         expected_gradient = jax.grad(self.expected)(x, coeffs)
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qml.math.allclose(gradient, expected_gradient)
 
     @pytest.mark.jax
     def test_jax_backprop_coeffs(self):
@@ -520,7 +520,7 @@ class TestSumOfTermsDifferentiability:
         gradient = jax.grad(self.f, argnums=1)(self.x, coeffs)
         expected_gradient = jax.grad(self.expected, argnums=1)(self.x, coeffs)
         assert len(gradient) == 2
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qml.math.allclose(gradient, expected_gradient)
 
     @pytest.mark.torch
     def test_torch_backprop(self):
@@ -580,7 +580,7 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(out, expected_out)
         gradient = tape1.gradient(out, x)
         expected_gradient = tape2.gradient(expected_out, x)
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qml.math.allclose(gradient, expected_gradient)
 
     @pytest.mark.tf
     def test_tf_backprop_coeffs(self):
@@ -599,4 +599,4 @@ class TestSumOfTermsDifferentiability:
         gradient = tape1.gradient(out, coeffs)
         expected_gradient = tape2.gradient(expected_out, coeffs)
         assert len(gradient) == 2
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qml.math.allclose(gradient, expected_gradient)

@@ -65,7 +65,7 @@ class TestGQSP:
         )
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
 
-        assert np.allclose(expected_output, generated_output)
+        assert np.allclose(generated_output, expected_output)
 
     @pytest.mark.parametrize(
         ("unitary"),
@@ -98,7 +98,7 @@ class TestGQSP:
         )
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
 
-        assert np.allclose(expected_output, generated_output)
+        assert np.allclose(generated_output, expected_output)
 
     def test_queueing(self):
         """Test that no additional gates are being queued"""
@@ -150,7 +150,7 @@ class TestGQSP:
         expected_output = jnp.array(qml.matrix(circuit, wire_order=[0, 1])(angles))
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(jnp.array(angles))
 
-        assert np.allclose(expected_output, generated_output)
+        assert np.allclose(generated_output, expected_output)
         assert qml.math.get_interface(generated_output) == "jax"
 
     @pytest.mark.torch
@@ -171,7 +171,7 @@ class TestGQSP:
         expected_output = torch.tensor(qml.matrix(circuit, wire_order=[0, 1])(angles))
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(torch.tensor(angles))
 
-        assert np.allclose(expected_output, generated_output)
+        assert np.allclose(generated_output, expected_output)
         assert qml.math.get_interface(generated_output) == "torch"
 
     @pytest.mark.tf
@@ -192,7 +192,7 @@ class TestGQSP:
         expected_output = tf.Variable(qml.matrix(circuit, wire_order=[0, 1])(angles))
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(tf.Variable(angles))
 
-        assert np.allclose(expected_output, generated_output)
+        assert np.allclose(generated_output, expected_output)
         assert qml.math.get_interface(generated_output) == "tensorflow"
 
     @pytest.mark.jax
@@ -216,5 +216,5 @@ class TestGQSP:
         jit_circuit = jax.jit(circuit)
         generated_output = jit_circuit(angles)
 
-        assert np.allclose(expected_output, generated_output)
+        assert np.allclose(generated_output, expected_output)
         assert qml.math.get_interface(generated_output) == "jax"

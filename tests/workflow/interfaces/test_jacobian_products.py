@@ -614,10 +614,10 @@ class TestProbsTransformJacobians:
         res0dx = 0.5 * np.array([-np.sin(x) * np.cos(y), np.sin(x) * np.cos(y)])
         res0dy = 0.5 * np.array([-np.cos(x) * np.sin(y), np.cos(x) * np.sin(y)])
         expected_jvp00 = 2.5 * res0dx + 1.5 * res0dy
-        assert qml.math.allclose(expected_jvp00, jvp[0][0])
+        assert qml.math.allclose(jvp[0][0], expected_jvp00)
 
         expected_jvp01 = -2.5 * np.sin(x) * np.cos(y) - 1.5 * np.cos(x) * np.sin(y)
-        assert qml.math.allclose(expected_jvp01, jvp[0][1])
+        assert qml.math.allclose(jvp[0][1], expected_jvp01)
 
         assert qml.math.allclose(jvp[1][0], 0)
         assert qml.math.allclose(jvp[1][1], -0.6 * np.sin(phi))

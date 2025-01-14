@@ -65,7 +65,7 @@ class TestExpectationValueMath:
         ops = func(ops)
         state_vectors = func(state_vectors)
         overlap = qml.math.expectation_value(ops, state_vectors)
-        assert qml.math.allclose(expected, overlap)
+        assert qml.math.allclose(overlap, expected)
 
     state_wrong_amp = [
         ([[1, 0], [0, 1]], [0.5, 0]),

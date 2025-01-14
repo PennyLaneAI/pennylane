@@ -1065,7 +1065,7 @@ class TestQInfoMeasurements:
 
         for i in (0, 1, 3, 4, 5):  # skip density matrix on both wires
             g = qml.jacobian(f)(phi, i, real=True)
-            assert qml.math.allclose(expected_grads[i], g)
+            assert qml.math.allclose(g, expected_grads[i])
 
         # density matrix on both wires case
         g_real = qml.jacobian(f)(phi, 2, True)

@@ -735,7 +735,7 @@ class TestPreprocessingIntegration:
         assert qml.math.allclose(processed_results[0][1], expected_entropy)
 
         expected_expval = np.cos(y)
-        assert qml.math.allclose(expected_expval, processed_results[1])
+        assert qml.math.allclose(processed_results[1], expected_expval)
 
 
 class TestAdjointDiffTapeValidation:
