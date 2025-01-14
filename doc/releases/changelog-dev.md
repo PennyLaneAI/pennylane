@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed. 
+   [(#6821)](https://github.com/PennyLaneAI/pennylane/pull/6821)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -20,4 +23,5 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-Diksha Dhawan
+Diksha Dhawan 
+Marcus Gisslén
