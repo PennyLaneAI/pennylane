@@ -509,8 +509,7 @@ class QNode:
     ):
         if kwargs:
             warnings.warn(
-                f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please \
-                specify all arguments in the gradient_kwargs argument.",
+                f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please specify all arguments in the gradient_kwargs argument.",
                 qml.PennyLaneDeprecationWarning,
             )
             gradient_kwargs = kwargs
