@@ -183,7 +183,6 @@ class QuantumScript:
         self._trainable_params = trainable_params
         self._graph = None
         self._specs = None
-        self._output_dim = None
         self._batch_size = _UNSET_BATCH_SIZE
 
         self._obs_sharing_wires = None
@@ -542,28 +541,6 @@ class QuantumScript:
                 candidate = op_batch_size
 
         self._batch_size = candidate
-
-    def _update_output_dim(self):
-        """Update the dimension of the output of the quantum script.
-
-        Sets:
-            self._output_dim (int): Size of the quantum script output (when flattened)
-
-        This method makes use of `self.batch_size`, so that `self._batch_size`
-        needs to be up to date when calling it.
-        Call `_update_batch_size` before `_update_output_dim`
-        """
-        self._output_dim = 0
-        for m in self.measurements:
-            # attempt to infer the output dimension
-            if isinstance(m, ProbabilityMP):
-                # TODO: what if we had a CV device here? Having the base as
-                # 2 would have to be swapped to the cutoff value
-                self._output_dim += 2 ** len(m.wires)
-            elif not isinstance(m, StateMP):
-                self._output_dim += 1
-        if self.batch_size:
-            self._output_dim *= self.batch_size
 
     # ========================================================
     # Parameter handling
@@ -961,9 +938,6 @@ class QuantumScript:
             # obs may change if measurements were updated
             new_qscript._obs_sharing_wires = self._obs_sharing_wires
             new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
-        if not (update.get("measurements") or update.get("operations")):
-            # output_dim may change if either measurements or operations were updated
-            new_qscript._output_dim = self._output_dim
         return new_qscript
 
     def __copy__(self) -> "QuantumScript":
