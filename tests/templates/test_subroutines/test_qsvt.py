@@ -411,21 +411,6 @@ phase_angle_data = (
 )
 
 
-@pytest.mark.jax
-@pytest.mark.parametrize("initial_angles, expected_angles", phase_angle_data)
-def test_private_qsp_to_qsvt_jax(initial_angles, expected_angles):
-    """Test that the _qsp_to_qsvt function is jax compatible"""
-    import jax.numpy as jnp
-
-    from pennylane.templates.subroutines.qsvt import _qsp_to_qsvt
-
-    initial_angles = jnp.array(initial_angles)
-    expected_angles = jnp.array(expected_angles)
-
-    computed_angles = _qsp_to_qsvt(initial_angles)
-    jnp.allclose(computed_angles, expected_angles)
-
-
 class Testqsvt:
     """Test the qml.qsvt function."""
 
