@@ -10,6 +10,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` has been deprecated.
+  Instead, use ``qml.run`` with these arguments for a more detailed control over the execution.
+  [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
+
 <h3>Documentation 📝</h3>
 
 * Updated documentation for vibrational Hamiltonians
