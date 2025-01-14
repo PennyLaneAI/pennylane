@@ -626,19 +626,6 @@ class QSVT(Operation):
         return mat
 
 
-def _qsp_to_qsvt(angles):
-    r"""Converts qsp angles to qsvt angles."""
-    num_angles = len(angles)
-    update_vals = np.empty(num_angles)
-
-    update_vals[0] = 3 * np.pi / 4
-    update_vals[1:-1] = np.pi / 2
-    update_vals[-1] = -np.pi / 4
-    update_vals = qml.math.convert_like(update_vals, angles)
-
-    return angles + update_vals
-
-
 def _complementary_poly(poly_coeffs):
     r"""
     Computes the complementary polynomial Q given a polynomial P.
