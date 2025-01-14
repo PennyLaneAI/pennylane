@@ -393,7 +393,6 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
         for container in program:
             if container.transform == qml.devices.preprocess.decompose.transform:
                 container.kwargs["decomposer"] = decomposer
-                container.kwargs["max_expansion"] = decomp_depth
 
                 for cond in ["stopping_condition", "stopping_condition_shots"]:
                     # Devices that do not support native mid-circuit measurements
