@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Specifying gradient keyword arguments is deprecated and will be removed in v0.42. 
+  Instead, please specify all arguments through the ``gradient_kwargs`` argument.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``qsvt_legacy`` function has been deprecated.
   Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
 
