@@ -403,25 +403,25 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
         tuple: a tuple containing:
             - list[TensorLike[float]]: List of Hamiltonian integrals in VSCF basis for up to 3 coupled vibrational modes.
             - list[TensorLike[float]]: List of dipole integrals in VSCF basis for up to 3 coupled vibrational modes.
-              Returns ``None`` if ``d_integrals`` are ``None``.
+
+        ``None`` is returned if ``d_integrals`` is ``None``.
 
     **Example**
 
     >>> h1 = np.array([[[0.00968289, 0.00233724, 0.0007408,  0.00199125],
-                        [0.00233724, 0.02958449, 0.00675431, 0.0021936],
-                        [0.0007408,  0.00675431, 0.0506012,  0.01280986],
-                        [0.00199125, 0.0021936,  0.01280986, 0.07282307]]])
+    ...                 [0.00233724, 0.02958449, 0.00675431, 0.0021936],
+    ...                 [0.0007408,  0.00675431, 0.0506012,  0.01280986],
+    ...                 [0.00199125, 0.0021936,  0.01280986, 0.07282307]]])
     >>> qml.qchem.vscf_integrals(h_integrals=[h1], modals=[4,4,4])
-    (
-       [array([[[ 9.36124041e-03,  3.63798208e-19, -3.42019607e-19,
-         -3.83743044e-19],
-        [ 9.59982270e-19,  2.77803512e-02,  5.18290259e-18,
-         -4.82000376e-18],
-        [-2.73826508e-19,  4.88583546e-18,  4.63297357e-02,
-         -2.87022759e-18],
-        [-1.94549340e-19, -5.48544743e-18, -1.41379640e-18,
-          7.92203227e-02]]])], None
-    )
+    ([array([[[ 9.36124041e-03, -4.20128342e-19,  3.25260652e-19,
+            1.08420217e-18],
+            [-9.21571847e-19,  2.77803512e-02, -3.46944695e-18,
+            5.63785130e-18],
+            [-3.25260652e-19, -8.67361738e-19,  4.63297357e-02,
+            -1.04083409e-17],
+            [ 1.30104261e-18,  5.20417043e-18, -1.38777878e-17,
+            7.92203227e-02]]])],
+    None)
 
 
     .. details::

@@ -162,6 +162,14 @@ def _conditional_broastcast_expand(tape):
 
 
 @qml.transform
+def no_counts(tape):
+    """Throws an error on counts measurements."""
+    if any(isinstance(mp, qml.measurements.CountsMP) for mp in tape.measurements):
+        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+    return (tape,), null_postprocessing
+
+
+@qml.transform
 def adjoint_state_measurements(
     tape: QuantumScript, device_vjp=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -535,6 +543,8 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
+        if config.interface == qml.math.Interface.JAX_JIT:
+            transform_program.add_transform(no_counts)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config
@@ -581,11 +591,13 @@ class DefaultQubit(Device):
         """
         updated_values = {}
 
+        jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
         updated_values["convert_to_numpy"] = (
-            execution_config.interface.value not in {"jax", "jax-jit"}
+            execution_config.interface not in jax_interfaces
             or execution_config.gradient_method == "adjoint"
+            # need numpy to use caching, and need caching higher order derivatives
+            or execution_config.derivative_order > 1
         )
-
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")

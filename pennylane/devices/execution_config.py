@@ -26,7 +26,7 @@ class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
     mcm_method: Optional[str] = None
-    """Which mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
+    """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
@@ -34,7 +34,7 @@ class MCMConfig:
 
     postselect_mode: Optional[str] = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
-    discarded and only results for valid shots will be returned. In this case, less samples
+    discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
     will be of the same size as the original number of shots. If not specified, the device will
     decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally

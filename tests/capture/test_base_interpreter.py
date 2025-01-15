@@ -188,7 +188,7 @@ def test_default_measurement_handling():
 
 
 def test_measurement_handling():
-    """Test that the default measurment handling works."""
+    """Test that the default measurement handling works."""
 
     @SimplifyInterpreter()
     def f(w):
