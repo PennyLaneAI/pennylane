@@ -1159,13 +1159,11 @@ class MultiControlledX(ControlledOp):
     def _validate_control_values(control_values):
         if control_values is not None:
             if not (
-                isinstance(control_values, bool)
-                or isinstance(control_values, int)
+                isinstance(control_values, (bool, int))
                 or (
-                    (isinstance(control_values, list) or isinstance(control_values, tuple))
-                    and (
-                        all(isinstance(val, bool) for val in control_values)
-                        or all(isinstance(val, int) for val in control_values)
+                    (
+                        isinstance(control_values, (list, tuple))
+                        and all(isinstance(val, (bool, int)) for val in control_values)
                     )
                 )
             ):
