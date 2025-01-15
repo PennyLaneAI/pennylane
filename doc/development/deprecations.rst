@@ -90,7 +90,7 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* The input argument ``control_wires`` of ``MultiControlledX`` has been marked as deprecated long ago and now removed.
+* The input argument ``control_wires`` of ``MultiControlledX`` has been removed.
 
   - Deprecated in v0.22
   - Removed in v0.40
