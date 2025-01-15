@@ -212,7 +212,7 @@ class JacobianProductCalculator(abc.ABC):
 
 class NoGradients(JacobianProductCalculator):
     """A jacobian product calculator that raises errors when a vjp or jvp is requested."""
-    
+
     error_msg = "Derivatives cannot be calculated with diff_method=None"
 
     def compute_jacobian(self, tapes: QuantumScriptBatch) -> tuple:
