@@ -9,7 +9,7 @@
 * Finite shot and parameter-shift executions on `default.qubit` can now
   be natively jitted end-to-end, leading to performance improvements.
   Devices can now configure whether or not ML framework data is sent to them
-  via a `ExecutionConfig.convert_to_numpy` parameter.
+  via an `ExecutionConfig.convert_to_numpy` parameter.
   [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
 
 <h3>Breaking changes 💔</h3>
