@@ -152,14 +152,15 @@ class OutPoly(Operation):
     Args:
 
         polynomial_function (callable): The polynomial function to be applied. The number of arguments in the function
-                                        must be equal to the number of input registers.
-        input_registers (List[Union[Wires, Sequence[int]]]): List containing the wires (or the wire indices) used to store each variable of the polynomial.
+            must be equal to the number of input registers.
+        input_registers (List[Union[Wires, Sequence[int]]]): List containing the wires (or the wire indices) used to
+            store each variable of the polynomial.
         output_wires (Union[Wires, Sequence[int]]): The wires (or wire indices) used to store the output of the operation.
-        mod (int, optional): The integer for performing the modulo on the result of the polynomial operation. If not provided, it defaults
-                             to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
-        work_wires (Union[Wires, Sequence[int]], optional): The auxiliary wires to use for performing the polynomial operation. The
-                    work wires are not needed if :math:`mod=2^{\text{length(output_wires)}}`, otherwise two work wires
-                    should be provided. Default is empty set.
+        mod (int, optional): The integer for performing the modulo on the result of the polynomial operation. If not provided,
+            it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
+        work_wires (Union[Wires, Sequence[int]], optional): The auxiliary wires to use for performing the polynomial operation.
+            The work wires are not needed if :math:`mod=2^{\text{length(output_wires)}}`, otherwise two work wires should be
+            provided. Defaults to empty tuple.
 
     Raises:
         ValueError: If `mod` is not :math:`2^{\text{length(output_wires)}}` and insufficient number of work wires are provided.

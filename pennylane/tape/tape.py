@@ -294,7 +294,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -343,7 +342,6 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -419,7 +417,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> tape.num_params
     3
 
-    The existing circuit is overriden upon exiting a recording context.
+    The existing circuit is overridden upon exiting a recording context.
 
     Iterating over the quantum circuit can be done by iterating over the tape
     object:
@@ -448,7 +446,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     device via the :func:`~.pennylane.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-    >>> qml.execute([tape], dev, gradient_fn=None)
+    >>> qml.execute([tape], dev, diff_method=None)
     [array([0.77750694])]
 
     A new tape can be created by passing new parameters along with the indices
