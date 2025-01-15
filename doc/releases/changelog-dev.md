@@ -41,6 +41,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
+  [(#6830)](https://github.com/PennyLaneAI/pennylane/pull/6830)
+  
 * The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
   Instead, use the ``qml.workflow.get_best_diff_method`` function. 
   [(#6823)](https://github.com/PennyLaneAI/pennylane/pull/6823)
