@@ -168,7 +168,6 @@ def execute(
         warn(
             "The config argument has been deprecated and will be removed in v0.42. \
             If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-
             qml.PennyLaneDeprecationWarning,
         )
 
@@ -176,7 +175,6 @@ def execute(
         warn(
             "The inner_transform argument has been deprecated and will be removed in v0.42. \
             If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-
             qml.PennyLaneDeprecationWarning,
         )
 
