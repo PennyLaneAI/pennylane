@@ -10,6 +10,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
+  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+  [(#6823)](https://github.com/PennyLaneAI/pennylane/pull/6823)
+
 <h3>Documentation 📝</h3>
 
 * Updated documentation for vibrational Hamiltonians
