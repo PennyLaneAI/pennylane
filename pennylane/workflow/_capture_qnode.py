@@ -369,7 +369,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     Can now be used with execution pipeline workflow,
 
-    .. code-block: python
+    .. code-block:: python
 
         qml.capture.enable()
         dev = qml.device('lightning.qubit', wires=3)
