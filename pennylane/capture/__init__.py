@@ -182,13 +182,7 @@ expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redef
 
 
 class CaptureError(Exception):
-    """Exception raised when an error occurs during the capture process."""
-
-    def __init__(self, message):
-        super().__init__(message)
-
-    def __str__(self):
-        return self.args[0]
+    """Errors related to PennyLane's Program Capture execution pipeline."""
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name
