@@ -651,69 +651,6 @@ class TestMultiControlledX:
             with pytest.raises(ValueError, match=error_message):
                 _ = qml.MultiControlledX(wires=wires, control_values=control_values)
 
-    @pytest.mark.parametrize(
-        "control_wires,wires,control_values",
-        [
-            ([0], 1, [0]),
-            ([0, 1], 2, [0, 0]),
-            ([0, 1], 2, [1, 0]),
-            ([1, 0], 2, [1, 0]),
-            ([0, 1], 2, [1, 1]),
-            ([0, 2], 1, [1, 0]),
-            ([1, 2, 0], 3, [1, 0, 0]),
-            ([1, 0, 2, 4], 3, [1, 0, 0, 1]),
-            ([0, 1, 2, 5, 3, 6], 4, [1, 0, 0, 0, 0, 1]),
-        ],
-    )
-    def test_mixed_polarity_controls_old(self, control_wires, wires, control_values):
-        """Test if MultiControlledX properly applies mixed-polarity
-        control values with old version of the arguments."""
-
-        target_wires = Wires(wires)
-        dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
-
-        # Pick random starting state for the control and target qubits
-        control_state_weights = np.random.normal(size=2 ** (len(control_wires) + 1) - 2)
-        target_state_weights = np.random.normal(size=2 ** (len(target_wires) + 1) - 2)
-
-        @qml.qnode(dev)
-        def circuit_mpmct():
-            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
-            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
-
-            qml.MultiControlledX(
-                control_wires=control_wires, wires=target_wires, control_values=control_values
-            )
-            return qml.state()
-
-        # The result of applying the mixed-polarity gate should be the same as
-        # if we conjugated the specified control wires with Pauli X and applied the
-        # "regular" ControlledQubitUnitary in between.
-
-        x_locations = [x for x in range(len(control_values)) if control_values[x] == 0]
-
-        @qml.qnode(dev)
-        def circuit_pauli_x():
-            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
-            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
-
-            for wire in x_locations:
-                qml.PauliX(wires=control_wires[wire])
-
-            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wires)
-
-            for wire in x_locations:
-                qml.PauliX(wires=control_wires[wire])
-
-            return qml.state()
-
-        with pytest.warns(UserWarning, match="deprecated"):
-            mpmct_state = circuit_mpmct()
-
-        pauli_x_state = circuit_pauli_x()
-
-        assert qml.math.allclose(mpmct_state, pauli_x_state)
-
     def test_decomposition_not_enough_wires(self):
         """Test that the decomposition raises an error if the number of wires is lower than two"""
         with pytest.raises(ValueError, match="Wrong number of wires"):
