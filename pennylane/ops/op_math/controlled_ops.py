@@ -1155,6 +1155,24 @@ class MultiControlledX(ControlledOp):
             *wires, n_wires=len(wires), control_values=control_values, work_wires=work_wires
         )
 
+    @staticmethod
+    def _validate_control_values(control_values):
+        if control_values is not None:
+            if not (
+                isinstance(control_values, bool)
+                or isinstance(control_values, int)
+                or (
+                    (isinstance(control_values, list) or isinstance(control_values, tuple))
+                    and (
+                        all(isinstance(val, bool) for val in control_values)
+                        or all(isinstance(val, int) for val in control_values)
+                    )
+                )
+            ):
+                raise ValueError(
+                    f"control_values must be boolean or int. The given arg is {control_values}"
+                )
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -1174,21 +1192,7 @@ class MultiControlledX(ControlledOp):
                 UserWarning,
             )
 
-        # Validation for control_values
-        if control_values is not None:
-            if not (
-                isinstance(control_values, bool)
-                or isinstance(control_values, int)
-                or (
-                    isinstance(control_values, list)
-                    and all(isinstance(val, bool) for val in control_values)
-                )
-                or (
-                    isinstance(control_values, list)
-                    and all(isinstance(val, int) for val in control_values)
-                )
-            ):
-                raise ValueError("The argument control_values must be either boolean or int.")
+        self._validate_control_values(control_values)
 
         if len(wires) == 0:
             raise ValueError("Must specify the wires where the operation acts on")
