@@ -10,6 +10,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
+  [(#6830)](https://github.com/PennyLaneAI/pennylane/pull/6830)
+
 <h3>Documentation 📝</h3>
 
 * Updated documentation for vibrational Hamiltonians
