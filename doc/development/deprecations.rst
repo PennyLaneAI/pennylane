@@ -19,11 +19,6 @@ Pending deprecations
   - Deprecated in v0.40
   - Will be removed in v0.41
 
-* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
 * ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
   :meth:`~.Operator.terms` instead.
 
@@ -69,6 +64,11 @@ Completed deprecation cycles
 
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
   Instead, use the ``qml.workflow.construct_tape`` function.
+  
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
 
   - Deprecated in v0.40
   - Removed in v0.41

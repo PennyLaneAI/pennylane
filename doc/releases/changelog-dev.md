@@ -6,6 +6,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Finite shot and parameter-shift executions on `default.qubit` can now
+  be natively jitted end-to-end, leading to performance improvements.
+  Devices can now configure whether or not ML framework data is sent to them
+  via an `ExecutionConfig.convert_to_numpy` parameter.
+  [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
+
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
@@ -14,6 +20,9 @@
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
   Instead, use the ``qml.workflow.construct_tape`` function.
   [(#6825)](https://github.com/PennyLaneAI/pennylane/pull/6825)
+
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
+  [(#6830)](https://github.com/PennyLaneAI/pennylane/pull/6830)
   
 * The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
   Instead, use the ``qml.workflow.get_best_diff_method`` function. 
