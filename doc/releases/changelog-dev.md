@@ -7,7 +7,7 @@
 <h3>Improvements 🛠</h3>
 
 * The program capture execution pipeline supports control flow if program capture is enabled. 
-  [(#)]()
+  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
 
   ```python
   qml.capture.enable()
