@@ -10,6 +10,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+  Instead, use the ``qml.workflow.construct_tape`` function.
+  [(#6825)](https://github.com/PennyLaneAI/pennylane/pull/6825)
+
 <h3>Documentation 📝</h3>
 
 * Updated documentation for vibrational Hamiltonians
