@@ -198,9 +198,8 @@ class TestMapWiresCallables:
         assert isinstance(m_ops[1], Prod)
         qml.assert_equal(m_ops[0], mapped_op)
         qml.assert_equal(m_ops[1], mapped_op_2)
-        tape = qml.workflow.construct_tape(m_qnode)()
-        assert tape.observables[0].wires == Wires(wire_map[0])
-        assert tape.observables[1].wires == Wires(wire_map[1])
+        assert m_tape.observables[0].wires == Wires(wire_map[0])
+        assert m_tape.observables[1].wires == Wires(wire_map[1])
 
     @pytest.mark.jax
     def test_jitting_simplified_qfunc(self):
