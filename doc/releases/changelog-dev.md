@@ -8,6 +8,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The input argument `control_wires` of `MultiControlledX` has been marked as deprecated long ago and now removed.
+  [(#6832)](https://github.com/PennyLaneAI/pennylane/pull/6832)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
