@@ -1152,7 +1152,8 @@ class TestStochPulseGrad:
         assert qml.math.allclose(res, exp_grad)
         r = qml.execute([tape], dev, None)
         # Effective rotation parameters
-        assert qml.math.isclose(r, jnp.cos(2 * p[0]) * jnp.cos(2 * p[1]))
+        exp = jnp.cos(2 * p[0]) * jnp.cos(2 * p[1])
+        assert qml.math.isclose(r, exp)
         jax.clear_caches()
 
     @pytest.mark.slow
