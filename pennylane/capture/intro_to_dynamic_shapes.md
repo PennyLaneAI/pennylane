@@ -133,7 +133,7 @@ Erick has an open PR to fix this issue on the jax github.  Catalyst currently pa
 def h(x):
     return x[0]
 
-jax.make_jaxpr(h, abstracted_axes=("x", ) )(jax.numpy.array([0, 1,2]))
+jax.make_jaxpr(h, abstracted_axes=("x", ) )(jax.numpy.array([0, 1, 2]))
 ```
 
 
@@ -143,7 +143,7 @@ jax.make_jaxpr(h, abstracted_axes=("x", ) )(jax.numpy.array([0, 1,2]))
 
 
 
-Executing with `eval_jaxpr`:
+2. Executing with `eval_jaxpr`:
 
 No idea how to fix this right now.
 
@@ -231,7 +231,7 @@ inner jaxpr:  { lambda ; a:i32[] b:f32[a]. let c:f32[] = reduce_sum[axes=(0,)] b
 
 Note in this case that I am passing `n` when evaluating the jaxpr, even though `n` wasn't an argument that produced the jaxpr.
 
-`n` was an implicit argument contained inside of `x`, so `make_jaxpr` promotes it explicit input.  We can see this in the "inner jaxpr" printed out inside the function. Even though the function that produced it only had `x` as an input, the jaxpr has `a:i32[], b:f32[a]` as two arguments. When re-evaluating the jaxpr later, we need to make sure to pass the value for `n` as well.
+`n` was an implicit argument contained inside of `x`, so `make_jaxpr` promotes it to an explicit input. We can see this in the "inner jaxpr" printed out inside the function. Even though the function that produced it only had `x` as an input, the jaxpr has `a:i32[], b:f32[a]` as two arguments. When re-evaluating the jaxpr later, we need to make sure to pass the value for `n` as well.
 
 To handle generic functions, we must then be able to determine which axes are dynamic from the arguments, and extract the tracer values for all the abstract dimensions.
 
@@ -431,9 +431,6 @@ prim3.multiple_results = True
 ```
 
 
-```python
-
-```
 
 
 ```python
@@ -456,9 +453,6 @@ pe.custom_staging_rules[prim3] = custom_staging_rule
 ```
 
 
-```python
-
-```
 
 
 ```python

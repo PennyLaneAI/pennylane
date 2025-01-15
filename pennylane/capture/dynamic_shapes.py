@@ -25,7 +25,7 @@ except ImportError:  # pragma: no cover
 
 def _get_shape_for_array(x, abstract_shapes: list) -> dict:
     """
-    Populate the dictionay of abstract axes for a single tensorlike.
+    Populate the dictionary of abstract axes for a single tensorlike.
 
     This dictionary has dimensions as keys, and a string marker as the value.
 
@@ -60,7 +60,7 @@ def _get_shape_for_array(x, abstract_shapes: list) -> dict:
 
 
 def determine_abstracted_axes(args):
-    """Computed the abstracted axes and extracing the abstract shapes from the arguments.
+    """Computed the abstracted axes and extracting the abstract shapes from the arguments.
 
     Args:
         args (tuple): the arguments for a higher order primitive
