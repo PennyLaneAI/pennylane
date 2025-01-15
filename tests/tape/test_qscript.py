@@ -318,8 +318,8 @@ class TestUpdate:
         ):
             _ = tape.batch_size
 
-    def test_lazy_batch_size_and_output_dim(self):
-        """Test that batch_size and output_dim are computed lazily."""
+    def test_lazy_batch_size(self):
+        """Test that batch_size is computed lazily."""
         qs = QuantumScript([qml.RX([1.1, 2.2], 0)], [qml.expval(qml.PauliZ(0))])
         copied = qs.copy()
         assert qs._batch_size is _UNSET_BATCH_SIZE
