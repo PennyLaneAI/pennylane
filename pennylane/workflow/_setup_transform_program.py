@@ -117,7 +117,8 @@ def _setup_transform_program(
 
     # changing this set of conditions causes a bunch of tests to break.
     interface_data_supported = (
-        resolved_execution_config.interface is Interface.NUMPY
+        (not resolved_execution_config.convert_to_numpy)
+        or resolved_execution_config.interface is Interface.NUMPY
         or resolved_execution_config.gradient_method == "backprop"
         or (
             getattr(device, "short_name", "") == "default.mixed"

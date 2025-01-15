@@ -3185,7 +3185,8 @@ class TestSinglePrecision:
         jax.config.update("jax_enable_x64", False)
 
         try:
-            tol = 2e-2 if diff_method == "finite-diff" else 1e-6
+            # finite diff with float32 ...
+            tol = 5e-2 if diff_method == "finite-diff" else 1e-6
 
             @jax.jit
             @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
