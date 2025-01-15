@@ -31,21 +31,6 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 
-def test_tape_property_is_deprecated():
-    """Test that the tape property is deprecated."""
-    dev = qml.device("default.qubit")
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.PauliY(0)
-
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="The tape/qtape property is deprecated"
-    ):
-        _ = circuit.tape
-
-
 def dummyfunc():
     """dummy func."""
     return None
@@ -481,47 +466,6 @@ class TestPyTreeStructure:
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
-
-    def test_basic_tape_construction(self, tol):
-        """Test that a quantum tape is properly constructed"""
-        dev = qml.device("default.qubit", wires=2)
-
-        def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        qn = QNode(func, dev)
-
-        x = pnp.array(0.12, requires_grad=True)
-        y = pnp.array(0.54, requires_grad=True)
-
-        res = qn(x, y)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="tape/qtape property is deprecated"
-        ):
-            tape = qn.tape
-
-        assert isinstance(tape, QuantumScript)
-        assert len(tape.operations) == 3
-        assert len(tape.observables) == 1
-        assert tape.num_params == 2
-        assert tape.shots.total_shots is None
-
-        expected = qml.execute([tape], dev, None)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # when called, a new quantum tape is constructed
-        old_tape = tape
-        res2 = qn(x, y)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="tape/qtape property is deprecated"
-        ):
-            new_tape = qn.tape
-
-        assert np.allclose(res, res2, atol=tol, rtol=0)
-        assert new_tape is not old_tape
 
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
