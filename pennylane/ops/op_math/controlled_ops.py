@@ -1176,7 +1176,18 @@ class MultiControlledX(ControlledOp):
 
         # Validation for control_values
         if control_values is not None:
-            if not isinstance(0, Union[bool, List[bool], int, List[int]]):
+            if not (
+                isinstance(control_values, bool)
+                or isinstance(control_values, int)
+                or (
+                    isinstance(control_values, list)
+                    and all(isinstance(val, bool) for val in control_values)
+                )
+                or (
+                    isinstance(control_values, list)
+                    and all(isinstance(val, int) for val in control_values)
+                )
+            ):
                 raise ValueError("The argument control_values must be either boolean or int.")
 
         if len(wires) == 0:
