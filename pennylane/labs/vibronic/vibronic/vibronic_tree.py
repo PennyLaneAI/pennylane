@@ -31,8 +31,8 @@ class Node:  # pylint: disable=too-many-instance-attributes
         nonzero: Iterator[Tuple[int]],
         l_child: Node = None,
         r_child: Node = None,
-        l_shape: Tuple[int] = tuple(),
-        r_shape: Tuple[int] = tuple(),
+        l_shape: Tuple[int] = (),
+        r_shape: Tuple[int] = (),
         tensor: ndarray = None,
         scalar: float = None,
         value: float = None,
@@ -63,7 +63,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         if node_type == NodeType.TENSOR:
             self.shape = tensor.shape
         if node_type == NodeType.FLOAT:
-            self.shape = tuple()
+            self.shape = ()
 
     @classmethod
     def sum_node(cls, l_child: Node, r_child: Node) -> Node:
@@ -266,7 +266,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
             ret += ")"
 
         if self.node_type == NodeType.FLOAT:
-            ret += f"(FLOAT, {self.value}"
+            ret += f"(FLOAT, {self.value})"
 
         return ret
 
@@ -331,6 +331,6 @@ def _uniq_chain(iter1: Iterator, iter2: Iterator) -> Iterator:
 
 def _wrap_iter(iter:Iterator) -> Iterator:
     if iter == NodeType.FLOAT:
-        return tuple()
+        return ((),) 
 
     return iter
