@@ -14,13 +14,26 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
+from functools import lru_cache
 from string import ascii_lowercase
+
+import numpy as np
 
 has_jax = True
 try:
     import jax
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
+
+
+@lru_cache
+def _get_letter(ind: int) -> str:
+    if ind < 26:
+        return ascii_lowercase[ind]
+    # absolutely overkill, but it works
+    num_letters = int(np.ceil(np.log(ind) / np.log(26)))
+    letters = (ascii_lowercase[(ind // 26**i) % 26] for i in range(num_letters))
+    return "".join(letters)
 
 
 def _get_shape_for_array(x, abstract_shapes: list) -> dict:
@@ -47,13 +60,13 @@ def _get_shape_for_array(x, abstract_shapes: list) -> dict:
             # check if the shape tracer is one we have already encountered
             for previous_idx, previous_shape in enumerate(abstract_shapes):
                 if s is previous_shape:
-                    abstract_axes[i] = ascii_lowercase[previous_idx]
+                    abstract_axes[i] = _get_letter(previous_idx)
                     found = True
                     break
             # haven't encountered it, so add it to abstract_axes
             # and use new letter designation
             if not found:
-                abstract_axes[i] = ascii_lowercase[len(abstract_shapes)]
+                abstract_axes[i] = _get_letter(len(abstract_shapes))
                 abstract_shapes.append(s)
 
     return abstract_axes
