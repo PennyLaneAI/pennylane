@@ -37,7 +37,7 @@ markdown-it-py==3.0.0
 matplotlib==3.10.0
 mccabe==0.6.1
 mdurl==0.1.2
-ml_dtypes==0.5.1
+ml_dtypes==0.5.0
 mypy-extensions==1.0.0
 networkx==3.4.2
 nodeenv==1.9.1
@@ -56,7 +56,7 @@ prompt_toolkit==3.0.48
 py==1.11.0
 py-cpuinfo==9.0.0
 pydot==3.0.4
-Pygments==2.19.1
+Pygments==2.19.0
 pylint==2.7.4
 pyparsing==3.2.1
 pytest==8.3.4
@@ -74,7 +74,7 @@ qdldl==0.1.7.post5
 requests==2.32.3
 rich==13.9.4
 rustworkx==0.15.1
-scipy==1.15.1
+scipy==1.15.0
 scs==3.2.7.post2
 six==1.17.0
 smmap==5.0.2

@@ -38,7 +38,7 @@ isort==5.13.2
 jax==0.4.28
 jaxlib==0.4.28
 Jinja2==3.1.5
-keras==3.8.0
+keras==3.7.0
 kiwisolver==1.4.8
 lazy-object-proxy==1.10.0
 libclang==18.1.1
@@ -83,7 +83,7 @@ protobuf==4.25.5
 py==1.11.0
 py-cpuinfo==9.0.0
 pydot==3.0.4
-Pygments==2.19.1
+Pygments==2.19.0
 pylint==2.7.4
 pyparsing==3.2.1
 pytest==8.3.4
@@ -101,7 +101,7 @@ qdldl==0.1.7.post5
 requests==2.32.3
 rich==13.9.4
 rustworkx==0.15.1
-scipy==1.15.1
+scipy==1.15.0
 scs==3.2.7.post2
 six==1.17.0
 smmap==5.0.2
