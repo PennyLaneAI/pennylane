@@ -44,6 +44,7 @@ def execute(
     device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
     interface: Optional[Union[str, Interface]] = Interface.AUTO,
+    *,
     transform_program=None,
     grad_on_execution="best",
     gradient_kwargs=None,
@@ -166,15 +167,17 @@ def execute(
 
     if config != "unset":
         warn(
-            "The config argument has been deprecated and will be removed in v0.42. \
-            If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
+            "The config argument has been deprecated and will be removed in v0.42. "
+            "The provided config argument will be ignored. "
+            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
             qml.PennyLaneDeprecationWarning,
         )
 
     if inner_transform != "unset":
         warn(
-            "The inner_transform argument has been deprecated and will be removed in v0.42. \
-            If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
+            "The inner_transform argument has been deprecated and will be removed in v0.42. "
+            "The provided inner_transform argument will be ignored. "
+            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
             qml.PennyLaneDeprecationWarning,
         )
 
