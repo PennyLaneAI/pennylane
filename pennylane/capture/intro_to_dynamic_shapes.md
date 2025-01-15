@@ -86,6 +86,45 @@ jax.make_jaxpr(g, abstracted_axes=("x",))(jax.numpy.array([1,2,3]))
 
         { lambda ; a:i32[] b:i32[a]. let c:i32[] = reduce_sum[axes=(0,)] b in (c,) }
 
+### Understanding `abstracted_axes`
+
+Suppose we want to have two arrays with dynamic array dimensions `a` and `b`.
+`x` has two dynamic axes, with a shape `(a, b)`. This corresponds to an abstracted axes specification of `{0:"a", 1:"b"}`.
+`y` has one dynamic axis and one static axis, with a shape `(4, b)`.  This corresponds to an abstracted axes specification of
+`{1:"b"}`.  As the `0` dimension is static, it is not included in the dictionary.
+
+The abstracted axes for both `x` and `y` include the string `"b"`. This is because the second dimension of `x` and the second dimension
+of `y` should always match and should be represented by a single tracer variable.
+
+```
+a = 3
+b = 4
+x = jnp.zeros((a, b))
+y = jnp.zeros((4, b))
+x_axes = {0: "a", 1: "b"}
+y_axes = {1: "b"}
+args = (x, y)
+abstracted_axes = (x_axes, y_axes)
+jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+```
+```
+{ lambda ; a:i32[] b:i32[] c:f32[a,b] d:f32[4,b]. let  in (0,) }
+```
+
+The abstracted axes should have the same pytree structure as `args`, but with each tensor replaced by a dictionary indicating which axes
+are abstract. Suppose our first argument is instead a dictionary with tensorlike leaves.  Then we should provide an `abstracted_axes` with
+the same tree structure.
+
+```
+args = ({"x": x, "y": y},)
+abstracted_axes = ({"x": x_axes, "y": y_axes},)
+jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+```
+```
+{ lambda ; a:i32[] b:i32[] c:f32[a,b] d:f32[4,b]. let  in (0,) }
+```
+
+
 ## Limitations of dynamic shapes and numerical manipulations
 
 1. Slicing into a dynamically sized array.
@@ -152,7 +191,7 @@ jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
 
 
 
-## Extending support to PLXPR HOP's
+## Extending support to PLXPR Higher Order Primitives (HOP's)
 
 When capturing higher order primitives, we call `jax.make_jaxpr(f)` with arguments whose shapes are tracers.  
 

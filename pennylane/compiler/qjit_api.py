@@ -410,6 +410,7 @@ def _get_while_loop_qfunc_prim():
     while_loop_prim = create_non_interpreted_prim()("while_loop")
     while_loop_prim.multiple_results = True
 
+    # pylint: disable=too-many-arguments
     @while_loop_prim.def_impl
     def _(
         *args,
@@ -477,20 +478,17 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         jaxpr_body_fn = jax.make_jaxpr(flat_body_fn, abstracted_axes=abstracted_axes)(*init_state)
         jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn, abstracted_axes=abstracted_axes)(*init_state)
 
-        n_bf_c = len(jaxpr_body_fn.consts)
-        n_cf_c = len(jaxpr_cond_fn.consts)
-        end_abstract_shapes = -len(abstract_shapes) if abstract_shapes else None
-        body_consts = slice(0, n_bf_c)
-        cond_consts = slice(n_bf_c, n_bf_c + n_cf_c)
-        args_slice = slice(n_cf_c + n_bf_c, end_abstract_shapes)
-        abstract_shapes_slice = slice(end_abstract_shapes, None) if abstract_shapes else slice(0, 0)
+        body_consts = slice(0, len(jaxpr_body_fn.consts))
+        cond_consts = slice(body_consts.stop, body_consts.stop + len(jaxpr_cond_fn.consts))
+        abstract_shapes_slice = slice(cond_consts.stop, cond_consts.stop + len(abstract_shapes))
+        args_slice = slice(abstract_shapes_slice.stop, None)
 
         flat_args, _ = jax.tree_util.tree_flatten(init_state)
         results = while_loop_prim.bind(
             *jaxpr_body_fn.consts,
             *jaxpr_cond_fn.consts,
-            *flat_args,
             *abstract_shapes,
+            *flat_args,
             jaxpr_body_fn=jaxpr_body_fn.jaxpr,
             jaxpr_cond_fn=jaxpr_cond_fn.jaxpr,
             body_slice=body_consts,
@@ -715,12 +713,8 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
         jaxpr_body_fn = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(0, *init_state)
 
         consts_slice = slice(0, len(jaxpr_body_fn.consts))
-        args_slice = slice(
-            len(jaxpr_body_fn.consts), -len(abstract_shapes) if abstract_shapes else None
-        )
-        abstract_shapes_slice = (
-            slice(-len(abstract_shapes), None) if abstract_shapes else slice(0, 0)
-        )
+        abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
+        args_slice = slice(abstract_shapes_slice.stop, None)
 
         flat_args, _ = jax.tree_util.tree_flatten(init_state)
 
@@ -729,8 +723,8 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
             self.stop,
             self.step,
             *jaxpr_body_fn.consts,
-            *flat_args,
             *abstract_shapes,
+            *flat_args,
             jaxpr_body_fn=jaxpr_body_fn.jaxpr,
             consts_slice=consts_slice,
             args_slice=args_slice,

@@ -23,6 +23,42 @@ except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
+def _get_shape_for_array(x, abstract_shapes: list) -> dict:
+    """
+    Populate the dictionay of abstract axes for a single tensorlike.
+
+    This dictionary has dimensions as axes, and a string marker as the value.
+
+    Examples of shape -> abstract axes:
+
+    * `(3,4) -> {}`
+    * `(tracer1, ) -> {0: "a"}`
+    * `(tracer1, tracer1) -> {0: "a", 1: "a"}`
+    * `(3, tracer1) -> {1: "a"}`
+    * `(tracer1, 2, tracer2) -> {0: "a", 2: "b"}`
+
+    `abstract_shapes` contains all the tracers found in shapes.
+
+    """
+    abstract_axes = {}
+    for i, s in enumerate(getattr(x, "shape", ())):
+        if not isinstance(s, int):  #  if not int, then abstract
+            found = False
+            # check if the shape tracer is one we have already encountered
+            for previous_idx, previous_shape in enumerate(abstract_shapes):
+                if s is previous_shape:
+                    abstract_axes[i] = ascii_lowercase[previous_idx]
+                    found = True
+                    continue
+            # haven't encountered it, so add it to abstract_axes
+            # and use new letter designation
+            if not found:
+                abstract_axes[i] = ascii_lowercase[len(abstract_shapes)]
+                abstract_shapes.append(s)
+
+    return abstract_axes
+
+
 def determine_abstracted_axes(args):
     """Computed the abstracted axes and extracing the abstract shapes from the arguments.
 
@@ -37,37 +73,26 @@ def determine_abstracted_axes(args):
     To make jaxpr from arguments with dynamic shapes, the ``abstracted_axes`` keyword argument must be set.
     Then, when calling the jaxpr, variables for the dynamic shapes must be passed.
 
-    ```
-    def f(n):
-        x = jax.numpy.ones((n,))
-        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes((x,))
-        jaxpr = jax.make_jaxpr(jax.numpy.sum, abstracted_axes=abstracted_axes)(x)
-        return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
-    ```
+    .. code-block:: python
+
+        def f(n):
+            x = jax.numpy.ones((n,))
+            abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes((x,))
+            jaxpr = jax.make_jaxpr(jax.numpy.sum, abstracted_axes=abstracted_axes)(x)
+            return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
 
     """
     if not has_jax:  # pragma: no cover
         raise ImportError("jax must be installed to use determine_abstracted_axes")
-    if not jax.config.jax_dynamic_shapes:
+    if not jax.config.jax_dynamic_shapes:  # pylint: disable=no-member
         return None, tuple()
 
     args, structure = jax.tree_util.tree_flatten(args)
-    abstracted_axes = []
+
     abstract_shapes = []
-    for l in args:
-        l_shape = {}
-        for i, s in enumerate(getattr(l, "shape", ())):
-            if not isinstance(s, int):  # not abstract
-                found = False
-                for j, previous_shape in enumerate(abstract_shapes):
-                    if s is previous_shape:
-                        l_shape[i] = ascii_lowercase[j]
-                        found = True
-                        continue
-                if not found:
-                    l_shape[i] = ascii_lowercase[len(abstract_shapes)]
-                    abstract_shapes.append(s)
-        abstracted_axes.append(l_shape)
+    # note: this function in-place mutates abstract_shapes
+    # adding any additional abstract shapes found
+    abstracted_axes = [_get_shape_for_array(a, abstract_shapes) for a in args]
 
     if not abstract_shapes:
         return None, ()

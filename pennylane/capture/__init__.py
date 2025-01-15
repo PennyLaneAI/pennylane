@@ -33,6 +33,7 @@ quantum-classical programs.
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
+    ~determine_abstracted_axes
     ~expand_plxpr_transforms
     ~run_autograph
     ~make_plxpr
