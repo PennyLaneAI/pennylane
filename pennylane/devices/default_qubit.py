@@ -591,7 +591,11 @@ class DefaultQubit(Device):
         """
         updated_values = {}
 
-        jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
+        jax_interfaces = {
+            qml.math.Interface.JAX,
+            qml.math.Interface.JAX_JIT,
+            qml.math.Interface.TORCH,
+        }
         updated_values["convert_to_numpy"] = (
             execution_config.interface not in jax_interfaces
             or execution_config.gradient_method == "adjoint"

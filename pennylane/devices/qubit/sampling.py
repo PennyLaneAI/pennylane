@@ -504,7 +504,23 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
     if qml.math.get_interface(probs) == "jax" or prng_key is not None:
         return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, seed=rng)
 
+    if qml.math.get_interface(probs) == "torch":
+        return _sample_probs_torch(probs, shots, num_wires, rng)
+
     return _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng)
+
+
+def _sample_probs_torch(probs, shots, num_wires, rng):
+    """Sample from the give probabilities using torch."""
+    import torch
+
+    rng = np.random.default_rng(rng)
+    seed = int(rng.integers(1, high=1000000))
+    g = torch.Generator(probs.device).manual_seed(seed)
+    samples = torch.multinomial(probs, shots, replacement=True, generator=g)
+    powers_of_two = 1 << np.arange(num_wires)[::-1]
+    states_sampled_base_ten = qml.math.expand_dims(samples, axis=-1) & powers_of_two
+    return (states_sampled_base_ten > 0).to(int)
 
 
 def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):

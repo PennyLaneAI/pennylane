@@ -496,7 +496,7 @@ def finite_diff(
 
             if len(tape.measurements) > 1:
                 pre_grads = tuple(
-                    qml.math.convert_like(i * coeff_div, coeff_div) for i in pre_grads
+                    qml.math.convert_like(i, coeff_div) * coeff_div for i in pre_grads
                 )
             else:
                 pre_grads = qml.math.convert_like(pre_grads[0] * coeff_div, coeff_div)

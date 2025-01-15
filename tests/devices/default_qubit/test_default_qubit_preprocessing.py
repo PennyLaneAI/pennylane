@@ -141,8 +141,8 @@ class TestConfigSetup:
 
         assert dev.tracker.totals["execute_and_derivative_batches"] == 1
 
-    @pytest.mark.parametrize("interface", ("jax", "jax-jit"))
-    def test_not_convert_to_numpy_with_jax(self, interface):
+    @pytest.mark.parametrize("interface", ("jax", "jax-jit", "torch"))
+    def test_not_convert_to_numpy(self, interface):
         """Test that we will not convert to numpy when working with jax."""
 
         dev = qml.device("default.qubit")
@@ -159,7 +159,7 @@ class TestConfigSetup:
         processed = dev.setup_execution_config(config)
         assert processed.convert_to_numpy
 
-    @pytest.mark.parametrize("interface", ("autograd", "torch", "tf"))
+    @pytest.mark.parametrize("interface", ("autograd", "tf"))
     def test_convert_to_numpy_non_jax(self, interface):
         """Test that other interfaces are still converted to numpy."""
         config = qml.devices.ExecutionConfig(gradient_method="adjoint", interface=interface)
