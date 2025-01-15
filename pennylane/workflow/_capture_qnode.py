@@ -113,7 +113,7 @@ from numbers import Number
 from warnings import warn
 
 import pennylane as qml
-from pennylane.capture import FlatFn
+from pennylane.capture import CaptureError, FlatFn
 from pennylane.typing import TensorLike
 
 has_jax = True
@@ -367,6 +367,25 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         result:
         [Array([-0.96939224, -0.38207346], dtype=float32)]
 
+    Can now be used with execution pipeline workflow,
+
+    .. code-block: python
+
+        qml.capture.enable()
+        dev = qml.device('lightning.qubit', wires=3)
+
+        @qml.qnode(dev, autograph=True)
+        def circuit(x):
+            if x > 1.967:
+                qml.Hadamard(2)
+            else:
+                qml.Y(1)
+
+            return qml.state()
+
+    >>> circuit(3)
+    array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j,
+           0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j])
 
     """
 
@@ -383,8 +402,20 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
+    # pylint: disable=protected-access
+    qfunc = qml.capture.autograph.run_autograph(qfunc) if qnode._autograph else qfunc
     flat_fn = FlatFn(qfunc)
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
+    try:
+        qfunc_jaxpr = qml.capture.make_plxpr(flat_fn, autograph=False)(*args)
+    except (
+        jax.errors.TracerArrayConversionError,
+        jax.errors.TracerIntegerConversionError,
+        jax.errors.TracerBoolConversionError,
+    ) as exc:
+        raise CaptureError(
+            "Autograph must be used when Python control flow is dependent on a dynamic variable (a function input). "
+            "Please ensure autograph=True or use native control flow functions like for_loop, while_loop, etc."
+        ) from exc
 
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))

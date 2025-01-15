@@ -499,6 +499,7 @@ class QNode:
         interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         *,
+        autograph: bool = True,
         grad_on_execution: Literal[True, False, "best"] = "best",
         cache: Union[Cache, Literal["auto", True, False]] = "auto",
         cachesize: int = 10000,
@@ -548,6 +549,7 @@ class QNode:
             self._qfunc_uses_shots_arg = False
 
         # input arguments
+        self._autograph = autograph
         self.func = func
         self.device = device
         self._interface = (

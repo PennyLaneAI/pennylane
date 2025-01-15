@@ -181,6 +181,16 @@ PlxprInterpreter: type  # pylint: disable=redefined-outer-name
 expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
 
 
+class CaptureError(Exception):
+    """Exception raised when an error occurs during the capture process."""
+
+    def __init__(self, message):
+        super().__init__(message)
+
+    def __str__(self):
+        return self.args[0]
+
+
 # pylint: disable=import-outside-toplevel, redefined-outer-name
 def __getattr__(key):
     if key == "AbstractOperator":
