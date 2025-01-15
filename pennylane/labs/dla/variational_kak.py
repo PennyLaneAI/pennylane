@@ -82,7 +82,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     Instead of relying on having Pauli words, we use the adjoint representation
     for a more general evaluation of the cost function. The rest is the same.
 
-    .. seealso:: `Theory demo on KAK theorem <https://pennylane.ai/qml/demos/tutorial_kak_theorem>`__, `demo on KAK decomposition in practice <https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__,
+    .. seealso:: `The KAK decomposition  theory(demo) <https://pennylane.ai/qml/demos/tutorial_kak_decomposition>`__, `The KAK decomposition in practice (demo) <https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__.
 
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
