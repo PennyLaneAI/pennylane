@@ -610,7 +610,7 @@ class TestMultiControlledX:
         """Tests that control_values specified with a bit string is deprecated."""
         with pytest.raises(
             ValueError,
-            match="The argument control_values must be either boolean or int",
+            match="control_values must be boolean or int",
         ):
             _ = qml.MultiControlledX(wires=[0, 1, 2], control_values="01")
 
