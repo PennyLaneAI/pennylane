@@ -86,22 +86,22 @@ def test_no_gradients():
     jpc = NoGradients()
 
     with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calcualted with diff_method=None"
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
     ):
         jpc.compute_jacobian(())
 
     with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calcualted with diff_method=None"
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
     ):
         jpc.compute_vjp((), ())
 
     with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calcualted with diff_method=None"
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
     ):
         jpc.execute_and_compute_jvp((), ())
 
     with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calcualted with diff_method=None"
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
     ):
         jpc.execute_and_compute_jacobian(())
 
