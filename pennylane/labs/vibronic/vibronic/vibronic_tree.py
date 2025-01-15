@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Tuple
+from itertools import product
+from typing import Iterator, Tuple
 
 from numpy import allclose, average, isclose, ndarray, zeros
+
+#pylint: disable=protected-access
 
 
 class NodeType(Enum):
@@ -16,6 +19,7 @@ class NodeType(Enum):
     HADAMARD = 3
     SCALAR = 4
     TENSOR = 5
+    FLOAT = 6
 
 
 class Node:  # pylint: disable=too-many-instance-attributes
@@ -24,12 +28,14 @@ class Node:  # pylint: disable=too-many-instance-attributes
     def __init__(  # pylint: disable=too-many-arguments
         self,
         node_type: NodeType,
+        nonzero: Iterator[Tuple[int]],
         l_child: Node = None,
         r_child: Node = None,
-        l_shape: Tuple[int] = tuple(),
-        r_shape: Tuple[int] = tuple(),
+        l_shape: Tuple[int] = (),
+        r_shape: Tuple[int] = (),
         tensor: ndarray = None,
         scalar: float = None,
+        value: float = None,
         is_zero: bool = None,
     ) -> Node:
 
@@ -40,7 +46,11 @@ class Node:  # pylint: disable=too-many-instance-attributes
         self.r_shape = r_shape
         self.tensor = tensor
         self.scalar = scalar
+        self.value = value
         self.is_zero = is_zero
+
+        self._nonzero = nonzero
+        self.nonzero = _wrap_iter(nonzero)
 
         if node_type == NodeType.SUM:
             self.shape = l_child.shape
@@ -52,6 +62,8 @@ class Node:  # pylint: disable=too-many-instance-attributes
             self.shape = l_child.shape
         if node_type == NodeType.TENSOR:
             self.shape = tensor.shape
+        if node_type == NodeType.FLOAT:
+            self.shape = ()
 
     @classmethod
     def sum_node(cls, l_child: Node, r_child: Node) -> Node:
@@ -61,8 +73,16 @@ class Node:  # pylint: disable=too-many-instance-attributes
                 f"Cannot add Node of shape {l_child.shape} with Node of shape {r_child.shape}."
             )
 
+        if l_child._nonzero == NodeType.FLOAT:
+            nonzero = r_child._nonzero
+        elif r_child._nonzero == NodeType.FLOAT:
+            nonzero = l_child._nonzero
+        else:
+            nonzero = list(_uniq_chain(l_child._nonzero, r_child._nonzero))
+
         return cls(
             node_type=NodeType.SUM,
+            nonzero=nonzero,
             l_child=l_child,
             r_child=r_child,
             l_shape=l_child.shape,
@@ -77,8 +97,17 @@ class Node:  # pylint: disable=too-many-instance-attributes
         r_child: Node,
     ) -> Node:
         """Construct a OUTER node"""
+
+        if l_child._nonzero == NodeType.FLOAT:
+            nonzero = r_child._nonzero
+        elif r_child._nonzero == NodeType.FLOAT:
+            nonzero = l_child._nonzero
+        else:
+            nonzero = list(_flatten_product(l_child._nonzero, r_child._nonzero))
+
         return cls(
             node_type=NodeType.OUTER,
+            nonzero=nonzero,
             l_child=l_child,
             r_child=r_child,
             l_shape=l_child.shape,
@@ -93,27 +122,40 @@ class Node:  # pylint: disable=too-many-instance-attributes
         r_child: Node,
     ) -> Node:
         """Construct a HADAMARD node"""
-        if l_child.shape != r_child.shape:
-            raise ValueError(
-                f"Cannot take Hadamard product of Node of shape {l_child.shape} with Node of shape {r_child.shape}."
-            )
 
-        return cls(
-            node_type=NodeType.HADAMARD,
-            l_child=l_child,
-            r_child=r_child,
-            l_shape=l_child.shape,
-            r_shape=r_child.shape,
-            is_zero=l_child.is_zero or r_child.is_zero,
-        )
+        raise NotImplementedError
+
+        #if l_child.shape != r_child.shape:
+        #    raise ValueError(
+        #        f"Cannot take Hadamard product of Node of shape {l_child.shape} with Node of shape {r_child.shape}."
+        #    )
+
+        #return cls(
+        #    node_type=NodeType.HADAMARD,
+        #    l_child=l_child,
+        #    r_child=r_child,
+        #    l_shape=l_child.shape,
+        #    r_shape=r_child.shape,
+        #    is_zero=l_child.is_zero or r_child.is_zero,
+        #)
 
     @classmethod
     def tensor_node(cls, tensor: ndarray) -> Node:
         """Construct a TENSOR node"""
+
+        if len(tensor.shape):
+            return cls(
+                node_type=NodeType.TENSOR,
+                nonzero=list(zip(*tensor.nonzero())),
+                tensor=tensor,
+                is_zero=allclose(tensor, zeros(tensor.shape)),
+            )
+
         return cls(
-            node_type=NodeType.TENSOR,
-            tensor=tensor,
-            is_zero=allclose(tensor, zeros(tensor.shape)),
+            node_type=NodeType.FLOAT,
+            nonzero=NodeType.FLOAT if tensor else list(iter(())),
+            value=tensor,
+            is_zero=(tensor==0),
         )
 
     @classmethod
@@ -121,6 +163,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         """Construct a SCALAR node"""
         return cls(
             node_type=NodeType.SCALAR,
+            nonzero=child._nonzero if scalar else list(iter(())),
             l_child=child,
             l_shape=child.shape,
             scalar=scalar,
@@ -165,6 +208,9 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         if self.node_type == NodeType.TENSOR:
             return allclose(self.tensor, other.tensor)
+
+        if self.node_type == NodeType.FLOAT:
+            return self.value == other.value
 
         raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
 
@@ -219,6 +265,9 @@ class Node:  # pylint: disable=too-many-instance-attributes
             ret += self.r_child._str(level + 1)
             ret += ")"
 
+        if self.node_type == NodeType.FLOAT:
+            ret += f"(FLOAT, {self.value})"
+
         return ret
 
     def compute(self, index: Tuple[int]) -> float:
@@ -229,6 +278,9 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         if self.node_type == NodeType.TENSOR:
             return self.tensor[index]
+
+        if self.node_type == NodeType.FLOAT:
+            return self.value
 
         if self.node_type == NodeType.SCALAR:
             return self.scalar * self.l_child.compute(index)
@@ -246,53 +298,13 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
 
-    def compute_average(self) -> float:
-        """Compute the average of the term's coefficients"""
-
-        if self.node_type == NodeType.TENSOR:
-            return self.average
-
-        if self.node_type == NodeType.SCALAR:
-            return self.scalar * self.l_child.compute_average()
-
-        if self.node_type == NodeType.SUM:
-            return (self.l_child.compute_average() + self.r_child.compute_average()) / 2
-
-        if self.node_type == NodeType.OUTER:
-            return self.l_child.compute_average() * self.r_child.compute_average()
-
-        if self.node_type == NodeType.HADAMARD:
-            raise NotImplementedError("HADAMARD nodes not supported")
-
-        raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
-
-    def is_zero(self) -> bool:
-        """Returning true means the tree computes zero on every index, however there are false negatives"""
-
-        if self.node_type == NodeType.TENSOR:
-            return allclose(self.tensor, zeros(self.tensor.shape))
-
-        if self.node_type == NodeType.SCALAR:
-            return self.scalar == 0 or self.l_child.is_zero()
-
-        if self.node_type == NodeType.SUM:
-            return self.l_child.is_zero() and self.r_child.is_zero()
-
-        if self.node_type == NodeType.OUTER:
-            return self.l_child.is_zero() or self.r_child.is_zero()
-
-        if self.node_type == NodeType.HADAMARD:
-            return self.l_child.is_zero() or self.r_child.is_zero()
-
-        raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
-
     def _validate_index(self, index: Tuple[int]) -> bool:
         if len(index) != len(self.shape):
             return False
 
         for x, y in zip(index, self.shape):
-            if not isinstance(x, type(y)):
-                return False
+            #if not isinstance(x, type(y)):
+            #    return False
 
             if x < 0:
                 return False
@@ -301,3 +313,24 @@ class Node:  # pylint: disable=too-many-instance-attributes
                 return False
 
         return True
+
+def _flatten_product(iter1: Iterator[Tuple], iter2: Iterator[Tuple]) -> Iterator[Tuple]:
+    for (a, b) in product(iter1, iter2):
+        yield (*a, *b)
+
+def _uniq_chain(iter1: Iterator, iter2: Iterator) -> Iterator:
+    seen = set()
+
+    for a in iter1:
+        seen.add(a)
+        yield a
+
+    for b in iter2:
+        if b not in seen:
+            yield b
+
+def _wrap_iter(iter:Iterator) -> Iterator:
+    if iter == NodeType.FLOAT:
+        return ((),) 
+
+    return iter

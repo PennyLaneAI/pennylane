@@ -113,7 +113,7 @@ class VibronicMatrix:
             term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
             coeff_sum = sum(
                 abs(term.coeffs.compute(index))
-                for index in product(range(self.modes), repeat=len(term.ops))
+                for index in term.coeffs.nonzero
             )
             norm += coeff_sum * term_op_norm
 
