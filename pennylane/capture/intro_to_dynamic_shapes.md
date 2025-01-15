@@ -5,14 +5,11 @@
 import jax
 ```
 
-Dynamic shapes are experimental feature of jax with limited support and feature coverage.
-
+Dynamic shapes are an experimental feature of jax with limited support and feature coverage.
+Without the `"jax_dynamic_shapes"` feature, we can't create arrays whose  size depends on an abstract value.
 
 ```python
 jax.config.update("jax_dynamic_shapes", False)
-```
-
-Without this setup, we can't create arrays whose size depends on an abstract value.
 
 
 ```python
@@ -279,7 +276,7 @@ jax.make_jaxpr(f)(3)
 
 
 
-We can now take these learnings a make custom higher order primitive that supports dynamically shaped inputs:
+We can now take these learnings to make a custom higher order primitive that supports dynamically shaped inputs:
 
 
 ```python

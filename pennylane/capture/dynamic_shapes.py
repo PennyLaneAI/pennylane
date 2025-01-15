@@ -27,7 +27,7 @@ def _get_shape_for_array(x, abstract_shapes: list) -> dict:
     """
     Populate the dictionay of abstract axes for a single tensorlike.
 
-    This dictionary has dimensions as axes, and a string marker as the value.
+    This dictionary has dimensions as keys, and a string marker as the value.
 
     Examples of shape -> abstract axes:
 
