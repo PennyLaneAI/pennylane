@@ -49,7 +49,7 @@ def _get_shape_for_array(x, abstract_shapes: list) -> dict:
                 if s is previous_shape:
                     abstract_axes[i] = ascii_lowercase[previous_idx]
                     found = True
-                    continue
+                    break
             # haven't encountered it, so add it to abstract_axes
             # and use new letter designation
             if not found:
