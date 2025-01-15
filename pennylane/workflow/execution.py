@@ -18,17 +18,19 @@ differentiation support.
 
 import inspect
 import logging
-from collections.abc import Callable
 from dataclasses import replace
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 from warnings import warn
 
 from cachetools import Cache
 
 import pennylane as qml
 from pennylane.math import Interface
+from pennylane.math.interface_utils import InterfaceLike
 from pennylane.tape import QuantumScriptBatch
+from pennylane.transforms.core import TransformDispatcher, TransformProgram
 from pennylane.typing import ResultBatch
+from pennylane.workflow.resolution import SupportedDiffMethods
 
 from ._setup_transform_program import _setup_transform_program
 from .resolution import _resolve_execution_config, _resolve_interface
@@ -42,17 +44,17 @@ logger.addHandler(logging.NullHandler())
 def execute(
     tapes: QuantumScriptBatch,
     device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
-    diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
-    interface: Optional[Union[str, Interface]] = Interface.AUTO,
+    diff_method: Optional[Union[TransformDispatcher, SupportedDiffMethods]] = None,
+    interface: Optional[InterfaceLike] = Interface.AUTO,
     *,
-    transform_program=None,
-    grad_on_execution="best",
-    gradient_kwargs=None,
+    grad_on_execution: Literal[bool, "best"] = "best",
     cache: Union[None, bool, dict, Cache] = True,
-    cachesize=10000,
-    max_diff=1,
-    device_vjp=False,
-    mcm_config=None,
+    cachesize: int = 10000,
+    max_diff: int = 1,
+    device_vjp: Union[bool, None] = False,
+    gradient_kwargs: dict = None,
+    transform_program: TransformProgram = None,
+    mcm_config: "qml.devices.MCMConfig" = None,
     config="unset",
     inner_transform="unset",
     gradient_fn="unset",
@@ -76,8 +78,6 @@ def execute(
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
-        gradient_kwargs (dict): dictionary of keyword arguments to pass when
-            determining the gradients of tapes.
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
         cachesize (int): the size of the cache.
@@ -89,6 +89,8 @@ def execute(
             product if it is available.
         mcm_config (dict): Dictionary containing configuration options for handling
             mid-circuit measurements.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes.
         config="unset": **DEPRECATED**. This keyword argument has been deprecated and
             will be removed in v0.42.
         inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
