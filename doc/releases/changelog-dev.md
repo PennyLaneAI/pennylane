@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The coefficients of observables now have improved differentiability.
+  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
+
 <h3>Breaking changes 💔</h3>
 
 * The `output_dim` property of `qml.tape.QuantumScript` has been removed. Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the same information.
@@ -29,3 +32,4 @@ This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
 Diksha Dhawan,
+Christina Lee,
