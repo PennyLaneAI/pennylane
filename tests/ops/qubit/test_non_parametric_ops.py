@@ -632,33 +632,6 @@ class TestMultiControlledX:
             _ = qml.MultiControlledX(wires=wires, control_values=control_values)
 
     @pytest.mark.parametrize(
-        "control_wires, wires, control_values, error_message",
-        [
-            (
-                [0, 1],
-                [2],
-                [0, 1, 0],
-                "Length of control values must equal number of control wires.",
-            ),
-            ([0], None, [1], "Must specify the wires where the operation acts on"),
-            ([0, 1], 2, [0, 1, 1], "Length of control values must equal number of control wires."),
-            ([0, 1], [2, 3], [1, 0], "MultiControlledX accepts a single target wire."),
-        ],
-    )
-    def test_invalid_arguments_to_init_old(
-        self, control_wires, wires, control_values, error_message
-    ):
-        """Tests initializing a MultiControlledX with invalid arguments with the old interface"""
-        with pytest.warns(
-            UserWarning,
-            match="The control_wires keyword for MultiControlledX is deprecated",
-        ):
-            with pytest.raises(ValueError, match=error_message):
-                _ = qml.MultiControlledX(
-                    control_wires=control_wires, wires=wires, control_values=control_values
-                )
-
-    @pytest.mark.parametrize(
         "wires, control_values, error_message",
         [
             ([0, 1, 2], "ab", "String of control values can contain only '0' or '1'."),
