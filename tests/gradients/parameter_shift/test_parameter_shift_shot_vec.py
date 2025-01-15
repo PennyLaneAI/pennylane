@@ -2032,7 +2032,7 @@ class TestHamiltonianExpvalGradients:
         tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)
         tape.trainable_params = {2, 3, 4}
 
-        with pytest.raises(ValueError, match="for expectations, not var"):
+        with pytest.raises(ValueError, match="for expectations, not"):
             qml.gradients.param_shift(tape, broadcast=broadcast)
 
     def test_no_trainable_coeffs(self, mocker, broadcast, tol):
@@ -2078,7 +2078,6 @@ class TestHamiltonianExpvalGradients:
             b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
         ]
         for res in all_res:
-            assert isinstance(res, tuple)
             assert len(res) == 2
             assert res[0].shape == ()
             assert res[1].shape == ()
@@ -2086,17 +2085,16 @@ class TestHamiltonianExpvalGradients:
             assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
             assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_trainable_coeffs(self, mocker, broadcast, tol):
+    def test_trainable_coeffs(self, broadcast, tol):
         """Test trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-        coeffs = np.array([0.1, 0.2, 0.3])
+        coeffs = qml.numpy.array([0.1, 0.2, 0.3])
         H = qml.Hamiltonian(coeffs, obs)
 
-        weights = np.array([0.4, 0.5])
+        weights = qml.numpy.array([0.4, 0.5])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(weights[0], wires=0)
@@ -2116,19 +2114,16 @@ class TestHamiltonianExpvalGradients:
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         # two (broadcasted if broadcast=True) shifts per rotation gate
         # one circuit per trainable H term
-        assert len(tapes) == (2 + 2 if broadcast else 2 * 2 + 2)
-        assert [t.batch_size for t in tapes] == ([2, 2, None, None] if broadcast else [None] * 6)
-        spy.assert_called()
+        assert len(tapes) == (2 if broadcast else 2 * 2)
+        assert [t.batch_size for t in tapes] == ([2, 2] if broadcast else [None] * 4)
 
         res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
-        assert qml.math.shape(res) == (3, 4)
+        assert qml.math.shape(res) == (3, 2)
 
         expected = [
             -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
             b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-            np.cos(x),
-            -(np.sin(x) * np.sin(y)),
         ]
         for r in res:
             assert qml.math.allclose(r, expected, atol=shot_vec_tol)

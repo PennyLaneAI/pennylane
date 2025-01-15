@@ -6,10 +6,16 @@
 
 <h3>Improvements 🛠</h3>
 
+* The coefficients of observables now have improved differentiability.
+  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.execute` now has a collection of forced keyword arguments.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
+
+* Removed method `qsvt_legacy` along with its private helper `_qsp_to_qsvt`
+  [(#6827)](https://github.com/PennyLaneAI/pennylane/pull/6827)
 
 <h3>Deprecations 👋</h3>
 
@@ -27,4 +33,7 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-Diksha Dhawan
+
+Yushao Chen,
+Diksha Dhawan,
+Christina Lee,
