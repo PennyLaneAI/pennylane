@@ -44,6 +44,7 @@ def execute(
     device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
     interface: Optional[Union[str, Interface]] = Interface.AUTO,
+    *,
     transform_program=None,
     inner_transform=None,
     config=None,
