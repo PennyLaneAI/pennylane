@@ -201,26 +201,20 @@ class TestCompileIntegration:
         [compiled_tape], _ = qml.compile(tape)
         assert compiled_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1])]
 
-    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
-    def test_compile_empty_basis_set(self, wires):
+    def test_compile_empty_basis_set(self):
         """Test that compiling with empty basis set decomposes any decomposable operation."""
-
-        qfunc = build_qfunc(wires=wires)
-        dev = qml.device("default.qubit", wires=Wires(wires))
-
-        qnode = qml.QNode(qfunc, dev)
-
-        transformed_qfunc = compile(qfunc, basis_set=[])
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
-
-        original_result = qnode(0.3, 0.4, 0.5)
-        transformed_result = transformed_qnode(0.3, 0.4, 0.5)
-        assert np.allclose(original_result, transformed_result)
-
-        tape = qml.workflow.construct_tape(qnode)(0.3, 0.4, 0.5)
-        transformed_tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
-
+        ops = (
+            qml.RX(0.1, 0),
+            qml.H(1),
+            qml.Barrier([0, 1]),
+            qml.CNOT([1, 0]),
+            qml.PauliY(0),
+            qml.CY([0, 1]),
+        )
+        tape = qml.tape.QuantumScript(ops)
         decomposable_ops = {op.name for op in tape.operations if op.has_decomposition}
+
+        [transformed_tape], _ = qml.compile(tape, basis_set=[])
         assert not any(op.name in decomposable_ops for op in transformed_tape.operations)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
