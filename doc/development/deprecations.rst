@@ -92,7 +92,7 @@ Completed deprecation cycles
 
 * The input argument ``control_wires`` of ``MultiControlledX`` has been marked as deprecated long ago and now removed.
 
-  - Deprecated in v0.36
+  - Deprecated in v0.22
   - Removed in v0.40
 
 * The ``qml.qinfo`` module has been removed. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
