@@ -6,9 +6,9 @@ from enum import Enum
 from itertools import product
 from typing import Iterator, Tuple
 
-from numpy import allclose, average, isclose, ndarray, zeros
+from numpy import allclose, isclose, ndarray, zeros
 
-#pylint: disable=protected-access
+# pylint: disable=protected-access
 
 
 class NodeType(Enum):
@@ -49,8 +49,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         self.value = value
         self.is_zero = is_zero
 
-        self._nonzero = nonzero
-        self.nonzero = _wrap_iter(nonzero)
+        self.nonzero = nonzero
 
         if node_type == NodeType.SUM:
             self.shape = l_child.shape
@@ -73,16 +72,9 @@ class Node:  # pylint: disable=too-many-instance-attributes
                 f"Cannot add Node of shape {l_child.shape} with Node of shape {r_child.shape}."
             )
 
-        if l_child._nonzero == NodeType.FLOAT:
-            nonzero = r_child._nonzero
-        elif r_child._nonzero == NodeType.FLOAT:
-            nonzero = l_child._nonzero
-        else:
-            nonzero = list(_uniq_chain(l_child._nonzero, r_child._nonzero))
-
         return cls(
             node_type=NodeType.SUM,
-            nonzero=nonzero,
+            nonzero=list(_uniq_chain(l_child.nonzero, r_child.nonzero)),
             l_child=l_child,
             r_child=r_child,
             l_shape=l_child.shape,
@@ -98,16 +90,9 @@ class Node:  # pylint: disable=too-many-instance-attributes
     ) -> Node:
         """Construct a OUTER node"""
 
-        if l_child._nonzero == NodeType.FLOAT:
-            nonzero = r_child._nonzero
-        elif r_child._nonzero == NodeType.FLOAT:
-            nonzero = l_child._nonzero
-        else:
-            nonzero = list(_flatten_product(l_child._nonzero, r_child._nonzero))
-
         return cls(
             node_type=NodeType.OUTER,
-            nonzero=nonzero,
+            nonzero=list(_flatten_product(l_child.nonzero, r_child.nonzero)),
             l_child=l_child,
             r_child=r_child,
             l_shape=l_child.shape,
@@ -125,19 +110,19 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         raise NotImplementedError
 
-        #if l_child.shape != r_child.shape:
+        # if l_child.shape != r_child.shape:
         #    raise ValueError(
         #        f"Cannot take Hadamard product of Node of shape {l_child.shape} with Node of shape {r_child.shape}."
         #    )
 
-        #return cls(
+        # return cls(
         #    node_type=NodeType.HADAMARD,
         #    l_child=l_child,
         #    r_child=r_child,
         #    l_shape=l_child.shape,
         #    r_shape=r_child.shape,
         #    is_zero=l_child.is_zero or r_child.is_zero,
-        #)
+        # )
 
     @classmethod
     def tensor_node(cls, tensor: ndarray) -> Node:
@@ -153,9 +138,9 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         return cls(
             node_type=NodeType.FLOAT,
-            nonzero=NodeType.FLOAT if tensor else list(iter(())),
+            nonzero=((),) if tensor else list(iter(())),
             value=tensor,
-            is_zero=(tensor==0),
+            is_zero=(tensor == 0),
         )
 
     @classmethod
@@ -163,7 +148,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         """Construct a SCALAR node"""
         return cls(
             node_type=NodeType.SCALAR,
-            nonzero=child._nonzero if scalar else list(iter(())),
+            nonzero=child.nonzero if scalar else list(iter(())),
             l_child=child,
             l_shape=child.shape,
             scalar=scalar,
@@ -303,7 +288,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
             return False
 
         for x, y in zip(index, self.shape):
-            #if not isinstance(x, type(y)):
+            # if not isinstance(x, type(y)):
             #    return False
 
             if x < 0:
@@ -314,9 +299,11 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         return True
 
+
 def _flatten_product(iter1: Iterator[Tuple], iter2: Iterator[Tuple]) -> Iterator[Tuple]:
-    for (a, b) in product(iter1, iter2):
+    for a, b in product(iter1, iter2):
         yield (*a, *b)
+
 
 def _uniq_chain(iter1: Iterator, iter2: Iterator) -> Iterator:
     seen = set()
@@ -328,9 +315,3 @@ def _uniq_chain(iter1: Iterator, iter2: Iterator) -> Iterator:
     for b in iter2:
         if b not in seen:
             yield b
-
-def _wrap_iter(iter:Iterator) -> Iterator:
-    if iter == NodeType.FLOAT:
-        return ((),) 
-
-    return iter
