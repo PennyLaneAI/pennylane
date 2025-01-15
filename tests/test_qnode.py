@@ -318,7 +318,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.interface == "numpy"
+        assert circuit.interface == "auto"
         assert circuit.device is dev
 
         # QNode can still be executed
@@ -1062,6 +1062,31 @@ class TestIntegration:
 
         with pytest.raises(qml.QuantumFunctionError, match="device_vjp=True is not supported"):
             circuit()
+
+    @pytest.mark.parametrize(
+        "interface",
+        (
+            pytest.param("autograd", marks=pytest.mark.autograd),
+            pytest.param("jax", marks=pytest.mark.jax),
+            pytest.param("torch", marks=pytest.mark.torch),
+            pytest.param("tensorflow", marks=pytest.mark.tf),
+        ),
+    )
+    def test_error_if_differentiate_diff_method_None(self, interface):
+        """Test that an error is raised if differentiating a qnode with diff_method=None"""
+
+        @qml.qnode(qml.device("reference.qubit", wires=1), diff_method=None)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        x = qml.math.asarray(0.5, like=interface, requires_grad=True)
+
+        res = circuit(x)  # execution works fine
+        assert qml.math.allclose(res, np.cos(0.5))
+
+        with pytest.raises(qml.QuantumFunctionError, match="with diff_method=None"):
+            qml.math.grad(circuit)(x)
 
 
 class TestShots:
