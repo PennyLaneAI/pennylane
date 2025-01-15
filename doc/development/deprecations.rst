@@ -9,8 +9,8 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` has been deprecated.
-  Instead, use ``qml.run`` with these arguments for a more detailed control over the execution.
+* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
+  If more detailed control over the execution is required, use ``qml.run`` with these arguments instead.
 
   - Deprecated in v0.41
   - Will be removed in v0.42

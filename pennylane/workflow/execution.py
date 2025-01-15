@@ -167,14 +167,16 @@ def execute(
     if config != "unset":
         warn(
             "The config argument has been deprecated and will be removed in v0.42. \
-            Instead, use qml.run with these arguments for a more detailed control over the execution.",
+            If more detailed control over the execution is required, use ``qml.run`` with these arguments instead.",
+
             qml.PennyLaneDeprecationWarning,
         )
 
     if inner_transform != "unset":
         warn(
             "The inner_transform argument has been deprecated and will be removed in v0.42. \
-            Instead, use qml.run with these arguments for a more detailed control over the execution.",
+            If more detailed control over the execution is required, use ``qml.run`` with these arguments instead.",
+
             qml.PennyLaneDeprecationWarning,
         )
 
