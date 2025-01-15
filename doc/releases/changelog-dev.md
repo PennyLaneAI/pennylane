@@ -11,6 +11,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
+  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+  [(#6823)](https://github.com/PennyLaneAI/pennylane/pull/6823)
+
 * The `output_dim` property of `qml.tape.QuantumScript` has been removed. Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the same information.
   [(#6829)](https://github.com/PennyLaneAI/pennylane/pull/6829)
 
