@@ -723,6 +723,7 @@ class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
     def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""
