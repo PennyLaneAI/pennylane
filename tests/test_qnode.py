@@ -51,20 +51,6 @@ def dummyfunc():
     return None
 
 
-def test_get_best_method_is_deprecated():
-    """Test that is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"):
-        dev = qml.device("default.qubit", wires=2)
-        _ = QNode.get_best_method(dev, "jax")
-
-
-def test_best_method_str_is_deprecated():
-    """Test that is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"):
-        dev = qml.device("default.qubit", wires=2)
-        _ = QNode.best_method_str(dev, "jax")
-
-
 # pylint: disable=unused-argument
 class CustomDevice(qml.devices.Device):
     """A null device that just returns 0."""
@@ -206,65 +192,6 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_best_method_is_device(self):
-        """Test that the method for determining the best diff method
-        for a device that is a child of qml.devices.Device and has a
-        compute_derivatives method defined returns 'device'"""
-
-        dev = CustomDeviceWithDiffMethod()
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res = QNode.get_best_method(dev, "jax")
-            assert res == ("device", {}, dev)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res = QNode.get_best_method(dev, None)
-            assert res == ("device", {}, dev)
-
-    # pylint: disable=protected-access
-    @pytest.mark.parametrize("interface", ["jax", "tensorflow", "torch", "autograd"])
-    def test_best_method_is_backprop(self, interface):
-        """Test that the method for determining the best diff method
-        for the default.qubit device and a valid interface returns backpropagation"""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res = QNode.get_best_method(dev, interface)
-            assert res == ("backprop", {}, dev)
-
-    # pylint: disable=protected-access
-    def test_best_method_is_param_shift(self):
-        """Test that the method for determining the best diff method
-        for a given device and interface returns the parameter shift rule if
-        'device' and 'backprop' don't work"""
-
-        # null device has no info - fall back on parameter-shift
-        dev = CustomDevice()
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res = QNode.get_best_method(dev, None)
-            assert res == (qml.gradients.param_shift, {}, dev)
-
-        # no interface - fall back on parameter-shift
-        dev2 = qml.device("default.qubit", wires=1)
-        tape = qml.tape.QuantumScript([], [], shots=50)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res2 = QNode.get_best_method(dev2, None, tape=tape)
-            assert res2 == (qml.gradients.param_shift, {}, dev2)
-
     # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
         """Test that a user-supplied diff method correctly returns the right
@@ -307,7 +234,6 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
-        # check that get_best_method was only ever called once
 
     @pytest.mark.autograd
     def test_gradient_transform(self, mocker):
@@ -687,12 +613,13 @@ class TestTapeConstruction:
         assert tape.measurements == contents[3:]
 
     @pytest.mark.jax
-    def test_jit_counts_raises_error(self):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "reference.qubit"))
+    def test_jit_counts_raises_error(self, dev_name):
         """Test that returning counts in a quantum function with trainable parameters while
         jitting raises an error."""
         import jax
 
-        dev = qml.device("default.qubit", wires=2, shots=5)
+        dev = qml.device(dev_name, wires=2, shots=5)
 
         def circuit1(param):
             qml.Hadamard(0)
@@ -706,7 +633,7 @@ class TestTapeConstruction:
         with pytest.raises(
             NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
         ):
-            jitted_qnode1(0.123)
+            _ = jitted_qnode1(0.123)
 
         # Test with qnode decorator syntax
         @qml.qnode(dev)
