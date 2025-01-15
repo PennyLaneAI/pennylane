@@ -11,6 +11,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `MultiControlledX` no longer accepts strings as control values.
+  [(#6835)](https://github.com/PennyLaneAI/pennylane/pull/6835)
+
 * Removed method `qsvt_legacy` along with its private helper `_qsp_to_qsvt`
   [(#6827)](https://github.com/PennyLaneAI/pennylane/pull/6827)
 
