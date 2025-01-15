@@ -69,7 +69,7 @@ class TestLogging:
                 return qml.expval(qml.PauliZ(0))
 
             circuit(params)
-        assert len(caplog.records) == 10
+        assert len(caplog.records) == 11
         log_records_expected = [
             (
                 "pennylane.workflow.qnode",
@@ -83,7 +83,7 @@ class TestLogging:
                 "pennylane.workflow.execution",
                 [
                     "device=<default.qubit device (wires=2)",
-                    "diff_method=None, interface=numpy",
+                    "diff_method=None, interface=Interface.AUTOGRAD",
                 ],
             ),
             (
@@ -169,7 +169,7 @@ class TestLogging:
 
             circuit(params)
 
-        assert len(caplog.records) == 8
+        assert len(caplog.records) == 9
 
         log_records_expected = [
             (
@@ -188,7 +188,7 @@ class TestLogging:
                 "pennylane.workflow.execution",
                 [
                     "device=<default.qutrit.mixed device (wires=2)",
-                    "diff_method=None, interface=None",
+                    "diff_method=None, interface=Interface.AUTOGRAD",
                 ],
             ),
         ]

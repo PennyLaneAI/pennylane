@@ -15,6 +15,9 @@
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
+* An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
+  [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
+
 <h3>Breaking changes 💔</h3>
 
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 

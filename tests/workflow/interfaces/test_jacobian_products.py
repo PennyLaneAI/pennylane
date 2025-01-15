@@ -26,6 +26,7 @@ from pennylane.workflow.jacobian_products import (
     DeviceDerivatives,
     DeviceJacobianProducts,
     JacobianProductCalculator,
+    NoGradients,
     TransformJacobianProducts,
 )
 
@@ -77,6 +78,32 @@ def _accepts_finite_shots(jpc):
 
 def _tol_for_shots(shots):
     return 0.05 if shots else 1e-6
+
+
+def test_no_gradients():
+    """Test that errors are raised when derivatives are requested from `NoGradients`."""
+
+    jpc = NoGradients()
+
+    with pytest.raises(
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
+    ):
+        jpc.compute_jacobian(())
+
+    with pytest.raises(
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
+    ):
+        jpc.compute_vjp((), ())
+
+    with pytest.raises(
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
+    ):
+        jpc.execute_and_compute_jvp((), ())
+
+    with pytest.raises(
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
+    ):
+        jpc.execute_and_compute_jacobian(())
 
 
 # pylint: disable=too-few-public-methods
