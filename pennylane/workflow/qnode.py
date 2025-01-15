@@ -20,7 +20,7 @@ import inspect
 import logging
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any, Literal, Optional, Union, get_args
+from typing import Literal, Optional, Union, get_args
 
 from cachetools import Cache
 
@@ -694,128 +694,6 @@ class QNode:
             f"Differentiation method {diff_method} not recognized. Allowed "
             f"options are {tuple(get_args(SupportedDiffMethods))}."
         )
-
-    # pylint: disable=unused-argument
-    @staticmethod
-    @debug_logger
-    def get_best_method(
-        device: SupportedDeviceAPIs,
-        interface: SupportedInterfaceUserInput,
-        tape: Optional["qml.tape.QuantumTape"] = None,
-    ) -> tuple[
-        Union[TransformDispatcher, Literal["device", "backprop", "parameter-shift", "finite-diff"]],
-        dict[str, Any],
-        SupportedDeviceAPIs,
-    ]:
-        """
-        .. warning::
-
-            This method is deprecated in v0.40 and will be removed in v0.41.
-            Instead, use the :func:`qml.workflow.get_best_diff_method <.workflow.get_best_diff_method>` function.
-
-        Returns the 'best' differentiation method
-        for a particular device and interface combination.
-
-        This method attempts to determine support for differentiation
-        methods using the following order:
-
-        * ``"device"``
-        * ``"backprop"``
-        * ``"parameter-shift"``
-        * ``"finite-diff"``
-
-        The first differentiation method that is supported (going from
-        top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradients
-        are not included here.
-
-        Args:
-            device (.devices.Device): PennyLane device
-            interface (str): name of the requested interface
-            shots
-
-        Returns:
-            tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
-            ``gradient_kwargs``, and the device to use when calling the execute function.
-        """
-
-        warnings.warn(
-            "QNode.get_best_method is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.get_best_diff_method function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-        if not isinstance(device, qml.devices.Device):
-            device = qml.devices.LegacyDeviceFacade(device)
-
-        config = _make_execution_config(None, "best")
-
-        if device.supports_derivatives(config, circuit=tape):
-            new_config = device.setup_execution_config(config)
-            return new_config.gradient_method, {}, device
-
-        if tape and any(isinstance(o, qml.operation.CV) for o in tape):
-            return qml.gradients.param_shift_cv, {"dev": device}, device
-
-        return qml.gradients.param_shift, {}, device
-
-    @staticmethod
-    @debug_logger
-    def best_method_str(device: SupportedDeviceAPIs, interface: SupportedInterfaceUserInput) -> str:
-        """
-        .. warning::
-
-            This method is deprecated in v0.40 and will be removed in v0.41.
-            Instead, use the :func:`qml.workflow.get_best_diff_method <.workflow.get_best_diff_method>` function.
-
-
-        Similar to :meth:`~.get_best_method`, except return the
-        'best' differentiation method in human-readable format.
-
-        This method attempts to determine support for differentiation
-        methods using the following order:
-
-        * ``"device"``
-        * ``"backprop"``
-        * ``"parameter-shift"``
-        * ``"finite-diff"``
-
-        The first differentiation method that is supported (going from
-        top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradient
-        are not included here.
-
-        This method is intended only for debugging purposes. Otherwise,
-        :meth:`~.get_best_method` should be used instead.
-
-        Args:
-            device (.devices.Device): PennyLane device
-            interface (str): name of the requested interface
-
-        Returns:
-            str: The gradient function to use in human-readable format.
-        """
-
-        warnings.warn(
-            "QNode.best_method_str is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.get_best_diff_method function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-        if not isinstance(device, qml.devices.Device):
-            device = qml.devices.LegacyDeviceFacade(device)
-
-        warnings.filterwarnings(
-            "ignore", "QNode.get_best_method is deprecated", qml.PennyLaneDeprecationWarning
-        )
-        transform = QNode.get_best_method(device, interface)[0]
-
-        if transform is qml.gradients.finite_diff:
-            return "finite-diff"
-
-        if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
-            return "parameter-shift"
-
-        # only other options at this point are "backprop" or "device"
-        return transform
 
     @debug_logger
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
