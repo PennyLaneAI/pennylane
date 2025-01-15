@@ -54,7 +54,7 @@ def compile(
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, a default of
             ``pennylane.ops.__all__`` will be used. This decomposes templates and
-            operator arithmetic. If an empty collection (e.g. ``[]``, ``()``, or
+            operator arithmetic. If an empty basis set (e.g. ``[]``, ``()``, or
             ``{}``) is provided as the basis set, all operations that can be
             decomposed will be decomposed.
         num_passes (int): The number of times to apply the set of transforms in
