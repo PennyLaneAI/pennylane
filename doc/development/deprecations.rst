@@ -9,12 +9,6 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``qsvt_legacy`` function has been deprecated.
-  Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been deprecated. 
   Instead, use the ``qml.workflow.construct_tape`` function.
 
@@ -27,11 +21,6 @@ Pending deprecations
   - Will be removed in v0.41
 
 * The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` is deprecated. 
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``output_dim`` property of ``qml.tape.QuantumScript`` has been deprecated. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
 
   - Deprecated in v0.40
   - Will be removed in v0.41
@@ -86,6 +75,17 @@ Completed deprecation cycles
 
 * The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
   Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+  
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``output_dim`` property of ``qml.tape.QuantumScript`` has been removed. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``qml.qsvt_legacy`` function has been removed.
+  Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
 
   - Deprecated in v0.40
   - Removed in v0.41
