@@ -19,7 +19,7 @@ differentiation support.
 import inspect
 import logging
 from dataclasses import replace
-from typing import Literal, Optional, Union
+from typing import Callable, Literal, Optional, Union
 from warnings import warn
 
 from cachetools import Cache
@@ -44,7 +44,7 @@ logger.addHandler(logging.NullHandler())
 def execute(
     tapes: QuantumScriptBatch,
     device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
-    diff_method: Optional[Union[TransformDispatcher, SupportedDiffMethods]] = None,
+    diff_method: Optional[Union[Callable, SupportedDiffMethods, TransformDispatcher]] = None,
     interface: Optional[InterfaceLike] = Interface.AUTO,
     *,
     grad_on_execution: Literal[bool, "best"] = "best",
