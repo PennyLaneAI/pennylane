@@ -25,11 +25,6 @@ Pending deprecations
   - Deprecated in v0.40
   - Will be removed in v0.41
 
-* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
 * ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
   :meth:`~.Operator.terms` instead.
 
