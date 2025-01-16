@@ -509,6 +509,7 @@ class QNode:
     ):
         self._init_args = locals()
         del self._init_args["self"]
+        del self._init_args["kwargs"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -542,7 +543,8 @@ class QNode:
                     f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please specify all arguments in the gradient_kwargs argument.",
                     qml.PennyLaneDeprecationWarning,
                 )
-            gradient_kwargs = kwargs
+            gradient_kwargs |= kwargs
+
         _validate_gradient_kwargs(gradient_kwargs)
 
         if "shots" in inspect.signature(func).parameters:
@@ -684,16 +686,16 @@ class QNode:
         tensor(0.5403, dtype=torch.float64)
         """
         if not kwargs:
-            valid_params = (
-                set(self._init_args.copy().pop("gradient_kwargs"))
-                | qml.gradients.SUPPORTED_GRADIENT_KWARGS
-            )
+            valid_params = set(self._init_args.copy()) | qml.gradients.SUPPORTED_GRADIENT_KWARGS
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
+
         original_init_args = self._init_args.copy()
-        gradient_kwargs = original_init_args.pop("gradient_kwargs")
-        original_init_args.update(gradient_kwargs)
+        new_gradient_kwargs = kwargs.pop("gradient_kwargs", {})
+        old_gradient_kwargs = original_init_args.get("gradient_kwargs", {}).copy()
+        old_gradient_kwargs.update(new_gradient_kwargs)
+        kwargs["gradient_kwargs"] = old_gradient_kwargs
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
         # pylint: disable=protected-access

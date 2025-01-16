@@ -145,24 +145,21 @@ class TestUpdate:
         """Test that gradient kwargs are updated correctly"""
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, atol=1)
+        @qml.qnode(dev, gradient_kwargs={"atol": 1})
         def circuit(x):
             qml.RZ(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RY(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        assert len(circuit.gradient_kwargs) == 1
-        assert list(circuit.gradient_kwargs.keys()) == ["atol"]
+        assert set(circuit.gradient_kwargs.keys()) == {"atol"}
 
-        new_atol_circuit = circuit.update(atol=2)
-        assert len(new_atol_circuit.gradient_kwargs) == 1
-        assert list(new_atol_circuit.gradient_kwargs.keys()) == ["atol"]
+        new_atol_circuit = circuit.update(gradient_kwargs={"atol": 2})
+        assert set(new_atol_circuit.gradient_kwargs.keys()) == {"atol"}
         assert new_atol_circuit.gradient_kwargs["atol"] == 2
 
-        new_kwarg_circuit = circuit.update(h=1)
-        assert len(new_kwarg_circuit.gradient_kwargs) == 2
-        assert list(new_kwarg_circuit.gradient_kwargs.keys()) == ["atol", "h"]
+        new_kwarg_circuit = circuit.update(gradient_kwargs={"h": 1})
+        assert set(new_kwarg_circuit.gradient_kwargs.keys()) == {"atol", "h"}
         assert new_kwarg_circuit.gradient_kwargs["atol"] == 1
         assert new_kwarg_circuit.gradient_kwargs["h"] == 1
 
@@ -170,7 +167,7 @@ class TestUpdate:
             UserWarning,
             match="Received gradient_kwarg blah, which is not included in the list of standard qnode gradient kwargs.",
         ):
-            circuit.update(blah=1)
+            circuit.update(gradient_kwargs={"blah": 1})
 
     def test_update_multiple_arguments(self):
         """Test that multiple parameters can be updated at once."""
@@ -194,7 +191,7 @@ class TestUpdate:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.combine_global_phases
-        @qml.qnode(dev, atol=1)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RZ(x, wires=0)
             qml.GlobalPhase(phi=1)
