@@ -111,9 +111,8 @@ def _approximate_set(basis_gates, max_length=10):
         "S": qml.S(0),
         "S*": qml.adjoint(qml.S(0)),
     }
-    # Maintains the basis gates - (root node begin with Identity)
-    basis = [_CLIFFORD_T_BASIS["I"]]
-    basis += [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
+    # Maintains the basis gates
+    basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
 
     # Get the SU(2) data for the gates in basis set
     basis_mat, basis_gph = {}, {}
