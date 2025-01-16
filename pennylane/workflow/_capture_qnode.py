@@ -188,8 +188,6 @@ def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_di
         raise NotImplementedError(
             "Overriding shots is not yet supported with the program capture execution."
         )
-    if qnode_kwargs["diff_method"] not in {"backprop", "best"}:
-        raise NotImplementedError("Only backpropagation derivatives are supported at this time.")
 
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
@@ -283,7 +281,39 @@ def _backprop(args, tangents, **impl_kwargs):
     return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
 
 
-diff_method_map = {"backprop": _backprop}
+def _finite_diff(args, tangents, **impl_kwargs):
+
+    gradient_kwargs = impl_kwargs["qnode_kwargs"]["gradient_kwargs"]
+    h = gradient_kwargs.get("h", 1e-7)
+    if gradient_kwargs.get("approx_order", 1) != 1:
+        raise NotImplementedError("only approx_order=1 is currently supported.")
+    if gradient_kwargs.get("strategy", "forward") != "forward":
+        raise NotImplementedError("only strategy='forward' is currently supported.")
+
+    res1 = qnode_prim.bind(*args, **impl_kwargs)
+
+    jvps = [0 for _ in res1]
+    for i, t in enumerate(tangents):
+        if isinstance(t, ad.Zero):
+            continue
+        shifted_args = list(args)
+
+        shape = shifted_args[i].shape
+        flat_arg = jax.numpy.reshape(shifted_args[i], -1)
+        flat_t = jax.numpy.reshape(t, -1)
+
+        for element_idx, element in enumerate(flat_arg):
+            arg = flat_arg.at[element_idx].set(element + h)
+            shifted_args[i] = jax.numpy.reshape(arg, shape)
+            res2 = qnode_prim.bind(*shifted_args, **impl_kwargs)
+
+            for result_idx, (r1, r2) in enumerate(zip(res1, res2)):
+                jvps[result_idx] += flat_t[element_idx] * (r2 - r1) / h
+
+    return res1, jvps
+
+
+diff_method_map = {"backprop": _backprop, "finite-diff": _finite_diff}
 
 
 def _resolve_diff_method(diff_method: str, device) -> str:
@@ -395,7 +425,12 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
-    qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
+    qnode_kwargs = {
+        "diff_method": qnode.diff_method,
+        **execute_kwargs,
+        "gradient_kwargs": qnode.gradient_kwargs,
+        **mcm_config,
+    }
 
     flat_args = jax.tree_util.tree_leaves(args)
 
