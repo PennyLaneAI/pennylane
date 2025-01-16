@@ -10,7 +10,7 @@ from pennylane.labs.vibronic import VibronicHamiltonian, coeffs
 N_STATES_1 = 8
 N_MODES_1 = 10
 
-vham1 = VibronicHamiltonian(N_STATES_1, N_MODES_1, *coeffs1())
+vham1 = VibronicHamiltonian(N_STATES_1, N_MODES_1, *coeffs1(), sparse=True)
 
 N_STATES_2 = 8
 N_MODES_2 = 21

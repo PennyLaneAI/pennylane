@@ -23,6 +23,7 @@ class VibronicHamiltonian:
         betas: np.ndarray,
         lambdas: np.ndarray,
         omegas: np.ndarray,
+        sparse: bool = False,
     ):
         if not is_pow_2(states) or states == 0:
             raise ValueError(f"States must be a positive power of 2, got {states} states.")
@@ -48,6 +49,7 @@ class VibronicHamiltonian:
         self.betas = betas
         self.lambdas = lambdas
         self.omegas = omegas
+        self.sparse = sparse
 
     def fragment(self, index: int) -> VibronicMatrix:
         """Return the fragment at the given index"""
@@ -79,11 +81,11 @@ class VibronicHamiltonian:
         term = VibronicTerm(("P", "P"), Node.tensor_node(np.diag(self.omegas) / 2))
         word = VibronicWord((term,))
         blocks = {(i, i): word for i in range(self.states)}
-        return VibronicMatrix(self.states, self.modes, blocks)
+        return VibronicMatrix(self.states, self.modes, blocks, sparse=self.sparse)
 
     def _fragment(self, i: int) -> VibronicMatrix:
         blocks = {(j, i ^ j): self.v_word(j, i ^ j) for j in range(self.states)}
-        return VibronicMatrix(self.states, self.modes, blocks)
+        return VibronicMatrix(self.states, self.modes, blocks, sparse=self.sparse)
 
     def block_operator(self) -> VibronicMatrix:
         """Return the block representation of the Hamiltonian"""
@@ -102,7 +104,7 @@ class VibronicHamiltonian:
         # pylint: disable=arguments-out-of-order
         """Compute the error matrix"""
         scalar = -(delta**2) / 24
-        epsilon = VibronicMatrix(self.states, self.modes)
+        epsilon = VibronicMatrix(self.states, self.modes, sparse=self.sparse)
 
         for i in range(self.states):
             for j in range(i + 1, self.states + 1):
@@ -133,7 +135,7 @@ class VibronicHamiltonian:
             term = VibronicTerm(("P", "P"), node)
             blocks[(j, m ^ j)] = VibronicWord((term,))
 
-        return VibronicMatrix(self.states, self.modes, blocks)
+        return VibronicMatrix(self.states, self.modes, blocks, sparse=self.sparse)
 
     def __add__(self, other: VibronicHamiltonian) -> VibronicHamiltonian:
         if not isinstance(other, VibronicHamiltonian):
