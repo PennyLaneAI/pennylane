@@ -31,38 +31,9 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 
-def test_tape_property_is_deprecated():
-    """Test that the tape property is deprecated."""
-    dev = qml.device("default.qubit")
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.PauliY(0)
-
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="The tape/qtape property is deprecated"
-    ):
-        _ = circuit.tape
-
-
 def dummyfunc():
     """dummy func."""
     return None
-
-
-def test_get_best_method_is_deprecated():
-    """Test that is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"):
-        dev = qml.device("default.qubit", wires=2)
-        _ = QNode.get_best_method(dev, "jax")
-
-
-def test_best_method_str_is_deprecated():
-    """Test that is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"):
-        dev = qml.device("default.qubit", wires=2)
-        _ = QNode.best_method_str(dev, "jax")
 
 
 # pylint: disable=unused-argument
@@ -206,65 +177,6 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_best_method_is_device(self):
-        """Test that the method for determining the best diff method
-        for a device that is a child of qml.devices.Device and has a
-        compute_derivatives method defined returns 'device'"""
-
-        dev = CustomDeviceWithDiffMethod()
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res = QNode.get_best_method(dev, "jax")
-            assert res == ("device", {}, dev)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res = QNode.get_best_method(dev, None)
-            assert res == ("device", {}, dev)
-
-    # pylint: disable=protected-access
-    @pytest.mark.parametrize("interface", ["jax", "tensorflow", "torch", "autograd"])
-    def test_best_method_is_backprop(self, interface):
-        """Test that the method for determining the best diff method
-        for the default.qubit device and a valid interface returns backpropagation"""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res = QNode.get_best_method(dev, interface)
-            assert res == ("backprop", {}, dev)
-
-    # pylint: disable=protected-access
-    def test_best_method_is_param_shift(self):
-        """Test that the method for determining the best diff method
-        for a given device and interface returns the parameter shift rule if
-        'device' and 'backprop' don't work"""
-
-        # null device has no info - fall back on parameter-shift
-        dev = CustomDevice()
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res = QNode.get_best_method(dev, None)
-            assert res == (qml.gradients.param_shift, {}, dev)
-
-        # no interface - fall back on parameter-shift
-        dev2 = qml.device("default.qubit", wires=1)
-        tape = qml.tape.QuantumScript([], [], shots=50)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res2 = QNode.get_best_method(dev2, None, tape=tape)
-            assert res2 == (qml.gradients.param_shift, {}, dev2)
-
     # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
         """Test that a user-supplied diff method correctly returns the right
@@ -307,7 +219,6 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
-        # check that get_best_method was only ever called once
 
     @pytest.mark.autograd
     def test_gradient_transform(self, mocker):
@@ -407,7 +318,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.interface == "numpy"
+        assert circuit.interface == "auto"
         assert circuit.device is dev
 
         # QNode can still be executed
@@ -556,47 +467,6 @@ class TestPyTreeStructure:
 class TestTapeConstruction:
     """Tests for the tape construction"""
 
-    def test_basic_tape_construction(self, tol):
-        """Test that a quantum tape is properly constructed"""
-        dev = qml.device("default.qubit", wires=2)
-
-        def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        qn = QNode(func, dev)
-
-        x = pnp.array(0.12, requires_grad=True)
-        y = pnp.array(0.54, requires_grad=True)
-
-        res = qn(x, y)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="tape/qtape property is deprecated"
-        ):
-            tape = qn.tape
-
-        assert isinstance(tape, QuantumScript)
-        assert len(tape.operations) == 3
-        assert len(tape.observables) == 1
-        assert tape.num_params == 2
-        assert tape.shots.total_shots is None
-
-        expected = qml.execute([tape], dev, None)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # when called, a new quantum tape is constructed
-        old_tape = tape
-        res2 = qn(x, y)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="tape/qtape property is deprecated"
-        ):
-            new_tape = qn.tape
-
-        assert np.allclose(res, res2, atol=tol, rtol=0)
-        assert new_tape is not old_tape
-
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
         is returned from the QNode."""
@@ -687,12 +557,13 @@ class TestTapeConstruction:
         assert tape.measurements == contents[3:]
 
     @pytest.mark.jax
-    def test_jit_counts_raises_error(self):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "reference.qubit"))
+    def test_jit_counts_raises_error(self, dev_name):
         """Test that returning counts in a quantum function with trainable parameters while
         jitting raises an error."""
         import jax
 
-        dev = qml.device("default.qubit", wires=2, shots=5)
+        dev = qml.device(dev_name, wires=2, shots=5)
 
         def circuit1(param):
             qml.Hadamard(0)
@@ -706,7 +577,7 @@ class TestTapeConstruction:
         with pytest.raises(
             NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
         ):
-            jitted_qnode1(0.123)
+            _ = jitted_qnode1(0.123)
 
         # Test with qnode decorator syntax
         @qml.qnode(dev)
@@ -873,6 +744,7 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -1169,6 +1041,52 @@ class TestIntegration:
         tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
         res = qml.execute([tape], dev)
         assert qml.math.get_interface(res) == "numpy"
+
+    def test_error_device_vjp_unsuppoprted(self):
+        """Test that an error is raised in the device_vjp is unsupported."""
+
+        class DummyDev(qml.devices.Device):
+
+            def execute(self, circuits, execution_config=qml.devices.ExecutionConfig()):
+                return 0
+
+            def supports_derivatives(self, execution_config=None, circuit=None):
+                return execution_config and execution_config.gradient_method == "vjp_grad"
+
+            def supports_vjp(self, execution_config=None, circuit=None) -> bool:
+                return execution_config and execution_config.gradient_method == "vjp_grad"
+
+        @qml.qnode(DummyDev(), diff_method="parameter-shift", device_vjp=True)
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="device_vjp=True is not supported"):
+            circuit()
+
+    @pytest.mark.parametrize(
+        "interface",
+        (
+            pytest.param("autograd", marks=pytest.mark.autograd),
+            pytest.param("jax", marks=pytest.mark.jax),
+            pytest.param("torch", marks=pytest.mark.torch),
+            pytest.param("tensorflow", marks=pytest.mark.tf),
+        ),
+    )
+    def test_error_if_differentiate_diff_method_None(self, interface):
+        """Test that an error is raised if differentiating a qnode with diff_method=None"""
+
+        @qml.qnode(qml.device("reference.qubit", wires=1), diff_method=None)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        x = qml.math.asarray(0.5, like=interface, requires_grad=True)
+
+        res = circuit(x)  # execution works fine
+        assert qml.math.allclose(res, np.cos(0.5))
+
+        with pytest.raises(qml.QuantumFunctionError, match="with diff_method=None"):
+            qml.math.grad(circuit)(x)
 
 
 class TestShots:
