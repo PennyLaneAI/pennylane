@@ -339,18 +339,60 @@ def test_qnode_pytree_output():
     assert list(out.keys()) == ["a", "b"]
 
 
-def test_qnode_jvp():
-    """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule."""
+class TestDifferentiation:
 
-    @qml.qnode(qml.device("default.qubit", wires=1))
-    def circuit(x):
-        qml.RX(x, 0)
-        return qml.expval(qml.Z(0))
+    def test_error_backprop_unsupported(self):
+        """Test an error is raised with backprop if the device does not support it."""
 
-    x = 0.9
-    xt = -0.6
-    jvp = jax.jvp(circuit, (x,), (xt,))
-    assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
+        class DummyDev(qml.devices.Device):
+
+            def execute(self, *_, **__):
+                return 0
+
+        with pytest.raises(qml.QuantumFunctionError, match="does not support backprop"):
+
+            @qml.qnode(DummyDev(wires=2), diff_method="backprop")
+            def circuit(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+    def test_error_unsupported_diff_method(self):
+        """Test an error is raised for a non-backprop diff method."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2), diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            NotImplementedError, match="diff_method parameter-shift not yet implemented."
+        ):
+            jax.grad(circuit)(0.5)
+
+    @pytest.mark.parametrize("diff_method", ("best", "backprop"))
+    def test_default_qubit_backprop(self, diff_method):
+        """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        x = 0.9
+        xt = -0.6
+        jvp = jax.jvp(circuit, (x,), (xt,))
+        assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
+
+    def test_no_gradients_with_lightning(self):
+        """Test that we get an error if we try and differentiate a lightning execution."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(NotImplementedError, match=r"diff_method adjoint not yet implemented"):
+            jax.grad(circuit)(0.5)
 
 
 def test_qnode_jit():

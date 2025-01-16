@@ -278,9 +278,31 @@ def _make_zero(tan, arg):
     return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
 
 
-def _qnode_jvp(args, tangents, **impl_kwargs):
+def _backprop(args, tangents, **impl_kwargs):
     tangents = tuple(map(_make_zero, tangents, args))
     return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
+
+
+diff_method_map = {"backprop": _backprop}
+
+
+def _resolve_diff_method(diff_method: str, device) -> str:
+    # check if best is backprop
+    if diff_method == "best":
+        config = qml.devices.ExecutionConfig(gradient_method=diff_method, interface="jax")
+        diff_method = device.setup_execution_config(config).gradient_method
+
+    if diff_method not in diff_method_map:
+        raise NotImplementedError(f"diff_method {diff_method} not yet implemented.")
+
+    return diff_method
+
+
+def _qnode_jvp(args, tangents, *, qnode_kwargs, device, **impl_kwargs):
+    diff_method = _resolve_diff_method(qnode_kwargs["diff_method"], device)
+    return diff_method_map[diff_method](
+        args, tangents, qnode_kwargs=qnode_kwargs, device=device, **impl_kwargs
+    )
 
 
 ad.primitive_jvps[qnode_prim] = _qnode_jvp
