@@ -57,7 +57,6 @@ def execute(
     mcm_config: "qml.devices.MCMConfig" = None,
     config="unset",
     inner_transform="unset",
-    gradient_fn="unset",
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -95,8 +94,6 @@ def execute(
             will be removed in v0.42.
         inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
             and will be removed in v0.42.
-        gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed
-            ``diff_method`` and will be removed in v0.41.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -159,13 +156,6 @@ def execute(
     """
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
-
-    if gradient_fn != "unset":
-        warn(
-            "gradient_fn has been renamed to diff_method in qml.execute",
-            qml.PennyLaneDeprecationWarning,
-        )
-        diff_method = gradient_fn
 
     if config != "unset":
         warn(
