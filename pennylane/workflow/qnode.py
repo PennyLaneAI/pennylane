@@ -29,7 +29,7 @@ from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
@@ -550,9 +550,7 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = (
-            Interface.NUMPY if diff_method is None else get_canonical_interface_name(interface)
-        )
+        self._interface = get_canonical_interface_name(interface)
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -694,25 +692,6 @@ class QNode:
             f"Differentiation method {diff_method} not recognized. Allowed "
             f"options are {tuple(get_args(SupportedDiffMethods))}."
         )
-
-    @property
-    def tape(self) -> QuantumTape:
-        """The quantum tape
-
-        .. warning::
-
-            This property is deprecated in v0.40 and will be removed in v0.41.
-            Instead, use the :func:`qml.workflow.construct_tape <.workflow.construct_tape>` function.
-        """
-
-        warnings.warn(
-            "The tape/qtape property is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.construct_tape function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._tape
-
-    qtape = tape  # for backwards compatibility
 
     @debug_logger
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:

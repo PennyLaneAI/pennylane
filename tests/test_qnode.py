@@ -31,21 +31,6 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 
-def test_tape_property_is_deprecated():
-    """Test that the tape property is deprecated."""
-    dev = qml.device("default.qubit")
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.PauliY(0)
-
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="The tape/qtape property is deprecated"
-    ):
-        _ = circuit.tape
-
-
 def dummyfunc():
     """dummy func."""
     return None
@@ -333,7 +318,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.interface == "numpy"
+        assert circuit.interface == "auto"
         assert circuit.device is dev
 
         # QNode can still be executed
@@ -482,47 +467,6 @@ class TestPyTreeStructure:
 class TestTapeConstruction:
     """Tests for the tape construction"""
 
-    def test_basic_tape_construction(self, tol):
-        """Test that a quantum tape is properly constructed"""
-        dev = qml.device("default.qubit", wires=2)
-
-        def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        qn = QNode(func, dev)
-
-        x = pnp.array(0.12, requires_grad=True)
-        y = pnp.array(0.54, requires_grad=True)
-
-        res = qn(x, y)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="tape/qtape property is deprecated"
-        ):
-            tape = qn.tape
-
-        assert isinstance(tape, QuantumScript)
-        assert len(tape.operations) == 3
-        assert len(tape.observables) == 1
-        assert tape.num_params == 2
-        assert tape.shots.total_shots is None
-
-        expected = qml.execute([tape], dev, None)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # when called, a new quantum tape is constructed
-        old_tape = tape
-        res2 = qn(x, y)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="tape/qtape property is deprecated"
-        ):
-            new_tape = qn.tape
-
-        assert np.allclose(res, res2, atol=tol, rtol=0)
-        assert new_tape is not old_tape
-
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
         is returned from the QNode."""
@@ -613,12 +557,13 @@ class TestTapeConstruction:
         assert tape.measurements == contents[3:]
 
     @pytest.mark.jax
-    def test_jit_counts_raises_error(self):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "reference.qubit"))
+    def test_jit_counts_raises_error(self, dev_name):
         """Test that returning counts in a quantum function with trainable parameters while
         jitting raises an error."""
         import jax
 
-        dev = qml.device("default.qubit", wires=2, shots=5)
+        dev = qml.device(dev_name, wires=2, shots=5)
 
         def circuit1(param):
             qml.Hadamard(0)
@@ -632,7 +577,7 @@ class TestTapeConstruction:
         with pytest.raises(
             NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
         ):
-            jitted_qnode1(0.123)
+            _ = jitted_qnode1(0.123)
 
         # Test with qnode decorator syntax
         @qml.qnode(dev)
@@ -1117,6 +1062,31 @@ class TestIntegration:
 
         with pytest.raises(qml.QuantumFunctionError, match="device_vjp=True is not supported"):
             circuit()
+
+    @pytest.mark.parametrize(
+        "interface",
+        (
+            pytest.param("autograd", marks=pytest.mark.autograd),
+            pytest.param("jax", marks=pytest.mark.jax),
+            pytest.param("torch", marks=pytest.mark.torch),
+            pytest.param("tensorflow", marks=pytest.mark.tf),
+        ),
+    )
+    def test_error_if_differentiate_diff_method_None(self, interface):
+        """Test that an error is raised if differentiating a qnode with diff_method=None"""
+
+        @qml.qnode(qml.device("reference.qubit", wires=1), diff_method=None)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        x = qml.math.asarray(0.5, like=interface, requires_grad=True)
+
+        res = circuit(x)  # execution works fine
+        assert qml.math.allclose(res, np.cos(0.5))
+
+        with pytest.raises(qml.QuantumFunctionError, match="with diff_method=None"):
+            qml.math.grad(circuit)(x)
 
 
 class TestShots:
