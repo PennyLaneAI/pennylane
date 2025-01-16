@@ -70,6 +70,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.execute` now has a collection of keyword-only arguments.
+  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
+
 * The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
   [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
 
@@ -94,6 +97,10 @@
   [(#6827)](https://github.com/PennyLaneAI/pennylane/pull/6827)
 
 <h3>Deprecations 👋</h3>
+
+* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
+  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
+  [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
 
 <h3>Documentation 📝</h3>
 
