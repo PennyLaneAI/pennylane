@@ -507,12 +507,6 @@ class QNode:
         gradient_kwargs: dict = {},
         **kwargs,
     ):
-        if kwargs:
-            warnings.warn(
-                f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please specify all arguments in the gradient_kwargs argument.",
-                qml.PennyLaneDeprecationWarning,
-            )
-            gradient_kwargs = kwargs
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -540,7 +534,15 @@ class QNode:
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
+        if kwargs:
+            if any(k in qml.gradients.SUPPORTED_GRADIENT_KWARGS for k in list(kwargs.keys())):
+                warnings.warn(
+                    f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please specify all arguments in the gradient_kwargs argument.",
+                    qml.PennyLaneDeprecationWarning,
+                )
+            gradient_kwargs = kwargs
         _validate_gradient_kwargs(gradient_kwargs)
+
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
                 "Detected 'shots' as an argument to the given quantum function. "

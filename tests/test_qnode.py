@@ -160,11 +160,9 @@ class TestValidation:
     def test_expansion_strategy_error(self):
         """Test that an error is raised if expansion_strategy is passed to the qnode."""
 
-        with pytest.raises(ValueError, match=r"'expansion_strategy' is no longer"):
+        with pytest.raises(ValueError, match="'expansion_strategy' is no longer"):
 
-            @qml.qnode(
-                qml.device("default.qubit"), gradient_kwargs={"expansion_strategy": "device"}
-            )
+            @qml.qnode(qml.device("default.qubit"), expansion_strategy="device")
             def _():
                 return qml.state()
 
@@ -173,7 +171,7 @@ class TestValidation:
 
         with pytest.raises(ValueError, match="'max_expansion' is no longer a valid"):
 
-            @qml.qnode(qml.device("default.qubit"), gradient_kwargs={"max_expansion": 1})
+            @qml.qnode(qml.device("default.qubit"), max_expansion=1)
             def _():
                 qml.state()
 
@@ -442,19 +440,16 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=2)
 
         with warnings.catch_warnings(record=True) as w:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="Specifying gradient keyword arguments"
-            ):
 
-                @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
-                def circuit0(params):
-                    qml.RX(params[0], wires=0)
-                    return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+            @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
+            def circuit0(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
-                @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
-                def circuit2(params):
-                    qml.RX(params[0], wires=0)
-                    return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+            @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
+            def circuit2(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
         assert len(w) == 2
         assert "Use diff_method instead" in str(w[0].message)

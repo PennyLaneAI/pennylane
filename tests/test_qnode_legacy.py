@@ -387,19 +387,16 @@ class TestValidation:
         dev = DefaultQubitLegacy(wires=2)
 
         with warnings.catch_warnings(record=True) as w:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="Specifying gradient keyword arguments"
-            ):
 
-                @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
-                def circuit0(params):
-                    qml.RX(params[0], wires=0)
-                    return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+            @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
+            def circuit0(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
-                @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
-                def circuit2(params):
-                    qml.RX(params[0], wires=0)
-                    return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+            @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
+            def circuit2(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
         assert len(w) == 2
         assert "Use diff_method instead" in str(w[0].message)
