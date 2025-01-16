@@ -21,6 +21,8 @@ from typing import Optional, Type
 
 import pennylane as qml
 
+from .capture_diff import create_custom_prim_classes
+
 has_jax = True
 try:
     import jax
@@ -128,7 +130,8 @@ def create_measurement_obs_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(name + "_obs")
+    primitive = create_custom_prim_classes()[1](name + "_obs")
+    primitive.p_type = "measurement"
 
     @primitive.def_impl
     def _(obs, **kwargs):
@@ -165,7 +168,8 @@ def create_measurement_mcm_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(name + "_mcm")
+    primitive = create_custom_prim_classes()[1](name + "_mcm")
+    primitive.p_type = "measurement"
 
     @primitive.def_impl
     def _(*mcms, single_mcm=True, **kwargs):
@@ -200,7 +204,8 @@ def create_measurement_wires_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(name + "_wires")
+    primitive = create_custom_prim_classes()[1](name + "_wires")
+    primitive.p_type = "measurement"
 
     @primitive.def_impl
     def _(*args, has_eigvals=False, **kwargs):

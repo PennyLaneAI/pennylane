@@ -23,6 +23,7 @@ import jax
 
 import pennylane as qml
 
+from .capture_diff import create_custom_prim_classes
 from .flatfn import FlatFn
 from .primitives import (
     AbstractMeasurement,
@@ -36,6 +37,8 @@ from .primitives import (
     qnode_prim,
     while_loop_prim,
 )
+
+QmlPrimitive = create_custom_prim_classes()[0]
 
 FlattenedHigherOrderPrimitives: dict["jax.core.Primitive", Callable] = {}
 """
@@ -311,20 +314,21 @@ class PlxprInterpreter:
             self._env[constvar] = const
 
         for eqn in jaxpr.eqns:
+            primitive = eqn.primitive
+            custom_handler = self._primitive_registrations.get(primitive, None)
 
-            custom_handler = self._primitive_registrations.get(eqn.primitive, None)
             if custom_handler:
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = custom_handler(self, *invals, **eqn.params)
-            elif isinstance(eqn.outvars[0].aval, AbstractOperator):
+            elif isinstance(primitive, QmlPrimitive) and primitive.p_type.value == "operator":
                 outvals = self.interpret_operation_eqn(eqn)
-            elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
+            elif isinstance(primitive, QmlPrimitive) and primitive.p_type.value == "measurement":
                 outvals = self.interpret_measurement_eqn(eqn)
             else:
                 invals = [self.read(invar) for invar in eqn.invars]
-                outvals = eqn.primitive.bind(*invals, **eqn.params)
+                outvals = primitive.bind(*invals, **eqn.params)
 
-            if not eqn.primitive.multiple_results:
+            if not primitive.multiple_results:
                 outvals = [outvals]
             for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                 self._env[outvar] = outval

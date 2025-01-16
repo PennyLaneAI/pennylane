@@ -18,7 +18,7 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
-from pennylane.capture.capture_diff import create_non_interpreted_prim
+from pennylane.capture.capture_diff import create_custom_prim_classes
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
@@ -192,8 +192,9 @@ def _get_adjoint_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    adjoint_prim = create_non_interpreted_prim()("adjoint_transform")
+    adjoint_prim = create_custom_prim_classes()[1]("adjoint_transform")
     adjoint_prim.multiple_results = True
+    adjoint_prim.p_type = "higher_order"
 
     @adjoint_prim.def_impl
     def _(*args, jaxpr, lazy, n_consts):

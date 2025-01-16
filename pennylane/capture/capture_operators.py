@@ -20,7 +20,7 @@ from typing import Optional, Type
 
 import pennylane as qml
 
-from .capture_diff import create_non_interpreted_prim
+from .capture_diff import create_custom_prim_classes
 
 has_jax = True
 try:
@@ -103,7 +103,8 @@ def create_operator_primitive(
     if not has_jax:
         return None
 
-    primitive = create_non_interpreted_prim()(operator_type.__name__)
+    primitive = create_custom_prim_classes()[1](operator_type.__name__)
+    primitive.p_type = "operator"
 
     @primitive.def_impl
     def _(*args, **kwargs):

@@ -17,7 +17,7 @@ import functools
 from collections.abc import Callable
 
 import pennylane as qml
-from pennylane.capture.capture_diff import create_non_interpreted_prim
+from pennylane.capture.capture_diff import create_custom_prim_classes
 from pennylane.capture.flatfn import FlatFn
 
 from .compiler import (
@@ -407,8 +407,9 @@ def _get_while_loop_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    while_loop_prim = create_non_interpreted_prim()("while_loop")
+    while_loop_prim = create_custom_prim_classes()[1]("while_loop")
     while_loop_prim.multiple_results = True
+    while_loop_prim.p_type = "higher_order"
 
     @while_loop_prim.def_impl
     def _(*args, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice):
@@ -628,8 +629,9 @@ def _get_for_loop_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    for_loop_prim = create_non_interpreted_prim()("for_loop")
+    for_loop_prim = create_custom_prim_classes()[1]("for_loop")
     for_loop_prim.multiple_results = True
+    for_loop_prim.p_type = "higher_order"
 
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl

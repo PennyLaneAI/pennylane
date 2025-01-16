@@ -22,6 +22,7 @@ from collections.abc import Sequence
 from copy import copy
 
 import pennylane as qml
+from pennylane.capture.capture_diff import create_custom_prim_classes
 from pennylane.typing import ResultBatch
 
 
@@ -544,8 +545,9 @@ def _create_transform_primitive(name):
     except ImportError:
         return None
 
-    transform_prim = jax.core.Primitive(name + "_transform")
+    transform_prim = create_custom_prim_classes()[0](name + "_transform")
     transform_prim.multiple_results = True
+    transform_prim.p_type = "transform"
 
     @transform_prim.def_impl
     def _(

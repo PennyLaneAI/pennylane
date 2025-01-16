@@ -15,6 +15,7 @@
 This submodule offers differentiation-related primitives and types for
 the PennyLane capture module.
 """
+from enum import Enum
 from functools import lru_cache
 
 has_jax = True
@@ -24,17 +25,41 @@ except ImportError:
     has_jax = False
 
 
+class PrimitiveType(Enum):
+    """Enum to define valid set of primitive classes"""
+
+    DEFAULT = None
+    OPERATOR = "operator"
+    MEASUREMENT = "measurement"
+    HIGHER_ORDER = "higher_order"
+    TRANSFORM = "transform"
+
+
 @lru_cache
-def create_non_interpreted_prim():
+def create_custom_prim_classes():
     """Create a primitive type ``NonInterpPrimitive``, which binds to JAX's JVPTrace
     and BatchTrace objects like a standard Python function and otherwise behaves like jax.core.Primitive.
     """
 
     if not has_jax:  # pragma: no cover
-        return None
+        return None, None
+
+    class QmlPrimitive(jax.core.Primitive):
+        """A subclass for JAX's Primitive that differentiates between different
+        classes of primitives."""
+
+        _p_type = PrimitiveType.DEFAULT
+
+        @property
+        def p_type(self):
+            return self._p_type
+
+        @p_type.setter
+        def p_type(self, value):
+            self._p_type = PrimitiveType(value)
 
     # pylint: disable=too-few-public-methods
-    class NonInterpPrimitive(jax.core.Primitive):
+    class NonInterpPrimitive(QmlPrimitive):
         """A subclass to JAX's Primitive that works like a Python function
         when evaluating JVPTracers and BatchTracers."""
 
@@ -49,7 +74,7 @@ def create_non_interpreted_prim():
                 return self.impl(*args, **params)
             return super().bind_with_trace(trace, args, params)
 
-    return NonInterpPrimitive
+    return QmlPrimitive, NonInterpPrimitive
 
 
 @lru_cache
@@ -60,7 +85,7 @@ def _get_grad_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    grad_prim = create_non_interpreted_prim()("grad")
+    grad_prim = create_custom_prim_classes()[1]("grad")
     grad_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
 
     # pylint: disable=too-many-arguments
@@ -91,7 +116,7 @@ def _get_jacobian_prim():
     """Create a primitive for Jacobian computations.
     This primitive is used when capturing ``qml.jacobian``.
     """
-    jacobian_prim = create_non_interpreted_prim()("jacobian")
+    jacobian_prim = create_custom_prim_classes()[1]("jacobian")
     jacobian_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
 
     # pylint: disable=too-many-arguments

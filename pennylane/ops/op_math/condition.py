@@ -20,7 +20,7 @@ from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
-from pennylane.capture.capture_diff import create_non_interpreted_prim
+from pennylane.capture.capture_diff import create_custom_prim_classes
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
@@ -683,8 +683,9 @@ def _get_cond_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    cond_prim = create_non_interpreted_prim()("cond")
+    cond_prim = create_custom_prim_classes()[1]("cond")
     cond_prim.multiple_results = True
+    cond_prim.p_type = "higher_order"
 
     @cond_prim.def_impl
     def _(*all_args, jaxpr_branches, consts_slices, args_slice):
