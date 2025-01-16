@@ -17,6 +17,7 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import Enum
@@ -269,6 +270,11 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     @property
     def return_type(self) -> Optional[ObservableReturnTypes]:
         """Measurement return type."""
+        warnings.warn(
+            "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
+            "Instead, please use isinstance for type checking directly.",
+            qml.PennyLaneDeprecationWarning,
+        )
         return None
 
     @property
