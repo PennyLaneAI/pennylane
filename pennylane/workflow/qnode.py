@@ -507,6 +507,7 @@ class QNode:
         gradient_kwargs: Optional[dict] = None,
         **kwargs,
     ):
+        gradient_kwargs = gradient_kwargs or {}
         self._init_args = locals()
         del self._init_args["self"]
         del self._init_args["kwargs"]
