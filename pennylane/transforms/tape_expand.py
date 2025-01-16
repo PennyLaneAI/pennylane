@@ -303,7 +303,7 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=None):
 
     .. code-block:: python
 
-        def custom_cnot(wires):
+        def custom_cnot(wires, **_):
             return [
                 qml.Hadamard(wires=wires[1]),
                 qml.CZ(wires=[wires[0], wires[1]]),
@@ -358,7 +358,7 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
 
     .. code-block:: python
 
-        def custom_cnot(wires):
+        def custom_cnot(wires, **_):
             return [
                 qml.Hadamard(wires=wires[1]),
                 qml.CZ(wires=[wires[0], wires[1]]),
@@ -430,7 +430,7 @@ def set_decomposition(custom_decomps, dev):
 
     .. code-block:: python
 
-        def custom_cnot(wires):
+        def custom_cnot(wires, **_):
             return [
                 qml.Hadamard(wires=wires[1]),
                 qml.CZ(wires=[wires[0], wires[1]]),
@@ -453,10 +453,12 @@ def set_decomposition(custom_decomps, dev):
     0: ─╭●─┤  <Z>
     1: ─╰X─┤
 
-    Now let's set up a context where the custom decomposition will be applied:
+    Now let's set up a context where the custom decomposition will be applied.
+    To see our change, the circuit is drawn at the device level where the
+    custom decomposition will be applied.
 
     >>> with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
-    ...     print(qml.draw(circuit, wire_order=[0, 1])())
+    ...     print(qml.draw(circuit, level="device")())
     0: ────╭●────┤  <Z>
     1: ──H─╰Z──H─┤
 

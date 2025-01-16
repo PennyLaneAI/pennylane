@@ -9,34 +9,6 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``qsvt_legacy`` function has been deprecated.
-  Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``tape`` and ``qtape`` properties of ``QNode`` have been deprecated. 
-  Instead, use the ``qml.workflow.construct_tape`` function.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``output_dim`` property of ``qml.tape.QuantumScript`` has been deprecated. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been deprecated. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
 * ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
   :meth:`~.Operator.terms` instead.
 
@@ -86,6 +58,34 @@ Completed deprecation cycles
   - Removed in v0.41
 
 * The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+  Instead, use the ``qml.workflow.construct_tape`` function.
+  
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
+  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+  
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``output_dim`` property of ``qml.tape.QuantumScript`` has been removed. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``qml.qsvt_legacy`` function has been removed.
+  Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
 
   - Deprecated in v0.40
   - Removed in v0.41
