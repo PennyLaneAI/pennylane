@@ -85,7 +85,7 @@ class TestPennyLaneTransformer:
         transformer = PennyLaneTransformer()
         user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3), autograph=False)
         def circ(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
