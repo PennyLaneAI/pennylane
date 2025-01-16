@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved decompositions done by `qml.clifford_t_decomposition` for `qml.PhaseShift` gates.
+  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
