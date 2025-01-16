@@ -22,6 +22,10 @@ def hamiltonian_grad(tape, idx):
     """Computes the tapes necessary to get the gradient of a tape with respect to
     a Hamiltonian observable's coefficients.
 
+    .. warning::
+        This function is deprecated and will be removed in v0.42. This gradient recipe is not
+        required for the new operator arithmetic of PennyLane.
+
     Args:
         tape (qml.tape.QuantumTape): tape with a single Hamiltonian expectation as measurement
         idx (int): index of parameter that we differentiate with respect to
