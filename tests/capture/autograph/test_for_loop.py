@@ -522,7 +522,7 @@ class TestErrors:
             AutoGraphError,
             match="Make sure that loop variables are not used in tracing-incompatible ways",
         ):
-            run_autograph(f)()
+            f()
 
     def test_for_in_dynamic_range_indexing_numeric_list(self):
         """Test an informative error is raised when using a for loop with a dynamic range
@@ -540,7 +540,7 @@ class TestErrors:
             AutoGraphError,
             match="Make sure that loop variables are not used in tracing-incompatible ways",
         ):
-            _ = run_autograph(f)(2)
+            f(2)
 
     def test_for_in_dynamic_range_indexing_object_list(self):
         """Test that an error is raised for a for loop over a Python range with dynamic bounds
@@ -558,7 +558,7 @@ class TestErrors:
             AutoGraphError,
             match="Make sure that loop variables are not used in tracing-incompatible ways",
         ):
-            run_autograph(f)(2)
+            f(2)
 
     def test_uninitialized_variables(self):
         """Verify errors for (potentially) uninitialized loop variables."""
