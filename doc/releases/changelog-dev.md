@@ -15,6 +15,9 @@
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
+* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed. 
+   [(#6821)](https://github.com/PennyLaneAI/pennylane/pull/6821)
+
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
 
@@ -52,5 +55,6 @@ This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
 Diksha Dhawan,
+Marcus Gisslén,
 Christina Lee,
 Andrija Paurevic
