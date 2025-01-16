@@ -9,7 +9,7 @@ from pennylane.labs.vibronic.hamiltonians.spin_vibronic_ham import get_coeffs as
 def test_against_10_mode():
     expected = 1.6621227513071748
 
-    vham = VibronicHamiltonian(8, 10, *ten_mode())
+    vham = VibronicHamiltonian(8, 10, *ten_mode(), sparse=True)
     ep = vham.epsilon(1)
     actual = ep.norm(4)
 
