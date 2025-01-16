@@ -19,7 +19,11 @@ class VibronicMatrix:
     """The VibronicMatrix class"""
 
     def __init__(
-        self, states: int, modes: int, blocks: Dict[Tuple[int, int], VibronicWord] = None
+        self,
+        states: int,
+        modes: int,
+        blocks: Dict[Tuple[int, int], VibronicWord] = None,
+        sparse: bool = False,
     ) -> VibronicMatrix:
 
         if not is_pow_2(states) or states == 0:
@@ -31,6 +35,7 @@ class VibronicMatrix:
         self._blocks = blocks
         self.states = states
         self.modes = modes
+        self.sparse = sparse
 
     def block(self, row: int, col: int) -> VibronicWord:
         """Return the block indexed at (row, col)"""
@@ -107,6 +112,9 @@ class VibronicMatrix:
         if self.states != 1:
             raise RuntimeError("Base case called on VibronicMatrix with >1 state")
 
+        if self.sparse:
+            return self._norm_base_case_sparse(gridpoints)
+
         word = self.block(0, 0)
         norm = 0
 
@@ -115,8 +123,19 @@ class VibronicMatrix:
             compiled = jit(term.coeffs.compute)
             coeff_sum = sum(
                 abs(compiled(index))
-                for index in term.coeffs.nonzero
+                for index in product(range(self.modes), repeat=len(term.ops))
             )
+            norm += coeff_sum * term_op_norm
+
+        return norm
+
+    def _norm_base_case_sparse(self, gridpoints: int) -> float:
+        word = self.block(0, 0)
+        norm = 0
+
+        for term in word.terms:
+            term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
+            coeff_sum = sum(abs(term.coeffs.compute(index)) for index in term.coeffs.nonzero())
             norm += coeff_sum * term_op_norm
 
         return norm
@@ -145,7 +164,9 @@ class VibronicMatrix:
         for key in r_keys.difference(l_keys):
             new_blocks[key] = other._blocks[key]
 
-        return VibronicMatrix(self.states, self.modes, new_blocks)
+        return VibronicMatrix(
+            self.states, self.modes, new_blocks, sparse=(self.sparse and other.sparse)
+        )
 
     def __sub__(self, other: VibronicMatrix) -> VibronicMatrix:
         if self.states != other.states:
@@ -172,14 +193,16 @@ class VibronicMatrix:
         for key in r_keys.difference(l_keys):
             new_blocks[key] = (-1) * other._blocks[key]
 
-        return VibronicMatrix(self.states, self.modes, new_blocks)
+        return VibronicMatrix(
+            self.states, self.modes, new_blocks, sparse=(self.sparse and other.sparse)
+        )
 
     def __mul__(self, scalar: float) -> VibronicMatrix:
         new_blocks = {}
         for key in self._blocks.keys():
             new_blocks[key] = scalar * self._blocks[key]
 
-        return VibronicMatrix(self.states, self.modes, new_blocks)
+        return VibronicMatrix(self.states, self.modes, new_blocks, sparse=self.sparse)
 
     __rmul__ = __mul__
 
@@ -200,7 +223,9 @@ class VibronicMatrix:
                 f"Cannot multiply VibronicMatrix on {self.modes} states with VibronicMatrix on {other.modes} states."
             )
 
-        product_matrix = VibronicMatrix(self.states, self.modes)
+        product_matrix = VibronicMatrix(
+            self.states, self.modes, sparse=(self.sparse and other.sparse)
+        )
 
         for i, j in product(range(self.states), repeat=2):
             block_products = [self.block(i, k) @ other.block(k, j) for k in range(self.states)]
@@ -225,10 +250,10 @@ class VibronicMatrix:
         # pylint: disable=chained-comparison
         half = self.states // 2
 
-        top_left = VibronicMatrix(half, self.modes, {})
-        top_right = VibronicMatrix(half, self.modes, {})
-        bottom_left = VibronicMatrix(half, self.modes, {})
-        bottom_right = VibronicMatrix(half, self.modes, {})
+        top_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
+        top_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
+        bottom_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
+        bottom_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
 
         for index, word in self._blocks.items():
             x, y = index
@@ -243,22 +268,6 @@ class VibronicMatrix:
                 bottom_right.set_block(x - half, y - half, word)
 
         return top_left, top_right, bottom_left, bottom_right
-
-    def iterate_over_coeffs(self) -> int:
-        """Find number of coefficients"""
-        import time
-
-        for _, word in self._blocks.items():
-            for count, term in enumerate(word.terms):
-                compiled = jax.jit(term.coeffs.compute)
-
-                start = time.time()
-                for index in product(range(self.modes), repeat=len(term.ops)):
-                    compiled(index)
-                end = time.time()
-
-                print(f"{count}/{len(word.terms)}", self.modes ** len(term.ops), end - start)
-
 
 def commutator(a: VibronicMatrix, b: VibronicMatrix):
     """Return the commutator [a, b] = ab - ba"""

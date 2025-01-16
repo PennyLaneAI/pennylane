@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from itertools import product, tee
+from itertools import product
 from typing import Iterator, Tuple
 
 from jax.numpy import allclose, isclose, ndarray, zeros
@@ -28,7 +28,6 @@ class Node:  # pylint: disable=too-many-instance-attributes
     def __init__(  # pylint: disable=too-many-arguments
         self,
         node_type: NodeType,
-        nonzero: Iterator[Tuple[int]],
         l_child: Node = None,
         r_child: Node = None,
         l_shape: Tuple[int] = (),
@@ -48,7 +47,6 @@ class Node:  # pylint: disable=too-many-instance-attributes
         self.scalar = scalar
         self.value = value
         self.is_zero = is_zero
-        self.nonzero = nonzero
 
         if node_type == NodeType.SUM:
             self.shape = l_child.shape
@@ -71,15 +69,8 @@ class Node:  # pylint: disable=too-many-instance-attributes
                 f"Cannot add Node of shape {l_child.shape} with Node of shape {r_child.shape}."
             )
 
-        lnz1, lnz2 = tee(l_child.nonzero, 2)
-        rnz1, rnz2 = tee(r_child.nonzero, 2)
-
-        l_child.nonzero = lnz1
-        r_child.nonzero = rnz1
-
         return cls(
             node_type=NodeType.SUM,
-            nonzero=_uniq_chain(lnz2, rnz2),
             l_child=l_child,
             r_child=r_child,
             l_shape=l_child.shape,
@@ -95,15 +86,8 @@ class Node:  # pylint: disable=too-many-instance-attributes
     ) -> Node:
         """Construct a OUTER node"""
 
-        lnz1, lnz2 = tee(l_child.nonzero, 2)
-        rnz1, rnz2 = tee(r_child.nonzero, 2)
-
-        l_child.nonzero = lnz1
-        r_child.nonzero = rnz1
-
         return cls(
             node_type=NodeType.OUTER,
-            nonzero=_flatten_product(lnz2, rnz2),
             l_child=l_child,
             r_child=r_child,
             l_shape=l_child.shape,
@@ -142,14 +126,12 @@ class Node:  # pylint: disable=too-many-instance-attributes
         if len(tensor.shape):
             return cls(
                 node_type=NodeType.TENSOR,
-                nonzero=zip(*tensor.nonzero()),
                 tensor=tensor,
                 is_zero=allclose(tensor, zeros(tensor.shape)),
             )
 
         return cls(
             node_type=NodeType.FLOAT,
-            nonzero=((),) if tensor else iter(()),
             value=tensor,
             is_zero=(tensor == 0),
         )
@@ -158,12 +140,8 @@ class Node:  # pylint: disable=too-many-instance-attributes
     def scalar_node(cls, scalar: float, child: Node) -> Node:
         """Construct a SCALAR node"""
 
-        nz1, nz2 = tee(child.nonzero, 2)
-        child.nonzero = nz1
-
         return cls(
             node_type=NodeType.SCALAR,
-            nonzero=nz2 if scalar else iter(()),
             l_child=child,
             l_shape=child.shape,
             scalar=scalar,
@@ -295,6 +273,29 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         if self.node_type == NodeType.HADAMARD:
             return self.l_child.compute(index) * self.r_child.compute(index)
+
+        raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
+
+    def nonzero(self) -> Iterator[Tuple[int]]:
+        """Compute the nonzero indices"""
+
+        if self.node_type == NodeType.TENSOR:
+            return zip(*self.tensor.nonzero())
+
+        if self.node_type == NodeType.FLOAT:
+            return iter(((),)) if self.value else iter(())
+
+        if self.node_type == NodeType.SCALAR:
+            return self.l_child.nonzero() if self.scalar else iter(())
+
+        if self.node_type == NodeType.SUM:
+            return _uniq_chain(self.l_child.nonzero(), self.r_child.nonzero())
+
+        if self.node_type == NodeType.OUTER:
+            return _flatten_product(self.l_child.nonzero(), self.r_child.nonzero())
+
+        if self.node_type == NodeType.HADAMARD:
+            raise NotImplementedError
 
         raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
 

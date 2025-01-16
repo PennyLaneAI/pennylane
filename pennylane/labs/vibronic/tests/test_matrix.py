@@ -1,9 +1,13 @@
 """Test matrix operations"""
 
+from typing import Dict, Tuple
+
 import numpy as np
 import pytest
 
 from pennylane.labs.vibronic import Node, VibronicMatrix, VibronicTerm, VibronicWord, op_norm
+
+# pylint: disable=too-many-arguments
 
 vword0 = VibronicWord([VibronicTerm(tuple(), Node.tensor_node(np.array(0.5)))])
 blocks0 = {(0, 0): vword0}
@@ -29,40 +33,78 @@ class TestMatrix:
     """Test properties of the VibronicMatrix class"""
 
     params = [
-        (vmat0, 2, 0.5),
-        (vmat0, 4, 0.5),
-        (vmat1, 2, op_norm(2)),
-        (vmat1, 4, op_norm(4)),
-        (vmat2, 2, 6 * op_norm(2) ** 2),
-        (vmat2, 4, 6 * op_norm(4) ** 2),
-        (vmat3, 2, np.sqrt(18 * op_norm(2) ** 3)),
-        (vmat3, 4, np.sqrt(18 * op_norm(4) ** 3)),
-        (vmat4, 2, 6 * op_norm(2) ** 2 + np.sqrt(18 * op_norm(2) ** 3)),
-        (vmat4, 4, 6 * op_norm(4) ** 2 + np.sqrt(18 * op_norm(4) ** 3)),
+        (blocks0, 2, 1, 1, False, 0.5),
+        (blocks0, 4, 1, 1, False, 0.5),
+        (blocks0, 2, 1, 1, True, 0.5),
+        (blocks0, 4, 1, 1, True, 0.5),
+        (blocks1, 2, 1, 1, False, op_norm(2)),
+        (blocks1, 4, 1, 1, False, op_norm(4)),
+        (blocks1, 2, 1, 1, True, op_norm(2)),
+        (blocks1, 4, 1, 1, True, op_norm(4)),
+        (blocks2, 2, 2, 2, False, 6 * op_norm(2) ** 2),
+        (blocks2, 4, 2, 2, False, 6 * op_norm(4) ** 2),
+        (blocks2, 2, 2, 2, True, 6 * op_norm(2) ** 2),
+        (blocks2, 4, 2, 2, True, 6 * op_norm(4) ** 2),
+        (blocks3, 2, 2, 2, False, np.sqrt(18 * op_norm(2) ** 3)),
+        (blocks3, 4, 2, 2, False, np.sqrt(18 * op_norm(4) ** 3)),
+        (blocks3, 2, 2, 2, True, np.sqrt(18 * op_norm(2) ** 3)),
+        (blocks3, 4, 2, 2, True, np.sqrt(18 * op_norm(4) ** 3)),
+        (blocks4, 2, 2, 2, False, 6 * op_norm(2) ** 2 + np.sqrt(18 * op_norm(2) ** 3)),
+        (blocks4, 4, 2, 2, False, 6 * op_norm(4) ** 2 + np.sqrt(18 * op_norm(4) ** 3)),
+        (blocks4, 2, 2, 2, True, 6 * op_norm(2) ** 2 + np.sqrt(18 * op_norm(2) ** 3)),
+        (blocks4, 4, 2, 2, True, 6 * op_norm(4) ** 2 + np.sqrt(18 * op_norm(4) ** 3)),
     ]
 
-    @pytest.mark.parametrize("vmatrix, gridpoints, expected", params)
-    def test_norm(self, vmatrix: VibronicMatrix, gridpoints: int, expected: float):
+    @pytest.mark.parametrize("blocks, gridpoints, states, modes, sparse, expected", params)
+    def test_norm(
+        self,
+        blocks: Dict[Tuple[int], VibronicWord],
+        gridpoints: int,
+        states: int,
+        modes: int,
+        sparse: bool,
+        expected: float,
+    ):
         """Test that the norm is correct"""
+
+        vmatrix = VibronicMatrix(states, modes, blocks, sparse=sparse)
 
         assert np.isclose(vmatrix.norm(gridpoints), expected)
 
     params = [
-        (vmat0, 2),
-        (vmat0, 4),
-        (vmat1, 2),
-        (vmat1, 4),
-        (vmat2, 2),
-        (vmat2, 4),
-        (vmat3, 2),
-        (vmat3, 4),
-        (vmat4, 2),
-        (vmat4, 4),
+        (blocks0, 2, 1, 1, False),
+        (blocks0, 4, 1, 1, False),
+        (blocks0, 2, 1, 1, True),
+        (blocks0, 4, 1, 1, True),
+        (blocks1, 2, 1, 1, False),
+        (blocks1, 4, 1, 1, False),
+        (blocks1, 2, 1, 1, True),
+        (blocks1, 4, 1, 1, True),
+        (blocks2, 2, 2, 2, False),
+        (blocks2, 4, 2, 2, False),
+        (blocks2, 2, 2, 2, True),
+        (blocks2, 4, 2, 2, True),
+        (blocks3, 2, 2, 2, False),
+        (blocks3, 4, 2, 2, False),
+        (blocks3, 2, 2, 2, True),
+        (blocks3, 4, 2, 2, True),
+        (blocks4, 2, 2, 2, False),
+        (blocks4, 4, 2, 2, False),
+        (blocks4, 2, 2, 2, True),
+        (blocks4, 4, 2, 2, True),
     ]
 
-    @pytest.mark.parametrize("vmatrix, gridpoints", params)
-    def test_norm_against_numpy(self, vmatrix: VibronicMatrix, gridpoints: int):
+    @pytest.mark.parametrize("blocks, gridpoints, states, modes, sparse", params)
+    def test_norm_against_numpy(
+        self,
+        blocks: Dict[Tuple[int], VibronicWord],
+        gridpoints: int,
+        states: int,
+        modes: int,
+        sparse: bool,
+    ):
         """Test that .norm is an upper bound on the true norm"""
+        vmatrix = VibronicMatrix(states, modes, blocks, sparse=sparse)
         upper_bound = vmatrix.norm(gridpoints)
         norm = np.max(np.linalg.eigvals(vmatrix.matrix(gridpoints)))
         assert norm <= upper_bound
