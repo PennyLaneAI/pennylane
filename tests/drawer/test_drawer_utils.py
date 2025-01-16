@@ -220,7 +220,7 @@ class TestCwireConnections:
         assert wires == [[0, 0]]
 
     def test_multiple_measure_multiple_cond(self):
-        """Test a case with multiple measurments and multiple conditionals."""
+        """Test a case with multiple measurements and multiple conditionals."""
         m0 = qml.measure(0)
         m1 = qml.measure(1)
         m2_nonused = qml.measure(2)
