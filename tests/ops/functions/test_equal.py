@@ -878,18 +878,20 @@ class TestEqual:
         param_qml = npp.eye(2) * 1j
         param_np = np.eye(2) * 1j
 
+        # ControlledQubitUnitary
         op1 = PARAMETRIZED_OPERATIONS_Remaining[3]
+        wires = [wire + 1, wire]
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
-                op1(p1, wires=wire, control_wires=wire + 1),
-                op1(p2, wires=wire, control_wires=wire + 1),
+                op1(p1, wires=wires),
+                op1(p2, wires=wires),
                 check_trainability=False,
                 check_interface=False,
             )
             assert not qml.equal(
-                op1(p1, wires=wire, control_wires=wire + 1),
-                op1(p2, wires=wire, control_wires=wire + 1),
+                op1(p1, wires=wires),
+                op1(p2, wires=wires),
                 check_trainability=False,
                 check_interface=True,
             )
@@ -897,14 +899,14 @@ class TestEqual:
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
         assert qml.equal(
-            op1(param_qml, wires=wire, control_wires=wire + 1),
-            op1(param_qml_1, wires=wire, control_wires=wire + 1),
+            op1(param_qml, wires=wires),
+            op1(param_qml_1, wires=wires),
             check_trainability=False,
             check_interface=False,
         )
         assert not qml.equal(
-            op1(param_qml, wires=wire, control_wires=wire + 1),
-            op1(param_qml_1, wires=wire, control_wires=wire + 1),
+            op1(param_qml, wires=wires),
+            op1(param_qml_1, wires=wires),
             check_trainability=True,
             check_interface=False,
         )
@@ -1061,21 +1063,22 @@ class TestEqual:
         wire = 0
         param = np.eye(2) * 1j
         op1 = PARAMETRIZED_OPERATIONS_Remaining[3]
+        wires = [wire + 1, wire]
         assert qml.equal(
-            op1(param, wires=wire, control_wires=wire + 1),
-            op1(param, wires=wire, control_wires=wire + 1),
+            op1(param, wires=wires),
+            op1(param, wires=wires),
             check_trainability=False,
             check_interface=False,
         )
         assert not qml.equal(
-            op1(param, wires=wire, control_wires=wire + 1),
-            op1(param * 2, wires=wire, control_wires=wire + 1),
+            op1(param, wires=wires),
+            op1(param * 2, wires=wires),
             check_trainability=False,
             check_interface=False,
         )
         assert not qml.equal(
-            op1(param, wires=wire, control_wires=wire + 1),
-            op1(param, wires=wire + 2, control_wires=wire + 1),
+            op1(param, wires=wires),
+            op1(param, wires=[wire + 1, wire + 2]),
             check_trainability=False,
             check_interface=False,
         )
