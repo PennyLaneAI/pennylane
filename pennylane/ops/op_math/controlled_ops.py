@@ -125,13 +125,14 @@ class ControlledQubitUnitary(ControlledOp):
     def _primitive_bind_call(
         cls,
         base,
-        control_wires: WiresLike,
-        wires: WiresLike = (),
+        wires: WiresLike,
+        control_wires: WiresLike = "unset",
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        wires = Wires(() if wires is None else wires)
+        self._deprecate_control_wires(control_wires)
+
         work_wires = Wires(() if work_wires is None else work_wires)
 
         if hasattr(base, "wires") and len(wires) != 0:
@@ -140,10 +141,17 @@ class ControlledQubitUnitary(ControlledOp):
             )
             wires = Wires(())
 
-        all_wires = control_wires + wires
         return cls._primitive.bind(
-            base, control_wires=all_wires, control_values=control_values, work_wires=work_wires
+            base, control_wires=wires, control_values=control_values, work_wires=work_wires
         )
+
+    def _deprecate_control_wires(self, control_wires):
+        if control_wires != "unset":
+            warnings.warn(
+                "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+                "Instead, please use wires, following wires=controlled_wires+target_wire.",
+                qml.PennyLaneDeprecationWarning,
+            )
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
@@ -155,16 +163,11 @@ class ControlledQubitUnitary(ControlledOp):
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        if control_wires != "unset":
-            warnings.warn(
-                "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Instead, please use wires, following wires=controlled_wires+target_wire.",
-                qml.PennyLaneDeprecationWarning,
-            )
+        self._deprecate_control_wires(control_wires)
 
-        wires = Wires(() if wires is None else wires)
+        # wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
-        control_wires = Wires(wires[:-1])
+        control_wires = wires[:-1]  # default
 
         if hasattr(base, "wires") and len(wires) != 0:
             warnings.warn(
@@ -173,18 +176,17 @@ class ControlledQubitUnitary(ControlledOp):
             wires = Wires(())
 
         if isinstance(base, Iterable):
-            if len(wires) == 0:
-                if len(control_wires) > 1:
-                    num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
-                    wires = control_wires[-num_base_wires:]
-                    control_wires = control_wires[:-num_base_wires]
-                else:
-                    raise TypeError(
-                        "Must specify a set of wires. None is not a valid `wires` label."
-                    )
+            if len(wires) > 1:
+                num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+                target_wires = wires[-num_base_wires:]
+                control_wires = wires[:-num_base_wires]
+            else:
+                raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
             # We use type.__call__ instead of calling the class directly so that we don't bind the
             # operator primitive when new program capture is enabled
-            base = type.__call__(qml.QubitUnitary, base, wires=wires, unitary_check=unitary_check)
+            base = type.__call__(
+                qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
+            )
 
         super().__init__(
             base,

@@ -1663,7 +1663,7 @@ custom_ctrl_ops = [
     (
         qml.QubitUnitary(np.array([[0, 1], [1, 0]]), wires=0),
         [1, 2],
-        qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=0, control_wires=[1, 2]),
+        qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[1, 2, 0]),
     ),
 ]
 
@@ -1773,16 +1773,14 @@ class TestCtrl:
 
         op = qml.ctrl(
             Controlled(
-                qml.ControlledQubitUnitary(
-                    np.array([[0, 1], [1, 0]]), control_wires=[1], wires=[0]
-                ),
+                qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), control_wires=[1, 0]),
                 control_wires=[2],
                 control_values=[0],
             ),
             control=[3],
         )
         expected = qml.ControlledQubitUnitary(
-            np.array([[0, 1], [1, 0]]), control_wires=[3, 2, 1], wires=[0], control_values=[1, 0, 1]
+            np.array([[0, 1], [1, 0]]), wires=[3, 2, 1, 0], control_values=[1, 0, 1]
         )
         assert op == expected
 
@@ -2131,7 +2129,7 @@ class TestTapeExpansionWithControlled:
             ctrl(qml.QubitUnitary, 1)(M, wires=0)
 
         tape = QuantumScript.from_queue(q_tape)
-        expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
+        expected = qml.ControlledQubitUnitary(M, wires=[1, 0])
         assert equal_list(list(tape), expected)
 
         # causes decomposition into more basic operators
@@ -2149,7 +2147,7 @@ class TestTapeExpansionWithControlled:
         # will immediately decompose according to selected decomposition algorithm
         tape = tape.expand(1, stop_at=lambda op: not isinstance(op, Controlled))
 
-        expected = qml.ControlledQubitUnitary(M, control_wires=[1, 2], wires=0).decomposition()
+        expected = qml.ControlledQubitUnitary(M, wires=[1, 2, 0]).decomposition()
         assert tape.circuit == expected
 
     @pytest.mark.parametrize(

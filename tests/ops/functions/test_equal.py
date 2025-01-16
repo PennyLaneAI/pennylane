@@ -107,7 +107,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
     qml.QubitUnitary(np.eye(2) * 1j, wires=0),
     qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
-    qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
+    qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[2, 0]),
     qml.SingleExcitation(0.123, wires=[0, 3]),
     qml.SingleExcitationPlus(0.123, wires=[0, 3]),
     qml.SingleExcitationMinus(0.123, wires=[0, 3]),

@@ -156,11 +156,11 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
             [-0.5, 0.456],
             qml.ctrl(qml.s_prod(-0.5, qml.RX(0.456, 0)), [1]),
         ),
-        (qml.ControlledQubitUnitary(X, [1], [0]), [Y], qml.ControlledQubitUnitary(Y, [1], [0])),
+        (qml.ControlledQubitUnitary(X, [1, 0]), [Y], qml.ControlledQubitUnitary(Y, [1, 0])),
         (
-            qml.ControlledQubitUnitary(qml.QubitUnitary(X, 0), [1]),
+            qml.ControlledQubitUnitary(qml.QubitUnitary(X, 0), [1, 0]),
             [Y],
-            qml.ControlledQubitUnitary(qml.QubitUnitary(Y, 0), [1]),
+            qml.ControlledQubitUnitary(qml.QubitUnitary(Y, 0), [1, 0]),
         ),
     ],
 )

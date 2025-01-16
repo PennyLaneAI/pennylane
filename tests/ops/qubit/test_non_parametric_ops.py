@@ -727,7 +727,7 @@ class TestMultiControlledX:
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
 
-            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wires)
+            qml.ControlledQubitUnitary(X, wires=control_wires + target_wires)
 
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
@@ -805,7 +805,7 @@ class TestMultiControlledX:
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
 
-            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wires)
+            qml.ControlledQubitUnitary(X, wires=control_wires + target_wires)
 
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
