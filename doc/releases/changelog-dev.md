@@ -28,6 +28,28 @@
   >>> circuit(2.5)
   {'Probabilities': Array([0., 0., 1., 0.], dtype=float32),
    'State': Array([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j], dtype=complex64)} 
+
+* `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
+  [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
+
+  After constructing a `QNode`,
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(device=qml.device("default.qubit"))
+  def circuit():
+    qml.H(0)
+    qml.CNOT([0,1])
+    return qml.probs()
+  ```
+  its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
+  of updating a QNode's `diff_method`:
+  ```pycon
+  >>> print(circuit.diff_method)
+  best
+  >>> new_circuit = circuit.update(diff_method="parameter-shift")
+  >>> print(new_circuit.diff_method)
+  'parameter-shift'
   ```
   
 * Finite shot and parameter-shift executions on `default.qubit` can now
@@ -39,7 +61,23 @@
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
+* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed. 
+   [(#6821)](https://github.com/PennyLaneAI/pennylane/pull/6821)
+
+* An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
+  [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
+
 <h3>Breaking changes 💔</h3>
+
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
+  [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
+
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+  [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
+
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+  Instead, use the ``qml.workflow.construct_tape`` function.
+  [(#6825)](https://github.com/PennyLaneAI/pennylane/pull/6825)
 
 * The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
   [(#6830)](https://github.com/PennyLaneAI/pennylane/pull/6830)
@@ -63,10 +101,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `BasisState` now casts its input to integers.
+  [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
 Diksha Dhawan,
+Marcus Gisslén,
 Christina Lee,
+Andrija Paurevic

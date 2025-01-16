@@ -65,17 +65,6 @@ class InfiniteOp(qml.operation.Operation):
         return [InfiniteOp(*self.parameters, self.wires)]
 
 
-def test_max_expansion_is_deprecated():
-    """Test that max_expansion argument is deprecated."""
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
-    ):
-        tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
-        )
-        decompose(tape, lambda obj: obj.has_matrix, max_expansion=1)
-
-
 class TestPrivateHelpers:
     """Test the private helpers for preprocessing."""
 
