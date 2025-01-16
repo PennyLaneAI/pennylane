@@ -102,14 +102,14 @@ def test_approximate_sets():
     # Check length of approximated sets with gate depths
     approx_set1, _, _, _ = _approximate_set((), max_length=0)
     approx_set2, _, _, _ = _approximate_set(("t", "h"), max_length=1)
-    assert len(approx_set1) == 0
-    assert len(approx_set2) == 2
+    assert len(approx_set1) == 1
+    assert len(approx_set2) == 3
 
     # Verify exist-check reduce redundancy via GP-like summation
     approx_set3, _, _, _ = _approximate_set(("t", "t*", "h"), max_length=3)
     approx_set4, _, _, _ = _approximate_set(("t", "t*", "h"), max_length=5)
-    assert len(approx_set3) == 21  # should be <  39 = 3 + 3x3 + 3x3x3
-    assert len(approx_set4) == 84  # should be < 263 = 3 + ... + 3x3x3x3x3
+    assert len(approx_set3) == 22  # should be <  39 = 1 + 3 + 3x3 + 3x3x3
+    assert len(approx_set4) == 85  # should be < 263 = 1 + 3 + ... + 3x3x3x3x3
 
 
 @pytest.mark.parametrize(
