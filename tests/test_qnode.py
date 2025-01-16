@@ -92,6 +92,123 @@ def test_copy():
     assert copied_qn.diff_method == qn.diff_method
 
 
+class TestUpdate:
+    """Tests the update instance method of QNode"""
+
+    def test_new_object_creation(self):
+        """Test that a new object is created rather than mutated"""
+        dev = qml.device("default.qubit")
+        dummy_qn = qml.QNode(dummyfunc, dev)
+        updated_qn = dummy_qn.update(device=dummy_qn.device)
+        assert updated_qn is not dummy_qn
+
+    def test_empty_update(self):
+        """Test that providing no update parameters throws an error."""
+        dev = qml.device("default.qubit")
+        dummy_qn = qml.QNode(dummyfunc, dev)
+        with pytest.raises(
+            ValueError, match="Must specify at least one configuration property to update."
+        ):
+            dummy_qn.update()
+
+    def test_update_args(self):
+        """Test that arguments of QNode can be updated"""
+        dev = qml.device("default.qubit")
+        dummy_qn = qml.QNode(dummyfunc, dev)
+
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        new_circuit = dummy_qn.update(func=circuit)
+        assert new_circuit.func is circuit
+
+    @pytest.mark.torch
+    def test_update_kwargs(self):
+        """Test that keyword arguments can be updated"""
+        dev = qml.device("default.qubit")
+        dummy_qn = qml.QNode(dummyfunc, dev)
+
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert dummy_qn.interface == "auto"
+        new_circuit = dummy_qn.update(func=circuit).update(interface="torch")
+        assert qml.math.get_interface(new_circuit(1)) == "torch"
+
+    def test_update_gradient_kwargs(self):
+        """Test that gradient kwargs are updated correctly"""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev, atol=1)
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert len(circuit.gradient_kwargs) == 1
+        assert list(circuit.gradient_kwargs.keys()) == ["atol"]
+
+        new_atol_circuit = circuit.update(atol=2)
+        assert len(new_atol_circuit.gradient_kwargs) == 1
+        assert list(new_atol_circuit.gradient_kwargs.keys()) == ["atol"]
+        assert new_atol_circuit.gradient_kwargs["atol"] == 2
+
+        new_kwarg_circuit = circuit.update(h=1)
+        assert len(new_kwarg_circuit.gradient_kwargs) == 2
+        assert list(new_kwarg_circuit.gradient_kwargs.keys()) == ["atol", "h"]
+        assert new_kwarg_circuit.gradient_kwargs["atol"] == 1
+        assert new_kwarg_circuit.gradient_kwargs["h"] == 1
+
+        with pytest.warns(
+            UserWarning,
+            match="Received gradient_kwarg blah, which is not included in the list of standard qnode gradient kwargs.",
+        ):
+            circuit.update(blah=1)
+
+    def test_update_multiple_arguments(self):
+        """Test that multiple parameters can be updated at once."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert circuit.diff_method == "best"
+        assert not circuit.execute_kwargs["device_vjp"]
+        new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)
+        assert new_circuit.diff_method == "adjoint"
+        assert new_circuit.execute_kwargs["device_vjp"]
+
+    def test_update_transform_program(self):
+        """Test that the transform program is properly preserved"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.transforms.combine_global_phases
+        @qml.qnode(dev, atol=1)
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.GlobalPhase(phi=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert qml.transforms.combine_global_phases in circuit.transform_program
+        assert len(circuit.transform_program) == 1
+        new_circuit = circuit.update(diff_method="parameter-shift")
+        assert new_circuit.diff_method == "parameter-shift"
+        assert circuit.transform_program == new_circuit.transform_program
+
+
 class TestInitialization:
     """Testing the initialization of the qnode."""
 

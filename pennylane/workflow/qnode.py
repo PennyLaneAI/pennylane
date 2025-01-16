@@ -508,6 +508,8 @@ class QNode:
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         **gradient_kwargs,
     ):
+        self._init_args = locals()
+        del self._init_args["self"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -625,6 +627,71 @@ class QNode:
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         self._transform_program.push_back(transform_container=transform_container)
+
+    def update(self, **kwargs) -> "QNode":
+        """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
+
+        .. note::
+            The QNode`s transform program cannot be updated using this method.
+
+        Keyword Args:
+            **kwargs: The provided keyword arguments must match that of :meth:`QNode.__init__`.
+                The list of supported gradient keyword arguments can be found at ``qml.gradients.SUPPORTED_GRADIENT_KWARGS``.
+
+        Returns:
+            qnode (QNode): new QNode with updated settings
+
+
+        Raises:
+            ValueError: if provided keyword arguments are invalid
+
+        **Example**
+
+        Let's begin by defining a ``QNode`` object,
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(x):
+                qml.RZ(x, wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.RY(x, wires=1)
+                return qml.expval(qml.PauliZ(1))
+
+        If we wish to try out a new configuration without having to repeat the
+        boiler plate above, we can use the ``QNode.update`` method. For example,
+        we can update the differentiation method and execution arguments,
+
+        >>> new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)
+        >>> print(new_circuit.diff_method)
+        adjoint
+        >>> print(new_circuit.execute_kwargs["device_vjp"])
+        True
+
+        Similarly, if we wish to re-configure the interface used for execution,
+
+        >>> new_circuit= circuit.update(interface="torch")
+        >>> new_circuit(1)
+        tensor(0.5403, dtype=torch.float64)
+        """
+        if not kwargs:
+            valid_params = (
+                set(self._init_args.copy().pop("gradient_kwargs"))
+                | qml.gradients.SUPPORTED_GRADIENT_KWARGS
+            )
+            raise ValueError(
+                f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
+            )
+        original_init_args = self._init_args.copy()
+        gradient_kwargs = original_init_args.pop("gradient_kwargs")
+        original_init_args.update(gradient_kwargs)
+        original_init_args.update(kwargs)
+        updated_qn = QNode(**original_init_args)
+        # pylint: disable=protected-access
+        updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        return updated_qn
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
