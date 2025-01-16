@@ -17,7 +17,7 @@ N_MODES_2 = 21
 
 vham2 = VibronicHamiltonian(N_STATES_2, N_MODES_2, *coeffs2())
 
-dense_vham1 = VibronicHamiltonian(N_STATES_1, N_MODES_1, *coeffs(N_STATES_1, N_MODES_1))
+dense_vham1 = VibronicHamiltonian(4, 5, *coeffs(4, 5))
 
 
 def time_norm(vham: VibronicHamiltonian):
@@ -51,4 +51,4 @@ def time_coefficients(vham: VibronicHamiltonian):
 
 
 if __name__ == "__main__":
-    print(time_norm_ep(vham1))
+    print(time_norm_ep(dense_vham1))
