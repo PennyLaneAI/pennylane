@@ -23,6 +23,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
+  [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
+
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+  [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
+
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
   Instead, use the ``qml.workflow.construct_tape`` function.
   [(#6825)](https://github.com/PennyLaneAI/pennylane/pull/6825)

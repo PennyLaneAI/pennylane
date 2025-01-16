@@ -393,7 +393,6 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
         for container in program:
             if container.transform == qml.devices.preprocess.decompose.transform:
                 container.kwargs["decomposer"] = decomposer
-                container.kwargs["max_expansion"] = decomp_depth
 
                 for cond in ["stopping_condition", "stopping_condition_shots"]:
                     # Devices that do not support native mid-circuit measurements
@@ -416,17 +415,13 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
 
 
 @contextlib.contextmanager
-def set_decomposition(custom_decomps, dev, decomp_depth=None):
+def set_decomposition(custom_decomps, dev):
     """Context manager for setting custom decompositions.
-
-    .. warning::
-        The ``decomp_depth`` argument is deprecated and will be removed in version 0.41.
 
     Args:
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
             decompositions to be applied by the device at runtime.
         dev (pennylane.devices.LegacyDevice): A quantum device.
-        decomp_depth: The maximum depth of the expansion.
 
     **Example**
 
@@ -468,11 +463,6 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
     1: ──H─╰Z──H─┤
 
     """
-    if decomp_depth is not None:
-        warnings.warn(
-            "The decomp_depth argument is deprecated and will be removed in version v0.41.",
-            qml.PennyLaneDeprecationWarning,
-        )
 
     if isinstance(dev, qml.devices.LegacyDeviceFacade):
         dev = dev.target_device
@@ -481,9 +471,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
 
         # Create a new expansion function; stop at things that do not have
         # custom decompositions, or that satisfy the regular device stopping criteria
-        new_custom_expand_fn = create_decomp_expand_fn(
-            custom_decomps, dev, decomp_depth=decomp_depth
-        )
+        new_custom_expand_fn = create_decomp_expand_fn(custom_decomps, dev)
 
         # Set the custom expand function within this context only
         try:
@@ -501,9 +489,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
                 category=qml.PennyLaneDeprecationWarning,
             )
             original_preprocess = dev.preprocess
-            new_preprocess = _create_decomp_preprocessing(
-                custom_decomps, dev, decomp_depth=decomp_depth
-            )
+            new_preprocess = _create_decomp_preprocessing(custom_decomps, dev)
 
             try:
                 dev.preprocess = new_preprocess
