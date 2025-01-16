@@ -323,15 +323,14 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
 
     ops_with_custom_ctrl_ops = _get_special_ops()
     custom_key = (type(op), len(control))
-    wires = control + op.wires
 
     if custom_key in ops_with_custom_ctrl_ops and all(control_values):
         qml.QueuingManager.remove(op)
-        return ops_with_custom_ctrl_ops[custom_key](*op.data, wires)
+        return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
 
     if isinstance(op, qml.QubitUnitary):
         return qml.ControlledQubitUnitary(
-            op, wires, control_values=control_values, work_wires=work_wires
+            op, wires=control + op.wires, control_values=control_values, work_wires=work_wires
         )
 
     return None

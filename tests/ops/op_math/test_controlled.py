@@ -1773,7 +1773,7 @@ class TestCtrl:
 
         op = qml.ctrl(
             Controlled(
-                qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), control_wires=[1, 0]),
+                qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[1, 0]),
                 control_wires=[2],
                 control_values=[0],
             ),
@@ -2141,7 +2141,7 @@ class TestTapeExpansionWithControlled:
         """Test ctrl on ControlledQubitUnitary."""
 
         with qml.queuing.AnnotatedQueue() as q_tape:
-            ctrl(qml.ControlledQubitUnitary, 1)(M, control_wires=2, wires=0)
+            ctrl(qml.ControlledQubitUnitary, 1)(M, wires=[2, 0])
 
         tape = QuantumScript.from_queue(q_tape)
         # will immediately decompose according to selected decomposition algorithm
