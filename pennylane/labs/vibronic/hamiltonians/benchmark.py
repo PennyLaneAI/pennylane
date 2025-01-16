@@ -56,4 +56,4 @@ def time_coefficients(vham: VibronicHamiltonian):
 
 
 if __name__ == "__main__":
-    print(time_norm_ep(vham1))
+    print(time_norm_ep(vham2))

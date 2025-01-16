@@ -6,7 +6,7 @@ from enum import Enum
 from itertools import product, tee
 from typing import Iterator, Tuple
 
-from numpy import allclose, isclose, ndarray, zeros
+from jax.numpy import allclose, isclose, ndarray, zeros
 
 # pylint: disable=protected-access
 
@@ -318,7 +318,6 @@ class Node:  # pylint: disable=too-many-instance-attributes
 def _flatten_product(iter1: Iterator[Tuple], iter2: Iterator[Tuple]) -> Iterator[Tuple]:
     for a, b in product(iter1, iter2):
         yield (*a, *b)
-
 
 def _uniq_chain(iter1: Iterator, iter2: Iterator) -> Iterator:
     seen = set()
