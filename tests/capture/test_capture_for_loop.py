@@ -408,7 +408,7 @@ class TestCaptureCircuitsForLoop:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circuit(upper_bound, arg):
 
             # for loop with dynamic bounds

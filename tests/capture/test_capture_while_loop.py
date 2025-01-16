@@ -90,7 +90,7 @@ class TestCaptureCircuitsWhileLoop:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circuit():
 
             @qml.while_loop(lambda i: i < 3)
@@ -116,7 +116,7 @@ class TestCaptureCircuitsWhileLoop:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circuit(arg):
 
             qml.Hadamard(wires=0)
@@ -172,7 +172,7 @@ class TestCaptureCircuitsWhileLoop:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circuit(upper_bound, arg):
 
             # while loop with dynamic bounds
@@ -253,7 +253,7 @@ class TestCaptureCircuitsWhileLoop:
         """Test simple while-loop primitive with gradient."""
         from pennylane.capture.primitives import grad_prim
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
         def inner_func(x):
 
             @qml.while_loop(lambda i: i < 3)
