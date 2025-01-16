@@ -210,9 +210,9 @@ class TestIntegration:
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        ag_fn = run_autograph(circ)
-        assert ag_fn(np.pi) == -1
+        assert circ(np.pi) == -1
 
+        ag_fn = run_autograph(circ)
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
 
@@ -266,8 +266,7 @@ class TestIntegration:
             qml.adjoint(qml.X(0))
             return qml.expval(qml.Z(0))
 
-        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
-        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+        assert circ() == -1
 
     def test_ctrl_op(self):
         """Test that controlled operators successfully pass through autograph"""
@@ -278,8 +277,7 @@ class TestIntegration:
             qml.ctrl(qml.X(0), 1)
             return qml.expval(qml.Z(0))
 
-        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
-        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+        assert circ() == -1
 
     @pytest.mark.xfail(
         raises=NotImplementedError,
@@ -297,10 +295,10 @@ class TestIntegration:
             qml.adjoint(inner)(x)
             return qml.probs()
 
-        ag_fn = run_autograph(circ)
         phi = np.pi / 2
-        assert np.allclose(ag_fn(phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
+        assert np.allclose(circ(phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
 
+        ag_fn = run_autograph(circ)
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
         assert check_cache(inner)
@@ -321,9 +319,9 @@ class TestIntegration:
             qml.ctrl(inner, control=1)(x)
             return qml.probs()
 
-        ag_fn = run_autograph(circ)
-        assert np.allclose(ag_fn(np.pi), [0.0, 0.0, 0.0, 1.0])
+        assert np.allclose(circ(np.pi), [0.0, 0.0, 0.0, 1.0])
 
+        ag_fn = run_autograph(circ)
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
         assert check_cache(inner)
@@ -379,10 +377,8 @@ class TestIntegration:
 
             return circuit(x)
 
-        ag_fn = run_autograph(fn)
-
         with pytest.raises(NotImplementedError):
-            ag_fn(0.5)
+            fn(0.5)
 
     @pytest.mark.xfail
     def test_mcm_one_shot(self, seed):
