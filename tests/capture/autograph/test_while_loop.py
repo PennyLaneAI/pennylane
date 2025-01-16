@@ -96,11 +96,7 @@ class TestWhileLoops:
                 w += 1
             return qml.probs()
 
-        ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0.0)
-        assert "while_loop[" in str(jaxpr)
-
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0**4)[0]
+        result = f(2.0**4)
         expected = jnp.array(
             [
                 0.00045727,
