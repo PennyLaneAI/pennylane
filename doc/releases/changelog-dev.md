@@ -85,6 +85,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `BasisState` now casts its input to integers.
+  [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
