@@ -149,15 +149,22 @@ class ControlledQubitUnitary(ControlledOp):
     def __init__(
         self,
         base,
-        control_wires: WiresLike,
-        wires: WiresLike = (),
+        wires: WiresLike,
+        control_wires: WiresLike = "unset",
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
+        if control_wires != "unset":
+            warnings.warn(
+                "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+                "Instead, please use wires, following wires=controlled_wires+target_wire.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
-        control_wires = Wires(control_wires)
+        control_wires = Wires(wires[:-1])
 
         if hasattr(base, "wires") and len(wires) != 0:
             warnings.warn(
