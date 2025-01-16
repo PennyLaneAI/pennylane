@@ -6,6 +6,29 @@
 
 <h3>Improvements 🛠</h3>
 
+* `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
+  [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
+
+  After constructing a `QNode`,
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(device=qml.device("default.qubit"))
+  def circuit():
+    qml.H(0)
+    qml.CNOT([0,1])
+    return qml.probs()
+  ```
+  its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
+  of updating a QNode's `diff_method`:
+  ```pycon
+  >>> print(circuit.diff_method)
+  best
+  >>> new_circuit = circuit.update(diff_method="parameter-shift")
+  >>> print(new_circuit.diff_method)
+  'parameter-shift'
+  ```
+  
 * Finite shot and parameter-shift executions on `default.qubit` can now
   be natively jitted end-to-end, leading to performance improvements.
   Devices can now configure whether or not ML framework data is sent to them
