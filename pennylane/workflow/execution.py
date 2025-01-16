@@ -81,7 +81,7 @@ def execute(
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
         cachesize (int): the size of the cache.
-        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+        max_diff (int): If ``diff_method`` is a gradient transform, this option specifies
             the maximum number of derivatives to support. Increasing this value allows
             for higher-order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backward pass.

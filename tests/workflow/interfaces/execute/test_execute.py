@@ -57,21 +57,6 @@ def test_execute_legacy_device():
     assert qml.math.allclose(res[0], np.cos(0.1))
 
 
-def test_gradient_fn_deprecation():
-    """Test that gradient_fn has been renamed to diff_method."""
-
-    tape = qml.tape.QuantumScript([qml.RX(qml.numpy.array(1.0), 0)], [qml.expval(qml.Z(0))])
-    dev = qml.device("default.qubit")
-
-    with dev.tracker:
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"gradient_fn has been renamed to diff_method"
-        ):
-            qml.execute((tape,), dev, gradient_fn="adjoint")
-
-    assert dev.tracker.totals["execute_and_derivative_batches"] == 1  # uses adjoint diff
-
-
 def test_config_deprecation():
     """Test that the config argument has been deprecated."""
 
