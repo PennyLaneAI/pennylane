@@ -115,23 +115,9 @@ class VibronicMatrix:
             compiled = jit(term.coeffs.compute)
             coeff_sum = sum(
                 abs(compiled(index))
-                for index in product(range(self.modes), repeat=len(term.ops))
+                for index in term.coeffs.nonzero
             )
             norm += coeff_sum * term_op_norm
-
-        return norm
-
-    def _norm_base_case_bad(self, gridpoints: int) -> float:
-        if self.states != 1:
-            raise RuntimeError("Base case called on VibronicMatrix with >1 state")
-
-        word = self.block(0, 0)
-        norm = 0
-
-        for term in word.terms:
-            term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
-            scalar = term.coeffs.compute_average() * (self.modes ** len(term.ops))
-            norm += scalar * term_op_norm
 
         return norm
 
@@ -274,7 +260,6 @@ class VibronicMatrix:
                 print(f"{count}/{len(word.terms)}", self.modes ** len(term.ops), end - start)
 
 
-@jit
 def commutator(a: VibronicMatrix, b: VibronicMatrix):
     """Return the commutator [a, b] = ab - ba"""
     return a @ b - b @ a

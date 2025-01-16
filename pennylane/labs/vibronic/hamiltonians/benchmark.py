@@ -5,7 +5,7 @@ import time
 from pickled_ham import get_coeffs as coeffs2
 from spin_vibronic_ham import get_coeffs as coeffs1
 
-from pennylane.labs.vibronic import VibronicHamiltonian
+from pennylane.labs.vibronic import VibronicHamiltonian, coeffs
 
 N_STATES_1 = 8
 N_MODES_1 = 10
@@ -16,6 +16,8 @@ N_STATES_2 = 8
 N_MODES_2 = 21
 
 vham2 = VibronicHamiltonian(N_STATES_2, N_MODES_2, *coeffs2())
+
+dense_vham1 = VibronicHamiltonian(N_STATES_1, N_MODES_1, *coeffs(N_STATES_1, N_MODES_1))
 
 
 def time_norm(vham: VibronicHamiltonian):
