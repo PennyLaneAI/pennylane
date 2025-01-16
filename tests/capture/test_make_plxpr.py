@@ -57,7 +57,7 @@ class TestMakePLxPR:
 
         spy = mocker.spy(jax, "make_jaxpr")
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circ(x):
             qml.RX(x, 0)
             qml.Hadamard(0)
@@ -78,7 +78,7 @@ class TestMakePLxPR:
 
         spy = mocker.spy(jax, "make_jaxpr")
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circ(x, y):
             qml.RX(x, 0)
             qml.RY(y, 0)
@@ -107,7 +107,7 @@ class TestMakePLxPR:
 
         spy = mocker.spy(jax, "make_jaxpr")
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circ():
             qml.Hadamard(0)
             return qml.expval(qml.X(0))
@@ -143,7 +143,7 @@ class TestAutoGraphIntegration:
             return qml.state()
 
         dev = qml.device("default.qubit", wires=1)
-        qnode = qml.QNode(func, dev)
+        qnode = qml.QNode(func, dev, autograph=False)
 
         plxpr1 = qml.capture.make_plxpr(func)(2)
         plxpr2 = qml.capture.make_plxpr(qnode)(2)
@@ -170,7 +170,7 @@ class TestAutoGraphIntegration:
             return qml.expval(qml.Z(0))
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(func, dev)
+        qnode = qml.QNode(func, dev, autograph=False)
 
         plxpr1 = qml.capture.make_plxpr(func)(0)
         plxpr2 = qml.capture.make_plxpr(qnode)(0)
@@ -196,7 +196,7 @@ class TestAutoGraphIntegration:
             return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(func, dev)
+        qnode = qml.QNode(func, dev, autograph=False)
 
         plxpr1 = qml.capture.make_plxpr(func)(jnp.array([0.0, 0.0]))
         plxpr2 = qml.capture.make_plxpr(qnode)(jnp.array([0.0, 0.0]))
