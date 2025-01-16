@@ -504,7 +504,7 @@ class QNode:
         device_vjp: Union[None, bool] = False,
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
-        gradient_kwargs: dict = {},
+        gradient_kwargs: Optional[dict] = None,
         **kwargs,
     ):
         self._init_args = locals()
