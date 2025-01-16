@@ -12,8 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.hamiltonian module."""
+import pytest
+
 import pennylane as qml
 from pennylane.gradients.hamiltonian_grad import hamiltonian_grad
+
+
+def test_hamiltonian_grad_deprecation():
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="The 'hamiltonian_grad' function is deprecated"
+    ):
+        hamiltonian_grad(None, 0)
 
 
 def test_behaviour():

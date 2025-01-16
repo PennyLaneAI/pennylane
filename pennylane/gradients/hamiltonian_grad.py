@@ -13,6 +13,8 @@
 # limitations under the License.
 """Contains a gradient recipe for the coefficients of Hamiltonians."""
 # pylint: disable=protected-access,unnecessary-lambda
+import warnings
+
 import pennylane as qml
 
 
@@ -24,6 +26,11 @@ def hamiltonian_grad(tape, idx):
         tape (qml.tape.QuantumTape): tape with a single Hamiltonian expectation as measurement
         idx (int): index of parameter that we differentiate with respect to
     """
+    warnings.warn(
+        "The 'hamiltonian_grad' function is deprecated and will be removed in v0.42. "
+        "This gradient recipe is not required for the new operator arithmetic of Pennylane ",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     op, m_pos, p_idx = tape.get_operation(idx)
 
