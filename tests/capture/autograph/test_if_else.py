@@ -145,16 +145,8 @@ class TestConditionals:
 
             return qml.expval(m)
 
-        ag_circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond" in str(jaxpr)
-
-        def res(x):
-            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
-
-        # pylint: disable=singleton-comparison
-        assert res(3) == 0
-        assert res(6) == 1
+        assert circuit(3) == 0
+        assert circuit(6) == 1
 
     def test_nested_cond(self):
         """Test that a nested conditional is converted as expected"""
@@ -295,14 +287,8 @@ class TestConditionals:
 
             return qml.expval(qml.PauliZ(0))
 
-        ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
-
-        def res(x):
-            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
-
-        assert np.allclose(res(True), 0)
-        assert np.allclose(res(False), 1)
+        assert np.allclose(f(True), 0)
+        assert np.allclose(f(False), 1)
 
 
 if __name__ == "__main__":
