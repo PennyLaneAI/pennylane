@@ -11,7 +11,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `qml.execute` now has a collection of forced keyword arguments.
+* `qml.execute` now has a collection of keyword-only arguments.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
 * Removed method `qsvt_legacy` along with its private helper `_qsp_to_qsvt`
