@@ -29,10 +29,9 @@ from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from ._capture_qnode import capture_qnode
 from .resolution import SupportedDiffMethods
 
 logger = logging.getLogger(__name__)
@@ -508,6 +507,8 @@ class QNode:
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         **gradient_kwargs,
     ):
+        self._init_args = locals()
+        del self._init_args["self"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -550,9 +551,7 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = (
-            Interface.NUMPY if diff_method is None else get_canonical_interface_name(interface)
-        )
+        self._interface = get_canonical_interface_name(interface)
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -628,6 +627,71 @@ class QNode:
         """
         self._transform_program.push_back(transform_container=transform_container)
 
+    def update(self, **kwargs) -> "QNode":
+        """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
+
+        .. note::
+            The QNode`s transform program cannot be updated using this method.
+
+        Keyword Args:
+            **kwargs: The provided keyword arguments must match that of :meth:`QNode.__init__`.
+                The list of supported gradient keyword arguments can be found at ``qml.gradients.SUPPORTED_GRADIENT_KWARGS``.
+
+        Returns:
+            qnode (QNode): new QNode with updated settings
+
+
+        Raises:
+            ValueError: if provided keyword arguments are invalid
+
+        **Example**
+
+        Let's begin by defining a ``QNode`` object,
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(x):
+                qml.RZ(x, wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.RY(x, wires=1)
+                return qml.expval(qml.PauliZ(1))
+
+        If we wish to try out a new configuration without having to repeat the
+        boiler plate above, we can use the ``QNode.update`` method. For example,
+        we can update the differentiation method and execution arguments,
+
+        >>> new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)
+        >>> print(new_circuit.diff_method)
+        adjoint
+        >>> print(new_circuit.execute_kwargs["device_vjp"])
+        True
+
+        Similarly, if we wish to re-configure the interface used for execution,
+
+        >>> new_circuit= circuit.update(interface="torch")
+        >>> new_circuit(1)
+        tensor(0.5403, dtype=torch.float64)
+        """
+        if not kwargs:
+            valid_params = (
+                set(self._init_args.copy().pop("gradient_kwargs"))
+                | qml.gradients.SUPPORTED_GRADIENT_KWARGS
+            )
+            raise ValueError(
+                f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
+            )
+        original_init_args = self._init_args.copy()
+        gradient_kwargs = original_init_args.pop("gradient_kwargs")
+        original_init_args.update(gradient_kwargs)
+        original_init_args.update(kwargs)
+        updated_qn = QNode(**original_init_args)
+        # pylint: disable=protected-access
+        updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        return updated_qn
+
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
     @debug_logger
@@ -695,25 +759,6 @@ class QNode:
             f"options are {tuple(get_args(SupportedDiffMethods))}."
         )
 
-    @property
-    def tape(self) -> QuantumTape:
-        """The quantum tape
-
-        .. warning::
-
-            This property is deprecated in v0.40 and will be removed in v0.41.
-            Instead, use the :func:`qml.workflow.construct_tape <.workflow.construct_tape>` function.
-        """
-
-        warnings.warn(
-            "The tape/qtape property is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.construct_tape function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._tape
-
-    qtape = tape  # for backwards compatibility
-
     @debug_logger
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
@@ -779,6 +824,8 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         if qml.capture.enabled():
+            from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
+
             return capture_qnode(self, *args, **kwargs)
         return self._impl_call(*args, **kwargs)
 
