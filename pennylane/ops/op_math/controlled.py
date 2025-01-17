@@ -28,7 +28,6 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
-from pennylane.capture.capture_diff import create_custom_prim_classes
 from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
@@ -233,11 +232,14 @@ def _ctrl_transform(op, control, control_values, work_wires):
 def _get_ctrl_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
-    import jax  # pylint: disable=import-outside-toplevel
 
-    ctrl_prim = create_custom_prim_classes()[1]("ctrl_transform")
+    # pylint: disable=import-outside-toplevel
+    import jax
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    ctrl_prim = NonInterpPrimitive("ctrl_transform")
     ctrl_prim.multiple_results = True
-    ctrl_prim.p_type = "higher_order"
+    ctrl_prim.prim_type = "higher_order"
 
     @ctrl_prim.def_impl
     def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):

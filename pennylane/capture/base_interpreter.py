@@ -23,7 +23,6 @@ import jax
 
 import pennylane as qml
 
-from .capture_diff import create_custom_prim_classes
 from .flatfn import FlatFn
 from .primitives import (
     AbstractMeasurement,
@@ -37,8 +36,6 @@ from .primitives import (
     qnode_prim,
     while_loop_prim,
 )
-
-QmlPrimitive = create_custom_prim_classes()[0]
 
 FlattenedHigherOrderPrimitives: dict["jax.core.Primitive", Callable] = {}
 """
@@ -320,9 +317,9 @@ class PlxprInterpreter:
             if custom_handler:
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = custom_handler(self, *invals, **eqn.params)
-            elif isinstance(primitive, QmlPrimitive) and primitive.p_type.value == "operator":
+            elif getattr(primitive, "prim_type", "") == "operator":
                 outvals = self.interpret_operation_eqn(eqn)
-            elif isinstance(primitive, QmlPrimitive) and primitive.p_type.value == "measurement":
+            elif getattr(primitive, "prim_type", "") == "measurement":
                 outvals = self.interpret_measurement_eqn(eqn)
             else:
                 invals = [self.read(invar) for invar in eqn.invars]

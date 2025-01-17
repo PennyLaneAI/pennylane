@@ -20,7 +20,6 @@ from functools import lru_cache
 from typing import Generic, Optional, TypeVar, Union
 
 import pennylane as qml
-from pennylane.capture.capture_diff import create_custom_prim_classes
 from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, MidMeasure
@@ -244,9 +243,11 @@ def _create_mid_measure_primitive():
         measurement.
 
     """
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
 
-    mid_measure_p = create_custom_prim_classes()[1]("measure")
+    mid_measure_p = NonInterpPrimitive("measure")
 
     @mid_measure_p.def_impl
     def _(wires, reset=False, postselect=None):

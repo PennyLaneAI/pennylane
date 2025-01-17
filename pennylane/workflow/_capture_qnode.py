@@ -114,7 +114,6 @@ from warnings import warn
 
 import pennylane as qml
 from pennylane.capture import FlatFn
-from pennylane.capture.capture_diff import create_custom_prim_classes
 from pennylane.typing import TensorLike
 
 has_jax = True
@@ -186,9 +185,13 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
 def _get_qnode_prim():
     if not has_jax:
         return None
-    qnode_prim = create_custom_prim_classes()[0]("qnode")
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture.custom_primitives import QmlPrimitive
+
+    qnode_prim = QmlPrimitive("qnode")
     qnode_prim.multiple_results = True
-    qnode_prim.p_type = "higher_order"
+    qnode_prim.prim_type = "higher_order"
 
     # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl

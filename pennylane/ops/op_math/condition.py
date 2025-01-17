@@ -20,7 +20,6 @@ from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
-from pennylane.capture.capture_diff import create_custom_prim_classes
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
@@ -681,11 +680,13 @@ def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[Measurement
 def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
 
-    cond_prim = create_custom_prim_classes()[1]("cond")
+    cond_prim = NonInterpPrimitive("cond")
     cond_prim.multiple_results = True
-    cond_prim.p_type = "higher_order"
+    cond_prim.prim_type = "higher_order"
 
     @cond_prim.def_impl
     def _(*all_args, jaxpr_branches, consts_slices, args_slice):
