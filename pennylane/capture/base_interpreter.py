@@ -25,8 +25,6 @@ import pennylane as qml
 
 from .flatfn import FlatFn
 from .primitives import (
-    AbstractMeasurement,
-    AbstractOperator,
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
