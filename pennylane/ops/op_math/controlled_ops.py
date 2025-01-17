@@ -1168,7 +1168,7 @@ class MultiControlledX(ControlledOp):
                 )
             ):
                 raise ValueError(
-                    f"control_values must be boolean or int. The given arg is {control_values}"
+                    f"control_values must be boolean or int. Got: {control_values}"
                 )
 
     # pylint: disable=too-many-arguments
