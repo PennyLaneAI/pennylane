@@ -166,7 +166,7 @@ class TestApplyControlledQ:
 
         u = get_unitary(circ, n_all_wires)
 
-        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=control_wire + wires)
+        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=Wires(control_wire) + Wires(wires))
         u_ideal = get_unitary(circ, n_all_wires)
 
         assert np.allclose(u_ideal, u)
