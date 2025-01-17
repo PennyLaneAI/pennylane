@@ -117,7 +117,7 @@ class ControlledQubitUnitary(ControlledOp):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(
-            data[0], metadata[0], control_values=metadata[1], work_wires=metadata[2]
+            data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
         )
 
     # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
