@@ -123,19 +123,6 @@ class TestSample:
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
 
-    def test_observable_return_type_is_sample(self):
-        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.sample(qml.PauliZ(0))
-            assert res.return_type is Sample
-            return res
-
-        circuit()
-
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
     def test_observable_is_measurement_value(self, shots, phi):
