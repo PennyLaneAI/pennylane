@@ -723,6 +723,11 @@ class TestMeasurementProcess:
         (qml.mutual_info(wires0=0, wires1=1), ()),
         (qml.vn_entropy(wires=[0, 1]), ()),
     ]
+    
+    def test_deprecation_return_type(self):
+        """Test that the return_type property is deprecated."""
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="MeasurementProcess property return_type is deprecated"):
+            _ = MeasurementProcess().return_type
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_no_shots)
     def test_output_shapes_no_shots(self, measurement, expected_shape):
