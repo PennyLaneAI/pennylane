@@ -13,7 +13,7 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 
-from functools import lru_cache, partial
+from functools import lru_cache, partial, reduce
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
@@ -153,6 +153,25 @@ def _get_plxpr_defer_measurements():
             self._cur_wire = None
             self._cur_measurement_idx = None
 
+        def resolve_mcm_values(self, eqn, invals) -> MeasurementValue:
+            """Create a ``MeasurementValue`` that captures all classical processing in its
+            ``processing_fn``."""
+            assert len(invals) <= 2
+
+            if len(invals) == 1:
+                meas_val = invals[0]
+                processing_fn = lambda x: eqn.primitive.bind(x, **eqn.params)
+                return meas_val._apply(processing_fn)
+
+            if all(isinstance(inval, MeasurementValue) for inval in invals):
+                processing_fn = lambda *x: eqn.primitive.bind(*x, **eqn.params)
+                return invals[0]._transform_bin_op(processing_fn, invals[1])
+
+            # One MeasurementValue, one number
+            [meas_val, other] = invals if isinstance(invals[0], MeasurementValue) else invals[::-1]
+            processing_fn = lambda x: eqn.primitive.bind(x, other, **eqn.params)
+            return meas_val._apply(processing_fn)
+
         def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
@@ -185,7 +204,10 @@ def _get_plxpr_defer_measurements():
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
                     invals = [self.read(invar) for invar in eqn.invars]
-                    outvals = eqn.primitive.bind(*invals, **eqn.params)
+                    if any(isinstance(inval, MeasurementValue) for inval in invals):
+                        outvals = self.resolve_mcm_values(eqn, invals)
+                    else:
+                        outvals = eqn.primitive.bind(*invals, **eqn.params)
 
                 if not eqn.primitive.multiple_results:
                     outvals = [outvals]
@@ -208,7 +230,11 @@ def _get_plxpr_defer_measurements():
     def _(self, wires, reset=False, postselect=None):
         with qml.QueuingManager.stop_recording():
             meas = type.__call__(
-                MidMeasureMP, Wires(self._cur_wire), reset=reset, postselect=postselect
+                MidMeasureMP,
+                Wires(self._cur_wire),
+                reset=reset,
+                postselect=postselect,
+                id=self._cur_measurement_idx,
             )
 
         cnot_wires = (wires, self._cur_wire)
@@ -239,19 +265,36 @@ def _get_plxpr_defer_measurements():
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
-                for branch, value in condition._items():
-                    if value:
-                        cur_consts = invals[consts_slices[i]]
-                        ctrl_transform_prim.bind(
-                            *cur_consts,
-                            *args,
-                            *control_wires,
-                            jaxpr=jaxpr,
-                            n_control=len(control_wires),
-                            control_values=branch,
-                            work_wires=None,
-                            n_consts=len(cur_consts),
-                        )
+                for branch, _ in condition._items():
+
+                    # qml.capture.disable()
+                    # value = condition.processing_fn(*branch)
+                    # qml.capture.enable()
+                    # if value:
+                    #     cur_consts = invals[consts_slices[i]]
+                    #     ctrl_transform_prim.bind(
+                    #         *cur_consts,
+                    #         *args,
+                    #         *control_wires,
+                    #         jaxpr=jaxpr,
+                    #         n_control=len(control_wires),
+                    #         control_values=branch,
+                    #         work_wires=None,
+                    #         n_consts=len(cur_consts),
+                    #     )
+
+                    value = condition.processing_fn(*branch)
+                    cur_consts = invals[consts_slices[i]]
+                    qml.cond(value, ctrl_transform_prim.bind)(
+                        *cur_consts,
+                        *args,
+                        *control_wires,
+                        jaxpr=jaxpr,
+                        n_control=len(control_wires),
+                        control_values=branch,
+                        work_wires=None,
+                        n_consts=len(cur_consts),
+                    )
 
         return []
 
