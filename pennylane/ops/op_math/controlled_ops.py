@@ -117,7 +117,7 @@ class ControlledQubitUnitary(ControlledOp):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(
-            data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
+            data[0], metadata[0], control_values=metadata[1], work_wires=metadata[2]
         )
 
     # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
@@ -169,7 +169,7 @@ class ControlledQubitUnitary(ControlledOp):
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
         work_wires = Wires(() if work_wires is None else work_wires)
-        control_wires = wires[:-1]  # default
+        control_wires = wires
 
         if hasattr(base, "wires") and len(wires) != 0:
             warnings.warn(

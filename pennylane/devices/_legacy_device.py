@@ -466,7 +466,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             for mp in observables:
                 obs = mp.obs if isinstance(mp, MeasurementProcess) and mp.obs is not None else mp
 
-                if mp.return_type is Expectation:
+                if isinstance(mp, ExpvalMP):
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
 
                 elif mp.return_type is Variance:
