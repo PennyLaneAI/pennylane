@@ -207,7 +207,6 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
-    @pytest.mark.local_salt(8)
     @pytest.mark.autograd
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_autograd(self, coeffs, ops, seed):
