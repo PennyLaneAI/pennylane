@@ -18,6 +18,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 import warnings
 from collections.abc import Iterable
 from functools import lru_cache
+from typing import List, Union
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -1154,23 +1155,31 @@ class MultiControlledX(ControlledOp):
             *wires, n_wires=len(wires), control_values=control_values, work_wires=work_wires
         )
 
+    @staticmethod
+    def _validate_control_values(control_values):
+        if control_values is not None:
+            if not (
+                isinstance(control_values, (bool, int))
+                or (
+                    (
+                        isinstance(control_values, (list, tuple))
+                        and all(isinstance(val, (bool, int)) for val in control_values)
+                    )
+                )
+            ):
+                raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: WiresLike = (),
-        control_values=None,
+        control_values: Union[bool, List[bool], int, List[int]] = None,
         work_wires: WiresLike = (),
     ):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        # First raise deprecation warnings regardless of the validity of other arguments
-        if isinstance(control_values, str):
-            warnings.warn(
-                "Specifying control values using a bitstring is deprecated, and will not be "
-                "supported in future releases, Use a list of booleans or integers instead.",
-                qml.PennyLaneDeprecationWarning,
-            )
+        self._validate_control_values(control_values)
 
         if len(wires) == 0:
             raise ValueError("Must specify the wires where the operation acts on")

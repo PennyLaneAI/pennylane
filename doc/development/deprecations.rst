@@ -25,11 +25,6 @@ Pending deprecations
 
   - Deprecated in v0.36
 
-* ``MultiControlledX`` is the only controlled operation that still supports specifying control
-  values with a bit string. In the future, it will no longer accepts strings as control values.
-
-  - Deprecated in v0.36
-
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
 
@@ -57,6 +52,11 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* ``MultiControlledX`` no longer accepts strings as control values.
+
+  - Deprecated in v0.36
+  - Removed in v0.41
 
 * The input argument ``control_wires`` of ``MultiControlledX`` has been removed.
 

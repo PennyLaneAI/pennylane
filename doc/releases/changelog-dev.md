@@ -46,6 +46,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `MultiControlledX` no longer accepts strings as control values.
+  [(#6835)](https://github.com/PennyLaneAI/pennylane/pull/6835)
+
 * The input argument `control_wires` of `MultiControlledX` has been removed.
   [(#6832)](https://github.com/PennyLaneAI/pennylane/pull/6832)
 
