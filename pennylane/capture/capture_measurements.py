@@ -21,7 +21,6 @@ from typing import Optional, Type
 
 import pennylane as qml
 
-
 has_jax = True
 try:
     import jax
