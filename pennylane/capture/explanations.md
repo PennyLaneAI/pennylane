@@ -1,4 +1,4 @@
-[This](This) documentation explains the principles behind `qml.capture.CaptureMeta` and higher order primitives.
+This documentation explains the principles behind `qml.capture.CaptureMeta` and higher order primitives.
 
 
 ```python
@@ -503,8 +503,8 @@ fd_prim_2 = NonInterpPrimitive("finite_diff_2")
 fd_prim_2.multiple_results = True
 fd_prim_2.def_impl(finite_diff_impl) # This also defines the behaviour with a JVP tracer
 
-def finite_diff_2(fun, delta=1e-5):
-    return fd_prim_2.bind(fun, delta)
+def finite_diff_2(x, fun, delta=1e-5):
+    return fd_prim_2.bind(x, fun, delta)
 ```
 
 Now we can use the primitive in a differentiable workflow, without defining a JVP rule
@@ -524,29 +524,4 @@ have non-interpreted primitives as well. This is because their differentiation i
 by the surrounding QNode primitive rather than through the standard chain rule that acts
 "locally" (in the circuit). In short, we only want gates to store their tracers (which will help
 determining differentiability of gate arguments, for example), but not to do anything with them.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
