@@ -547,7 +547,6 @@ class QNode:
             gradient_kwargs |= kwargs
 
         _validate_gradient_kwargs(gradient_kwargs)
-
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
                 "Detected 'shots' as an argument to the given quantum function. "
