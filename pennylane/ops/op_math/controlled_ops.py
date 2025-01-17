@@ -38,10 +38,15 @@ class ControlledQubitUnitary(ControlledOp):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
 
+    .. warning::
+
+        The ``control_wires`` argument is deprecated and will be removed in 
+        v0.42. Please use the ``wires`` argument instead.
+
     In addition to default ``Operation`` instance attributes, the following are
     available for ``ControlledQubitUnitary``:
 
-    * ``control_wires``: wires that act as control for the operation
+    * ``control_wires``: (deprecated) wires that act as control for the operation
     * ``control_values``: the state on which to apply the controlled operation (see below)
     * ``target_wires``: the wires the unitary matrix will be applied to
     * ``work_wires``: wires made use of during the decomposition of the operation into native operations
@@ -58,9 +63,10 @@ class ControlledQubitUnitary(ControlledOp):
             operation. If passing a matrix, this will be used to construct a QubitUnitary
             operator that will be used as the base operator. If providing a ``qml.QubitUnitary``,
             this will be used as the base directly.
+        wires (Union[Wires, Sequence[int], or int]): the wires the full 
+        controlled unitary acts on, composed of the controlled wires followed
+        by the target wires
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
-        wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
-            (optional if U is provided as a QubitUnitary)
         control_values (List[int, bool]): a list providing the state of the control qubits to
             control on (default is the all 1s state)
         unitary_check (bool): whether to check whether an array U is unitary when creating the
@@ -74,16 +80,16 @@ class ControlledQubitUnitary(ControlledOp):
     both wires ``0`` and ``1``:
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
-    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
+    >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2])
     Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
-       [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
+        [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
 
     Alternatively, the same operator can be constructed with a QubitUnitary:
 
     >>> base = qml.QubitUnitary(U, wires=2)
-    >>> qml.ControlledQubitUnitary(base, control_wires=[0, 1])
+    >>> qml.ControlledQubitUnitary(base, wires=[0, 1, 2])
     Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
-       [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
+        [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
 
     Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
@@ -95,11 +101,11 @@ class ControlledQubitUnitary(ControlledOp):
     wire ``3`` conditioned on three wires where the first is in state ``0``, the
     second is in state ``1``, and the third in state ``1``, we can write:
 
-    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values=[0, 1, 1])
+    >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[0, 1, 1])
 
     or
 
-    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values=[False, True, True])
+    >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
     """
 
     num_wires = AnyWires
