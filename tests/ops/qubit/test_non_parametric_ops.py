@@ -606,11 +606,11 @@ class TestMultiControlledX:
 
     X = np.array([[0, 1], [1, 0]])
 
-    def test_str_control_values_deprecation(self):
+    def test_str_control_values_error(self):
         """Tests that control_values specified with a bit string is deprecated."""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="Specifying control values using a bitstring is deprecated",
+        with pytest.raises(
+            ValueError,
+            match="control_values must be boolean or int",
         ):
             _ = qml.MultiControlledX(wires=[0, 1, 2], control_values="01")
 
@@ -630,26 +630,6 @@ class TestMultiControlledX:
         """Tests initializing a MultiControlledX with invalid arguments"""
         with pytest.raises(ValueError, match=error_message):
             _ = qml.MultiControlledX(wires=wires, control_values=control_values)
-
-    @pytest.mark.parametrize(
-        "wires, control_values, error_message",
-        [
-            ([0, 1, 2], "ab", "String of control values can contain only '0' or '1'."),
-            (
-                [0, 1, 2],
-                "011",
-                "Length of control values must equal number of control wires.",
-            ),
-        ],
-    )
-    def test_invalid_str_control_values(self, wires, control_values, error_message):
-        """Tests control_values specified with invalid strings"""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="Specifying control values using a bitstring is deprecated",
-        ):
-            with pytest.raises(ValueError, match=error_message):
-                _ = qml.MultiControlledX(wires=wires, control_values=control_values)
 
     def test_decomposition_not_enough_wires(self):
         """Test that the decomposition raises an error if the number of wires is lower than two"""
