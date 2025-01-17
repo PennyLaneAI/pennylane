@@ -164,7 +164,7 @@ class ControlledQubitUnitary(ControlledOp):
     ):
         self._deprecate_control_wires(control_wires)
 
-        if wires is None:
+        if wires is None or len(wires) == 0:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
         work_wires = Wires(() if work_wires is None else work_wires)
         control_wires = wires[:-1]  # default
@@ -177,12 +177,9 @@ class ControlledQubitUnitary(ControlledOp):
             control_wires = [w for w in wires if w not in base.wires]
 
         if isinstance(base, Iterable):
-            if len(wires) > 1:
-                num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
-                target_wires = wires[-num_base_wires:]
-                control_wires = wires[:-num_base_wires]
-            else:
-                raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
+            num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+            target_wires = wires[-num_base_wires:]
+            control_wires = wires[:-num_base_wires]
             # We use type.__call__ instead of calling the class directly so that we don't bind the
             # operator primitive when new program capture is enabled
             base = type.__call__(
