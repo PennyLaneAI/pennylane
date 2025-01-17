@@ -507,7 +507,6 @@ class QNode:
         gradient_kwargs: Optional[dict] = None,
         **kwargs,
     ):
-        gradient_kwargs = gradient_kwargs or {}
         self._init_args = locals()
         del self._init_args["self"]
         del self._init_args["kwargs"]
@@ -538,6 +537,7 @@ class QNode:
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
+        gradient_kwargs = gradient_kwargs or {}
         if kwargs:
             if any(k in qml.gradients.SUPPORTED_GRADIENT_KWARGS for k in list(kwargs.keys())):
                 warnings.warn(
@@ -693,10 +693,14 @@ class QNode:
             )
 
         original_init_args = self._init_args.copy()
+        # gradient_kwargs defaults to None
+        original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
+        # nested dictionary update
         new_gradient_kwargs = kwargs.pop("gradient_kwargs", {})
-        old_gradient_kwargs = original_init_args.get("gradient_kwargs", {}).copy()
+        old_gradient_kwargs = original_init_args.get("gradient_kwargs").copy()
         old_gradient_kwargs.update(new_gradient_kwargs)
         kwargs["gradient_kwargs"] = old_gradient_kwargs
+
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
         # pylint: disable=protected-access
