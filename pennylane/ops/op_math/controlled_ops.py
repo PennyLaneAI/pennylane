@@ -139,7 +139,7 @@ class ControlledQubitUnitary(ControlledOp):
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
-            wires = Wires(())
+            # wires = Wires(())
 
         return cls._primitive.bind(
             base, wires=wires, control_values=control_values, work_wires=work_wires
