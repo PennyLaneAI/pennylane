@@ -21,6 +21,7 @@ from functools import partial
 import pytest
 
 import pennylane as qml
+from pennylane.capture import CaptureError
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -1005,3 +1006,127 @@ class TestQNodeVmapIntegration:
         assert jax.numpy.allclose(jax.numpy.transpose(result[1], (1, 0)), expected)
         assert jax.numpy.allclose(result[2], expected)
         assert jax.numpy.allclose(jax.numpy.transpose(result[3], (1, 0)), expected)
+
+
+class TestQNodeAutographIntegration:
+    """Tests for autograph integration with QNodes."""
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_for_loop_autograph(self, autograph):
+        """Tests that for loops can be used with the QNode and raises CaptureError if autograph=False."""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        @qml.qnode(dev, autograph=autograph)
+        def circuit(n):
+            for i in range(n):
+                qml.H(i)
+            return qml.state()
+
+        if autograph:
+            expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
+            assert qml.math.allclose(circuit(2), expected_state)
+        else:
+            with pytest.raises(
+                CaptureError,
+                match=r"Autograph must be used when Python control flow is dependent on a dynamic variable \(a function input\)",
+            ):
+                circuit(2)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_while_loop_autograph(self, autograph):
+        """Tests that for loops can be used with the QNode and raises CaptureError if autograph=False."""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        @qml.qnode(dev, autograph=autograph)
+        def circuit(n):
+            i = 0
+            while i < n:
+                qml.H(i)
+                i += 1
+            return qml.state()
+
+        if autograph:
+            expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
+            assert qml.math.allclose(circuit(2), expected_state)
+        else:
+            with pytest.raises(
+                CaptureError,
+                match=r"Autograph must be used when Python control flow is dependent on a dynamic variable \(a function input\)",
+            ):
+                circuit(2)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_conditional_autograph(self, autograph):
+        """Test that conditional statements can be used with the QNode."""
+        dev = qml.device("default.qubit", wires=[0])
+
+        @qml.qnode(dev, autograph=autograph)
+        def circuit(x):
+            if x > 1:
+                qml.Hadamard(0)
+
+            else:
+                qml.I(0)
+
+            return qml.state()
+
+        if autograph:
+            assert qml.math.allclose(circuit(0), [1, 0])
+            assert qml.math.allclose(circuit(2), [qml.numpy.sqrt(2) / 2, qml.numpy.sqrt(2) / 2])
+        else:
+            with pytest.raises(
+                CaptureError,
+                match=r"Autograph must be used when Python control flow is dependent on a dynamic variable \(a function input\)",
+            ):
+                circuit(0)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_native_for_loop(self, autograph):
+        """Test that a native for loop can be used with the QNode."""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        @qml.qnode(dev, autograph=autograph)
+        def circuit(n: int):
+            @qml.for_loop(n)
+            def loop(i):
+                qml.H(wires=i)
+
+            loop()
+            return qml.state()
+
+        expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
+        assert qml.math.allclose(circuit(2), expected_state)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_native_while_loop(self, autograph):
+        """Test that a native for loop can be used with the QNode."""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        @qml.qnode(dev, autograph=autograph)
+        def circuit(n: int):
+            @qml.while_loop(lambda x: x < n)
+            def loop(x):
+                qml.H(wires=x)
+                x += 1
+                return x
+
+            loop(0)
+            return qml.state()
+
+        expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
+        assert qml.math.allclose(circuit(2), expected_state)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_native_conditional_statements(self, autograph):
+        """Test that a native for loop can be used with the QNode."""
+        dev = qml.device("default.qubit", wires=[0, 1])
+
+        @qml.qnode(dev, autograph=autograph)
+        def circuit():
+            qml.X(0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.X, false_fn=qml.I)(wires=[1])
+
+            return qml.state()
+
+        assert qml.math.allclose(circuit(), [0, 0, 0, 1])
