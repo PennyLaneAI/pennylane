@@ -175,7 +175,8 @@ class ControlledQubitUnitary(ControlledOp):
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
-            wires = Wires(())
+            # base should have the target_wires. Then control_wires should be the ones in wires that are not in base.wires
+            control_wires = [w for w in wires if w not in base.wires]
 
         if isinstance(base, Iterable):
             if len(wires) > 1:
