@@ -171,7 +171,7 @@ class TestCliffordCompile:
             for op in tape.operations
         )
 
-    @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 9e-2])
+    @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 7e-2])
     @pytest.mark.parametrize("circuit", [circuit_3, circuit_4, circuit_5])
     def test_total_error(self, epsilon, circuit):
         """Ensure that given a certain epsilon, the total operator error is below the threshold."""
@@ -411,7 +411,7 @@ class TestCliffordCompile:
 
         [tape], _ = qml.clifford_t_decomposition(tape)
 
-        assert not sum([isinstance(op, qml.GlobalPhase) for op in tape.operations])
+        assert not sum(isinstance(op, qml.GlobalPhase) for op in tape.operations)
 
     def test_raise_with_decomposition_method(self):
         """Test that exception is correctly raise when using incorrect decomposing method"""

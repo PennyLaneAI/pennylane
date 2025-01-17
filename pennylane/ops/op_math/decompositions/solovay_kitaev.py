@@ -72,16 +72,16 @@ def _contains_SU2(op_mat, ops_vecs, tol=1e-8):
         tol (float): Tolerance for the match to be considered ``True``.
 
     Returns:
-        Tuple(bool, TensorLike): A bool that shows whether an operation similar to the given operations
-        was found, and the quaternion representation of the searched operation.
+        Tuple(bool, TensorLike, int): A bool that shows whether an operation similar to the given operations
+        was found, the quaternion representation of the searched operation and their index in the list.
     """
     node_points = qml.math.array(ops_vecs)
     gate_points = qml.math.array([_quaternion_transform(op_mat)])
 
     tree = KDTree(node_points)
-    dist = tree.query(gate_points, workers=-1)[0][0]
+    dist, indx = tree.query(gate_points, workers=-1)
 
-    return (dist < tol, gate_points[0])
+    return (dist[0] < tol, gate_points[0], indx[0])
 
 
 @lru_cache()
@@ -113,6 +113,7 @@ def _approximate_set(basis_gates, max_length=10):
     }
     # Maintains the basis gates
     basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
+    t_set = {qml.T(0), qml.adjoint(qml.T(0))}
 
     # Get the SU(2) data for the gates in basis set
     basis_mat, basis_gph = {}, {}
@@ -125,18 +126,22 @@ def _approximate_set(basis_gates, max_length=10):
     gtrie_ids = [[[gate] for gate in basis]]
     gtrie_mat = [list(basis_mat.values())]
     gtrie_gph = [list(basis_gph.values())]
+    gtrie_sum = [[int(gate in t_set) for gate in basis]]
 
     # Maintains the approximate set for gates' names, SU(2)s, global phases and quaternions
     approx_set_ids = list(gtrie_ids[0])
     approx_set_mat = list(gtrie_mat[0])
     approx_set_gph = list(gtrie_gph[0])
+    approx_set_sum = list(gtrie_sum[0])
     approx_set_qat = [_quaternion_transform(mat) for mat in approx_set_mat]
 
     # We will perform a breadth-first search (BFS) style set building for the set
     for depth in range(max_length - 1):
         # Add the containers for next depth while we explore the current
-        gtrie_id, gtrie_mt, gtrie_gp = [], [], []
-        for node, su2m, gphase in zip(gtrie_ids[depth], gtrie_mat[depth], gtrie_gph[depth]):
+        gtrie_id, gtrie_mt, gtrie_gp, gtrie_sm = [], [], [], []
+        for node, su2m, gphase, tgsum in zip(
+            gtrie_ids[depth], gtrie_mat[depth], gtrie_gph[depth], gtrie_sum[depth]
+        ):
             # Get the last operation in the current node
             last_op = qml.adjoint(node[-1], lazy=False) if node else None
 
@@ -149,8 +154,10 @@ def _approximate_set(basis_gates, max_length=10):
                 # Extend and check if the node already exists in the approximate set.
                 su2_gp = basis_gph[op] + gphase
                 su2_op = (-1.0) ** bool(su2_gp >= math.pi) * (basis_mat[op] @ su2m)
-                exists, quaternion = _contains_SU2(su2_op, approx_set_qat)
-                if not exists:
+                exists, quaternion, index = _contains_SU2(su2_op, approx_set_qat)
+
+                global_phase = qml.math.mod(su2_gp, math.pi)
+                if not exists or global_phase != approx_set_gph[index]:
                     approx_set_ids.append(node + [op])
                     approx_set_mat.append(su2_op)
                     approx_set_qat.append(quaternion)
@@ -160,14 +167,35 @@ def _approximate_set(basis_gates, max_length=10):
                     gtrie_mt.append(su2_op)
 
                     # Add the global phase data
-                    global_phase = qml.math.mod(su2_gp, math.pi)
                     approx_set_gph.append(global_phase)
                     gtrie_gp.append(global_phase)
+
+                    # Add the T gate sum data
+                    tbool = int(op in t_set)
+                    approx_set_sum.append(tgsum + tbool)
+                    gtrie_sm.append(tgsum + tbool)
 
         # Add to the next depth for next iteration
         gtrie_ids.append(gtrie_id)
         gtrie_mat.append(gtrie_mt)
         gtrie_gph.append(gtrie_gp)
+        gtrie_sum.append(gtrie_sm)
+
+    # Prune the approximate set for equivalent operations with higher T-gate counts
+    if approx_set_qat:
+        tree, tsum = KDTree(approx_set_qat), qml.math.array(approx_set_sum)
+        dists, indxs = tree.query(approx_set_qat, workers=-1, k=10)
+
+        prune_ixs = []
+        for dist, indx in zip(dists, indxs):
+            eq_idx = qml.math.sort(indx[qml.math.where(dist.round(8) == 0.0)])
+            prune_ixs.extend(eq_idx[qml.math.argsort(tsum[eq_idx])][1:])
+
+        for ix in sorted(set(prune_ixs), reverse=True):
+            del approx_set_ids[ix]
+            del approx_set_mat[ix]
+            del approx_set_gph[ix]
+            del approx_set_qat[ix]
 
     return approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat
 
@@ -340,7 +368,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
     [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
 
     # Get phase information based on the decomposition effort
-    phase = approx_set_gph[index] - gate_gph if depth or qml.math.allclose(gate_gph, 0.0) else 0.0
+    phase = approx_set_gph[index] - gate_gph
     global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase

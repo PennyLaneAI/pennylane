@@ -85,7 +85,7 @@ def test_contains_SU2():
 
     approx_ids, _, _, approx_vec = _approximate_set(("T", "T*", "H"), max_length=3)
 
-    exists, quaternion = _contains_SU2(target, approx_vec)
+    exists, quaternion, _ = _contains_SU2(target, approx_vec)
     assert exists
 
     result = [qml.adjoint(qml.T(0)), qml.adjoint(qml.T(0)), qml.adjoint(qml.T(0))]
