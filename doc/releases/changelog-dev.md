@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Bump `rng_salt` to `v0.40.0`.
+  [(#6854)](https://github.com/PennyLaneAI/pennylane/pull/6854)
+
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
