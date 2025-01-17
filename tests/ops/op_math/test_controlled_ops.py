@@ -59,13 +59,14 @@ class TestControlledQubitUnitary:
 
         with pytest.raises(TypeError, match="Must specify a set of wires"):
             qml.ControlledQubitUnitary(base_op, wires=None)
-            
+
     def test_deprecation_control_wires(self):
         """Test that a deprecation warning is raised when using the control_wires arg"""
         base_op = [[0, 1], [1, 0]]
 
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The control_wires input to ControlledQubitUnitary is deprecated"
+            qml.PennyLaneDeprecationWarning,
+            match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
             qml.ControlledQubitUnitary(base_op, wires=[0, 1], control_wires=[2, 3])
 
