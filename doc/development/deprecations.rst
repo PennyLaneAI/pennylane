@@ -58,6 +58,11 @@ Completed deprecation cycles
   - Deprecated in v0.36
   - Removed in v0.41
 
+* The input argument ``control_wires`` of ``MultiControlledX`` has been removed.
+
+  - Deprecated in v0.22
+  - Removed in v0.41
+
 * The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
 
   - Deprecated in v0.40

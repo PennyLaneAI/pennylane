@@ -1172,38 +1172,25 @@ class MultiControlledX(ControlledOp):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        control_wires: WiresLike = (),
         wires: WiresLike = (),
         control_values: Union[bool, List[bool], int, List[int]] = None,
         work_wires: WiresLike = (),
     ):
-        control_wires = Wires(() if control_wires is None else control_wires)
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
-
-        if len(control_wires) > 0:
-            warnings.warn(
-                "The control_wires keyword for MultiControlledX is deprecated, and will "
-                "be removed soon. Use wires = (*control_wires, target_wire) instead.",
-                UserWarning,
-            )
 
         self._validate_control_values(control_values)
 
         if len(wires) == 0:
             raise ValueError("Must specify the wires where the operation acts on")
 
-        if len(control_wires) > 0:
-            if len(wires) != 1:
-                raise ValueError("MultiControlledX accepts a single target wire.")
-        else:
-            if len(wires) < 2:
-                raise ValueError(
-                    f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. "
-                    f"Need at least 2."
-                )
-            control_wires = wires[:-1]
-            wires = wires[-1:]
+        if len(wires) < 2:
+            raise ValueError(
+                f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. "
+                f"Need at least 2."
+            )
+        control_wires = wires[:-1]
+        wires = wires[-1:]
 
         control_values = _check_and_convert_control_values(control_values, control_wires)
 
