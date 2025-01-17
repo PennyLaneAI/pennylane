@@ -40,7 +40,7 @@ class ControlledQubitUnitary(ControlledOp):
 
     .. warning::
 
-        The ``control_wires`` argument is deprecated and will be removed in 
+        The ``control_wires`` argument is deprecated and will be removed in
         v0.42. Please use the ``wires`` argument instead.
 
     In addition to default ``Operation`` instance attributes, the following are
@@ -63,7 +63,7 @@ class ControlledQubitUnitary(ControlledOp):
             operation. If passing a matrix, this will be used to construct a QubitUnitary
             operator that will be used as the base operator. If providing a ``qml.QubitUnitary``,
             this will be used as the base directly.
-        wires (Union[Wires, Sequence[int], or int]): the wires the full 
+        wires (Union[Wires, Sequence[int], or int]): the wires the full
         controlled unitary acts on, composed of the controlled wires followed
         by the target wires
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
