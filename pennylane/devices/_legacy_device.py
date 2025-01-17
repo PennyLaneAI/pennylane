@@ -93,7 +93,6 @@ def _local_tape_expand(tape, depth, stop_at):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -813,7 +812,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 # Some measurements are not observable based.
                 continue
 
-            if mp.obs.name == "LinearCombination" and not self.supports_observable("Hamiltonian"):
+            if mp.obs.name == "LinearCombination" and not (
+                self.supports_observable("Hamiltonian")
+                or self.supports_observable("LinearCombination")
+            ):
                 return False
 
             if mp.obs.name in (
