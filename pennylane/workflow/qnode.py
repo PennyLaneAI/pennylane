@@ -690,7 +690,6 @@ class QNode:
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
-
         original_init_args = self._init_args.copy()
         # gradient_kwargs defaults to None
         original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
