@@ -530,7 +530,11 @@ class TestCountsIntegration:
             return res
 
         circuit()
-        assert circuit._qfunc_output.return_type is Counts  # pylint: disable=protected-access
+        # Will raise an PennyLaneDeprecationWarning
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="ObservableReturnTypes is deprecated"
+        ):
+            assert circuit._qfunc_output.return_type is Counts  # pylint: disable=protected-access
 
     def test_providing_no_observable_and_no_wires_counts(self):
         """Test that we can provide no observable and no wires to sample function"""

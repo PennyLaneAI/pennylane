@@ -20,7 +20,7 @@ import copy
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from enum import Enum
+from enum import Enum, EnumMeta
 from typing import Optional, Union
 
 import pennylane as qml
@@ -35,7 +35,25 @@ from pennylane.wires import Wires
 # =============================================================================
 
 
-class ObservableReturnTypes(Enum):
+class DeprecatedEnumMeta(EnumMeta):
+    """Metaclass for deprecation of Enum classes."""
+
+    def __getattribute__(cls, name):
+        if name not in {"__class__", "__doc__", "__module__", "__qualname__"}:
+            warnings.warn(
+                f"{cls.__name__} is deprecated and will be removed in version 0.42. "
+                "Instead, please use the direct string representation of the return type.",
+                qml.PennyLaneDeprecationWarning,
+            )
+        return super().__getattribute__(name)
+    
+    
+class DeprecatedEnum(Enum, metaclass=DeprecatedEnumMeta):
+    """Deprecated Enum class."""
+    pass
+
+
+class ObservableReturnTypes(DeprecatedEnum):
     """Enumeration class to represent the return types of an observable."""
 
     Sample = "sample"

@@ -81,7 +81,7 @@ class TestExpval:
         @qml.qnode(dev)
         def circuit():
             res = qml.expval(qml.PauliZ(0))
-            assert res.return_type is Expectation
+            assert isinstance(res, ExpectationMP)
             return res
 
         circuit()

@@ -40,7 +40,7 @@ class TestStateMP:
         """Test the processing of a state vector."""
 
         mp = StateMP(wires=None)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         processed = mp.process_state(vec, None)
@@ -144,7 +144,7 @@ class TestStateMP:
         """Test the processing of a state vector."""
 
         mp = StateMP(wires=None)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         # Expecting a NotImplementedError to be raised when process_density_matrix is called
@@ -171,7 +171,7 @@ class TestDensityMatrixMP:
         """Test the processing of a state vector into a matrix."""
 
         mp = DensityMatrixMP(wires=wires)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         num_wires = int(np.log2(len(vec)))
@@ -198,7 +198,7 @@ class TestDensityMatrixMP:
         """Test the processing of a density matrix into a matrix."""
 
         mp = DensityMatrixMP(wires=wires)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         num_wires = int(np.log2(len(mat)))
