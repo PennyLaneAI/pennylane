@@ -73,7 +73,7 @@ def _expand_metric_tensor(
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:  # pylint: disable=too-many-arguments
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:  # pylint: disable=too-many-arguments, too-many-positional-arguments
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
 
@@ -88,7 +88,7 @@ def _expand_metric_tensor(
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-def metric_tensor(  # pylint:disable=too-many-arguments
+def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arguments
     tape: QuantumScript,
     argnum=None,
     approx=None,
