@@ -116,9 +116,7 @@ class ControlledQubitUnitary(ControlledOp):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(
-            data[0], metadata[0], control_values=metadata[1], work_wires=metadata[2]
-        )
+        return cls(data[0], metadata[0], control_values=metadata[1], work_wires=metadata[2])
 
     # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
     @classmethod
@@ -146,7 +144,7 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
     @classmethod
-    def _deprecate_control_wires(self, control_wires):
+    def _deprecate_control_wires(cls, control_wires):
         if control_wires != "unset":
             warnings.warn(
                 "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
