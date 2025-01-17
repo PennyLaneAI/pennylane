@@ -9,26 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``tape`` and ``qtape`` properties of ``QNode`` have been deprecated. 
-  Instead, use the ``qml.workflow.construct_tape`` function.
+* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
+  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
 
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` is deprecated. 
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` is deprecated. 
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
+  - Deprecated in v0.41
+  - Will be removed in v0.42
 
 * ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
   :meth:`~.Operator.terms` instead.
@@ -71,6 +56,27 @@ Completed deprecation cycles
 * ``MultiControlledX`` no longer accepts strings as control values.
 
   - Deprecated in v0.36
+  - Removed in v0.41
+
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+  Instead, use the ``qml.workflow.construct_tape`` function.
+  
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
+
+  - Deprecated in v0.40
   - Removed in v0.41
 
 * The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
