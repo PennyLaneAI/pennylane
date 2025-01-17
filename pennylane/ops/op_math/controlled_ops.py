@@ -131,7 +131,7 @@ class ControlledQubitUnitary(ControlledOp):
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        self._deprecate_control_wires(control_wires)
+        cls._deprecate_control_wires(control_wires)
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
@@ -142,9 +142,10 @@ class ControlledQubitUnitary(ControlledOp):
             wires = Wires(())
 
         return cls._primitive.bind(
-            base, control_wires=wires, control_values=control_values, work_wires=work_wires
+            base, wires=wires, control_values=control_values, work_wires=work_wires
         )
 
+    @classmethod
     def _deprecate_control_wires(self, control_wires):
         if control_wires != "unset":
             warnings.warn(
@@ -165,7 +166,8 @@ class ControlledQubitUnitary(ControlledOp):
     ):
         self._deprecate_control_wires(control_wires)
 
-        # wires = Wires(() if wires is None else wires)
+        if wires is None:
+            raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
         work_wires = Wires(() if work_wires is None else work_wires)
         control_wires = wires[:-1]  # default
 
@@ -201,7 +203,7 @@ class ControlledQubitUnitary(ControlledOp):
         values = None if self.control_values is None else [True] + self.control_values
         return ControlledQubitUnitary(
             self.base,
-            control_wires=ctrl_wires,
+            wires=ctrl_wires + self.wires,
             control_values=values,
             work_wires=self.work_wires,
         )

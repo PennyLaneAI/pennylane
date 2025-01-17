@@ -81,10 +81,10 @@ class TestControlledQubitUnitary:
         """Test that the operator wires are as expected with capture enabled"""
         base_op = [[0, 1], [1, 0]]
 
-        op_kwarg = qml.ControlledQubitUnitary(base_op, wires=control_wires + wires)
+        op_kwarg = qml.ControlledQubitUnitary(base_op, wires=Wires(control_wires) + Wires(wires))
         assert op_kwarg.base.wires == Wires(wires)
         assert op_kwarg.control_wires == Wires(control_wires)
-        op = qml.ControlledQubitUnitary(base_op, wires=control_wires + wires)
+        op = qml.ControlledQubitUnitary(base_op, wires=Wires(control_wires) + Wires(wires))
         assert op.base.wires == Wires(wires)
         assert op.control_wires == Wires(control_wires)
 
@@ -101,7 +101,7 @@ class TestControlledQubitUnitary:
         assert op_1.control_wires == Wires([0, 1])
 
         control_wires_2, wires_2 = [0, 1, 2], ()
-        op_2 = qml.ControlledQubitUnitary(base_op, wires=control_wires_2 + wires_2)
+        op_2 = qml.ControlledQubitUnitary(base_op, wires=Wires(control_wires_2) + Wires(wires_2))
 
         assert op_2.base.wires == Wires(2)
         assert op_2.control_wires == Wires([0, 1])
@@ -138,7 +138,7 @@ class TestControlledQubitUnitary:
         @qml.qnode(dev)
         def f1():
             qml.QubitUnitary(U1, wires=range(3))
-            qml.ControlledQubitUnitary(X, wires=control_wires + target_wire)
+            qml.ControlledQubitUnitary(X, wires=control_wires + [target_wire])
             qml.QubitUnitary(U2, wires=range(3))
             return qml.state()
 
@@ -170,7 +170,7 @@ class TestControlledQubitUnitary:
         @qml.qnode(dev)
         def f1():
             qml.QubitUnitary(U1, wires=range(3))
-            qml.ControlledQubitUnitary(X_broadcasted, wires=control_wires + target_wire)
+            qml.ControlledQubitUnitary(X_broadcasted, wires=control_wires + [target_wire])
             qml.QubitUnitary(U2, wires=range(3))
             return qml.state()
 
@@ -308,7 +308,7 @@ class TestControlledQubitUnitary:
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
 
-            qml.ControlledQubitUnitary(U, wires=control_wires + wires)
+            qml.ControlledQubitUnitary(U, wires=control_wires + target_wires)
 
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
