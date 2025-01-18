@@ -54,7 +54,6 @@ DefaultGateSet = {
     "Toffoli",
 }
 
-
 # parameters for further configuration of the decompositions
 resource_config = {
     "error_rx": 10e-3,

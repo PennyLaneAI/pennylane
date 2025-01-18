@@ -9,52 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``qsvt_legacy`` function has been deprecated.
-  Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
+* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
+  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
 
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``tape`` and ``qtape`` properties of ``QNode`` have been deprecated. 
-  Instead, use the ``qml.workflow.construct_tape`` function.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` is deprecated. 
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` is deprecated. 
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``output_dim`` property of ``qml.tape.QuantumScript`` has been deprecated. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been deprecated. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-  
-* The ``QubitStateVector`` template is deprecated.
-  Instead, use ``StatePrep``.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
+  - Deprecated in v0.41
+  - Will be removed in v0.42
 
 * ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
   :meth:`~.Operator.terms` instead.
@@ -65,12 +24,6 @@ Pending deprecations
   A user should use :class:`op.operands <~.CompositeOp>` instead.
 
   - Deprecated in v0.36
-
-* ``MultiControlledX`` is the only controlled operation that still supports specifying control
-  values with a bit string. In the future, it will no longer accepts strings as control values.
-
-  - Deprecated in v0.36
-  - Will be removed in v0.37
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
@@ -99,6 +52,54 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* ``MultiControlledX`` no longer accepts strings as control values.
+
+  - Deprecated in v0.36
+  - Removed in v0.41
+
+* The input argument ``control_wires`` of ``MultiControlledX`` has been removed.
+
+  - Deprecated in v0.22
+  - Removed in v0.41
+
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+  Instead, use the ``qml.workflow.construct_tape`` function.
+  
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
+  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+  
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``output_dim`` property of ``qml.tape.QuantumScript`` has been removed. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``qml.qsvt_legacy`` function has been removed.
+  Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
+
+  - Deprecated in v0.40
+  - Removed in v0.41
 
 * The ``qml.qinfo`` module has been removed. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
   modules instead.
