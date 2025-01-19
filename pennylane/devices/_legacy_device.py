@@ -93,7 +93,6 @@ def _local_tape_expand(tape, depth, stop_at):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 

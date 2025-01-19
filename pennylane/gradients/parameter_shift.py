@@ -752,6 +752,12 @@ def _param_shift_stopping_condition(op) -> bool:
     return True
 
 
+def _inplace_set_trainable_params(tape):
+    """Update all the trainable params in place."""
+    params = tape.get_parameters(trainable_only=False)
+    tape.trainable_params = qml.math.get_trainable_indices(params)
+
+
 def _expand_transform_param_shift(
     tape: QuantumScript,
     argnum=None,
@@ -769,11 +775,21 @@ def _expand_transform_param_shift(
         name="param_shift",
         error=qml.operation.DecompositionUndefinedError,
     )
-    if new_tape is tape:
-        return [tape], postprocessing
-    params = new_tape.get_parameters(trainable_only=False)
-    new_tape.trainable_params = qml.math.get_trainable_indices(params)
-    return [new_tape], postprocessing
+    if any(
+        qml.math.requires_grad(d) for mp in tape.measurements for d in getattr(mp.obs, "data", [])
+    ):
+        try:
+            batch, postprocessing = qml.transforms.split_to_single_terms(new_tape)
+        except RuntimeError as e:
+            raise ValueError(
+                "Can only differentiate Hamiltonian "
+                f"coefficients for expectations, not {tape.measurements}."
+            ) from e
+    else:
+        batch = [new_tape]
+    if len(batch) > 1 or batch[0] is not tape:
+        _ = [_inplace_set_trainable_params(t) for t in batch]
+    return batch, postprocessing
 
 
 @partial(
