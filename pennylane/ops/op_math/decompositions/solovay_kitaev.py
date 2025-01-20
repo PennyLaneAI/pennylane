@@ -63,27 +63,28 @@ def _quaternion_transform(matrix):
     )
 
 
-def _contains_SU2(op_mat, ops_vecs, tol=1e-8):
+def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
     r"""Checks if a given SU(2) matrix is contained in a list of quaternions for a given tolerance.
 
     Args:
         op_mat (TensorLike): SU(2) matrix for the operation to be searched
         op_vecs (list(TensorLike)): List of quaternion for the operations that makes the search space.
+        kd_tree (KDTree): KDTree object built from the list of quaternions. Default is ``None``.
         tol (float): Tolerance for the match to be considered ``True``.
 
     Returns:
         Tuple(bool, TensorLike, int): A bool that shows whether an operation similar to the given operations
         was found, the quaternion representation of the searched operation and their index in the list.
     """
-    node_points = qml.math.array(ops_vecs)
     gate_points = qml.math.array([_quaternion_transform(op_mat)])
 
-    tree = KDTree(node_points)
+    tree = kd_tree or KDTree(qml.math.array(ops_vecs))
     dist, indx = tree.query(gate_points, workers=-1)
 
     return (dist[0] < tol, gate_points[0], indx[0])
 
 
+# pylint: disable=too-many-statements
 @lru_cache()
 def _approximate_set(basis_gates, max_length=10):
     r"""Builds an approximate unitary set required for the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
@@ -137,8 +138,9 @@ def _approximate_set(basis_gates, max_length=10):
 
     # We will perform a breadth-first search (BFS) style set building for the set
     for depth in range(max_length - 1):
+        kdtree = KDTree(qml.math.array(approx_set_qat))
         # Add the containers for next depth while we explore the current
-        gtrie_id, gtrie_mt, gtrie_gp, gtrie_sm = [], [], [], []
+        gtrie_id, gtrie_mt, gtrie_gp, gtrie_sm, gtrie_qt = [], [], [], [], []
         for node, su2m, gphase, tgsum in zip(
             gtrie_ids[depth], gtrie_mat[depth], gtrie_gph[depth], gtrie_sum[depth]
         ):
@@ -154,13 +156,24 @@ def _approximate_set(basis_gates, max_length=10):
                 # Extend and check if the node already exists in the approximate set.
                 su2_gp = basis_gph[op] + gphase
                 su2_op = (-1.0) ** bool(su2_gp >= math.pi) * (basis_mat[op] @ su2m)
-                exists, quaternion, index = _contains_SU2(su2_op, approx_set_qat)
+
+                exists = False
+                if gtrie_qt:
+                    exists, quaternion, index = _contains_SU2(su2_op, ops_vecs=gtrie_qt)
+
+                if exists:
+                    index += len(approx_set_qat) - len(gtrie_qt)
+                else:
+                    exists, quaternion, index = _contains_SU2(su2_op, kd_tree=kdtree)
 
                 global_phase = qml.math.mod(su2_gp, math.pi)
                 if not exists or global_phase != approx_set_gph[index]:
                     approx_set_ids.append(node + [op])
                     approx_set_mat.append(su2_op)
+
+                    # Add the quaternion data
                     approx_set_qat.append(quaternion)
+                    gtrie_qt.append(quaternion)
 
                     # Add to the containers for next depth
                     gtrie_id.append(node + [op])
