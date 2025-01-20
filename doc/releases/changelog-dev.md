@@ -12,8 +12,10 @@
 
 <h3>Documentation 📝</h3>
 
-* Updated documentation for vibrational Hamiltonians
+* Updated documentation for vibrational Hamiltonians.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
+
+* Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
 
 <h3>Bug fixes 🐛</h3>
 
