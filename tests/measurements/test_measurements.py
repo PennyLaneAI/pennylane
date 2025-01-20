@@ -95,11 +95,16 @@ def test_none_return_type():
     """Test that a measurement process without a return type property has return_type
     `None`"""
 
-    class NoReturnTypeMeasurement(MeasurementProcess):
-        """Dummy measurement process with no return type."""
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="MeasurementProcess property return_type is deprecated",
+    ):
 
-    mp = NoReturnTypeMeasurement()
-    assert mp.return_type is None
+        class NoReturnTypeMeasurement(MeasurementProcess):
+            """Dummy measurement process with no return type."""
+
+        mp = NoReturnTypeMeasurement()
+        assert mp.return_type is None
 
 
 def test_eq_correctness():
@@ -215,8 +220,7 @@ class TestStatisticsQueuing:
 
         assert len(q.queue) == 1
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -238,8 +242,7 @@ class TestStatisticsQueuing:
 
         assert len(q.queue) == 1
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -263,8 +266,7 @@ class TestStatisticsQueuing:
         assert len(q.queue) == 1
 
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
 
 class TestProperties:
@@ -563,22 +565,23 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-            @property
-            def return_type(self):
-                return Sample
-
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliX(0)
-            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
-
         with pytest.raises(
-            qml.DeviceError,
-            match="not accepted for analytic simulation on default.qubit",
+            qml.PennyLaneDeprecationWarning,
+            match="MeasurementProcess property return_type is deprecated",
         ):
-            circuit()
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.PauliX(0)
+                return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+
+            with pytest.raises(
+                qml.DeviceError,
+                match="not accepted for analytic simulation on default.qubit",
+            ):
+                circuit()
 
 
 class TestStateMeasurement:
