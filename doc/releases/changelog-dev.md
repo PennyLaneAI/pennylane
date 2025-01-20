@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* A `RuntimeWarning` is now raised by `QNode` if `interface="jax"` and the installed version of JAX
+  is greater than `0.4.28`.
+  [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
+
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
@@ -105,4 +109,5 @@ Diksha Dhawan,
 Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
+Mudit Pandey,
 Andrija Paurevic
