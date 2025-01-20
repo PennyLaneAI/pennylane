@@ -157,7 +157,7 @@ def _approximate_set(basis_gates, max_length=10):
                 su2_gp = basis_gph[op] + gphase
                 su2_op = (-1.0) ** bool(su2_gp >= math.pi) * (basis_mat[op] @ su2m)
 
-                exists = False
+                exists, quaternion, index = False, None, -1
                 if gtrie_qt:
                     exists, quaternion, index = _contains_SU2(su2_op, ops_vecs=gtrie_qt)
 

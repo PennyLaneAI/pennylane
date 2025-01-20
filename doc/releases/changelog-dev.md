@@ -44,7 +44,8 @@
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
 
-* `qml.ops.sk_decomposition` now has an improved approximate set generation.
+* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly impacts
+  the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` gates for them.
   [(#6855)](https://github.com/PennyLaneAI/pennylane/pull/6855)
 
 <h3>Breaking changes 💔</h3>
