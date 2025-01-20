@@ -51,8 +51,9 @@ class TestAdjointRepr:
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
     @pytest.mark.parametrize("assume_orthogonal", [True, False])
     @pytest.mark.parametrize("change_norms", [False, True])
+    @pytest.mark.parametrize("dense", [False, True])
     def test_structure_constants_elements_with_orthogonal_basis(
-        self, dla, assume_orthogonal, change_norms
+        self, dla, assume_orthogonal, change_norms, dense
     ):
         r"""Test relation :math:`[i G_α, i G_β] = \sum_{γ=0}^{d-1} f^γ_{α,β} iG_γ_` with orthogonal
         bases.
@@ -68,7 +69,7 @@ class TestAdjointRepr:
             # Sample some random new coefficients between 0.5 and 1.5
             coeffs = np.random.random(d) + 0.5
             dla = [c * op for c, op in zip(coeffs, dla)]
-        ad_rep = structure_constants(dla, pauli=True, is_orthogonal=assume_orthogonal)
+        ad_rep = structure_constants(dla, pauli=True, dense=dense, is_orthogonal=assume_orthogonal)
         for alpha in range(d):
             for beta in range(d):
 
@@ -80,7 +81,8 @@ class TestAdjointRepr:
                 assert all(np.isclose(comm_res[k], res[k]) for k in res)
 
     @pytest.mark.parametrize("ortho_dla", [Ising3, XXZ3])
-    def test_structure_constants_elements_with_non_orthogonal(self, ortho_dla):
+    @pytest.mark.parametrize("dense", [False, True])
+    def test_structure_constants_elements_with_non_orthogonal(self, ortho_dla, dense):
         r"""Test relation :math:`[i G_α, i G_β] = \sum_{γ=0}^{d-1} f^γ_{α,β} iG_γ_` with
         non-orthogonal bases.
         """
@@ -88,7 +90,7 @@ class TestAdjointRepr:
 
         coeffs = np.random.random((d, d)) + 0.5
         dla = [sum(c * op for c, op in zip(_coeffs, ortho_dla)) for _coeffs in coeffs]
-        ad_rep = structure_constants(dla, pauli=True, is_orthogonal=False)
+        ad_rep = structure_constants(dla, pauli=True, dense=dense, is_orthogonal=False)
         for alpha in range(d):
             for beta in range(d):
 
@@ -110,18 +112,20 @@ class TestAdjointRepr:
         assert np.allclose(transf_ortho_ad_rep, ad_rep)
 
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
-    def test_use_operators(self, dla):
+    @pytest.mark.parametrize("dense", [False, True])
+    def test_use_operators(self, dla, dense):
         """Test that operators can be passed and lead to the same result"""
-        ad_rep_true = structure_constants(dla, pauli=True)
+        ad_rep_true = structure_constants(dla, pauli=True, dense=dense)
 
         ops = [op.operation() for op in dla]
-        ad_rep = structure_constants(ops, pauli=False)
+        ad_rep = structure_constants(ops, pauli=False, dense=dense)
         assert qml.math.allclose(ad_rep, ad_rep_true)
 
-    def test_raise_error_for_non_paulis(self):
+    @pytest.mark.parametrize("dense", [False, True])
+    def test_raise_error_for_non_paulis(self, dense):
         """Test that an error is raised when passing operators that do not have a pauli_rep"""
         generators = [qml.Hadamard(0), qml.X(0)]
         with pytest.raises(
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
-            qml.pauli.structure_constants(generators)
+            qml.pauli.structure_constants(generators, dense=dense)

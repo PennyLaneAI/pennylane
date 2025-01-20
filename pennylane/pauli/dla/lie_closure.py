@@ -55,7 +55,7 @@ def lie_closure(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
-        dense (bool): Whether or not dense representations should be used and output in the Lie cloure computation. Default is ``False``.
+        dense (bool): Whether or not dense matrix representations are used and output in the structure constants computation. Default is ``False``.
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
     Returns:
