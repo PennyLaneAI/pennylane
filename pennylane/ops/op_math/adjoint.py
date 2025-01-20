@@ -191,6 +191,7 @@ def _get_adjoint_qfunc_prim():
     # if capture is enabled, jax should be installed
     # pylint: disable=import-outside-toplevel
     import jax
+
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     adjoint_prim = NonInterpPrimitive("adjoint_transform")

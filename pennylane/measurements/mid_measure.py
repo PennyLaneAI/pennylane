@@ -245,6 +245,7 @@ def _create_mid_measure_primitive():
     """
     # pylint: disable=import-outside-toplevel
     import jax
+
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     mid_measure_p = NonInterpPrimitive("measure")

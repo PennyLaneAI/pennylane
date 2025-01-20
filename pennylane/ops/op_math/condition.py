@@ -682,6 +682,7 @@ def _get_cond_qfunc_prim():
 
     # pylint: disable=import-outside-toplevel
     import jax
+
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     cond_prim = NonInterpPrimitive("cond")

@@ -235,6 +235,7 @@ def _get_ctrl_qfunc_prim():
 
     # pylint: disable=import-outside-toplevel
     import jax
+
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     ctrl_prim = NonInterpPrimitive("ctrl_transform")

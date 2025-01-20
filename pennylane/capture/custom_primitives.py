@@ -29,7 +29,8 @@ class PrimitiveType(Enum):
     TRANSFORM = "transform"
 
 
-class QmlPrimitive(jax.core.Primitive):  # pylint: disable=abstract-method
+# pylint: disable=too-few-public-methods,abstract-method
+class QmlPrimitive(jax.core.Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives."""
 

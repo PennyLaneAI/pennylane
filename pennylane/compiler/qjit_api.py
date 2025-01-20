@@ -406,6 +406,7 @@ def _get_while_loop_qfunc_prim():
 
     # pylint: disable=import-outside-toplevel
     import jax
+
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     while_loop_prim = NonInterpPrimitive("while_loop")
@@ -630,6 +631,7 @@ def _get_for_loop_qfunc_prim():
 
     # pylint: disable=import-outside-toplevel
     import jax
+
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     for_loop_prim = NonInterpPrimitive("for_loop")
