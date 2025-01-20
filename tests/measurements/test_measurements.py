@@ -183,7 +183,7 @@ def test_jax_pytree_integration(mp):
 
 
 @pytest.mark.parametrize(
-    "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
+    "stat_func,return_type", [(expval, ExpectationMP), (var, VarianceMP), (sample, SampleMP)]
 )
 class TestStatisticsQueuing:
     """Tests for annotating the return types of the statistics functions"""
@@ -201,8 +201,7 @@ class TestStatisticsQueuing:
 
         assert len(q.queue) == 1
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
@@ -395,7 +394,7 @@ class TestExpansion:
         assert tape.operations[3].wires.tolist() == [1]
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], ExpectationMP)
         assert tape.measurements[0].wires.tolist() == [0, 1]
         assert np.all(tape.measurements[0].eigvals() == np.array([1, -1, -1, 1]))
 
@@ -419,7 +418,7 @@ class TestExpansion:
         )
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], ExpectationMP)
         assert tape.measurements[0].wires.tolist() == ["a"]
         assert np.all(tape.measurements[0].eigvals() == np.array([0, 5]))
 
