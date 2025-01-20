@@ -519,23 +519,6 @@ class TestCountsIntegration:
         assert all(sum(r.values()) == n_sample for r in result)
         assert all(all(v.dtype == np.dtype("int") for v in r.values()) for r in result)
 
-    def test_observable_return_type_is_counts(self):
-        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Counts`"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.counts(qml.PauliZ(0))
-            return res
-
-        circuit()
-        # Will raise an PennyLaneDeprecationWarning
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="ObservableReturnTypes is deprecated"
-        ):
-            assert circuit._qfunc_output.return_type is Counts  # pylint: disable=protected-access
-
     def test_providing_no_observable_and_no_wires_counts(self):
         """Test that we can provide no observable and no wires to sample function"""
         dev = qml.device("default.qubit", wires=2, shots=1000)

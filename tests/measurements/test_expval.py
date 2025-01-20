@@ -74,18 +74,6 @@ class TestExpval:
         else:
             assert res.dtype == r_dtype
 
-    def test_observable_return_type_is_expectation(self):
-        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.expval(qml.PauliZ(0))
-            assert isinstance(res, ExpectationMP)
-            return res
-
-        circuit()
-
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_measurement_value(
