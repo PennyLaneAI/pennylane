@@ -86,6 +86,11 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added a `QmlPrimitive` class that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` module.
+  This class contains a `prim_type` property so that we can differentiate between different sets of PennyLane primitives.
+  Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
+  [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
+
 <h3>Documentation 📝</h3>
 
 * Updated documentation for vibrational Hamiltonians
@@ -105,4 +110,5 @@ Diksha Dhawan,
 Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
+Mudit Pandey,
 Andrija Paurevic
