@@ -92,6 +92,7 @@
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
 
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
+  [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
 <h3>Bug fixes 🐛</h3>
 
