@@ -643,22 +643,21 @@ class TestResourceMultiControlledX:
     """Test the ResourceMultiControlledX operation"""
 
     res_ops = (
-        re.ResourceMultiControlledX(control_wires=[0], wires=["t"], control_values=[1]),
-        re.ResourceMultiControlledX(control_wires=[0, 1], wires=["t"], control_values=[1, 1]),
-        re.ResourceMultiControlledX(control_wires=[0, 1, 2], wires=["t"], control_values=[1, 1, 1]),
+        re.ResourceMultiControlledX(wires=[0, "t"], control_values=[1]),
+        re.ResourceMultiControlledX(wires=[0, 1, "t"], control_values=[1, 1]),
+        re.ResourceMultiControlledX(wires=[0, 1, 2, "t"], control_values=[1, 1, 1]),
         re.ResourceMultiControlledX(
-            control_wires=[0, 1, 2, 3, 4], wires=["t"], control_values=[1, 1, 1, 1, 1]
+            wires=[0, 1, 2, 3, 4, "t"], control_values=[1, 1, 1, 1, 1]
         ),
         re.ResourceMultiControlledX(
-            control_wires=[0], wires=["t"], control_values=[0], work_wires=["w1"]
+            wires=[0, "t"], control_values=[0], work_wires=["w1"]
         ),
         re.ResourceMultiControlledX(
-            control_wires=[0, 1], wires=["t"], control_values=[1, 0], work_wires=["w1", "w2"]
+            wires=[0, 1, "t"], control_values=[1, 0], work_wires=["w1", "w2"]
         ),
-        re.ResourceMultiControlledX(control_wires=[0, 1, 2], wires=["t"], control_values=[0, 0, 1]),
+        re.ResourceMultiControlledX(wires=[0, 1, 2, "t"], control_values=[0, 0, 1]),
         re.ResourceMultiControlledX(
-            control_wires=[0, 1, 2, 3, 4],
-            wires=["t"],
+            wires=[0, 1, 2, 3, 4, "t"],
             control_values=[1, 0, 0, 1, 0],
             work_wires=["w1"],
         ),
@@ -732,8 +731,7 @@ class TestResourceMultiControlledX:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         op = re.ResourceMultiControlledX(
-            control_wires=[0, 1, 2, 3, 4],
-            wires=["t"],
+            wires=[0, 1, 2, 3, 4, "t"],
             control_values=[1, 0, 0, 1, 0],
             work_wires=["w1"],
         )
@@ -777,7 +775,7 @@ class TestResourceMultiControlledX:
     )
     def test_resource_controlled(self, ctrl_wires, ctrl_values, work_wires, expected_res):
         """Test that the controlled resources are as expected"""
-        op = re.ResourceMultiControlledX(control_wires=[0], wires=["t"], control_values=[1])
+        op = re.ResourceMultiControlledX(wires=[0, "t"], control_values=[1])
 
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
@@ -806,8 +804,7 @@ class TestResourceMultiControlledX:
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
         op = re.ResourceMultiControlledX(
-            control_wires=[0, 1, 2, 3, 4],
-            wires=["t"],
+            wires=[0, 1, 2, 3, 4, "t"],
             control_values=[1, 0, 0, 1, 0],
             work_wires=["w1"],
         )
