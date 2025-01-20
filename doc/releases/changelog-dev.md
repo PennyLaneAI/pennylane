@@ -105,8 +105,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Isaac De Vlugt
-Diksha Dhawan
+Isaac De Vlugt, 
+Diksha Dhawan, 
 Yushao Chen,
 Diksha Dhawan,
 Pietropaolo Frisoni,
