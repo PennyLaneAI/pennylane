@@ -646,12 +646,8 @@ class TestResourceMultiControlledX:
         re.ResourceMultiControlledX(wires=[0, "t"], control_values=[1]),
         re.ResourceMultiControlledX(wires=[0, 1, "t"], control_values=[1, 1]),
         re.ResourceMultiControlledX(wires=[0, 1, 2, "t"], control_values=[1, 1, 1]),
-        re.ResourceMultiControlledX(
-            wires=[0, 1, 2, 3, 4, "t"], control_values=[1, 1, 1, 1, 1]
-        ),
-        re.ResourceMultiControlledX(
-            wires=[0, "t"], control_values=[0], work_wires=["w1"]
-        ),
+        re.ResourceMultiControlledX(wires=[0, 1, 2, 3, 4, "t"], control_values=[1, 1, 1, 1, 1]),
+        re.ResourceMultiControlledX(wires=[0, "t"], control_values=[0], work_wires=["w1"]),
         re.ResourceMultiControlledX(
             wires=[0, 1, "t"], control_values=[1, 0], work_wires=["w1", "w2"]
         ),
