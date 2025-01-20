@@ -50,7 +50,7 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* ``qml.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
+* ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 <h3>Breaking changes 💔</h3>
@@ -108,15 +108,11 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-<<<<<<< HEAD
-Diksha Dhawan,
-Korbinian Kottmann
-=======
 
 Yushao Chen,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic
->>>>>>> 397273bbfff54621cc52c6c3376b30ae46b9468b
