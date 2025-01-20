@@ -49,6 +49,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `MultiControlledX` no longer accepts strings as control values.
+  [(#6835)](https://github.com/PennyLaneAI/pennylane/pull/6835)
+
+* The input argument `control_wires` of `MultiControlledX` has been removed.
+  [(#6832)](https://github.com/PennyLaneAI/pennylane/pull/6832)
+
 * `qml.execute` now has a collection of keyword-only arguments.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
@@ -81,6 +87,8 @@
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
 
+<h3>Internal changes ⚙️</h3>
+
 <h3>Documentation 📝</h3>
 
 * Updated documentation for vibrational Hamiltonians
@@ -97,6 +105,7 @@ This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
 Diksha Dhawan,
+Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
 Andrija Paurevic
