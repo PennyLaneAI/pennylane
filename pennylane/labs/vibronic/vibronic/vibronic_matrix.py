@@ -142,23 +142,6 @@ class VibronicMatrix:
 
         return norm
 
-    # def _norm_base_case_sparse(self, gridpoints: int) -> float:
-    #    word = self.block(0, 0)
-    #    norm = 0
-
-    #    for term in word.terms:
-    #        compiled, local_vars = term.coeffs.compile()
-
-    #        indices = np.array(list(term.coeffs.nonzero())).T
-    #        for i, row in enumerate(indices):
-    #            var_dict[f"idx{i}"] = row
-
-    #        term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
-    #        coeff_sum = eval(compiled, {}, local_vars)
-    #        norm += coeff_sum * term_op_norm
-
-    #    return norm
-
     def __add__(self, other: VibronicMatrix) -> VibronicMatrix:
         if self.states != other.states:
             raise ValueError(
