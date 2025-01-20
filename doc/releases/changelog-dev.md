@@ -102,6 +102,7 @@ This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
 Diksha Dhawan,
+Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
 Andrija Paurevic
