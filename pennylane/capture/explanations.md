@@ -471,10 +471,10 @@ This allows us to use the forward pass as usual (to compute the first-order deri
 ```
 
 Now if we want to make this primitive differentiable (with automatic
-differentiation/backprop, not by using a higher order finite difference scheme),
+differentiation/backprop, not by using a higher-order finite difference scheme),
 we need to specify a JVP rule. (Note that there are multiple rather simple fixes for this example
 that we could use to implement a finite difference scheme that is readily differentiable. This is
-somewhat besides the point, because we did not identify a possibility to use any of those
+somewhat beside the point because we did not identify the possibility of using any of those
 alternatives in the PennyLane code).
 
 However, the finite difference rule is just a standard
@@ -482,7 +482,7 @@ algebraic function making use of calls to `fun` and some elementary operations, 
 we would like to just use the chain rule as it is known to the AD engine. A JVP rule would
 then just manually re-implement this chain rule, which we'd rather not do.
 
-Instead, we define a non-interpreted type of primitives, and create such a primitive
+Instead, we define a non-interpreted type of primitive and create such a primitive
 for our finite difference method. We also create the usual method that binds the
 primitive to inputs.
 
@@ -512,7 +512,7 @@ that just repeats the chain rule:
 
 ```pycon
 >>> # Forward execution of finite_diff_2 (-> first-order derivative)
->>> finite_diff_2(fun, delta=1e-6)(1.)
+>>> finite_diff_2(1., fun, delta=1e-6)
 (2.000000000002, 3.999999999892978, 23.000000001216492)
 >>> # Differentiation of finite_diff_2 (-> second-order derivative)
 >>> jax.jacobian(finite_diff_2)(1., fun, delta=1e-6)
@@ -523,5 +523,5 @@ In addition to the differentiation primitives for `qml.jacobian` and `qml.grad`,
 have non-interpreted primitives as well. This is because their differentiation is performed
 by the surrounding QNode primitive rather than through the standard chain rule that acts
 "locally" (in the circuit). In short, we only want gates to store their tracers (which will help
-determining differentiability of gate arguments, for example), but not to do anything with them.
+determine the differentiability of gate arguments, for example), but not to do anything with them.
 
