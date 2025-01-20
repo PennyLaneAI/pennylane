@@ -159,22 +159,6 @@ from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
 
-from importlib.util import find_spec
-from packaging.version import Version
-from warnings import warn
-
-has_jax = find_spec("jax")
-
-if has_jax:  # pragma: no cover
-    from jax import __version__ as jax_version
-
-    if Version(jax_version) > Version("0.4.28"):
-        warn(
-            "PennyLane is currently not compatible with versions of JAX > 0.4.28. "
-            f"You have version {jax_version} installed.",
-            RuntimeWarning,
-        )
-
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 

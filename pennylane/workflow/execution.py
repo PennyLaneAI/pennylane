@@ -31,7 +31,7 @@ from pennylane.typing import ResultBatch
 from pennylane.workflow.resolution import SupportedDiffMethods
 
 from ._setup_transform_program import _setup_transform_program
-from .resolution import _resolve_execution_config, _resolve_interface
+from .resolution import _resolve_execution_config, _resolve_interface, _validate_jax_version
 from .run import run
 
 logger = logging.getLogger(__name__)
@@ -217,7 +217,11 @@ def execute(
 
     ### Specifying and preprocessing variables ####
 
+    old_interface = interface
     interface = _resolve_interface(interface, tapes)
+
+    if old_interface in (None, "auto") and interface in (Interface.JAX, Interface.JAX_JIT):
+        _validate_jax_version()
 
     config = qml.devices.ExecutionConfig(
         interface=interface,
