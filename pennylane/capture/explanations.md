@@ -479,7 +479,7 @@ alternatives in the PennyLane code).
 
 However, the finite difference rule is just a standard
 algebraic function making use of calls to `fun` and some elementary operations, so ideally
-we would like to just use the chain rule as it is known to the AD engine. A JVP rule would
+we would like to just use the chain rule as it is known to the automatic differentiation framework. A JVP rule would
 then just manually re-implement this chain rule, which we'd rather not do.
 
 Instead, we define a non-interpreted type of primitive and create such a primitive
