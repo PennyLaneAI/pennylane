@@ -123,7 +123,8 @@ def lie_closure(
 
         In the case of large sums of Pauli operators, it is often faster to use the dense representation of the operators rather than
         the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation. We can force this by using the
-        ``dense`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``.
+        ``dense`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``, where ``dim_g`` is the
+        dimension of the DLA and ``n`` the number of qubits.
 
         >>> dla = qml.lie_closure(ops, dense=True)
         >>> dla.shape
