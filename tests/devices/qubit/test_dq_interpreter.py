@@ -553,3 +553,25 @@ class TestClassicalComponents:
 
         res2 = circuit(x, y, z, False, False)
         assert qml.math.allclose(res2, jnp.cos(y))  # false fn = y
+
+
+def test_dynamic_shape_ones():
+    """Test that DefaultQubitInterpreter can handle jax.numpy.ones and the associated broadcast_in_dim primitive."""
+
+    jax.config.update("jax_dynamic_shapes", True)
+
+    try:
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f(n):
+            ones = jax.numpy.ones((n + 1,))
+            qml.RX(ones, wires=0)
+            return qml.expval(qml.Z(0))
+
+        output = f(3)
+        assert output.shape == (4,)
+        ones = jax.numpy.ones(4)
+        assert qml.math.allclose(output, jax.numpy.cos(ones))
+
+    finally:
+        jax.config.update("jax_dynamic_shapes", False)

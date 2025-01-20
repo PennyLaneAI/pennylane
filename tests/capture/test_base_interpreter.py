@@ -543,3 +543,32 @@ class TestHigherOrderPrimitiveRegistrations:
         assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive  # eqn 0 is mul
         assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
+
+
+class TestDynamicShapes:
+
+    @pytest.mark.parametrize("reinterpret", (True, False))
+    def test_creating_ones(self, reinterpret):
+        """Test that broadcast_in_dim can be executed with PlxprInterpreter."""
+        jax.config.update("jax_dynamic_shapes", True)
+        try:
+
+            def f(n):
+                return 2 * jax.numpy.ones((2, n + 1))
+
+            interpreter = PlxprInterpreter()
+
+            if reinterpret:
+                # can still capture it once again
+                f = interpreter(f)
+
+            jaxpr = jax.make_jaxpr(f)(3)
+
+            output = interpreter.eval(jaxpr.jaxpr, jaxpr.consts, 4)
+
+            assert len(output) == 2  # shape and array
+            assert jax.numpy.allclose(output[0], 5)  # 4 + 1
+            assert jax.numpy.allclose(output[1], 2 * jax.numpy.ones((2, 5)))
+
+        finally:
+            jax.config.update("jax_dynamic_shapes", False)

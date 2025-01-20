@@ -351,6 +351,8 @@ class PlxprInterpreter:
                 jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
             results = self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
             assert flat_f.out_tree
+            # slice out any dynamic shape variables
+            results = results[-flat_f.out_tree.num_leaves :]
             return jax.tree_util.tree_unflatten(flat_f.out_tree, results)
 
         return wrapper
@@ -459,6 +461,26 @@ def handle_while_loop(
         args_slice=args_slice,
         abstract_shapes_slice=abstract_shapes_slice,
     )
+
+
+# pylint: disable=unused-argument
+@PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
+def _(self, x, *dyn_shape, shape, broadcast_dimensions):
+    # needs custom primitive as jax.core.eval_jaxpr will error out with this
+    dyn_shape_iter = iter(dyn_shape)
+    new_shape = []
+    for s in shape:
+        if s is not None:
+            new_shape.append(s)
+        else:
+            # pull from iterable of dynamic shapes
+            next_s = next(dyn_shape_iter)
+            if not qml.math.is_abstract(next_s):
+                # may need to cast to a built-in integer if possible
+                next_s = int(next_s)
+            new_shape.append(next_s)
+
+    return jax.lax.broadcast_in_dim(x, tuple(new_shape), broadcast_dimensions=broadcast_dimensions)
 
 
 # pylint: disable=unused-argument, too-many-arguments
