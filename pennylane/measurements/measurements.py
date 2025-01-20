@@ -275,7 +275,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             "Instead, please use isinstance for type checking directly.",
             qml.PennyLaneDeprecationWarning,
         )
-        return None
+        return None # pylint: disable=useless-return
 
     @property
     def numeric_type(self) -> type:
