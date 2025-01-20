@@ -14,12 +14,12 @@
 """
 Unit tests for PennyLane custom primitives.
 """
-
+# pylint: disable=wrong-import-position
 import pytest
 
-from pennylane.capture.custom_primitives import PrimitiveType, QmlPrimitive
-
 jax = pytest.importorskip("jax")
+
+from pennylane.capture.custom_primitives import PrimitiveType, QmlPrimitive
 
 pytestmark = pytest.mark.jax
 
