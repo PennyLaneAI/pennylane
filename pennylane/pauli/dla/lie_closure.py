@@ -37,7 +37,7 @@ def lie_closure(
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
-    dense: bool = False,
+    matrix: bool = False,
     tol: float = None,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
     r"""Compute the dynamical Lie algebra from a set of generators.
@@ -55,7 +55,7 @@ def lie_closure(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
-        dense (bool): Whether or not dense representations should be used and output in the Lie cloure computation. This can help
+        matrix (bool): Whether or not matrix representations should be used and output in the Lie cloure computation. This can help
             speed-up computation when using sums of Paulis with many terms.  Default is ``False``.
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
@@ -122,12 +122,12 @@ def lie_closure(
         >>> type(dla[0])
         pennylane.pauli.pauli_arithmetic.PauliSentence
 
-        In the case of sums of Pauli operators with many terms, it is often faster to use the dense representation of the operators rather than
+        In the case of sums of Pauli operators with many terms, it is often faster to use the matrix representation of the operators rather than
         the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation.
-        We can force this by using the ``dense`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``, where ``dim_g`` is the
+        We can force this by using the ``matrix`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``, where ``dim_g`` is the
         dimension of the DLA and ``n`` the number of qubits.
 
-        >>> dla = qml.lie_closure(ops, dense=True)
+        >>> dla = qml.lie_closure(ops, matrix=True)
         >>> dla.shape
         (6, 4, 4)
 
@@ -147,7 +147,7 @@ def lie_closure(
             for op in generators
         ]
 
-    if dense:
+    if matrix:
         return _lie_closure_dense(generators, max_iterations, verbose, tol)
 
     vspace = PauliVSpace(generators, tol=tol)
