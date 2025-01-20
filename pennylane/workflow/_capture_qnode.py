@@ -180,7 +180,7 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
 
 qnode_prim = QmlPrimitive("qnode")
 qnode_prim.multiple_results = True
-qnode_prim.prim_type = "higher_order
+qnode_prim.prim_type = "higher_order"
 
 
 # pylint: disable=too-many-arguments, unused-argument
