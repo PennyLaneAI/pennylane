@@ -74,7 +74,7 @@ def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
 
     Returns:
         Tuple(bool, TensorLike, int): A bool that shows whether an operation similar to the given operations
-        was found, the quaternion representation of the searched operation and their index in the list.
+        was found, the quaternion representation of the searched operation and its index in the list.
     """
     gate_points = qml.math.array([_quaternion_transform(op_mat)])
 
