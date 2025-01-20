@@ -12,24 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule offers differentiation-related primitives and types for
-the PennyLane capture module.
+This submodule offers custom primitives for the PennyLane capture module.
 """
 from enum import Enum
+
 import jax
 
 
 class PrimitiveType(Enum):
     """Enum to define valid set of primitive classes"""
 
-    DEFAULT = None
+    DEFAULT = "default"
     OPERATOR = "operator"
     MEASUREMENT = "measurement"
     HIGHER_ORDER = "higher_order"
     TRANSFORM = "transform"
 
 
-class QmlPrimitive(jax.core.Primitive):
+class QmlPrimitive(jax.core.Primitive):  # pylint: disable=abstract-method
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives."""
 
@@ -37,14 +37,17 @@ class QmlPrimitive(jax.core.Primitive):
 
     @property
     def prim_type(self):
+        """Value of Enum representing the primitive type to differentiate between various
+        sets of PennyLane primitives."""
         return self._prim_type.value
 
     @prim_type.setter
     def prim_type(self, value):
+        """Setter for QmlPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,abstract-method
 class NonInterpPrimitive(QmlPrimitive):
     """A subclass to JAX's Primitive that works like a Python function
     when evaluating JVPTracers and BatchTracers."""
