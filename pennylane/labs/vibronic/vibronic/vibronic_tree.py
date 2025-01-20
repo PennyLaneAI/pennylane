@@ -36,6 +36,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         scalar: float = None,
         value: float = None,
         is_zero: bool = None,
+        label: str = None,
     ) -> Node:
 
         self.node_type = node_type
@@ -47,6 +48,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         self.scalar = scalar
         self.value = value
         self.is_zero = is_zero
+        self.label = label
 
         if node_type == NodeType.SUM:
             self.shape = l_child.shape
@@ -120,13 +122,14 @@ class Node:  # pylint: disable=too-many-instance-attributes
         # )
 
     @classmethod
-    def tensor_node(cls, tensor: ndarray) -> Node:
+    def tensor_node(cls, tensor: ndarray, label: str = None) -> Node:
         """Construct a TENSOR node"""
 
         if len(tensor.shape):
             return cls(
                 node_type=NodeType.TENSOR,
                 tensor=tensor,
+                label=label,
                 is_zero=allclose(tensor, zeros(tensor.shape)),
             )
 
@@ -247,6 +250,39 @@ class Node:  # pylint: disable=too-many-instance-attributes
             ret += f"(FLOAT, {self.value})"
 
         return ret
+
+    def compile(self):
+        """Compile to a simple arithmetic expression"""
+
+        indices = [f"idx{i}" for i in range(len(self.shape))]
+        str_rep = f"npsum(npabs({self._compile(indices)}))"
+
+        return compile(str_rep, "", "eval")
+
+    def _compile(self, indices: Tuple[int]) -> str:
+
+        if self.node_type == NodeType.TENSOR:
+            index_str = ",".join(indices)
+            return f"{self.label}[{index_str}]"
+
+        if self.node_type == NodeType.FLOAT:
+            return f"{self.value}"
+
+        if self.node_type == NodeType.SCALAR:
+            return f"{self.scalar} * ({self.l_child._compile(indices)})"
+
+        if self.node_type == NodeType.SUM:
+            return f"({self.l_child._compile(indices)}) + ({self.r_child._compile(indices)})"
+
+        if self.node_type == NodeType.OUTER:
+            l_indices = indices[: len(self.l_shape)]
+            r_indices = indices[len(self.l_shape) :]
+            return f"({self.l_child._compile(l_indices)}) * ({self.r_child._compile(r_indices)})"
+
+        if self.node_type == NodeType.HADAMARD:
+            return f"({self.l_child._compile(indices)}) * ({self.r_child._compile(indices)})"
+
+        raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
 
     def compute(self, index: Tuple[int]) -> float:
         """Compute the coefficient at the given index"""

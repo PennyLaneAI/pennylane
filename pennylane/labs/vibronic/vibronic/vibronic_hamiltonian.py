@@ -51,6 +51,13 @@ class VibronicHamiltonian:
         self.omegas = omegas
         self.sparse = sparse
 
+        self.tensors = {
+            "alphas": self.alphas,
+            "betas": self.betas,
+            "lambdas": self.lambdas,
+            "omegas": np.diag(self.omegas) / 2,
+        }
+
     def fragment(self, index: int) -> VibronicMatrix:
         """Return the fragment at the given index"""
 
@@ -71,21 +78,27 @@ class VibronicHamiltonian:
 
         return VibronicWord(
             (
-                VibronicTerm(tuple(), Node.tensor_node(self.lambdas[i, j])),
-                VibronicTerm(("Q",), Node.tensor_node(self.alphas[i, j])),
-                VibronicTerm(("Q", "Q"), Node.tensor_node(self.betas[i, j])),
+                VibronicTerm(tuple(), Node.tensor_node(self.lambdas[i, j], label="lambdas")),
+                VibronicTerm(("Q",), Node.tensor_node(self.alphas[i, j], label=f"alphas[{i},{j}]")),
+                VibronicTerm(
+                    ("Q", "Q"), Node.tensor_node(self.betas[i, j], label=f"betas[{i},{j}]")
+                ),
             )
         )
 
     def _p_fragment(self) -> VibronicMatrix:
-        term = VibronicTerm(("P", "P"), Node.tensor_node(np.diag(self.omegas) / 2))
+        term = VibronicTerm(("P", "P"), Node.tensor_node(np.diag(self.omegas) / 2, label="omegas"))
         word = VibronicWord((term,))
         blocks = {(i, i): word for i in range(self.states)}
-        return VibronicMatrix(self.states, self.modes, blocks, sparse=self.sparse)
+        return VibronicMatrix(
+            self.states, self.modes, blocks, sparse=self.sparse, tensors=self.tensors
+        )
 
     def _fragment(self, i: int) -> VibronicMatrix:
         blocks = {(j, i ^ j): self.v_word(j, i ^ j) for j in range(self.states)}
-        return VibronicMatrix(self.states, self.modes, blocks, sparse=self.sparse)
+        return VibronicMatrix(
+            self.states, self.modes, blocks, sparse=self.sparse, tensors=self.tensors
+        )
 
     def block_operator(self) -> VibronicMatrix:
         """Return the block representation of the Hamiltonian"""
@@ -104,7 +117,7 @@ class VibronicHamiltonian:
         # pylint: disable=arguments-out-of-order
         """Compute the error matrix"""
         scalar = -(delta**2) / 24
-        epsilon = VibronicMatrix(self.states, self.modes, sparse=self.sparse)
+        epsilon = VibronicMatrix(self.states, self.modes, sparse=self.sparse, tensors=self.tensors)
 
         for i in range(self.states):
             for j in range(i + 1, self.states + 1):
@@ -127,15 +140,20 @@ class VibronicHamiltonian:
             node = Node.scalar_node(
                 2,
                 Node.hadamard_node(
-                    Node.tensor_node(self.betas[j, m ^ j]),
-                    Node.outer_node(Node.tensor_node(self.omegas), Node.tensor_node(self.omegas)),
+                    Node.tensor_node(self.betas[j, m ^ j], label=f"betas[{j},{m ^ j}]"),
+                    Node.outer_node(
+                        Node.tensor_node(self.omegas, label="omegas"),
+                        Node.tensor_node(self.omegas, label="omegas"),
+                    ),
                 ),
             )
 
             term = VibronicTerm(("P", "P"), node)
             blocks[(j, m ^ j)] = VibronicWord((term,))
 
-        return VibronicMatrix(self.states, self.modes, blocks, sparse=self.sparse)
+        return VibronicMatrix(
+            self.states, self.modes, blocks, sparse=self.sparse, tensors=self.tensors
+        )
 
     def __add__(self, other: VibronicHamiltonian) -> VibronicHamiltonian:
         if not isinstance(other, VibronicHamiltonian):

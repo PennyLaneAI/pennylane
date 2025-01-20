@@ -23,6 +23,7 @@ class VibronicMatrix:
         modes: int,
         blocks: Dict[Tuple[int, int], VibronicWord] = None,
         sparse: bool = False,
+        tensors: Dict[str, np.ndarray] = {},
     ) -> VibronicMatrix:
 
         if not is_pow_2(states) or states == 0:
@@ -35,6 +36,7 @@ class VibronicMatrix:
         self.states = states
         self.modes = modes
         self.sparse = sparse
+        self.tensors = tensors
 
     def block(self, row: int, col: int) -> VibronicWord:
         """Return the block indexed at (row, col)"""
@@ -132,8 +134,24 @@ class VibronicMatrix:
         norm = 0
 
         for term in word.terms:
+            compiled = term.coeffs.compile()
+
+            var_dict = {
+                "alphas": self.tensors["alphas"],
+                "betas": self.tensors["betas"],
+                "lambdas": self.tensors["lambdas"],
+                "omegas": self.tensors["omegas"],
+                "npabs": np.abs,
+                "npsum": np.sum
+            }
+
+            indices = np.array(list(term.coeffs.nonzero())).T
+            for i, row in enumerate(indices):
+                var_dict[f"idx{i}"] = row
+
             term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
-            coeff_sum = sum(abs(term.coeffs.compute(index)) for index in term.coeffs.nonzero())
+            coeff_sum = eval(compiled, {}, var_dict)
+            #coeff_sum = sum(abs(compute_index(index)) for index in term.coeffs.nonzero())
             norm += coeff_sum * term_op_norm
 
         return norm
@@ -163,7 +181,11 @@ class VibronicMatrix:
             new_blocks[key] = other._blocks[key]
 
         return VibronicMatrix(
-            self.states, self.modes, new_blocks, sparse=(self.sparse and other.sparse)
+            self.states,
+            self.modes,
+            new_blocks,
+            sparse=(self.sparse and other.sparse),
+            tensors=self.tensors,
         )
 
     def __sub__(self, other: VibronicMatrix) -> VibronicMatrix:
@@ -192,7 +214,11 @@ class VibronicMatrix:
             new_blocks[key] = (-1) * other._blocks[key]
 
         return VibronicMatrix(
-            self.states, self.modes, new_blocks, sparse=(self.sparse and other.sparse)
+            self.states,
+            self.modes,
+            new_blocks,
+            sparse=(self.sparse and other.sparse),
+            tensors=self.tensors,
         )
 
     def __mul__(self, scalar: float) -> VibronicMatrix:
@@ -200,7 +226,9 @@ class VibronicMatrix:
         for key in self._blocks.keys():
             new_blocks[key] = scalar * self._blocks[key]
 
-        return VibronicMatrix(self.states, self.modes, new_blocks, sparse=self.sparse)
+        return VibronicMatrix(
+            self.states, self.modes, new_blocks, sparse=self.sparse, tensors=self.tensors
+        )
 
     __rmul__ = __mul__
 
@@ -222,7 +250,7 @@ class VibronicMatrix:
             )
 
         product_matrix = VibronicMatrix(
-            self.states, self.modes, sparse=(self.sparse and other.sparse)
+            self.states, self.modes, sparse=(self.sparse and other.sparse), tensors=self.tensors
         )
 
         for i, j in product(range(self.states), repeat=2):
@@ -248,10 +276,12 @@ class VibronicMatrix:
         # pylint: disable=chained-comparison
         half = self.states // 2
 
-        top_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
-        top_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
-        bottom_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
-        bottom_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
+        top_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse, tensors=self.tensors)
+        top_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse, tensors=self.tensors)
+        bottom_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse, tensors=self.tensors)
+        bottom_right = VibronicMatrix(
+            half, self.modes, {}, sparse=self.sparse, tensors=self.tensors
+        )
 
         for index, word in self._blocks.items():
             x, y = index
