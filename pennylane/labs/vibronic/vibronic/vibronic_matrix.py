@@ -110,51 +110,54 @@ class VibronicMatrix:
         return norm1 + norm2
 
     def _norm_base_case(self, gridpoints: int) -> float:
+        # pylint: disable=eval-used
+
         if self.states != 1:
             raise RuntimeError("Base case called on VibronicMatrix with >1 state")
 
+        word = self.block(0, 0)
+        norm = 0
+
         if self.sparse:
-            return self._norm_base_case_sparse(gridpoints)
+            for term in word.terms:
+                term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
+                compiled, local_vars = term.coeffs.compile(to_numpy=True)
+                coeff_sum = eval(compiled, {}, local_vars)
+                norm += coeff_sum * term_op_norm
 
-        word = self.block(0, 0)
-        norm = 0
+            return norm
 
         for term in word.terms:
             term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
-            coeff_sum = sum(
-                abs(term.coeffs.compute(index))
-                for index in product(range(self.modes), repeat=len(term.ops))
-            )
+            compiled, local_vars = term.coeffs.compile()
+
+            coeff_sum = 0
+            for index in product(range(self.modes), repeat=len(term.ops)):
+                for i, j in enumerate(index):
+                    local_vars[f"idx{i}"] = j
+
+                coeff_sum += eval(compiled, {}, local_vars)
+
             norm += coeff_sum * term_op_norm
 
         return norm
 
-    def _norm_base_case_sparse(self, gridpoints: int) -> float:
-        word = self.block(0, 0)
-        norm = 0
+    # def _norm_base_case_sparse(self, gridpoints: int) -> float:
+    #    word = self.block(0, 0)
+    #    norm = 0
 
-        for term in word.terms:
-            compiled = term.coeffs.compile()
+    #    for term in word.terms:
+    #        compiled, local_vars = term.coeffs.compile()
 
-            var_dict = {
-                "alphas": self.tensors["alphas"],
-                "betas": self.tensors["betas"],
-                "lambdas": self.tensors["lambdas"],
-                "omegas": self.tensors["omegas"],
-                "npabs": np.abs,
-                "npsum": np.sum
-            }
+    #        indices = np.array(list(term.coeffs.nonzero())).T
+    #        for i, row in enumerate(indices):
+    #            var_dict[f"idx{i}"] = row
 
-            indices = np.array(list(term.coeffs.nonzero())).T
-            for i, row in enumerate(indices):
-                var_dict[f"idx{i}"] = row
+    #        term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
+    #        coeff_sum = eval(compiled, {}, local_vars)
+    #        norm += coeff_sum * term_op_norm
 
-            term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
-            coeff_sum = eval(compiled, {}, var_dict)
-            #coeff_sum = sum(abs(compute_index(index)) for index in term.coeffs.nonzero())
-            norm += coeff_sum * term_op_norm
-
-        return norm
+    #    return norm
 
     def __add__(self, other: VibronicMatrix) -> VibronicMatrix:
         if self.states != other.states:

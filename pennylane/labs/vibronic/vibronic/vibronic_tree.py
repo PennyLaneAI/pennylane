@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 from itertools import product
-from typing import Iterator, Tuple
+from typing import Any, Iterator, Tuple
 
+import numpy as np
 from numpy import allclose, isclose, ndarray, zeros
 
 # pylint: disable=protected-access
@@ -36,7 +38,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         scalar: float = None,
         value: float = None,
         is_zero: bool = None,
-        label: str = None,
+        label: Tuple[str, Any] = None,
     ) -> Node:
 
         self.node_type = node_type
@@ -251,36 +253,77 @@ class Node:  # pylint: disable=too-many-instance-attributes
 
         return ret
 
-    def compile(self):
+    def compile(self, to_numpy: bool = False):
         """Compile to a simple arithmetic expression"""
 
         indices = [f"idx{i}" for i in range(len(self.shape))]
-        str_rep = f"npsum(npabs({self._compile(indices)}))"
+        local_vars = {}
+        expr, local_vars = self._compile(indices, local_vars)
 
-        return compile(str_rep, "", "eval")
+        if to_numpy:
+            local_vars["np_abs"] = np.abs
+            local_vars["np_sum"] = np.sum
 
-    def _compile(self, indices: Tuple[int]) -> str:
+            indices = np.array(list(self.nonzero())).T
+            for i, row in enumerate(indices):
+                local_vars[f"idx{i}"] = row
+
+            str_rep = f"np_sum(np_abs({expr}))"
+        else:
+            str_rep = f"{expr}"
+
+        return compile(str_rep, "", "eval"), local_vars
+
+    def _compile(self, indices: Tuple[int], local_vars: dict) -> (str, dict):
 
         if self.node_type == NodeType.TENSOR:
             index_str = ",".join(indices)
-            return f"{self.label}[{index_str}]"
+
+            if self.label:
+                var_expr, reference = self.label
+                var_name = re.sub(r"\[.*\]", "", var_expr)
+                local_vars[var_name] = reference
+            else:
+                var_expr = (
+                    "nparray("
+                    + "".join(np.array2string(self.tensor, separator=",").splitlines())
+                    + ")"
+                )
+                local_vars["nparray"] = np.array
+
+            return f"{var_expr}[{index_str}]", local_vars
 
         if self.node_type == NodeType.FLOAT:
-            return f"{self.value}"
+            return f"{self.value}", local_vars
 
         if self.node_type == NodeType.SCALAR:
-            return f"{self.scalar} * ({self.l_child._compile(indices)})"
+            compiled, local_vars = self.l_child._compile(indices, local_vars)
+
+            return f"{self.scalar} * ({compiled})", local_vars
 
         if self.node_type == NodeType.SUM:
-            return f"({self.l_child._compile(indices)}) + ({self.r_child._compile(indices)})"
+            l_compiled, l_vars = self.l_child._compile(indices, local_vars)
+            r_compiled, r_vars = self.r_child._compile(indices, local_vars)
+            local_vars = l_vars | r_vars
+
+            return f"({l_compiled}) + ({r_compiled})", local_vars
 
         if self.node_type == NodeType.OUTER:
             l_indices = indices[: len(self.l_shape)]
             r_indices = indices[len(self.l_shape) :]
-            return f"({self.l_child._compile(l_indices)}) * ({self.r_child._compile(r_indices)})"
+
+            l_compiled, l_vars = self.l_child._compile(l_indices, local_vars)
+            r_compiled, r_vars = self.r_child._compile(r_indices, local_vars)
+            local_vars = l_vars | r_vars
+
+            return f"({l_compiled}) * ({r_compiled})", local_vars
 
         if self.node_type == NodeType.HADAMARD:
-            return f"({self.l_child._compile(indices)}) * ({self.r_child._compile(indices)})"
+            l_compiled, l_vars = self.l_child._compile(indices, local_vars)
+            r_compiled, r_vars = self.r_child._compile(indices, local_vars)
+            local_vars = l_vars | r_vars
+
+            return f"({l_compiled}) * ({r_compiled})", local_vars
 
         raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
 

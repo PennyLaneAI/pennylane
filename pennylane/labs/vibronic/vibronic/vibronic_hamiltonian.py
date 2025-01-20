@@ -78,16 +78,25 @@ class VibronicHamiltonian:
 
         return VibronicWord(
             (
-                VibronicTerm(tuple(), Node.tensor_node(self.lambdas[i, j], label="lambdas")),
-                VibronicTerm(("Q",), Node.tensor_node(self.alphas[i, j], label=f"alphas[{i},{j}]")),
                 VibronicTerm(
-                    ("Q", "Q"), Node.tensor_node(self.betas[i, j], label=f"betas[{i},{j}]")
+                    tuple(), Node.tensor_node(self.lambdas[i, j], label=("lambdas", self.lambdas))
+                ),
+                VibronicTerm(
+                    ("Q",),
+                    Node.tensor_node(self.alphas[i, j], label=(f"alphas[{i},{j}]", self.alphas)),
+                ),
+                VibronicTerm(
+                    ("Q", "Q"),
+                    Node.tensor_node(self.betas[i, j], label=(f"betas[{i},{j}]", self.betas)),
                 ),
             )
         )
 
     def _p_fragment(self) -> VibronicMatrix:
-        term = VibronicTerm(("P", "P"), Node.tensor_node(np.diag(self.omegas) / 2, label="omegas"))
+        term = VibronicTerm(
+            ("P", "P"),
+            Node.tensor_node(np.diag(self.omegas) / 2, label=("omegas", np.diag(self.omegas) / 2)),
+        )
         word = VibronicWord((term,))
         blocks = {(i, i): word for i in range(self.states)}
         return VibronicMatrix(
@@ -140,10 +149,12 @@ class VibronicHamiltonian:
             node = Node.scalar_node(
                 2,
                 Node.hadamard_node(
-                    Node.tensor_node(self.betas[j, m ^ j], label=f"betas[{j},{m ^ j}]"),
+                    Node.tensor_node(
+                        self.betas[j, m ^ j], label=(f"betas[{j},{m ^ j}]", self.betas)
+                    ),
                     Node.outer_node(
-                        Node.tensor_node(self.omegas, label="omegas"),
-                        Node.tensor_node(self.omegas, label="omegas"),
+                        Node.tensor_node(self.omegas, label=("omegas", np.diag(self.omegas) / 2)),
+                        Node.tensor_node(self.omegas, label=("omegas", np.diag(self.omegas) / 2)),
                     ),
                 ),
             )
