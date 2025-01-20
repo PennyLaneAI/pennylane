@@ -205,7 +205,10 @@ def execute(
     interface = _resolve_interface(interface, tapes)
     # Only need to calculate derivatives with jax when we know it will be executed later.
 
-    if old_interface in (None, "auto") and interface in (Interface.JAX, Interface.JAX_JIT):
+    if old_interface in (None, "auto") and interface in (
+        Interface.JAX,
+        Interface.JAX_JIT,
+    ):  # pragma: no cover
         _validate_jax_version()
 
     config = qml.devices.ExecutionConfig(
