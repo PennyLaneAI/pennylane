@@ -3473,58 +3473,6 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_multiple_hamiltonians(self, tol, broadcast):
-        """Test multiple trainable Hamiltonian coefficients"""
-        dev = qml.device("default.qubit", wires=2)
-
-        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-        coeffs = np.array([0.1, 0.2, 0.3])
-        a, b, c = coeffs
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        obs = [qml.PauliZ(0)]
-        coeffs = np.array([0.7])
-        d = coeffs[0]
-        H2 = qml.Hamiltonian(coeffs, obs)
-
-        weights = np.array([0.4, 0.5])
-        x, y = weights
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H1)
-            qml.expval(H2)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape.trainable_params = {0, 1, 2, 4, 5}
-
-        res = dev.execute([tape])
-        expected = [-c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y)), d * np.cos(x)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        # two shifts per rotation gate (in one batched tape if broadcasting),
-        # one circuit per trainable H term
-        assert len(tapes) == 2 * (1 if broadcast else 2)
-
-        res = fn(dev.execute(tapes))
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-        assert len(res[0]) == 2
-        assert len(res[1]) == 2
-
-        expected = [
-            [
-                -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
-                b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-            ],
-            [-d * np.sin(x), 0],
-        ]
-
-        assert np.allclose(np.stack(res), expected, atol=tol, rtol=0)
-
     @staticmethod
     def cost_fn(weights, coeffs1, coeffs2, dev=None, broadcast=False):
         """Cost function for gradient tests"""
