@@ -42,6 +42,7 @@ def _deprecate_control_wires(control_wires):
             qml.PennyLaneDeprecationWarning,
         )
 
+
 # pylint: disable=too-few-public-methods
 class ControlledQubitUnitary(ControlledOp):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
