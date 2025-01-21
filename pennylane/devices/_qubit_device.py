@@ -1428,8 +1428,7 @@ class QubitDevice(Device):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
 
-        The format of the dictionary depends on mp.return_type, which is set when
-        calling measurements.counts by setting the kwarg all_outcomes (bool). By default,
+        The format of the dictionary depends on whether the MeasurementProcess is Counts or AllCounts. By default,
         the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
         the dictionary will instead contain all possible outcomes, with a count of 0
         for those not observed. See example.
