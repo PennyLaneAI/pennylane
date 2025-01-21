@@ -89,8 +89,13 @@
 
 <h3>Documentation 📝</h3>
 
-* Updated documentation for vibrational Hamiltonians
+* The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`, 
+  `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better 
+  code examples.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
+
+* Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
+  [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -102,6 +107,7 @@
 This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
+Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Marcus Gisslén,
