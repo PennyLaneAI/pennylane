@@ -381,6 +381,19 @@ class PlxprInterpreter:
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
 def _(self, x, *dyn_shape, shape, broadcast_dimensions):
+    """Handle the broadcast_in_dim primitive created by jnp.ones, jnp.zeros, jnp.full
+
+    >>> def f(n):
+    ...     return jax.numpy.ones((n, 4, n))
+    >>> jax.make_jaxpr(f)(4)
+    { lambda ; a:i32[]. let
+        b:f32[a,4,a] = broadcast_in_dim[
+        broadcast_dimensions=()
+        shape=(None, 4, None)
+        ] 1.0 a a
+    in (b,) }
+
+    """
     # needs custom primitive as jax.core.eval_jaxpr will error out with this
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
 
@@ -390,6 +403,15 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions):
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
 def _(self, *dyn_shape, dimension, dtype, shape):
+    """Handle the iota primitive created by jnp.arange
+
+    >>> def f(n):
+    ...     return jax.numpy.arange(n)
+    >>> jax.make_jaxpr(f)(4)
+    { lambda ; a:i32[]. let
+    b:i32[a] = iota[dimension=0 dtype=int32 shape=(None,)] a
+    in (b,) }
+    """
     # iota is primitive created by jnp.arange
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
     return jax.lax.broadcasted_iota(dtype, new_shape, dimension)
