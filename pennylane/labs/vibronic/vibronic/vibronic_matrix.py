@@ -108,32 +108,34 @@ class VibronicMatrix:
         return norm1 + norm2
 
     def _norm_base_case(self, gridpoints: int) -> float:
+        # pylint: disable=eval-used
+
         if self.states != 1:
             raise RuntimeError("Base case called on VibronicMatrix with >1 state")
 
+        word = self.block(0, 0)
+        norm = 0
+
         if self.sparse:
-            return self._norm_base_case_sparse(gridpoints)
+            for term in word.terms:
+                term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
+                compiled, local_vars = term.coeffs.compile(to_numpy=True)
+                coeff_sum = eval(compiled, {}, local_vars)
+                norm += coeff_sum * term_op_norm
 
-        word = self.block(0, 0)
-        norm = 0
-
-        for term in word.terms:
-            term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
-            coeff_sum = sum(
-                abs(term.coeffs.compute(index))
-                for index in product(range(self.modes), repeat=len(term.ops))
-            )
-            norm += coeff_sum * term_op_norm
-
-        return norm
-
-    def _norm_base_case_sparse(self, gridpoints: int) -> float:
-        word = self.block(0, 0)
-        norm = 0
+            return norm
 
         for term in word.terms:
             term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), term.ops))
-            coeff_sum = sum(abs(term.coeffs.compute(index)) for index in term.coeffs.nonzero())
+            compiled, local_vars = term.coeffs.compile()
+
+            coeff_sum = 0
+            for index in product(range(self.modes), repeat=len(term.ops)):
+                for i, j in enumerate(index):
+                    local_vars[f"idx{i}"] = j
+
+                coeff_sum += eval(compiled, {}, local_vars)
+
             norm += coeff_sum * term_op_norm
 
         return norm
@@ -163,7 +165,10 @@ class VibronicMatrix:
             new_blocks[key] = other._blocks[key]
 
         return VibronicMatrix(
-            self.states, self.modes, new_blocks, sparse=(self.sparse and other.sparse)
+            self.states,
+            self.modes,
+            new_blocks,
+            sparse=(self.sparse and other.sparse),
         )
 
     def __sub__(self, other: VibronicMatrix) -> VibronicMatrix:
@@ -192,7 +197,10 @@ class VibronicMatrix:
             new_blocks[key] = (-1) * other._blocks[key]
 
         return VibronicMatrix(
-            self.states, self.modes, new_blocks, sparse=(self.sparse and other.sparse)
+            self.states,
+            self.modes,
+            new_blocks,
+            sparse=(self.sparse and other.sparse),
         )
 
     def __mul__(self, scalar: float) -> VibronicMatrix:

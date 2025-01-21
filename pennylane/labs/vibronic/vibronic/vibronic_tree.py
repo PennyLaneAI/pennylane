@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 from itertools import product
-from typing import Iterator, Tuple
+from typing import Any, Iterator, Tuple
 
+import numpy as np
 from numpy import allclose, isclose, ndarray, zeros
 
 # pylint: disable=protected-access
@@ -36,6 +38,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         scalar: float = None,
         value: float = None,
         is_zero: bool = None,
+        label: Tuple[str, Any] = None,
     ) -> Node:
 
         self.node_type = node_type
@@ -47,6 +50,7 @@ class Node:  # pylint: disable=too-many-instance-attributes
         self.scalar = scalar
         self.value = value
         self.is_zero = is_zero
+        self.label = label
 
         if node_type == NodeType.SUM:
             self.shape = l_child.shape
@@ -120,13 +124,14 @@ class Node:  # pylint: disable=too-many-instance-attributes
         # )
 
     @classmethod
-    def tensor_node(cls, tensor: ndarray) -> Node:
+    def tensor_node(cls, tensor: ndarray, label: str = None) -> Node:
         """Construct a TENSOR node"""
 
         if len(tensor.shape):
             return cls(
                 node_type=NodeType.TENSOR,
                 tensor=tensor,
+                label=label,
                 is_zero=allclose(tensor, zeros(tensor.shape)),
             )
 
@@ -247,6 +252,80 @@ class Node:  # pylint: disable=too-many-instance-attributes
             ret += f"(FLOAT, {self.value})"
 
         return ret
+
+    def compile(self, to_numpy: bool = False):
+        """Compile to a simple arithmetic expression"""
+
+        indices = [f"idx{i}" for i in range(len(self.shape))]
+        local_vars = {}
+        expr, local_vars = self._compile(indices, local_vars)
+
+        if to_numpy:
+            local_vars["np_abs"] = np.abs
+            local_vars["np_sum"] = np.sum
+
+            indices = np.array(list(self.nonzero())).T
+            for i, row in enumerate(indices):
+                local_vars[f"idx{i}"] = row
+
+            str_rep = f"np_sum(np_abs({expr}))"
+        else:
+            str_rep = f"{expr}"
+
+        return compile(str_rep, "", "eval"), local_vars
+
+    def _compile(self, indices: Tuple[int], local_vars: dict) -> (str, dict):
+
+        if self.node_type == NodeType.TENSOR:
+            index_str = ",".join(indices)
+
+            if self.label:
+                var_expr, reference = self.label
+                var_name = re.sub(r"\[.*\]", "", var_expr)
+                local_vars[var_name] = reference
+            else:
+                var_expr = (
+                    "nparray("
+                    + "".join(np.array2string(self.tensor, separator=",").splitlines())
+                    + ")"
+                )
+                local_vars["nparray"] = np.array
+
+            return f"{var_expr}[{index_str}]", local_vars
+
+        if self.node_type == NodeType.FLOAT:
+            return f"{self.value}", local_vars
+
+        if self.node_type == NodeType.SCALAR:
+            compiled, local_vars = self.l_child._compile(indices, local_vars)
+
+            return f"{self.scalar} * ({compiled})", local_vars
+
+        if self.node_type == NodeType.SUM:
+            l_compiled, l_vars = self.l_child._compile(indices, local_vars)
+            r_compiled, r_vars = self.r_child._compile(indices, local_vars)
+            local_vars = l_vars | r_vars
+
+            return f"({l_compiled}) + ({r_compiled})", local_vars
+
+        if self.node_type == NodeType.OUTER:
+            l_indices = indices[: len(self.l_shape)]
+            r_indices = indices[len(self.l_shape) :]
+
+            l_compiled, l_vars = self.l_child._compile(l_indices, local_vars)
+            r_compiled, r_vars = self.r_child._compile(r_indices, local_vars)
+            local_vars = l_vars | r_vars
+
+            return f"({l_compiled}) * ({r_compiled})", local_vars
+
+        if self.node_type == NodeType.HADAMARD:
+            l_compiled, l_vars = self.l_child._compile(indices, local_vars)
+            r_compiled, r_vars = self.r_child._compile(indices, local_vars)
+            local_vars = l_vars | r_vars
+
+            return f"({l_compiled}) * ({r_compiled})", local_vars
+
+        raise ValueError(f"Node was constructed with invalid NodeType {self.node_type}.")
 
     def compute(self, index: Tuple[int]) -> float:
         """Compute the coefficient at the given index"""
