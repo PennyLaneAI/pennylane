@@ -235,7 +235,7 @@ class QubitDevice(Device):
             circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -346,7 +346,7 @@ class QubitDevice(Device):
             circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             tuple: statistics for each shot item from the shot vector
@@ -599,7 +599,7 @@ class QubitDevice(Device):
                 provided, the entire shot range is treated as a single bin.
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             Union[float, List[float]]: the corresponding statistics
