@@ -41,13 +41,13 @@ def _get_shape_for_array(x, abstract_shapes: list) -> dict:
 
     Examples of shape -> abstract axes:
 
-    * `(3,4) -> {}`
-    * `(tracer1, ) -> {0: "a"}`
-    * `(tracer1, tracer1) -> {0: "a", 1: "a"}`
-    * `(3, tracer1) -> {1: "a"}`
-    * `(tracer1, 2, tracer2) -> {0: "a", 2: "b"}`
+    * ``(3,4) -> {}``
+    * ``(tracer1, ) -> {0: "a"}``
+    * ``(tracer1, tracer1) -> {0: "a", 1: "a"}``
+    * ``(3, tracer1) -> {1: "a"}``
+    * ``(tracer1, 2, tracer2) -> {0: "a", 2: "b"}``
 
-    `abstract_shapes` contains all the tracers found in shapes.
+    ``abstract_shapes`` contains all the tracers found in shapes.
 
     """
     abstract_axes = {}
