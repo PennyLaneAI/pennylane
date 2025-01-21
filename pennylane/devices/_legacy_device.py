@@ -432,7 +432,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 internally, otherwise convert it into array[float]. Default: False.
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -480,7 +480,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 elif isinstance(mp, StateMP):
                     raise qml.QuantumFunctionError("Returning the state is not supported")
 
-                elif mp.return_type is not None:
+                else:
                     raise qml.QuantumFunctionError(
                         f"Unsupported return type specified for observable {obs.name}"
                     )
