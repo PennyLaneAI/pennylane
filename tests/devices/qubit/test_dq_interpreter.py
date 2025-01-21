@@ -555,12 +555,12 @@ class TestClassicalComponents:
         assert qml.math.allclose(res2, jnp.cos(y))  # false fn = y
 
 
-def test_dynamic_shape_ones():
-    """Test that DefaultQubitInterpreter can handle jax.numpy.ones and the associated broadcast_in_dim primitive."""
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestDynamicShapes:
+    """Tests for creating arrays with a dynamic input."""
 
-    jax.config.update("jax_dynamic_shapes", True)
-
-    try:
+    def test_dynamic_shape_ones(self):
+        """Test that DefaultQubitInterpreter can handle jax.numpy.ones and the associated broadcast_in_dim primitive."""
 
         @DefaultQubitInterpreter(num_wires=1)
         def f(n):
@@ -573,5 +573,16 @@ def test_dynamic_shape_ones():
         ones = jax.numpy.ones(4)
         assert qml.math.allclose(output, jax.numpy.cos(ones))
 
-    finally:
-        jax.config.update("jax_dynamic_shapes", False)
+    def test_dynamic_shape_arange(self):
+        """Test that DefaultQubitInterpreter can handle jnp.arange."""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f(n):
+            x = jax.numpy.arange(n)
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        output = f(4)
+        assert output.shape == (4,)
+        x = jax.numpy.arange(4)
+        assert qml.math.allclose(output, jax.numpy.cos(x))
