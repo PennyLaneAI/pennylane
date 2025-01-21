@@ -142,15 +142,16 @@ class TestConfigSetup:
         assert dev.tracker.totals["execute_and_derivative_batches"] == 1
 
     @pytest.mark.parametrize("interface", ("jax", "jax-jit"))
-    def test_not_convert_to_numpy_with_jax(self, interface):
+    def test_convert_to_numpy_with_jax(self, interface):
         """Test that we will not convert to numpy when working with jax."""
-
+        # separate test so we can easily update it once we solve the
+        # compilation overhead issue
         dev = qml.device("default.qubit")
         config = qml.devices.ExecutionConfig(
             gradient_method=qml.gradients.param_shift, interface=interface
         )
         processed = dev.setup_execution_config(config)
-        assert not processed.convert_to_numpy
+        assert processed.convert_to_numpy
 
     def test_convert_to_numpy_with_adjoint(self):
         """Test that we will convert to numpy with adjoint."""
