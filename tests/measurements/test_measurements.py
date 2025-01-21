@@ -567,21 +567,16 @@ class TestSampleMeasurement:
 
         dev = qml.device("default.qubit", wires=2)
 
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+
         with pytest.raises(
-            qml.PennyLaneDeprecationWarning,
-            match="MeasurementProcess property return_type is deprecated",
+            qml.DeviceError,
+            match="not accepted for analytic simulation on default.qubit",
         ):
-
-            @qml.qnode(dev)
-            def circuit():
-                qml.PauliX(0)
-                return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
-
-            with pytest.raises(
-                qml.DeviceError,
-                match="not accepted for analytic simulation on default.qubit",
-            ):
-                circuit()
+            circuit()
 
 
 class TestStateMeasurement:
