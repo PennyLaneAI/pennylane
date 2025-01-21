@@ -187,6 +187,55 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
+@lru_cache
+def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
+    try:
+        # pylint: disable=import-outside-toplevel
+        from jax import make_jaxpr
+    except ImportError:  # pragma: no cover
+        return None, None
+
+    # pylint: disable=redefined-outer-name
+
+    class DynamicDecomposeInterpreter(qml.capture.PlxprInterpreter):
+        """ """
+
+        def __init__(self, gate_set=None, max_expansion=None):
+            self.max_expansion = max_expansion
+
+            if gate_set is None:
+                gate_set = set(qml.ops.__all__)
+
+            if isinstance(gate_set, (str, type)):
+                gate_set = set([gate_set])
+
+            if isinstance(gate_set, Iterable):
+                gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+                gate_names = set(gate for gate in gate_set if isinstance(gate, str))
+                self.gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
+            else:
+                self.gate_set = gate_set
+
+            super().__init__()
+
+        def stopping_condition(self, op: qml.operation.Operator) -> bool:
+            """ """
+            pass
+
+        def decompose_operation(self, op: qml.operation.Operator):
+            """ """
+            pass
+
+        def interpret_operation_eqn(self, eqn):
+            """ """
+            pass
+
+    return DynamicDecomposeInterpreter
+
+
+DynamicDecomposeInterpreter = _get_plxpr_dynamic_decompose()
+
+
 @partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
 def decompose(tape, gate_set=None, max_expansion=None):
     """Decomposes a quantum circuit into a user-specified gate set.
