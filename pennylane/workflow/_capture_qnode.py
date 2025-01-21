@@ -276,6 +276,10 @@ def _qnode_batching_rule(
     return result, (0,) * len(result)
 
 
+### JVP CALCULATION #########################################################
+# This structure will change as we add more diff methods
+
+
 def _make_zero(tan, arg):
     return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
 
@@ -306,6 +310,8 @@ def _qnode_jvp(args, tangents, *, qnode_kwargs, device, **impl_kwargs):
         args, tangents, qnode_kwargs=qnode_kwargs, device=device, **impl_kwargs
     )
 
+
+### END JVP CALCULATION #######################################################
 
 ad.primitive_jvps[qnode_prim] = _qnode_jvp
 
