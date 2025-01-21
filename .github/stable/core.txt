@@ -43,7 +43,7 @@ osqp==0.6.7.post3
 packaging==24.2
 pandas==2.2.3
 pathspec==0.12.1
-PennyLane_Lightning==0.40.0
+PennyLane_Lightning==0.41.0
 pillow==11.1.0
 platformdirs==4.3.6
 pluggy==1.5.0
@@ -52,7 +52,7 @@ prompt_toolkit==3.0.48
 py==1.11.0
 py-cpuinfo==9.0.0
 pydot==3.0.4
-Pygments==2.19.0
+Pygments==2.19.1
 pylint==2.7.4
 pyparsing==3.2.1
 pytest==8.3.4
@@ -70,7 +70,8 @@ qdldl==0.1.7.post5
 requests==2.32.3
 rich==13.9.4
 rustworkx==0.15.1
-scipy==1.15.0
+scipy==1.15.1
+scipy-openblas32==0.3.28.0.2
 scs==3.2.7.post2
 six==1.17.0
 smmap==5.0.2
@@ -78,11 +79,11 @@ tach==0.13.1
 termcolor==2.5.0
 toml==0.10.2
 tomli==2.2.1
-tomli_w==1.1.0
+tomli_w==1.2.0
 tomlkit==0.13.2
 typing_extensions==4.12.2
 tzdata==2024.2
 urllib3==2.3.0
-virtualenv==20.28.1
+virtualenv==20.29.1
 wcwidth==0.2.13
 wrapt==1.12.1
