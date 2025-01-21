@@ -758,13 +758,11 @@ class QubitDevice(Device):
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
-            elif m.return_type is not None:
+            else:
                 name = obs.name if isinstance(obs, qml.operation.Operator) else type(obs).__name__
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {name}"
                 )
-            else:
-                result = None
 
             # 2. Post-process statistics results (if need be)
             if isinstance(
