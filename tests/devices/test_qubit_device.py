@@ -378,6 +378,7 @@ class TestExtractStatistics:
         with pytest.raises(qml.QuantumFunctionError, match=_match):
             dev.statistics(qscript)
 
+    @pytest.mark.xfail(reason="return_type is deprecated. Anything dependent on it should be failed. PR6841")
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qubit_device_extract_stats, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
