@@ -3547,95 +3547,8 @@ class TestHamiltonianExpvalGradients:
         jac = fn(dev.execute(tapes))
         return jac
 
-    @staticmethod
-    def cost_fn_expected(weights, coeffs1, coeffs2):
-        """Analytic jacobian of cost_fn above"""
-        a, b, c = coeffs1
-        d = coeffs2[0]
-        x, y = weights
-        return [
-            [
-                -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
-                b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-            ],
-            [-d * np.sin(x), 0],
-        ]
-
-    @pytest.mark.autograd
-    def test_autograd(self, tol, broadcast):
-        """Test gradient of multiple trainable Hamiltonian coefficients
-        using autograd"""
-        coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        coeffs2 = np.array([0.7], requires_grad=True)
-        weights = np.array([0.4, 0.5], requires_grad=True)
-        dev = qml.device("default.qubit", wires=2)
-
-        res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, np.array(expected), atol=tol, rtol=0)
-
-        # TODO: test when Hessians are supported with the new return types
-        # second derivative wrt to Hamiltonian coefficients should be zero
-        # ---
-        # res = qml.jacobian(self.cost_fn)(weights, coeffs1, coeffs2, dev=dev)
-        # assert np.allclose(res[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-        # assert np.allclose(res[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol, broadcast):
-        """Test gradient of multiple trainable Hamiltonian coefficients
-        using tf"""
-        import tensorflow as tf
-
-        coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
-        coeffs2 = tf.Variable([0.7], dtype=tf.float64)
-        weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        with tf.GradientTape() as _:
-            jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-
-        expected = self.cost_fn_expected(weights.numpy(), coeffs1.numpy(), coeffs2.numpy())
-        assert np.allclose(jac[0], np.array(expected)[0], atol=tol, rtol=0)
-        assert np.allclose(jac[1], np.array(expected)[1], atol=tol, rtol=0)
-
-        # TODO: test when Hessians are supported with the new return types
-        # second derivative wrt to Hamiltonian coefficients should be zero.
-        # When activating the following, rename the GradientTape above from _ to t
-        # ---
-        # hess = t.jacobian(jac, [coeffs1, coeffs2])
-        # assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-        # assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
-
-    @pytest.mark.torch
-    def test_torch(self, tol, broadcast):
-        """Test gradient of multiple trainable Hamiltonian coefficients
-        using torch"""
-        import torch
-
-        coeffs1 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64, requires_grad=True)
-        coeffs2 = torch.tensor([0.7], dtype=torch.float64, requires_grad=True)
-        weights = torch.tensor([0.4, 0.5], dtype=torch.float64, requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-        expected = self.cost_fn_expected(
-            weights.detach().numpy(), coeffs1.detach().numpy(), coeffs2.detach().numpy()
-        )
-        res = tuple(tuple(_r.detach() for _r in r) for r in res)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # second derivative wrt to Hamiltonian coefficients should be zero
-        # hess = torch.autograd.functional.jacobian(
-        #     lambda *args: self.cost_fn(*args, dev, broadcast), (weights, coeffs1, coeffs2)
-        # )
-        # assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-        # assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
-
     @pytest.mark.jax
-    def test_jax(self, tol, broadcast):
+    def test_jax(self, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""
         import jax
@@ -3647,19 +3560,11 @@ class TestHamiltonianExpvalGradients:
         weights = jnp.array([0.4, 0.5])
         dev = qml.device("default.qubit", wires=2)
 
-        res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(np.array(res)[:, :2], np.array(expected), atol=tol, rtol=0)
-
-        # TODO: test when Hessians are supported with the new return types
-        # second derivative wrt to Hamiltonian coefficients should be zero
-        # ---
-        # second derivative wrt to Hamiltonian coefficients should be zero
-        # res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev, broadcast)
-        # assert np.allclose(res[:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-
-        # res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev, broadcast)
-        # assert np.allclose(res[:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'hamiltonian_grad' function is deprecated"
+        ):
+            with pytest.warns(UserWarning, match="Please use qml.gradients.split_to_single_terms"):
+                self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
 
 
 @pytest.mark.autograd
