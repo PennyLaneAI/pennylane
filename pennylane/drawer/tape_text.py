@@ -198,7 +198,7 @@ def _add_cwire_measurement(m, layer_str, config):
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
     mv_label = "MCM"
-    meas_label = measurement_label_map[m._shortname](mv_label)
+    meas_label = measurement_label_map[m._shortname](mv_label)  # pylint: disable=protected-access
 
     n_wires = len(config.wire_map)
     for mcm in mcms:
@@ -219,10 +219,12 @@ def _add_measurement(m, layer_str, config):
         obs_label = None
     else:
         obs_label = m.obs.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-    if m._shortname in measurement_label_map:
-        meas_label = measurement_label_map[m._shortname](obs_label)
+    if m._shortname in measurement_label_map:  # pylint: disable=protected-access
+        meas_label = measurement_label_map[m._shortname](
+            obs_label
+        )  # pylint: disable=protected-access
     else:
-        meas_label = m._shortname
+        meas_label = m._shortname  # pylint: disable=protected-access
 
     if len(m.wires) == 0:  # state or probability across all wires
         n_wires = len(config.wire_map)
