@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* A `RuntimeWarning` is now raised by `QNode` if `interface="jax"` and the installed version of JAX
+* A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
   is greater than `0.4.28`.
   [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
 
