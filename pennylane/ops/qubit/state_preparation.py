@@ -102,7 +102,7 @@ class BasisState(StatePrepBase):
             state_list = list(qml.math.toarray(state))
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
-
+        state = qml.math.cast(state, int)
         super().__init__(state, wires=wires, id=id)
 
     def _flatten(self):
@@ -287,7 +287,7 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         state: TensorLike,
