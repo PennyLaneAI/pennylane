@@ -51,6 +51,7 @@
 
 * The input argument `control_wires` of `MultiControlledX` has been removed.
   [(#6832)](https://github.com/PennyLaneAI/pennylane/pull/6832)
+  [(#6862)](https://github.com/PennyLaneAI/pennylane/pull/6862)
 
 * `qml.execute` now has a collection of keyword-only arguments.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
