@@ -45,7 +45,7 @@ A dictionary containing flattened style cond, while, and for loop higher order p
 """
 
 
-def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["Tracer"], shape: tuple[Optional[int]]):
+def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[Optional[int]]):
     """
     A helper for broadcast_in_dim and iota to combine static dimensions and dynamic dimensions.
     """
