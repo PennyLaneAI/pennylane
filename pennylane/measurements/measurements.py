@@ -137,7 +137,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
-        name = self._shortname or cls.__name__
+        name = cls._shortname or cls.__name__
         cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
         cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
         cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
