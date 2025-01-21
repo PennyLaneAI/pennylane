@@ -23,7 +23,6 @@ class VibronicMatrix:
         modes: int,
         blocks: Dict[Tuple[int, int], VibronicWord] = None,
         sparse: bool = False,
-        tensors: Dict[str, np.ndarray] = {},
     ) -> VibronicMatrix:
 
         if not is_pow_2(states) or states == 0:
@@ -36,7 +35,6 @@ class VibronicMatrix:
         self.states = states
         self.modes = modes
         self.sparse = sparse
-        self.tensors = tensors
 
     def block(self, row: int, col: int) -> VibronicWord:
         """Return the block indexed at (row, col)"""
@@ -171,7 +169,6 @@ class VibronicMatrix:
             self.modes,
             new_blocks,
             sparse=(self.sparse and other.sparse),
-            tensors=self.tensors,
         )
 
     def __sub__(self, other: VibronicMatrix) -> VibronicMatrix:
@@ -204,7 +201,6 @@ class VibronicMatrix:
             self.modes,
             new_blocks,
             sparse=(self.sparse and other.sparse),
-            tensors=self.tensors,
         )
 
     def __mul__(self, scalar: float) -> VibronicMatrix:
@@ -212,9 +208,7 @@ class VibronicMatrix:
         for key in self._blocks.keys():
             new_blocks[key] = scalar * self._blocks[key]
 
-        return VibronicMatrix(
-            self.states, self.modes, new_blocks, sparse=self.sparse, tensors=self.tensors
-        )
+        return VibronicMatrix(self.states, self.modes, new_blocks, sparse=self.sparse)
 
     __rmul__ = __mul__
 
@@ -236,7 +230,7 @@ class VibronicMatrix:
             )
 
         product_matrix = VibronicMatrix(
-            self.states, self.modes, sparse=(self.sparse and other.sparse), tensors=self.tensors
+            self.states, self.modes, sparse=(self.sparse and other.sparse)
         )
 
         for i, j in product(range(self.states), repeat=2):
@@ -262,12 +256,10 @@ class VibronicMatrix:
         # pylint: disable=chained-comparison
         half = self.states // 2
 
-        top_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse, tensors=self.tensors)
-        top_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse, tensors=self.tensors)
-        bottom_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse, tensors=self.tensors)
-        bottom_right = VibronicMatrix(
-            half, self.modes, {}, sparse=self.sparse, tensors=self.tensors
-        )
+        top_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
+        top_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
+        bottom_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
+        bottom_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
 
         for index, word in self._blocks.items():
             x, y = index
