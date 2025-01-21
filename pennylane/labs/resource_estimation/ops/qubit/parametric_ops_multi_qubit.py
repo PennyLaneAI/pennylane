@@ -106,12 +106,19 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(pauli_word, **kwargs):
-        if set(pauli_word) == {"I"}:
+    def _resource_decomp(pauli_string, **kwargs):
+        if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
             gp = re.ResourceGlobalPhase.resource_rep()
             return {gp: 1}
 
-        active_wires = len(pauli_word.replace("I", ""))
+        if pauli_string == "X":
+            return {re.ResourceRX.resource_rep(): 1}
+        if pauli_string == "Y":
+            return {re.ResourceRY.resource_rep(): 1}
+        if pauli_string == "Z":
+            return {re.ResourceRZ.resource_rep(): 1}
+
+        active_wires = len(pauli_string.replace("I", ""))
 
         h = re.ResourceHadamard.resource_rep()
         s = re.ResourceS.resource_rep()
@@ -122,17 +129,21 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
         h_count = 0
         s_count = 0
 
-        for gate in pauli_word:
+        for gate in pauli_string:
             if gate == "X":
-                h_count += 2
+                h_count += 1
             if gate == "Y":
-                h_count += 2
+                h_count += 1
                 s_count += 1
 
         gate_types = {}
-        gate_types[h] = h_count
-        gate_types[s] = s_count
-        gate_types[s_dagg] = s_count
+        if h_count:
+            gate_types[h] = 2 * h_count
+
+        if s_count:
+            gate_types[s] = s_count
+            gate_types[s_dagg] = s_count
+
         gate_types[rz] = 1
         gate_types[cnot] = 2 * (active_wires - 1)
 
@@ -140,73 +151,52 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
     def resource_params(self):
         return {
-            "pauli_word": self.hyperparameters["pauli_word"],
+            "pauli_string": self.hyperparameters["pauli_word"],
         }
 
     @classmethod
-    def resource_rep(cls, pauli_word):
-        return re.CompressedResourceOp(cls, {"pauli_word": pauli_word})
+    def resource_rep(cls, pauli_string):
+        return re.CompressedResourceOp(cls, {"pauli_string": pauli_string})
 
     @classmethod
-    def adjoint_resource_decomp(cls, pauli_word) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(pauli_word=pauli_word): 1}
+    def adjoint_resource_decomp(cls, pauli_string) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(pauli_string=pauli_string): 1}
 
-    @staticmethod
+    @classmethod
     def controlled_resource_decomp(
+        cls,
         num_ctrl_wires,
         num_ctrl_values,
         num_work_wires,
-        pauli_word,
+        pauli_string,
     ) -> Dict[re.CompressedResourceOp, int]:
-        if set(pauli_word) == {"I"}:
-            ctrl_gp = re.ResourceControlled.resource_rep(
-                re.ResourceGlobalPhase,
-                {},
-                num_ctrl_wires,
-                num_ctrl_values,
-                num_work_wires,
-            )
-            return {ctrl_gp: 1}
+        base_gate_types = cls.resources(pauli_string)
 
-        active_wires = len(pauli_word.replace("I", ""))
-
-        h = re.ResourceHadamard.resource_rep()
-        s = re.ResourceS.resource_rep()
-        s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
-        cnot = re.ResourceCNOT.resource_rep()
-        ctrl_rz = re.ResourceControlled.resource_rep(
-            base_class=re.ResourceRZ,
-            base_params={},
-            num_ctrl_wires=num_ctrl_wires,
-            num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
+        pivotal_gates = (
+            re.ResourceRX.resource_rep(),
+            re.ResourceRY.resource_rep(),
+            re.ResourceRZ.resource_rep(),
+            re.ResourceGlobalPhase.resource_rep(),
         )
 
-        h_count = 0
-        s_count = 0
+        for gate in pivotal_gates:
+            if gate in base_gate_types:
+                counts = base_gate_types.pop(gate)
+                ctrl_gate = re.ResourceControlled.resource_rep(
+                    gate.op_type,
+                    gate.params,
+                    num_ctrl_wires,
+                    num_ctrl_values,
+                    num_work_wires,
+                )
 
-        for gate in pauli_word:
-            if gate == "X":
-                h_count += 2
-            if gate == "Y":
-                h_count += 2
-                s_count += 1
+                base_gate_types[ctrl_gate] = counts
 
-        gate_types = {}
-        if h_count:
-            gate_types[h] = h_count
-        if s_count:
-            gate_types[s] = s_count
-            gate_types[s_dagg] = s_count
-
-        gate_types[ctrl_rz] = 1
-        gate_types[cnot] = 2 * (active_wires - 1)
-
-        return gate_types
+        return base_gate_types
 
     @classmethod
-    def pow_resource_decomp(cls, z, pauli_word) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(pauli_word=pauli_word): 1}
+    def pow_resource_decomp(cls, z, pauli_string) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(pauli_string=pauli_string): 1}
 
 
 class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
