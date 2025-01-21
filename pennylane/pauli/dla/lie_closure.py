@@ -55,8 +55,8 @@ def lie_closure(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
-        matrix (bool): Whether or not matrix representations should be used and output in the Lie cloure computation. This can help
-            speed-up computation when using sums of Paulis with many terms.  Default is ``False``.
+        matrix (bool): Whether or not matrix representations should be used and returned in the Lie closure computation. This can help
+            speed up the computation when using sums of Paulis with many terms. Default is ``False``.
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
     Returns:
