@@ -155,7 +155,7 @@ class ControlledQubitUnitary(ControlledOp):
         if control_wires != "unset":
             warnings.warn(
                 "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Instead, please use wires, following wires=controlled_wires+target_wire.",
+                "Please note that the second positional arg of your input is going to be the new wires, following wires=controlled_wires+target_wires, where target_wires is the optional arg wires in the legacy interface.",
                 qml.PennyLaneDeprecationWarning,
             )
 
