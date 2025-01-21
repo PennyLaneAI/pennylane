@@ -224,7 +224,7 @@ class TestQNode:
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
-        gradient_kwargs = {"h": 1e-8}
+        gradient_kwargs = {"h": 1e-8, "approx_order": 2}
 
         @qnode(
             dev,
