@@ -34,6 +34,14 @@ from .controlled_decompositions import decompose_mcx
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
+def _deprecate_control_wires(control_wires):
+    if control_wires != "unset":
+        warnings.warn(
+            "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+            "Please note that the second positional arg of your input is going to be the new wires, following wires=controlled_wires+target_wires, where target_wires is the optional arg wires in the legacy interface.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
 # pylint: disable=too-few-public-methods
 class ControlledQubitUnitary(ControlledOp):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
@@ -136,7 +144,7 @@ class ControlledQubitUnitary(ControlledOp):
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        cls._deprecate_control_wires(control_wires)
+        _deprecate_control_wires(control_wires)
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
@@ -150,15 +158,6 @@ class ControlledQubitUnitary(ControlledOp):
             base, wires=wires, control_values=control_values, work_wires=work_wires
         )
 
-    @classmethod
-    def _deprecate_control_wires(cls, control_wires):
-        if control_wires != "unset":
-            warnings.warn(
-                "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Please note that the second positional arg of your input is going to be the new wires, following wires=controlled_wires+target_wires, where target_wires is the optional arg wires in the legacy interface.",
-                qml.PennyLaneDeprecationWarning,
-            )
-
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
@@ -169,7 +168,7 @@ class ControlledQubitUnitary(ControlledOp):
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        self._deprecate_control_wires(control_wires)
+        _deprecate_control_wires(control_wires)
 
         if wires is None or len(wires) == 0:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
