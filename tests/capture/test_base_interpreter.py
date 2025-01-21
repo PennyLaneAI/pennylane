@@ -546,6 +546,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
 
 class TestDynamicShapes:
+    """Test that our interpreters can handle dynamic array creation."""
 
     @pytest.mark.parametrize("reinterpret", (True, False))
     def test_creating_ones(self, reinterpret):
@@ -569,6 +570,32 @@ class TestDynamicShapes:
             assert len(output) == 2  # shape and array
             assert jax.numpy.allclose(output[0], 5)  # 4 + 1
             assert jax.numpy.allclose(output[1], 2 * jax.numpy.ones((2, 5)))
+
+        finally:
+            jax.config.update("jax_dynamic_shapes", False)
+
+    @pytest.mark.parametrize("reinterpret", (True, False))
+    def test_arange(self, reinterpret):
+        """Test that broadcast_in_dim can be executed with PlxprInterpreter."""
+        jax.config.update("jax_dynamic_shapes", True)
+        try:
+
+            def f(n):
+                return 2 * jax.numpy.arange(n + 1)
+
+            interpreter = PlxprInterpreter()
+
+            if reinterpret:
+                # can still capture it once again
+                f = interpreter(f)
+
+            jaxpr = jax.make_jaxpr(f)(3)
+
+            output = interpreter.eval(jaxpr.jaxpr, jaxpr.consts, 6)
+
+            assert len(output) == 2  # shape and array
+            assert jax.numpy.allclose(output[0], 7)  # 4 + 1
+            assert jax.numpy.allclose(output[1], 2 * jax.numpy.arange(7))
 
         finally:
             jax.config.update("jax_dynamic_shapes", False)

@@ -17,7 +17,7 @@ This submodule defines a strategy structure for defining custom plxpr interprete
 # pylint: disable=no-self-use
 from copy import copy
 from functools import partial, wraps
-from typing import Callable, Sequence
+from typing import Callable, Optional, Sequence
 
 import jax
 
@@ -43,6 +43,26 @@ A dictionary containing flattened style cond, while, and for loop higher order p
 .. code-block::
     MyInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
 """
+
+
+def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["Tracer"], shape: tuple[Optional[int]]):
+    """
+    A helper for broadcast_in_dim and iota to combine static dimensions and dynamic dimensions.
+    """
+    dyn_shape_iter = iter(dyn_shape)
+    new_shape = []
+    for s in shape:
+        if s is not None:
+            new_shape.append(s)
+        else:
+            # pull from iterable of dynamic shapes
+            next_s = next(dyn_shape_iter)
+            if not qml.math.is_abstract(next_s):
+                # may need to cast to a built-in integer if possible
+                next_s = int(next_s)
+            new_shape.append(next_s)
+
+    return tuple(new_shape)
 
 
 def jaxpr_to_jaxpr(
@@ -358,6 +378,23 @@ class PlxprInterpreter:
         return wrapper
 
 
+# pylint: disable=unused-argument
+@PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
+def _(self, x, *dyn_shape, shape, broadcast_dimensions):
+    # needs custom primitive as jax.core.eval_jaxpr will error out with this
+    new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
+
+    return jax.lax.broadcast_in_dim(x, new_shape, broadcast_dimensions=broadcast_dimensions)
+
+
+# pylint: disable=unused-argument
+@PlxprInterpreter.register_primitive(jax.lax.iota_p)
+def _(self, *dyn_shape, dimension, dtype, shape):
+    # iota is primitive created by jnp.arange
+    new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
+    return jax.lax.broadcasted_iota(dtype, new_shape, dimension)
+
+
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
 def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
     """Interpret an adjoint transform primitive."""
@@ -461,26 +498,6 @@ def handle_while_loop(
         args_slice=args_slice,
         abstract_shapes_slice=abstract_shapes_slice,
     )
-
-
-# pylint: disable=unused-argument
-@PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
-def _(self, x, *dyn_shape, shape, broadcast_dimensions):
-    # needs custom primitive as jax.core.eval_jaxpr will error out with this
-    dyn_shape_iter = iter(dyn_shape)
-    new_shape = []
-    for s in shape:
-        if s is not None:
-            new_shape.append(s)
-        else:
-            # pull from iterable of dynamic shapes
-            next_s = next(dyn_shape_iter)
-            if not qml.math.is_abstract(next_s):
-                # may need to cast to a built-in integer if possible
-                next_s = int(next_s)
-            new_shape.append(next_s)
-
-    return jax.lax.broadcast_in_dim(x, tuple(new_shape), broadcast_dimensions=broadcast_dimensions)
 
 
 # pylint: disable=unused-argument, too-many-arguments

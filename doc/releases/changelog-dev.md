@@ -9,7 +9,9 @@
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
   [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
 
-* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones` or `jnp.zeros`.
+* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
+  and `jnp.arange`.
+  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
