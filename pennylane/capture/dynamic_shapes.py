@@ -15,9 +15,7 @@
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
 from functools import lru_cache
-from string import ascii_lowercase
-
-import numpy as np
+from string import ascii_lowercase as letters
 
 has_jax = True
 try:
@@ -29,11 +27,10 @@ except ImportError:  # pragma: no cover
 @lru_cache
 def _get_letter(ind: int) -> str:
     if ind < 26:
-        return ascii_lowercase[ind]
-    # absolutely overkill, but it works
-    num_letters = int(np.ceil(np.log(ind) / np.log(26)))
-    letters = (ascii_lowercase[(ind // 26**i) % 26] for i in range(num_letters))
-    return "".join(letters)
+        return letters[ind]
+    if ind < 702:
+        return letters[ind // 26 - 1] + letters[ind % 26]
+    raise NotImplementedError("we only support up to 702 dynamic axes")  # pragma: no cover
 
 
 def _get_shape_for_array(x, abstract_shapes: list) -> dict:
@@ -81,12 +78,17 @@ def determine_abstracted_axes(args):
     Returns:
         tuple, tuple: the corresponding abstracted axes and dynamic shapes
 
+    Note that "dynamic shapes" only refers to the size of dimensions, but not the number of dimensions.
+    Even with dynamic shapes mode enabled, we cannot change the number of dimensions.
+
     See the ``intro_to_dynamic_shapes.md`` document for more information on how dynamic shapes work.
 
     To make jaxpr from arguments with dynamic shapes, the ``abstracted_axes`` keyword argument must be set.
     Then, when calling the jaxpr, variables for the dynamic shapes must be passed.
 
     .. code-block:: python
+
+        jax.config.update("jax_dynamic_shapes", True)
 
         def f(n):
             x = jax.numpy.ones((n,))

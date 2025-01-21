@@ -127,3 +127,34 @@ def test_pytree_input(enable_disable):
         _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, *flat_args)
 
     _ = jax.make_jaxpr(f, abstracted_axes=initial_abstracted_axes)(arg)
+
+
+def test_input_created_with_jnp_ones(enable_disable):
+    """Test that determine_abstracted_axes works with manually created dynamic arrays."""
+
+    def f(n):
+        m = n + 1
+        ones = jax.numpy.ones((m, 3))
+        zeros = jax.numpy.zeros((4, n))
+
+        abstracted_axes, abstract_shapes = determine_abstracted_axes((ones, zeros))
+        assert abstracted_axes == ({0: "a"}, {1: "b"})
+        assert len(abstract_shapes) == 2
+        assert abstract_shapes[0] is m
+        assert abstract_shapes[1] is n
+
+    _ = jax.make_jaxpr(f)(3)
+
+
+def test_large_number_of_abstract_axes(enable_disable):
+    """Test that determine_abstracted_axes can handle over 26 abstract axes."""
+
+    def f(shapes):
+        ones = jax.numpy.zeros(shapes)
+        abstracted_axes, abstract_shapes = determine_abstracted_axes((ones,))
+
+        assert abstracted_axes
+        assert len(set(abstracted_axes[0].keys())) == 30  # unique keys for each axis
+        assert len(abstract_shapes) == 30
+
+    _ = jax.make_jaxpr(f)(list(range(30)))

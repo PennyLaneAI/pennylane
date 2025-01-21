@@ -215,10 +215,13 @@ class TestAdjointQfunc:
             def f(x, y):
                 qml.adjoint(g)(x, y)
 
-            abstracted_axes = ({"a": {0: "n"}}, {0: "m"})
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(
-                {"a": jax.numpy.arange(2)}, jax.numpy.arange(3)
-            )
+            x_a_axes = {0: "n"}
+            y_axes = {0: "m"}
+            x = {"a": jax.numpy.arange(2)}
+            y = jax.numpy.arange(3)
+
+            abstracted_axes = ({"a": x_a_axes}, y_axes)
+            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(x, y)
             tape = qml.tape.plxpr_to_tape(
                 jaxpr.jaxpr, jaxpr.consts, 3, 4, jax.numpy.arange(3), jax.numpy.arange(4)
             )
