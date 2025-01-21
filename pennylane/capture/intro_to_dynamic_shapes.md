@@ -8,9 +8,13 @@ import jax
 Dynamic shapes are an experimental feature of jax with limited support and feature coverage.
 Without the `"jax_dynamic_shapes"` feature, we can't create arrays whose  size depends on an abstract value.
 
+Note that "dynamic shapes" reference an array with a dynamic size for one or more dimensions.  
+The number of dimensions must still remain fixed. We cannot do `jax.numpy.ones([3] * n)` for
+a tracer `n`.
+
 ```python
 jax.config.update("jax_dynamic_shapes", False)
-
+```
 
 ```python
 %xmode Minimal

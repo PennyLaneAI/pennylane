@@ -186,51 +186,45 @@ class TestAdjointQfunc:
         out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
         assert qml.math.isclose(out, qml.math.sin(-(0.5 + 0.3)))
 
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_dynamic_shape_input(self):
         """Test that the adjoint transform can accept arrays with dynamic shapes."""
-        jax.config.update("jax_dynamic_shapes", True)
-        try:
 
-            def f(x):
-                qml.adjoint(qml.RX)(x, 0)
+        def f(x):
+            qml.adjoint(qml.RX)(x, 0)
 
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
 
-            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
-            expected = qml.adjoint(qml.RX(jax.numpy.arange(2), 0))
-            qml.assert_equal(tape[0], expected)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
+        expected = qml.adjoint(qml.RX(jax.numpy.arange(2), 0))
+        qml.assert_equal(tape[0], expected)
 
-        finally:
-            jax.config.update("jax_dynamic_shapes", False)
-
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_complicated_dynamic_shape_input(self):
         """Test a dynamic shape input with a more complicate shape."""
-        jax.config.update("jax_dynamic_shapes", True)
-        try:
 
-            def g(x, y):
-                qml.RX(x["a"], 0)
-                qml.RY(y, 0)
+        def g(x, y):
+            qml.RX(x["a"], 0)
+            qml.RY(y, 0)
 
-            def f(x, y):
-                qml.adjoint(g)(x, y)
+        def f(x, y):
+            qml.adjoint(g)(x, y)
 
-            abstracted_axes = ({"a": {0: "n"}}, {0: "m"})
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(
-                {"a": jax.numpy.arange(2)}, jax.numpy.arange(3)
-            )
-            tape = qml.tape.plxpr_to_tape(
-                jaxpr.jaxpr, jaxpr.consts, 3, 4, jax.numpy.arange(3), jax.numpy.arange(4)
-            )
+        x_a_axes = {0: "n"}
+        y_axes = {0: "m"}
+        x = {"a": jax.numpy.arange(2)}
+        y = jax.numpy.arange(3)
 
-            op1 = qml.adjoint(qml.RY(jax.numpy.arange(4), 0))
-            op2 = qml.adjoint(qml.RX(jax.numpy.arange(3), 0))
-            qml.assert_equal(op1, tape[0])
-            qml.assert_equal(op2, tape[1])
+        abstracted_axes = ({"a": x_a_axes}, y_axes)
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(x, y)
+        tape = qml.tape.plxpr_to_tape(
+            jaxpr.jaxpr, jaxpr.consts, 3, 4, jax.numpy.arange(3), jax.numpy.arange(4)
+        )
 
-        finally:
-            jax.config.update("jax_dynamic_shapes", False)
-
+        op1 = qml.adjoint(qml.RY(jax.numpy.arange(4), 0))
+        op2 = qml.adjoint(qml.RX(jax.numpy.arange(3), 0))
+        qml.assert_equal(op1, tape[0])
+        qml.assert_equal(op2, tape[1])
 
 class TestCtrlQfunc:
     """Tests for the ctrl primitive."""
@@ -407,22 +401,17 @@ class TestCtrlQfunc:
         out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
         assert qml.math.isclose(out, -0.5 * qml.math.sin(0.5 + 0.3))
 
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_dynamic_shape_input(self):
         """Test that ctrl can accept dynamic shape inputs."""
-        jax.config.update("jax_dynamic_shapes", True)
-        try:
+        def f(x):
+            qml.ctrl(qml.RX, (2, 3))(x, 0)
 
-            def f(x):
-                qml.ctrl(qml.RX, (2, 3))(x, 0)
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
 
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
-
-            tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
-            expected = qml.ctrl(qml.RX(jax.numpy.arange(2), 0), (2, 3))
-            qml.assert_equal(tape[0], expected)
-
-        finally:
-            jax.config.update("jax_dynamic_shapes", False)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
+        expected = qml.ctrl(qml.RX(jax.numpy.arange(2), 0), (2, 3))
+        qml.assert_equal(tape[0], expected)
 
     def test_pytree_input(self):
         """Test that ctrl can accept pytree inputs."""

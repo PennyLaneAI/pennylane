@@ -26,14 +26,6 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 
-@pytest.fixture
-def enable_disable():
-    jax.config.update("jax_dynamic_shapes", True)
-    try:
-        yield
-    finally:
-        jax.config.update("jax_dynamic_shapes", False)
-
 
 def test_null_if_not_enabled():
     """Test None and an empty tuple are returned if dynamic shapes is not enabled."""
@@ -47,7 +39,8 @@ def test_null_if_not_enabled():
     _ = jax.make_jaxpr(f)(jnp.eye(4))
 
 
-def test_null_if_no_abstract_shapes(enable_disable):
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+def test_null_if_no_abstract_shapes():
     """Test the None and an empty tuple are returned if no dynamic shapes exist."""
 
     def f(*args):
@@ -59,7 +52,8 @@ def test_null_if_no_abstract_shapes(enable_disable):
     _ = jax.make_jaxpr(f)(jnp.eye(4))
 
 
-def test_single_abstract_shape(enable_disable):
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+def test_single_abstract_shape():
     """Test we get the correct answer for a single abstract shape."""
 
     initial_abstracted_axes = ({0: "a"},)
@@ -77,6 +71,7 @@ def test_single_abstract_shape(enable_disable):
     _ = jax.make_jaxpr(f, abstracted_axes=initial_abstracted_axes)(jnp.arange(4))
 
 
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 @pytest.mark.parametrize(
     "initial_abstracted_axes, num_shapes",
     [
@@ -86,7 +81,7 @@ def test_single_abstract_shape(enable_disable):
     ],
 )
 def test_single_abstract_shape_multiple_abstract_axes(
-    enable_disable, initial_abstracted_axes, num_shapes
+    initial_abstracted_axes, num_shapes
 ):
     """Test we get the correct answer for a single input with two abstract axes."""
 
@@ -103,7 +98,8 @@ def test_single_abstract_shape_multiple_abstract_axes(
     _ = jax.make_jaxpr(f, abstracted_axes=initial_abstracted_axes)(jnp.eye(4))
 
 
-def test_pytree_input(enable_disable):
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+def test_pytree_input():
     """Test a pytree input with dynamic shapes."""
 
     initial_abstracted_axes = (
@@ -127,3 +123,36 @@ def test_pytree_input(enable_disable):
         _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, *flat_args)
 
     _ = jax.make_jaxpr(f, abstracted_axes=initial_abstracted_axes)(arg)
+
+
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+def test_input_created_with_jnp_ones():
+    """Test that determine_abstracted_axes works with manually created dynamic arrays."""
+
+    def f(n):
+        m = n + 1
+        ones = jax.numpy.ones((m, 3))
+        zeros = jax.numpy.zeros((4, n))
+
+        abstracted_axes, abstract_shapes = determine_abstracted_axes((ones, zeros))
+        assert abstracted_axes == ({0: "a"}, {1: "b"})
+        assert len(abstract_shapes) == 2
+        assert abstract_shapes[0] is m
+        assert abstract_shapes[1] is n
+
+    _ = jax.make_jaxpr(f)(3)
+
+
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+def test_large_number_of_abstract_axes():
+    """Test that determine_abstracted_axes can handle over 26 abstract axes."""
+
+    def f(shapes):
+        ones = jax.numpy.zeros(shapes)
+        abstracted_axes, abstract_shapes = determine_abstracted_axes((ones,))
+
+        assert abstracted_axes
+        assert len(set(abstracted_axes[0].keys())) == 30  # unique keys for each axis
+        assert len(abstract_shapes) == 30
+
+    _ = jax.make_jaxpr(f)(list(range(30)))
