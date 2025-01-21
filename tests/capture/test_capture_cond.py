@@ -849,21 +849,16 @@ class TestPytree:
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
 
 
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 def test_cond_abstracted_axes():
     """Test cond can accept inputs with dynamic shapes."""
-    jax.config.update("jax_dynamic_shapes", True)
-    try:
+    def workflow(x, predicate):
+        return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
 
-        def workflow(x, predicate):
-            return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
+    jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
 
-        jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
+    output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
+    assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
 
-        output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
-        assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
-
-        output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
-        assert qml.math.allclose(output_false[0], 0)  # 0 * 1
-
-    finally:
-        jax.config.update("jax_dynamic_shapes", False)
+    output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
+    assert qml.math.allclose(output_false[0], 0)  # 0 * 1

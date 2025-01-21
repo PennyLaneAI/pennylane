@@ -81,27 +81,22 @@ class TestCaptureWhileLoop:
         assert np.allclose(res_arr1_jxpr, expected), f"Expected {expected}, but got {res_arr1_jxpr}"
         assert np.allclose(res_idx, res_idx_jxpr) and res_idx_jxpr == 10
 
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_while_loop_dyanmic_shape_array(self):
         """Test while loop can accept ararys with dynamic shapes."""
 
-        jax.config.update("jax_dynamic_shapes", True)
+        def f(x):
+            @qml.while_loop(lambda res: jax.numpy.sum(res) < 10)
+            def g(res):
+                return res + res
 
-        try:
+            return g(x)
 
-            def f(x):
-                @qml.while_loop(lambda res: jax.numpy.sum(res) < 10)
-                def g(res):
-                    return res + res
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(2))
 
-                return g(x)
-
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(2))
-
-            [output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
-            expected = jax.numpy.array([0, 4, 8])
-            assert jax.numpy.allclose(output, expected)
-        finally:
-            jax.config.update("jax_dynamic_shapes", False)
+        [output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+        expected = jax.numpy.array([0, 4, 8])
+        assert jax.numpy.allclose(output, expected)
 
 
 class TestCaptureCircuitsWhileLoop:
