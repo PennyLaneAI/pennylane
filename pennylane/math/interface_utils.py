@@ -15,9 +15,13 @@
 
 import warnings
 from enum import Enum
+from importlib.metadata import version
+from importlib.util import find_spec
 from typing import Literal, Union
+from warnings import warn
 
 import autoray as ar
+from packaging.version import Version
 
 
 class Interface(Enum):
@@ -212,23 +216,50 @@ def get_deep_interface(value):
     return _get_interface_of_single_tensor(itr)
 
 
-def get_canonical_interface_name(user_input: InterfaceLike) -> Interface:
+def _check_supported_jax() -> None:
+    """Checks if the installed version of JAX is supported. If an unsupported version of
+    JAX is installed, a ``RuntimeWarning`` is raised."""
+    if not find_spec("jax"):
+        return
+
+    jax_version = version("jax")
+    if Version(jax_version) > Version("0.4.28"):  # pragma: no cover
+        warn(
+            "PennyLane is currently not compatible with versions of JAX > 0.4.28. "
+            f"You have version {jax_version} installed.",
+            RuntimeWarning,
+        )
+
+
+def get_canonical_interface_name(
+    user_input: InterfaceLike, _validate_jax_version=False
+) -> Interface:
     """Helper function to get the canonical interface name.
 
     Args:
-        interface (str, Interface): reference interface
+        interface (str, Interface): Reference interface
+        _validate_jax_version (bool): Whether we should check if a supported version of
+            JAX is installed. If ``True``, a ``RuntimeWarning`` is raised if the canonical
+            interface is found to be JAX. ``False`` by default.
 
     Raises:
-        ValueError: key does not exist in the interface map
+        ValueError: Key does not exist in the interface map
 
     Returns:
-        Interface: canonical interface
+        Interface: Canonical interface
     """
 
     if user_input in SUPPORTED_INTERFACE_NAMES:
+        if _validate_jax_version and user_input in (Interface.JAX, Interface.JAX_JIT):
+            _check_supported_jax()
+
         return user_input
     try:
-        return INTERFACE_MAP[user_input]
+        out = INTERFACE_MAP[user_input]
+
+        if out in (Interface.JAX, Interface.JAX_JIT):
+            _check_supported_jax()
+        return out
     except KeyError as exc:
         raise ValueError(
             f"Unknown interface {user_input}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
