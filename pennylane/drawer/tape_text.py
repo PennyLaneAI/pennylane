@@ -21,15 +21,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import pennylane as qml
-from pennylane.measurements import (
-    Counts,
-    Expectation,
-    MidMeasureMP,
-    Probability,
-    Sample,
-    State,
-    Variance,
-)
+from pennylane.measurements import MidMeasureMP
 
 from .drawable_layers import drawable_layers
 from .utils import (
@@ -173,12 +165,12 @@ def _add_mid_measure_op(op, layer_str, config):
 
 
 measurement_label_map = {
-    Expectation: lambda label: f"<{label}>",
-    Probability: lambda label: f"Probs[{label}]" if label else "Probs",
-    Sample: lambda label: f"Sample[{label}]" if label else "Sample",
-    Counts: lambda label: f"Counts[{label}]" if label else "Counts",
-    Variance: lambda label: f"Var[{label}]",
-    State: lambda label: "State",
+    "expval": lambda label: f"<{label}>",
+    "probs": lambda label: f"Probs[{label}]" if label else "Probs",
+    "sample": lambda label: f"Sample[{label}]" if label else "Sample",
+    "counts": lambda label: f"Counts[{label}]" if label else "Counts",
+    "var": lambda label: f"Var[{label}]",
+    "state": lambda label: "State",
 }
 
 
@@ -206,7 +198,7 @@ def _add_cwire_measurement(m, layer_str, config):
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
     mv_label = "MCM"
-    meas_label = measurement_label_map[m.return_type](mv_label)
+    meas_label = measurement_label_map[m._shortname](mv_label)
 
     n_wires = len(config.wire_map)
     for mcm in mcms:
@@ -227,10 +219,10 @@ def _add_measurement(m, layer_str, config):
         obs_label = None
     else:
         obs_label = m.obs.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-    if m.return_type in measurement_label_map:
-        meas_label = measurement_label_map[m.return_type](obs_label)
+    if m._shortname in measurement_label_map:
+        meas_label = measurement_label_map[m._shortname](obs_label)
     else:
-        meas_label = m.return_type.value
+        meas_label = m._shortname
 
     if len(m.wires) == 0:  # state or probability across all wires
         n_wires = len(config.wire_map)
