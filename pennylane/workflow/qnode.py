@@ -32,7 +32,6 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from ._capture_qnode import capture_qnode
 from .resolution import SupportedDiffMethods
 
 logger = logging.getLogger(__name__)
@@ -837,6 +836,8 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         if qml.capture.enabled():
+            from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
+
             return capture_qnode(self, *args, **kwargs)
         return self._impl_call(*args, **kwargs)
 
