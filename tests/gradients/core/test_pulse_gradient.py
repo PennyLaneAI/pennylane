@@ -1385,7 +1385,10 @@ class TestStochPulseGradIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1415,7 +1418,10 @@ class TestStochPulseGradIntegration:
         ham_y = qml.pulse.constant * qml.PauliX(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_x)(params[0], T_x)
@@ -1444,7 +1450,10 @@ class TestStochPulseGradIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1471,7 +1480,10 @@ class TestStochPulseGradIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1503,7 +1515,10 @@ class TestStochPulseGradIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params, T=None):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1542,8 +1557,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            sampler_seed=seed,
+            gradient_kwargs={"num_split_times": num_split_times, "sampler_seed": seed},
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
@@ -1574,8 +1588,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            use_broadcasting=True,
+            gradient_kwargs={"num_split_times": num_split_times, "use_broadcasting": True},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1619,18 +1632,22 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            use_broadcasting=True,
-            sampler_seed=seed,
+            gradient_kwargs={
+                "num_split_times": num_split_times,
+                "use_broadcasting": True,
+                "sampler_seed": seed,
+            },
         )
         circuit_no_bc = qml.QNode(
             ansatz,
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            use_broadcasting=False,
-            sampler_seed=seed,
+            gradient_kwargs={
+                "num_split_times": num_split_times,
+                "use_broadcasting": False,
+                "sampler_seed": seed,
+            },
         )
         params = [jnp.array(0.4)]
         jac_bc = jax.jacobian(circuit_bc)(params)
@@ -1684,9 +1701,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=qml.gradients.stoch_pulse_grad,
-            num_split_times=7,
-            use_broadcasting=True,
-            sampler_seed=seed,
+            gradient_kwargs={"num_split_times": 7, "sampler_seed": seed, "use_broadcasting": True},
         )
         cost_jax = qml.QNode(ansatz, dev, interface="jax")
         params = (0.42,)
@@ -1729,9 +1744,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=qml.gradients.stoch_pulse_grad,
-            num_split_times=7,
-            use_broadcasting=True,
-            sampler_seed=seed,
+            gradient_kwargs={"num_split_times": 7, "sampler_seed": seed, "use_broadcasting": True},
         )
         cost_jax = qml.QNode(ansatz, dev, interface="jax")
 
