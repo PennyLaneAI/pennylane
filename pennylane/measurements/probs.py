@@ -151,7 +151,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    return_type = Probability
+    _shortname = "probs"
 
     @classmethod
     def _abstract_eval(cls, n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):

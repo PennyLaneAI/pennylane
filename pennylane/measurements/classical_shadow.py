@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
+from .measurements import MeasurementShapeError, MeasurementTransform
 
 
 def shadow_expval(H, k=1, seed=None):
@@ -225,6 +225,8 @@ class ClassicalShadowMP(MeasurementTransform):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    _shortname = "shadow"
 
     def __init__(
         self,
@@ -448,7 +450,9 @@ class ClassicalShadowMP(MeasurementTransform):
 
     @property
     def return_type(self):
-        return Shadow
+        # Use the return type from MeasurementProcess to raise warning
+        super().return_type
+        return self._shortname
 
     @classmethod
     def _abstract_eval(
@@ -492,6 +496,8 @@ class ShadowExpvalMP(MeasurementTransform):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    _shortname = "shadowexpval"
 
     def _flatten(self):
         metadata = (
@@ -567,7 +573,8 @@ class ShadowExpvalMP(MeasurementTransform):
 
     @property
     def return_type(self):
-        return ShadowExpval
+        super().return_type
+        return self._shortname
 
     def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
         return () if isinstance(self.H, Operator) else (len(self.H),)

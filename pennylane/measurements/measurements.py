@@ -129,13 +129,15 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     # pylint:disable=too-many-instance-attributes
 
+    _shortname = None
+
     _obs_primitive: Optional["jax.core.Primitive"] = None
     _wires_primitive: Optional["jax.core.Primitive"] = None
     _mcm_primitive: Optional["jax.core.Primitive"] = None
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
-        name = getattr(cls.return_type, "value", cls.__name__)
+        name = self._shortname or cls.__name__
         cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
         cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
         cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
@@ -338,7 +340,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     def __repr__(self):
         """Representation of this class."""
-        name_str = self.return_type.value if self.return_type else type(self).__name__
+        name_str = self._shortname or type(self).__name__
         if self.mv is not None:
             return f"{name_str}({repr(self.mv)})"
         if self.obs:
@@ -347,7 +349,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
+        return f"{self._shortname}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
@@ -578,6 +580,8 @@ class SampleMeasurement(MeasurementProcess):
     >>> circuit()
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
+
+    _shortname = "sample"
 
     @abstractmethod
     def process_samples(

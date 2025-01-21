@@ -22,7 +22,7 @@ from typing import Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MutualInfo, StateMeasurement
+from .measurements import StateMeasurement
 
 
 def mutual_info(wires0, wires1, log_base=None):
@@ -102,6 +102,8 @@ class MutualInfoMP(StateMeasurement):
 
     """
 
+    _shortname = "mutualinfo"
+
     def _flatten(self):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
         return (None, None), metadata
@@ -141,7 +143,8 @@ class MutualInfoMP(StateMeasurement):
 
     @property
     def return_type(self):
-        return MutualInfo
+        super().return_type
+        return self._shortname
 
     @property
     def numeric_type(self):

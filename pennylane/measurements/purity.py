@@ -21,7 +21,7 @@ from typing import Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import Purity, StateMeasurement
+from .measurements import StateMeasurement
 
 
 def purity(wires) -> "PurityMP":
@@ -74,12 +74,15 @@ class PurityMP(StateMeasurement):
             applications where the instance has to be identified
     """
 
+    _shortname = "purity"
+
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
 
     @property
     def return_type(self):
-        return Purity
+        super().return_type
+        return self._shortname
 
     @property
     def numeric_type(self):
