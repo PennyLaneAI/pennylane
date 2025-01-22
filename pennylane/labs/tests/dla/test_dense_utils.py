@@ -583,7 +583,7 @@ class TestOpToAdjvec:
         """Test that op_to_adjvec yields the same results independently of the input type"""
 
         g = list(qml.pauli.pauli_group(3))  # su(8)
-        g = qml.lie_closure(g, dense=True)
+        g = qml.lie_closure(g, matrix=True)
 
         m = g[:32]
 

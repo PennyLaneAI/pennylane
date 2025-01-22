@@ -37,7 +37,7 @@ def lie_closure(
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
-    dense: bool = False,
+    matrix: bool = False,
     tol: float = None,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
     r"""Compute the dynamical Lie algebra from a set of generators.
@@ -55,7 +55,8 @@ def lie_closure(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
-        dense (bool): Whether or not dense matrix representations are used and output in the structure constants computation. Default is ``False``.
+        matrix (bool): Whether or not matrix representations should be used and returned in the Lie closure computation. This can help
+            speed up the computation when using sums of Paulis with many terms. Default is ``False``.
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
     Returns:
@@ -121,11 +122,12 @@ def lie_closure(
         >>> type(dla[0])
         pennylane.pauli.pauli_arithmetic.PauliSentence
 
-        In the case of large sums of Pauli operators, it is often faster to use the dense representation of the operators rather than
-        the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation. We can force this by using the
-        ``dense`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``.
+        In the case of sums of Pauli operators with many terms, it is often faster to use the matrix representation of the operators rather than
+        the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation.
+        We can force this by using the ``matrix`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``, where ``dim_g`` is the
+        dimension of the DLA and ``n`` the number of qubits.
 
-        >>> dla = qml.lie_closure(ops, dense=True)
+        >>> dla = qml.lie_closure(ops, matrix=True)
         >>> dla.shape
         (6, 4, 4)
 
@@ -145,8 +147,8 @@ def lie_closure(
             for op in generators
         ]
 
-    if dense:
-        return _lie_closure_dense(generators, max_iterations, verbose, tol)
+    if matrix:
+        return _lie_closure_matrix(generators, max_iterations, verbose, tol)
 
     vspace = PauliVSpace(generators, tol=tol)
 
@@ -523,15 +525,15 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
     return np.array(basis)
 
 
-def _lie_closure_dense(
+def _lie_closure_matrix(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
 ):
-    r"""Compute the dynamical Lie algebra :math:`\mathfrak{g}` from a set of generators using their dense matrix representation.
+    r"""Compute the dynamical Lie algebra :math:`\mathfrak{g}` from a set of generators using their matrix representation.
 
-    This function computes the Lie closure of a set of generators using their dense matrix representation.
+    This function computes the Lie closure of a set of generators using their matrix representation.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
     :class:`~PauliSentence` employed in :func:`~lie_closure`, e.g., when few generators are sums of many Paulis.
 
@@ -549,7 +551,7 @@ def _lie_closure_dense(
         tol (float): Numerical tolerance for the linear independence check between algebra elements
 
     Returns:
-        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linearly independent basis of the DLA :math:`\mathfrak{g}` as dense matrices.
+        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linearly independent basis of the DLA :math:`\mathfrak{g}` as matrices.
 
     **Example**
 
@@ -557,7 +559,7 @@ def _lie_closure_dense(
 
     >>> n = 5
     >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]
-    >>> g = _lie_closure_dense(gens)
+    >>> g = _lie_closure_matrix(gens)
 
     The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~batched_pauli_decompose`.
 
@@ -571,11 +573,11 @@ def _lie_closure_dense(
     so Hermitian operators alone can not form an algebra with the standard commutator).
     """
 
-    dense_in = isinstance(generators, np.ndarray) or all(
+    matrix_in = isinstance(generators, np.ndarray) or all(
         isinstance(op, np.ndarray) for op in generators
     )
 
-    if not dense_in:
+    if not matrix_in:
         all_wires = qml.wires.Wires.all_wires([_.wires for _ in generators])
         n = len(all_wires)
         assert all_wires.toset() == set(range(n))

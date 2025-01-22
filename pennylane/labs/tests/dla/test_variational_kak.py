@@ -39,7 +39,7 @@ def test_kak_Ising(n, dense):
     gens += [Z(i) for i in range(n)]
     H = qml.sum(*gens)
 
-    g = qml.lie_closure(gens, dense=dense)
+    g = qml.lie_closure(gens, matrix=dense)
     if not dense:
         g = [op.pauli_rep for op in g]
 
@@ -77,7 +77,7 @@ def test_kak_Heisenberg(n, dense):
     gens += [Z(i) @ Z(i + 1) for i in range(n - 1)]
     H = qml.sum(*gens)
 
-    g = qml.lie_closure(gens, dense=dense)
+    g = qml.lie_closure(gens, matrix=dense)
     if not dense:
         g = [op.pauli_rep for op in g]
 
@@ -114,7 +114,7 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
     gens = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(n - 1)]
     H = qml.sum(*gens)
 
-    g = qml.lie_closure(gens, dense=dense)
+    g = qml.lie_closure(gens, matrix=dense)
     if not dense:
         g = [op.pauli_rep for op in g]
 
