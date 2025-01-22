@@ -148,7 +148,7 @@ def lie_closure(
         ]
 
     if matrix:
-        return _lie_closure_dense(generators, max_iterations, verbose, tol)
+        return _lie_closure_matrix(generators, max_iterations, verbose, tol)
 
     vspace = PauliVSpace(generators, tol=tol)
 
@@ -525,15 +525,15 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
     return np.array(basis)
 
 
-def _lie_closure_dense(
+def _lie_closure_matrix(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
 ):
-    r"""Compute the dynamical Lie algebra :math:`\mathfrak{g}` from a set of generators using their dense matrix representation.
+    r"""Compute the dynamical Lie algebra :math:`\mathfrak{g}` from a set of generators using their matrix representation.
 
-    This function computes the Lie closure of a set of generators using their dense matrix representation.
+    This function computes the Lie closure of a set of generators using their matrix representation.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
     :class:`~PauliSentence` employed in :func:`~lie_closure`, e.g., when few generators are sums of many Paulis.
 
@@ -551,7 +551,7 @@ def _lie_closure_dense(
         tol (float): Numerical tolerance for the linear independence check between algebra elements
 
     Returns:
-        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linearly independent basis of the DLA :math:`\mathfrak{g}` as dense matrices.
+        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linearly independent basis of the DLA :math:`\mathfrak{g}` as matrices.
 
     **Example**
 
@@ -559,7 +559,7 @@ def _lie_closure_dense(
 
     >>> n = 5
     >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]
-    >>> g = _lie_closure_dense(gens)
+    >>> g = _lie_closure_matrix(gens)
 
     The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~batched_pauli_decompose`.
 
@@ -573,11 +573,11 @@ def _lie_closure_dense(
     so Hermitian operators alone can not form an algebra with the standard commutator).
     """
 
-    dense_in = isinstance(generators, np.ndarray) or all(
+    matrix_in = isinstance(generators, np.ndarray) or all(
         isinstance(op, np.ndarray) for op in generators
     )
 
-    if not dense_in:
+    if not matrix_in:
         all_wires = qml.wires.Wires.all_wires([_.wires for _ in generators])
         n = len(all_wires)
         assert all_wires.toset() == set(range(n))

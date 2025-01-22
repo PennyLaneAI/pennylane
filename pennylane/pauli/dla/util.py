@@ -41,7 +41,7 @@ def trace_inner_product(
     >>> trace_inner_product(qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0))
     1.0
 
-    If both operators are dense arrays, a leading batch dimension is broadcasted.
+    If both operators are arrays, a leading batch dimension is broadcasted.
 
     >>> batch = 10
     >>> ops1 = np.random.rand(batch, 16, 16)
@@ -75,5 +75,5 @@ def trace_inner_product(
             return np.tensordot(A, B, axes=[[-1, -2], [-2, -1]]) / A.shape[-1]
 
     raise NotImplementedError(
-        "Inputs to pennylane.pauli.trace_inner_product need to be iterables of dense matrices or operators with a pauli_rep"
+        "Inputs to pennylane.pauli.trace_inner_product need to be iterables of matrices or operators with a pauli_rep"
     )
