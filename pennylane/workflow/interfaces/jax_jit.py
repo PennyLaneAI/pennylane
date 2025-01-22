@@ -35,7 +35,7 @@ Array(1., dtype=float64)
 Note that we must provide the expected output shape for the function to use pure callbacks.
 
 """
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument, too-many-arguments, protected-access
 from functools import partial
 
 import jax
@@ -251,7 +251,7 @@ def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
 
     """
 
-    if any(isinstance(m, qml.measurements.CountsMP) for t in tapes for m in t.measurements):
+    if any(m._shortname == "counts" for t in tapes for m in t.measurements):
         # Obtaining information about the shape of the Counts measurements is
         # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
