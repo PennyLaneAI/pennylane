@@ -106,8 +106,6 @@ class TestInitialization:
         """Test that the properties are correct."""
         meas = qml.vn_entropy(wires=0)
         assert meas.numeric_type == float
-        with pytest.raises(qml.PennyLaneDeprecationWarning, match="return_type is deprecated"):
-            assert meas.return_type == "vnentropy"
 
     @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ())])
     def test_shape(self, shots, shape):

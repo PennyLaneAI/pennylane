@@ -15,7 +15,6 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
-import warnings
 from collections.abc import Sequence
 from typing import Optional
 
@@ -105,16 +104,6 @@ class VnEntropyMP(StateMeasurement):
     ):
         self.log_base = log_base
         super().__init__(wires=wires, id=id)
-
-    @property
-    def return_type(self):
-        """Measurement return type."""
-        warnings.warn(
-            "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
-            "Instead, please use isinstance for type checking directly.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._shortname
 
     @property
     def hash(self):

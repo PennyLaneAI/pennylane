@@ -56,12 +56,6 @@ def expected_purity_grad_ising_xx(param):
 class TestPurityUnitTest:
     """Tests for purity measurements"""
 
-    def test_return_type(self):
-        """Test that the return type is defined and the purity enum."""
-        m = PurityMP(wires=qml.wires.Wires((0, 1)))
-        with pytest.raises(qml.PennyLaneDeprecationWarning, match="return_type is deprecated"):
-            assert isinstance(m, PurityMP)
-
     def test_numeric_type(self):
         """Test that the numeric type of PurityMP is float."""
         m = PurityMP(wires=qml.wires.Wires(0))

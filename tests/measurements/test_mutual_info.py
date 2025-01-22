@@ -44,8 +44,6 @@ class TestMutualInfoUnitTests:
         """Test that the properties are correct."""
         meas = qml.mutual_info(wires0=[0], wires1=[1])
         assert meas.numeric_type == float
-        with pytest.raises(qml.PennyLaneDeprecationWarning, match="return_type is deprecated"):
-            assert meas.return_type == "mutualinfo"
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``log_base`` information."""
