@@ -87,6 +87,10 @@
 * The `mcm_method` keyword in `qml.execute` is deprecated. Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
 
+* The `qml.gradients.hamiltonian_grad` function has been deprecated.
+  This gradient recipe is not required with the new operator arithmetic system.
+  [(#6849)](https://github.com/PennyLaneAI/pennylane/pull/6849)
+
 * The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
