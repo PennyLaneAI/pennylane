@@ -87,11 +87,20 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `qml.gradients.hamiltonian_grad` function has been deprecated.
+  This gradient recipe is not required with the new operator arithmetic system.
+  [(#6849)](https://github.com/PennyLaneAI/pennylane/pull/6849)
+
 * The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
 
 <h3>Internal changes ⚙️</h3>
+
+* Added a `QmlPrimitive` class that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` module.
+  This class contains a `prim_type` property so that we can differentiate between different sets of PennyLane primitives.
+  Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
+  [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
 
 <h3>Documentation 📝</h3>
 
@@ -118,4 +127,5 @@ Diksha Dhawan,
 Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
+Mudit Pandey,
 Andrija Paurevic
