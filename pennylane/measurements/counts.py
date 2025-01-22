@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import SampleMeasurement
+from .measurements import Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
@@ -178,7 +178,7 @@ class CountsMP(SampleMeasurement):
             outcomes (default), or whether it will display all possible outcomes for the system
     """
 
-    _shortname = qml.measurements.Counts  #! Note: deprecated. Change the value to "counts" in v0.42
+    _shortname = Counts  #! Note: deprecated. Change the value to "counts" in v0.42
 
     # pylint: disable=too-many-arguments
     def __init__(

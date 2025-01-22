@@ -21,7 +21,7 @@ from typing import Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement
+from .measurements import StateMeasurement, VnEntropy
 
 
 def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
@@ -89,9 +89,7 @@ class VnEntropyMP(StateMeasurement):
         log_base (float): Base for the logarithm.
     """
 
-    _shortname = (
-        qml.measurements.VnEntropy
-    )  #! Note: deprecated. Change the value to "vnentropy" in v0.42
+    _shortname = VnEntropy  #! Note: deprecated. Change the value to "vnentropy" in v0.42
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("log_base", self.log_base))

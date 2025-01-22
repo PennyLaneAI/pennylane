@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, SampleMeasurement
+from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
@@ -156,7 +156,7 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
-    _shortname = qml.measurements.Sample  #! Note: deprecated. Change the value to "sample" in v0.42
+    _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
 
     def __init__(self, obs=None, wires=None, eigvals=None, id=None):
 

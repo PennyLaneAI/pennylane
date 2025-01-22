@@ -22,7 +22,7 @@ from typing import Generic, Optional, TypeVar, Union
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess
+from .measurements import MeasurementProcess, MidMeasure
 
 
 def measure(wires: Union[Hashable, Wires], reset: bool = False, postselect: Optional[int] = None):
@@ -280,9 +280,7 @@ class MidMeasureMP(MeasurementProcess):
         id (str): Custom label given to a measurement instance.
     """
 
-    _shortname = (
-        qml.measurements.MidMeasure
-    )  #! Note: deprecated. Change the value to "measure" in v0.42
+    _shortname = MidMeasure  #! Note: deprecated. Change the value to "measure" in v0.42
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))

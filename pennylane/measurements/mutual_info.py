@@ -22,7 +22,7 @@ from typing import Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement
+from .measurements import MutualInfo, StateMeasurement
 
 
 def mutual_info(wires0, wires1, log_base=None):
@@ -102,9 +102,7 @@ class MutualInfoMP(StateMeasurement):
 
     """
 
-    _shortname = (
-        qml.measurements.MutualInfo
-    )  #! Note: deprecated. Change the value to "mutualinfo" in v0.42
+    _shortname = MutualInfo  #! Note: deprecated. Change the value to "mutualinfo" in v0.42
 
     def _flatten(self):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
