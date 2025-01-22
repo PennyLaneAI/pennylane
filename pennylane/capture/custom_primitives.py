@@ -16,6 +16,7 @@ This submodule offers custom primitives for the PennyLane capture module.
 """
 from enum import Enum
 from typing import Union
+
 import jax
 
 
@@ -34,7 +35,7 @@ class QmlPrimitive(jax.core.Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives."""
 
-    _prim_type = PrimitiveType.DEFAULT
+    _prim_type: PrimitiveType = PrimitiveType.DEFAULT
 
     @property
     def prim_type(self):
@@ -43,7 +44,7 @@ class QmlPrimitive(jax.core.Primitive):
         return self._prim_type.value
 
     @prim_type.setter
-    def prim_type(self, value):
+    def prim_type(self, value: Union[str, PrimitiveType]):
         """Setter for QmlPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)
 
