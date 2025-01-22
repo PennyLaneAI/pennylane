@@ -84,8 +84,10 @@
 
 <h3>Deprecations 👋</h3>
 
-* Specifying gradient keyword arguments is deprecated and will be removed in v0.42. 
-  Instead, please specify all arguments through the ``gradient_kwargs`` argument.
+* Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
+  and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
+  keyword argument `gradient_kwargs` via an explicit dictionary. This change will improve qnode argument
+  validation.
   [(#6828)](https://github.com/PennyLaneAI/pennylane/pull/6828)
 
 * The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
