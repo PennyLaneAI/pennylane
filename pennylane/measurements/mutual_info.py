@@ -15,6 +15,7 @@
 """
 This module contains the qml.mutual_info measurement.
 """
+import warnings
 from collections.abc import Sequence
 from copy import copy
 from typing import Optional
@@ -128,6 +129,16 @@ class MutualInfoMP(StateMeasurement):
 
     def __repr__(self):
         return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
+
+    @property
+    def return_type(self):
+        """Measurement return type."""
+        warnings.warn(
+            "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
+            "Instead, please use isinstance for type checking directly.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        return self._shortname
 
     @property
     def hash(self):
