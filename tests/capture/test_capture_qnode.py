@@ -1097,6 +1097,26 @@ class TestQNodeAutographIntegration:
         expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
         assert qml.math.allclose(circuit(2), expected_state)
 
+    @pytest.mark.xfail(reason="Autograph bug with lambda functions as condition")
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_native_while_loop_lambda(self, autograph):
+        """Test that a native for loop can be used with the QNode."""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        @qml.qnode(dev, autograph=autograph)
+        def circuit(n: int):
+
+            @qml.while_loop(lambda i: i < n)
+            def loop(i):
+                qml.H(wires=i)
+                return i + 1
+
+            loop(0)
+            return qml.state()
+
+        expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
+        assert qml.math.allclose(circuit(2), expected_state)
+
     @pytest.mark.parametrize("autograph", [True, False])
     def test_native_while_loop(self, autograph):
         """Test that a native for loop can be used with the QNode."""
@@ -1104,11 +1124,14 @@ class TestQNodeAutographIntegration:
 
         @qml.qnode(dev, autograph=autograph)
         def circuit(n: int):
-            @qml.while_loop(lambda x: x < n)
-            def loop(x):
-                qml.H(wires=x)
-                x += 1
-                return x
+
+            def condition(i):
+                return i < n
+
+            @qml.while_loop(condition)
+            def loop(i):
+                qml.H(wires=i)
+                return i + 1
 
             loop(0)
             return qml.state()

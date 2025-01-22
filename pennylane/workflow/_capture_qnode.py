@@ -403,7 +403,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     # pylint: disable=protected-access
-    qfunc = qml.capture.autograph.run_autograph(qfunc) if qnode._autograph else qfunc
+    qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
     flat_fn = FlatFn(qfunc)
     try:
         qfunc_jaxpr = qml.capture.make_plxpr(flat_fn, autograph=False)(*args)
