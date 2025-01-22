@@ -20,7 +20,6 @@ Experimental dynamical Lie algebra (DLA) functionality
 .. autosummary::
     :toctree: api
 
-    ~structure_constants_dense
     ~cartan_decomp
     ~recursive_cartan_decomp
     ~cartan_subalgebra
@@ -80,7 +79,6 @@ two isomorphic simple components (``ClassB``), see `here <https://en.wikipedia.o
 
 """
 
-from .structure_constants_dense import structure_constants_dense
 from .cartan import (
     cartan_decomp,
     recursive_cartan_decomp,

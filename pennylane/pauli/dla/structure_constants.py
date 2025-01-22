@@ -37,7 +37,7 @@ def _all_commutators(ops):
 def structure_constants(
     g: list[Union[Operator, PauliWord, PauliSentence]],
     pauli: bool = False,
-    dense: bool = False,
+    matrix: bool = False,
     is_orthogonal: bool = True,
 ) -> TensorLike:
     r"""
@@ -62,7 +62,7 @@ def structure_constants(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
-        dense (bool): Whether or not dense matrix representations are used and output in the structure constants computation. Default is ``False``.
+        matrix (bool): Whether or not matrix matrix representations are used and output in the structure constants computation. Default is ``False``.
         is_orthogonal (bool): Whether the set of operators in ``g`` is orthogonal with respect to the trace inner product.
             Default is ``True``.
 
@@ -165,13 +165,13 @@ def structure_constants(
         be skipped.
 
     """
+    if matrix:
+        return _structure_constants_matrix(g, is_orthogonal)
+
     if any((op.pauli_rep is None) for op in g):
         raise ValueError(
             f"Cannot compute adjoint representation of non-pauli operators. Received {g}."
         )
-
-    if dense:
-        return _structure_constants_dense(g, is_orthogonal)
 
     if not pauli:
         g = [op.pauli_rep for op in g]
@@ -199,11 +199,11 @@ def structure_constants(
     return rep
 
 
-def _structure_constants_dense(g: TensorLike, is_orthogonal: bool = True) -> TensorLike:
+def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
 
-    This function computes the structure constants of a Lie algebra provided by their dense matrix representation,
+    This function computes the structure constants of a Lie algebra provided by their matrix matrix representation,
     obtained from, e.g., :func:`~lie_closure`.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
     :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
@@ -212,7 +212,7 @@ def _structure_constants_dense(g: TensorLike, is_orthogonal: bool = True) -> Ten
     .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qml/demos/tutorial_liesim/#lie-algebra-basics>`__.
 
     Args:
-        g (np.array): The (dynamical) Lie algebra provided as dense matrices, as generated from :func:`~lie_closure`.
+        g (np.array): The (dynamical) Lie algebra provided as matrix matrices, as generated from :func:`~lie_closure`.
             ``g`` should have shape ``(d, 2**n, 2**n)`` where ``d`` is the dimension of the algebra and ``n`` is the number of qubits. Each matrix ``g[i]`` should be Hermitian.
         is_orthogonal (bool): Whether or not the matrices in ``g`` are orthogonal with respect to the Hilbert-Schmidt inner product on
             (skew-)Hermitian matrices. If the inputs are orthogonal, it is recommended to set ``is_orthogonal`` to ``True`` to reduce
@@ -228,15 +228,15 @@ def _structure_constants_dense(g: TensorLike, is_orthogonal: bool = True) -> Ten
 
     >>> n = 4
     >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
-    >>> g = qml.lie_closure(gens, dense=True)
+    >>> g = qml.lie_closure(gens, matrix=True)
     >>> g.shape
     (12, 16, 16)
 
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> from pennylane.labs.dla import structure_constants_dense
-    >>> adj = structure_constants_dense(g)
+    >>> from pennylane.labs.dla import structure_constants_matrix
+    >>> adj = structure_constants_matrix(g)
     >>> adj.shape
     (12, 12, 12)
 
@@ -274,9 +274,9 @@ def _structure_constants_dense(g: TensorLike, is_orthogonal: bool = True) -> Ten
     computing (and inverting) the diagonal of the Gram matrix.
     """
 
-    dense_in = isinstance(g, np.ndarray) or all(isinstance(op, np.ndarray) for op in g)
+    matrix_in = isinstance(g, np.ndarray) or all(isinstance(op, np.ndarray) for op in g)
 
-    if not dense_in:
+    if not matrix_in:
         all_wires = qml.wires.Wires.all_wires([_.wires for _ in g])
         n = len(all_wires)
         assert all_wires.toset() == set(range(n))
