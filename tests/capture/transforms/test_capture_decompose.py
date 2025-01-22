@@ -28,7 +28,12 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
+from pennylane.operation import Operation
+from pennylane.transforms.decompose import (
+    DecomposeInterpreter,
+    DynamicDecomposeInterpreter,
+    decompose_plxpr_to_plxpr,
+)
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -499,3 +504,51 @@ def test_decompose_plxpr_to_plxpr():
     assert transformed_jaxpr.eqns[2].primitive == qml.RZ._primitive
     assert transformed_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
     assert transformed_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+class SimpleCustomOp(Operation):
+    num_wires = 1
+    num_params = 0
+    ndim_params = (0,)
+    basis = "Z"
+    grad_method = "A"
+    parameter_frequencies = [(1,)]
+
+    def _init__(self, wires, id=None):
+        super().__init__(wires=wires, id=id)
+
+    @staticmethod
+    def _compute_plxpr_decomposition(wires):
+        qml.RX(0.5, wires=wires)
+
+
+class TestDynamicDecomposeInterpreter:
+
+    def test_function_simple(self):
+        """ """
+
+        @DynamicDecomposeInterpreter()
+        def f(x):
+            qml.RY(x, wires=0)
+            SimpleCustomOp(wires=0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert jaxpr.eqns[0].primitive == qml.RY._primitive
+        assert jaxpr.eqns[1].primitive == qml.RX._primitive
+
+    def test_qnode_simple(self):
+        """ """
+
+        @DynamicDecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit(x):
+            qml.RY(x, wires=0)
+            SimpleCustomOp(wires=0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)(0.5)
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive == qml.RY._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive

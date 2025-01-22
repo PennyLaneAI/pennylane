@@ -20,9 +20,10 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 import warnings
 from collections.abc import Callable, Generator, Iterable
 from functools import lru_cache, partial
-from typing import Optional
+from typing import Optional, Sequence
 
 import pennylane as qml
+from pennylane.capture.primitives import AbstractMeasurement, AbstractOperator
 from pennylane.transforms.core import transform
 
 
@@ -218,14 +219,40 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
             super().__init__()
 
-        def eval_dynamic_decomposition(self, op):
-            pass
+        def eval_dynamic_decomposition(
+            self, jaxpr_decomp: "jax.core.Jaxpr", consts: Sequence, *args
+        ):
+            """ """
+
+            for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
+                self._env[invar] = arg
+            for const, constvar in zip(consts, jaxpr_decomp.constvars, strict=True):
+                self._env[constvar] = const
+
+            for inner_eqn in jaxpr_decomp.eqns:
+
+                custom_handler = self._primitive_registrations.get(inner_eqn.primitive, None)
+
+                if custom_handler:
+                    invals = [self.read(invar) for invar in inner_eqn.invars]
+                    outvals = custom_handler(self, *invals, **inner_eqn.params)
+
+                elif isinstance(inner_eqn.outvars[0].aval, AbstractOperator):
+                    outvals = super().interpret_operation_eqn(inner_eqn)
+                elif isinstance(inner_eqn.outvars[0].aval, AbstractMeasurement):
+                    outvals = super().interpret_measurement_eqn(inner_eqn)
+                else:
+                    invals = [self.read(invar) for invar in inner_eqn.invars]
+                    outvals = inner_eqn.primitive.bind(*invals, **inner_eqn.params)
+
+                if not inner_eqn.primitive.multiple_results:
+                    outvals = [outvals]
+
+                for inner_outvar, inner_outval in zip(inner_eqn.outvars, outvals, strict=True):
+                    self._env[inner_outvar] = inner_outval
 
         def interpret_operation_eqn(self, eqn):
             """ """
-
-            from jax import make_jaxpr
-
             # eq: e' una roba del tipo:
             # _:AbstractOperator() = Hadamard[n_wires=1] 0
 
@@ -234,47 +261,18 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                 op = eqn.primitive.impl(*invals, **eqn.params)
 
             # Ora abbiamo recuperato l'operatore concreto
-            print(f"op from DynamicDecomposeInterpreter: {op}")
 
             if hasattr(op, "_compute_plxpr_decomposition"):
 
                 # Non sono sicuro di cosa stia facendo (questo argomento forse non ha senso)
                 args = op.wires
 
-                jaxpr_decomp = make_jaxpr(op._compute_plxpr_decomposition)(*op.wires)
+                jaxpr_decomp = make_jaxpr(op._compute_plxpr_decomposition)(*args)
 
                 # Adesso abbiamo catturato la decomposizione dinamica dell'operatore.
                 # Dobbiamo ora interpretare il jaxpr della decomposizione dinamica, ma senza chiamare
                 # di nuovo la funzione 'read' nella classe base per evitare di tornare a questo punto
-
-                for arg, invar in zip(args, jaxpr_decomp.jaxpr.invars, strict=True):
-                    self._env[invar] = arg
-                for const, constvar in zip(
-                    jaxpr_decomp.consts, jaxpr_decomp.jaxpr.constvars, strict=True
-                ):
-                    self._env[constvar] = const
-
-                for inner_eqn in jaxpr_decomp.eqns:
-
-                    custom_handler = self._primitive_registrations.get(inner_eqn.primitive, None)
-
-                    if custom_handler:
-                        invals = [self.read(invar) for invar in inner_eqn.invars]
-                        outvals = custom_handler(self, *invals, **inner_eqn.params)
-
-                    elif isinstance(inner_eqn.outvars[0].aval, AbstractOperator):
-                        outvals = super().interpret_operation_eqn(inner_eqn)
-                    elif isinstance(inner_eqn.outvars[0].aval, AbstractMeasurement):
-                        outvals = super().interpret_measurement_eqn(inner_eqn)
-                    else:
-                        invals = [self.read(invar) for invar in inner_eqn.invars]
-                        outvals = inner_eqn.primitive.bind(*invals, **inner_eqn.params)
-
-                    if not inner_eqn.primitive.multiple_results:
-                        outvals = [outvals]
-
-                    for inner_outvar, inner_outval in zip(inner_eqn.outvars, outvals, strict=True):
-                        self._env[inner_outvar] = inner_outval
+                self.eval_dynamic_decomposition(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
 
             else:
 
