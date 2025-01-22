@@ -146,6 +146,7 @@ class TestConfigSetup:
         """Test that we will not convert to numpy when working with jax."""
         # separate test so we can easily update it once we solve the
         # compilation overhead issue
+        # TODO: [sc-82874]
         dev = qml.device("default.qubit")
         config = qml.devices.ExecutionConfig(
             gradient_method=qml.gradients.param_shift, interface=interface

@@ -592,6 +592,7 @@ class DefaultQubit(Device):
         updated_values = {}
 
         # uncomment once compilation overhead with jitting improved
+        # TODO: [sc-82874]
         # jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
         # updated_values["convert_to_numpy"] = (
         #    execution_config.interface not in jax_interfaces
