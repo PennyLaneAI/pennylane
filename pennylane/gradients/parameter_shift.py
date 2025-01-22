@@ -15,6 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
+import warnings
 from functools import partial
 
 import numpy as np
@@ -372,6 +373,12 @@ def expval_param_shift(
         op, op_idx, _ = tape.get_operation(idx)
 
         if op.name == "LinearCombination":
+            warnings.warn(
+                "Please use qml.gradients.split_to_single_terms so that the ML framework "
+                "can compute the gradients of the coefficients.",
+                UserWarning,
+            )
+
             # operation is a Hamiltonian
             if not isinstance(tape[op_idx], ExpectationMP):
                 raise ValueError(
