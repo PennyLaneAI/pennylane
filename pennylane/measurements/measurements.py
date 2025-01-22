@@ -341,7 +341,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     def __repr__(self):
         """Representation of this class."""
-        name_str = self._shortname or type(self).__name__
+        name_str = self._shortname.value or type(self).__name__
         if self.mv is not None:
             return f"{name_str}({repr(self.mv)})"
         if self.obs:
@@ -350,7 +350,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{self._shortname}(wires={self.wires.tolist()})"
+        return f"{self._shortname.value}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__

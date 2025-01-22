@@ -232,7 +232,7 @@ def _add_measurement(m, layer_str, config):
     if type(m) in measurement_label_map:
         meas_label = measurement_label_map[type(m)](obs_label)
     else:
-        meas_label = m._shortname  # pylint: disable=protected-access
+        meas_label = m._shortname.value  # pylint: disable=protected-access
 
     if len(m.wires) == 0:  # state or probability across all wires
         n_wires = len(config.wire_map)
