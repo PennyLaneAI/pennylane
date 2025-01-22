@@ -1269,9 +1269,6 @@ class TestDeviceNewUnits:
         """Check that an error is raised if the return type of an observable is unsupported"""
         # pylint: disable=too-few-public-methods
 
-        class UnsupportedReturnType:
-            value = "unsupported"
-
         class DummyMeasurement(MeasurementProcess):
             _shortname = "SomeUnsupportedReturnType"
 
