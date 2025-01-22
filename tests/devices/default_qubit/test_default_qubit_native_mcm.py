@@ -389,9 +389,9 @@ class TestJaxIntegration:
         results1 = func1(*params)
 
         jaxpr = str(jax.make_jaxpr(func)(*params))
+        # will change once we solve the compilation overhead issue
         # assert "pure_callback" not in jaxpr
         assert "pure_callback" in jaxpr
-        # will change once we solve compilation overhead issue
 
         func2 = jax.jit(func)
         results2 = func2(*params)
