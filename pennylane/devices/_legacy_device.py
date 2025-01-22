@@ -480,7 +480,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 elif isinstance(mp, StateMP):
                     raise qml.QuantumFunctionError("Returning the state is not supported")
 
-                else:
+                elif mp._shortname is not None: # pylint: disable=protected-access
                     raise qml.QuantumFunctionError(
                         f"Unsupported return type specified for observable {obs.name}"
                     )
