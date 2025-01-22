@@ -21,7 +21,16 @@ from dataclasses import dataclass
 from typing import Optional
 
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import (
+    MidMeasureMP,
+    ExpectationMP,
+    ProbabilityMP,
+    SampleMP,
+    CountsMP,
+    VarianceMP,
+    StateMP,
+    DensityMatrixMP,
+)
 
 from .drawable_layers import drawable_layers
 from .utils import (
@@ -165,11 +174,10 @@ def _add_mid_measure_op(op, layer_str, config):
 
 
 measurement_label_map = {
-     ExpectationMP: lambda label: f"<{label}>",
+    ExpectationMP: lambda label: f"<{label}>",
     ProbabilityMP: lambda label: f"Probs[{label}]" if label else "Probs",
     SampleMP: lambda label: f"Sample[{label}]" if label else "Sample",
     CountsMP: lambda label: f"Counts[{label}]" if label else "Counts",
-    AllCountsMP: lambda label: f"Counts[{label}]" if label else "Counts",
     VarianceMP: lambda label: f"Var[{label}]",
     StateMP: lambda label: "State",
     DensityMatrixMP: lambda label: "DensityMatrix",
@@ -200,7 +208,7 @@ def _add_cwire_measurement(m, layer_str, config):
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
     mv_label = "MCM"
-    meas_label = _measurement_label_map[type(m)](mv_label)_  # pylint: disable=protected-access
+    meas_label = measurement_label_map[type(m)](mv_label)  # pylint: disable=protected-access
 
     n_wires = len(config.wire_map)
     for mcm in mcms:
