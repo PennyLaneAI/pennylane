@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import VnEntropy
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
 

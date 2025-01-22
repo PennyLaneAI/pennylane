@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo, Shots, State, VnEntropy
+from pennylane.measurements import MutualInfoMP, Shots, StateMP, VnEntropyMP
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
@@ -86,7 +86,7 @@ class TestInitialization:
         qs = QuantumScript(measurements=m)
         assert len(qs._measurements) == 1
         assert isinstance(qs._measurements, list)
-        assert qs._measurements[0].return_type is qml.measurements.State
+        assert isinstance(qs._measurements[0], StateMP)
 
     @pytest.mark.parametrize(
         "ops,num_preps",
@@ -140,10 +140,7 @@ class TestUpdate:
     @pytest.mark.parametrize("sample_ms", sample_measurements)
     def test_update_circuit_info_sampling(self, sample_ms):
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), sample_ms])
-        shadow_mp = sample_ms.return_type not in (
-            qml.measurements.Shadow,
-            qml.measurements.ShadowExpval,
-        )
+        shadow_mp = not isinstance(sample_ms, (qml.measurements.ClassicalShadowMP, qml.measurements.ShadowExpvalMP))
         assert qs.samples_computational_basis is shadow_mp
 
         qs = QuantumScript(measurements=[sample_ms, sample_ms, qml.sample()])
@@ -1158,7 +1155,7 @@ class TestOutputShape:
     def test_output_shapes_single(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape."""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
             pytest.skip("Sample doesn't support analytic computations.")
 
         num_wires = 3
@@ -1174,7 +1171,7 @@ class TestOutputShape:
         if expected_shape is None:
             expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
 
-        if measurement.return_type is qml.measurements.Sample:
+        if isinstance(measurement, qml.measurements.SampleMP):
             if measurement.obs is None:
                 expected_shape = (num_wires,) if shots == 1 else (shots, num_wires)
 
@@ -1187,7 +1184,7 @@ class TestOutputShape:
     def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the output
         shape of a QNode for a single measurement."""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
             pytest.skip("Sample doesn't support analytic computations.")
         if shots and isinstance(measurement, qml.measurements.StateMeasurement):
             pytest.skip("State measurements with finite shots not supported.")
@@ -1220,7 +1217,7 @@ class TestOutputShape:
 
         qs = QuantumScript(measurements=measurements, shots=shots)
 
-        if measurements[0].return_type is qml.measurements.Sample:
+        if isinstance(measurements[0], qml.measurements.SampleMP):
             expected[1] = shots
             expected = tuple(expected)
 
@@ -1239,7 +1236,7 @@ class TestOutputShape:
         """Test that the expected output shape is obtained when using multiple
         expectation value, variance and probability measurements with a shot
         vector."""
-        if measurements[0].return_type is qml.measurements.Probability:
+        if isinstance(measurements[0], qml.measurements.ProbabilityMP):
             num_wires = set(len(m.wires) for m in measurements)
             if len(num_wires) > 1:
                 pytest.skip(
@@ -1297,11 +1294,11 @@ class TestOutputShape:
     def test_broadcasting_single(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape for a single measurement and parameter broadcasting"""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
             pytest.skip("Sample doesn't support analytic computations.")
 
         if (
-            measurement.return_type in {State, MutualInfo, VnEntropy}
+            isinstance(measurement, (StateMP, MutualInfoMP, VnEntropyMP))
             and measurement.wires is not None
         ):
             pytest.skip("Density matrix does not support parameter broadcasting")
@@ -1331,10 +1328,10 @@ class TestOutputShape:
     def test_broadcasting_multi(self, measurement, expected, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape for multiple measurements and parameter broadcasting"""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
             pytest.skip("Sample doesn't support analytic computations.")
 
-        if measurement.return_type in {State, MutualInfo, VnEntropy}:
+        if isinstance(measurement, (StateMP, MutualInfoMP, VnEntropyMP)):
             pytest.skip("Density matrix does not support parameter broadcasting.")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
@@ -1435,7 +1432,7 @@ class TestNumericType:
         """Test that most measurements output floating point values and that
         the tape output domain correctly identifies this."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
-        if shots and isinstance(ret, (qml.measurements.MutualInfoMP, qml.measurements.VnEntropyMP)):
+        if shots and isinstance(ret, (MutualInfoMP, VnEntropyMP)):
             pytest.skip("Shots and entropies not supported.")
 
         a, b = 0.3, 0.2

@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import AllCounts, Counts, CountsMP
+from pennylane.measurements import CountsMP
 from pennylane.wires import Wires
 
 
@@ -30,9 +30,9 @@ class TestCounts:
         meas1 = qml.counts(wires=0)
         meas2 = qml.counts(op=qml.PauliX(0), all_outcomes=True)
         assert meas1.samples_computational_basis is True
-        assert meas1.return_type == Counts
+        assert isinstance(meas1, CountsMP)
         assert meas2.samples_computational_basis is False
-        assert meas2.return_type == AllCounts
+        assert meas2.all_outcomes is True
 
     def test_queue(self):
         """Test that the right measurement class is queued."""

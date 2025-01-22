@@ -21,7 +21,7 @@ from pennylane import numpy as pnp
 from pennylane.devices import DefaultMixed
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
-from pennylane.measurements import DensityMatrixMP, State, StateMP, density_matrix, expval, state
+from pennylane.measurements import DensityMatrixMP, StateMP, density_matrix, expval, state
 from pennylane.wires import WireError, Wires
 
 
@@ -242,7 +242,7 @@ class TestState:
         tape = qml.workflow.construct_tape(func)()
         obs = tape.observables
         assert len(obs) == 1
-        assert obs[0].return_type is State
+        assert isinstance(obs[0], StateMP)
 
     @pytest.mark.parametrize("wires", range(2, 5))
     def test_state_correct_ghz(self, wires):
@@ -573,7 +573,7 @@ class TestDensityMatrix:
         tape = qml.workflow.construct_tape(func)()
         obs = tape.observables
         assert len(obs) == 1
-        assert obs[0].return_type is State
+        assert isinstance(obs[0], StateMP)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])

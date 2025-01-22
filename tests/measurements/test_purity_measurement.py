@@ -59,7 +59,8 @@ class TestPurityUnitTest:
     def test_return_type(self):
         """Test that the return type is defined and the purity enum."""
         m = PurityMP(wires=qml.wires.Wires((0, 1)))
-        assert m.return_type is qml.measurements.Purity
+        with pytest.raises(qml.PennyLaneDeprecationWarning, match="return_type is deprecated"):
+            assert isinstance(m, PurityMP)
 
     def test_numeric_type(self):
         """Test that the numeric type of PurityMP is float."""

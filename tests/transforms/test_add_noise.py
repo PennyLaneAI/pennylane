@@ -109,7 +109,7 @@ class TestAddNoise:
         assert tape.observables[0].name == "Prod"
 
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_noise_tape_with_state_prep(self):
         """Test if the expected tape is returned with the transform"""
@@ -142,7 +142,7 @@ class TestAddNoise:
         assert tape.observables[0].name == "Prod"
 
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
 
 class TestAddNoiseInterface:
@@ -242,10 +242,10 @@ class TestAddNoiseInterface:
         assert tape.observables[0].name == "Prod"
 
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
         assert tape.observables[1].name == "PauliZ"
         assert tape.observables[1].wires.tolist() == [0]
-        assert tape.measurements[1].return_type is Expectation
+        assert isinstance(tape.measurements[1], qml.measurements.ExpectationMP)
 
         assert not np.allclose(res_without_noise, res_with_noise)
 
