@@ -81,8 +81,8 @@ class TestCaptureWhileLoop:
         assert np.allclose(res_arr1_jxpr, expected), f"Expected {expected}, but got {res_arr1_jxpr}"
         assert np.allclose(res_idx, res_idx_jxpr) and res_idx_jxpr == 10
 
-    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
-    def test_while_loop_dyanmic_shape_array(self):
+    # pylint: disable=unused-argument
+    def test_while_loop_dyanmic_shape_array(self, enable_disable_dynamic_shapes):
         """Test while loop can accept ararys with dynamic shapes."""
 
         def f(x):

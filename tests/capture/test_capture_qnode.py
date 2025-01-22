@@ -366,8 +366,8 @@ def test_qnode_jit():
     assert qml.math.allclose(res, jax.numpy.cos(x))
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
-def test_dynamic_shape_input():
+# pylint: disable=unused-argument
+def test_dynamic_shape_input(enable_disable_dynamic_shapes):
     """Test that the qnode can accept an input with a dynamic shape."""
 
     @qml.qnode(qml.device("default.qubit", wires=1))

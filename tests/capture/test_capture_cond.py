@@ -849,9 +849,10 @@ class TestPytree:
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
-def test_cond_abstracted_axes():
+# pylint: disable=unused-argument
+def test_cond_abstracted_axes(enable_disable_dynamic_shapes):
     """Test cond can accept inputs with dynamic shapes."""
+
     def workflow(x, predicate):
         return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
 

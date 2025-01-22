@@ -234,8 +234,8 @@ class TestCaptureForLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
-    def test_dynamic_shape_input(self):
+    # pylint: disable=unused-argument
+    def test_dynamic_shape_input(self, enable_disable_dynamic_shapes):
         """Test that the for loop can accept inputs with dynamic shapes."""
 
         def f(x):
