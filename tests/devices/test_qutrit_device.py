@@ -267,9 +267,7 @@ class TestObservables:
         """Check that an error is raised if the return type of an observable is unsupported"""
 
         class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return "SomeUnsupportedReturnType"
+            _shortname = "SomeUnsupportedReturnType"
 
         U = unitary_group.rvs(3, random_state=10)
 
@@ -344,9 +342,7 @@ class TestExtractStatistics:
         """Tests that the statistics method returns an empty list if the return type is None"""
 
         class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return returntype
+            _shortname = returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
@@ -365,9 +361,7 @@ class TestExtractStatistics:
         assert returntype not in [Expectation, Variance, Sample, Probability, State, Counts, None]
 
         class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return returntype
+            _shortname = returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 

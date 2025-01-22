@@ -312,9 +312,7 @@ class TestObservables:
 
         # pylint: disable=too-few-public-methods
         class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return "SomeUnsupportedReturnType"
+            _shortname = "SomeUnsupportedReturnType"
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
@@ -383,9 +381,7 @@ class TestExtractStatistics:
         """Tests that the statistics method returns an empty list if the return type is None"""
 
         class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return returntype
+            _shortname = returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
         dev = mock_qubit_device_extract_stats()
@@ -400,9 +396,7 @@ class TestExtractStatistics:
         assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
 
         class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return returntype
+            _shortname = returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 

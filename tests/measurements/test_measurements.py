@@ -48,9 +48,7 @@ from pennylane.wires import Wires
 
 
 class NotValidMeasurement(MeasurementProcess):
-    @property
-    def return_type(self):
-        return "NotValidReturnType"
+    _shortname = "NotValidReturnType"
 
 
 def test_no_measure():
@@ -589,9 +587,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            @property
-            def return_type(self):
-                return State
+            _shortname = State
 
             def shape(self):
                 return ()
@@ -611,9 +607,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            @property
-            def return_type(self):
-                return State
+            _shortname = State
 
             def shape(self):
                 return ()
