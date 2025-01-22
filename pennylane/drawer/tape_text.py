@@ -165,12 +165,14 @@ def _add_mid_measure_op(op, layer_str, config):
 
 
 measurement_label_map = {
-    "expval": lambda label: f"<{label}>",
-    "probs": lambda label: f"Probs[{label}]" if label else "Probs",
-    "sample": lambda label: f"Sample[{label}]" if label else "Sample",
-    "counts": lambda label: f"Counts[{label}]" if label else "Counts",
-    "var": lambda label: f"Var[{label}]",
-    "state": lambda label: "State",
+     ExpectationMP: lambda label: f"<{label}>",
+    ProbabilityMP: lambda label: f"Probs[{label}]" if label else "Probs",
+    SampleMP: lambda label: f"Sample[{label}]" if label else "Sample",
+    CountsMP: lambda label: f"Counts[{label}]" if label else "Counts",
+    AllCountsMP: lambda label: f"Counts[{label}]" if label else "Counts",
+    VarianceMP: lambda label: f"Var[{label}]",
+    StateMP: lambda label: "State",
+    DensityMatrixMP: lambda label: "DensityMatrix",
 }
 
 
@@ -198,7 +200,7 @@ def _add_cwire_measurement(m, layer_str, config):
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
     mv_label = "MCM"
-    meas_label = measurement_label_map[m._shortname](mv_label)  # pylint: disable=protected-access
+    meas_label = _measurement_label_map[type(m)](mv_label)_  # pylint: disable=protected-access
 
     n_wires = len(config.wire_map)
     for mcm in mcms:
@@ -219,10 +221,8 @@ def _add_measurement(m, layer_str, config):
         obs_label = None
     else:
         obs_label = m.obs.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-    if m._shortname in measurement_label_map:  # pylint: disable=protected-access
-        meas_label = measurement_label_map[m._shortname](
-            obs_label
-        )  # pylint: disable=protected-access
+    if type(m) in measurement_label_map:
+        meas_label = measurement_label_map[type(m)](obs_label)
     else:
         meas_label = m._shortname  # pylint: disable=protected-access
 
