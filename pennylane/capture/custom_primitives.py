@@ -15,7 +15,7 @@
 This submodule offers custom primitives for the PennyLane capture module.
 """
 from enum import Enum
-
+from typing import Union
 import jax
 
 
