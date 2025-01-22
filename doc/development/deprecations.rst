@@ -16,6 +16,12 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
+* The `qml.gradients.hamiltonian_grad` function has been deprecated.
+  This gradient recipe is not required with the new operator arithmetic system.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
 
