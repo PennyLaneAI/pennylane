@@ -270,7 +270,7 @@ def compare_tapes(res_tape, expected_tape):
             assert op.wires.tolist() == exp_op.wires.tolist()
 
     for meas, exp_meas in zip(res_tape.measurements, expected_tape.measurements):
-        assert get_name(meas._shortname) == get_name(exp_meas._shortname) # pylint: disable=protected-access
+        assert (meas._shortname) == (exp_meas._shortname) # pylint: disable=protected-access
         assert get_name(meas.obs) == get_name(exp_meas.obs)
         assert meas.wires.tolist() == exp_meas.wires.tolist()
 
