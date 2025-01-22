@@ -852,6 +852,7 @@ class TestPytree:
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 def test_cond_abstracted_axes():
     """Test cond can accept inputs with dynamic shapes."""
+
     def workflow(x, predicate):
         return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
 

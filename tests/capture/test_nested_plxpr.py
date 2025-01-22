@@ -226,6 +226,7 @@ class TestAdjointQfunc:
         qml.assert_equal(op1, tape[0])
         qml.assert_equal(op2, tape[1])
 
+
 class TestCtrlQfunc:
     """Tests for the ctrl primitive."""
 
@@ -404,6 +405,7 @@ class TestCtrlQfunc:
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_dynamic_shape_input(self):
         """Test that ctrl can accept dynamic shape inputs."""
+
         def f(x):
             qml.ctrl(qml.RX, (2, 3))(x, 0)
 

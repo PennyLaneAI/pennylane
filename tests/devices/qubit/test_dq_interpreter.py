@@ -559,18 +559,21 @@ class TestClassicalComponents:
 class TestDynamicShapes:
     """Tests for creating arrays with a dynamic input."""
 
-    def test_dynamic_shape_ones(self):
+    @pytest.mark.parametrize(
+        "creation_fn", [jax.numpy.ones, jax.numpy.zeros, lambda s: jax.numpy.full(s, 0.5)]
+    )
+    def test_broadcast_in_dim(self, creation_fn):
         """Test that DefaultQubitInterpreter can handle jax.numpy.ones and the associated broadcast_in_dim primitive."""
 
         @DefaultQubitInterpreter(num_wires=1)
         def f(n):
-            ones = jax.numpy.ones((n + 1,))
+            ones = creation_fn((n + 1,))
             qml.RX(ones, wires=0)
             return qml.expval(qml.Z(0))
 
         output = f(3)
         assert output.shape == (4,)
-        ones = jax.numpy.ones(4)
+        ones = creation_fn(4)
         assert qml.math.allclose(output, jax.numpy.cos(ones))
 
     def test_dynamic_shape_arange(self):

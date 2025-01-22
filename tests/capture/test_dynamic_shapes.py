@@ -26,7 +26,6 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 
-
 def test_null_if_not_enabled():
     """Test None and an empty tuple are returned if dynamic shapes is not enabled."""
 
@@ -80,9 +79,7 @@ def test_single_abstract_shape():
         (({1: "a"},), 1),
     ],
 )
-def test_single_abstract_shape_multiple_abstract_axes(
-    initial_abstracted_axes, num_shapes
-):
+def test_single_abstract_shape_multiple_abstract_axes(initial_abstracted_axes, num_shapes):
     """Test we get the correct answer for a single input with two abstract axes."""
 
     def f(*args):
