@@ -199,7 +199,7 @@ def structure_constants(
     return rep
 
 
-def _structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> TensorLike:
+def _structure_constants_dense(g: TensorLike, is_orthogonal: bool = True) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
 
@@ -214,8 +214,8 @@ def _structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Te
     Args:
         g (np.array): The (dynamical) Lie algebra provided as dense matrices, as generated from :func:`~lie_closure`.
             ``g`` should have shape ``(d, 2**n, 2**n)`` where ``d`` is the dimension of the algebra and ``n`` is the number of qubits. Each matrix ``g[i]`` should be Hermitian.
-        is_orthonormal (bool): Whether or not the matrices in ``g`` are orthonormal with respect to the Hilbert-Schmidt inner product on
-            (skew-)Hermitian matrices. If the inputs are orthonormal, it is recommended to set ``is_orthonormal`` to ``True`` to reduce
+        is_orthogonal (bool): Whether or not the matrices in ``g`` are orthogonal with respect to the Hilbert-Schmidt inner product on
+            (skew-)Hermitian matrices. If the inputs are orthogonal, it is recommended to set ``is_orthogonal`` to ``True`` to reduce
             computational cost. Defaults to ``True``.
 
     Returns:
@@ -251,10 +251,13 @@ def _structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Te
 
         f^\gamma_{\alpha, \beta} = \text{tr}[-i G_\gamma[iG_\alpha, iG_\beta]] = i\text{tr}[G_\gamma [G_\alpha, G_\beta]] \in \mathbb{R}.
 
-    **Structure constants in non-orthonormal bases**
+    Possible deviations of an orthogonal basis from normalization is taken into account in a
+    reduced version of the step for non-orthogonal bases below.
 
-    Structure constants are often discussed using an orthonormal basis of the algebra.
-    This function can deal with non-orthonormal bases as well. For this, the Gram
+    **Structure constants in non-orthogonal bases**
+
+    Structure constants are often discussed using an orthogonal basis of the algebra.
+    This function can deal with non-orthogonal bases as well. For this, the Gram
     matrix :math:`g` between the basis elements is taken into account when computing the overlap
     of a commutator :math:`[iG_\alpha, iG_\beta]` with all algebra elements :math:`iG_\gamma`.
     The resulting formula reads
@@ -267,6 +270,8 @@ def _structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Te
     Internally, the commutators are computed by evaluating all operator products and subtracting
     suitable pairs of products from each other. These products can be reused to evaluate the
     Gram matrix as well.
+    For orthogonal but not normalized bases, a reduced version of this step is used, only
+    computing (and inverting) the diagonal of the Gram matrix.
     """
 
     dense_in = isinstance(g, np.ndarray) or all(isinstance(op, np.ndarray) for op in g)
@@ -299,9 +304,17 @@ def _structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Te
     # Normalize trace inner product by dimension chi
     adj = (1j * np.tensordot(g / chi, all_coms, axes=[[1, 2], [3, 1]])).real
 
-    if not is_orthonormal:
-        # If the basis is not orthonormal, compute the Gram matrix and apply its
-        # (pseudo-)inverse to the obtained projections. See the docstring for details.
+    if is_orthogonal:
+        # Orthogonal but not normalized inputs. Need to correct by (diagonal) Gram matrix
+        # todo:
+        gram_diag = np.sum(
+            np.diagonal(np.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1), axis=0
+        ).real
+        adj = (chi / gram_diag[:, None, None]) * adj
+    else:
+        # Non-orthogonal inputs. Need to correct by (full) Gram matrix
+        # Compute the Gram matrix and apply its (pseudo-)inverse to the obtained projections.
+        # See the docstring for details.
         # The Gram matrix is just one additional diagonal contraction of the ``prod`` tensor,
         # across the Hilbert space dimensions. (dimg, _chi_, dimg, _chi_) -> (dimg, dimg)
         # This contraction is missing the normalization factor 1/chi of the trace inner product.
