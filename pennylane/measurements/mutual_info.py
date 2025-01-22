@@ -143,7 +143,7 @@ class MutualInfoMP(StateMeasurement):
 
     @property
     def return_type(self):
-        super().return_type
+        qml.measurements.measurements.warn_return_type_deprecation()
         return self._shortname
 
     @property

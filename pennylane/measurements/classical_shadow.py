@@ -451,7 +451,7 @@ class ClassicalShadowMP(MeasurementTransform):
     @property
     def return_type(self):
         # Use the return type from MeasurementProcess to raise warning
-        super().return_type
+        qml.measurements.measurements.warn_return_type_deprecation()
         return self._shortname
 
     @classmethod
@@ -573,7 +573,7 @@ class ShadowExpvalMP(MeasurementTransform):
 
     @property
     def return_type(self):
-        super().return_type
+        qml.measurements.measurements.warn_return_type_deprecation()
         return self._shortname
 
     def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:

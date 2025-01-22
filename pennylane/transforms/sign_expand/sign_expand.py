@@ -313,7 +313,9 @@ def sign_expand(  # pylint: disable=too-many-arguments
     if (
         not isinstance(hamiltonian, qml.ops.LinearCombination)
         or len(tape.measurements) > 1
-        or not isinstance(tape.measurements[0], (qml.measurements.ExpectationMP, qml.measurements.VarianceMP))
+        or not isinstance(
+            tape.measurements[0], (qml.measurements.ExpectationMP, qml.measurements.VarianceMP)
+        )
     ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)` or 'qml.var(H)', where H is of type `qml.Hamiltonian`"
