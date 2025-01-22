@@ -48,10 +48,14 @@
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
 
+* The requested `diff_method` is now validated when program capture is enabled.
+  [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -98,8 +102,13 @@
 
 <h3>Documentation 📝</h3>
 
-* Updated documentation for vibrational Hamiltonians
+* The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`, 
+  `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better 
+  code examples.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
+
+* Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
+  [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -111,6 +120,7 @@
 This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
+Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Marcus Gisslén,
