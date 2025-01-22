@@ -22,14 +22,14 @@ from typing import Optional
 
 import pennylane as qml
 from pennylane.measurements import (
-    MidMeasureMP,
+    CountsMP,
+    DensityMatrixMP,
     ExpectationMP,
+    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
-    CountsMP,
-    VarianceMP,
     StateMP,
-    DensityMatrixMP,
+    VarianceMP,
 )
 
 from .drawable_layers import drawable_layers
