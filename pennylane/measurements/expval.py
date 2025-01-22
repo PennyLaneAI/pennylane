@@ -92,7 +92,9 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    _shortname = "expval"
+    _shortname = (
+        qml.measurements.Expectation
+    )  #! Note: deprecated. Change the value to "expval" in v0.42
 
     @property
     def numeric_type(self):

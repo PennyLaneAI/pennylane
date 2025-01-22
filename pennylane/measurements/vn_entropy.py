@@ -89,7 +89,9 @@ class VnEntropyMP(StateMeasurement):
         log_base (float): Base for the logarithm.
     """
 
-    _shortname = "vnentropy"
+    _shortname = (
+        qml.measurements.VnEntropy
+    )  #! Note: deprecated. Change the value to "vnentropy" in v0.42
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("log_base", self.log_base))

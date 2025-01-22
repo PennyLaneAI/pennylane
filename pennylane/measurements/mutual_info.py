@@ -102,7 +102,9 @@ class MutualInfoMP(StateMeasurement):
 
     """
 
-    _shortname = "mutualinfo"
+    _shortname = (
+        qml.measurements.MutualInfo
+    )  #! Note: deprecated. Change the value to "mutualinfo" in v0.42
 
     def _flatten(self):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))

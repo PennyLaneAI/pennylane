@@ -280,7 +280,9 @@ class MidMeasureMP(MeasurementProcess):
         id (str): Custom label given to a measurement instance.
     """
 
-    _shortname = "measure"
+    _shortname = (
+        qml.measurements.MidMeasure
+    )  #! Note: deprecated. Change the value to "measure" in v0.42
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))

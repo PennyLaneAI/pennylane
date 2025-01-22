@@ -74,7 +74,7 @@ class PurityMP(StateMeasurement):
             applications where the instance has to be identified
     """
 
-    _shortname = "purity"
+    _shortname = qml.measurements.Purity  #! Note: deprecated. Change the value to "purity" in v0.42
 
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
