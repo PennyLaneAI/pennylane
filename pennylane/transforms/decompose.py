@@ -199,7 +199,10 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
     # pylint: disable=redefined-outer-name
 
     class DynamicDecomposeInterpreter(qml.capture.PlxprInterpreter):
-        """ """
+        """
+        Experimental Plxpr Interpreter for applying a dynamic decomposition to operations program capture is enabled.
+
+        """
 
         def __init__(self, gate_set=None, max_expansion=None):
             self.max_expansion = max_expansion
@@ -222,7 +225,15 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
         def eval_dynamic_decomposition(
             self, jaxpr_decomp: "jax.core.Jaxpr", consts: Sequence, *args
         ):
-            """ """
+            """
+            Evaluate a dynamic decomposition of a Jaxpr.
+
+            Args:
+                jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate
+                consts (Sequence): the constants to use in the evaluation
+                *args: the arguments to use in the evaluation
+
+            """
 
             for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
                 self._env[invar] = arg
@@ -251,33 +262,26 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                 for inner_outvar, inner_outval in zip(inner_eqn.outvars, outvals, strict=True):
                     self._env[inner_outvar] = inner_outval
 
-        def interpret_operation_eqn(self, eqn):
-            """ """
-            # eq: e' una roba del tipo:
-            # _:AbstractOperator() = Hadamard[n_wires=1] 0
+        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
+            """
+            Interpret an equation corresponding to an operator.
+
+            Args:
+                eqn (jax.core.JaxprEqn): a jax equation for an operator.
+            """
 
             invals = (self.read(invar) for invar in eqn.invars)
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
 
-            # Ora abbiamo recuperato l'operatore concreto
-
             if hasattr(op, "_compute_plxpr_decomposition"):
 
-                # Non sono sicuro di cosa stia facendo (questo argomento forse non ha senso)
-                args = op.wires
-
-                jaxpr_decomp = make_jaxpr(op._compute_plxpr_decomposition)(*args)
-
-                # Adesso abbiamo catturato la decomposizione dinamica dell'operatore.
-                # Dobbiamo ora interpretare il jaxpr della decomposizione dinamica, ma senza chiamare
-                # di nuovo la funzione 'read' nella classe base per evitare di tornare a questo punto
+                jaxpr_decomp = op._plxpr_decomposition()
+                args = (*op.parameters, tuple(op.wires), *op.hyperparameters)
                 self.eval_dynamic_decomposition(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
 
             else:
 
-                # Se l'operatore non ha un metodo per calcolare la decomposizione dinamica,
-                # chiamiamo semplicemente la funzione di interpretazione base
                 return super().interpret_operation_eqn(eqn)
 
     return DynamicDecomposeInterpreter

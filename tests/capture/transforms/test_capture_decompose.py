@@ -509,10 +509,6 @@ def test_decompose_plxpr_to_plxpr():
 class SimpleCustomOp(Operation):
     num_wires = 1
     num_params = 0
-    ndim_params = (0,)
-    basis = "Z"
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
 
     def _init__(self, wires, id=None):
         super().__init__(wires=wires, id=id)
@@ -520,6 +516,31 @@ class SimpleCustomOp(Operation):
     @staticmethod
     def _compute_plxpr_decomposition(wires):
         qml.RX(0.5, wires=wires)
+
+
+class CustomOpCond(Operation):
+    num_wires = 1
+    num_params = 1
+
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
+
+    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
+
+        return jax.make_jaxpr(self._compute_plxpr_decomposition)(
+            *self.parameters, wires=tuple(self.wires), **self.hyperparameters
+        )
+
+    @staticmethod
+    def _compute_plxpr_decomposition(phi, wires):
+
+        def true_fn(phi):
+            qml.RX(phi, wires=0)
+
+        def false_fn(phi):
+            qml.RY(phi, wires=0)
+
+        qml.cond(phi > 0.5, true_fn, false_fn)(phi)
 
 
 class TestDynamicDecomposeInterpreter:
