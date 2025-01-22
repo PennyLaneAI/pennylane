@@ -123,6 +123,15 @@ class TestAdjointRepr:
         ad_rep = structure_constants(ops, pauli=False, matrix=matrix)
         assert qml.math.allclose(ad_rep, ad_rep_true)
 
+    @pytest.mark.parametrize("dla", [Ising3, XXZ3])
+    def test_matrix_input(self, dla):
+        """Test structure constants work as expected for matrix inputs"""
+        dla_m = [qml.matrix(op, wire_order=range(3)) for op in dla]
+        adj = qml.structure_constants(dla, matrix=True, is_orthogonal=False)
+        adj_m = qml.structure_constants(dla_m, matrix=True, is_orthogonal=False)
+
+        assert np.allclose(adj, adj_m)
+
     def test_raise_error_for_non_paulis(self):
         """Test that an error is raised when passing operators that do not have a pauli_rep"""
         generators = [qml.Hadamard(0), qml.X(0)]
