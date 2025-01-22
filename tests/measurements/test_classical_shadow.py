@@ -464,7 +464,7 @@ class TestExpvalMeasurement:
 
         copied_res = copy.copy(res)
         assert type(copied_res) == type(res)  # pylint: disable=unidiomatic-typecheck
-        assert copied_res._shortname == res._shortname # pylint: disable=protected-access
+        assert copied_res._shortname == res._shortname  # pylint: disable=protected-access
         qml.assert_equal(copied_res.H, res.H)
         assert copied_res.k == res.k
         assert copied_res.seed == res.seed

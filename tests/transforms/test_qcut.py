@@ -270,7 +270,7 @@ def compare_tapes(res_tape, expected_tape):
             assert op.wires.tolist() == exp_op.wires.tolist()
 
     for meas, exp_meas in zip(res_tape.measurements, expected_tape.measurements):
-        assert (meas._shortname) == (exp_meas._shortname) # pylint: disable=protected-access
+        assert (meas._shortname) == (exp_meas._shortname)  # pylint: disable=protected-access
         assert get_name(meas.obs) == get_name(exp_meas.obs)
         assert meas.wires.tolist() == exp_meas.wires.tolist()
 
@@ -279,7 +279,7 @@ def compare_measurements(meas1, meas2):
     """
     Helper function to compare measurements
     """
-    assert meas1._shortname == meas2._shortname # pylint: disable=protected-access
+    assert meas1._shortname == meas2._shortname  # pylint: disable=protected-access
     obs1 = meas1.obs
     obs2 = meas2.obs
     assert np.array(get_name(obs1) == get_name(obs2)).all()
@@ -508,9 +508,13 @@ class TestTapeToGraph:
         g = qcut.tape_to_graph(tape)
         nodes = list(g.nodes)
 
-        node_observables = [node.obj for node in nodes if isinstance(node.obj, qml.measurements.MeasurementProcess)]
+        node_observables = [
+            node.obj for node in nodes if isinstance(node.obj, qml.measurements.MeasurementProcess)
+        ]
 
-        assert node_observables[0]._shortname == expected_measurement # pylint: disable=protected-access
+        assert (
+            node_observables[0]._shortname == expected_measurement
+        )  # pylint: disable=protected-access
 
     def test_multiple_observables(self):
         """
@@ -1575,9 +1579,7 @@ class TestGetMeasurements:
         out = qcut._get_measurements(group, meas)
 
         assert len(out) == 2
-        assert [o._shortname for o in out] == [
-            "expval", "expval"
-        ]
+        assert [o._shortname for o in out] == ["expval", "expval"]
 
         obs = [o.obs for o in out]
 

@@ -140,7 +140,9 @@ class TestUpdate:
     @pytest.mark.parametrize("sample_ms", sample_measurements)
     def test_update_circuit_info_sampling(self, sample_ms):
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), sample_ms])
-        shadow_mp = not isinstance(sample_ms, (qml.measurements.ClassicalShadowMP, qml.measurements.ShadowExpvalMP))
+        shadow_mp = not isinstance(
+            sample_ms, (qml.measurements.ClassicalShadowMP, qml.measurements.ShadowExpvalMP)
+        )
         assert qs.samples_computational_basis is shadow_mp
 
         qs = QuantumScript(measurements=[sample_ms, sample_ms, qml.sample()])
