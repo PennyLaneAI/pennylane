@@ -29,11 +29,11 @@
   'parameter-shift'
   ```
   
-* Finite shot and parameter-shift executions on `default.qubit` can now
-  be natively jitted end-to-end, leading to performance improvements.
-  Devices can now configure whether or not ML framework data is sent to them
-  via an `ExecutionConfig.convert_to_numpy` parameter.
+* Devices can now configure whether or not ML framework data is sent to them
+  via an `ExecutionConfig.convert_to_numpy` parameter. This is not used on 
+  `default.qubit` due to compilation overheads when jitting.
   [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
+  [(#6869)](https://github.com/PennyLaneAI/pennylane/pull/6869)
 
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
