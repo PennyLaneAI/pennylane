@@ -104,7 +104,7 @@ Control Decompositions
 
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
-from .condition import Conditional, cond
+from .condition import Conditional, cond, get_mcm_predicates
 from .controlled import Controlled, ControlledOp, ctrl
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .controlled_ops import (

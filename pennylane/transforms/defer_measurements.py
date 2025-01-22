@@ -17,7 +17,7 @@ from functools import lru_cache, partial, reduce
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
-from pennylane.ops.op_math import ctrl
+from pennylane.ops.op_math import ctrl, get_mcm_predicates
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -260,30 +260,18 @@ def _get_plxpr_defer_measurements():
     def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
+        if any(isinstance(c, MeasurementValue) for c in conditions):
+            conditions = get_mcm_predicates(conditions[:-1])
         args = invals[args_slice]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
+            if jaxpr is None:
+                continue
+
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
-                for branch, _ in condition._items():
 
-                    # qml.capture.disable()
-                    # value = condition.processing_fn(*branch)
-                    # qml.capture.enable()
-                    # if value:
-                    #     cur_consts = invals[consts_slices[i]]
-                    #     ctrl_transform_prim.bind(
-                    #         *cur_consts,
-                    #         *args,
-                    #         *control_wires,
-                    #         jaxpr=jaxpr,
-                    #         n_control=len(control_wires),
-                    #         control_values=branch,
-                    #         work_wires=None,
-                    #         n_consts=len(cur_consts),
-                    #     )
-
-                    value = condition.processing_fn(*branch)
+                for branch, value in condition._items():
                     cur_consts = invals[consts_slices[i]]
                     qml.cond(value, ctrl_transform_prim.bind)(
                         *cur_consts,
@@ -295,6 +283,28 @@ def _get_plxpr_defer_measurements():
                         work_wires=None,
                         n_consts=len(cur_consts),
                     )
+
+                ###### OPTIONAL IMPLEMENTATION THAT DOES NOT EXECUTE YET ######
+                # branches = jax.numpy.array(condition.branches_simple)
+
+                # @qml.for_loop(0, len(branches))
+                # def loop_fn(j):
+                #     branch = branches.at[j].get()
+                #     value = condition.processing_fn(*branch)
+
+                #     cur_consts = invals[consts_slices[i]]
+                #     qml.cond(value, ctrl_transform_prim.bind)(
+                #         *cur_consts,
+                #         *args,
+                #         *control_wires,
+                #         jaxpr=jaxpr,
+                #         n_control=len(control_wires),
+                #         control_values=branch,
+                #         work_wires=None,
+                #         n_consts=len(cur_consts),
+                #     )
+
+                # loop_fn()
 
         return []
 

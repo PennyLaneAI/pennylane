@@ -664,7 +664,7 @@ def _validate_abstract_values(
             )
 
 
-def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
+def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
     """Helper function to update predicates with mid-circuit measurements"""
     new_conds = [conditions[0]]
     false_cond = ~conditions[0]
@@ -703,7 +703,7 @@ def _get_cond_qfunc_prim():
                     "Cannot use qml.cond with a combination of mid-circuit measurements "
                     "and other classical conditions as predicates."
                 )
-            conditions = _get_mcm_predicates(mcm_conditions)
+            conditions = get_mcm_predicates(mcm_conditions)
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
             consts = all_args[const_slice]
