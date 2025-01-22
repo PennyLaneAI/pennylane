@@ -291,11 +291,16 @@ def _backprop(args, tangents, **impl_kwargs):
 def _finite_diff(args, tangents, **impl_kwargs):
 
     gradient_kwargs = impl_kwargs["qnode_kwargs"]["gradient_kwargs"]
-    h = gradient_kwargs.get("h", 1e-7)
+    h = gradient_kwargs.get("h", 1e-6)
     if gradient_kwargs.get("approx_order", 1) != 1:
         raise NotImplementedError("only approx_order=1 is currently supported.")
     if gradient_kwargs.get("strategy", "forward") != "forward":
         raise NotImplementedError("only strategy='forward' is currently supported.")
+    available_kwargs = {"h", "strategy", "approx_order"}
+    if any(kwarg not in available_kwargs for kwarg in gradient_kwargs):
+        raise ValueError(
+            f"The only available gradient kwargs for finite diff are {available_kwargs}. Got {gradient_kwargs}."
+        )
 
     res1 = qnode_prim.bind(*args, **impl_kwargs)
 
@@ -305,9 +310,15 @@ def _finite_diff(args, tangents, **impl_kwargs):
             continue
         shifted_args = list(args)
 
-        shape = shifted_args[i].shape
+        shape = getattr(shifted_args[i], "shape", ())
         flat_arg = jax.numpy.reshape(shifted_args[i], -1)
         flat_t = jax.numpy.reshape(t, -1)
+
+        if getattr(flat_arg, "dtype", None) == jax.numpy.float32:
+            warn(
+                "Detected float32 parameter with finite differences. Recommend use of float64 with finite diff.",
+                UserWarning,
+            )
 
         for element_idx, element in enumerate(flat_arg):
             arg = flat_arg.at[element_idx].set(element + h)
@@ -318,6 +329,7 @@ def _finite_diff(args, tangents, **impl_kwargs):
                 jvps[result_idx] += flat_t[element_idx] * (r2 - r1) / h
 
     return res1, jvps
+
 
 diff_method_map = {"backprop": _backprop, "finite-diff": _finite_diff}
 
