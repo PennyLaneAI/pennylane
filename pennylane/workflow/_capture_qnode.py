@@ -248,6 +248,9 @@ def _qnode_batching_rule(
                 UserWarning,
             )
 
+        # To resolve this ambiguity, we might add more properties to the AbstractOperator
+        # class to indicate which operators support batching and check them here.
+        # As above, at this stage we raise a warning and give the user full flexibility.
         elif arg.size > 1 and batch_dim is None:
             warn(
                 f"Argument at index {idx} has size > 1 but its batch dimension is None. "
@@ -270,6 +273,10 @@ def _qnode_batching_rule(
     # The batch dimension is at the front (axis 0) for all elements in the result.
     # JAX doesn't expose `out_axes` in the batching rule.
     return result, (0,) * len(result)
+
+
+### JVP CALCULATION #########################################################
+# This structure will change as we add more diff methods
 
 
 def _make_zero(tan, arg):
@@ -312,7 +319,6 @@ def _finite_diff(args, tangents, **impl_kwargs):
 
     return res1, jvps
 
-
 diff_method_map = {"backprop": _backprop, "finite-diff": _finite_diff}
 
 
@@ -334,6 +340,8 @@ def _qnode_jvp(args, tangents, *, qnode_kwargs, device, **impl_kwargs):
         args, tangents, qnode_kwargs=qnode_kwargs, device=device, **impl_kwargs
     )
 
+
+### END JVP CALCULATION #######################################################
 
 ad.primitive_jvps[qnode_prim] = _qnode_jvp
 

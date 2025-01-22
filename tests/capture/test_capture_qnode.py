@@ -344,6 +344,7 @@ class TestDifferentiation:
     def test_error_backprop_unsupported(self):
         """Test an error is raised with backprop if the device does not support it."""
 
+        # pylint: disable=too-few-public-methods
         class DummyDev(qml.devices.Device):
 
             def execute(self, *_, **__):
@@ -352,7 +353,7 @@ class TestDifferentiation:
         with pytest.raises(qml.QuantumFunctionError, match="does not support backprop"):
 
             @qml.qnode(DummyDev(wires=2), diff_method="backprop")
-            def circuit(x):
+            def _(x):
                 qml.RX(x, 0)
                 return qml.expval(qml.Z(0))
 
