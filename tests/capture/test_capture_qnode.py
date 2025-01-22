@@ -14,7 +14,6 @@
 """
 Tests for capturing a qnode into jaxpr.
 """
-from dataclasses import asdict
 from functools import partial
 
 # pylint: disable=protected-access
@@ -130,10 +129,6 @@ def test_simple_qnode():
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
     expected_kwargs = {"diff_method": "best"}
     expected_kwargs.update(circuit.execute_kwargs)
-    mcm_config = qml.devices.MCMConfig(
-        postselect_mode=expected_kwargs["postselect_mode"], mcm_method=expected_kwargs["mcm_method"]
-    )
-    expected_kwargs.update(asdict(mcm_config))
     assert eqn0.params["qnode_kwargs"] == expected_kwargs
 
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
