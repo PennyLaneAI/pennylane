@@ -599,7 +599,7 @@ class QubitDevice(Device):
                 provided, the entire shot range is treated as a single bin.
 
         Raises:
-            QuantumFunctionError: if the observable is not supported
+            QuantumFunctionError: if a measurement is not supported
 
         Returns:
             Union[float, List[float]]: the corresponding statistics
