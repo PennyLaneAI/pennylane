@@ -142,11 +142,6 @@ class MutualInfoMP(StateMeasurement):
         return hash(fingerprint)
 
     @property
-    def return_type(self):
-        qml.measurements.measurements.warn_return_type_deprecation()
-        return self._shortname
-
-    @property
     def numeric_type(self):
         return float
 

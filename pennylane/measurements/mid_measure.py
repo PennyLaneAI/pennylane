@@ -337,11 +337,6 @@ class MidMeasureMP(MeasurementProcess):
         return _label
 
     @property
-    def return_type(self):
-        qml.measurements.measurements.warn_return_type_deprecation()
-        return self._shortname
-
-    @property
     def samples_computational_basis(self):
         return False
 

@@ -35,15 +35,6 @@ from pennylane.wires import Wires
 # =============================================================================
 
 
-def warn_return_type_deprecation():
-    """Warns the user that the return_type property is deprecated."""
-    warnings.warn(
-        "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
-        "Instead, please use isinstance for type checking directly.",
-        qml.PennyLaneDeprecationWarning,
-    )
-
-
 class ObservableReturnTypes(Enum):
     """Enumeration class to represent the return types of an observable."""
 
@@ -281,7 +272,11 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     @property
     def return_type(self) -> Optional[ObservableReturnTypes]:
         """Measurement return type."""
-        warn_return_type_deprecation()
+        warnings.warn(
+            "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
+            "Instead, please use isinstance for type checking directly.",
+            qml.PennyLaneDeprecationWarning,
+        )
         return self._shortname
 
     @property

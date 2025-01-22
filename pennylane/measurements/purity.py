@@ -80,11 +80,6 @@ class PurityMP(StateMeasurement):
         super().__init__(wires=wires, id=id)
 
     @property
-    def return_type(self):
-        qml.measurements.measurements.warn_return_type_deprecation()
-        return self._shortname
-
-    @property
     def numeric_type(self):
         return float
 
