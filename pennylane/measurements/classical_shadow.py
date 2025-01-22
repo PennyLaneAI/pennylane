@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .measurements import MeasurementShapeError, MeasurementTransform
+from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
 
 
 def shadow_expval(H, k=1, seed=None):
@@ -226,7 +226,7 @@ class ClassicalShadowMP(MeasurementTransform):
             where the instance has to be identified
     """
 
-    _shortname = "shadow"
+    _shortname = Shadow  #! Note: deprecated. Change the value to "shadow" in v0.42
 
     def __init__(
         self,
@@ -491,7 +491,7 @@ class ShadowExpvalMP(MeasurementTransform):
             where the instance has to be identified
     """
 
-    _shortname = "shadowexpval"
+    _shortname = ShadowExpval  #! Note: deprecated. Change the value to "shadowexpval" in v0.42
 
     def _flatten(self):
         metadata = (
