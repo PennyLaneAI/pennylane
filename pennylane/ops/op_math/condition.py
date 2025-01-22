@@ -687,6 +687,7 @@ def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
     import jax  # pylint: disable=import-outside-toplevel
+    from jax._src.interpreters import partial_eval as pe
 
     cond_prim = create_non_interpreted_prim()("cond")
     cond_prim.multiple_results = True
@@ -716,7 +717,7 @@ def _get_cond_qfunc_prim():
                 continue
             if isinstance(pred, qml.measurements.MeasurementValue):
                 with qml.queuing.AnnotatedQueue() as q:
-                    out = jax.core.eval_jaxpr(jaxpr, consts, *args)
+                    out = qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
 
                 if len(out) != 0:
                     raise ConditionalTransformError(
@@ -726,7 +727,7 @@ def _get_cond_qfunc_prim():
                 for wrapped_op in q:
                     Conditional(pred, wrapped_op.obj)
             elif pred:
-                return jax.core.eval_jaxpr(jaxpr, consts, *args)
+                return qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
 
         return ()
 
@@ -754,5 +755,41 @@ def _get_cond_qfunc_prim():
         # We return the abstract values of the true branch since the abstract values
         # of the other branches (if they exist) should be the same
         return outvals_true
+
+    def custom_staging_rule(jaxpr_trace, *invars, **params):
+
+        outer_invars = [jaxpr_trace.getvar(x) for x in invars]
+
+        jaxpr = params["jaxpr_branches"][0]
+
+        env = {}
+        returned_vars = []
+        out_tracers = []
+        for outvar in jaxpr.outvars:
+            new_shape = []
+            for s in outvar.aval.shape:
+                if isinstance(s, int):
+                    new_shape.append(s)
+                else:
+                    # is var
+                    new_shape.append(env[s])
+            new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
+            new_var = jaxpr_trace.makevar(out_tracer)
+            returned_vars.append(new_var)
+            out_tracers.append(out_tracer)
+            env[outvar] = new_var
+
+        eqn = pe.new_jaxpr_eqn(
+            outer_invars,
+            returned_vars,
+            cond_prim,
+            params,
+            jax.core.no_effects,
+        )
+        jaxpr_trace.frame.add_eqn(eqn)
+        return out_tracers
+
+    pe.custom_staging_rules[cond_prim] = custom_staging_rule
 
     return cond_prim
