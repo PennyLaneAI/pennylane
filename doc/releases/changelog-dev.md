@@ -44,6 +44,9 @@
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
 
+* The requested `diff_method` is now validated when program capture is enabled.
+  [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
@@ -87,6 +90,11 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added a `QmlPrimitive` class that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` module.
+  This class contains a `prim_type` property so that we can differentiate between different sets of PennyLane primitives.
+  Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
+  [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
+
 <h3>Documentation 📝</h3>
 
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`, 
@@ -112,4 +120,5 @@ Diksha Dhawan,
 Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
+Mudit Pandey,
 Andrija Paurevic
