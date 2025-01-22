@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires
 
-from .measurements import State, StateMeasurement
+from .measurements import StateMeasurement
 
 
 def state() -> "StateMP":

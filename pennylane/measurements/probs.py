@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .measurements import SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 

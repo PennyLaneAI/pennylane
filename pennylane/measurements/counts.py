@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import AllCounts, Counts, SampleMeasurement
+from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
 
 

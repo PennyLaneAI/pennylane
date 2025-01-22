@@ -15,7 +15,7 @@
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
 # TODO: Fix the latter two pylint warnings
-# pylint: disable=too-many-arguments, too-many-branches, too-many-statements
+# pylint: disable=too-many-arguments, too-many-branches, too-many-statements, protected-access
 
 from dataclasses import dataclass
 from typing import Optional
