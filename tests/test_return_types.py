@@ -1273,9 +1273,7 @@ class TestDeviceNewUnits:
             value = "unsupported"
 
         class DummyMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return UnsupportedReturnType
+            _shortname = "SomeUnsupportedReturnType"
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
