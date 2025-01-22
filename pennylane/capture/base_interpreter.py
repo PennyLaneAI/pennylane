@@ -51,6 +51,27 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
 
     For example, with `shape=(None, 4, None)` and `dyn_shape=(a, b)`, then the processed shape is
     `(a, 4, b)`.
+
+    When capturing `broadcast_in_dim_p` with a dynamic shape, we might end up with:
+    ```
+    >>> def f(n):
+    ...     return jax.numpy.ones((n, 4, n))
+    >>> jax.make_jaxpr(f)(4)
+    { lambda ; a:i32[]. let
+        b:f32[a,4,a] = broadcast_in_dim[
+        broadcast_dimensions=()
+        shape=(None, 4, None)
+        ] 1.0 a a
+    in (b,) }
+    ```
+
+    `1.0` is the value we want to fill. `a, a` are the two dynamic shapes.
+    The static part of the shape is `(None, 4, None)`. We need to replace the two `None`
+    values with `a` and `a`.
+
+    `broadcast_in_dim` also cant handle shapes where an integer is a concrete jax arrays,
+    so we need to convert any concrete jax arrays to normal integers.
+
     """
     dyn_shape_iter = iter(dyn_shape)
     new_shape = []
