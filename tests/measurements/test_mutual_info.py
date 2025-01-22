@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.wires import Wires
 
@@ -46,7 +45,7 @@ class TestMutualInfoUnitTests:
         meas = qml.mutual_info(wires0=[0], wires1=[1])
         assert meas.numeric_type == float
         with pytest.raises(qml.PennyLaneDeprecationWarning, match="return_type is deprecated"):
-            assert meas.return_type == MutualInfo
+            assert meas.return_type == "mutualinfo"
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``log_base`` information."""
