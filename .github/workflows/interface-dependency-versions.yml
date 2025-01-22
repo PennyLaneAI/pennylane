@@ -67,7 +67,7 @@ jobs:
       
       - name: PennyLane-Lightning Latest Version
         id: pennylane-lightning
-        run: echo "latest=--index-url 'PennyLane-Lightning @ git+https://github.com/PennyLaneAI/pennylane-lightning@replace-return_type-check'" >> $GITHUB_OUTPUT
+        run: echo "latest=--index-url 'git+https://github.com/PennyLaneAI/pennylane-lightning@replace-return_type-check'" >> $GITHUB_OUTPUT
       
     outputs:
       jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
