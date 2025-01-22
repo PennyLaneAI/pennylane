@@ -14,9 +14,17 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
-# pylint: disable=protected-access,too-few-public-methods,too-many-arguments
-# pylint: disable=too-many-public-methods,comparison-with-callable,unused-argument
-# pylint: disable=no-value-for-parameter,no-member,not-callable, use-implicit-booleaness-not-comparison
+# pylint: disable=
+#   protected-access,
+#   too-few-public-methods,
+#   too-many-arguments,
+#   too-many-public-methods,
+#   comparison-with-callable,
+#   unused-argument,
+#   no-value-for-parameter,
+#   no-member,
+#   not-callable,
+#   use-implicit-booleaness-not-comparison
 import copy
 import itertools
 import string
@@ -270,7 +278,7 @@ def compare_tapes(res_tape, expected_tape):
             assert op.wires.tolist() == exp_op.wires.tolist()
 
     for meas, exp_meas in zip(res_tape.measurements, expected_tape.measurements):
-        assert (meas._shortname) == (exp_meas._shortname)  # pylint: disable=protected-access
+        assert (meas._shortname) == (exp_meas._shortname)
         assert get_name(meas.obs) == get_name(exp_meas.obs)
         assert meas.wires.tolist() == exp_meas.wires.tolist()
 
@@ -279,7 +287,7 @@ def compare_measurements(meas1, meas2):
     """
     Helper function to compare measurements
     """
-    assert meas1._shortname == meas2._shortname  # pylint: disable=protected-access
+    assert meas1._shortname == meas2._shortname
     obs1 = meas1.obs
     obs2 = meas2.obs
     assert np.array(get_name(obs1) == get_name(obs2)).all()
@@ -512,9 +520,7 @@ class TestTapeToGraph:
             node.obj for node in nodes if isinstance(node.obj, qml.measurements.MeasurementProcess)
         ]
 
-        assert (
-            node_observables[0]._shortname == expected_measurement
-        )  # pylint: disable=protected-access
+        assert node_observables[0]._shortname == expected_measurement
 
     def test_multiple_observables(self):
         """
