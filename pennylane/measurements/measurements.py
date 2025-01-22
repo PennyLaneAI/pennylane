@@ -341,7 +341,14 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     def __repr__(self):
         """Representation of this class."""
-        name_str = self._shortname.value if self._shortname else type(self).__name__
+        if self._shortname:
+            if isinstance(self._shortname, str):
+                name_str = self._shortname
+            else:
+                name_str = self._shortname.value
+        else:
+            name_str = type(self).__name__
+
         if self.mv is not None:
             return f"{name_str}({repr(self.mv)})"
         if self.obs:
