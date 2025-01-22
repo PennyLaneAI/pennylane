@@ -214,11 +214,19 @@ def _forward_pass(jaxpr, env, num_wires):
 
             mp = eqn.primitive.bind(*invals, **eqn.params)
             bra = apply_operation(mp.obs, ket)
-            bras.append(-2 * bra)
+            bras.append(2 * bra)
             results.append(jnp.real(jnp.sum(jnp.conj(bra) * ket)))
 
         else:
-            raise NotImplementedError
+            invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
+            if eqn.primitive not in ad.primitive_jvps:
+                raise NotImplementedError
+            outvals, doutvals = ad.primitive_jvps[eqn.primitive](invals, tangents, **eqn.params)
+            if not eqn.primitive.multiple_results:
+                outvals = [outvals]
+                doutvals = [doutvals]
+            for var, v, dv in zip(eqn.outvars, outvals, doutvals):
+                env[var] = (v, dv)
 
     return results, bras, ket
 
