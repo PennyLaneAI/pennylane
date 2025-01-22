@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import Counts, SampleMeasurement
+from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
@@ -190,7 +190,7 @@ class CountsMP(SampleMeasurement):
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
-        self._shortname = "allcounts" if all_outcomes else "counts"
+        self._shortname = AllCounts if all_outcomes else Counts
         if wires is not None:
             wires = Wires(wires)
         super().__init__(obs, wires, eigvals, id)
