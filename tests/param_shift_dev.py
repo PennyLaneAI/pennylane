@@ -34,6 +34,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
                     execution_config, use_device_jacobian_product=True
                 )
         program, config = super().preprocess(execution_config)
+        config = dataclasses.replace(config, convert_to_numpy=True)
         program.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
         return program, config
 
