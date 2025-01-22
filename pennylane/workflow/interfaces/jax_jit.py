@@ -251,7 +251,7 @@ def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
 
     """
 
-    if any(m._shortname == "counts" for t in tapes for m in t.measurements):
+    if any(isinstance(m, qml.measurements.CountsMP) and not (m.all_outcomes) for t in tapes for m in t.measurements):
         # Obtaining information about the shape of the Counts measurements is
         # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
@@ -277,7 +277,7 @@ def jax_jit_vjp_execute(tapes, execute_fn, jpc, device=None):
         the returned tuple corresponds in order to the provided tapes.
 
     """
-    if any(isinstance(m, qml.measurements.CountsMP) for t in tapes for m in t.measurements):
+    if any(isinstance(m, qml.measurements.CountsMP) and not (m.all_outcomes) for t in tapes for m in t.measurements):
         # Obtaining information about the shape of the Counts measurements is
         # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
