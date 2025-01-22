@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Improved decompositions done by `qml.clifford_t_decomposition` for `qml.PhaseShift` gates.
+* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.

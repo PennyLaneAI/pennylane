@@ -214,18 +214,20 @@ def _rot_decompose(op):
         if ops_ is None:
             ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(-theta / 2)]
             if not qml.math.is_abstract(theta):
-                # qml.S(0), qml.T(0) == PhaseShift(math.pi / 2), PhaseShift(math.pi / 4)
+                # We iterate to catch the following for odd integers k1 and k2 (div_):
+                # S / S† => PhaseShift(k1 * pi / 2), T / T† => PhaseShift(k2 * pi / 4)
                 for val_ in [2, 4]:
-                    rem_ = qml.math.divide(theta, math.pi / val_)
+                    div_ = qml.math.divide(theta, math.pi / val_)
                     mod_ = qml.math.mod(theta, math.pi / val_)
                     if qml.math.allclose(mod_, 0.0, atol=1e-6) and qml.math.allclose(
-                        qml.math.mod(rem_, 2), 1.0, atol=1e-6
+                        qml.math.mod(div_, 2), 1.0, atol=1e-6
                     ):
                         vop_ = qml.S(wires) if val_ == 2 else qml.T(wires)
-                        sign = qml.math.mod(qml.math.floor_divide(rem_, 2), 2)
+                        sign = qml.math.mod(qml.math.floor_divide(div_, 2), 2)
                         ops_ = [
                             vop_ if qml.math.allclose(sign, 0.0, atol=1e-6) else qml.adjoint(vop_)
                         ]
+                        break
         else:
             ops_.append(qml.GlobalPhase(-theta / 2))
 
