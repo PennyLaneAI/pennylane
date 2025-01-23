@@ -179,7 +179,7 @@ def test_overriding_shots():
 def test_providing_keyword_argument():
     """Test that keyword arguments can be provided to the qnode."""
 
-    @qml.qnode(qml.device("default.qubit", wires=1))
+    @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
     def circuit(*, n_iterations=0):
         for _ in range(n_iterations):
             qml.X(0)
