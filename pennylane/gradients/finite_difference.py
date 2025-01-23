@@ -17,6 +17,7 @@ of a quantum tape.
 """
 import functools
 from functools import partial
+from typing import Callable, Literal
 
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from warnings import warn
@@ -166,6 +167,76 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
+def finite_diff_jvp(
+    f: Callable,
+    args: tuple,
+    tangents: tuple,
+    *,
+    h: float = 1e-6,
+    approx_order: int = 1,
+    strategy: Literal["forward", "backward", "center"] = "forward",
+) -> tuple:
+    r"""Compute the jvp of a generic function using finite differences.
+
+    Args:
+        f (Callable): a generic function that returns an iterable of tensors.
+        args (tuple[TensorLike]): The tuple of arguments to ``f``
+        tangents (tuple[TensorLike]): the tuple of tangents for the arguments.
+
+        h=1e-6 (float): finite difference method step size
+        approx_order=1 (int): The approximation order of the finite-difference method to use.
+        strategy="forward" (str): The strategy of the finite difference method. Must be one of
+            ``"forward"``, ``"center"``, or ``"backward"``.
+            For the ``"forward"`` strategy, the finite-difference shifts occur at the points
+            :math:`x_0, x_0+h, x_0+2h,\dots`, where :math:`h` is some small
+            stepsize. The ``"backwards"`` strategy is similar, but in
+            reverse: :math:`x_0, x_0-h, x_0-2h, \dots`. Finally, the
+            ``"center"`` strategy results in shifts symmetric around the
+            unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
+
+    >>> def f(x, y):
+    ...     return 2 * x * y, x**2
+    >>> args = (0.5, 1.2)
+    >>> tangents = (1.0, 1.0)
+    >>> results, dresults = qml.gradients.finite_diff_jvp(f, args, tangents)
+    >>> results
+    (1.2, 0.25)
+    >>> dresults
+    [np.float64(3.399999999986747), np.float64(1.000001000006634)]
+
+    """
+    if approx_order != 1:
+        raise NotImplementedError("only approx_order=1 is currently supported.")
+    if strategy != "forward":
+        raise NotImplementedError("only strategy='forward' is currently supported.")
+
+    res1 = f(*args)
+
+    jvps = [0 for _ in res1]
+    for i, t in enumerate(tangents):
+        # Zero = jax.interpreters.ad.Zero
+        if type(t).__name__ == "Zero" or not qml.math.is_abstract(t) and qml.math.allclose(t, 0):
+            continue
+        shifted_args = list(args)
+
+        if qml.math.get_dtype_name(args[i]) == "float32":
+            warn(
+                "Detected float32 parameter with finite differences. Recommend use of float64 with finite diff.",
+                UserWarning,
+            )
+
+        for index in np.ndindex(getattr(shifted_args[i], "shape", ())):
+
+            shifted_args[i] = qml.math.scatter_element_add(args[i], index, h)
+            res2 = f(*shifted_args)
+
+            for result_idx, (r1, r2) in enumerate(zip(res1, res2)):
+                t = np.array(t) if isinstance(t, (int, float)) else t
+                jvps[result_idx] += t[index] * (r2 - r1) / h
+
+    return res1, jvps
+
+
 def _processing_fn(results, shots, single_shot_batch_fn):
     if not shots.has_partitioned_shots:
         return single_shot_batch_fn(results)
@@ -188,15 +259,16 @@ def _finite_diff_stopping_condition(op) -> bool:
     return True
 
 
+# pylint: disable=too-many-positional-arguments
 def _expand_transform_finite_diff(
     tape: QuantumScript,
     argnum=None,
-    h=1e-7,
-    approx_order=1,
-    n=1,
-    strategy="forward",
+    h: float = 1e-7,
+    approx_order: int = 1,
+    n: int = 1,
+    strategy: Literal["forward", "backward", "center"] = "forward",
     f0=None,
-    validate_params=True,
+    validate_params: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before finite difference."""
     [new_tape], postprocessing = qml.devices.preprocess.decompose(
@@ -213,6 +285,7 @@ def _expand_transform_finite_diff(
     return [new_tape], postprocessing
 
 
+# pylint: disable=too-many-positional-arguments
 @partial(
     transform,
     expand_transform=_expand_transform_finite_diff,
@@ -222,12 +295,12 @@ def _expand_transform_finite_diff(
 def finite_diff(
     tape: QuantumScript,
     argnum=None,
-    h=1e-7,
-    approx_order=1,
-    n=1,
-    strategy="forward",
+    h: float = 1e-7,
+    approx_order: int = 1,
+    n: int = 1,
+    strategy: Literal["forward", "backward", "center"] = "forward",
     f0=None,
-    validate_params=True,
+    validate_params: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
