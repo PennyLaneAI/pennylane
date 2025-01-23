@@ -137,6 +137,31 @@ class CustomOpWhileLoop(Operation):
         return qml.expval(qml.Z(0))
 
 
+class CustomOpAutograph(Operation):
+    """Custom operation that contains a nested conditional in its decomposition"""
+
+    num_wires = 1
+    num_params = 1
+
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
+
+    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
+
+        return qml.capture.make_plxpr(self._compute_plxpr_decomposition)(
+            *self.parameters, *self.wires, **self.hyperparameters
+        )
+
+    @staticmethod
+    def _compute_plxpr_decomposition(phi, wires):
+
+        if phi > 0.5:
+            qml.RX(phi, wires=wires)
+
+        else:
+            qml.RY(phi, wires=wires)
+
+
 class TestDynamicDecomposeInterpreter:
     """Tests for the DynamicDecomposeInterpreter class"""
 
@@ -298,3 +323,46 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0))
 
         assert jax.numpy.allclose(*result, circuit_comparison(x, wire))
+
+    @pytest.mark.parametrize("wire", [0, 1])
+    @pytest.mark.parametrize("x", [0.2, 0.8])
+    def test_qnode_autograph(self, x, wire):
+        """Test that a QNode with a nested conditional custom operation is correctly decomposed."""
+
+        @DynamicDecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit(x, wire):
+            CustomOpAutograph(x, wires=wire)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)(x, wire)
+
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[1].primitive == cond_prim
+        assert (
+            qfunc_jaxpr.eqns[1].params["jaxpr_branches"][0].eqns[0].primitive == qml.RX._primitive
+        )
+        assert (
+            qfunc_jaxpr.eqns[1].params["jaxpr_branches"][1].eqns[0].primitive == qml.RY._primitive
+        )
+        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
+
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit_comparison(x, wire):
+            if x > 0.5:
+                qml.RX(x, wires=wire)
+            else:
+                qml.RY(x, wires=wire)
+
+            return qml.expval(qml.Z(0))
+
+        jaxpr_comparison = qml.capture.make_plxpr(circuit_comparison)(x, wire)
+        result_comparison = jax.core.eval_jaxpr(
+            jaxpr_comparison.jaxpr, jaxpr_comparison.consts, x, wire
+        )
+
+        assert jax.numpy.allclose(*result, *result_comparison)
