@@ -133,7 +133,8 @@ def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
         elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
             warnings.warn(
                 f"Received gradient_kwarg {kwarg}, which is not included in the list of "
-                "standard qnode gradient kwargs."
+                "standard qnode gradient kwargs. Please specify all gradient kwargs through "
+                "the gradient_kwargs argument as a dictionary."
             )
 
 
