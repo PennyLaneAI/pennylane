@@ -1493,6 +1493,7 @@ class TestHamiltonianSamples:
 
     This is a copy of the tests in test_sampling.py, but using the device instead"""
 
+    @pytest.mark.local_salt(2)
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_hamiltonian_expval(self, max_workers, seed):
         """Test that sampling works well for Hamiltonian observables"""
@@ -1507,6 +1508,7 @@ class TestHamiltonianSamples:
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
 
+    @pytest.mark.local_salt(3)
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_sum_expval(self, max_workers, seed):
         """Test that sampling works well for Sum observables"""

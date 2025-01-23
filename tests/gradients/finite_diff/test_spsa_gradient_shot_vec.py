@@ -807,6 +807,7 @@ class TestSpsaGradientIntegration:
             res_1 = (2 * res[1][0], 2 * res[1][1])
             assert np.allclose(res_1, [0, np.cos(y)], atol=spsa_shot_vec_tol, rtol=0)
 
+    @pytest.mark.local_salt(1)
     def test_var_expectation_values(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
