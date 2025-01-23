@@ -763,8 +763,8 @@ class QubitDevice(Device):
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {name}"
                 )
-            else:
-                result = None
+            # else:
+            #     result = None
 
             # 2. Post-process statistics results (if need be)
             if isinstance(
