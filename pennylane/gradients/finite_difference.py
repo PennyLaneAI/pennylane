@@ -218,10 +218,9 @@ def finite_diff_jvp(
 
     jvps = [0 for _ in initial_res]
     for i, t in enumerate(tangents):
-        # Zero = jax.interpreters.ad.Zero
-        if type(t).__name__ == "Zero" or not qml.math.is_abstract(t) and qml.math.allclose(t, 0):
+        if type(t).__name__ == "Zero":  # Zero = jax.interpreters.ad.Zero
             continue
-        shifted_args = list(args)
+        t = np.array(t) if isinstance(t, (int, float)) else t
 
         if qml.math.get_dtype_name(args[i]) == "float32":
             warn(
@@ -229,10 +228,14 @@ def finite_diff_jvp(
                 UserWarning,
             )
 
-        for index in np.ndindex(qml.math.shape(shifted_args[i])):
-            t = np.array(t) if isinstance(t, (int, float)) else t
-            ti_over_h = t[index] / h
+        shifted_args = list(args)
+        for index in np.ndindex(qml.math.shape(args[i])):
+            ti = t[index]
 
+            if not qml.math.is_abstract(ti) and qml.math.allclose(ti, 0):
+                continue
+
+            ti_over_h = ti / h
             for coeff, shift in zip(coeffs, shifts):
                 if shift == 0:
                     res = initial_res
