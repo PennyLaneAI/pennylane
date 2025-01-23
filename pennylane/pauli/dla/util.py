@@ -16,8 +16,10 @@ from typing import Iterable, Union
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
+from pennylane.typing import TensorLike
 
 
 def trace_inner_product(
@@ -82,17 +84,15 @@ def trace_inner_product(
 
     if isinstance(A, Iterable) and isinstance(B, Iterable):
 
-        if all(isinstance(op, np.ndarray) for op in A) and all(
-            isinstance(op, np.ndarray) for op in B
-        ):
-            A = np.array(A)
-            B = np.array(B)
+        if not isinstance(A, TensorLike):
+            interface = qml.math.get_interface(A)
+            A = qml.math.array(A, like=interface)
+            B = qml.math.array(B, like=interface)
 
-        if isinstance(A, np.ndarray):
-            assert A.shape[-2:] == B.shape[-2:]
-            # The axes of the first input are switched, compared to tr[A@B], because we need to
-            # transpose A.
-            return np.tensordot(A.conj(), B, axes=[[-2, -1], [-2, -1]]) / A.shape[-1]
+        assert A.shape[-2:] == B.shape[-2:]
+        # The axes of the first input are switched, compared to tr[A@B], because we need to
+        # transpose A.
+        return qml.math.tensordot(A.conj(), B, axes=[[-2, -1], [-2, -1]]) / A.shape[-1]
 
     raise NotImplementedError(
         "Inputs to pennylane.pauli.trace_inner_product need to be iterables of matrices or operators with a pauli_rep"

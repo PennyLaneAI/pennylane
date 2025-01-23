@@ -70,3 +70,50 @@ def test_NotImplementedError():
         NotImplementedError, match="Inputs to pennylane.pauli.trace_inner_product need"
     ):
         _ = qml.pauli.trace_inner_product(qml.CNOT((0, 1)), qml.X(0))
+
+
+@pytest.mark.all_interfaces
+class TestInterfaces:
+    @pytest.mark.jax
+    def test_jax_jit_input(
+        self,
+    ):
+        """Test jax inputs are handled correctly"""
+        import jax
+        import jax.numpy as jnp
+
+        A = jnp.array([qml.matrix(X(0)), qml.matrix(X(0))])
+        B = jnp.array([qml.matrix(Y(0)), qml.matrix(Y(0))])
+
+        @jax.jit
+        def f(A, B):
+            return trace_inner_product(A, B)
+
+        assert jnp.allclose(f(A, B), 0)
+        assert jnp.allclose(f(A, A), 1)
+
+    @pytest.mark.torch
+    def test_torch_input(
+        self,
+    ):
+        """Test torch inputs are handled correctly"""
+        import torch
+
+        A = torch.tensor(np.array([qml.matrix(X(0)), qml.matrix(X(0))]))
+        B = torch.tensor(np.array([qml.matrix(Y(0)), qml.matrix(Y(0))]))
+
+        assert qml.math.allclose(trace_inner_product(A, B), 0)
+        assert qml.math.allclose(trace_inner_product(A, A), 1)
+
+    @pytest.mark.tf
+    def test_tf_input(
+        self,
+    ):
+        """Test tf inputs are handled correctly"""
+        import tensorflow as tf
+
+        A = tf.Tensor(np.array([qml.matrix(X(0)), qml.matrix(X(0))]))
+        B = tf.Tensor(np.array([qml.matrix(X(0)), qml.matrix(X(0))]))
+
+        assert qml.math.allclose(trace_inner_product(A, B), 0)
+        assert qml.math.allclose(trace_inner_product(A, A), 1)
