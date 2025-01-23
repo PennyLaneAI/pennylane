@@ -121,8 +121,12 @@ def _get_plxpr_defer_measurements():
     except ImportError:
         return None, None
 
+    # pylint: disable=redefined-outer-name
+
     class DeferMeasurementsInterpreter(PlxprInterpreter):
         """Interpreter for applying the defer_measurements transform to plxpr."""
+
+        # pylint: disable=unnecessary-lambda-assignment, attribute-defined-outside-init
 
         def __init__(self, num_wires):
             super().__init__()
@@ -151,20 +155,6 @@ def _get_plxpr_defer_measurements():
             """
             self._cur_wire = None
             self._cur_measurement_idx = None
-
-        def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
-            """Interpret an equation corresponding to a measurement process.
-
-            Args:
-                eqn (jax.core.JaxprEqn)
-
-            See also :meth:`~.interpret_measurement`.
-
-            """
-            invals = (self.read(invar) for invar in eqn.invars)
-            with QueuingManager.stop_recording():
-                mp = eqn.primitive.impl(*invals, **eqn.params)
-            return self.interpret_measurement(mp)
 
         def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
             """Interpret a measurement process instance.
@@ -284,7 +274,9 @@ def _get_plxpr_defer_measurements():
         return MeasurementValue([meas], lambda x: x)
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
-    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
+    def _(
+        self, *invals, jaxpr_branches, consts_slices, args_slice
+    ):  # pylint: disable=unused-argument
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
         if not any(isinstance(c, MeasurementValue) for c in conditions):
@@ -318,28 +310,6 @@ def _get_plxpr_defer_measurements():
                         n_consts=len(cur_consts),
                     )
 
-                ###### OPTIONAL IMPLEMENTATION THAT DOES NOT EXECUTE YET ######
-                # branches = jax.numpy.array(condition.branches_simple)
-
-                # @qml.for_loop(0, len(branches))
-                # def loop_fn(j):
-                #     branch = branches.at[j].get()
-                #     value = condition.processing_fn(*branch)
-
-                #     cur_consts = invals[consts_slices[i]]
-                #     qml.cond(value, ctrl_transform_prim.bind)(
-                #         *cur_consts,
-                #         *args,
-                #         *control_wires,
-                #         jaxpr=jaxpr,
-                #         n_control=len(control_wires),
-                #         control_values=branch,
-                #         work_wires=None,
-                #         n_consts=len(cur_consts),
-                #     )
-
-                # loop_fn()
-
         return []
 
     def defer_measurements_plxpr_to_plxpr(
@@ -362,6 +332,7 @@ def _get_plxpr_defer_measurements():
 DeferMeasurementsInterpreter, defer_measurements_plxpr_to_plxpr = _get_plxpr_defer_measurements()
 
 
+# pylint: disable=unused-argument
 @partial(transform, plxpr_transform=defer_measurements_plxpr_to_plxpr)
 def defer_measurements(
     tape: QuantumScript,
