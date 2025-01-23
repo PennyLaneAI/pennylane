@@ -137,14 +137,15 @@ class TestQNode:
             device_vjp=device_vjp,
         )
 
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -183,14 +184,15 @@ class TestQNode:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
         )
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -222,13 +224,14 @@ class TestQNode:
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
+        gradient_kwargs = {"h": 1e-8, "approx_order": 2}
+
         @qnode(
             dev,
             interface=interface,
-            h=1e-8,
-            order=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -408,10 +411,10 @@ class TestQNode:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
         )
-
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 10
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 10
             tol = TOL_FOR_SPSA
 
         # pylint: disable=too-few-public-methods
@@ -429,7 +432,7 @@ class TestQNode:
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -555,15 +558,15 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
         )
-
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -593,14 +596,15 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -660,14 +664,15 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -711,8 +716,9 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
@@ -720,7 +726,7 @@ class TestQubitIntegration:
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -826,12 +832,13 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         dev1 = qml.device("default.qubit")
 
-        @qnode(dev1, **kwargs)
+        @qnode(dev1, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit1(a, b, c):
             qml.RX(a, wires=0)
             qml.RX(b, wires=1)
@@ -1350,8 +1357,9 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
@@ -1359,7 +1367,7 @@ class TestQubitIntegration:
         P = np.array(state, requires_grad=False)
         x, y = np.array([0.765, -0.654], requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -1498,16 +1506,17 @@ class TestTapeExpansion:
             device_vjp=device_vjp,
         )
 
+        gradient_kwargs = {}
         if diff_method in ["adjoint", "hadamard"]:
             pytest.skip("The diff method requested does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 10
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 10
             tol = TOL_FOR_SPSA
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
             qml.templates.AngleEmbedding(data, wires=[0, 1])
@@ -1584,7 +1593,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
