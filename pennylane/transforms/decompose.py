@@ -192,7 +192,8 @@ DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
     try:
         # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
+        # pylint: disable=unused-import
+        import jax
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -278,11 +279,11 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
                 jaxpr_decomp = op._plxpr_decomposition()
                 args = (*op.parameters, tuple(op.wires), *op.hyperparameters)
-                self.eval_dynamic_decomposition(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
+                return self.eval_dynamic_decomposition(
+                    jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args
+                )
 
-            else:
-
-                return super().interpret_operation_eqn(eqn)
+            return super().interpret_operation_eqn(eqn)
 
     return DynamicDecomposeInterpreter
 

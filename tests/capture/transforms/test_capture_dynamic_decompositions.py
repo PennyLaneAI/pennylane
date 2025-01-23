@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class"""
-# pylint:disable=protected-access,unused-argument, wrong-import-position
+# pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter,
 import pytest
 
 import pennylane as qml
@@ -20,11 +20,8 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import (
-    adjoint_transform_prim,
     cond_prim,
     for_loop_prim,
-    grad_prim,
-    jacobian_prim,
     qnode_prim,
     while_loop_prim,
 )
@@ -37,6 +34,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 class SimpleCustomOp(Operation):
+    """Simple custom operation that contains a single gate in its decomposition"""
+
     num_wires = 1
     num_params = 0
 
@@ -55,6 +54,8 @@ class SimpleCustomOp(Operation):
 
 
 class CustomOpCond(Operation):
+    """Custom operation that contains a conditional in its decomposition"""
+
     num_wires = 1
     num_params = 1
 
@@ -80,6 +81,8 @@ class CustomOpCond(Operation):
 
 
 class CustomOpForLoop(Operation):
+    """Custom operation that contains a for loop in its decomposition"""
+
     num_wires = 1
     num_params = 1
 
@@ -100,12 +103,15 @@ class CustomOpForLoop(Operation):
             qml.RX(phi, wires=0)
             return jax.numpy.sin(phi)
 
-        final_x = loop_rx(phi)
+        # pylint: disable=unused-variable
+        loop_rx(phi)
 
         return qml.expval(qml.Z(0))
 
 
 class CustomOpWhileLoop(Operation):
+    """Custom operation that contains a while loop in its decomposition"""
+
     num_wires = 1
     num_params = 1
 
@@ -132,9 +138,10 @@ class CustomOpWhileLoop(Operation):
 
 
 class TestDynamicDecomposeInterpreter:
+    """Tests for the DynamicDecomposeInterpreter class"""
 
     def test_function_simple(self):
-        """ """
+        """Test that a function with a custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         def f(x):
@@ -151,7 +158,7 @@ class TestDynamicDecomposeInterpreter:
     ############################
 
     def test_qnode_simple(self):
-        """ """
+        """Test that a QNode with a custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2))
@@ -170,7 +177,7 @@ class TestDynamicDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_qnode_cond(self):
-        """ """
+        """Test that a QNode with a conditional custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2))
@@ -193,7 +200,7 @@ class TestDynamicDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_qnode_for_loop(self):
-        """ """
+        """Test that a QNode with a for loop custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2))
@@ -211,7 +218,7 @@ class TestDynamicDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_qnode_while_loop(self):
-        """ """
+        """Test that a QNode with a while loop custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2))
