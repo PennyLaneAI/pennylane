@@ -288,9 +288,8 @@ class QNode:
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
-        autograph (bool): Experimental key word argument that enables Pennylane program capture to work with circuits that have
-            native Python control flow embedded in them. For more information, refer to :doc:`Autograph </development/autograph>`.
-            Default is ``True``.
+        autograph (bool): Whether to use AutoGraph to convert Python control flow to native PennyLane
+            control flow. For more information, refer to :doc:`Autograph </development/autograph>`. Defaults to True.
 
     **Example**
 
