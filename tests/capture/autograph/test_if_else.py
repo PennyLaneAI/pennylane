@@ -136,7 +136,7 @@ class TestConditionals:
     def test_qubit_manipulation_cond(self):
         """Test conditional with quantum operation."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def circuit(x):
             if x > 4:
                 qml.PauliX(wires=0)
@@ -145,8 +145,16 @@ class TestConditionals:
 
             return qml.expval(m)
 
-        assert circuit(3) == 0
-        assert circuit(6) == 1
+        ag_circuit = run_autograph(circuit)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert "cond" in str(jaxpr)
+
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+
+        # pylint: disable=singleton-comparison
+        assert res(3) == 0
+        assert res(6) == 1
 
     def test_nested_cond(self):
         """Test that a nested conditional is converted as expected"""
@@ -280,15 +288,21 @@ class TestConditionals:
         """Test that different measurements be used in the return in different branches, as
         they are all represented by the AbstractMeasurement class."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f(switch: bool):
             if switch:
                 return qml.expval(qml.PauliY(0))
 
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(f(True), 0)
-        assert np.allclose(f(False), 1)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+
+        assert np.allclose(res(True), 0)
+        assert np.allclose(res(False), 1)
 
 
 if __name__ == "__main__":

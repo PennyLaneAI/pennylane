@@ -117,46 +117,60 @@ class TestForLoops:
     def test_for_in_array(self):
         """Test for loop over JAX array."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f(params):
             for x in params:
                 qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        result = f(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([1.0, 2.0, 3.0]))
+
+        def res(params):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
+
+        result = res(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     def test_for_in_array_unpack(self):
         """Test for loop over a 2D JAX array unpacking the inner dimension."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f(params):
             for x1, x2 in params:
                 qml.RY(x1, wires=0)
                 qml.RY(x2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0]]))
+
         params = jnp.array([[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, jnp.pi]])
-        result = f(params)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
 
         assert np.allclose(result, jnp.sqrt(2) / 2)
 
     def test_for_in_numeric_list(self):
         """Test for loop over a Python list that is convertible to an array."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f():
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
             for x in params:
                 qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(f(), -jnp.sqrt(2) / 2)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     def test_for_in_numeric_list_of_list(self):
         """Test for loop over a nested Python list that is convertible to an array."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f():
             params = [[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, jnp.pi]]
             for xx in params:
@@ -164,7 +178,11 @@ class TestForLoops:
                     qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(f(), jnp.sqrt(2) / 2)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert np.allclose(result, jnp.sqrt(2) / 2)
 
     @pytest.mark.xfail(
         reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
@@ -173,131 +191,167 @@ class TestForLoops:
         """Test for loop over a Python list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f():
             params = ["0", "1", "2"]
             for x in params:
                 qml.RY(int(x) / 4 * jnp.pi, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(f(), -jnp.sqrt(2) / 2)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     def test_for_in_static_range(self):
         """Test for loop over a Python range with static bounds."""
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3), autograph=False)
         def f():
             for i in range(3):
                 qml.Hadamard(i)
             return qml.probs()
 
-        assert np.allclose(f(), [1 / 8] * 8)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert np.allclose(result, [1 / 8] * 8)
 
     def test_for_in_static_range_indexing_array(self):
         """Test for loop over a Python range with static bounds that is used to index an array."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f():
             params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
             for i in range(3):
                 qml.RY(params[i], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(f(), -jnp.sqrt(2) / 2)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     def test_for_in_dynamic_range(self):
         """Test for loop over a Python range with dynamic bounds."""
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3), autograph=False)
         def f(n: int):
             for i in range(n):
                 qml.Hadamard(i)
             return qml.probs()
 
-        assert np.allclose(f(3), [1 / 8] * 8)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+
+        assert np.allclose(result, [1 / 8] * 8)
 
     def test_for_in_dynamic_range_indexing_array(self):
         """Test for loop over a Python range with dynamic bounds that is used to index an array."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f(n: int):
             params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
             for i in range(n):
                 qml.RY(params[i], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(f(3), -jnp.sqrt(2) / 2)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+
+        assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     def test_for_in_enumerate_array(self):
         """Test for loop over a Python enumeration on an array."""
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3), autograph=False)
         def f(params):
             for i, x in enumerate(params):
                 qml.RY(x, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
+
         params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
-        result = f(params)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
 
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
     def test_for_in_enumerate_array_no_unpack(self):
         """Test for loop over a Python enumeration with delayed unpacking."""
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3), autograph=False)
         def f(params):
             for v in enumerate(params):
                 qml.RY(v[1], wires=v[0])
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
+
         params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
-        result = f(params)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
 
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
     def test_for_in_enumerate_nested_unpack(self):
         """Test for loop over a Python enumeration with nested unpacking."""
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3), autograph=False)
         def f(params):
             for i, (x1, x2) in enumerate(params):
                 qml.RY(x1, wires=i)
                 qml.RY(x2, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]))
+
         params = jnp.array(
             [[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, 3 / 4 * jnp.pi], [jnp.pi, 2 * jnp.pi]]
         )
-        result = f(params)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
 
         assert np.allclose(result, [jnp.sqrt(2) / 2, -jnp.sqrt(2) / 2, -1.0])
 
     def test_for_in_enumerate_start(self):
         """Test for loop over a Python enumeration with offset indices."""
 
-        @qml.qnode(qml.device("default.qubit", wires=5))
+        @qml.qnode(qml.device("default.qubit", wires=5), autograph=False)
         def f(params):
             for i, x in enumerate(params, start=2):
                 qml.RY(x, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(5)]
 
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
+
         params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
-        result = f(params)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
 
         assert np.allclose(result, [1.0, 1.0, 1.0, jnp.sqrt(2) / 2, 0.0])
 
     def test_for_in_enumerate_numeric_list(self):
         """Test for loop over a Python enumeration on a list that is convertible to an array."""
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3), autograph=False)
         def f():
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
             for i, x in enumerate(params):
                 qml.RY(x, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-        assert np.allclose(f(), [1.0, jnp.sqrt(2) / 2, 0.0])
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
     def test_iterating_over_wires(self):
         """Test that a wires obejct is a valid iteration target for a for loop,
@@ -321,14 +375,18 @@ class TestForLoops:
         """Test for loop over a Python enumeration on a list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3), autograph=False)
         def f():
             params = ["0", "1", "2"]
             for i, x in enumerate(params):
                 qml.RY(int(x) / 4 * jnp.pi, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-        assert np.allclose(f(), [1.0, jnp.sqrt(2) / 2, 0.0])
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
     @pytest.mark.xfail(
         reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
@@ -337,7 +395,7 @@ class TestForLoops:
         """Test for loop over arbitrary iterable Python objects.
         The behaviour should fall back to standard Python."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f():
             params = {"a": 0.0, "b": 1 / 4 * jnp.pi, "c": 2 / 4 * jnp.pi}
             for k, v in params.items():
@@ -345,7 +403,11 @@ class TestForLoops:
                 qml.RY(v, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(f(), -jnp.sqrt(2) / 2)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     def test_loop_carried_value(self):
         """Test a loop which updates a value each iteration."""
@@ -496,7 +558,7 @@ class TestErrors:
         """Check the error raised when a for loop iterates over a Python list that
         is *not* convertible to an array."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f():
             params = ["0", "1", "2"]
             for x in params:
@@ -504,14 +566,14 @@ class TestErrors:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(AutoGraphError, match="Could not convert the iteration target"):
-            f()
+            run_autograph(f)()
 
     def test_for_in_static_range_indexing_numeric_list(self):
         """Test an informative error is raised when using a for loop with a static range
         to index through an array-compatible Python list. This can be fixed by wrapping the
         list in a jax array, so the error raised here is actionable."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f():
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
             for i in range(3):
@@ -522,14 +584,14 @@ class TestErrors:
             AutoGraphError,
             match="Make sure that loop variables are not used in tracing-incompatible ways",
         ):
-            f()
+            run_autograph(f)()
 
     def test_for_in_dynamic_range_indexing_numeric_list(self):
         """Test an informative error is raised when using a for loop with a dynamic range
         to index through an array-compatible Python list. This can be fixed by wrapping the
         list in a jax array, so the error raised here is actionable."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f(n: int):
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
             for i in range(n):
@@ -540,14 +602,14 @@ class TestErrors:
             AutoGraphError,
             match="Make sure that loop variables are not used in tracing-incompatible ways",
         ):
-            f(2)
+            _ = run_autograph(f)(2)
 
     def test_for_in_dynamic_range_indexing_object_list(self):
         """Test that an error is raised for a for loop over a Python range with dynamic bounds
         that is used to index an array-incompatible Python list. This use-case is never possible,
         even with AutoGraph, because the list can't be wrapped in a jax array."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def f(n: int):
             params = ["0", "1", "2"]
             for i in range(n):
@@ -558,7 +620,7 @@ class TestErrors:
             AutoGraphError,
             match="Make sure that loop variables are not used in tracing-incompatible ways",
         ):
-            f(2)
+            run_autograph(f)(2)
 
     def test_uninitialized_variables(self):
         """Verify errors for (potentially) uninitialized loop variables."""

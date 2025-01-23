@@ -205,14 +205,14 @@ class TestIntegration:
     def test_qnode(self):
         """Test autograph on a QNode."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def circ(x: float):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circ(np.pi) == -1
-
         ag_fn = run_autograph(circ)
+        assert ag_fn(np.pi) == -1
+
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
 
@@ -261,23 +261,25 @@ class TestIntegration:
     def test_adjoint_op(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
         def circ():
             qml.adjoint(qml.X(0))
             return qml.expval(qml.Z(0))
 
-        assert circ() == -1
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     def test_ctrl_op(self):
         """Test that controlled operators successfully pass through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
         def circ():
             qml.X(1)
             qml.ctrl(qml.X(0), 1)
             return qml.expval(qml.Z(0))
 
-        assert circ() == -1
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     @pytest.mark.xfail(
         raises=NotImplementedError,
@@ -289,16 +291,16 @@ class TestIntegration:
         def inner(x):
             qml.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
         def circ(x: float):
             inner(x * 2)
             qml.adjoint(inner)(x)
             return qml.probs()
 
-        phi = np.pi / 2
-        assert np.allclose(circ(phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
-
         ag_fn = run_autograph(circ)
+        phi = np.pi / 2
+        assert np.allclose(ag_fn(phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
+
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
         assert check_cache(inner)
@@ -313,15 +315,15 @@ class TestIntegration:
         def inner(x):
             qml.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
         def circ(x: float):
             qml.PauliX(1)
             qml.ctrl(inner, control=1)(x)
             return qml.probs()
 
-        assert np.allclose(circ(np.pi), [0.0, 0.0, 0.0, 1.0])
-
         ag_fn = run_autograph(circ)
+        assert np.allclose(ag_fn(np.pi), [0.0, 0.0, 0.0, 1.0])
+
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
         assert check_cache(inner)
@@ -368,8 +370,9 @@ class TestIntegration:
             raise NotImplementedError
 
         def fn(x):
+
             @my_quantum_transform
-            @qml.qnode(dev)
+            @qml.qnode(dev, autograph=False)
             def circuit(x):
                 qml.RY(x, wires=0)
                 qml.RX(x, wires=0)
@@ -377,8 +380,10 @@ class TestIntegration:
 
             return circuit(x)
 
+        ag_fn = run_autograph(fn)
+
         with pytest.raises(NotImplementedError):
-            fn(0.5)
+            ag_fn(0.5)
 
     @pytest.mark.xfail
     def test_mcm_one_shot(self, seed):
