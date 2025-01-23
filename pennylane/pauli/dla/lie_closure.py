@@ -26,6 +26,7 @@ import scipy
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
 
 from ..pauli_arithmetic import PauliSentence, PauliWord
 from .util import trace_inner_product
@@ -136,6 +137,9 @@ def lie_closure(
         >>> dla_ops = [qml.pauli_decompose(op) for op in dla]
 
     """
+    if matrix:
+        return _lie_closure_matrix(generators, max_iterations, verbose, tol)
+
     if not all(isinstance(op, (PauliSentence, PauliWord, np.ndarray)) for op in generators):
         if pauli:
             raise TypeError(
@@ -146,9 +150,6 @@ def lie_closure(
             rep if (rep := op.pauli_rep) is not None else qml.pauli.pauli_sentence(op)
             for op in generators
         ]
-
-    if matrix:
-        return _lie_closure_matrix(generators, max_iterations, verbose, tol)
 
     vspace = PauliVSpace(generators, tol=tol)
 
@@ -511,18 +512,21 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
-        if not np.allclose(A.conj().T, A):
+        if not qml.math.allclose(A.conj().T, A):
             A = 1j * A
-            if not np.allclose(A.conj().T, A):
+            if not qml.math.allclose(A.conj().T, A):
                 raise ValueError(f"At least one basis matrix is not (skew-)Hermitian:\n{A}")
 
-        B = A.copy()
+        B = copy(A)
         if len(basis) > 0:
-            B -= np.tensordot(trace_inner_product(np.array(basis), A), basis, axes=[[0], [0]])
-        if (norm := np.sqrt(trace_inner_product(B, B))) > tol:  # Tolerance for numerical stability
+            lhs = trace_inner_product(basis, A)
+            B -= qml.math.tensordot(lhs, qml.math.stack(basis), axes=[[0], [0]])
+        if (
+            norm := qml.math.real(qml.math.sqrt(trace_inner_product(B, B)))
+        ) > tol:  # Tolerance for numerical stability
             B /= norm
             basis.append(B)
-    return np.array(basis)
+    return qml.math.array(basis)
 
 
 def _lie_closure_matrix(
@@ -573,27 +577,29 @@ def _lie_closure_matrix(
     so Hermitian operators alone can not form an algebra with the standard commutator).
     """
 
-    matrix_in = isinstance(generators, np.ndarray) or all(
-        isinstance(op, np.ndarray) for op in generators
-    )
-
-    if not matrix_in:
+    if not isinstance(generators[0], TensorLike):
+        # operator input
         all_wires = qml.wires.Wires.all_wires([_.wires for _ in generators])
         n = len(all_wires)
         assert all_wires.toset() == set(range(n))
 
-        gens = np.array([qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex)
+        generators = np.array(
+            [qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex
+        )
         chi = 2**n
-        assert gens.shape == (len(generators), chi, chi)
+        assert np.shape(generators) == (len(generators), chi, chi)
 
-    else:
-        gens = np.array(generators)
-        chi = generators[0].shape[0]
-        assert gens.shape == (len(generators), chi, chi)
+    if isinstance(generators[0], TensorLike) and isinstance(generators, (list, tuple)):
+        # list of matrices
+        interface = qml.math.get_interface(generators[0])
+        generators = qml.math.stack(generators, like=interface)
+
+    chi = qml.math.shape(generators[0])[0]
+    assert qml.math.shape(generators) == (len(generators), chi, chi)
 
     epoch = 0
     old_length = 0
-    vspace = _hermitian_basis(gens, tol, old_length)
+    vspace = _hermitian_basis(generators, tol, old_length)
     new_length = initial_length = len(vspace)
 
     while (new_length > old_length) and (epoch < max_iterations):
@@ -606,20 +612,20 @@ def _lie_closure_matrix(
         # the commutators.
         # [m0, m1] = m0 m1 - m1 m0
         # Implement einsum "aij,bjk->abik" by tensordot and moveaxis
-        m0m1 = np.moveaxis(
-            np.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[2], [1]]), 1, 2
+        m0m1 = qml.math.moveaxis(
+            qml.math.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[2], [1]]), 1, 2
         )
-        m0m1 = np.reshape(m0m1, (-1, chi, chi))
+        m0m1 = qml.math.reshape(m0m1, (-1, chi, chi))
 
         # Implement einsum "aij,bki->abkj" by tensordot and moveaxis
-        m1m0 = np.moveaxis(
-            np.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[1], [2]]), 1, 3
+        m1m0 = qml.math.moveaxis(
+            qml.math.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[1], [2]]), 1, 3
         )
-        m1m0 = np.reshape(m1m0, (-1, chi, chi))
+        m1m0 = qml.math.reshape(m1m0, (-1, chi, chi))
         all_coms = m0m1 - m1m0
 
         # sub-select linearly independent subset
-        vspace = np.concatenate([vspace, all_coms])
+        vspace = qml.math.concatenate([vspace, all_coms])
         vspace = _hermitian_basis(vspace, tol, old_length)
 
         # Updated number of linearly independent PauliSentences from previous and current step

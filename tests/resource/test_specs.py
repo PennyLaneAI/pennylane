@@ -33,10 +33,15 @@ class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
     def sample_circuit(self):
+
         @qml.transforms.merge_rotations
         @qml.transforms.undo_swaps
         @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=pnp.pi / 4)
+        @qml.qnode(
+            qml.device("default.qubit"),
+            diff_method="parameter-shift",
+            gradient_kwargs={"shifts": pnp.pi / 4},
+        )
         def circuit(x):
             qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
             qml.RX(x, wires=0)
@@ -222,7 +227,11 @@ class TestSpecsTransform:
 
         @qml.transforms.split_non_commuting
         @qml.transforms.merge_rotations
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=pnp.pi / 4)
+        @qml.qnode(
+            qml.device("default.qubit"),
+            diff_method="parameter-shift",
+            gradient_kwargs={"shifts": pnp.pi / 4},
+        )
         def circuit(x):
             qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
             qml.RX(x, wires=0)

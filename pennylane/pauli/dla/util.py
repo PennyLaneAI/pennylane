@@ -16,17 +16,25 @@ from typing import Iterable, Union
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
+from pennylane.typing import TensorLike
 
 
 def trace_inner_product(
     A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
 ):
-    r"""Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A B\right)/\text{dim}(A)` between two Hermitian operators :math:`A` and :math:`B`.
+    r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)` between two operators :math:`A` and :math:`B`.
 
     If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
     inputs.
+
+    .. warn:: Operator inputs are assumed to be Hermitian. In particular,
+        sums of Pauli operators are assumed to have real-valued coefficients.
+        We recommend to use matrix representations for non-Hermitian inputs.
+        In case of non-Hermitian :class:`~PauliSentence` or :class:`Operator` inputs,
+        the Hermitian conjugation needs to be done manually by inputting :math:`A = A^\dagger`.
 
     Args:
         A (Union[PauliSentence, Operator, np.ndarray]): First operator
@@ -37,7 +45,7 @@ def trace_inner_product(
 
     **Example**
 
-    >>> from pennylane.labs.dla import trace_inner_product
+    >>> from pennylane.pauli import trace_inner_product
     >>> trace_inner_product(qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0))
     1.0
 
@@ -56,23 +64,38 @@ def trace_inner_product(
     >>> trace_inner_product(ops1, ops1).shape
     (10, 10)
 
+    .. details::
+        :title: Usage Details
+
+        :class:`~PauliSentence` and :class:`~Operator` inputs are assumed to be Hermitian. In particular,
+        the input ``A`` is not conjugated when operators are used. To get correct results, we can either use
+        the matrix representation or manually conjugate the operator.
+
+        >>> A = qml.X(0) - 1j * qml.Y(0)
+        >>> Ad = qml.X(0) + 1j * qml.Y(0)
+        >>> B = qml.X(0) + 1j * qml.Y(0)
+        >>> trace_inner_product(Ad, B) == trace_inner_product(qml.matrix(A), qml.matrix(B))
+        True
+
     """
     if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
+        # No dagger needed as paulis are Hermitian
         return (A.pauli_rep @ B.pauli_rep).trace()
 
     if isinstance(A, Iterable) and isinstance(B, Iterable):
 
-        if all(isinstance(op, np.ndarray) for op in A) and all(
-            isinstance(op, np.ndarray) for op in B
-        ):
-            A = np.array(A)
-            B = np.array(B)
+        if not isinstance(A, TensorLike) or isinstance(A, (list, tuple)):
+            interface_A = qml.math.get_interface(A)
+            A = qml.math.array(A, like=interface_A)
 
-        if isinstance(A, np.ndarray):
-            assert A.shape[-2:] == B.shape[-2:]
-            # The axes of the first input are switched, compared to tr[A@B], because we need to
-            # transpose A.
-            return np.tensordot(A, B, axes=[[-1, -2], [-2, -1]]) / A.shape[-1]
+        if not isinstance(B, TensorLike) or isinstance(B, (list, tuple)):
+            interface_B = qml.math.get_interface(B)
+            B = qml.math.array(B, like=interface_B)
+
+        assert A.shape[-2:] == B.shape[-2:]
+        # The axes of the first input are switched, compared to tr[A@B], because we need to
+        # transpose A.
+        return qml.math.tensordot(A.conj(), B, axes=[[-2, -1], [-2, -1]]) / A.shape[-1]
 
     raise NotImplementedError(
         "Inputs to pennylane.pauli.trace_inner_product need to be iterables of matrices or operators with a pauli_rep"

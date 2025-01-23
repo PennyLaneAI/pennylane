@@ -228,6 +228,8 @@ class SampleMP(SampleMeasurement):
             )
         if self.obs:
             num_values_per_shot = 1  # one single eigenvalue
+        elif self.mv is not None:
+            num_values_per_shot = 1 if isinstance(self.mv, MeasurementValue) else len(self.mv)
         else:
             # one value per wire
             num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires

@@ -33,11 +33,11 @@
   'parameter-shift'
   ```
   
-* Finite shot and parameter-shift executions on `default.qubit` can now
-  be natively jitted end-to-end, leading to performance improvements.
-  Devices can now configure whether or not ML framework data is sent to them
-  via an `ExecutionConfig.convert_to_numpy` parameter.
+* Devices can now configure whether or not ML framework data is sent to them
+  via an `ExecutionConfig.convert_to_numpy` parameter. This is not used on 
+  `default.qubit` due to compilation overheads when jitting.
   [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
+  [(#6869)](https://github.com/PennyLaneAI/pennylane/pull/6869)
 
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
@@ -96,11 +96,26 @@
 
 <h3>Deprecations 👋</h3>
 
+* Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
+  and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
+  keyword argument `gradient_kwargs` via an explicit dictionary. This change will improve qnode argument
+  validation.
+  [(#6828)](https://github.com/PennyLaneAI/pennylane/pull/6828)
+
+* The `qml.gradients.hamiltonian_grad` function has been deprecated.
+  This gradient recipe is not required with the new operator arithmetic system.
+  [(#6849)](https://github.com/PennyLaneAI/pennylane/pull/6849)
+
 * The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
 
 <h3>Internal changes ⚙️</h3>
+
+* Added a `QmlPrimitive` class that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` module.
+  This class contains a `prim_type` property so that we can differentiate between different sets of PennyLane primitives.
+  Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
+  [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
 
 <h3>Documentation 📝</h3>
 
@@ -128,4 +143,5 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Korbinian Kottmann,
 Christina Lee,
+Mudit Pandey,
 Andrija Paurevic
