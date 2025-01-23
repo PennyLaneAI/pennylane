@@ -43,7 +43,7 @@ def trace_inner_product(
 
     **Example**
 
-    >>> from pennylane.labs.dla import trace_inner_product
+    >>> from pennylane.pauli import trace_inner_product
     >>> trace_inner_product(qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0))
     1.0
 
@@ -61,6 +61,19 @@ def trace_inner_product(
 
     >>> trace_inner_product(ops1, ops1).shape
     (10, 10)
+
+    .. details::
+        :title: Usage Details
+
+        :class:`~PauliSentence` and :class:`~Operator` inputs are assumed to be Hermitian. In particular,
+        the input ``A`` is not conjugated when operators are used. To get correct results, we can either use
+        the matrix representation or manually conjugate the operator.
+
+        >>> A = qml.X(0) - 1j * qml.Y(0)
+        >>> Ad = qml.X(0) + 1j * qml.Y(0)
+        >>> B = qml.X(0) + 1j * qml.Y(0)
+        >>> trace_inner_product(Ad, B) == trace_inner_product(qml.matrix(A), qml.matrix(B))
+        True
 
     """
     if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
