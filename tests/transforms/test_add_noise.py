@@ -414,7 +414,7 @@ class TestAddNoiseLevels:
         @qml.transforms.undo_swaps
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)
@@ -447,7 +447,7 @@ class TestAddNoiseLevels:
         @qml.transforms.undo_swaps
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)
