@@ -1970,12 +1970,12 @@ class TestParameterShiftRule:
 
         dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
 
-        @qml.qnode(dev, diff_method="parameter-shift", broadcast=broadcast)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"broadcast": broadcast})
         def qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(SpecialObservable(wires=0))
 
-        @qml.qnode(dev, diff_method="parameter-shift", broadcast=broadcast)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"broadcast": broadcast})
         def reference_qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
