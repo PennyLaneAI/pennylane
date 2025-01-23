@@ -147,11 +147,11 @@ class ControlledQubitUnitary(ControlledOp):
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
-            # warnings.warn(
-            #     "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-            #     "Instead, please use a full matrix as input.",
-            #     qml.PennyLaneDeprecationWarning,
-            # )
+            warnings.warn(
+                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+                "Instead, please use a full matrix as input.",
+                qml.PennyLaneDeprecationWarning,
+            )
             base = base.matrix()
 
         return cls._primitive.bind(
@@ -185,11 +185,11 @@ class ControlledQubitUnitary(ControlledOp):
         control_wires = wires[:-1]  # default
 
         if isinstance(base, qml.QubitUnitary):
-            # warnings.warn(
-            #     "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-            #     "Instead, please use a full matrix as input.",
-            #     qml.PennyLaneDeprecationWarning,
-            # )
+            warnings.warn(
+                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+                "Instead, please use a full matrix as input.",
+                qml.PennyLaneDeprecationWarning,
+            )
             base = base.matrix()
 
         if isinstance(base, Iterable):
