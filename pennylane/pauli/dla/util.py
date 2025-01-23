@@ -84,10 +84,13 @@ def trace_inner_product(
 
     if isinstance(A, Iterable) and isinstance(B, Iterable):
 
-        if not isinstance(A, TensorLike):
-            interface = qml.math.get_interface(A)
-            A = qml.math.array(A, like=interface)
-            B = qml.math.array(B, like=interface)
+        if not isinstance(A, TensorLike) or isinstance(A, (list, tuple)):
+            interface_A = qml.math.get_interface(A)
+            A = qml.math.array(A, like=interface_A)
+
+        if not isinstance(B, TensorLike) or isinstance(B, (list, tuple)):
+            interface_B = qml.math.get_interface(B)
+            B = qml.math.array(B, like=interface_B)
 
         assert A.shape[-2:] == B.shape[-2:]
         # The axes of the first input are switched, compared to tr[A@B], because we need to
