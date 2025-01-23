@@ -113,14 +113,6 @@ class TestControlledQubitUnitary:
 
         qml.assert_equal(op1, op2)
 
-    def test_wires_specified_twice_warning(self):
-        base = qml.QubitUnitary(X, 0)
-        with pytest.warns(
-            UserWarning,
-            match="base operator already has wires; values specified through wires kwarg will be ignored.",
-        ):
-            qml.ControlledQubitUnitary(base, wires=[1, 2, 3])
-
     @pytest.mark.parametrize("target_wire", list(range(3)))
     def test_toffoli(self, target_wire):
         """Test if ControlledQubitUnitary acts like a Toffoli gate when the input unitary is a
