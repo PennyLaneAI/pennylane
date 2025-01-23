@@ -338,7 +338,7 @@ class TestProbs:
     @pytest.mark.jax
     @pytest.mark.parametrize("shots", (None, 500))
     @pytest.mark.parametrize("obs", ([0, 1], qml.PauliZ(0) @ qml.PauliZ(1)))
-    @pytest.mark.parametrize("params", ([np.pi / 2], [np.pi / 2, np.pi / 2, np.pi / 2]))
+    @pytest.mark.parametrize("params", (np.pi / 2, [np.pi / 2, np.pi / 2, np.pi / 2]))
     def test_integration_jax(self, tol_stochastic, shots, obs, params, seed):
         """Test the probability is correct for a known state preparation when jitted with JAX."""
         jax = pytest.importorskip("jax")
@@ -359,7 +359,9 @@ class TestProbs:
         # expected probability, using [00, 01, 10, 11]
         # ordering, is [0.5, 0.5, 0, 0]
 
-        assert "pure_callback" not in str(jax.make_jaxpr(circuit)(params))
+        # TODO: [sc-82874]
+        # revert once we are able to jit end to end without extreme compilation overheads
+        assert "pure_callback" in str(jax.make_jaxpr(circuit)(params))
 
         res = jax.jit(circuit)(params)
         expected = np.array([0.5, 0.5, 0, 0])
