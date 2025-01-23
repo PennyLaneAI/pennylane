@@ -45,12 +45,12 @@ class SimpleCustomOp(Operation):
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
         return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, wires=tuple(self.wires), **self.hyperparameters
+            *self.parameters, *self.wires, **self.hyperparameters
         )
 
     @staticmethod
     def _compute_plxpr_decomposition(wires):
-        qml.RX(0.5, wires=0)
+        qml.Hadamard(wires=wires)
 
 
 class CustomOpCond(Operation):
@@ -65,17 +65,17 @@ class CustomOpCond(Operation):
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
         return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, wires=tuple(self.wires), **self.hyperparameters
+            *self.parameters, *self.wires, **self.hyperparameters
         )
 
     @staticmethod
     def _compute_plxpr_decomposition(phi, wires):
 
         def true_fn(phi):
-            qml.RX(phi, wires=0)
+            qml.RX(phi, wires=wires)
 
         def false_fn(phi):
-            qml.RY(phi, wires=0)
+            qml.RY(phi, wires=wires)
 
         qml.cond(phi > 0.5, true_fn, false_fn)(phi)
 
@@ -92,7 +92,7 @@ class CustomOpForLoop(Operation):
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
         return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, wires=tuple(self.wires), **self.hyperparameters
+            *self.parameters, *self.wires, **self.hyperparameters
         )
 
     @staticmethod
@@ -100,7 +100,7 @@ class CustomOpForLoop(Operation):
 
         @qml.for_loop(0, 3, 1)
         def loop_rx(i, phi):
-            qml.RX(phi, wires=0)
+            qml.RX(phi, wires=wires)
             return jax.numpy.sin(phi)
 
         # pylint: disable=unused-variable
@@ -121,7 +121,7 @@ class CustomOpWhileLoop(Operation):
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
         return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, wires=tuple(self.wires), **self.hyperparameters
+            *self.parameters, *self.wires, **self.hyperparameters
         )
 
     @staticmethod
@@ -129,7 +129,7 @@ class CustomOpWhileLoop(Operation):
 
         @qml.while_loop(lambda i: i < 3)
         def loop_rx(phi):
-            qml.RX(phi, wires=0)
+            qml.RX(phi, wires=wires)
             return jax.numpy.sin(phi)
 
         loop_rx(phi)
@@ -151,7 +151,7 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)(0.5)
         assert jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert jaxpr.eqns[1].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
 
     ############################
     ### QNode
@@ -172,7 +172,7 @@ class TestDynamicDecomposeInterpreter:
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 

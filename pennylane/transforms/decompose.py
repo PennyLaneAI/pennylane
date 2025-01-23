@@ -278,7 +278,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
             if hasattr(op, "_compute_plxpr_decomposition"):
 
                 jaxpr_decomp = op._plxpr_decomposition()
-                args = (*op.parameters, tuple(op.wires), *op.hyperparameters)
+                args = (*op.parameters, *op.wires, *op.hyperparameters)
                 return self.eval_dynamic_decomposition(
                     jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args
                 )
