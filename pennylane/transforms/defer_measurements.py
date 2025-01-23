@@ -13,7 +13,8 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 
-from functools import lru_cache, partial, reduce
+from functools import lru_cache, partial
+from typing import Optional
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
@@ -126,7 +127,6 @@ def _get_plxpr_defer_measurements():
         def __init__(self, num_wires):
             super().__init__()
             self._num_wires = num_wires
-            self._measurements_map = {}
 
             # State variables
             self._cur_wire = None
@@ -149,9 +149,40 @@ def _get_plxpr_defer_measurements():
             this method can be used to deallocate qubits and registers when converting to
             a Catalyst variant jaxpr.
             """
-            self._measurements_map = {}
             self._cur_wire = None
             self._cur_measurement_idx = None
+
+        def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
+            """Interpret an equation corresponding to a measurement process.
+
+            Args:
+                eqn (jax.core.JaxprEqn)
+
+            See also :meth:`~.interpret_measurement`.
+
+            """
+            invals = (self.read(invar) for invar in eqn.invars)
+            with QueuingManager.stop_recording():
+                mp = eqn.primitive.impl(*invals, **eqn.params)
+            return self.interpret_measurement(mp)
+
+        def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
+            """Interpret a measurement process instance.
+
+            Args:
+                measurement (MeasurementProcess): a measurement instance.
+
+            See also :meth:`~.interpret_measurement_eqn`.
+
+            """
+            if measurement.mv is not None:
+                kwargs = {"wires": measurement.wires, "eigvals": measurement.eigvals()}
+                if isinstance(measurement, CountsMP):
+                    kwargs["all_outcomes"] = measurement.all_outcomes
+
+                measurement = type(measurement)(**kwargs)
+
+            return super().interpret_measurement(measurement)
 
         def resolve_mcm_values(self, eqn, invals) -> MeasurementValue:
             """Create a ``MeasurementValue`` that captures all classical processing in its
@@ -238,20 +269,16 @@ def _get_plxpr_defer_measurements():
             )
 
         cnot_wires = (wires, self._cur_wire)
-        self._measurements_map[self._cur_measurement_idx] = self._cur_wire
-
         if postselect is not None:
             qml.Projector(jax.numpy.array([postselect]), wires=wires)
 
         qml.CNOT(wires=cnot_wires)
-
         if reset:
             if postselect is None:
                 qml.CNOT(wires=cnot_wires[::-1])
             elif postselect == 1:
                 qml.X(wires=wires)
 
-        # cur_idx = self._cur_measurement_idx
         self._cur_measurement_idx += 1
         self._cur_wire -= 1
         return MeasurementValue([meas], lambda x: x)
@@ -260,8 +287,15 @@ def _get_plxpr_defer_measurements():
     def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
-        if any(isinstance(c, MeasurementValue) for c in conditions):
-            conditions = get_mcm_predicates(conditions[:-1])
+        if not any(isinstance(c, MeasurementValue) for c in conditions):
+            return super()._primitive_registrations[cond_prim](
+                *invals,
+                jaxpr_branches=jaxpr_branches,
+                consts_slices=consts_slices,
+                args_slice=args_slice,
+            )
+
+        conditions = get_mcm_predicates(conditions[:-1])
         args = invals[args_slice]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
@@ -312,7 +346,10 @@ def _get_plxpr_defer_measurements():
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
 
-        interpreter = DeferMeasurementsInterpreter()
+        if (num_wires := tkwargs.pop("num_wires", None)) is None:
+            raise ValueError("'num_wires' argument not provided >:(")
+
+        interpreter = DeferMeasurementsInterpreter(num_wires=num_wires)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
@@ -327,7 +364,10 @@ DeferMeasurementsInterpreter, defer_measurements_plxpr_to_plxpr = _get_plxpr_def
 
 @partial(transform, plxpr_transform=defer_measurements_plxpr_to_plxpr)
 def defer_measurements(
-    tape: QuantumScript, reduce_postselected: bool = True, allow_postselect: bool = True
+    tape: QuantumScript,
+    reduce_postselected: bool = True,
+    allow_postselect: bool = True,
+    num_wires: Optional[int] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
