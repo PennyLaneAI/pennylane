@@ -54,6 +54,10 @@ class ResourceQFT(qml.QFT, ResourceOperator):
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, params)
 
+    @staticmethod
+    def tracking_name(num_wires) -> str:
+        return f"QFT({num_wires})"
+
 
 class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperator):
     """Resource class for QPE"""
@@ -80,6 +84,12 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
         op = self.hyperparameters["unitary"]
         num_estimation_wires = len(self.hyperparameters["estimation_wires"])
 
+        if not isinstance(op, re.ResourceOperator):
+            raise TypeError(
+                f"Can't obtain QPE resources when the base unitary {op} is an instance"
+                " of ResourceOperator"
+            )
+
         return {
             "base_class": type(op),
             "base_params": op.resource_params(),
@@ -103,7 +113,7 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
     @staticmethod
     def tracking_name(base_class, base_params, num_estimation_wires) -> str:
         base_name = base_class.tracking_name(**base_params)
-        return f"QuantumPhaseEstimation({base_name}, {num_estimation_wires})"
+        return f"QPE({base_name}, {num_estimation_wires})"
 
 
 ResourceQPE = ResourceQuantumPhaseEstimation  # Alias for ease of typing
