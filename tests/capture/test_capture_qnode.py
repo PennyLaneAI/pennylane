@@ -185,7 +185,16 @@ def test_providing_keyword_argument():
             qml.X(0)
         return qml.probs()
 
-    res = circuit(n_iterations=3)
+    jaxpr = jax.make_jaxpr(partial(circuit, n_iterations=3))()
+
+    assert jaxpr.eqns[0].primitive == qnode_prim
+
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+    for i in range(3):
+        assert qfunc_jaxpr.eqns[i].primitive == qml.PauliX._primitive
+    assert len(qfunc_jaxpr.eqns) == 4
+
+    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
     assert qml.math.allclose(res, jax.numpy.array([0, 1]))
 
     res2 = circuit(n_iterations=4)
