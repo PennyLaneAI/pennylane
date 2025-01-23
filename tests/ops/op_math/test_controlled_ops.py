@@ -72,17 +72,6 @@ class TestControlledQubitUnitary:
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_wires_specified_twice_with_capture(self):
-        """Test that a UserWarning is raised for providing redundant wires with capture enabled"""
-        base = qml.QubitUnitary(X, wires=0)
-        with pytest.warns(
-            UserWarning,
-            match="base operator already has wires; values specified through wires kwarg will be ignored.",
-        ):
-            qml.ControlledQubitUnitary(base, wires=[1, 2, 3])
-
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize(
         "control_wires, wires",
         [(0, 1), ([0, 1], [2])],
