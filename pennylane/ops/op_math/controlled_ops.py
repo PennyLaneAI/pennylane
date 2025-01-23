@@ -183,7 +183,7 @@ class ControlledQubitUnitary(ControlledOp):
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
         work_wires = Wires(() if work_wires is None else work_wires)
         control_wires = wires[:-1]  # default
-            
+
         if isinstance(base, qml.QubitUnitary):
             # warnings.warn(
             #     "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
