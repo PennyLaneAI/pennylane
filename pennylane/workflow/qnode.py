@@ -288,6 +288,9 @@ class QNode:
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
+        autograph (bool): Experimental key word argument that enables Pennylane program capture to work with circuits that have
+            native Python control flow embedded in them. For more information, refer to :doc:`Autograph </development/autograph>`.
+            Default is ``True``.
 
     **Example**
 
@@ -497,7 +500,6 @@ class QNode:
         interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         *,
-        autograph: bool = True,
         grad_on_execution: Literal[True, False, "best"] = "best",
         cache: Union[Cache, Literal["auto", True, False]] = "auto",
         cachesize: int = 10000,
@@ -506,6 +508,7 @@ class QNode:
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         gradient_kwargs: Optional[dict] = None,
+        autograph: bool = True,
         **kwargs,
     ):
         self._init_args = locals()
