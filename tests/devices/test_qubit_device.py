@@ -387,7 +387,6 @@ class TestExtractStatistics:
         dev = mock_qubit_device_extract_stats()
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.statistics(qscript)
-            results = dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", ["not None"])
     def test_error_return_type_none(self, mock_qubit_device_extract_stats, returntype):
