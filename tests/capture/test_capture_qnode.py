@@ -1075,14 +1075,14 @@ class TestQNodeAutographIntegration:
             return qml.state()
 
         if autograph:
-            expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
-            assert qml.math.allclose(circuit(2), expected_state)
+            expected_state = [1 / qml.math.sqrt(8)] * (2**3)
+            assert qml.math.allclose(circuit(3), expected_state)
         else:
             with pytest.raises(
                 CaptureError,
                 match=r"Autograph must be used when Python control flow is dependent on a dynamic variable \(a function input\)",
             ):
-                circuit(2)
+                circuit(3)
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_while_loop_autograph(self, autograph):
@@ -1098,14 +1098,14 @@ class TestQNodeAutographIntegration:
             return qml.state()
 
         if autograph:
-            expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
-            assert qml.math.allclose(circuit(2), expected_state)
+            expected_state = [1 / qml.math.sqrt(8)] * (2**3)
+            assert qml.math.allclose(circuit(3), expected_state)
         else:
             with pytest.raises(
                 CaptureError,
                 match=r"Autograph must be used when Python control flow is dependent on a dynamic variable \(a function input\)",
             ):
-                circuit(2)
+                circuit(3)
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_conditional_autograph(self, autograph):
