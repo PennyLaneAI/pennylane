@@ -339,18 +339,17 @@ class TestExtractStatistics:
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
-        """Tests that the statistics method returns an empty list if the return type is None"""
+        """Tests that the statistics method raises Unsupported QuantumFunctionError if the return type is None"""
 
         class UnsupportedMeasurement(MeasurementProcess):
             _shortname = returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
-        with monkeypatch.context() as m:
-            dev = mock_qutrit_device_extract_stats()
-            results = dev.statistics(qscript)
-
-        assert results == []
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+            with monkeypatch.context() as m:
+                dev = mock_qutrit_device_extract_stats()
+                results = dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", ["not None"])
     def test_error_return_type_not_none(
