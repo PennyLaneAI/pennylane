@@ -60,11 +60,11 @@ def _convert_to_interface(result, interface: Interface):
 def _make_execution_config(
     circuit: Optional["QNode"], diff_method=None, mcm_config=None
 ) -> "qml.devices.ExecutionConfig":
-    circuit_interface = getattr(circuit, "interface", Interface.NUMPY)
+    circuit_interface = getattr(circuit, "interface", "numpy")
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
     grad_on_execution = execute_kwargs.get("grad_on_execution")
-    if circuit_interface == Interface.JAX:
+    if circuit_interface == "jax":
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
