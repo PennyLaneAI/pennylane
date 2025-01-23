@@ -256,13 +256,12 @@ def _backward_pass(jaxpr, bras, ket, env):
     return out_jvps
 
 
-def execute_and_jvp(jaxpr, consts, args, tangents, num_wires):
+def execute_and_jvp(jaxpr, args, tangents, num_wires):
     """Execute and calculate the jvp for a jaxpr."""
-    env = {}
-    for var, arg, tangent in zip(jaxpr.invars, args, tangents, strict=True):
-        env[var] = (arg, tangent)
-    for const, constvar in zip(consts, jaxpr.constvars, strict=True):
-        env[constvar] = (const, ad.Zero(constvar.aval))
+    env = {
+        var: (arg, tangent)
+        for var, arg, tangent in zip(jaxpr.constvars + jaxpr.invars, args, tangents, strict=True)
+    }
 
     results, bras, ket = _forward_pass(jaxpr, env, num_wires)
     return results, _backward_pass(jaxpr, bras, ket, env)
