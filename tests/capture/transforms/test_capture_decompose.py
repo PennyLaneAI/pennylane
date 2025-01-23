@@ -28,10 +28,8 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.operation import Operation
 from pennylane.transforms.decompose import (
     DecomposeInterpreter,
-    DynamicDecomposeInterpreter,
     decompose_plxpr_to_plxpr,
 )
 
@@ -504,72 +502,3 @@ def test_decompose_plxpr_to_plxpr():
     assert transformed_jaxpr.eqns[2].primitive == qml.RZ._primitive
     assert transformed_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
     assert transformed_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
-
-
-class SimpleCustomOp(Operation):
-    num_wires = 1
-    num_params = 0
-
-    def _init__(self, wires, id=None):
-        super().__init__(wires=wires, id=id)
-
-    @staticmethod
-    def _compute_plxpr_decomposition(wires):
-        qml.RX(0.5, wires=wires)
-
-
-class CustomOpCond(Operation):
-    num_wires = 1
-    num_params = 1
-
-    def __init__(self, phi, wires, id=None):
-        super().__init__(phi, wires=wires, id=id)
-
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, wires=tuple(self.wires), **self.hyperparameters
-        )
-
-    @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
-
-        def true_fn(phi):
-            qml.RX(phi, wires=0)
-
-        def false_fn(phi):
-            qml.RY(phi, wires=0)
-
-        qml.cond(phi > 0.5, true_fn, false_fn)(phi)
-
-
-class TestDynamicDecomposeInterpreter:
-
-    def test_function_simple(self):
-        """ """
-
-        @DynamicDecomposeInterpreter()
-        def f(x):
-            qml.RY(x, wires=0)
-            SimpleCustomOp(wires=0)
-            return qml.expval(qml.Z(0))
-
-        jaxpr = jax.make_jaxpr(f)(0.5)
-        assert jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert jaxpr.eqns[1].primitive == qml.RX._primitive
-
-    def test_qnode_simple(self):
-        """ """
-
-        @DynamicDecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=2))
-        def circuit(x):
-            qml.RY(x, wires=0)
-            SimpleCustomOp(wires=0)
-            return qml.expval(qml.Z(0))
-
-        jaxpr = jax.make_jaxpr(circuit)(0.5)
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive
