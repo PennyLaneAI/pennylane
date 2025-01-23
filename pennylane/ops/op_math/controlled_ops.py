@@ -182,7 +182,7 @@ class ControlledQubitUnitary(ControlledOp):
                 "Instead, please use a full matrix as input.",
                 qml.PennyLaneDeprecationWarning,
             )
-            base = base.matrix
+            base = base.matrix()
 
         if isinstance(base, Iterable):
             num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
