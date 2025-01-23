@@ -138,19 +138,23 @@ def test_group_commutator_decompose(op):
 
 
 @pytest.mark.parametrize(
-    ("op"),
+    ("op", "max_depth"),
     [
-        qml.RX(math.pi / 42, wires=[1]),
-        qml.RY(math.pi / 7, wires=["a"]),
-        qml.prod(*[qml.RX(1.0, "a"), qml.T("a")]),
-        qml.prod(*[qml.T(0), qml.Hadamard(0)] * 5),
+        (qml.RX(math.pi / 42, wires=[1]), 5),
+        (qml.RY(math.pi / 7, wires=["a"]), 5),
+        (qml.prod(*[qml.RX(1.0, "a"), qml.T("a")]), 5),
+        (qml.prod(*[qml.T(0), qml.Hadamard(0)] * 5), 5),
+        (qml.RZ(-math.pi / 2, wires=[1]), 1),
+        (qml.adjoint(qml.S(wires=["a"])), 1),
+        (qml.PhaseShift(5 * math.pi / 2, wires=[0]), 1),
+        (qml.PhaseShift(-3 * math.pi / 4, wires=["b"]), 1),
     ],
 )
-def test_solovay_kitaev(op):
-    """Test Solovay-Kitaev decomposition method"""
+def test_solovay_kitaev(op, max_depth):
+    """Test Solovay-Kitaev decomposition method with specified max-depth"""
 
     with qml.queuing.AnnotatedQueue() as q:
-        gates = sk_decomposition(op, epsilon=1e-4, max_depth=5, basis_set=("T", "T*", "H"))
+        gates = sk_decomposition(op, epsilon=1e-4, max_depth=max_depth, basis_set=("T", "T*", "H"))
     assert q.queue == gates
 
     matrix_sk = qml.matrix(qml.tape.QuantumScript(gates))
