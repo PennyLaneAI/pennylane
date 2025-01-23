@@ -1008,8 +1008,8 @@ class DefaultMixedNewAPI(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
-        if not execution_config.gradient_method in {"best", "backprop", None}:
-            execution_config.interface = None
+        if execution_config.gradient_method not in {"best", "backprop", None}:
+            updated_values["interface"] = None
 
         # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
