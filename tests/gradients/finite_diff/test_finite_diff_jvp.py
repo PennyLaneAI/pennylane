@@ -67,6 +67,18 @@ def test_builtins():
     assert qml.math.allclose(dres, (3.0, 0.5 * 2 + 0.5 * 1.0))
 
 
+def test_effect_of_h():
+    """Test that setting h does change the value used when computing the derivative."""
+
+    def f(x):
+        return (x**3,)
+
+    _, dres = qml.gradients.finite_diff_jvp(f, (2.0,), (1.0,), h=1e-1)
+
+    expected_dres = (f(2.1)[0] - f(2.0)[0]) / 0.1  # 12.61, quite a bit off from 12
+    assert qml.math.allclose(dres[0], expected_dres)
+
+
 @pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "tensorflow", "autograd"))
 def test_scalar_in_scalar_out(interface):
     """Test using finite_diff_jvp with scalars in and scalars out."""
