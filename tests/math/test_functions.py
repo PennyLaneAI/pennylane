@@ -1024,6 +1024,13 @@ def test_get_interface(t, interface):
     assert res == interface
 
 
+def test_interface_enum_error():
+    """Test that an error is raised if comparing to string"""
+    with pytest.raises(TypeError, match="Cannot compare Interface with str"):
+        # pylint: disable=pointless-statement
+        "numpy" == fn.Interface.NUMPY
+
+
 @pytest.mark.parametrize("t", test_data)
 def test_toarray(t):
     """Test that the toarray method correctly converts the input
