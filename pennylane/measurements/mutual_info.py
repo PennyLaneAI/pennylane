@@ -102,6 +102,9 @@ class MutualInfoMP(StateMeasurement):
 
     """
 
+    def __str__(self):
+        return "mutualinfo"
+
     _shortname = MutualInfo  #! Note: deprecated. Change the value to "mutualinfo" in v0.42
 
     def _flatten(self):

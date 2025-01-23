@@ -89,6 +89,9 @@ class VnEntropyMP(StateMeasurement):
         log_base (float): Base for the logarithm.
     """
 
+    def __str__(self):
+        return "vnentropy"
+
     _shortname = VnEntropy  #! Note: deprecated. Change the value to "vnentropy" in v0.42
 
     def _flatten(self):
