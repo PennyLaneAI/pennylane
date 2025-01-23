@@ -23,10 +23,16 @@ from pennylane.pauli import PauliSentence
 def trace_inner_product(
     A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
 ):
-    r"""Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A B\right)/\text{dim}(A)` between two Hermitian operators :math:`A` and :math:`B`.
+    r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)` between two operators :math:`A` and :math:`B`.
 
     If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
     inputs.
+
+    .. warn:: Operator inputs are assumed to be Hermitian. In particular,
+        sums of Pauli operators are assumed to have real-valued coefficients.
+        We recommend to use matrix representations for non-Hermitian inputs.
+        In case of non-Hermitian :class:`~PauliSentence` or :class:`Operator` inputs,
+        the Hermitian conjugation needs to be done manually by inputting :math:`A = A^\dagger`.
 
     Args:
         A (Union[PauliSentence, Operator, np.ndarray]): First operator
@@ -58,6 +64,7 @@ def trace_inner_product(
 
     """
     if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
+        # No dagger needed as paulis are Hermitian
         return (A.pauli_rep @ B.pauli_rep).trace()
 
     if isinstance(A, Iterable) and isinstance(B, Iterable):
@@ -72,7 +79,7 @@ def trace_inner_product(
             assert A.shape[-2:] == B.shape[-2:]
             # The axes of the first input are switched, compared to tr[A@B], because we need to
             # transpose A.
-            return np.tensordot(A, B, axes=[[-1, -2], [-2, -1]]) / A.shape[-1]
+            return np.tensordot(A.conj(), B, axes=[[-2, -1], [-2, -1]]) / A.shape[-1]
 
     raise NotImplementedError(
         "Inputs to pennylane.pauli.trace_inner_product need to be iterables of matrices or operators with a pauli_rep"
