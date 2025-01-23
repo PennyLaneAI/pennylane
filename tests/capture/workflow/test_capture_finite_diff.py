@@ -26,40 +26,16 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 
-class TestValidation:
+def test_warning_float32():
+    """Test that a warning is raised if trainable inputs are float32."""
 
-    def test_approx_order_unsupported_error(self):
-        """Test that a NotImplementedError is raised for higher approx_order."""
+    @qml.qnode(qml.device("default.qubit", wires=1), diff_method="finite-diff")
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
 
-        @qml.qnode(qml.device("default.qubit", wires=2), diff_method="finite-diff", approx_order=2)
-        def f(_):
-            return qml.expval(qml.Z(0))
-
-        with pytest.raises(NotImplementedError, match="only approx_order=1"):
-            jax.grad(f)(0.5)
-
-    def test_strategy_unsupported_error(self):
-        """Test that a NotImplementedError is raised for different strategies."""
-
-        @qml.qnode(
-            qml.device("default.qubit", wires=2), diff_method="finite-diff", strategy="backward"
-        )
-        def f(_):
-            return qml.expval(qml.Z(0))
-
-        with pytest.raises(NotImplementedError, match="only strategy='forward'"):
-            jax.grad(f)(0.5)
-
-    def test_warning_float32(self):
-        """Test that a warning is raised if trainable inputs are float32."""
-
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method="finite-diff")
-        def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
-
-        with pytest.warns(UserWarning, match="Detected float32 parameter with finite differences."):
-            jax.grad(circuit)(jnp.array(0.5, dtype=jnp.float32))
+    with pytest.warns(UserWarning, match="Detected float32 parameter with finite differences."):
+        jax.grad(circuit)(jnp.array(0.5, dtype=jnp.float32))
 
 
 class TestGradients:
@@ -205,7 +181,11 @@ class TestGradients:
     def test_jaxpr_contents(self, argnums):
         """Make some tests on the captured jaxpr to assert we are doing the correct thing."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method="finite-diff", h=1e-4)
+        @qml.qnode(
+            qml.device("default.qubit", wires=1),
+            diff_method="finite-diff",
+            gradient_kwargs={"h": 1e-4},
+        )
         def circuit(x, y):
             qml.RX(x, 0)
             qml.RY(y, 0)

@@ -210,16 +210,13 @@ def finite_diff_jvp(
     [np.float64(3.399999999986747), np.float64(1.000001000006634)]
 
     """
-    if approx_order != 1:
-        raise NotImplementedError("only approx_order=1 is currently supported.")
-    if strategy != "forward":
-        raise NotImplementedError("only strategy='forward' is currently supported.")
+    coeffs, shifts = finite_diff_coeffs(n=1, approx_order=approx_order, strategy=strategy)
 
-    res1 = f(*args)
-    if not isinstance(res1, (list, tuple)):
+    initial_res = f(*args)
+    if not isinstance(initial_res, (list, tuple)):
         raise ValueError("Input function f must return either a list or tuple.")
 
-    jvps = [0 for _ in res1]
+    jvps = [0 for _ in initial_res]
     for i, t in enumerate(tangents):
         # Zero = jax.interpreters.ad.Zero
         if type(t).__name__ == "Zero" or not qml.math.is_abstract(t) and qml.math.allclose(t, 0):
@@ -233,16 +230,20 @@ def finite_diff_jvp(
             )
 
         for index in np.ndindex(qml.math.shape(shifted_args[i])):
-
-            shifted_args[i] = qml.math.scatter_element_add(args[i], index, h)
             t = np.array(t) if isinstance(t, (int, float)) else t
-            ti = t[index]
+            ti_over_h = t[index] / h
 
-            res2 = f(*shifted_args)
-            for result_idx, (r1, r2) in enumerate(zip(res1, res2)):
-                jvps[result_idx] += ti * (r2 - r1) / h
+            for coeff, shift in zip(coeffs, shifts):
+                if shift == 0:
+                    res = initial_res
+                else:
+                    shifted_args[i] = qml.math.scatter_element_add(args[i], index, h * shift)
+                    res = f(*shifted_args)
 
-    return res1, jvps
+                for result_idx, r in enumerate(res):
+                    jvps[result_idx] += ti_over_h * coeff * r
+
+    return initial_res, jvps
 
 
 def _processing_fn(results, shots, single_shot_batch_fn):

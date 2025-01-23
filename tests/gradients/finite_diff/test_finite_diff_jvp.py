@@ -24,21 +24,6 @@ pytestmark = pytest.mark.all_interfaces
 
 class TestValidation:
 
-    def test_approx_order_validation(self):
-        """Test that a NotImplementedError is thrown for higher order approx_order."""
-
-        def f(x):
-            return x**2
-
-        with pytest.raises(NotImplementedError, match="only approx_order=1 is currently"):
-            qml.gradients.finite_diff_jvp(f, (0.5,), (1.0,), approx_order=2)
-
-    def test_strategy_validation(self):
-        """Test that a NotImplementedError is thrown for strategies other than forward."""
-
-        with pytest.raises(NotImplementedError, match="only strategy='forward'"):
-            qml.gradients.finite_diff_jvp(lambda x: (x**2,), (0.5,), (1.0,), strategy="backward")
-
     @pytest.mark.parametrize("interface", ("numpy", "torch", "jax", "tensorflow", "autograd"))
     def test_float32_warning(self, interface):
         """Test that a warning is raised with float32 parameters."""
