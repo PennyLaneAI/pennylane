@@ -50,20 +50,6 @@ class TestValidation:
         with pytest.raises(NotImplementedError, match="only strategy='forward'"):
             jax.grad(f)(0.5)
 
-    def test_unsupported_kwarg(self):
-        """Test that an error is raised for unsupported gradient kwargs."""
-
-        @qml.qnode(
-            qml.device("default.qubit", wires=2), diff_method="finite-diff", something="value"
-        )
-        def f(_):
-            return qml.expval(qml.Z(0))
-
-        with pytest.raises(
-            ValueError, match="The only available gradient kwargs for finite diff are"
-        ):
-            jax.grad(f)(0.5)
-
     def test_warning_float32(self):
         """Test that a warning is raised if trainable inputs are float32."""
 

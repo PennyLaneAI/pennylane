@@ -110,6 +110,7 @@ from copy import copy
 from dataclasses import asdict
 from functools import partial
 from numbers import Number
+from typing import Callable
 from warnings import warn
 
 import jax
@@ -291,20 +292,25 @@ def _backprop(args, tangents, **impl_kwargs):
 
 
 def _finite_diff(args, tangents, **impl_kwargs):
+    f = partial(qnode_prim.bind, **impl_kwargs)
+    return _generic_finite_diff(f, args, tangents, **impl_kwargs["qnode_kwargs"]["gradient_kwargs"])
 
-    gradient_kwargs = impl_kwargs["qnode_kwargs"]["gradient_kwargs"]
-    h = gradient_kwargs.get("h", 1e-6)
-    if gradient_kwargs.get("approx_order", 1) != 1:
+
+def _generic_finite_diff(
+    f: Callable,
+    args: tuple,
+    tangents: tuple,
+    *,
+    h: float = 1e-6,
+    approx_order=1,
+    strategy="forward",
+):
+    if approx_order != 1:
         raise NotImplementedError("only approx_order=1 is currently supported.")
-    if gradient_kwargs.get("strategy", "forward") != "forward":
+    if strategy != "forward":
         raise NotImplementedError("only strategy='forward' is currently supported.")
-    available_kwargs = {"h", "strategy", "approx_order"}
-    if any(kwarg not in available_kwargs for kwarg in gradient_kwargs):
-        raise ValueError(
-            f"The only available gradient kwargs for finite diff are {available_kwargs}. Got {gradient_kwargs}."
-        )
 
-    res1 = qnode_prim.bind(*args, **impl_kwargs)
+    res1 = f(*args)
 
     jvps = [0 for _ in res1]
     for i, t in enumerate(tangents):
@@ -325,7 +331,7 @@ def _finite_diff(args, tangents, **impl_kwargs):
         for element_idx, element in enumerate(flat_arg):
             arg = flat_arg.at[element_idx].set(element + h)
             shifted_args[i] = jax.numpy.reshape(arg, shape)
-            res2 = qnode_prim.bind(*shifted_args, **impl_kwargs)
+            res2 = f(*shifted_args)
 
             for result_idx, (r1, r2) in enumerate(zip(res1, res2)):
                 jvps[result_idx] += flat_t[element_idx] * (r2 - r1) / h
