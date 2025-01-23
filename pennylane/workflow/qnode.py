@@ -285,7 +285,7 @@ class QNode:
             as the name suggests. If not provided,
             the device will determine the best choice automatically. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        gradient_kwargs (dict): Any additional keyword arguments provided are passed to the differentiation
+        gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
 
