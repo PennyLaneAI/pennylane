@@ -37,10 +37,10 @@ class SimpleCustomOp(Operation):
     """Simple custom operation that contains a single gate in its decomposition"""
 
     num_wires = 1
-    num_params = 0
+    num_params = 1
 
-    def _init__(self, wires, id=None):
-        super().__init__(wires=wires, id=id)
+    def _init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
@@ -49,8 +49,8 @@ class SimpleCustomOp(Operation):
         )
 
     @staticmethod
-    def _compute_plxpr_decomposition(wires):
-        qml.Hadamard(wires=wires)
+    def _compute_plxpr_decomposition(phi, wires):
+        qml.RX(phi, wires=wires)
 
 
 class CustomOpCond(Operation):
@@ -71,13 +71,13 @@ class CustomOpCond(Operation):
     @staticmethod
     def _compute_plxpr_decomposition(phi, wires):
 
-        def true_fn(phi):
+        def true_fn(phi, wires):
             qml.RX(phi, wires=wires)
 
-        def false_fn(phi):
+        def false_fn(phi, wires):
             qml.RY(phi, wires=wires)
 
-        qml.cond(phi > 0.5, true_fn, false_fn)(phi)
+        qml.cond(phi > 0.5, true_fn, false_fn)(phi, wires)
 
 
 class CustomOpForLoop(Operation):
@@ -128,11 +128,11 @@ class CustomOpWhileLoop(Operation):
     def _compute_plxpr_decomposition(phi, wires):
 
         @qml.while_loop(lambda i: i < 3)
-        def loop_rx(phi):
+        def loop_fn(i):
             qml.RX(phi, wires=wires)
-            return jax.numpy.sin(phi)
+            return i + 1
 
-        loop_rx(phi)
+        _ = loop_fn(0)
 
         return qml.expval(qml.Z(0))
 
@@ -146,46 +146,59 @@ class TestDynamicDecomposeInterpreter:
         @DynamicDecomposeInterpreter()
         def f(x):
             qml.RY(x, wires=0)
-            SimpleCustomOp(wires=0)
+            SimpleCustomOp(x, wires=0)
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(0.5)
         assert jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[1].primitive == qml.RX._primitive
 
     ############################
     ### QNode
     ############################
 
-    def test_qnode_simple(self):
+    @pytest.mark.parametrize("x", [0.2, 0.8])
+    def test_qnode_simple(self, x):
         """Test that a QNode with a custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2))
         def circuit(x):
             qml.RY(x, wires=0)
-            SimpleCustomOp(wires=0)
+            SimpleCustomOp(x, wires=0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(circuit)(0.5)
+        jaxpr = jax.make_jaxpr(circuit)(x)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    def test_qnode_cond(self):
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit_comparison(x):
+            qml.RY(x, wires=0)
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Z(0))
+
+        assert jax.numpy.allclose(*result, circuit_comparison(x))
+
+    @pytest.mark.parametrize("wire", [0, 1])
+    @pytest.mark.parametrize("x", [0.2, 0.8])
+    def test_qnode_cond(self, x, wire):
         """Test that a QNode with a conditional custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2))
-        def f(x):
-            CustomOpCond(x, wires=0)
+        def circuit(x, wire):
+            CustomOpCond(x, wires=wire)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = jax.make_jaxpr(circuit)(x, wire)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -199,16 +212,34 @@ class TestDynamicDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    def test_qnode_for_loop(self):
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
+
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit_comparison(x, wire):
+            def true_fn(x, wire):
+                qml.RX(x, wires=wire)
+
+            def false_fn(x, wire):
+                qml.RY(x, wires=wire)
+
+            qml.cond(x > 0.5, true_fn, false_fn)(x, wire)
+
+            return qml.expval(qml.Z(0))
+
+        assert jax.numpy.allclose(*result, circuit_comparison(x, wire))
+
+    @pytest.mark.parametrize("wire", [0, 1])
+    @pytest.mark.parametrize("x", [0.2, 0.8])
+    def test_qnode_for_loop(self, x, wire):
         """Test that a QNode with a for loop custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2))
-        def f(x):
-            CustomOpForLoop(x, wires=0)
+        def circuit(x, wire):
+            CustomOpForLoop(x, wires=wire)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = jax.make_jaxpr(circuit)(x, wire)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -217,16 +248,34 @@ class TestDynamicDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    def test_qnode_while_loop(self):
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
+
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit_comparison(x, wire):
+            @qml.for_loop(0, 3, 1)
+            def loop_rx(i, phi):
+                qml.RX(phi, wires=wire)
+                return jax.numpy.sin(phi)
+
+            # pylint: disable=unused-variable
+            loop_rx(x)
+
+            return qml.expval(qml.Z(0))
+
+        assert jax.numpy.allclose(*result, circuit_comparison(x, wire))
+
+    @pytest.mark.parametrize("wire", [0, 1])
+    @pytest.mark.parametrize("x", [0.2, 0.8])
+    def test_qnode_while_loop(self, x, wire):
         """Test that a QNode with a while loop custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2))
-        def f(x):
-            CustomOpWhileLoop(x, wires=0)
+        def circuit(x, wire):
+            CustomOpWhileLoop(x, wires=wire)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = jax.make_jaxpr(circuit)(x, wire)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -234,3 +283,18 @@ class TestDynamicDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[0].params["jaxpr_body_fn"].eqns[0].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
+
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit_comparison(x, wire):
+            @qml.while_loop(lambda i: i < 3)
+            def loop_fn(i):
+                qml.RX(x, wires=wire)
+                return i + 1
+
+            _ = loop_fn(0)
+
+            return qml.expval(qml.Z(0))
+
+        assert jax.numpy.allclose(*result, circuit_comparison(x, wire))
