@@ -678,3 +678,67 @@ class TestLieClosureDense:
         ops = [np.array([[0.0, 1.0], [0.0, 0.0]])]
         with pytest.raises(ValueError, match="At least one basis matrix"):
             _ = qml.lie_closure(ops, matrix=True)
+
+
+X0 = qml.matrix(X(0))
+Y0 = qml.matrix(Y(0))
+Z0 = qml.matrix(Z(0))
+
+
+@pytest.mark.all_interfaces
+class TestLieClosureInterfaces:
+    """Test input for matrix inputs from AD interfaces"""
+
+    @pytest.mark.jax
+    def test_jax_lie_closure_matrix(
+        self,
+    ):
+        """Test lie_closure can handle jax inputs in matrix mode"""
+        import jax.numpy as jnp
+
+        su2 = np.array([X0, Y0, -Z0])
+        gens_list = [jnp.array(X0), jnp.array(Y0)]
+
+        gens = jnp.array([X0, Y0])
+
+        res = qml.lie_closure(gens, matrix=True)
+        assert qml.math.allclose(res, su2)
+
+        res_list = qml.lie_closure(gens_list, matrix=True)
+        assert qml.math.allclose(res_list, su2)
+
+    @pytest.mark.torch
+    def test_torch_lie_closure_matrix(
+        self,
+    ):
+        """Test lie_closure can handle torch inputs in matrix mode"""
+        import torch
+
+        su2 = torch.tensor(np.array([X0, Y0, -Z0]))
+        gens_list = [torch.tensor(X0), torch.tensor(Y0)]
+
+        gens = torch.tensor([X0, Y0])
+
+        res = qml.lie_closure(gens, matrix=True)
+        assert qml.math.allclose(res, su2)
+
+        res_list = qml.lie_closure(gens_list, matrix=True)
+        assert qml.math.allclose(res_list, su2)
+
+    @pytest.mark.tf
+    def test_tf_lie_closure_matrix(
+        self,
+    ):
+        """Test lie_closure can handle tf inputs in matrix mode"""
+        import tensorflow as tf
+
+        su2 = qml.math.stack([X0, Y0, -Z0], like="tf")
+        gens_list = [tf.Tensor(X0), tf.Tensor(Y0)]
+
+        gens = tf.Tensor([X0, Y0])
+
+        res = qml.lie_closure(gens, matrix=True)
+        assert qml.math.allclose(res, su2)
+
+        res_list = qml.lie_closure(gens_list, matrix=True)
+        assert qml.math.allclose(res_list, su2)
