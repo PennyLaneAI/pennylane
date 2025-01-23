@@ -121,6 +121,9 @@ class ControlledQubitUnitary(ControlledOp):
     grad_method = None
     """Gradient computation method."""
 
+    def _flatten(self):
+        return (self.base,), (self.wires, tuple(self.control_values), self.work_wires)
+
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0], metadata[0], control_values=metadata[1], work_wires=metadata[2])
@@ -144,7 +147,12 @@ class ControlledQubitUnitary(ControlledOp):
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
-            # wires = Wires(())
+            # warnings.warn(
+            #     "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+            #     "Instead, please use a full matrix as input.",
+            #     qml.PennyLaneDeprecationWarning,
+            # )
+            base = base.matrix()
 
         return cls._primitive.bind(
             base, wires=wires, control_values=control_values, work_wires=work_wires
@@ -177,11 +185,11 @@ class ControlledQubitUnitary(ControlledOp):
         control_wires = wires[:-1]  # default
             
         if isinstance(base, qml.QubitUnitary):
-            warnings.warn(
-                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Instead, please use a full matrix as input.",
-                qml.PennyLaneDeprecationWarning,
-            )
+            # warnings.warn(
+            #     "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+            #     "Instead, please use a full matrix as input.",
+            #     qml.PennyLaneDeprecationWarning,
+            # )
             base = base.matrix()
 
         if isinstance(base, Iterable):
