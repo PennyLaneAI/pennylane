@@ -72,7 +72,7 @@ class TestTransformProgramGetter:
         @partial(qml.transforms.compile, num_passes=2)
         @partial(qml.transforms.merge_rotations, atol=1e-5)
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=2)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
