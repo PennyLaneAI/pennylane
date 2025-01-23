@@ -52,7 +52,7 @@ X_broadcasted = np.array([X] * 3)
 # pylint: disable=too-many-public-methods
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
-    
+
     def test_deprecation_unitary_base(self):
         """Test that a deprecation warning is raised when using the QubitUnitary base arg"""
         base_op = [[0, 1], [1, 0]]
