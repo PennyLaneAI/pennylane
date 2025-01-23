@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -179,10 +179,12 @@ def finite_diff_jvp(
     r"""Compute the jvp of a generic function using finite differences.
 
     Args:
-        f (Callable): a generic function that returns an iterable of tensors.
+        f (Callable): a generic function that returns an iterable of tensors. Note that this
+            function should not have keyword arguments.
         args (tuple[TensorLike]): The tuple of arguments to ``f``
         tangents (tuple[TensorLike]): the tuple of tangents for the arguments.
 
+    Keyword Args:
         h=1e-6 (float): finite difference method step size
         approx_order=1 (int): The approximation order of the finite-difference method to use.
         strategy="forward" (str): The strategy of the finite difference method. Must be one of
@@ -193,6 +195,9 @@ def finite_diff_jvp(
             reverse: :math:`x_0, x_0-h, x_0-2h, \dots`. Finally, the
             ``"center"`` strategy results in shifts symmetric around the
             unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
+
+    Returns:
+        results, d_results: Returns the results and the cotangents of the results
 
     >>> def f(x, y):
     ...     return 2 * x * y, x**2
@@ -211,6 +216,8 @@ def finite_diff_jvp(
         raise NotImplementedError("only strategy='forward' is currently supported.")
 
     res1 = f(*args)
+    if not isinstance(res1, (list, tuple)):
+        raise ValueError("Input function f must return either a list or tuple.")
 
     jvps = [0 for _ in res1]
     for i, t in enumerate(tangents):
@@ -225,14 +232,15 @@ def finite_diff_jvp(
                 UserWarning,
             )
 
-        for index in np.ndindex(getattr(shifted_args[i], "shape", ())):
+        for index in np.ndindex(qml.math.shape(shifted_args[i])):
 
             shifted_args[i] = qml.math.scatter_element_add(args[i], index, h)
-            res2 = f(*shifted_args)
+            t = np.array(t) if isinstance(t, (int, float)) else t
+            ti = t[index]
 
+            res2 = f(*shifted_args)
             for result_idx, (r1, r2) in enumerate(zip(res1, res2)):
-                t = np.array(t) if isinstance(t, (int, float)) else t
-                jvps[result_idx] += t[index] * (r2 - r1) / h
+                jvps[result_idx] += ti * (r2 - r1) / h
 
     return res1, jvps
 
