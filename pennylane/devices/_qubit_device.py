@@ -758,7 +758,7 @@ class QubitDevice(Device):
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
-            elif m._shortname is not None:  # pylint: disable=protected-access
+            else:
                 name = obs.name if isinstance(obs, qml.operation.Operator) else type(obs).__name__
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {name}"
