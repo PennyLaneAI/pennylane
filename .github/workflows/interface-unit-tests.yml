@@ -106,7 +106,7 @@ jobs:
         id: pytest_warning_flags
         run: |
           if [ "${{ inputs.python_warning_level }}" != "default" ]; then
-            echo "pytest_warning_args=${PYTEST_WARNING_ARGS}" >> $GITHUB_OUTPUT
+            echo "pytest_warning_args=$PYTEST_WARNING_ARGS" >> $GITHUB_OUTPUT
           else
             echo "pytest_warning_args=''" >> $GITHUB_OUTPUT
           fi
