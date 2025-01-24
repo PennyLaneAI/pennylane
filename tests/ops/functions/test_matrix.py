@@ -683,6 +683,7 @@ class TestInterfaces:
 
         assert np.allclose(matrix, expected_matrix)
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     @pytest.mark.catalyst
     @pytest.mark.external
     def test_catalyst(self):
