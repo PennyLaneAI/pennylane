@@ -37,7 +37,7 @@ class SimpleCustomOp(Operation):
     """Simple custom operation that contains a single gate in its decomposition"""
 
     num_wires = 1
-    num_params = 1
+    num_params = 0
 
     def _init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -49,8 +49,8 @@ class SimpleCustomOp(Operation):
         )
 
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
-        qml.RX(phi, wires=wires)
+    def _compute_plxpr_decomposition(wires):
+        qml.Hadamard(wires=wires)
 
 
 class CustomOpMultiWire(Operation):
@@ -70,9 +70,9 @@ class CustomOpMultiWire(Operation):
 
     @staticmethod
     def _compute_plxpr_decomposition(phi, *wires):
-        qml.CNOT([wires[0], wires[1]])
-        qml.DoubleExcitation(phi, wires)
-        qml.CNOT([wires[0], wires[1]])
+        qml.CNOT(wires=[wires[0], wires[1]])
+        qml.DoubleExcitation(phi, wires=wires)
+        qml.CNOT(wires=[wires[0], wires[1]])
         qml.RX(phi, wires=wires[0])
         qml.RY(phi, wires=wires[1])
         qml.RZ(phi, wires=wires[2])
@@ -206,15 +206,15 @@ class TestDynamicDecomposeInterpreter:
         """Test that a function with a custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
-        def f(x):
-            qml.RY(x, wires=0)
-            SimpleCustomOp(x, wires=0)
+        def f():
+            qml.RY(0.1, wires=0)
+            SimpleCustomOp(wires=0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = jax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 4
         assert jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert jaxpr.eqns[1].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
         assert jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
@@ -222,35 +222,34 @@ class TestDynamicDecomposeInterpreter:
     ### QNode tests
     ############################
 
-    @pytest.mark.parametrize("x", [0.2, 0.8])
-    def test_qnode_simple(self, x):
+    def test_qnode_simple(self):
         """Test that a QNode with a custom operation is correctly decomposed."""
 
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2))
-        def circuit(x):
-            qml.RY(x, wires=0)
-            SimpleCustomOp(x, wires=0)
+        def circuit():
+            qml.RY(0.1, wires=0)
+            SimpleCustomOp(wires=0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(circuit)(x)
+        jaxpr = jax.make_jaxpr(circuit)()
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         @qml.qnode(device=qml.device("default.qubit", wires=2))
-        def circuit_comparison(x):
-            qml.RY(x, wires=0)
-            qml.RX(x, wires=0)
+        def circuit_comparison():
+            qml.RY(0.1, wires=0)
+            qml.Hadamard(wires=0)
             return qml.expval(qml.Z(0))
 
-        assert jax.numpy.allclose(*result, circuit_comparison(x))
+        assert jax.numpy.allclose(*result, circuit_comparison())
 
     @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [2, 3, 1, 0]])
     def test_multi_wire(self, wires):
@@ -436,6 +435,7 @@ class TestDynamicDecomposeInterpreter:
 
             return qml.expval(qml.Z(0))
 
+        # Autograph requires to capture the function first
         jaxpr_comparison = qml.capture.make_plxpr(circuit_comparison)(x, wire)
         result_comparison = jax.core.eval_jaxpr(
             jaxpr_comparison.jaxpr, jaxpr_comparison.consts, x, wire
