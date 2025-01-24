@@ -197,7 +197,8 @@ def finite_diff_jvp(
             unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
 
     Returns:
-        results, d_results: Returns the results and the cotangents of the results
+        tuple(TensorLike, TensorLike): The results and the cotangents of the results
+
 
     >>> def f(x, y):
     ...     return 2 * x * y, x**2
@@ -220,11 +221,14 @@ def finite_diff_jvp(
     for i, t in enumerate(tangents):
         if type(t).__name__ == "Zero":  # Zero = jax.interpreters.ad.Zero
             continue
-        t = np.array(t) if isinstance(t, (int, float)) else t
+        t = np.array(t) if isinstance(t, (int, float, complex)) else t
 
-        if qml.math.get_dtype_name(args[i]) == "float32":
+
+        if qml.math.get_dtype_name(args[i]) in ("float32", "complex64"):
+
             warn(
-                "Detected float32 parameter with finite differences. Recommend use of float64 with finite diff.",
+                "Detected 32 bits precision parameter with finite differences. Recommend use of 64 bits precision with finite diff.",
+
                 UserWarning,
             )
 

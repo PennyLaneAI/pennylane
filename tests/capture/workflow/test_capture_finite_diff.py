@@ -42,7 +42,7 @@ class TestGradients:
 
     @pytest.mark.parametrize("grad_f", (jax.grad, jax.jacobian))
     def test_simple_circuit(self, grad_f):
-        """Test accurage results for a simple, single parameter circuit."""
+        """Test accurate results for a simple, single parameter circuit."""
 
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method="finite-diff")
         def circuit(x):
