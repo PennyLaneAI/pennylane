@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the ``DecomposeInterpreter`` class"""
-# pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter,
+"""Unit tests for the ``DynamicDecomposeInterpreter`` class."""
+# pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods
 import pytest
 
 import pennylane as qml
