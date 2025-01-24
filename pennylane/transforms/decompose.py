@@ -205,24 +205,6 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
         """
 
-        def __init__(self, gate_set=None, max_expansion=None):
-            self.max_expansion = max_expansion
-
-            if gate_set is None:
-                gate_set = set(qml.ops.__all__)
-
-            if isinstance(gate_set, (str, type)):
-                gate_set = set([gate_set])
-
-            if isinstance(gate_set, Iterable):
-                gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-                gate_names = set(gate for gate in gate_set if isinstance(gate, str))
-                self.gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
-            else:
-                self.gate_set = gate_set
-
-            super().__init__()
-
         def eval_dynamic_decomposition(
             self, jaxpr_decomp: "jax.core.Jaxpr", consts: Sequence, *args
         ):
