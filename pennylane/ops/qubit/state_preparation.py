@@ -157,6 +157,9 @@ class BasisState(StatePrepBase):
         prep_vals = self.parameters[0]
         prep_vals_int = math.cast(self.parameters[0], int)
 
+        if self.is_sparse:
+            return _sparse_statevec_permute(prep_vals, wire_order)
+
         if wire_order is None:
             indices = prep_vals_int
             num_wires = len(indices)
@@ -561,3 +564,39 @@ class QubitDensityMatrix(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
+
+
+def _sparse_statevec_permute(state: csr_matrix, wires: list) -> csr_matrix:
+    """Permutes the wires of a statevector represented as a scipy.sparse.csr_matrix.
+
+    Args:
+        state (csr_matrix): the input statevector
+        wires (Iterable[int]): the wire permutation. E.g., [0, 2, 1] means the permutation of wires 0, 1, 2 to 0, 2, 1
+
+    Returns:
+        csr_matrix: the permuted statevector
+    """
+    n_wires = len(wires)
+    n_states = 2**n_wires
+
+    if state.shape[1] != n_states:
+        raise ValueError(
+            f"Statevector shape {state.shape} does not match the number of wires {n_wires}"
+        )
+
+    # Initialize the permuted statevector as zero
+    permuted_state = csr_matrix((1, n_states), dtype=complex)
+
+    # Enumerate over the nonzero values of state
+    for pos in state.nonzero()[1]:
+        # For a csr matrix, nonzero returns all the column indices of the nonzero values, which is the site info we want to loop over
+
+        # Convert the position to a binary string
+        pos_bin = format(pos, f"0{n_wires}b")
+        pos_bin_perm = [pos_bin[w] for w in wires]
+        pos_perm = int("".join(pos_bin_perm), 2)
+        # print(pos, pos_perm)
+        # Update the permuted statevector
+        permuted_state[0, pos_perm] = state[0, pos]
+
+    return permuted_state
