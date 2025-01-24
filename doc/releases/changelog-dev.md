@@ -84,6 +84,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `mcm_method` keyword in `qml.execute` is deprecated. Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
+  [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
+
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
   and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
   keyword argument `gradient_kwargs` via an explicit dictionary. This change will improve qnode argument

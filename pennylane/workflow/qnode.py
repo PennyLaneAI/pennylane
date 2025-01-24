@@ -107,6 +107,10 @@ def _to_qfunc_output_type(
     return qml.pytrees.unflatten(results, qfunc_output_structure)
 
 
+def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
+    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
+
+
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
     for kwarg in gradient_kwargs:
         if kwarg == "expansion_strategy":
@@ -563,17 +567,18 @@ class QNode:
         self.device = device
         self._interface = get_canonical_interface_name(interface)
         self.diff_method = diff_method
-        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
 
         # execution keyword arguments
+        _validate_mcm_config(postselect_mode, mcm_method)
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
             "device_vjp": device_vjp,
-            "mcm_config": mcm_config,
+            "postselect_mode": postselect_mode,
+            "mcm_method": mcm_method,
         }
 
         # internal data attributes
