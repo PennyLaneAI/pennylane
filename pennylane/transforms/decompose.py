@@ -223,17 +223,38 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
             super().__init__()
 
+        def stopping_condition(self, op: qml.operation.Operator) -> bool:
+            """Function to determine whether or not an operator needs to be decomposed or not.
+
+            Args:
+                op (qml.operation.Operator): Operator to check.
+
+            Returns:
+                bool: Whether or not ``op`` is valid or needs to be decomposed. ``True`` means
+                that the operator does not need to be decomposed.
+            """
+            if not hasattr(op, "_compute_plxpr_decomposition"):
+                if not self.gate_set(op):
+                    warnings.warn(
+                        f"Operator {op.name} does not define a plxpr decomposition and was not "
+                        f"found in the target gate set. To remove this warning, add the operator name "
+                        f"({op.name}) or type ({type(op)}) to the gate set.",
+                        UserWarning,
+                    )
+                return True
+            return self.gate_set(op)
+
         def eval_dynamic_decomposition(
-            self, jaxpr_decomp: "jax.core.Jaxpr", consts: Sequence, *args
+            self, jaxpr_decomp: "jax.core.Jaxpr", consts: Sequence, *args, current_depth: int = 0
         ):
             """
             Evaluate a dynamic decomposition of a Jaxpr.
 
             Args:
-                jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate
-                consts (Sequence): the constants to use in the evaluation
-                *args: the arguments to use in the evaluation
-
+                jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate.
+                consts (Sequence): the constants to use in the evaluation.
+                *args: the arguments to use in the evaluation.
+                current_depth (int): the current depth of decomposition. Defaults to 0.
             """
 
             for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
@@ -250,7 +271,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                     outvals = custom_handler(self, *invals, **inner_eqn.params)
 
                 elif isinstance(inner_eqn.outvars[0].aval, AbstractOperator):
-                    outvals = super().interpret_operation_eqn(inner_eqn)
+                    outvals = self.interpret_operation_eqn(inner_eqn, current_depth=current_depth)
                 elif isinstance(inner_eqn.outvars[0].aval, AbstractMeasurement):
                     outvals = super().interpret_measurement_eqn(inner_eqn)
                 else:
@@ -263,12 +284,13 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                 for inner_outvar, inner_outval in zip(inner_eqn.outvars, outvals, strict=True):
                     self._env[inner_outvar] = inner_outval
 
-        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
+        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn", current_depth: int = 0):
             """
-            Interpret an equation corresponding to an operator.
+            Interpret an equation corresponding to an operator with controlled decomposition depth.
 
             Args:
-                eqn (jax.core.JaxprEqn): a jax equation for an operator.
+                eqn (jax.core.JaxprEqn): a Jax equation for an operator.
+                current_depth (int): the current depth of decomposition. Defaults to 0.
             """
 
             invals = (self.read(invar) for invar in eqn.invars)
@@ -277,10 +299,17 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
             if hasattr(op, "_compute_plxpr_decomposition"):
 
+                if self.max_expansion is not None and current_depth >= self.max_expansion:
+                    return super().interpret_operation_eqn(eqn)
+
+                if self.stopping_condition(op):
+                    return super().interpret_operation_eqn(eqn)
+
                 jaxpr_decomp = op._plxpr_decomposition()
                 args = (*op.parameters, *op.wires, *op.hyperparameters)
+
                 return self.eval_dynamic_decomposition(
-                    jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args
+                    jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args, current_depth=current_depth + 1
                 )
 
             return super().interpret_operation_eqn(eqn)
