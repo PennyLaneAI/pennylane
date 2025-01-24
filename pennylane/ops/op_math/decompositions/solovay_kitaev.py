@@ -73,8 +73,9 @@ def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
         tol (float): Tolerance for the match to be considered ``True``.
 
     Returns:
-        Tuple(bool, TensorLike, int): A bool that shows whether an operation similar to the given operations was
-        found, the quaternion representation of the searched operation and its index in the `op_vecs` or `kd_tree`.
+        Tuple(bool, TensorLike, int): A tuple including `True`/`False` for whether an operation similar to the
+        given operations was found, the quaternion representation of the searched operations, and its index in
+        the `op_vecs` or `kd_tree`.
     """
     gate_points = qml.math.array([_quaternion_transform(op_mat)])
 
@@ -88,12 +89,14 @@ def _prune_approximate_set(
     approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat, approx_set_sum
 ):
     """Prune the approximate set for equivalent gate sequences with higher T-gate counts.
+
     Args:
         approx_set_ids (list[list[~pennylane.operation.Operation]]): List of gate sequences.
         approx_set_mat (list[TensorLike]): List of SU(2) matrices.
         approx_set_gph (list[float]): List of global phases.
         approx_set_qat (list[TensorLike]): List of quaternion representations.
         approx_set_sum (list[int]): List of numbers of the T and Adjoint(T) gates in the sequences.
+
     Returns:
         Tuple[list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]]:
         A tuple containing the pruned approximate set.
