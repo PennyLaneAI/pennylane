@@ -457,7 +457,8 @@ class StatePrep(StatePrepBase):
           state tensor.
         """
 
-        assert pad_with is None, "Non-zero Padding is not supported for csr_matrix state"
+        if pad_with:
+            raise ValueError("Non-zero Padding is not supported for csr_matrix state")
         shape = state.shape
 
         # check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is 2D array
