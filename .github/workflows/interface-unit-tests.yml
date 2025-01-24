@@ -113,6 +113,9 @@ jobs:
 
           echo "pytest_warning_args=$pytest_warning_args" >> $GITHUB_OUTPUT
           echo $pytest_warning_args
+          echo "hi"
+          echo $PYTEST_WARNING_ARGS
+          exit 1
 
     outputs:
       fail_fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
