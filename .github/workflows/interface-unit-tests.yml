@@ -97,25 +97,21 @@ jobs:
     steps:
       - name: Set fail-fast for WAE
         id: mat_fail_fast
-        env:
-          PYTEST_WARNING_ARGS: -W "${{ inputs.python_warning_level }}" --continue-on-collection-errors
         run: |
           echo "fail_fast=${{ contains(inputs.python_warning_level, 'default') && 'default' || 'error' }}" >> $GITHUB_OUTPUT
 
       - name: Set pytest arguments for setting warnings level
         id: pytest_warning_flags
+        env:
+          PYTEST_WARNING_ARGS: -W "${{ inputs.python_warning_level }}" --continue-on-collection-errors
         run: |
-          if [ "${{ inputs.python_warning_level }}" == "default" ]; then
-            pytest_warning_args=""
+          if [ "${{ inputs.python_warning_level }}" != "default" ]; then
+            echo "Setting pytest warning flags"
+            echo "pytest_warning_args=$PYTEST_WARNING_ARGS" >> $GITHUB_OUTPUT
           else
-            pytest_warning_args=$PYTEST_WARNING_ARGS
+            echo "No pytest warning flags needed"
+            echo "pytest_warning_args=''" >> $GITHUB_OUTPUT
           fi
-
-          echo "pytest_warning_args=$pytest_warning_args" >> $GITHUB_OUTPUT
-          echo $pytest_warning_args
-          echo "hi"
-          echo $PYTEST_WARNING_ARGS
-          exit 1
 
     outputs:
       fail_fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
