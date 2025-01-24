@@ -162,7 +162,7 @@ def execute(
             "The config argument has been deprecated and will be removed in v0.42. "
             "The provided config argument will be ignored. "
             "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
+            ValueError,
         )
 
     if inner_transform != "unset":
@@ -170,7 +170,7 @@ def execute(
             "The inner_transform argument has been deprecated and will be removed in v0.42. "
             "The provided inner_transform argument will be ignored. "
             "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
+            ValueError,
         )
 
     if logger.isEnabledFor(logging.DEBUG):
