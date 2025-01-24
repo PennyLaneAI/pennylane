@@ -110,7 +110,7 @@ jobs:
             echo "pytest_warning_args=$PYTEST_WARNING_ARGS" >> $GITHUB_OUTPUT
           else
             echo "No pytest warning flags needed"
-            echo "pytest_warning_args=''" >> $GITHUB_OUTPUT
+            echo "pytest_warning_args=" >> $GITHUB_OUTPUT
           fi
 
     outputs:
