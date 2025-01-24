@@ -1033,7 +1033,7 @@ class TestInterfaceEnum:
         assert fn.Interface.NUMPY == fn.Interface.NUMPY
         with pytest.raises(TypeError, match="Cannot compare Interface with str"):
             # pylint: disable=pointless-statement
-            "numpy" == fn.Interface.NUMPY
+            fn.Interface.NUMPY == "numpy"
 
 
 @pytest.mark.parametrize("t", test_data)
