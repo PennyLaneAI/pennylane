@@ -16,9 +16,13 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
-from typing import Optional
+from scipy.sparse import csr_matrix
+from typing import Optional, Union
+
+from warnings import warn
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -290,7 +294,7 @@ class StatePrep(StatePrepBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        state: TensorLike,
+        state: Union[TensorLike, csr_matrix],
         wires: WiresLike,
         pad_with=None,
         normalize=False,
@@ -298,7 +302,10 @@ class StatePrep(StatePrepBase):
         validate_norm: bool = True,
     ):
 
-        state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
+        if isinstance(state, csr_matrix):
+            state = self._preprocess_csr(state, wires, None, normalize, validate_norm)
+        else:
+            state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
 
         self._hyperparameters = {
             "pad_with": pad_with,
@@ -432,6 +439,59 @@ class StatePrep(StatePrepBase):
         elif not math.allclose(norm, 1.0, atol=TOLERANCE):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
+            else:
+                raise ValueError(
+                    f"The state must be a vector of norm 1.0; got norm {norm}. "
+                    "Use 'normalize=True' to automatically normalize."
+                )
+
+        return state
+
+    @staticmethod
+    def _preprocess_csr(state, wires, pad_with, normalize, validate_norm):
+        """Validate and pre-process inputs as follows:
+
+        * If state is batched, the processing that follows is applied to each state set in the batch.
+        * Check that the state tensor is one-dimensional.
+        * pad_with has to be None.
+        * If normalize is false, check that last dimension of state is normalised to one. Else, normalise the
+          state tensor.
+        """
+
+        assert pad_with is None, "Non-zero Padding is not supported for csr_matrix state"
+        shape = state.shape
+
+        # check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is 2D array
+        if shape[0] != 1:
+            raise ValueError(f"State must be a one-dimensional tensor; got shape {shape}.")
+
+        n_states = shape[-1]
+        dim = 2 ** len(Wires(wires))
+        if n_states != dim:
+            warn(
+                f"State must be of length {dim}; got length {n_states}. "
+                f"Automatically padding with zeros.",
+                UserWarning,
+            )
+            # pad a csr_matrix with zeros
+            state.resize((1, dim))
+            print(state)
+
+        if not validate_norm:
+            return state
+
+        # normalize
+        if "int" in str(state.dtype):
+            state = state.astype(float)
+
+        norm = sp.sparse.linalg.norm(state)
+
+        if normalize:
+            state = state / norm
+
+        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+            if normalize:
+                state = state / norm
             else:
                 raise ValueError(
                     f"The state must be a vector of norm 1.0; got norm {norm}. "
