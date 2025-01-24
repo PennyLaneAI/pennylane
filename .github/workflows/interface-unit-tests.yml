@@ -142,7 +142,7 @@ jobs:
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.10"]       
+            "default": ["3.10"]
           }
           EOF
           else
