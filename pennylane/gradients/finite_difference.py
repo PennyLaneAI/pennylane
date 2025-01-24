@@ -172,20 +172,20 @@ def finite_diff_jvp(
     args: tuple,
     tangents: tuple,
     *,
-    h: float = 1e-6,
+    h: float = 1e-7,
     approx_order: int = 1,
     strategy: Literal["forward", "backward", "center"] = "forward",
 ) -> tuple:
     r"""Compute the jvp of a generic function using finite differences.
 
     Args:
-        f (Callable): a generic function that returns an iterable of tensors. Note that this
+        f (Callable): a generic function that a pytree of tensors. Note that this
             function should not have keyword arguments.
         args (tuple[TensorLike]): The tuple of arguments to ``f``
         tangents (tuple[TensorLike]): the tuple of tangents for the arguments.
 
     Keyword Args:
-        h=1e-6 (float): finite difference method step size
+        h=1e-7 (float): finite difference method step size
         approx_order=1 (int): The approximation order of the finite-difference method to use.
         strategy="forward" (str): The strategy of the finite difference method. Must be one of
             ``"forward"``, ``"center"``, or ``"backward"``.
@@ -198,7 +198,6 @@ def finite_diff_jvp(
 
     Returns:
         tuple(TensorLike, TensorLike): The results and the cotangents of the results
-
 
     >>> def f(x, y):
     ...     return 2 * x * y, x**2
@@ -214,21 +213,18 @@ def finite_diff_jvp(
     coeffs, shifts = finite_diff_coeffs(n=1, approx_order=approx_order, strategy=strategy)
 
     initial_res = f(*args)
-    if not isinstance(initial_res, (list, tuple)):
-        raise ValueError("Input function f must return either a list or tuple.")
+    flat_initial_res, pytree_structure = qml.pytrees.flatten(initial_res)
 
-    jvps = [0 for _ in initial_res]
+    jvps = [0 for _ in flat_initial_res]
     for i, t in enumerate(tangents):
         if type(t).__name__ == "Zero":  # Zero = jax.interpreters.ad.Zero
             continue
         t = np.array(t) if isinstance(t, (int, float, complex)) else t
 
-
         if qml.math.get_dtype_name(args[i]) in ("float32", "complex64"):
 
             warn(
                 "Detected 32 bits precision parameter with finite differences. Recommend use of 64 bits precision with finite diff.",
-
                 UserWarning,
             )
 
@@ -242,15 +238,15 @@ def finite_diff_jvp(
             ti_over_h = ti / h
             for coeff, shift in zip(coeffs, shifts):
                 if shift == 0:
-                    res = initial_res
+                    res = flat_initial_res
                 else:
                     shifted_args[i] = qml.math.scatter_element_add(args[i], index, h * shift)
-                    res = f(*shifted_args)
+                    res, _ = qml.pytrees.flatten(f(*shifted_args))
 
                 for result_idx, r in enumerate(res):
                     jvps[result_idx] += ti_over_h * coeff * r
 
-    return initial_res, jvps
+    return initial_res, qml.pytrees.unflatten(jvps, pytree_structure)
 
 
 def _processing_fn(results, shots, single_shot_batch_fn):

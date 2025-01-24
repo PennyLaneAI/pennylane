@@ -34,17 +34,25 @@ def test_warning_float32():
         qml.RX(x, 0)
         return qml.expval(qml.Z(0))
 
-    with pytest.warns(UserWarning, match="Detected float32 parameter with finite differences."):
+    with pytest.warns(
+        UserWarning, match="Detected 32 bits precision parameter with finite differences."
+    ):
         jax.grad(circuit)(jnp.array(0.5, dtype=jnp.float32))
 
 
 class TestGradients:
 
+    @pytest.mark.parametrize(
+        "kwargs",
+        ({"approx_order": 2}, {"strategy": "backward"}, {"approx_order": 2, "strategy": "center"}),
+    )
     @pytest.mark.parametrize("grad_f", (jax.grad, jax.jacobian))
-    def test_simple_circuit(self, grad_f):
+    def test_simple_circuit(self, grad_f, kwargs):
         """Test accurate results for a simple, single parameter circuit."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method="finite-diff")
+        @qml.qnode(
+            qml.device("default.qubit", wires=1), diff_method="finite-diff", gradient_kwargs=kwargs
+        )
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
@@ -168,14 +176,19 @@ class TestGradients:
     def test_hessian(self):
         """Test that higher order derivatives like the hessian can be computed."""
 
-        @qml.qnode(qml.device("default.qubit", wires=4), diff_method="finite-diff")
+        # h=1e-7 gets really noisy for some reason
+        @qml.qnode(
+            qml.device("default.qubit", wires=4),
+            diff_method="finite-diff",
+            gradient_kwargs={"h": 1e-6},
+        )
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        hess = jax.grad(jax.grad(circuit))(0.5)
-        print(hess - -jnp.cos(0.5))
-        assert qml.math.allclose(hess, -jnp.cos(0.5), atol=5e-4)  # gets noisy
+        x = jnp.array(0.5, dtype=jnp.float64)
+        hess = jax.grad(jax.grad(circuit))(x)
+        assert qml.math.allclose(hess, -jnp.cos(x), atol=5e-4)  # gets noisy
 
     @pytest.mark.parametrize("argnums", ((0,), (0, 1)))
     def test_jaxpr_contents(self, argnums):
