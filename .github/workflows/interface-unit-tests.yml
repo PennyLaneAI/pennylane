@@ -105,10 +105,10 @@ jobs:
       - name: Set pytest arguments for setting warnings level
         id: pytest_warning_flags
         run: |
-          if [ "${{ inputs.python_warning_level }}" != "default" ]; then
-            pytest_warning_args=$PYTEST_WARNING_ARGS
-          else
+          if [ "${{ inputs.python_warning_level }}" == "default" ]; then
             pytest_warning_args=""
+          else
+            pytest_warning_args=$PYTEST_WARNING_ARGS
           fi
 
           echo "pytest_warning_args=$pytest_warning_args" >> $GITHUB_OUTPUT
