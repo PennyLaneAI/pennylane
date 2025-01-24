@@ -104,7 +104,7 @@ jobs:
         id: pytest_warning_flags
         run: |
           if [ "${{ inputs.python_warning_level }}" != "default" ]; then
-            echo "pytest_warning_args='-W "${{ inputs.python_warning_level }}" --continue-on-collection-errors'" >> $GITHUB_OUTPUT
+            echo "pytest_warning_args='-W \"${{ inputs.python_warning_level }}\" --continue-on-collection-errors'" >> $GITHUB_OUTPUT
           else
             echo "pytest_warning_args=''" >> $GITHUB_OUTPUT
           fi
