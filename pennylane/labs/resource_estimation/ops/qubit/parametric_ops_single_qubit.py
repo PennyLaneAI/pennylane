@@ -70,18 +70,38 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceControlledPhaseShift.resource_rep(): 1}
+        r"""
+        The resources for a multi-controlled phase shift gate are generated using
+        the identity defined in (lemma 7.11) from https://arxiv.org/pdf/quant-ph/9503016.
+        """
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceControlledPhaseShift.resource_rep(): 1}
 
-        raise re.ResourcesNotDefined
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        c_ps = re.ResourceControlledPhaseShift.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+        return {c_ps: 1, mcx: 2}
 
     @classmethod
-    def pow_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 1}
 
 
 class ResourceRX(qml.RX, re.ResourceOperator):
-    """Resource class for the RX gate."""
+    """Resource class for the RX gate.
+
+    Resources:
+        The resources are estimated by approximating the gate with a series of T gates.
+        The estimate is taken from https://arxiv.org/abs/1404.5320.
+    """
 
     @staticmethod
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -102,10 +122,41 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCRX.resource_rep(): 1}
+        r"""
+        Resources:
+            The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+            unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
-        raise re.ResourcesNotDefined
+            .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
+
+            we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated by :code:`Hadamard` gates.
+            The expression for controlled-RZ gates is used as defined in the reference above. By replacing
+            the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a controlled-version
+            of that identity.
+        """
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceCRX.resource_rep(): 1}
+
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        gate_types = {}
+
+        h = re.ResourceHadamard.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+
+        gate_types[mcx] = 2
+        gate_types[rz] = 2
+        gate_types[h] = 2
+
+        return gate_types
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -113,7 +164,12 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
 
 class ResourceRY(qml.RY, re.ResourceOperator):
-    """Resource class for the RY gate."""
+    """Resource class for the RY gate.
+
+    Resources:
+        The resources are estimated by approximating the gate with a series of T gates.
+        The estimate is taken from https://arxiv.org/abs/1404.5320.
+    """
 
     @staticmethod
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -134,10 +190,33 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCRY.resource_rep(): 1}
+        r"""
+        Resources:
+        The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
 
-        raise re.ResourcesNotDefined
+        .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
+
+        By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a controlled-version
+        of this identity. Thus we are able to constructively or destructively interfere the gates based on the
+        value of the control qubits.
+        """
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceCRY.resource_rep(): 1}
+
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        ry = re.ResourceRY.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+
+        return {ry: 2, mcx: 2}
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -171,10 +250,32 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCRZ.resource_rep(): 1}
+        r"""
+        The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+        unitary <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
 
-        raise re.ResourcesNotDefined
+        .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
+
+        By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a controlled-version of
+        this identity. Thus we are able to constructively or destructively interfere the gates based on the value
+        of the control qubits.
+        """
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceCRZ.resource_rep(): 1}
+
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        rz = re.ResourceRZ.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+
+        return {rz: 2, mcx: 2}
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -186,11 +287,10 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        rx = ResourceRX.resource_rep()
         ry = ResourceRY.resource_rep()
         rz = ResourceRZ.resource_rep()
 
-        gate_types = {rx: 1, ry: 1, rz: 1}
+        gate_types = {ry: 1, rz: 2}
         return gate_types
 
     def resource_params(self):
@@ -208,7 +308,53 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCRot.resource_rep(): 1}
+        r"""
+        Resources:
+            The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+            unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identities:
 
-        raise re.ResourcesNotDefined
+            .. math::
+
+                \begin{align}
+                    \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}, \\
+                    \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
+                \end{align}
+
+            This identity is applied along with some clever choices for the angle values to combine rotation;
+            the final circuit takes the form:
+
+            .. code-block:: bash
+
+                ctrl: ─────╭●─────────╭●─────────┤
+                trgt: ──RZ─╰X──RZ──RY─╰X──RY──RZ─┤
+
+            The :code:`CNOT` gates are replaced with multi-controlled X gates to generalize to the multi-controlled case.
+
+        """
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceCRot.resource_rep(): 1}
+
+            if num_ctrl_values:
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+
+        gate_types = {}
+
+        rz = re.ResourceRZ.resource_rep()
+        ry = re.ResourceRY.resource_rep()
+        mcx = re.ResourceMultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires,
+            num_ctrl_values=num_ctrl_values,
+            num_work_wires=num_work_wires,
+        )
+
+        gate_types[mcx] = 2
+        gate_types[rz] = 3
+        gate_types[ry] = 2
+
+        return gate_types
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Code relevant for performing measurements on a qutrit mixed state.
+Code relevant for performing measurements on a qubit mixed state.
 """
 
 from collections.abc import Callable
@@ -87,6 +87,7 @@ def calculate_reduced_density_matrix(
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
         readout_errors (List[Callable]): List of channels to apply to each wire being measured
+            to simulate readout errors. These are not applied on this type of measurement.
 
     Returns:
         TensorLike: state or reduced density matrix.
@@ -196,7 +197,7 @@ def calculate_variance(
         to simulate readout errors.
 
     Returns:
-        TensorLike: the variance of the observable wrt the state.
+        TensorLike: the variance of the observable with respect to the state.
     """
     probs = calculate_probability(measurementprocess, state, is_state_batched, readout_errors)
     eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
@@ -221,7 +222,7 @@ def calculate_expval_sum_of_terms(
         to simulate readout errors.
 
     Returns:
-        TensorLike: the expectation value of the sum of Hamiltonian observable wrt the state.
+        TensorLike: the expectation value of the sum of Hamiltonian observable with respect to the state.
     """
     # Recursively call measure on each term, so that the best measurement method can
     # be used for each term

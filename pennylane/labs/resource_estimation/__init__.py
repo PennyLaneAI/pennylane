@@ -50,11 +50,9 @@ Operators
 .. autosummary::
     :toctree: api
 
-    ~ResourceAdjoint
     ~ResourceCCZ
     ~ResourceCH
     ~ResourceCNOT
-    ~ResourceControlled
     ~ResourceControlledPhaseShift
     ~ResourceCRot
     ~ResourceCRX
@@ -80,7 +78,8 @@ Operators
     ~ResourceOrbitalRotation
     ~ResourcePauliRot
     ~ResourcePhaseShift
-    ~ResourcePow
+    ~ResourcePauliRot
+    ~ResourcePhaseShift
     ~ResourcePSWAP
     ~ResourceRot
     ~ResourceRX
@@ -97,13 +96,31 @@ Operators
     ~ResourceY
     ~ResourceZ
 
+Symbolic Operators
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceAdjoint
+    ~ResourceControlled
+    ~ResourcePow
+
 Templates
 ~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
+    ~ResourceBasisRotation
+    ~ResourcePrepSelPrep
     ~ResourceQFT
+    ~ResourceQPE
+    ~ResourceQubitization
+    ~ResourceReflection
+    ~ResourceSelect
+    ~ResourceStatePrep
+    ~ResourceTrotterProduct
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -152,6 +169,7 @@ from .ops import (
     ResourceDoubleExcitation,
     ResourceDoubleExcitationMinus,
     ResourceDoubleExcitationPlus,
+    ResourceExp,
     ResourceFermionicSWAP,
     ResourceGlobalPhase,
     ResourceHadamard,
@@ -184,9 +202,22 @@ from .ops import (
 )
 
 from .templates import (
+<<<<<<< HEAD
     ResourceControlledSequence,
     ResourceModExp,
     ResourceMultiplier,
     ResourcePhaseAdder,
+=======
+    ResourceBasisRotation,
+    ResourcePrepSelPrep,
+>>>>>>> trotter_resources
     ResourceQFT,
+    ResourceQPE,
+    ResourceQuantumPhaseEstimation,
+    ResourceQubitization,
+    ResourceReflection,
+    ResourceSelect,
+    ResourceStatePrep,
+    ResourceTrotterProduct,
+    resource_trotterize,
 )

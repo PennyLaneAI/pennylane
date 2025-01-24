@@ -256,12 +256,7 @@ class QubitDevice(Device):
         has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
         if has_mcm and "mid_measurements" not in kwargs:
             results = []
-            aux_circ = qml.tape.QuantumScript(
-                circuit.operations,
-                circuit.measurements,
-                shots=[1],
-                trainable_params=circuit.trainable_params,
-            )
+            aux_circ = circuit.copy(shots=[1])
             # Some devices like Lightning-Kokkos use `self.shots` to update `_samples`,
             # and hence we update `self.shots` temporarily for this loop
             shots_copy = self.shots
@@ -639,7 +634,7 @@ class QubitDevice(Device):
         results = []
 
         for m in measurements:
-            # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
+            # TODO: Remove this when all overridden measurements support the `MeasurementProcess` class
             if isinstance(m.mv, list):
                 # MeasurementProcess stores information needed for processing if terminal measurement
                 # uses a list of mid-circuit measurement values
@@ -647,7 +642,7 @@ class QubitDevice(Device):
             else:
                 obs = m.obs or m.mv
                 obs = m if obs is None else obs
-            # Check if there is an overriden version of the measurement process
+            # Check if there is an overridden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
                     result = method(tape=circuit)

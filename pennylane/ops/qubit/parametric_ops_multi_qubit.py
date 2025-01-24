@@ -661,7 +661,7 @@ class PCPhase(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *params: TensorLike, wires: Optional[WiresLike] = None, **hyperparams
+        *params: TensorLike, wires: WiresLike, **hyperparams
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 

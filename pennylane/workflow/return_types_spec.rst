@@ -53,7 +53,7 @@ array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 Empty Wires
 ^^^^^^^^^^^
 
-Some measurments allow broadcasting over all available wires, like ``qml.probs()``, ``qml.sample()``,
+Some measurements allow broadcasting over all available wires, like ``qml.probs()``, ``qml.sample()``,
 or ``qml.state()``. In such a case, the measurement process instance should have empty wires.
 The shape of the result object may be dictated either by the device or the other operations present in the circuit.
 

@@ -30,7 +30,7 @@ class FermiWord(dict):
     :math:`a^{\dagger}_0 a_1` can then be constructed as
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w
+    >>> print(w)
     a⁺(0) a(1)
     """
 
@@ -114,7 +114,7 @@ class FermiWord(dict):
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
-        a⁺(0) a(1)
+        'a⁺(0) a(1)'
         """
         if len(self) == 0:
             return "I"
@@ -211,7 +211,7 @@ class FermiWord(dict):
         r"""Multiply a FermiWord with another FermiWord, a FermiSentence, or a constant.
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-        >>> w * w
+        >>> print(w * w)
         a⁺(0) a(1) a⁺(0) a(1)
         """
 
@@ -265,7 +265,7 @@ class FermiWord(dict):
         r"""Exponentiate a Fermi word to an integer power.
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-        >>> w**3
+        >>> print(w**3)
         a⁺(0) a(1) a⁺(0) a(1) a⁺(0) a(1)
         """
 
@@ -348,7 +348,7 @@ class FermiWord(dict):
 
         **Example**
 
-        >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w = qml.FermiWord({(0, 0): '+', (1, 1): '-'})
         >>> w.shift_operator(0, 1)
         -1 * a(1) a⁺(0)
         """
@@ -427,7 +427,7 @@ class FermiSentence(dict):
     >>> w1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = FermiWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = FermiSentence({w1 : 1.2, w2: 3.1})
-    >>> s
+    >>> print(s)
     1.2 * a⁺(0) a(1)
     + 3.1 * a⁺(1) a(2)
     """
@@ -754,13 +754,15 @@ class FermiC(FermiWord):
 
     To construct the operator :math:`a^{\dagger}_0`:
 
-    >>> FermiC(0)
+    >>> w = FermiC(0)
+    >>> print(w)
     a⁺(0)
 
     This can be combined with the annihilation operator :class:`~pennylane.FermiA`. For example,
     :math:`a^{\dagger}_0 a_1 a^{\dagger}_2 a_3` can be constructed as:
 
-    >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> w = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> print(w)
     a⁺(0) a(1) a⁺(2) a(3)
     """
 
@@ -796,13 +798,15 @@ class FermiA(FermiWord):
 
     To construct the operator :math:`a_0`:
 
-    >>> FermiA(0)
+    >>> w = FermiA(0)
+    >>> print(w)
     a(0)
 
     This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
     :math:`a^{\dagger}_0 a_1 a^{\dagger}_2 a_3` can be constructed as:
 
-    >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> w = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> print(w)
     a⁺(0) a(1) a⁺(2) a(3)
     """
 

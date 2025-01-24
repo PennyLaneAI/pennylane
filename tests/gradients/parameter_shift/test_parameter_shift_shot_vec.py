@@ -261,12 +261,13 @@ class TestParamShift:
             return qml.probs([2, 3])
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
-        circuit.construct((params,), {})
+
+        tape = qml.workflow.construct_tape(circuit)(params)
 
         result = qml.gradients.param_shift(circuit)(params)
         assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
 
-        tapes, _ = qml.gradients.param_shift(circuit.tape, broadcast=broadcast)
+        tapes, _ = qml.gradients.param_shift(tape, broadcast=broadcast)
         assert tapes == []
 
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
@@ -371,7 +372,9 @@ class TestParamShift:
             assert tape.operations[1].data[0] == x[1] + expected[1]
 
         grad = fn(dev.execute(tapes))
-        exp = np.stack([-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])])
+        _expected = np.stack(
+            [-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])]
+        )
         assert isinstance(grad, tuple)
         assert len(grad) == len(default_shot_vector)
         for g in grad:
@@ -380,7 +383,7 @@ class TestParamShift:
             for (
                 a,
                 b,
-            ) in zip(g, exp):
+            ) in zip(g, _expected):
                 assert np.allclose(a, b, atol=shot_vec_tol)
 
     @pytest.mark.slow
@@ -414,21 +417,21 @@ class TestParamShift:
         tapes, fn = qml.gradients.param_shift(tape2)
         j2 = fn(dev.execute(tapes))
 
-        exp = -np.sin(1)
+        _expected = -np.sin(1)
 
         assert isinstance(j1, tuple)
         assert len(j1) == len(many_shots_shot_vector)
         for j in j1:
             assert isinstance(j, tuple)
             assert len(j) == len(tape1.trainable_params)
-            assert np.allclose(j[0], exp, atol=shot_vec_tol)
+            assert np.allclose(j[0], _expected, atol=shot_vec_tol)
             assert np.allclose(j[1], 0, atol=shot_vec_tol)
 
         for j in j2:
             assert isinstance(j, tuple)
             assert len(j) == len(tape1.trainable_params)
             assert np.allclose(j[0], 0, atol=shot_vec_tol)
-            assert np.allclose(j[1], exp, atol=shot_vec_tol)
+            assert np.allclose(j[1], _expected, atol=shot_vec_tol)
 
     def test_grad_recipe_parameter_dependent(self):
         """Test that an operation with a gradient recipe that depends on
@@ -1157,14 +1160,14 @@ class TestParameterShiftRule:
             assert len(r[0]) == len(tape.trainable_params)
 
             r_to_check = r[0][0]
-            exp = expval_expected[0]
-            assert np.allclose(r_to_check, exp, atol=shot_vec_tol)
+            _expected = expval_expected[0]
+            assert np.allclose(r_to_check, _expected, atol=shot_vec_tol)
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == ()
 
             r_to_check = r[0][1]
-            exp = expval_expected[1]
-            assert np.allclose(r_to_check, exp, atol=shot_vec_tol)
+            _expected = expval_expected[1]
+            assert np.allclose(r_to_check, _expected, atol=shot_vec_tol)
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == ()
 
@@ -1173,14 +1176,14 @@ class TestParameterShiftRule:
             assert len(r[1]) == len(tape.trainable_params)
 
             r_to_check = r[1][0]
-            exp = probs_expected[:, 0]
-            assert np.allclose(r_to_check, exp, atol=shot_vec_tol)
+            _expected = probs_expected[:, 0]
+            assert np.allclose(r_to_check, _expected, atol=shot_vec_tol)
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == (4,)
 
             r_to_check = r[1][1]
-            exp = probs_expected[:, 1]
-            assert np.allclose(r_to_check, exp, atol=shot_vec_tol)
+            _expected = probs_expected[:, 1]
+            assert np.allclose(r_to_check, _expected, atol=shot_vec_tol)
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == (4,)
 
@@ -2006,13 +2009,9 @@ class TestParameterShiftRule:
         assert len(record) == 0
 
 
-# TODO: allow broadcast=True
-
-
-@pytest.mark.parametrize("broadcast", [False])
+@pytest.mark.parametrize("broadcast", [False, True])
 class TestHamiltonianExpvalGradients:
-    """Test that tapes ending with expval(H) can be
-    differentiated"""
+    """Test that tapes ending with expval(H) can be differentiated."""
 
     def test_not_expval_error(self, broadcast):
         """Test that if the variance of the Hamiltonian is requested,
@@ -2033,7 +2032,7 @@ class TestHamiltonianExpvalGradients:
         tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)
         tape.trainable_params = {2, 3, 4}
 
-        with pytest.raises(ValueError, match="for expectations, not var"):
+        with pytest.raises(ValueError, match="for expectations, not"):
             qml.gradients.param_shift(tape, broadcast=broadcast)
 
     def test_no_trainable_coeffs(self, mocker, broadcast, tol):
@@ -2079,7 +2078,6 @@ class TestHamiltonianExpvalGradients:
             b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
         ]
         for res in all_res:
-            assert isinstance(res, tuple)
             assert len(res) == 2
             assert res[0].shape == ()
             assert res[1].shape == ()
@@ -2087,18 +2085,16 @@ class TestHamiltonianExpvalGradients:
             assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
             assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="TODO")
-    def test_trainable_coeffs(self, mocker, broadcast, tol):
+    def test_trainable_coeffs(self, broadcast, tol):
         """Test trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-        coeffs = np.array([0.1, 0.2, 0.3])
+        coeffs = qml.numpy.array([0.1, 0.2, 0.3])
         H = qml.Hamiltonian(coeffs, obs)
 
-        weights = np.array([0.4, 0.5])
+        weights = qml.numpy.array([0.4, 0.5])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(weights[0], wires=0)
@@ -2118,28 +2114,19 @@ class TestHamiltonianExpvalGradients:
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         # two (broadcasted if broadcast=True) shifts per rotation gate
         # one circuit per trainable H term
-        assert len(tapes) == (2 + 2 if broadcast else 2 * 2 + 2)
-        assert [t.batch_size for t in tapes] == ([2, 2, None, None] if broadcast else [None] * 6)
-        spy.assert_called()
+        assert len(tapes) == (2 if broadcast else 2 * 2)
+        assert [t.batch_size for t in tapes] == ([2, 2] if broadcast else [None] * 4)
 
         res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
-        assert len(res) == 4
-        assert res[0].shape == ()
-        assert res[1].shape == ()
-        assert res[2].shape == ()
-        assert res[3].shape == ()
+        assert qml.math.shape(res) == (3, 2)
 
         expected = [
             -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
             b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-            np.cos(x),
-            -(np.sin(x) * np.sin(y)),
         ]
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
-        assert np.allclose(res[2], expected[2], atol=tol, rtol=0)
-        assert np.allclose(res[3], expected[3], atol=tol, rtol=0)
+        for r in res:
+            assert qml.math.allclose(r, expected, atol=shot_vec_tol)
 
     @pytest.mark.xfail(reason="TODO")
     def test_multiple_hamiltonians(self, mocker, broadcast, tol):
@@ -2179,8 +2166,9 @@ class TestHamiltonianExpvalGradients:
             with pytest.raises(
                 NotImplementedError, match="Broadcasting with multiple measurements"
             ):
-                tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
+                qml.gradients.param_shift(tape, broadcast=broadcast)
             return
+
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         # two shifts per rotation gate, one circuit per trainable H term
         assert len(tapes) == 2 * 2 + 3
@@ -2275,8 +2263,7 @@ class TestHamiltonianExpvalGradients:
     @pytest.mark.xfail(reason="TODO")
     @pytest.mark.tf
     def test_tf(self, broadcast, tol):
-        """Test gradient of multiple trainable Hamiltonian coefficients
-        using tf"""
+        """Test gradient of multiple trainable Hamiltonian coefficients using tf"""
         import tensorflow as tf
 
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
@@ -2286,13 +2273,6 @@ class TestHamiltonianExpvalGradients:
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
-        if broadcast:
-            with pytest.raises(
-                NotImplementedError, match="Broadcasting with multiple measurements"
-            ):
-                with tf.GradientTape() as _:
-                    self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-            return
         with tf.GradientTape() as _:
             jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
 
@@ -2308,9 +2288,7 @@ class TestHamiltonianExpvalGradients:
         # assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         # assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
-    # TODO: Torch support for param-shift
     @pytest.mark.torch
-    @pytest.mark.xfail
     def test_torch(self, broadcast, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using torch"""
@@ -2322,24 +2300,21 @@ class TestHamiltonianExpvalGradients:
 
         dev = qml.device("default.qubit", wires=2)
 
-        if broadcast:
-            with pytest.raises(
-                NotImplementedError, match="Broadcasting with multiple measurements"
-            ):
-                res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-            return
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(
             weights.detach().numpy(), coeffs1.detach().numpy(), coeffs2.detach().numpy()
         )
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        for actual, _expected in zip(res, expected):
+            for val, exp_val in zip(actual, _expected):
+                assert qml.math.allclose(val.detach(), exp_val, atol=tol, rtol=0)
 
+        # TODO: test when Hessians are supported with the new return types
         # second derivative wrt to Hamiltonian coefficients should be zero
-        hess = torch.autograd.functional.jacobian(
-            lambda *args: self.cost_fn(*args, dev, broadcast), (weights, coeffs1, coeffs2)
-        )
-        assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-        assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
+        # hess = torch.autograd.functional.jacobian(
+        #     lambda *args: self.cost_fn(*args, dev, broadcast), (weights, coeffs1, coeffs2)
+        # )
+        # assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
+        # assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, broadcast, tol):
@@ -2354,12 +2329,6 @@ class TestHamiltonianExpvalGradients:
         weights = jnp.array([0.4, 0.5])
         dev = qml.device("default.qubit", wires=2)
 
-        if broadcast:
-            with pytest.raises(
-                NotImplementedError, match="Broadcasting with multiple measurements"
-            ):
-                res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-            return
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res, np.array(expected), atol=tol, rtol=0)

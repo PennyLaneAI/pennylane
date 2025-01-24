@@ -71,8 +71,9 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    def __init__(self, state, wires, id=None):
+    def __init__(self, state, wires: WiresLike, id=None):
 
+        wires = Wires(wires)
         if isinstance(state, list):
             state = qml.math.stack(state)
 
@@ -86,7 +87,6 @@ class BasisState(StatePrepBase):
             bin = 2 ** math.arange(len(wires))[::-1]
             state = qml.math.where((state & bin) > 0, 1, 0)
 
-        wires = Wires(wires)
         shape = qml.math.shape(state)
 
         if len(shape) != 1:
@@ -102,7 +102,7 @@ class BasisState(StatePrepBase):
             state_list = list(qml.math.toarray(state))
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
-
+        state = qml.math.cast(state, int)
         super().__init__(state, wires=wires, id=id)
 
     def _flatten(self):
@@ -287,7 +287,7 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         state: TensorLike,

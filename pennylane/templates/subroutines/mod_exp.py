@@ -18,6 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
 class ModExp(Operation):
@@ -49,7 +50,7 @@ class ModExp(Operation):
         mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If
             :math:`mod=2^{\text{len(output_wires)}}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
-            ``len(output_wires) + 2`` auxiliary wires are needed.
+            ``len(output_wires) + 2`` auxiliary wires are needed. Defaults to empty tuple.
 
     **Example**
 
@@ -112,12 +113,13 @@ class ModExp(Operation):
     grad_method = None
 
     def __init__(
-        self, x_wires, output_wires, base, mod=None, work_wires=None, id=None
+        self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
         output_wires = qml.wires.Wires(output_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
 
-        if work_wires is None:
+        if len(work_wires) == 0:
             raise ValueError("Work wires must be specified for ModExp")
 
         if mod is None:
@@ -130,7 +132,7 @@ class ModExp(Operation):
         else:
             if len(work_wires) < len(output_wires):
                 raise ValueError("ModExp needs as many work_wires as output_wires.")
-        if work_wires is not None:
+        if len(work_wires) != 0:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if any(wire in work_wires for wire in output_wires):
@@ -198,7 +200,7 @@ class ModExp(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires, output_wires, base, mod, work_wires
+        x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 

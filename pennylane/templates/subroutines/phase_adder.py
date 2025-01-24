@@ -19,9 +19,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import Wires, WiresLike
 
 
-def _add_k_fourier(k, wires):
+def _add_k_fourier(k, wires: WiresLike):
     """Adds k in the Fourier basis"""
     op_list = []
     for j, wire in enumerate(wires):
@@ -64,7 +65,7 @@ class PhaseAdder(Operation):
             value for `mod`.
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wire (Sequence[int] or int): the auxiliary wire to use for the addition. Optional
-            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to ``None``.
+            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to empty tuple.
 
     **Example**
 
@@ -112,7 +113,7 @@ class PhaseAdder(Operation):
 
         The second set of wires is ``work_wire`` which consist of the auxiliary qubit used to perform the modular phase addition operation.
 
-        - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wire``, hence ``work_wire=None``. This is the case by default.
+        - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wire``, hence ``work_wire=()``. This is the case by default.
 
         - If :math:`mod \neq 2^{\text{len(x_wires)}}`, one ``work_wire`` has to be provided.
 
@@ -123,13 +124,13 @@ class PhaseAdder(Operation):
     grad_method = None
 
     def __init__(
-        self, k, x_wires, mod=None, work_wire=None, id=None
+        self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
-        work_wire = qml.wires.Wires(work_wire) if work_wire is not None else work_wire
-        x_wires = qml.wires.Wires(x_wires)
+        work_wire = Wires(() if work_wire is None else work_wire)
+        x_wires = Wires(x_wires)
 
-        num_work_wires = 0 if work_wire is None else len(work_wire)
+        num_work_wires = len(work_wire)
 
         if not qml.math.is_abstract(mod):
             if mod is None:
@@ -145,21 +146,17 @@ class PhaseAdder(Operation):
                     "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
                     f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
                 )
-            if work_wire is not None:
+            if num_work_wires != 0:
                 if any(wire in work_wire for wire in x_wires):
                     raise ValueError(
                         "None of the wires in work_wire should be included in x_wires."
                     )
 
-        all_wires = (
-            qml.wires.Wires(x_wires) + qml.wires.Wires(work_wire)
-            if work_wire
-            else qml.wires.Wires(x_wires)
-        )
+        all_wires = x_wires + work_wire
 
         self.hyperparameters["k"] = k % mod
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
+        self.hyperparameters["work_wire"] = work_wire
         self.hyperparameters["x_wires"] = x_wires
         super().__init__(wires=all_wires, id=id)
 
@@ -178,11 +175,7 @@ class PhaseAdder(Operation):
 
     def map_wires(self, wire_map: dict):
         new_dict = {
-            key: (
-                [wire_map.get(w, w) for w in self.hyperparameters[key]]
-                if self.hyperparameters[key][0] is not None
-                else None
-            )
+            key: ([wire_map.get(w, w) for w in self.hyperparameters[key]])
             for key in ["x_wires", "work_wire"]
         }
 
@@ -201,7 +194,9 @@ class PhaseAdder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(k, x_wires, mod, work_wire):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        k, x_wires: WiresLike, mod, work_wire: WiresLike
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -212,13 +207,13 @@ class PhaseAdder(Operation):
                 value for `mod`.
             mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
             work_wire (Sequence[int]): the auxiliary wire to use for the addition. Optional
-                when `mod` is :math:`2^{len(x\_wires)}`. Defaults to ``None``.
+                when `mod` is :math:`2^{len(x\_wires)}`.
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = None)
+        >>> qml.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = ())
         [PhaseShift(6.283185307179586, wires=[1]),
         PhaseShift(3.141592653589793, wires=[2]),
         PhaseShift(1.5707963267948966, wires=[3])]

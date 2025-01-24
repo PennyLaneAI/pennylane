@@ -47,31 +47,80 @@ class TestHadamard:
 
         assert re.get_resources(h) == re.get_resources(h_dag)
 
-    def test_controlled_decomp(self):
-        """Test that the controlled decomposition is correct."""
-        expected = {re.ResourceCH.resource_rep(): 1}
-        assert re.ResourceHadamard.controlled_resource_decomp(1, 0, 0) == expected
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [],
+            {
+                re.ResourceCH.resource_rep(): 1,
+            },
+        ),
+        (
+            ["c1"],
+            [0],
+            [],
+            {
+                re.ResourceCH.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 2,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            ["w1"],
+            {
+                re.ResourceCH.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
+            },
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            ["w1", "w2"],
+            {
+                re.ResourceCH.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
+            },
+        ),
+    )
 
-        controlled_h = re.ResourceControlled(re.ResourceHadamard(0), control_wires=[1])
-        ch = re.ResourceCH([0, 1])
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, work_wires, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, work_wires, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_work_wires = len(work_wires)
 
-        r1 = re.get_resources(controlled_h)
-        r2 = re.get_resources(ch)
-        assert r1 == r2
+        op = re.ResourceHadamard(0)
+        op2 = re.ResourceControlled(
+            op, control_wires=ctrl_wires, control_values=ctrl_values, work_wires=work_wires
+        )
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
+            == expected_res
+        )
+        assert op2.resources(**op2.resource_params()) == expected_res
+
+    pow_data = (
+        (1, {re.ResourceHadamard.resource_rep(): 1}),
+        (2, {}),
+        (3, {re.ResourceHadamard.resource_rep(): 1}),
+        (4, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceHadamard.resource_rep(): z % 2}
-        assert re.ResourceHadamard.pow_resource_decomp(z) == expected
+        op = re.ResourceHadamard(0)
+        assert op.pow_resource_decomp(z) == expected_res
 
-        h = re.ResourceHadamard(0)
-        pow_h = re.ResourcePow(re.ResourceHadamard(0), z)
-
-        r1 = re.get_resources(h) * (z % 2)
-        r2 = re.get_resources(pow_h)
-
-        assert r1 == r2
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
 
 
 class TestSWAP:
@@ -113,31 +162,80 @@ class TestSWAP:
 
         assert re.get_resources(swap) == re.get_resources(swap_dag)
 
-    def test_controlled_decomp(self):
-        """Test that the controlled decomposition is correct."""
-        expected = {re.ResourceCSWAP.resource_rep(): 1}
-        assert re.ResourceSWAP.controlled_resource_decomp(1, 0, 0) == expected
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [],
+            {
+                re.ResourceCSWAP.resource_rep(): 1,
+            },
+        ),
+        (
+            ["c1"],
+            [0],
+            [],
+            {
+                re.ResourceCSWAP.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 2,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            ["w1"],
+            {
+                re.ResourceCNOT.resource_rep(): 2,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 1,
+            },
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            ["w1", "w2"],
+            {
+                re.ResourceCNOT.resource_rep(): 2,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 1,
+            },
+        ),
+    )
 
-        controlled_swap = re.ResourceControlled(re.ResourceSWAP([0, 1]), control_wires=[2])
-        cswap = re.ResourceCSWAP([0, 1, 2])
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, work_wires, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, work_wires, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_work_wires = len(work_wires)
 
-        r1 = re.get_resources(controlled_swap)
-        r2 = re.get_resources(cswap)
-        assert r1 == r2
+        op = re.ResourceSWAP([0, 1])
+        op2 = re.ResourceControlled(
+            op, control_wires=ctrl_wires, control_values=ctrl_values, work_wires=work_wires
+        )
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
+            == expected_res
+        )
+        assert op2.resources(**op2.resource_params()) == expected_res
+
+    pow_data = (
+        (1, {re.ResourceSWAP.resource_rep(): 1}),
+        (2, {}),
+        (3, {re.ResourceSWAP.resource_rep(): 1}),
+        (4, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceSWAP.resource_rep(): z % 2}
-        assert re.ResourceSWAP.pow_resource_decomp(z) == expected
+        op = re.ResourceSWAP([0, 1])
+        assert op.pow_resource_decomp(z) == expected_res
 
-        swap = re.ResourceSWAP([0, 1])
-        pow_swap = re.ResourcePow(re.ResourceSWAP([0, 1]), z)
-
-        r1 = re.get_resources(swap) * (z % 2)
-        r2 = re.get_resources(pow_swap)
-
-        assert r1 == r2
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
 
 
 class TestS:
@@ -182,26 +280,91 @@ class TestS:
         r2 = re.get_resources(s_dag)
         assert r1 == r2
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+    pow_data = (
+        (1, {re.ResourceS.resource_rep(): 1}),
+        (2, {re.ResourceS.resource_rep(): 2}),
+        (3, {re.ResourceS.resource_rep(): 3}),
+        (4, {}),
+        (7, {re.ResourceS.resource_rep(): 3}),
+        (8, {}),
+        (14, {re.ResourceS.resource_rep(): 2}),
+        (15, {re.ResourceS.resource_rep(): 3}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceS.resource_rep(): z % 4}
-        assert re.ResourceS.pow_resource_decomp(z) == expected
+        op = re.ResourceS(0)
+        assert op.pow_resource_decomp(z) == expected_res
 
-        s = re.ResourceS(0)
-        pow_s = re.ResourcePow(s, z)
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
 
-        r1 = re.get_resources(s) * (z % 4)
-        r2 = re.get_resources(pow_s)
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [],
+            {
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+            },
+        ),
+        (
+            ["c1"],
+            [0],
+            [],
+            {
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 2,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            ["w1"],
+            {
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
+            },
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            ["w1", "w2"],
+            {
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
+            },
+        ),
+    )
 
-        assert r1 == r2
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, work_wires, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, work_wires, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_work_wires = len(work_wires)
+
+        op = re.ResourceS(0)
+        op2 = re.ResourceControlled(
+            op, control_wires=ctrl_wires, control_values=ctrl_values, work_wires=work_wires
+        )
+
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
+            == expected_res
+        )
+        assert op2.resources(**op2.resource_params()) == expected_res
 
 
 class TestT:
     """Tests for ResourceT"""
 
     def test_resources(self):
-        """Test that ResourceT does not implement a decomposition"""
+        """Test that there is no further decomposition of the T gate."""
         op = re.ResourceT(0)
         with pytest.raises(re.ResourcesNotDefined):
             op.resources()
@@ -228,26 +391,91 @@ class TestT:
         r2 = re.get_resources(t_dag)
         assert r1 == r2
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [],
+            {
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+            },
+        ),
+        (
+            ["c1"],
+            [0],
+            [],
+            {
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 2,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            ["w1"],
+            {
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
+            },
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            ["w1", "w2"],
+            {
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
+            },
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, work_wires, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, work_wires, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_work_wires = len(work_wires)
+
+        op = re.ResourceT(0)
+        op2 = re.ResourceControlled(
+            op, control_wires=ctrl_wires, control_values=ctrl_values, work_wires=work_wires
+        )
+
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
+            == expected_res
+        )
+        assert op2.resources(**op2.resource_params()) == expected_res
+
+    pow_data = (
+        (1, {re.ResourceT.resource_rep(): 1}),
+        (2, {re.ResourceT.resource_rep(): 2}),
+        (3, {re.ResourceT.resource_rep(): 3}),
+        (7, {re.ResourceT.resource_rep(): 7}),
+        (8, {}),
+        (14, {re.ResourceT.resource_rep(): 6}),
+        (15, {re.ResourceT.resource_rep(): 7}),
+        (16, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceT.resource_rep(): z % 8}
-        assert re.ResourceT.pow_resource_decomp(z) == expected
+        op = re.ResourceT(0)
+        assert op.pow_resource_decomp(z) == expected_res
 
-        t = re.ResourceT(0)
-        pow_t = re.ResourcePow(t, z)
-
-        r1 = re.get_resources(t) * (z % 8)
-        r2 = re.get_resources(pow_t)
-
-        assert r1 == r2
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
 
 
 class TestX:
-    """Tests for ResourceX"""
+    """Tests for the ResourceX gate"""
 
     def test_resources(self):
-        """Test that ResourceT does not implement a decomposition"""
+        """Tests for the ResourceX gate"""
         expected = {
             re.ResourceS.resource_rep(): 2,
             re.ResourceHadamard.resource_rep(): 2,
@@ -264,22 +492,79 @@ class TestX:
         expected = re.CompressedResourceOp(re.ResourceX, {})
         assert re.ResourceX.resource_rep() == expected
 
-    def test_single_controlled_resources(self):
-        """Test that the controlled_resource_decomp method dispatches correctly."""
-        controlled_op = re.ResourceControlled(re.ResourceX(0), control_wires=[1])
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [],
+            {
+                re.ResourceCNOT.resource_rep(): 1,
+            },
+        ),
+        (
+            ["c1"],
+            [0],
+            [],
+            {
+                re.ResourceCNOT.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 2,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            ["w1"],
+            {
+                re.ResourceToffoli.resource_rep(): 1,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [0, 0],
+            ["w1"],
+            {
+                re.ResourceToffoli.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 4,
+            },
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            ["w1", "w2"],
+            {
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 1,
+            },
+        ),
+        (
+            ["c1", "c2", "c3", "c4"],
+            [1, 0, 0, 1],
+            ["w1", "w2"],
+            {
+                re.ResourceMultiControlledX.resource_rep(4, 2, 2): 1,
+            },
+        ),
+    )
 
-        cnot = re.ResourceCNOT([0, 1])
-        assert re.get_resources(controlled_op) == re.get_resources(cnot)
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, work_wires, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, work_wires, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_work_wires = len(work_wires)
 
-    def test_double_controlled_resources(self):
-        """Test that the controlled_resource_decomp method dispatches correctly."""
-        controlled_op = re.ResourceControlled(re.ResourceX(0), control_wires=[1, 2])
-        expected_op = re.ResourceToffoli([0, 1, 2])
+        op = re.ResourceX(0)
+        op2 = re.ResourceControlled(
+            op, control_wires=ctrl_wires, control_values=ctrl_values, work_wires=work_wires
+        )
 
-        r1 = re.get_resources(controlled_op)
-        r2 = re.get_resources(expected_op)
-
-        assert r1 == r2
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
+            == expected_res
+        )
+        assert op2.resources(**op2.resource_params()) == expected_res
 
     def test_adjoint_decomposition(self):
         """Test that the adjoint resources are correct."""
@@ -293,16 +578,252 @@ class TestX:
         r2 = re.get_resources(x_dag)
         assert r1 == r2
 
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomp(self, z):
+    pow_data = (
+        (1, {re.ResourceX.resource_rep(): 1}),
+        (2, {}),
+        (3, {re.ResourceX.resource_rep(): 1}),
+        (4, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        expected = {re.ResourceX.resource_rep(): z % 2}
-        assert re.ResourceX.pow_resource_decomp(z) == expected
+        op = re.ResourceX(0)
+        assert op.pow_resource_decomp(z) == expected_res
 
-        x = re.ResourceX(0)
-        pow_x = re.ResourcePow(x, z)
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
 
-        r1 = re.get_resources(x) * (z % 2)
-        r2 = re.get_resources(pow_x)
 
+class TestY:
+    """Tests for the ResourceY gate"""
+
+    def test_resources(self):
+        """Test that ResourceT does not implement a decomposition"""
+        expected = {
+            re.ResourceS.resource_rep(): 6,
+            re.ResourceHadamard.resource_rep(): 2,
+        }
+        assert re.ResourceY.resources() == expected
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceY(0)
+        assert op.resource_params() == {}
+
+    def test_resource_rep(self):
+        """Test that the compact representation is correct"""
+        expected = re.CompressedResourceOp(re.ResourceY, {})
+        assert re.ResourceY.resource_rep() == expected
+
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [],
+            {
+                re.ResourceCY.resource_rep(): 1,
+            },
+        ),
+        (
+            ["c1"],
+            [0],
+            [],
+            {
+                re.ResourceCY.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 2,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            ["w1"],
+            {
+                re.ResourceCY.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [0, 0],
+            ["w1"],
+            {
+                re.ResourceCY.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 2, 1): 2,
+            },
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            ["w1", "w2"],
+            {
+                re.ResourceCY.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
+            },
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, work_wires, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, work_wires, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_work_wires = len(work_wires)
+
+        op = re.ResourceY(0)
+        op2 = re.ResourceControlled(
+            op, control_wires=ctrl_wires, control_values=ctrl_values, work_wires=work_wires
+        )
+
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
+            == expected_res
+        )
+        assert op2.resources(**op2.resource_params()) == expected_res
+
+    def test_adjoint_decomposition(self):
+        """Test that the adjoint resources are correct."""
+        expected = {re.ResourceY.resource_rep(): 1}
+        assert re.ResourceY.adjoint_resource_decomp() == expected
+
+        y = re.ResourceY(0)
+        y_dag = re.ResourceAdjoint(y)
+
+        r1 = re.get_resources(y)
+        r2 = re.get_resources(y_dag)
         assert r1 == r2
+
+    pow_data = (
+        (1, {re.ResourceY.resource_rep(): 1}),
+        (2, {}),
+        (3, {re.ResourceY.resource_rep(): 1}),
+        (4, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
+        """Test that the pow decomposition is correct."""
+        op = re.ResourceY(0)
+        assert op.pow_resource_decomp(z) == expected_res
+
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res
+
+
+class TestZ:
+    """Tests for the ResourceZ gate"""
+
+    def test_resources(self):
+        """Test that ResourceT does not implement a decomposition"""
+        expected = {
+            re.ResourceS.resource_rep(): 2,
+        }
+        assert re.ResourceZ.resources() == expected
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceZ(0)
+        assert op.resource_params() == {}
+
+    def test_resource_rep(self):
+        """Test that the compact representation is correct"""
+        expected = re.CompressedResourceOp(re.ResourceZ, {})
+        assert re.ResourceZ.resource_rep() == expected
+
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [],
+            {
+                re.ResourceCZ.resource_rep(): 1,
+            },
+        ),
+        (
+            ["c1"],
+            [0],
+            [],
+            {
+                re.ResourceCZ.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 2,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            ["w1"],
+            {
+                re.ResourceCCZ.resource_rep(): 1,
+            },
+        ),
+        (
+            ["c1", "c2"],
+            [0, 0],
+            ["w1"],
+            {
+                re.ResourceCCZ.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 4,
+            },
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            ["w1", "w2"],
+            {
+                re.ResourceCZ.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
+            },
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, work_wires, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, work_wires, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+        num_work_wires = len(work_wires)
+
+        op = re.ResourceZ(0)
+        op2 = re.ResourceControlled(
+            op, control_wires=ctrl_wires, control_values=ctrl_values, work_wires=work_wires
+        )
+
+        assert (
+            op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
+            == expected_res
+        )
+        assert op2.resources(**op2.resource_params()) == expected_res
+
+    def test_adjoint_decomposition(self):
+        """Test that the adjoint resources are correct."""
+        expected = {re.ResourceZ.resource_rep(): 1}
+        assert re.ResourceZ.adjoint_resource_decomp() == expected
+
+        z = re.ResourceZ(0)
+        z_dag = re.ResourceAdjoint(z)
+
+        r1 = re.get_resources(z)
+        r2 = re.get_resources(z_dag)
+        assert r1 == r2
+
+    pow_data = (
+        (1, {re.ResourceZ.resource_rep(): 1}),
+        (2, {}),
+        (3, {re.ResourceZ.resource_rep(): 1}),
+        (4, {}),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
+        """Test that the pow decomposition is correct."""
+        op = re.ResourceZ(0)
+        assert op.pow_resource_decomp(z) == expected_res
+
+        op2 = re.ResourcePow(op, z)
+        assert op2.resources(**op2.resource_params()) == expected_res

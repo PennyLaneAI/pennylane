@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
 
@@ -89,7 +89,7 @@ def shadow_expval(H, k=1, seed=None):
     return ShadowExpvalMP(H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed=None):
+def classical_shadow(wires: WiresLike, seed=None):
     """
     The classical shadow measurement protocol.
 
@@ -180,8 +180,8 @@ def classical_shadow(wires, seed=None):
             measurements = [qml.classical_shadow(wires=(0,1))]
             tape = qml.tape.QuantumTape(ops, measurements, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0]
+        >>> bits1, recipes1 = qml.execute([tape], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         True
         >>> np.all(bits1 == bits2)
@@ -200,8 +200,8 @@ def classical_shadow(wires, seed=None):
             measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
             tape2 = qml.tape.QuantumTape(ops, measurements2, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape1], device=dev, gradient_fn=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape2], device=dev, gradient_fn=None)[0]
+        >>> bits1, recipes1 = qml.execute([tape1], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape2], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         False
         >>> np.all(bits1 == bits2)
@@ -227,7 +227,10 @@ class ClassicalShadowMP(MeasurementTransform):
     """
 
     def __init__(
-        self, wires: Optional[Wires] = None, seed: Optional[int] = None, id: Optional[str] = None
+        self,
+        wires: Optional[WiresLike] = None,
+        seed: Optional[int] = None,
+        id: Optional[str] = None,
     ):
         self.seed = seed
         super().__init__(wires=wires, id=id)

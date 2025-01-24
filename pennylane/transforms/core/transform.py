@@ -20,7 +20,7 @@ from typing import get_type_hints
 from .transform_dispatcher import TransformDispatcher, TransformError
 
 
-def transform(
+def transform(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     quantum_transform,
     expand_transform=None,
     classical_cotransform=None,
@@ -28,8 +28,8 @@ def transform(
     final_transform=False,
     use_argnum_in_expand=False,
     plxpr_transform=None,
-):  # pylint: disable=too-many-arguments
-    """Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
+) -> TransformDispatcher:
+    r"""Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
     :class:`~.QNode`.
 
     ``transform`` should be applied to a function that transforms tapes. Once validated, the result will
@@ -60,7 +60,7 @@ def transform(
             of the transform program. ``is_informative`` supersedes ``final_transform``.
         use_argnum_in_expand=False (bool): Whether or not to use ``argnum`` of the tape to determine trainable parameters
             during the expansion transform process.
-        plxpr_transform=None (Optional[Callable]): Function for processing primitives when transforming PLxPR. **Experimental**
+        plxpr_transform=None (Optional[Callable]): Function for transforming plxpr. **Experimental**
 
     Returns:
 
@@ -193,11 +193,17 @@ def transform(
           circuit. Then the transformed circuits are executed by a device and finally the post-processing function is
           applied on the results.
 
+          When experimental program capture is enabled, transforming a :class:`~.QNode` returns a new function to which the
+          transform has been added as a higher-order primitive.
+
         - For a quantum function (callable) input, the transform builds the tape when the quantum function is
           executed and then applies itself to the tape. The resulting tape is then converted back
           to a quantum function (callable). It therefore returns a transformed quantum function (Callable). The limitation
           is that the underlying transform can only return a sequence containing a single tape, because quantum
           functions only support a single circuit.
+
+          When experimental program capture is enabled, transforming a function (callable) returns a new function to which the
+          transform has been added as a higher-order primitive.
 
         - For a :class:`~.QuantumTape`, the underlying quantum transform is directly applied on the
           :class:`~.QuantumTape`. It returns a sequence of :class:`~.QuantumTape` and a processing
@@ -210,6 +216,78 @@ def transform(
         - For a :class:`~.devices.Device`, the transform is added to the device's transform program
           and a transformed :class:`pennylane.devices.Device` is returned. The transform is added
           to the end of the device program and will be last in the overall transform program.
+
+    .. details::
+        :title: Transforms with experimental program capture
+
+        To define a transform that can be applied directly to plxpr without the need to create ``QuantumScript``\ s, users
+        must provide the ``plxpr_transform`` argument. If this argument is not provided, executing transformed functions
+        will raise a ``NotImplementedError``. The ``plxpr_transform`` argument should be a function that applies the
+        respective transform to ``jax.core.Jaxpr`` and returns a transformed ``jax.core.ClosedJaxpr``. ``plxpr_transform``
+        can assume that no transform primitives are present in the input plxpr, and its implementation does not need to
+        account for these primitives. The exact expected signature of ``plxpr_transform`` is shown in the example below:
+
+        .. code-block:: python
+
+            def dummy_plxpr_transform(
+                jaxpr: jax.core.Jaxpr, consts: list, targs: list, tkwargs: dict, *args
+            ) -> jax.core.ClosedJaxpr:
+                ...
+
+        Once the ``plxpr_transform`` argument is provided, the transform can be easily used with program capture
+        enabled! To do so, apply the transform as you normally would:
+
+        .. code-block:: python
+
+            qml.capture.enable()
+
+            @qml.transforms.cancel_inverses
+            def circuit():
+                qml.X(0)
+                qml.S(1)
+                qml.X(0)
+                qml.adjoint(qml.S(1))
+                return qml.expval(qml.Z(1))
+
+        >>> qml.capture.make_plxpr(circuit)()
+        { lambda ; . let
+            a:AbstractMeasurement(n_wires=None) = cancel_inverses_transform[
+            args_slice=slice(0, 0, None)
+            consts_slice=slice(0, 0, None)
+            inner_jaxpr={ lambda ; . let
+                _:AbstractOperator() = PauliX[n_wires=1] 0
+                _:AbstractOperator() = S[n_wires=1] 1
+                _:AbstractOperator() = PauliX[n_wires=1] 0
+                b:AbstractOperator() = S[n_wires=1] 1
+                _:AbstractOperator() = Adjoint b
+                c:AbstractOperator() = PauliZ[n_wires=1] 1
+                d:AbstractMeasurement(n_wires=None) = expval_obs c
+              in (d,) }
+            targs_slice=slice(0, None, None)
+            tkwargs={}
+            ]
+          in (a,) }
+
+        As shown, the transform gets applied as a higher-order primitive, with the jaxpr
+        representation of the function being transformed stored in the ``inner_jaxpr``
+        parameter of the transform's primitive.
+
+        .. warning::
+
+            Currently, executing a function to which a transform has been applied will raise a
+            ``NotImplementedError``. See below for details on how to use functions that are
+            transformed.
+
+        To apply the transform, the :func:`pennylane.capture.expand_plxpr_transforms` function
+        should be used. This function accepts a function to which transforms have been applied
+        as an input, and returns a new function that has been transformed:
+
+        >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
+        >>> qml.capture.make_plxpr(transformed_circuit)()
+        { lambda ; . let
+            a:AbstractOperator() = PauliZ[n_wires=1] 1
+            b:AbstractMeasurement(n_wires=None) = expval_obs a
+          in (b,) }
     """
     # 1: Checks for the transform
     if not callable(quantum_transform):

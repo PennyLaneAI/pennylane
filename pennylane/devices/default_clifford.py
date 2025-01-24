@@ -466,7 +466,7 @@ class DefaultClifford(Device):
         transform_program = TransformProgram()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(qml.defer_measurements, device=self)
+        transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
 
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
@@ -579,7 +579,7 @@ class DefaultClifford(Device):
         tableau_simulator.do_circuit(stim_circuit)
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
 
-        # Perform measurments based on whether shots are provided
+        # Perform measurements based on whether shots are provided
         if circuit.shots:
             meas_results = self.measure_statistical(circuit, stim_circuit, seed=seed)
         else:

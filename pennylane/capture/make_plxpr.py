@@ -18,6 +18,8 @@ from typing import Callable, Sequence, Union
 
 import pennylane as qml
 
+from .autograph import run_autograph
+
 has_jax = True
 try:
     import jax
@@ -25,7 +27,9 @@ except ImportError:  # pragma: no cover
     has_jax = False
 
 
-def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), **kwargs):
+def make_plxpr(
+    func: Callable, static_argnums: Union[int, Sequence[int]] = (), autograph=True, **kwargs
+):
     r"""Takes a function and returns a ``Callable`` that, when called, produces a PLxPR representing
     the function with the given args.
 
@@ -36,13 +40,21 @@ def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), *
     Args:
         func (Callable): the ``Callable`` to be captured
 
-    Kwargs:
+    Keyword Args:
         static_argnums (Union(int, Sequence[int])): optional, an ``int`` or collection of ``int``\ s
             that specify which positional arguments to treat as static (trace- and compile-time constant).
+        autograph (bool): whether to use AutoGraph to convert Python control flow to native PennyLane
+            control flow. Defaults to True.
 
     Returns:
         Callable: function that, when called, returns the PLxPR representation of ``func`` for the specified inputs.
 
+    .. note::
+
+        More details on using AutoGraph are provided under Usage Details.
+
+        There are some limitations and sharp bits regarding AutoGraph; to better understand
+        supported behaviour and limitations, see https://docs.pennylane.ai/en/stable/development/autograph.html
 
     **Example**
 
@@ -78,6 +90,56 @@ def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), *
         ] a
       in (b,) }
 
+    .. details ::
+        :title: Usage Details
+
+        The ``autograph`` argument is ``True`` by default, converting Pythonic control flow to PennyLane
+        supported control flow. This requires the ``diastatic-malt`` package, a standalone fork of the AutoGraph
+        module in TensorFlow (`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_
+        ).
+
+        .. note::
+
+            There are some limitations and sharp bits regarding AutoGraph; to better understand
+            supported behaviour and limitations, see https://docs.pennylane.ai/en/stable/development/autograph.html
+
+        On its own, capture of standard Python control flow is not supported:
+
+        .. code-block:: python
+
+            def fn(x):
+                if x > 5:
+                    return x+1
+                return x+2
+
+        For this function, capture doesn't work without autograph:
+
+        >>> plxpr_fn = qml.capture.make_plxpr(fn, autograph=False)
+        >>> plxpr = plxpr_fn(3)
+        TracerBoolConversionError: Attempted boolean conversion of traced array with shape bool[].
+
+        With AutoGraph, the control flow is automatically converted to the native PennyLane control
+        flow implementation, and succeeds:
+
+        >>> plxpr_fn = qml.capture.make_plxpr(fn)
+        >>> plxpr = plxpr_fn(3)
+        >>> plxpr
+        { lambda ; a:i64[]. let
+            b:bool[] = gt a 5
+            _:bool[] c:i64[] = cond[
+              args_slice=slice(4, None, None)
+              consts_slices=[slice(2, 3, None), slice(3, 4, None)]
+              jaxpr_branches=[{ lambda a:i64[]; . let  in (True, a) }, { lambda a:i64[]; . let b:i64[] = add a 2 in (True, b) }]
+            ] b True a a
+          in (c,) }
+
+        We can evaulate this to get the results:
+
+        >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
+        [Array(4, dtype=int64, weak_type=True)]
+
+        >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7)
+        [Array(8, dtype=int64, weak_type=True)]
     """
     if not has_jax:  # pragma: no cover
         raise ImportError(
@@ -90,5 +152,8 @@ def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), *
             "Capturing PLxPR with ``make_plxpr`` requires PennyLane capture to be enabled. "
             "You can enable capture with ``qml.capture.enable()``"
         )
+
+    if autograph:
+        func = run_autograph(func)
 
     return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)

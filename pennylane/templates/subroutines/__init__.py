@@ -37,7 +37,7 @@ from .qsvt import poly_to_angles, QSVT, qsvt, transform_angles
 from .select import Select
 from .qdrift import QDrift
 from .controlled_sequence import ControlledSequence
-from .trotter import TrotterProduct
+from .trotter import TrotterProduct, TrotterizedQfunc, trotterize
 from .aqft import AQFT
 from .fable import FABLE
 from .reflection import Reflection
@@ -52,3 +52,4 @@ from .out_multiplier import OutMultiplier
 from .out_adder import OutAdder
 from .mod_exp import ModExp
 from .out_poly import OutPoly
+from .gqsp import GQSP

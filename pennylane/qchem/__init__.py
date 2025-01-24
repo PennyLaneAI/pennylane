@@ -82,3 +82,13 @@ from .tapering import (
     taper_hf,
     taper_operation,
 )
+from .vibrational import (
+    optimize_geometry,
+    localize_normal_modes,
+    VibrationalPES,
+    taylor_bosonic,
+    taylor_coeffs,
+    taylor_dipole_coeffs,
+    taylor_hamiltonian,
+    vscf_integrals,
+)

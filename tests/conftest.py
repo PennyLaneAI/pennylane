@@ -164,8 +164,10 @@ def seed(request):
 def enable_disable_plxpr():
     """enable and disable capture around each test."""
     qml.capture.enable()
-    yield
-    qml.capture.disable()
+    try:
+        yield
+    finally:
+        qml.capture.disable()
 
 
 #######################################################################

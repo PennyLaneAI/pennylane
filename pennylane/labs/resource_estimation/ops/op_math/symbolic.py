@@ -16,28 +16,31 @@ from collections import defaultdict
 from typing import Dict
 
 import pennylane.labs.resource_estimation as re
+from pennylane import math
 from pennylane.labs.resource_estimation.resource_container import _combine_dict, _scale_dict
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.op_math.controlled import ControlledOp
+from pennylane.ops.op_math.exp import Exp
 from pennylane.ops.op_math.pow import PowOperation
 
-# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments
+# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
 
 
 class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
-    """Resource class for Adjoint"""
+    """Resource class for the Adjoint symbolic operation."""
 
-    @staticmethod
-    def _resource_decomp(base_class, base_params, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    @classmethod
+    def _resource_decomp(
+        cls, base_class, base_params, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         try:
             return base_class.adjoint_resource_decomp(**base_params)
         except re.ResourcesNotDefined:
             gate_types = defaultdict(int)
             decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
-                resources = gate.op_type.adjoint_resource_decomp(**gate.params)
-                _scale_dict(resources, count, in_place=True)
-                _combine_dict(gate_types, resources, in_place=True)
+                rep = cls.resource_rep(gate.op_type, gate.params)
+                gate_types[rep] = count
 
             return gate_types
 
@@ -59,7 +62,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
 
 class ResourceControlled(ControlledOp, re.ResourceOperator):
-    """Resource class for Controlled"""
+    """Resource class for the Controlled symbolic operation."""
 
     @classmethod
     def _resource_decomp(
@@ -72,7 +75,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         except re.ResourcesNotDefined:
             pass
 
-        gate_types = {}
+        gate_types = defaultdict(int)
 
         if num_ctrl_values == 0:
             decomp = base_class.resources(**base_params, **kwargs)
@@ -142,14 +145,28 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
 
 class ResourcePow(PowOperation, re.ResourceOperator):
-    """Resource class for Pow"""
+    """Resource class for the Pow symbolic operation."""
 
-    @staticmethod
+    @classmethod
     def _resource_decomp(
-        base_class, z, base_params, **kwargs
+        cls, base_class, base_params, z, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
+        if z == 0:
+            return {re.ResourceIdentity.resource_rep(): 1}
+
         try:
             return base_class.pow_resource_decomp(z, **base_params)
+        except re.ResourcesNotDefined:
+            pass
+
+        try:
+            gate_types = defaultdict(int)
+            decomp = base_class.resources(**base_params, **kwargs)
+            for gate, count in decomp.items():
+                rep = cls.resource_rep(gate.op_type, gate.params, z)
+                gate_types[rep] = count
+
+            return gate_types
         except re.ResourcesNotDefined:
             pass
 
@@ -158,23 +175,111 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
-            "z": self.z,
             "base_params": self.base.resource_params(),
+            "z": self.z,
         }
 
     @classmethod
-    def resource_rep(cls, base_class, z, base_params) -> re.CompressedResourceOp:
+    def resource_rep(cls, base_class, base_params, z) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(
-            cls, {"base_class": base_class, "z": z, "base_params": base_params}
+            cls, {"base_class": base_class, "base_params": base_params, "z": z}
         )
 
     @classmethod
     def pow_resource_decomp(
-        cls, z0, base_class, z, base_params
+        cls, z0, base_class, base_params, z
     ) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(base_class, z0 * z, base_params): 1}
+        return {cls.resource_rep(base_class, base_params, z0 * z): 1}
 
     @staticmethod
-    def tracking_name(base_class, z, base_params) -> str:
+    def tracking_name(base_class, base_params, z) -> str:
         base_name = base_class.tracking_name(**base_params)
         return f"Pow({base_name}, {z})"
+
+
+class ResourceExp(Exp, re.ResourceOperator):
+    """Resource class for Exp"""
+
+    @staticmethod
+    def _resource_decomp(base_class, base_params, base_pauli_rep, coeff, num_steps, **kwargs):
+
+        # Custom exponential operator resources:
+        if issubclass(base_class, re.ResourceOperator):
+            try:
+                return base_class.exp_resource_decomp(coeff, num_steps, **base_params)
+            except re.ResourcesNotDefined:
+                pass
+
+        if base_pauli_rep and math.real(coeff) == 0:
+            scalar = num_steps or 1  # 1st-order Trotter-Suzuki with 'num_steps' trotter steps:
+            return _scale_dict(
+                _resources_from_pauli_sentence(base_pauli_rep), scalar=scalar, in_place=True
+            )
+
+        raise re.ResourcesNotDefined
+
+    def resource_params(self):
+        return _extract_exp_params(self.base, self.scalar, self.num_steps)
+
+    @classmethod
+    def resource_rep(cls, base_class, base_params, base_pauli_rep, coeff, num_steps):
+        name = cls.tracking_name(base_class, base_params, base_pauli_rep, coeff, num_steps)
+        return re.CompressedResourceOp(
+            cls,
+            {
+                "base_class": base_class,
+                "base_params": base_params,
+                "base_pauli_rep": base_pauli_rep,
+                "coeff": coeff,
+                "num_steps": num_steps,
+            },
+            name=name,
+        )
+
+    @classmethod
+    def pow_resource_decomp(
+        cls, z0, base_class, base_params, base_pauli_rep, coeff, num_steps
+    ) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(base_class, base_params, base_pauli_rep, z0 * coeff, num_steps): 1}
+
+    @staticmethod
+    def tracking_name(base_class, base_params, base_pauli_rep, coeff, num_steps):
+        base_name = (
+            base_class.tracking_name(**base_params)
+            if issubclass(base_class, re.ResourceOperator)
+            else base_class.__name__
+        )
+
+        return f"Exp({base_name}, {coeff}, num_steps={num_steps})".replace("Resource", "")
+
+
+def _extract_exp_params(base_op, scalar, num_steps):
+    pauli_rep = base_op.pauli_rep
+    isinstance_resource_op = isinstance(base_op, re.ResourceOperator)
+
+    if (not isinstance_resource_op) and (pauli_rep is None):
+        raise ValueError(
+            f"Cannot obtain resources for the exponential of {base_op}, if it is not a ResourceOperator and it doesn't have a Pauli decomposition."
+        )
+
+    base_class = type(base_op)
+    base_params = base_op.resource_params() if isinstance_resource_op else {}
+
+    return {
+        "base_class": base_class,
+        "base_params": base_params,
+        "base_pauli_rep": pauli_rep,
+        "coeff": scalar,
+        "num_steps": num_steps,
+    }
+
+
+def _resources_from_pauli_sentence(pauli_sentence):
+    gate_types = defaultdict(int)
+
+    for pauli_word in iter(pauli_sentence.keys()):
+        pauli_string = "".join((str(v) for v in pauli_word.values()))
+        pauli_rot_gate = re.ResourcePauliRot.resource_rep(pauli_string)
+        gate_types[pauli_rot_gate] = 1
+
+    return gate_types
