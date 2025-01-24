@@ -149,7 +149,7 @@ class ControlledQubitUnitary(ControlledOp):
             )
             warnings.warn(
                 "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Instead, please use a full matrix as input.",
+                "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
                 qml.PennyLaneDeprecationWarning,
             )
             base = base.matrix()
