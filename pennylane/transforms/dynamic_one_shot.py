@@ -54,6 +54,10 @@ def null_postprocessing(results):
     return results[0]
 
 
+def _get_plxpr_cancel_inverses():
+    return
+
+
 @transform
 def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
