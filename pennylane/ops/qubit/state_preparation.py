@@ -15,14 +15,13 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-# pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
-from scipy.sparse import csr_matrix
 from typing import Optional, Union
-
 from warnings import warn
 
 import numpy as np
 import scipy as sp
+# pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import math
@@ -497,7 +496,6 @@ class StatePrep(StatePrepBase):
                     f"The state must be a vector of norm 1.0; got norm {norm}. "
                     "Use 'normalize=True' to automatically normalize."
                 )
-
         return state
 
 
