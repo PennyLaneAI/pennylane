@@ -9,7 +9,7 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``control_wires`` argument in the ``qml.ControlledOperation`` class is deprecated. Instead, use the ``wires`` argument.
+* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class is deprecated. Instead, use the ``wires`` argument.
 
   - Deprecated in v0.41
   - Will be removed in v0.42
