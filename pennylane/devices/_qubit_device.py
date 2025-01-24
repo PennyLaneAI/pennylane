@@ -763,8 +763,6 @@ class QubitDevice(Device):
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {name}"
                 )
-            # else:
-            #     result = None
 
             # 2. Post-process statistics results (if need be)
             if isinstance(
@@ -1430,7 +1428,7 @@ class QubitDevice(Device):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
 
-        The format of the dictionary depends on whether the MeasurementProcess is Counts or AllCounts. By default,
+        The format of the dictionary depends on whether the MeasurementProcess CountsMP returns all counts or not. By default,
         the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
         the dictionary will instead contain all possible outcomes, with a count of 0
         for those not observed. See example.
