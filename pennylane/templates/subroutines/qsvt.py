@@ -576,31 +576,12 @@ Implementation of the QSP (Quantum Signal Processing) algorithm proposed in http
 
 import scipy
 
-def jit_if_available(func):
-    """
-    decorator that jax.jit the qsp_iterative optimization functions if jax is available
-    the static arguments to the jit function are meant to be contained in kwargs
-    """
-    try:
-        from functools import partial
-        from functools import wraps
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-        return jax.jit(func)
-    except ImportError:
-        return func
-
-
-
-@jit_if_available
 def cheby_pol(x, degree):
     """cos(degree*arcos(x))"""
-    # if np.abs(x) > 1:
-    #     raise ValueError()
+    if np.abs(x) > 1:
+        raise ValueError()
     return qml.math.cos(degree * qml.math.arccos(x))
 
-@jit_if_available
 def poly_func(
     coeffs, degree, parity, x
     ):
@@ -610,37 +591,24 @@ def poly_func(
         [coeffs[i] * cheby_pol(x, degree=2 * i + parity) for i in ind]
     )
 
-@jit_if_available
 def z_rotation(phi):
-    try:
-        import jax
-        interface='jax'
-    except ModuleNotFoundError:
-        interface=None
-    return qml.math.array([[qml.math.exp(1j * phi), 0.0], [0.0, qml.math.exp(-1j * phi)]], like=interface)
+    return qml.math.array([[qml.math.exp(1j * phi), 0.0], [0.0, qml.math.exp(-1j * phi)]])
 
-@jit_if_available
 def W_of_x(x):
     """W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
-    try:
-        import jax
-        interface='jax'
-    except ModuleNotFoundError:
-        interface=None
+
     return qml.math.array(
         [
             [cheby_pol(x=x, degree=1.), 1j * qml.math.sqrt(1 - cheby_pol(x=x, degree=1.) ** 2)],
             [1j * qml.math.sqrt(1 - cheby_pol(x=x, degree=1.) ** 2), cheby_pol(x=x, degree=1.)],
-        ], like=interface
+        ]
     )
 
-@jit_if_available
 def qsp_iterate(phi, x):
     """defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
     return qml.math.dot(W_of_x(x=x), z_rotation(phi=phi))
 
 
-@jit_if_available
 def qsp_iterates(phis, x):
     """Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)"""
     mtx = qml.math.eye(2)
@@ -678,10 +646,8 @@ def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimi
 
         return 1 / len(grid_points) * obj_func
     opt_kwargs = {}
-    try:
-        from jax import jacobian, hessian
-    except:
-        from autograd import jacobian, hessian
+
+    from autograd import jacobian, hessian
 
     opt_kwargs["jac"] = jacobian(obj_function)
     if opt_method == "Newton-CG":
