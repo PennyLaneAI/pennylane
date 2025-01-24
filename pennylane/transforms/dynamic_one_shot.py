@@ -58,40 +58,42 @@ def null_postprocessing(results):
 def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
+    This transform enables the ``"one-shot"`` mid-circuit measurement method. The ``"one-shot"`` method prompts the
+    device to perform a series of one-shot executions, where in each execution, the ``qml.measure``
+    operation applies a probabilistic mid-circuit measurement to the circuit.
+    This is in contrast with ``qml.defer_measurement``, which instead introduces an extra
+    wire for each mid-circuit measurement. The ``"one-shot"`` method is favourable in the few-shots
+    and several-mid-circuit-measurements limit, whereas ``qml.defer_measurements`` is favourable in
+    the opposite limit.
+
     Args:
-        tape (QNode or QuantumTape or Callable): a quantum circuit to add a batch dimension to.
+        tape (QNode or QuantumScript or Callable): a quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
         This circuit will provide the results of a dynamic execution.
 
-
     **Example**
 
-    Consider the following circuit:
+    Most devices that support mid-circuit measurements will include this transform in its
+    preprocessing automatically when applicable. When this is the case, any user-applied
+    ``dynamic_one_shot`` transforms will be ignored. The recommended way to use dynamic one
+    shot is to specify ``mcm_method="one-shot"`` in the ``qml.qnode`` decorator.
 
     .. code-block:: python
 
         dev = qml.device("default.qubit", shots=100)
         params = np.pi / 4 * np.ones(2)
 
-        @qml.dynamic_one_shot
-        @qml.qnode(dev)
+        @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
         def func(x, y):
             qml.RX(x, wires=0)
             m0 = qml.measure(0)
             qml.cond(m0, qml.RY)(y, wires=1)
             return qml.expval(op=m0)
 
-    The ``qml.dynamic_one_shot`` decorator prompts the QNode to perform a hundred one-shot
-    calculations, where in each calculation the ``qml.measure`` operations dynamically
-    measures the 0-wire and collapse the state vector stochastically. This transforms
-    contrasts with ``qml.defer_measurements``, which instead introduces an extra wire
-    for each mid-circuit measurement. The ``qml.dynamic_one_shot`` transform is favorable in the
-    few-shots several-mid-circuit-measurement limit, whereas ``qml.defer_measurements`` is favorable
-    in the opposite limit.
     """
     if not any(is_mcm(o) for o in tape.operations):
         return (tape,), null_postprocessing
@@ -383,6 +385,17 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
     """
     if isinstance(measurement, CountsMP):
         tmp = Counter()
+
+        if measurement.all_outcomes:
+            if isinstance(measurement.mv, Sequence):
+                values = [list(m.branches.values()) for m in measurement.mv]
+                values = list(itertools.product(*values))
+                tmp = Counter({"".join(map(str, v)): 0 for v in values})
+            else:
+                values = [list(measurement.mv.branches.values())]
+                values = list(itertools.product(*values))
+                tmp = Counter({float(*v): 0 for v in values})
+
         for i, d in enumerate(samples):
             tmp.update(
                 {k if isinstance(k, str) else float(k): v * is_valid[i] for k, v in d.items()}

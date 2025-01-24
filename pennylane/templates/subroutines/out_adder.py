@@ -17,6 +17,7 @@ Contains the OutAdder template.
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
 class OutAdder(Operation):
@@ -43,7 +44,7 @@ class OutAdder(Operation):
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
         output_wires (Sequence[int]): the wires that store the addition result. If the register is in a non-zero state :math:`b`, the solution will be added to this value.
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`.
-        work_wires (Sequence[int]): the auxiliary wires to use for the addition. The work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires should be provided. Defaults to ``None``.
+        work_wires (Sequence[int]): the auxiliary wires to use for the addition. The work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires should be provided. Defaults to empty tuple.
 
     **Example**
 
@@ -138,14 +139,21 @@ class OutAdder(Operation):
     grad_method = None
 
     def __init__(
-        self, x_wires, y_wires, output_wires, mod=None, work_wires=None, id=None
+        self,
+        x_wires: WiresLike,
+        y_wires: WiresLike,
+        output_wires: WiresLike,
+        mod=None,
+        work_wires: WiresLike = (),
+        id=None,
     ):  # pylint: disable=too-many-arguments
 
         x_wires = qml.wires.Wires(x_wires)
         y_wires = qml.wires.Wires(y_wires)
         output_wires = qml.wires.Wires(output_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
 
-        num_work_wires = 0 if work_wires is None else len(work_wires)
+        num_work_wires = len(work_wires)
 
         if mod is None:
             mod = 2 ** (len(output_wires))
@@ -158,7 +166,7 @@ class OutAdder(Operation):
             raise ValueError(
                 f"If mod is not 2^{len(output_wires)}, two work wires should be provided."
             )
-        if work_wires is not None:
+        if len(work_wires) != 0:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if any(wire in work_wires for wire in y_wires):
@@ -246,7 +254,7 @@ class OutAdder(Operation):
             work_wire = work_wires[1:]
         else:
             qft_new_output_wires = output_wires
-            work_wire = None
+            work_wire = ()
         op_list.append(qml.QFT(wires=qft_new_output_wires))
         op_list.append(
             qml.ControlledSequence(

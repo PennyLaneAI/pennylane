@@ -17,7 +17,7 @@ This submodule defines a strategy structure for defining custom plxpr interprete
 # pylint: disable=no-self-use
 from copy import copy
 from functools import partial, wraps
-from typing import Callable
+from typing import Callable, Sequence
 
 import jax
 
@@ -25,8 +25,6 @@ import pennylane as qml
 
 from .flatfn import FlatFn
 from .primitives import (
-    AbstractMeasurement,
-    AbstractOperator,
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
@@ -36,6 +34,13 @@ from .primitives import (
     qnode_prim,
     while_loop_prim,
 )
+
+FlattenedHigherOrderPrimitives: dict["jax.core.Primitive", Callable] = {}
+"""
+A dictionary containing flattened style cond, while, and for loop higher order primitives.
+.. code-block::
+    MyInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
+"""
 
 
 def jaxpr_to_jaxpr(
@@ -77,13 +82,14 @@ class PlxprInterpreter:
 
     Now the interpreter can be used to transform functions and jaxpr:
 
+    >>> qml.capture.enable()
     >>> interpreter = SimplifyInterpreter()
     >>> def f(x):
     ...     qml.RX(x, 0)**2
     ...     qml.adjoint(qml.Z(0))
     ...     return qml.expval(qml.X(0) + qml.X(0))
     >>> simplified_f = interpreter(f)
-    >>> print(qml.draw(simplified_f)(0.5)
+    >>> print(qml.draw(simplified_f)(0.5))
     0: ──RX(1.00)──Z─┤  <2.00*X>
     >>> jaxpr = jax.make_jaxpr(f)(0.5)
     >>> interpreter.eval(jaxpr.jaxpr, [], 0.5)
@@ -91,13 +97,12 @@ class PlxprInterpreter:
 
     **Handling higher order primitives:**
 
-    Two main strategies exist for handling higher order primitives (primitives with jaxpr as metatdata).
-
-    1) Structure preserving. Tracing the execution preserves the higher order primitive.
-    2) Structure flattening. Tracing the execution eliminates the higher order primitive.
+    Two main strategies exist for handling higher order primitives (primitives with jaxpr as metadata).
+    The first one is structure preserving (tracing the execution preserves the higher order primitive),
+    and the second one is structure flattening (tracing the execution eliminates the higher order primitive).
 
     Compilation transforms, like the above ``SimplifyInterpreter``, may prefer to handle higher order primitives
-    via a structure preserving method. After transforming the jaxpr, the `for_loop` still exists. This maintains
+    via a structure-preserving method. After transforming the jaxpr, the `for_loop` still exists. This maintains
     the compact structure of the jaxpr and reduces the size of the program. This behavior is the default.
 
     >>> def g(x):
@@ -110,22 +115,25 @@ class PlxprInterpreter:
     >>> jax.make_jaxpr(interpreter(g))(0.5)
     { lambda ; a:f32[]. let
         _:f32[] = for_loop[
-        jaxpr_body_fn={ lambda ; b:i32[] c:f32[]. let
+          args_slice=slice(0, None, None)
+          consts_slice=slice(0, 0, None)
+          jaxpr_body_fn={ lambda ; b:i32[] c:f32[]. let
             d:f32[] = convert_element_type[new_dtype=float32 weak_type=True] b
             e:f32[] = mul c d
             _:AbstractOperator() = RX[n_wires=1] e 0
-            in (c,) }
-        n_consts=0
+          in (c,) }
         ] 0 3 1 1.0
         f:AbstractOperator() = PauliZ[n_wires=1] 0
         g:AbstractOperator() = SProd[_pauli_rep=4.0 * Z(0)] 4.0 f
         h:AbstractMeasurement(n_wires=None) = expval_obs g
-    in (h,) }
+      in (h,) }
 
     Accumulation transforms, like device execution or conversion to tapes, may need to flatten out
     the higher order primitive to execute it.
 
     .. code-block:: python
+
+        import copy
 
         class AccumulateOps(PlxprInterpreter):
 
@@ -145,14 +153,14 @@ class PlxprInterpreter:
             state = invals[args_slice]
 
             for i in range(start, stop, step):
-                state = copy(self).eval(jaxpr_body_fn, consts, i, *state)
+                state = copy.copy(self).eval(jaxpr_body_fn, consts, i, *state)
             return state
 
     >>> @qml.for_loop(3)
     ... def loop(i, x):
     ...     qml.RX(x, i)
     ...     return x
-    >>> accumulator = AccumlateOps()
+    >>> accumulator = AccumulateOps()
     >>> accumulator(loop)(0.5)
     >>> accumulator.ops
     [RX(0.5, wires=[0]), RX(0.5, wires=[1]), RX(0.5, wires=[2])]
@@ -215,7 +223,7 @@ class PlxprInterpreter:
     def cleanup(self) -> None:
         """Perform any final steps after iterating through all equations.
 
-        Blank by default, this method can clean up instance variables. Particularily,
+        Blank by default, this method can clean up instance variables. Particularly,
         this method can be used to deallocate qubits and registers when converting to
         a Catalyst variant jaxpr.
         """
@@ -280,7 +288,7 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(measurement)
         return jax.tree_util.tree_unflatten(struct, data)
 
-    def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+    def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
         """Evaluate a jaxpr.
 
         Args:
@@ -301,20 +309,21 @@ class PlxprInterpreter:
             self._env[constvar] = const
 
         for eqn in jaxpr.eqns:
+            primitive = eqn.primitive
+            custom_handler = self._primitive_registrations.get(primitive, None)
 
-            custom_handler = self._primitive_registrations.get(eqn.primitive, None)
             if custom_handler:
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = custom_handler(self, *invals, **eqn.params)
-            elif isinstance(eqn.outvars[0].aval, AbstractOperator):
+            elif getattr(primitive, "prim_type", "") == "operator":
                 outvals = self.interpret_operation_eqn(eqn)
-            elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
+            elif getattr(primitive, "prim_type", "") == "measurement":
                 outvals = self.interpret_measurement_eqn(eqn)
             else:
                 invals = [self.read(invar) for invar in eqn.invars]
-                outvals = eqn.primitive.bind(*invals, **eqn.params)
+                outvals = primitive.bind(*invals, **eqn.params)
 
-            if not eqn.primitive.multiple_results:
+            if not primitive.multiple_results:
                 outvals = [outvals]
             for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                 self._env[outvar] = outval
@@ -469,3 +478,52 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     args = invals[n_consts:]
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
     return jacobian_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
+
+
+def flatten_while_loop(
+    self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice
+):
+    """Handle the while loop by a flattened python strategy."""
+    consts_body = invals[body_slice]
+    consts_cond = invals[cond_slice]
+    init_state = invals[args_slice]
+
+    fn_res = init_state
+    while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
+        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *fn_res)
+
+    return fn_res
+
+
+FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
+
+
+def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+    """Handle the cond primitive by a flattened python strategy."""
+    n_branches = len(jaxpr_branches)
+    conditions = invals[:n_branches]
+    args = invals[args_slice]
+
+    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+        consts = invals[const_slice]
+        if pred and jaxpr is not None:
+            return copy(self).eval(jaxpr, consts, *args)
+    return ()
+
+
+FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
+
+
+def flattened_for(self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice):
+    """Handle the for loop by a flattened python strategy."""
+    consts = invals[consts_slice]
+    init_state = invals[args_slice]
+
+    res = init_state
+    for i in range(start, stop, step):
+        res = copy(self).eval(jaxpr_body_fn, consts, i, *res)
+
+    return res
+
+
+FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for

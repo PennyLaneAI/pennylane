@@ -17,6 +17,7 @@ Contains the Adder template.
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
 class Adder(Operation):
@@ -46,7 +47,7 @@ class Adder(Operation):
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
             work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
-            should be provided. Defaults to ``None``.
+            should be provided. Defaults to empty tuple.
 
     **Example**
 
@@ -89,7 +90,7 @@ class Adder(Operation):
 
         The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular addition operation.
 
-        - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=None``. This is the case by default.
+        - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=()``. This is the case by default.
 
         - If :math:`mod \neq 2^{\text{len(x_wires)}}`, two ``work_wires`` have to be provided.
 
@@ -100,12 +101,13 @@ class Adder(Operation):
     grad_method = None
 
     def __init__(
-        self, k, x_wires, mod=None, work_wires=None, id=None
+        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
         x_wires = qml.wires.Wires(x_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
 
-        num_works_wires = 0 if work_wires is None else len(work_wires)
+        num_works_wires = len(work_wires)
 
         if mod is None:
             mod = 2 ** len(x_wires)
@@ -113,7 +115,7 @@ class Adder(Operation):
             raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
-        if work_wires is not None:
+        if num_works_wires != 0:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
         if mod > 2 ** len(x_wires):
@@ -122,15 +124,11 @@ class Adder(Operation):
                 f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
             )
 
-        all_wires = (
-            qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires)
-            if work_wires
-            else qml.wires.Wires(x_wires)
-        )
+        all_wires = x_wires + work_wires
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
+        self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["x_wires"] = x_wires
 
         super().__init__(wires=all_wires, id=id)
@@ -169,7 +167,9 @@ class Adder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        k, x_wires: WiresLike, mod, work_wires: WiresLike
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -180,7 +180,7 @@ class Adder(Operation):
             mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
             work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
                 work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
-                should be provided. Defaults to ``None``.
+                should be provided.
         Returns:
             list[.Operator]: Decomposition of the operator
 
@@ -194,7 +194,7 @@ class Adder(Operation):
         op_list = []
         if mod == 2 ** len(x_wires):
             qft_wires = x_wires
-            work_wire = None
+            work_wire = ()
         else:
             qft_wires = work_wires[:1] + x_wires
             work_wire = work_wires[1:]

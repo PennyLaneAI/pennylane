@@ -23,15 +23,13 @@ from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
-BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
-
 
 @dataclass
 class VibrationalPES:
     r"""Data class to save potential energy surface information computed along vibrational normal modes.
 
     Args:
-        freqs (list[float]): normal-mode frequencies
+        freqs (list[float]): normal-mode frequencies in atomic units
         grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
         gauss_weights (list[float]): the weights on the Gauss-Hermite quadrature grid
         uloc (TensorLike[float]): localization matrix indicating the relationship between original and localized modes
@@ -40,7 +38,29 @@ class VibrationalPES:
         localized (bool): Flag that localization of modes was used to generate PES and dipole. Default is ``True``.
         dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
             1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
-            value is 2.
+            value is 1.
+
+    **Example**
+
+    >>> freqs = np.array([0.01885397])
+    >>> grid, weights = np.polynomial.hermite.hermgauss(9)
+    >>> pes_onebody = [[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
+                        0.00584504, 0.02881817, 0.08483433, 0.22025702]]
+    >>> pes_twobody = None
+    >>> dipole_onebody = [[[-1.92201700e-16,  1.45397041e-16, -1.40451549e-01],
+                           [-1.51005108e-16,  9.53185441e-17, -1.03377032e-01],
+                           [-1.22793018e-16,  7.22781963e-17, -6.92825934e-02],
+                           [-1.96537436e-16, -5.86686504e-19, -3.52245369e-02],
+                           [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
+                           [ 5.24758835e-17, -1.40650833e-16,  3.69955543e-02],
+                           [-4.52407941e-17,  1.38406311e-16,  7.60888733e-02],
+                           [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
+                           [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]]
+    >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
+                                 uloc = None, pes_data=[pes_onebody, pes_twobody],
+                                 dipole_data=[dipole_onebody], localized=False)
+    >>> vib_obj.freqs
+    array([0.01885397])
 
     """
 
@@ -53,7 +73,7 @@ class VibrationalPES:
         pes_data,
         dipole_data,
         localized=True,
-        dipole_level=2,
+        dipole_level=1,
     ):
         self.freqs = freqs
         self.grid = grid
@@ -151,6 +171,17 @@ def optimize_geometry(molecule, method="rhf"):
 
     Returns:
         array[array[float]]: optimized atomic positions in Cartesian coordinates
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0],
+                             [0.0, 0.0,  1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> eq_geom = qml.qchem.optimize_geometry(mol)
+    >>> eq_geom
+    array([[ 0.        ,  0.        , -0.40277116],
+           [ 0.        ,  0.        ,  1.40277116]])
 
     """
     pyscf = _import_pyscf()

@@ -14,21 +14,13 @@
 """
 This module contains a class for executing plxpr using default qubit tools.
 """
-from copy import copy
 
 import jax
 import numpy as np
 
 from pennylane.capture import disable, enable
-from pennylane.capture.base_interpreter import PlxprInterpreter
-from pennylane.capture.primitives import (
-    adjoint_transform_prim,
-    cond_prim,
-    ctrl_transform_prim,
-    for_loop_prim,
-    measure_prim,
-    while_loop_prim,
-)
+from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
+from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.measurements import MidMeasureMP, Shots
 
 from .apply_operation import apply_operation
@@ -37,6 +29,7 @@ from .measure import measure
 from .sampling import measure_with_samples
 
 
+# pylint: disable=attribute-defined-outside-init, access-member-before-definition
 class DefaultQubitInterpreter(PlxprInterpreter):
     """Implements a class for interpreting plxpr using python simulation tools.
 
@@ -89,33 +82,27 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         self.stateref = None
         super().__init__()
 
-    @property
-    def state(self) -> None | jax.numpy.ndarray:
-        """The current state of the system. None if not initialized."""
-        return self.stateref["state"] if self.stateref else None
+    def __getattr__(self, key):
+        if key in {"state", "key", "is_state_batched"}:
+            if self.stateref is None:
+                raise AttributeError("execution not yet initialized.")
+            return self.stateref[key]
+        raise AttributeError(f"No attribute {key}")
 
-    @state.setter
-    def state(self, value: jax.numpy.ndarray | None):
-        if self.stateref is None:
-            raise AttributeError("execution not yet initialized.")
-        self.stateref["state"] = value
-
-    @property
-    def key(self) -> jax.numpy.ndarray:
-        """A jax PRNGKey. ``initial_key`` if not yet initialized."""
-        return self.stateref["key"] if self.stateref else self.initial_key
-
-    @key.setter
-    def key(self, value):
-        if self.stateref is None:
-            raise AttributeError("execution not yet initialized.")
-        self.stateref["key"] = value
+    def __setattr__(self, __name: str, __value) -> None:
+        if __name in {"state", "key", "is_state_batched"}:
+            if self.stateref is None:
+                raise AttributeError("execution not yet initialized")
+            self.stateref[__name] = __value
+        else:
+            super().__setattr__(__name, __value)
 
     def setup(self) -> None:
         if self.stateref is None:
             self.stateref = {
                 "state": create_initial_state(range(self.num_wires), like="jax"),
                 "key": self.initial_key,
+                "is_state_batched": False,
             }
         # else set by copying a parent interpreter and we need to modify same stateref
 
@@ -124,7 +111,10 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         self.stateref = None
 
     def interpret_operation(self, op):
-        self.state = apply_operation(op, self.state)
+        self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)
+        if op.batch_size:
+            self.is_state_batched = True
+        return op
 
     def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
         if "mcm" in eqn.primitive.name:
@@ -142,13 +132,21 @@ class DefaultQubitInterpreter(PlxprInterpreter):
                 # note that this does *not* group commuting measurements
                 # further work could figure out how to perform multiple measurements at the same time
                 output = measure_with_samples(
-                    [measurement], self.state, shots=self.shots, prng_key=new_key
+                    [measurement],
+                    self.state,
+                    shots=self.shots,
+                    prng_key=new_key,
+                    is_state_batched=self.is_state_batched,
                 )[0]
             else:
-                output = measure(measurement, self.state)
+                output = measure(measurement, self.state, is_state_batched=self.is_state_batched)
         finally:
             enable()
         return output
+
+
+# pylint: disable=protected-access
+DefaultQubitInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
 
 
 @DefaultQubitInterpreter.register_primitive(measure_prim)
@@ -157,6 +155,9 @@ def _(self, *invals, reset, postselect):
     self.key, new_key = jax.random.split(self.key, 2)
     mcms = {}
     self.state = apply_operation(mp, self.state, mid_measurements=mcms, prng_key=new_key)
+    if mp.postselect is not None:
+        # Divide by zero to create NaNs for MCM values that differ from the postselection value
+        self.state = self.state / (1 - jax.numpy.abs(mp.postselect - mcms[mp]))
     return mcms[mp]
 
 
@@ -172,43 +173,3 @@ def _(self, *invals, jaxpr, n_consts, lazy=True):
 def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     # TODO: requires jaxpr -> list of ops first
     raise NotImplementedError
-
-
-# pylint: disable=too-many-arguments
-@DefaultQubitInterpreter.register_primitive(for_loop_prim)
-def _(self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice):
-    consts = invals[consts_slice]
-    init_state = invals[args_slice]
-
-    res = init_state
-    for i in range(start, stop, step):
-        res = copy(self).eval(jaxpr_body_fn, consts, i, *res)
-
-    return res
-
-
-# pylint: disable=too-many-arguments
-@DefaultQubitInterpreter.register_primitive(while_loop_prim)
-def _(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice):
-    consts_body = invals[body_slice]
-    consts_cond = invals[cond_slice]
-    init_state = invals[args_slice]
-
-    fn_res = init_state
-    while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
-        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *fn_res)
-
-    return fn_res
-
-
-@DefaultQubitInterpreter.register_primitive(cond_prim)
-def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
-    n_branches = len(jaxpr_branches)
-    conditions = invals[:n_branches]
-    args = invals[args_slice]
-
-    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
-        consts = invals[const_slice]
-        if pred and jaxpr is not None:
-            return copy(self).eval(jaxpr, consts, *args)
-    return ()

@@ -30,7 +30,7 @@ class BoseWord(dict):
     symbols that denote creation and annihilation operators, respectively. The operator
     :math:`b^{\dagger}_0 b_1` can then be constructed as
 
-    >>> w = qml.bose.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
     >>> print(w)
     b⁺(0) b(1)
     """
@@ -112,7 +112,7 @@ class BoseWord(dict):
         represented by the number of the wire it operates on, and a `+` or `-` to indicate either
         a creation or annihilation operator.
 
-        >>> w = qml.bose.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
         'b⁺(0) b(1)'
         """
@@ -209,7 +209,7 @@ class BoseWord(dict):
     def __mul__(self, other):
         r"""Multiply a BoseWord with another BoseWord, a BoseSentence, or a constant.
 
-        >>> w = qml.bose.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w * w)
         b⁺(0) b(1) b⁺(0) b(1)
         """
@@ -263,7 +263,7 @@ class BoseWord(dict):
     def __pow__(self, value):
         r"""Exponentiate a Bose word to an integer power.
 
-        >>> w = qml.bose.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w**3)
         b⁺(0) b(1) b⁺(0) b(1) b⁺(0) b(1)
         """
@@ -280,7 +280,7 @@ class BoseWord(dict):
     def normal_order(self):
         r"""Convert a BoseWord to its normal-ordered form.
 
-        >>> bw = qml.bose.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
+        >>> bw = qml.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
         >>> print(bw.normal_order())
         4.0 * b⁺(0) b(0)
         + 2.0 * I
@@ -309,12 +309,6 @@ class BoseWord(dict):
                 bs = bw.shift_operator(right_pointer, left_pointer)
                 bs_as_list = sorted(list(bs.items()), key=lambda x: len(x[0].keys()), reverse=True)
                 bw = bs_as_list[0][0]
-                # Sort by ascending index order
-                if left_pointer > 0:
-                    bw_as_list = sorted(list(bw.keys()))
-                    if bw_as_list[left_pointer - 1][1] > bw_as_list[left_pointer][1]:
-                        temp_bs = bw.shift_operator(left_pointer - 1, left_pointer)
-                        bw = list(temp_bs.items())[0][0]
 
                 for i in range(1, len(bs_as_list)):
                     bw_comm += bs_as_list[i][0] * bs_as_list[i][1]
@@ -322,7 +316,20 @@ class BoseWord(dict):
                 # Left pointer now points to the new leftmost annihilation term
                 left_pointer += 1
 
-        ordered_op = bw + bw_comm.normal_order()
+        # Sort BoseWord by indice
+        plus_terms = list(bw.items())[:left_pointer]
+        minus_terms = list(bw.items())[left_pointer:]
+
+        sorted_plus_terms = dict(sorted(plus_terms, key=lambda x: (x[0][1], x[0][0])))
+        sorted_minus_terms = dict(sorted(minus_terms, key=lambda x: (x[0][1], x[0][0])))
+
+        sorted_dict = {**sorted_plus_terms, **sorted_minus_terms}
+
+        bw_sorted_by_index = {}
+        for i, (k, v) in enumerate(sorted_dict.items()):
+            bw_sorted_by_index[(i, k[1])] = v
+
+        ordered_op = BoseWord(bw_sorted_by_index) + bw_comm.normal_order()
         ordered_op.simplify(tol=1e-8)
         return ordered_op
 
@@ -413,9 +420,9 @@ class BoseSentence(dict):
     r"""Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.
 
-    >>> w1 = qml.bose.BoseWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.bose.BoseWord({(0, 1) : '+', (1, 2) : '-'})
-    >>> s = BoseSentence({w1 : 1.2, w2: 3.1})
+    >>> w1 = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.BoseWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = qml.BoseSentence({w1 : 1.2, w2: 3.1})
     >>> print(s)
     1.2 * b⁺(0) b(1)
     + 3.1 * b⁺(1) b(2)
@@ -601,8 +608,8 @@ class BoseSentence(dict):
     def normal_order(self):
         r"""Convert a BoseSentence to its normal-ordered form.
 
-        >>> bw = qml.bose.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
-        >>> bs = qml.bose.BoseSentence({bw: 1})
+        >>> bw = qml.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
+        >>> bs = qml.BoseSentence({bw: 1})
         >>> print(bw.normal_order())
         4.0 * b⁺(0) b(0)
         + 2.0 * I

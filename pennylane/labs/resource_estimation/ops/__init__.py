@@ -20,6 +20,8 @@ from .identity import (
 
 from .qubit import (
     ResourceDoubleExcitation,
+    ResourceDoubleExcitationMinus,
+    ResourceDoubleExcitationPlus,
     ResourceFermionicSWAP,
     ResourceHadamard,
     ResourceIsingXX,
@@ -27,6 +29,7 @@ from .qubit import (
     ResourceIsingYY,
     ResourceIsingZZ,
     ResourceMultiRZ,
+    ResourceOrbitalRotation,
     ResourcePauliRot,
     ResourcePhaseShift,
     ResourcePSWAP,
@@ -35,6 +38,7 @@ from .qubit import (
     ResourceRY,
     ResourceRZ,
     ResourceS,
+    ResourceSingleExcitation,
     ResourceSingleExcitationMinus,
     ResourceSingleExcitationPlus,
     ResourceSWAP,
@@ -45,6 +49,7 @@ from .qubit import (
 )
 
 from .op_math import (
+    ResourceAdjoint,
     ResourceCY,
     ResourceCH,
     ResourceCZ,
@@ -57,5 +62,7 @@ from .op_math import (
     ResourceToffoli,
     ResourceMultiControlledX,
     ResourceCNOT,
+    ResourceControlled,
     ResourceControlledPhaseShift,
+    ResourcePow,
 )

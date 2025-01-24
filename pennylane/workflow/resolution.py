@@ -14,13 +14,13 @@
 """This module contains the necessary helper functions for setting up the workflow for execution.
 
 """
-
+from collections.abc import Callable
 from dataclasses import replace
-from typing import Literal, get_args
+from typing import Literal, Optional, Union, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
-from pennylane.math import get_canonical_interface_name, get_interface
+from pennylane.math import Interface, get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
 
@@ -66,9 +66,9 @@ def _get_jax_interface_name(tapes):
             if op is not None:
                 # Some MeasurementProcess objects have op.obs=None
                 if any(qml.math.is_abstract(param) for param in op.data):
-                    return "jax-jit"
+                    return Interface.JAX_JIT
 
-    return "jax"
+    return Interface.JAX
 
 
 # pylint: disable=import-outside-toplevel
@@ -86,31 +86,32 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(interface, tapes):
-    """Helper function to resolve the interface name based on a list of tapes
+def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
+    """Helper function to resolve an interface based on a set of tapes.
 
     Args:
-        interface (str): Original interface to use as reference.
+        interface (str, Interface): Original interface to use as reference.
         tapes (list[.QuantumScript]): Quantum tapes
 
     Returns:
-        str: Interface name"""
+        Interface: resolved interface
+    """
 
     interface = get_canonical_interface_name(interface)
 
-    if interface == "auto":
+    if interface == Interface.AUTO:
         params = []
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = get_interface(*params)
-        if interface != "numpy":
+        if interface != Interface.NUMPY:
             try:
                 interface = get_canonical_interface_name(interface)
             except ValueError:
-                interface = None
-    if interface == "tf" and _use_tensorflow_autograph():
-        interface = "tf-autograph"
-    if interface == "jax":
+                interface = Interface.NUMPY
+    if interface == Interface.TF and _use_tensorflow_autograph():
+        interface = Interface.TF_AUTOGRAPH
+    if interface == Interface.JAX:
         # pylint: disable=unused-import
         try:  # pragma: no cover
             import jax
@@ -126,7 +127,7 @@ def _resolve_interface(interface, tapes):
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool
+    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
 ) -> "qml.devices.MCMConfig":
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
@@ -142,7 +143,7 @@ def _resolve_mcm_config(
     if mcm_config.mcm_method == "single-branch-statistics":
         raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
+    if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
         # not yet accessible.
         if mcm_config.postselect_mode == "hw-like":
@@ -154,7 +155,7 @@ def _resolve_mcm_config(
 
     if (
         finite_shots
-        and "jax" in interface
+        and interface in {Interface.JAX, Interface.JAX_JIT}
         and mcm_config.mcm_method in (None, "one-shot")
         and mcm_config.postselect_mode in (None, "hw-like")
     ):
@@ -225,7 +226,7 @@ def _resolve_execution_config(
     execution_config: "qml.devices.ExecutionConfig",
     device: "qml.devices.Device",
     tapes: QuantumScriptBatch,
-    transform_program: TransformProgram,
+    transform_program: Optional[TransformProgram] = None,
 ) -> "qml.devices.ExecutionConfig":
     """Resolves the execution configuration for non-device specific properties.
 
@@ -241,14 +242,28 @@ def _resolve_execution_config(
     updated_values = {}
     updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
 
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
+        execution_config.gradient_method, Callable
+    ):
+        updated_values["grad_on_execution"] = False
+
     if (
         "lightning" in device.name
+        and transform_program
         and qml.metric_tensor in transform_program
         and execution_config.gradient_method == "best"
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-    else:
-        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+    execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+
+    if execution_config.use_device_jacobian_product and not device.supports_vjp(
+        execution_config, tapes[0]
+    ):
+        raise qml.QuantumFunctionError(
+            f"device_vjp=True is not supported for device {device},"
+            f" diff_method {execution_config.gradient_method},"
+            " and the provided circuit."
+        )
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
@@ -259,7 +274,9 @@ def _resolve_execution_config(
     interface = _resolve_interface(execution_config.interface, tapes)
     finite_shots = any(tape.shots for tape in tapes)
     mcm_interface = (
-        _resolve_interface("auto", tapes) if execution_config.interface is None else interface
+        _resolve_interface(Interface.AUTO, tapes)
+        if execution_config.interface == Interface.NUMPY
+        else interface
     )
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 

@@ -21,7 +21,6 @@ import pytest
 import pennylane as qml
 
 
-@pytest.mark.xfail  # to be fixed by shortcut story 49160
 def test_standard_validity():
     """Run standard tests of operation validity."""
     weights = np.array(
@@ -402,8 +401,9 @@ class TestInterfaces:
 
         assert np.allclose(grads, np.zeros_like(unitary_matrix, dtype=complex), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("device_name", ("default.qubit", "reference.qubit"))
     @pytest.mark.jax
-    def test_jax_jit(self, tol):
+    def test_jax_jit(self, device_name, tol):
         """Test the jax interface."""
 
         import jax
@@ -417,7 +417,7 @@ class TestInterfaces:
             ]
         )
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device(device_name, wires=3)
 
         circuit = jax.jit(qml.QNode(circuit_template, dev), static_argnames="check")
         circuit2 = qml.QNode(circuit_template, dev)

@@ -18,7 +18,7 @@ import numpy as np
 
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 
 class GroverOperator(Operation):
@@ -109,16 +109,24 @@ class GroverOperator(Operation):
         hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
         return tuple(), (self.wires, hyperparameters)
 
-    def __init__(self, wires=None, work_wires=None, id=None):
-        if (not hasattr(wires, "__len__")) or (len(wires) < 2):
+    def __init__(self, wires: WiresLike, work_wires: WiresLike = (), id=None):
+        wires = Wires(wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+
+        if len(wires) < 2:
             raise ValueError("GroverOperator must have at least two wires provided.")
 
         self._hyperparameters = {
             "n_wires": len(wires),
-            "work_wires": Wires(work_wires) if work_wires is not None else Wires([]),
+            "work_wires": work_wires,
         }
 
         super().__init__(wires=wires, id=id)
+
+    @property
+    def work_wires(self):
+        """Additional auxiliary wires that can be used in the decomposition of :class:`~.MultiControlledX`."""
+        return self.hyperparameters["work_wires"]
 
     @property
     def num_params(self):
@@ -126,7 +134,7 @@ class GroverOperator(Operation):
 
     @staticmethod
     def compute_decomposition(
-        wires, work_wires, **kwargs
+        wires: WiresLike, work_wires: WiresLike, **kwargs
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators.
 

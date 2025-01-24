@@ -18,12 +18,10 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
-from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import make_qscript
 
 from .symbolicop import SymbolicOp
 
@@ -191,10 +189,14 @@ def create_adjoint_op(fn, lazy):
 def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
 
-    adjoint_prim = create_non_interpreted_prim()("adjoint_transform")
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    adjoint_prim = NonInterpPrimitive("adjoint_transform")
     adjoint_prim.multiple_results = True
+    adjoint_prim.prim_type = "higher_order"
 
     @adjoint_prim.def_impl
     def _(*args, jaxpr, lazy, n_consts):
@@ -235,7 +237,7 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # default adjoint transform when capture is not enabled.
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        qscript = make_qscript(qfunc)(*args, **kwargs)
+        qscript = qml.tape.make_qscript(qfunc)(*args, **kwargs)
 
         leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]

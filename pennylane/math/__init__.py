@@ -99,7 +99,9 @@ from .interface_utils import (
     SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
+    Interface,
 )
+from .grad import grad, jacobian
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
@@ -167,10 +169,12 @@ __all__ = [
     "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
+    "grad",
     "in_backprop",
     "is_abstract",
     "is_independent",
     "iscomplex",
+    "jacobian",
     "marginal_prob",
     "max_entropy",
     "min_entropy",
