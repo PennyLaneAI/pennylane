@@ -54,6 +54,9 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
 
     When capturing `broadcast_in_dim_p` with a dynamic shape, we might end up with:
     ```
+    >>> import jax
+    >>> qml.capture.enable()
+    >>> jax.config.update("jax_dynamic_shapes", True)
     >>> def f(n):
     ...     return jax.numpy.ones((n, 4, n))
     >>> jax.make_jaxpr(f)(4)
@@ -69,7 +72,7 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
     The static part of the shape is `(None, 4, None)`. We need to replace the two `None`
     values with `a` and `a`.
 
-    `broadcast_in_dim` also cant handle shapes where an integer is a concrete jax arrays,
+    `broadcast_in_dim` also can't handle shapes where an integer is a concrete jax arrays,
     so we need to convert any concrete jax arrays to normal integers.
 
     """
@@ -407,6 +410,9 @@ class PlxprInterpreter:
 def _(self, x, *dyn_shape, shape, broadcast_dimensions):
     """Handle the broadcast_in_dim primitive created by jnp.ones, jnp.zeros, jnp.full
 
+    >>> import jax
+    >>> qml.capture.enable()
+    >>> jax.config.update("jax_dynamic_shapes", True)
     >>> def f(n):
     ...     return jax.numpy.ones((n, 4, n))
     >>> jax.make_jaxpr(f)(4)
@@ -429,6 +435,9 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions):
 def _(self, *dyn_shape, dimension, dtype, shape):
     """Handle the iota primitive created by jnp.arange
 
+    >>> import jax
+    >>> qml.capture.enable()
+    >>> jax.config.update("jax_dynamic_shapes", True)
     >>> def f(n):
     ...     return jax.numpy.arange(n)
     >>> jax.make_jaxpr(f)(4)
