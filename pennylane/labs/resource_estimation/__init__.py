@@ -104,6 +104,7 @@ Symbolic Operators
 
     ~ResourceAdjoint
     ~ResourceControlled
+    ~ResourceExp
     ~ResourcePow
 
 Templates
@@ -121,6 +122,11 @@ Templates
     ~ResourceSelect
     ~ResourceStatePrep
     ~ResourceTrotterProduct
+    ~resource_trotterize
+    ~ResourceControlledSequence
+    ~ResourceModExp
+    ~ResourceMultiplier
+    ~ResourcePhaseAdder
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -202,15 +208,12 @@ from .ops import (
 )
 
 from .templates import (
-<<<<<<< HEAD
     ResourceControlledSequence,
     ResourceModExp,
     ResourceMultiplier,
     ResourcePhaseAdder,
-=======
     ResourceBasisRotation,
     ResourcePrepSelPrep,
->>>>>>> trotter_resources
     ResourceQFT,
     ResourceQPE,
     ResourceQuantumPhaseEstimation,
