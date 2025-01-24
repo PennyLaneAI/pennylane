@@ -23,7 +23,6 @@ from functools import lru_cache, partial
 from typing import Optional, Sequence
 
 import pennylane as qml
-from pennylane.capture.primitives import AbstractMeasurement, AbstractOperator
 from pennylane.transforms.core import transform
 
 
@@ -194,6 +193,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
         # pylint: disable=import-outside-toplevel
         # pylint: disable=unused-import
         import jax
+        from pennylane.capture.primitives import AbstractMeasurement, AbstractOperator
     except ImportError:  # pragma: no cover
         return None, None
 
