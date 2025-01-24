@@ -395,12 +395,11 @@ class RiemannianGradientOptimizer:
         if isinstance(self.circuit.device, qml.devices.Device):
             program, config = self.circuit.device.preprocess()
 
-            circuits = qml.execute(
+            circuits = qml.workflow.run(
                 circuits,
                 self.circuit.device,
-                transform_program=program,
                 config=config,
-                diff_method=None,
+                inner_transform_program=program,
             )
         else:
             circuits = qml.execute(
