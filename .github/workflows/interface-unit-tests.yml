@@ -106,10 +106,13 @@ jobs:
         id: pytest_warning_flags
         run: |
           if [ "${{ inputs.python_warning_level }}" != "default" ]; then
-            echo "pytest_warning_args=$PYTEST_WARNING_ARGS" >> $GITHUB_OUTPUT
+            pytest_warning_args=$PYTEST_WARNING_ARGS
           else
-            echo "pytest_warning_args=''" >> $GITHUB_OUTPUT
+            pytest_warning_args=""
           fi
+
+          echo "pytest_warning_args=$pytest_warning_args" >> $GITHUB_OUTPUT
+          echo $pytest_warning_args
 
     outputs:
       fail_fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
