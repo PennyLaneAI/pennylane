@@ -15,12 +15,13 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
+# pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
 from typing import Optional, Union
 from warnings import warn
 
 import numpy as np
 import scipy as sp
-# pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
+
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
@@ -300,9 +301,10 @@ class StatePrep(StatePrepBase):
         id: Optional[str] = None,
         validate_norm: bool = True,
     ):
-
+        self.is_sparse = False
         if isinstance(state, csr_matrix):
             state = self._preprocess_csr(state, wires, None, normalize, validate_norm)
+            self.is_sparse = True
         else:
             state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
 
@@ -467,7 +469,9 @@ class StatePrep(StatePrepBase):
 
         n_states = shape[-1]
         dim = 2 ** len(Wires(wires))
-        assert n_states <= dim, f"Input state must be of length {dim} or smaller; got length {n_states}."
+        assert (
+            n_states <= dim
+        ), f"Input state must be of length {dim} or smaller; got length {n_states}."
         if n_states < dim:
             warn(
                 f"State must be of length {dim}; got length {n_states}. "
