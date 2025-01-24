@@ -473,7 +473,7 @@ jobs:
       python_version: ${{ matrix.python-version }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
-      pytest_additional_args:${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       additional_pip_packages: |
         pyzx matplotlib stim quimb mitiq ply optax scipy-openblas32>=0.3.26
         git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
