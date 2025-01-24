@@ -1238,17 +1238,6 @@ class TestTransformProgramIntegration:
         assert circuit() == 100
 
 
-# pylint: disable=unused-argument
-class CustomDevice(qml.devices.Device):
-    """A null device that just returns 0."""
-
-    def __repr__(self):
-        return "CustomDevice"
-
-    def execute(self, circuits, execution_config=None):
-        return (0,)
-
-
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
