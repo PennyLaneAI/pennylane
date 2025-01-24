@@ -224,12 +224,11 @@ class QNSPSAOptimizer:
         if isinstance(cost.device, qml.devices.Device):
             program, config = cost.device.preprocess()
 
-            raw_results = qml.execute(
+            raw_results = qml.workflow.run(
                 all_grad_tapes + all_metric_tapes,
                 cost.device,
-                None,
-                transform_program=program,
                 config=config,
+                inner_transform_program=program,
             )
         else:
             raw_results = qml.execute(
