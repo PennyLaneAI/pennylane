@@ -392,30 +392,16 @@ class RiemannianGradientOptimizer:
             self.nqubits,
         )
 
-        if isinstance(self.circuit.device, qml.devices.Device):
-            program, config = self.circuit.device.preprocess()
+        raw_results = qml.execute(circuits, self.circuit.device)
 
-            circuits = qml.workflow.run(
-                circuits,
-                self.circuit.device,
-                config=config,
-                inner_transform_program=program,
-            )
-        else:
-            circuits = qml.execute(
-                circuits, self.circuit.device, diff_method=None
-            )  # pragma: no cover
-
-        program = self.circuit.device.preprocess_transforms()
-
-        circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
+        results_plus = np.array(raw_results[: len(raw_results) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )
-        circuits_min = np.array(circuits[len(circuits) // 2 :]).reshape(
+        results_min = np.array(raw_results[len(raw_results) // 2 :]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )
 
         # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
-        omegas = circuits_plus - circuits_min
+        omegas = results_plus - results_min
 
         return np.dot(self.coeffs, omegas)
