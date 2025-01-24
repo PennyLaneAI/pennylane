@@ -100,6 +100,7 @@
 * The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
+  [(#6879)](https://github.com/PennyLaneAI/pennylane/pull/6879)
 
 <h3>Internal changes ⚙️</h3>
 
