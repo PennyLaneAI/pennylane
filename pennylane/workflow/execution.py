@@ -186,7 +186,7 @@ def execute(
     if mcm_config != "unset":
         warn(
             "The mcm_config argument is deprecated and will be removed in v0.42, use mcm_method and postselect_mode instead.",
-            ValueError,
+            qml.PennyLaneDeprecationWarning,
         )
         mcm_method = mcm_config.mcm_method
         postselect_mode = mcm_config.postselect_mode
