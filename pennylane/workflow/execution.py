@@ -47,14 +47,16 @@ def execute(
     diff_method: Optional[Union[Callable, SupportedDiffMethods, TransformDispatcher]] = None,
     interface: Optional[InterfaceLike] = Interface.AUTO,
     *,
+    transform_program: TransformProgram = None,
     grad_on_execution: Literal[bool, "best"] = "best",
     cache: Union[None, bool, dict, Cache] = True,
     cachesize: int = 10000,
     max_diff: int = 1,
     device_vjp: Union[bool, None] = False,
+    postselect_mode=None,
+    mcm_method=None,
     gradient_kwargs: dict = None,
-    transform_program: TransformProgram = None,
-    mcm_config: "qml.devices.MCMConfig" = None,
+    mcm_config: "qml.devices.MCMConfig" = "unset",
     config="unset",
     inner_transform="unset",
 ) -> ResultBatch:
@@ -86,10 +88,18 @@ def execute(
             (classical) computational overhead during the backward pass.
         device_vjp=False (Optional[bool]): whether or not to use the device-provided Jacobian
             product if it is available.
-        mcm_config (dict): Dictionary containing configuration options for handling
-            mid-circuit measurements.
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. Default is ``None``.
+        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements.
+            ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
+            the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
+            otherwise. For usage details, please refer to the
+            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
+        mcm_config="unset": **DEPRECATED**. This keyword argument has been replaced by ``postselect_mode``
+            and ``mcm_method`` and will be removed in v0.42.
         config="unset": **DEPRECATED**. This keyword argument has been deprecated and
             will be removed in v0.42.
         inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
@@ -173,6 +183,14 @@ def execute(
             qml.PennyLaneDeprecationWarning,
         )
 
+    if mcm_config != "unset":
+        warn(
+            "The mcm_config argument is deprecated and will be removed in v0.42, use mcm_method and postselect_mode instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        mcm_method = mcm_config.mcm_method
+        postselect_mode = mcm_config.postselect_mode
+
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             (
@@ -209,7 +227,7 @@ def execute(
         gradient_method=diff_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         use_device_jacobian_product=device_vjp,
-        mcm_config=mcm_config or {},
+        mcm_config=qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method),
         gradient_keyword_arguments=gradient_kwargs or {},
         derivative_order=max_diff,
     )
