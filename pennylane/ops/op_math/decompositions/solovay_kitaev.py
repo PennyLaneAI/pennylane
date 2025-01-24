@@ -73,8 +73,8 @@ def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
         tol (float): Tolerance for the match to be considered ``True``.
 
     Returns:
-        Tuple(bool, TensorLike, int): A bool that shows whether an operation similar to the given operations
-        was found, the quaternion representation of the searched operation and its index in the list.
+        Tuple(bool, TensorLike, int): A bool that shows whether an operation similar to the given operations was
+        found, the quaternion representation of the searched operation and its index in the `op_vecs` or `kd_tree`.
     """
     gate_points = qml.math.array([_quaternion_transform(op_mat)])
 
@@ -116,7 +116,6 @@ def _prune_approximate_set(
     return approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat
 
 
-# pylint: disable=too-many-
 @lru_cache()
 def _approximate_set(basis_gates, max_length=10):
     r"""Builds an approximate unitary set required for the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
@@ -182,8 +181,8 @@ def _approximate_set(basis_gates, max_length=10):
         # Build a KDTree for the quaternions stored up to the current depth for querying.
         kdtree = KDTree(qml.math.array(approx_set_qat))
 
-        # Add the containers for extending the trie to the next depth while traversing current depth.
-        gtrie_id, gtrie_mt, gtrie_gp, gtrie_sm, gtrie_qt = [], [], [], [], []
+        # Add the local containers for extending the trie to the next depth while traversing current one.
+        ltrie_id, ltrie_mt, ltrie_gp, ltrie_sm, ltrie_qt = [], [], [], [], []
         for node, su2m, gphase, tgsum in zip(
             gtrie_ids[depth], gtrie_mat[depth], gtrie_gph[depth], gtrie_sum[depth]
         ):
@@ -203,11 +202,11 @@ def _approximate_set(basis_gates, max_length=10):
                 su2_op = (-1.0) ** bool(su2_gp >= math.pi) * (basis_mat[op] @ su2m)
 
                 exists, quaternion, global_index, local_index = False, None, -1, -1
-                if gtrie_qt:  # local check
-                    exists, quaternion, local_index = _contains_SU2(su2_op, ops_vecs=gtrie_qt)
+                if ltrie_qt:  # local check
+                    exists, quaternion, local_index = _contains_SU2(su2_op, ops_vecs=ltrie_qt)
 
                 if exists:  # get the global index from the local index
-                    global_index = local_index + len(approx_set_qat) - len(gtrie_qt)
+                    global_index = local_index + len(approx_set_qat) - len(ltrie_qt)
                 else:  # global check
                     exists, quaternion, global_index = _contains_SU2(su2_op, kd_tree=kdtree)
 
@@ -220,21 +219,21 @@ def _approximate_set(basis_gates, max_length=10):
                     approx_set_qat.append(quaternion)
 
                     # Add the data to the containers for next depth
-                    gtrie_id.append(node + [op])
-                    gtrie_mt.append(su2_op)
-                    gtrie_gp.append(global_phase)
-                    gtrie_qt.append(quaternion)
+                    ltrie_id.append(node + [op])
+                    ltrie_mt.append(su2_op)
+                    ltrie_gp.append(global_phase)
+                    ltrie_qt.append(quaternion)
 
                     # Add the T gate sum data
                     tbool = int(op in t_set)
                     approx_set_sum.append(tgsum + tbool)
-                    gtrie_sm.append(tgsum + tbool)
+                    ltrie_sm.append(tgsum + tbool)
 
         # Add to the next depth for new iteration
-        gtrie_ids.append(gtrie_id)
-        gtrie_mat.append(gtrie_mt)
-        gtrie_gph.append(gtrie_gp)
-        gtrie_sum.append(gtrie_sm)
+        gtrie_ids.append(ltrie_id)
+        gtrie_mat.append(ltrie_mt)
+        gtrie_gph.append(ltrie_gp)
+        gtrie_sum.append(ltrie_sm)
 
     # Prune the approximate set for equivalent operations with higher T-gate counts and return
     return _prune_approximate_set(
