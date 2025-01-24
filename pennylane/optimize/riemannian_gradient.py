@@ -102,38 +102,24 @@ def algebra_commutator(tape, lie_algebra_basis_names, nqubits):
           function to be applied to the results of the evaluated tapes
           in order to obtain the Lie algebra commutator.
     """
-    H = tape.measurements[0].obs
-    coeffs, observables = H.terms()
-    tapes_plus_total = []
-    tapes_min_total = []
 
     wires = list(range(nqubits))
-    paulis_plus = [qml.PauliRot(np.pi / 2, pauli, wires=wires) for pauli in lie_algebra_basis_names]
-    paulis_minus = [
+    paulis_plus = (qml.PauliRot(np.pi / 2, pauli, wires=wires) for pauli in lie_algebra_basis_names)
+    paulis_minus = (
         qml.PauliRot(-np.pi / 2, pauli, wires=wires) for pauli in lie_algebra_basis_names
-    ]
+    )
 
-    for obs in observables:
-        tapes_plus_total += [
-            QuantumScript(tape.operations + [op], [qml.expval(obs)]) for op in paulis_plus
-        ]
-        tapes_min_total += [
-            QuantumScript(tape.operations + [op], [qml.expval(obs)]) for op in paulis_minus
-        ]
+    measurements = [qml.expval(qml.s_prod(c, o)) for c, o in zip(*tape.measurements[0].obs.terms())]
+
+    tapes_plus = [QuantumScript(tape.operations + [op], measurements) for op in paulis_plus]
+    tapes_minus = [QuantumScript(tape.operations + [op], measurements) for op in paulis_minus]
 
     def calculate_omegas(results):
-        results_plus = np.array(results[: len(results) // 2]).reshape(
-            len(coeffs), len(lie_algebra_basis_names)
-        )
-        results_min = np.array(results[len(results) // 2 :]).reshape(
-            len(coeffs), len(lie_algebra_basis_names)
-        )
-        # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
-        omegas = results_plus - results_min
+        results_plus = qml.math.transpose(qml.math.vstack(results[: len(results) // 2]))
+        results_minus = qml.math.transpose(qml.math.vstack(results[len(results) // 2 :]))
+        return np.sum(results_plus - results_minus, axis=0)
 
-        return np.dot(coeffs, omegas)
-
-    return tapes_plus_total + tapes_min_total, calculate_omegas
+    return tapes_plus + tapes_minus, calculate_omegas
 
 
 class RiemannianGradientOptimizer:
