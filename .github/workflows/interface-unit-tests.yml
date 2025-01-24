@@ -120,7 +120,7 @@ jobs:
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.10"]
+            "default": ["3.10", "3.13"]
           }
           EOF
           elif [ "${{ inputs.python_warning_level }}" == "error" ];
@@ -133,10 +133,10 @@ jobs:
           else
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.10", "3.11", "3.12"],
-            "torch-tests": ["3.10", "3.12"],
+            "default": ["3.10", "3.11", "3.12", "3.13"],
+            "torch-tests": ["3.10", "3.13"],
             "tf-tests": ["3.10", "3.12"],
-            "jax-tests": ["3.10", "3.12"],
+            "jax-tests": ["3.10", "3.13"],
             "all-interfaces-tests": ["3.10"],
             "external-libraries-tests": ["3.10"],
             "qcut-tests": ["3.10"],
