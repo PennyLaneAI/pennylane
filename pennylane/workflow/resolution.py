@@ -96,19 +96,17 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
     Returns:
         Interface: resolved interface
     """
-
     interface = get_canonical_interface_name(interface)
 
     if interface == Interface.AUTO:
         params = []
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
-        interface = get_canonical_interface_name(get_interface(*params))
-        if interface != Interface.NUMPY:
-            try:
-                interface = get_canonical_interface_name(interface)
-            except ValueError:
-                interface = Interface.NUMPY
+        interface = get_interface(*params)
+        try:
+            interface = get_canonical_interface_name(interface)
+        except ValueError:
+            interface = Interface.NUMPY
     if interface == Interface.TF and _use_tensorflow_autograph():
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
