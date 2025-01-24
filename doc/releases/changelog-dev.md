@@ -100,8 +100,12 @@
 * The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
+  [(#6879)](https://github.com/PennyLaneAI/pennylane/pull/6879)
 
 <h3>Internal changes ⚙️</h3>
+
+* Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
+  [(#6877)](https://github.com/PennyLaneAI/pennylane/pull/6877)
 
 * Added a `QmlPrimitive` class that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` module.
   This class contains a `prim_type` property so that we can differentiate between different sets of PennyLane primitives.
