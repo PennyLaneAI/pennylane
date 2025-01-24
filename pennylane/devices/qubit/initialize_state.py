@@ -44,6 +44,9 @@ def create_initial_state(
         state[(0,) * num_wires] = 1
         return qml.math.asarray(state, like=like)
 
+    # sparse matrix VIP tunnel
+    if prep_operation.is_sparse:
+        return prep_operation.parameters[0]
     state_vector = prep_operation.state_vector(wire_order=list(wires))
     dtype = str(state_vector.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
