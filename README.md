@@ -23,6 +23,9 @@
   <a href="https://www.apache.org/licenses/LICENSE-2.0">
     <img src="https://img.shields.io/pypi/l/PennyLane.svg?logo=apache&style=flat-square" />
   </a>
+  <a href="https://securityscorecards.dev/viewer/?uri=github.com/pennylaneai/pennylane">
+    <img src="https://api.securityscorecards.dev/projects/github.com/pennylaneai/pennylane/badge" />
+  </a>
 </p>
 
 <p align="center">
