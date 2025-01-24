@@ -107,7 +107,6 @@ features is non-exhaustive.
 
 """
 from copy import copy
-from dataclasses import asdict
 from functools import partial
 from numbers import Number
 from warnings import warn
@@ -410,12 +409,10 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
-    mcm_config = asdict(execute_kwargs.pop("mcm_config"))
     qnode_kwargs = {
         "diff_method": qnode.diff_method,
         **execute_kwargs,
         "gradient_kwargs": qnode.gradient_kwargs,
-        **mcm_config,
     }
 
     flat_args = jax.tree_util.tree_leaves(args)
