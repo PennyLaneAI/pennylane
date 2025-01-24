@@ -15,6 +15,7 @@
 Unit tests for the available qubit state preparation operations.
 """
 import numpy as np
+import scipy as sp
 import pytest
 
 import pennylane as qml
@@ -406,3 +407,32 @@ class TestStateVector:
             ValueError, match=r"State must be of length 2; got length 1 \(state=\[0\]\)."
         ):
             _ = qml.BasisState([0], wires=[0, 1])
+
+
+class TestSparseStateVector:
+    """Test the sparse_state_vector() method of various state-prep operations."""
+
+    @pytest.mark.parametrize(
+        "num_wires,wire_order,one_position",
+        [
+            (2, None, (1, 0)),
+            (2, [1, 2], (1, 0)),
+            (3, [0, 1, 2], (0, 1, 0)),
+            (3, ["a", 1, 2], (0, 1, 0)),
+            (3, [1, 2, 0], (1, 0, 0)),
+            (3, [1, 2, "a"], (1, 0, 0)),
+            (3, [2, 1, 0], (0, 1, 0)),
+            (4, [3, 2, 0, 1], (0, 0, 0, 1)),
+        ],
+    )
+    def test_StatePrep_sparse_state_vector(self, num_wires, wire_order, one_position):
+        """Tests that StatePrep sparse_state_vector returns kets as expected."""
+        init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
+        qsv_op = qml.StatePrep(init_state, wires=[1, 2])
+        ket = qsv_op.state_vector(wire_order=wire_order)
+        ket_array = ket.toarray()
+        # Convert one position from binary to integer
+        one_position = int("".join([str(i) for i in one_position]), 2)
+        assert ket[0, one_position] == 1
+        ket[0, one_position] = 0
+        assert ket.count_nonzero() == 0
