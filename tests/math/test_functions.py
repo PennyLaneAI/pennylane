@@ -1024,11 +1024,16 @@ def test_get_interface(t, interface):
     assert res == interface
 
 
-def test_interface_enum_error():
-    """Test that an error is raised if comparing to string"""
-    with pytest.raises(TypeError, match="Cannot compare Interface with str"):
-        # pylint: disable=pointless-statement
-        "numpy" == fn.Interface.NUMPY
+# pylint: disable=too-few-public-methods
+class TestInterfaceEnum:
+    """Test the Interface enum class"""
+
+    def test_eq(self):
+        """Test that an error is raised if comparing to string"""
+        assert fn.Interface.NUMPY == fn.Interface.NUMPY
+        with pytest.raises(TypeError, match="Cannot compare Interface with str"):
+            # pylint: disable=pointless-statement
+            "numpy" == fn.Interface.NUMPY
 
 
 @pytest.mark.parametrize("t", test_data)

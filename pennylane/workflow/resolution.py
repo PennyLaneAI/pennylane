@@ -103,7 +103,7 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
         params = []
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
-        interface = get_interface(*params)
+        interface = get_canonical_interface_name(get_interface(*params))
         if interface != Interface.NUMPY:
             try:
                 interface = get_canonical_interface_name(interface)
