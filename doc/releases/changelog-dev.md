@@ -109,6 +109,7 @@
   [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
 
 * The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
+  [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
 
 <h3>Documentation 📝</h3>
 
