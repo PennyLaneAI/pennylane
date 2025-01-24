@@ -157,9 +157,6 @@ class BasisState(StatePrepBase):
         prep_vals = self.parameters[0]
         prep_vals_int = math.cast(self.parameters[0], int)
 
-        if self.is_sparse:
-            return _sparse_statevec_permute(prep_vals, wire_order)
-
         if wire_order is None:
             indices = prep_vals_int
             num_wires = len(indices)
@@ -356,6 +353,10 @@ class StatePrep(StatePrepBase):
         return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
     def state_vector(self, wire_order: Optional[WiresLike] = None):
+
+        if self.is_sparse:
+            return _sparse_statevec_permute(self.parameters[0], wire_order)
+
         num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
         op_vector = math.reshape(self.parameters[0], op_vector_shape)
