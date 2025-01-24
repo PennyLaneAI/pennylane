@@ -224,7 +224,7 @@ def finite_diff_jvp(
         if qml.math.get_dtype_name(args[i]) in ("float32", "complex64"):
 
             warn(
-                "Detected 32 bits precision parameter with finite differences. Recommend use of 64 bits precision with finite diff.",
+                "Detected 32 bits precision parameter with finite differences. It is recommended to use  64 bit precision when computing finite differences.",
                 UserWarning,
             )
 
