@@ -106,6 +106,7 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
         try:
             interface = get_canonical_interface_name(interface)
         except ValueError:
+            # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
     if interface == Interface.TF and _use_tensorflow_autograph():
         interface = Interface.TF_AUTOGRAPH
