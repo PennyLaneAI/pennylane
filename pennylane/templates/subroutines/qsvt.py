@@ -27,8 +27,6 @@ from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-from autograd import jacobian, hessian
-
 
 def qsvt(A, angles, wires, convention=None):
     r"""Implements the
