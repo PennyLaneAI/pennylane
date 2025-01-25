@@ -109,15 +109,13 @@ def algebra_commutator(tape, lie_algebra_basis_names, nqubits):
         qml.PauliRot(-np.pi / 2, pauli, wires=wires) for pauli in lie_algebra_basis_names
     )
 
-    measurements = [qml.expval(qml.s_prod(c, o)) for c, o in zip(*tape.measurements[0].obs.terms())]
-
-    tapes_plus = [QuantumScript(tape.operations + [op], measurements) for op in paulis_plus]
-    tapes_minus = [QuantumScript(tape.operations + [op], measurements) for op in paulis_minus]
+    tapes_plus = [tape.copy(operations=tape.operations + [op]) for op in paulis_plus]
+    tapes_minus = [tape.copy(operations=tape.operations + [op]) for op in paulis_minus]
 
     def calculate_omegas(results):
-        results_plus = qml.math.transpose(qml.math.vstack(results[: len(results) // 2]))
-        results_minus = qml.math.transpose(qml.math.vstack(results[len(results) // 2 :]))
-        return np.sum(results_plus - results_minus, axis=0)
+        results_plus = qml.math.hstack(results[: len(results) // 2])
+        results_minus = qml.math.hstack(results[len(results) // 2 :])
+        return results_plus - results_minus
 
     return tapes_plus + tapes_minus, calculate_omegas
 
