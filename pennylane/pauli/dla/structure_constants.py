@@ -286,9 +286,10 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
         chi = 2**n
         assert np.shape(g) == (len(g), chi, chi)
 
+    interface = qml.math.get_interface(g[0])
+
     if isinstance(g[0], TensorLike) and isinstance(g, (list, tuple)):
         # list of matrices
-        interface = qml.math.get_interface(g[0])
         g = qml.math.stack(g, like=interface)
 
     chi = qml.math.shape(g[0])[0]
@@ -329,15 +330,29 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
 
     if is_orthogonal:
         # Orthogonal but not normalized inputs. Need to correct by (diagonal) Gram matrix
-        # todo:
-        gram_diag = qml.math.real(
-            qml.math.sum(
-                qml.math.diagonal(
-                    qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1
-                ),  # offset, axis1, axis2 arguments are called differently in torch
-                axis=0,
+
+        if interface == "tensorflow":
+            import tensorflow as tf  # pylint: disable=import-outside-toplevel
+
+            gram_diag = qml.math.real(
+                qml.math.sum(
+                    tf.keras.ops.diagonal(
+                        tf.keras.ops.diagonal(prod, 0, 1, 3), 0, 0, 1
+                    ),  # offset, axis1, axis2 arguments are called differently in torch
+                    axis=0,
+                )
             )
-        )
+
+        else:
+            gram_diag = qml.math.real(
+                qml.math.sum(
+                    qml.math.diagonal(
+                        qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1
+                    ),  # offset, axis1, axis2 arguments are called differently in torch
+                    axis=0,
+                )
+            )
+
         adj = (chi / gram_diag[:, None, None]) * adj
     else:
         # Non-orthogonal inputs. Need to correct by (full) Gram matrix
