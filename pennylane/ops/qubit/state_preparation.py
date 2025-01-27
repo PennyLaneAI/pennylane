@@ -355,7 +355,7 @@ class StatePrep(StatePrepBase):
 
         if self.is_sparse:
             return (
-                _sparse_statevec_permute(self.parameters[0], self.wires, wire_order)
+                _sparse_statevec_permute_and_embed(self.parameters[0], self.wires, wire_order)
                 if wire_order
                 else self.parameters[0]
             )
@@ -568,7 +568,9 @@ class QubitDensityMatrix(Operation):
     grad_method = None
 
 
-def _sparse_statevec_permute_and_embed(state: csr_matrix, wires: list, wire_order: list) -> csr_matrix:
+def _sparse_statevec_permute_and_embed(
+    state: csr_matrix, wires: list, wire_order: list
+) -> csr_matrix:
     """Permutes the wires of a statevector represented as a scipy.sparse.csr_matrix.
 
     Args:
