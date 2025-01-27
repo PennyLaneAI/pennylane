@@ -159,7 +159,7 @@ def _approximate_set(basis_gates, max_length=10):
 
     # Maintain a trie-like structure that consists of -
     # gtrie_<ids / mat / gph / sum> stores <gates / SU2s / global phase / T-gate sum>
-    # each of them are list of lists, where each inner list stores the data at a depth D,
+    # each of them are list of lists, where each inner list stores the data at a depth D.
     gtrie_ids = [[[gate] for gate in basis]]
     gtrie_mat = [list(basis_mat.values())]
     gtrie_gph = [list(basis_gph.values())]
