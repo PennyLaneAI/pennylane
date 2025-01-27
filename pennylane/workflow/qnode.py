@@ -293,7 +293,8 @@ class QNode:
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
         autograph (bool): Whether to use AutoGraph to convert Python control flow to native PennyLane
-            control flow. For more information, refer to :doc:`Autograph </development/autograph>`. Defaults to True.
+            control flow. For more information, refer to :doc:`Autograph </development/autograph>`. Defaults to ``True``.
+
 
     **Example**
 
