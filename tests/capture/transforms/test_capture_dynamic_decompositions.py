@@ -37,9 +37,7 @@ class SimpleCustomOp(Operation):
 
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, *self.wires, **self.hyperparameters
-        )
+        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
 
     @staticmethod
     def _compute_plxpr_decomposition(wires):
@@ -89,9 +87,7 @@ class CustomOpCond(Operation):
 
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, *self.wires, **self.hyperparameters
-        )
+        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
 
     @staticmethod
     def _compute_plxpr_decomposition(phi, wires):
@@ -116,9 +112,7 @@ class CustomOpForLoop(Operation):
 
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, *self.wires, **self.hyperparameters
-        )
+        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
 
     @staticmethod
     def _compute_plxpr_decomposition(phi, wires):
@@ -130,8 +124,6 @@ class CustomOpForLoop(Operation):
 
         # pylint: disable=unused-variable
         loop_rx(phi)
-
-        return qml.expval(qml.Z(0))
 
 
 class CustomOpWhileLoop(Operation):
@@ -145,9 +137,7 @@ class CustomOpWhileLoop(Operation):
 
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, *self.wires, **self.hyperparameters
-        )
+        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
 
     @staticmethod
     def _compute_plxpr_decomposition(phi, wires):
@@ -173,9 +163,7 @@ class CustomOpNestedCond(Operation):
 
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, *self.wires, **self.hyperparameters
-        )
+        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
 
     @staticmethod
     def _compute_plxpr_decomposition(phi, wires):
@@ -216,7 +204,7 @@ class CustomOpAutograph(Operation):
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
         return qml.capture.make_plxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, *self.wires, **self.hyperparameters
+            *self.parameters, *self.wires
         )
 
     @staticmethod
@@ -300,7 +288,7 @@ class TestDynamicDecomposeInterpreter:
         @qml.qnode(device=qml.device("default.qubit", wires=4))
         def circuit(x, wires):
             CustomOpMultiWire(x, wires=wires)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.var(qml.Z(2)), qml.state()
+            return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(0.5, wires=wires)
 
@@ -325,7 +313,7 @@ class TestDynamicDecomposeInterpreter:
             qml.RY(x, wires=wires[1])
             qml.RZ(x, wires=wires[2])
             qml.RX(0.2, wires=wires[3])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.var(qml.Z(2)), qml.state()
+            return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         comparison_result = circuit_comparison(0.5, wires)
 
