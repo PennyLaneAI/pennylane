@@ -503,13 +503,10 @@ class StatePrep(StatePrepBase):
             state = state / norm
 
         elif not math.allclose(norm, 1.0, atol=TOLERANCE):
-            if normalize:
-                state = state / norm
-            else:
-                raise ValueError(
-                    f"The state must be a vector of norm 1.0; got norm {norm}. "
-                    "Use 'normalize=True' to automatically normalize."
-                )
+            raise ValueError(
+                f"The state must be a vector of norm 1.0; got norm {norm}. "
+                "Use 'normalize=True' to automatically normalize."
+            )
         return state
 
 
