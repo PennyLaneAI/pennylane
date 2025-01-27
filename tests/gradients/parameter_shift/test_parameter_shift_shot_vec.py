@@ -1372,8 +1372,8 @@ class TestParameterShiftRule:
 
     @pytest.mark.local_salt(1)
     def test_involutory_and_noninvolutory_variance_single_param(self, broadcast, seed):
-        """Tests a qubit Hermitian observable that is not involutory alongside
-        an involutory observable when there's a single trainable parameter."""
+        """Tests a qubit Hermitian observable that is not involuntary alongside
+        an involuntary observable when there's a single trainable parameter."""
         shot_vec = tuple([1000000] * 3)
         dev = qml.device("default.qubit", wires=2, shots=shot_vec, seed=seed)
         a = 0.54
