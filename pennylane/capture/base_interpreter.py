@@ -25,8 +25,6 @@ import pennylane as qml
 
 from .flatfn import FlatFn
 from .primitives import (
-    AbstractMeasurement,
-    AbstractOperator,
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
@@ -311,20 +309,21 @@ class PlxprInterpreter:
             self._env[constvar] = const
 
         for eqn in jaxpr.eqns:
+            primitive = eqn.primitive
+            custom_handler = self._primitive_registrations.get(primitive, None)
 
-            custom_handler = self._primitive_registrations.get(eqn.primitive, None)
             if custom_handler:
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = custom_handler(self, *invals, **eqn.params)
-            elif isinstance(eqn.outvars[0].aval, AbstractOperator):
+            elif getattr(primitive, "prim_type", "") == "operator":
                 outvals = self.interpret_operation_eqn(eqn)
-            elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
+            elif getattr(primitive, "prim_type", "") == "measurement":
                 outvals = self.interpret_measurement_eqn(eqn)
             else:
                 invals = [self.read(invar) for invar in eqn.invars]
-                outvals = eqn.primitive.bind(*invals, **eqn.params)
+                outvals = primitive.bind(*invals, **eqn.params)
 
-            if not eqn.primitive.multiple_results:
+            if not primitive.multiple_results:
                 outvals = [outvals]
             for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                 self._env[outvar] = outval
