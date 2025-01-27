@@ -214,8 +214,8 @@ def _rot_decompose(op):
         if ops_ is None:
             ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(-theta / 2)]
             if not qml.math.is_abstract(theta):
-                # We iterate to catch the following for odd integers k1 and k2 (div_):
-                # S / S† => PhaseShift(k1 * pi / 2), T / T† => PhaseShift(k2 * pi / 4)
+                # The following loop simplifies the two cases where for all odd intergers `k`,
+                # `PhaseShift(k * pi / 2)` is S / S* and `PhaseShift(k * pi / 4)` is T / T*.
                 for val_ in [2, 4]:
                     div_ = qml.math.divide(theta, math.pi / val_)
                     mod_ = qml.math.mod(theta, math.pi / val_)

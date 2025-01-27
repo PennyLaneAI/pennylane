@@ -154,7 +154,7 @@ class TestCliffordCompile:
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
     def test_qnode_decomposition(self):
-        """Test decomposition for the Clifford transform."""
+        """Test decomposition for the Clifford transform applied to a QNode."""
 
         dev = qml.device("default.qubit")
 
@@ -181,7 +181,7 @@ class TestCliffordCompile:
         )
 
     def test_phase_shift_decomposition(self):
-        """Test decomposition for the Clifford transform."""
+        """Test decomposition for the Clifford transform applied to the circuits with phase shifts."""
         old_tape = qml.tape.make_qscript(circuit_6)()
 
         [new_tape], _ = clifford_t_decomposition(old_tape, max_depth=3)
