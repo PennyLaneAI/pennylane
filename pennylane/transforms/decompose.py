@@ -20,7 +20,7 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 import warnings
 from collections.abc import Callable, Generator, Iterable
 from functools import lru_cache, partial
-from typing import Optional, Sequence
+from typing import Optional
 
 import pennylane as qml
 from pennylane.transforms.core import transform
@@ -193,7 +193,9 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
         # pylint: disable=import-outside-toplevel
         # pylint: disable=unused-import
         import jax
-        from pennylane.capture.primitives import AbstractMeasurement, AbstractOperator
+
+        from pennylane.capture.primitives import (AbstractMeasurement,
+                                                  AbstractOperator)
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -202,26 +204,19 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
     class DynamicDecomposeInterpreter(qml.capture.PlxprInterpreter):
         """
         Experimental Plxpr Interpreter for applying a dynamic decomposition to operations program capture is enabled.
-
         """
 
-        def eval_dynamic_decomposition(
-            self, jaxpr_decomp: "jax.core.Jaxpr", consts: Sequence, *args
-        ):
+        def eval_dynamic_decomposition(self, jaxpr_decomp: "jax.core.Jaxpr", *args):
             """
             Evaluate a dynamic decomposition of a Jaxpr.
 
             Args:
                 jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate
-                consts (Sequence): the constants to use in the evaluation
                 *args: the arguments to use in the evaluation
-
             """
 
             for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
                 self._env[invar] = arg
-            for const, constvar in zip(consts, jaxpr_decomp.constvars, strict=True):
-                self._env[constvar] = const
 
             for inner_eqn in jaxpr_decomp.eqns:
 
@@ -232,6 +227,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                     outvals = custom_handler(self, *invals, **inner_eqn.params)
 
                 elif isinstance(inner_eqn.outvars[0].aval, AbstractOperator):
+                    # This does not currently support nested decompositions
                     outvals = super().interpret_operation_eqn(inner_eqn)
                 elif isinstance(inner_eqn.outvars[0].aval, AbstractMeasurement):
                     outvals = super().interpret_measurement_eqn(inner_eqn)
@@ -260,10 +256,11 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
             if hasattr(op, "_compute_plxpr_decomposition"):
 
                 jaxpr_decomp = op._plxpr_decomposition()
-                args = (*op.parameters, *op.wires, *op.hyperparameters)
-                return self.eval_dynamic_decomposition(
-                    jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args
-                )
+                args = (*op.parameters, *op.wires, *op.hyperparameters.values())
+
+                # We assume that the JAXPR of the decomposition does not contain constants
+                # and that all the required parameters are passed as arguments
+                return self.eval_dynamic_decomposition(jaxpr_decomp.jaxpr, *args)
 
             return super().interpret_operation_eqn(eqn)
 

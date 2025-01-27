@@ -60,23 +60,29 @@ class CustomOpMultiWire(Operation):
     num_params = 1
 
     def __init__(self, phi, wires, id=None):
+
+        self.hyperparameters["key_1"] = 0.1
+        self.hyperparameters["key_2"] = 0.2
+
         super().__init__(phi, wires=wires, id=id)
 
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
         return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, *self.wires, **self.hyperparameters
+            *self.parameters, *self.wires, *self.hyperparameters.values()
         )
 
     @staticmethod
-    def _compute_plxpr_decomposition(phi, *wires):
+    def _compute_plxpr_decomposition(phi, *args):
+        wires = args[:4]
+        hyperparameters = args[4:]
         qml.CNOT(wires=[wires[0], wires[1]])
         qml.DoubleExcitation(phi, wires=wires)
         qml.CNOT(wires=[wires[0], wires[1]])
-        qml.RX(phi, wires=wires[0])
+        qml.RX(hyperparameters[0], wires=wires[0])
         qml.RY(phi, wires=wires[1])
         qml.RZ(phi, wires=wires[2])
-        qml.RX(phi, wires=wires[3])
+        qml.RX(hyperparameters[1], wires=wires[3])
 
 
 class CustomOpCond(Operation):
@@ -280,10 +286,10 @@ class TestDynamicDecomposeInterpreter:
             qml.CNOT([wires[0], wires[1]])
             qml.DoubleExcitation(x, wires)
             qml.CNOT([wires[0], wires[1]])
-            qml.RX(x, wires=wires[0])
+            qml.RX(0.1, wires=wires[0])
             qml.RY(x, wires=wires[1])
             qml.RZ(x, wires=wires[2])
-            qml.RX(x, wires=wires[3])
+            qml.RX(0.2, wires=wires[3])
             return qml.expval(qml.Z(0))
 
         assert jax.numpy.allclose(*result, circuit_comparison(0.5, wires))
