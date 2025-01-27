@@ -520,6 +520,7 @@ class Sum(CompositeOp):
         >>> op.grouping_indices
         ((2,), (0, 1))
         """
+        warnings.warn("This is a test", qml.PennyLaneDeprecationWarning)
         if not self.pauli_rep:
             raise ValueError("Cannot compute grouping for Sums containing non-Pauli operators.")
 
