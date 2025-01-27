@@ -17,7 +17,7 @@ This submodule defines a strategy structure for defining custom plxpr interprete
 # pylint: disable=no-self-use
 from copy import copy
 from functools import partial, wraps
-from typing import Callable, Sequence
+from typing import Callable, Optional, Sequence
 
 import jax
 
@@ -41,6 +41,53 @@ A dictionary containing flattened style cond, while, and for loop higher order p
 .. code-block::
     MyInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
 """
+
+
+def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[Optional[int]]):
+    """
+    A helper for broadcast_in_dim and iota to combine static dimensions and dynamic dimensions.
+
+    For example, with `shape=(None, 4, None)` and `dyn_shape=(a, b)`, then the processed shape is
+    `(a, 4, b)`.
+
+    When capturing `broadcast_in_dim_p` with a dynamic shape, we might end up with:
+    ```
+    >>> import jax
+    >>> qml.capture.enable()
+    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> def f(n):
+    ...     return jax.numpy.ones((n, 4, n))
+    >>> jax.make_jaxpr(f)(4)
+    { lambda ; a:i32[]. let
+        b:f32[a,4,a] = broadcast_in_dim[
+        broadcast_dimensions=()
+        shape=(None, 4, None)
+        ] 1.0 a a
+    in (b,) }
+    ```
+
+    `1.0` is the value we want to fill. `a, a` are the two dynamic shapes.
+    The static part of the shape is `(None, 4, None)`. We need to replace the two `None`
+    values with `a` and `a`.
+
+    `broadcast_in_dim` also can't handle shapes where an integer is a concrete jax arrays,
+    so we need to convert any concrete jax arrays to normal integers.
+
+    """
+    dyn_shape_iter = iter(dyn_shape)
+    new_shape = []
+    for s in shape:
+        if s is not None:
+            new_shape.append(s)
+        else:
+            # pull from iterable of dynamic shapes
+            next_s = next(dyn_shape_iter)
+            if not qml.math.is_abstract(next_s):
+                # may need to cast to a built-in integer if possible
+                next_s = int(next_s)
+            new_shape.append(next_s)
+
+    return tuple(new_shape)
 
 
 def jaxpr_to_jaxpr(
@@ -350,9 +397,56 @@ class PlxprInterpreter:
                 jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
             results = self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
             assert flat_f.out_tree
+            # slice out any dynamic shape variables
+            results = results[-flat_f.out_tree.num_leaves :]
             return jax.tree_util.tree_unflatten(flat_f.out_tree, results)
 
         return wrapper
+
+
+# pylint: disable=unused-argument
+@PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
+def _(self, x, *dyn_shape, shape, broadcast_dimensions):
+    """Handle the broadcast_in_dim primitive created by jnp.ones, jnp.zeros, jnp.full
+
+    >>> import jax
+    >>> qml.capture.enable()
+    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> def f(n):
+    ...     return jax.numpy.ones((n, 4, n))
+    >>> jax.make_jaxpr(f)(4)
+    { lambda ; a:i32[]. let
+        b:f32[a,4,a] = broadcast_in_dim[
+        broadcast_dimensions=()
+        shape=(None, 4, None)
+        ] 1.0 a a
+    in (b,) }
+
+    """
+    # needs custom primitive as jax.core.eval_jaxpr will error out with this
+    new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
+
+    return jax.lax.broadcast_in_dim(x, new_shape, broadcast_dimensions=broadcast_dimensions)
+
+
+# pylint: disable=unused-argument
+@PlxprInterpreter.register_primitive(jax.lax.iota_p)
+def _(self, *dyn_shape, dimension, dtype, shape):
+    """Handle the iota primitive created by jnp.arange
+
+    >>> import jax
+    >>> qml.capture.enable()
+    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> def f(n):
+    ...     return jax.numpy.arange(n)
+    >>> jax.make_jaxpr(f)(4)
+    { lambda ; a:i32[]. let
+    b:i32[a] = iota[dimension=0 dtype=int32 shape=(None,)] a
+    in (b,) }
+    """
+    # iota is primitive created by jnp.arange
+    new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
+    return jax.lax.broadcasted_iota(dtype, new_shape, dimension)
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
@@ -384,12 +478,15 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
 
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
-def handle_for_loop(self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice):
+def handle_for_loop(
+    self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+):
     """Handle a for loop primitive."""
     init_state = args[args_slice]
+    abstract_shapes = args[abstract_shapes_slice]
 
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        copy(self), jaxpr_body_fn, args[consts_slice], start, *init_state
+        copy(self), jaxpr_body_fn, args[consts_slice], *abstract_shapes, start, *init_state
     )
 
     return for_loop_prim.bind(
@@ -400,6 +497,7 @@ def handle_for_loop(self, start, stop, step, *args, jaxpr_body_fn, consts_slice,
         jaxpr_body_fn=new_jaxpr_body_fn,
         consts_slice=consts_slice,
         args_slice=args_slice,
+        abstract_shapes_slice=abstract_shapes_slice,
     )
 
 
@@ -423,15 +521,27 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 
 @PlxprInterpreter.register_primitive(while_loop_prim)
 def handle_while_loop(
-    self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice
+    self,
+    *invals,
+    jaxpr_body_fn,
+    jaxpr_cond_fn,
+    body_slice,
+    cond_slice,
+    args_slice,
+    abstract_shapes_slice,
 ):
     """Handle a while loop primitive."""
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
+    abstract_shapes = invals[abstract_shapes_slice]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts_body, *init_state)
-    new_jaxpr_cond_fn = jaxpr_to_jaxpr(copy(self), jaxpr_cond_fn, consts_cond, *init_state)
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(
+        copy(self), jaxpr_body_fn, consts_body, *abstract_shapes, *init_state
+    )
+    new_jaxpr_cond_fn = jaxpr_to_jaxpr(
+        copy(self), jaxpr_cond_fn, consts_cond, *abstract_shapes, *init_state
+    )
 
     return while_loop_prim.bind(
         *invals,
@@ -440,6 +550,7 @@ def handle_while_loop(
         body_slice=body_slice,
         cond_slice=cond_slice,
         args_slice=args_slice,
+        abstract_shapes_slice=abstract_shapes_slice,
     )
 
 
@@ -481,16 +592,24 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
 
 
 def flatten_while_loop(
-    self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice
+    self,
+    *invals,
+    jaxpr_body_fn,
+    jaxpr_cond_fn,
+    body_slice,
+    cond_slice,
+    args_slice,
+    abstract_shapes_slice,
 ):
     """Handle the while loop by a flattened python strategy."""
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
+    abstract_shapes = invals[abstract_shapes_slice]
 
     fn_res = init_state
-    while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
-        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *fn_res)
+    while copy(self).eval(jaxpr_cond_fn, consts_cond, *abstract_shapes, *fn_res)[0]:
+        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *abstract_shapes, *fn_res)
 
     return fn_res
 
@@ -514,14 +633,17 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 
-def flattened_for(self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice):
+def flattened_for(
+    self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+):
     """Handle the for loop by a flattened python strategy."""
     consts = invals[consts_slice]
     init_state = invals[args_slice]
+    abstract_shapes = invals[abstract_shapes_slice]
 
     res = init_state
     for i in range(start, stop, step):
-        res = copy(self).eval(jaxpr_body_fn, consts, i, *res)
+        res = copy(self).eval(jaxpr_body_fn, consts, *abstract_shapes, i, *res)
 
     return res
 
