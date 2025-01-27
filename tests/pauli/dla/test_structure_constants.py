@@ -139,3 +139,7 @@ class TestAdjointRepr:
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
             qml.pauli.structure_constants(generators)
+
+
+# class TestInterfacesStructureConstants:
+#     """Test interfaces jax, torch and tensorflow with structure constants"""
