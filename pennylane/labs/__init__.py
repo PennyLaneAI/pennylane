@@ -27,7 +27,7 @@ Modules
 
     dla
     resource_estimation
-
+    vibrational
 """
 
 from pennylane.labs import dla
