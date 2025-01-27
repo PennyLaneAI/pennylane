@@ -91,11 +91,11 @@ def _prune_approximate_set(
     """Prune the approximate set for equivalent gate sequences with higher T-gate counts.
 
     Args:
-        approx_set_ids (list[list[~pennylane.operation.Operation]]): List of gate sequences.
-        approx_set_mat (list[TensorLike]): List of SU(2) matrices.
-        approx_set_gph (list[float]): List of global phases.
-        approx_set_qat (list[TensorLike]): List of quaternion representations.
-        approx_set_sum (list[int]): List of numbers of the T and Adjoint(T) gates in the sequences.
+        approx_set_ids (list[list[~pennylane.operation.Operation]]): list of gate sequences
+        approx_set_mat (list[TensorLike]): list of SU(2) matrices
+        approx_set_gph (list[float]): list of global phases
+        approx_set_qat (list[TensorLike]): list of quaternion representations
+        approx_set_sum (list[int]): list of numbers of the T and Adjoint(T) gates in the sequences
 
     Returns:
         Tuple[list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]]:
@@ -159,8 +159,7 @@ def _approximate_set(basis_gates, max_length=10):
 
     # Maintain a trie-like structure that consists of -
     # gtrie_<ids / mat / gph / sum> stores <gates / SU2s / global phase / T-gate sum>
-    # each of them are list of lists, where each inner list store the data at a depth D,
-    # gtrie_<name>[D] = [data1, data2, ...] where data1, data2, ... is stored at D-th depth.
+    # each of them are list of lists, where each inner list stores the data at a depth D,
     gtrie_ids = [[[gate] for gate in basis]]
     gtrie_mat = [list(basis_mat.values())]
     gtrie_gph = [list(basis_gph.values())]
@@ -168,8 +167,8 @@ def _approximate_set(basis_gates, max_length=10):
 
     # Maintains the approximate set for gates, SU2s, global phases, T-gate sums and quaternions,
     # where each of the approx_set_<name> is the corresponding flattened verison of gtrie_<name>.
-    # We store the quaternions representation for the SU2 matrices for building a KDTree that allow
-    # querying possible neighbours of any newly built gate sequence and test its prior existence.
+    # We store the quaternion representations for the SU2 matrices to build a KDTree. This allows us to
+    # query for nearest neighbours of any newly built gate sequence and test for its prior existence.
     approx_set_ids = list(gtrie_ids[0])
     approx_set_mat = list(gtrie_mat[0])
     approx_set_gph = list(gtrie_gph[0])
@@ -213,7 +212,8 @@ def _approximate_set(basis_gates, max_length=10):
                 else:  # global check
                     exists, quaternion, global_index = _contains_SU2(su2_op, kd_tree=kdtree)
 
-                global_phase = qml.math.mod(su2_gp, math.pi)
+                # Add the sequence if it is unique, i.e., new SU(2) representation or global phase.
+                global_phase = qml.math.mod(su2_gp, math.pi)  # Get the global phase in [0, \pi)
                 if not exists or global_phase != approx_set_gph[global_index]:
                     # Add the data to the approximate set
                     approx_set_ids.append(node + [op])
