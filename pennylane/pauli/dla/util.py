@@ -30,7 +30,9 @@ def trace_inner_product(
     If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
     inputs.
 
-    .. warn:: Operator inputs are assumed to be Hermitian. In particular,
+    .. warning::
+
+        Operator inputs are assumed to be Hermitian. In particular,
         sums of Pauli operators are assumed to have real-valued coefficients.
         We recommend to use matrix representations for non-Hermitian inputs.
         In case of non-Hermitian :class:`~PauliSentence` or :class:`Operator` inputs,
