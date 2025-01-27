@@ -21,7 +21,9 @@ from itertools import product
 from typing import Optional, Union
 
 import numpy as np
+import scipy as sp
 from scipy.linalg import fractional_matrix_power
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -121,7 +123,7 @@ class QubitUnitary(Operation):
 
     def __init__(
         self,
-        U: TensorLike,
+        U: Union[TensorLike, csr_matrix],
         wires: WiresLike,
         id: Optional[str] = None,
         unitary_check: bool = False,
@@ -140,14 +142,7 @@ class QubitUnitary(Operation):
 
         # Check for unitarity; due to variable precision across the different ML frameworks,
         # here we issue a warning to check the operation, instead of raising an error outright.
-        if unitary_check and not (
-            qml.math.is_abstract(U)
-            or qml.math.allclose(
-                qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
-                qml.math.eye(dim),
-                atol=1e-6,
-            )
-        ):
+        if unitary_check and not self._unitary_check(U, dim):
             warnings.warn(
                 f"Operator {U}\n may not be unitary. "
                 "Verify unitarity of operation, or use a datatype with increased precision.",
@@ -156,6 +151,18 @@ class QubitUnitary(Operation):
 
         super().__init__(U, wires=wires, id=id)
 
+    @staticmethod
+    def _unitary_check(U, dim):
+        if isinstance(U, csr_matrix):
+            U_dagger = U.conjugate().transpose()
+            identity = csr_matrix(np.eye(dim))
+            return sp.sparse.linalg.norm(U @ U_dagger - identity) < 1e-10
+        return qml.math.allclose(
+            qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
+            qml.math.eye(dim),
+            atol=1e-6,
+        )
+        
     @staticmethod
     def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
