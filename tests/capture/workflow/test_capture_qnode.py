@@ -1133,7 +1133,6 @@ class TestQNodeAutographIntegration:
                 qml.Hadamard(0)
             else:
                 qml.I(0)
-
             return qml.state()
 
         if autograph:
@@ -1156,7 +1155,6 @@ class TestQNodeAutographIntegration:
             @qml.for_loop(n)
             def loop(i):
                 qml.H(wires=i)
-
             loop()
             return qml.state()
 
@@ -1173,12 +1171,10 @@ class TestQNodeAutographIntegration:
 
         @qml.qnode(dev, autograph=autograph)
         def circuit(n: int):
-
             @qml.while_loop(lambda i: i < n)
             def loop(i):
                 qml.H(wires=i)
                 return i + 1
-
             loop(0)
             return qml.state()
 
@@ -1192,15 +1188,12 @@ class TestQNodeAutographIntegration:
 
         @qml.qnode(dev, autograph=autograph)
         def circuit(n: int):
-
             def condition(i):
                 return i < n
-
             @qml.while_loop(condition)
             def loop(i):
                 qml.H(wires=i)
                 return i + 1
-
             loop(0)
             return qml.state()
 
