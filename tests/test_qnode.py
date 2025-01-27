@@ -29,6 +29,7 @@ from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
+from pennylane.workflow.qnode import _make_execution_config
 
 
 def dummyfunc():
@@ -1926,14 +1927,17 @@ class TestMCMConfiguration:
             return mp(qml.PauliZ(0))
 
         _ = circuit(1.8, qml.expval, shots=10)
-        assert circuit.execute_kwargs["mcm_config"] == original_config
+        assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
+        assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
         if mcm_method != "one-shot":
             _ = circuit(1.8, qml.expval)
-            assert circuit.execute_kwargs["mcm_config"] == original_config
+            assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
+            assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
         _ = circuit(1.8, qml.expval, shots=10)
-        assert circuit.execute_kwargs["mcm_config"] == original_config
+        assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
+        assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
 
 class TestTapeExpansion:
@@ -2070,3 +2074,52 @@ def test_resets_after_execution_error():
         circuit(qml.numpy.array(0.1))
 
     assert circuit.interface == "auto"
+
+
+class TestPrivateFunctions:
+    """Tests for private functions in the QNode class."""
+
+    def test_make_execution_config_with_no_qnode(self):
+        """Test that the _make_execution_config function correctly creates an execution config."""
+        diff_method = "best"
+        mcm_config = qml.devices.MCMConfig(postselect_mode="fill-shots", mcm_method="deferred")
+        config = _make_execution_config(None, diff_method, mcm_config)
+
+        expected_config = qml.devices.ExecutionConfig(
+            interface="numpy",
+            gradient_keyword_arguments={},
+            use_device_jacobian_product=False,
+            grad_on_execution=None,
+            gradient_method=diff_method,
+            mcm_config=mcm_config,
+        )
+
+        assert config == expected_config
+
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", "jax-jit"])
+    def test_make_execution_config_with_qnode(self, interface):
+        """Test that a execution config is made correctly with no QNode."""
+        if "jax" in interface:
+            grad_on_execution = False
+        else:
+            grad_on_execution = None
+
+        @qml.qnode(qml.device("default.qubit"), interface=interface)
+        def circuit():
+            qml.H(0)
+            return qml.probs()
+
+        diff_method = "best"
+        mcm_config = qml.devices.MCMConfig(postselect_mode="fill-shots", mcm_method="deferred")
+        config = _make_execution_config(circuit, diff_method, mcm_config)
+
+        expected_config = qml.devices.ExecutionConfig(
+            interface=interface,
+            gradient_keyword_arguments={},
+            use_device_jacobian_product=False,
+            grad_on_execution=grad_on_execution,
+            gradient_method=diff_method,
+            mcm_config=mcm_config,
+        )
+
+        assert config == expected_config
