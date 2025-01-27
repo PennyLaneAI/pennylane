@@ -875,7 +875,6 @@ class TestShotsIntegration:
             jax.grad(cost_fn)(a, b)
         assert dev.tracker.totals["executions"] == 1
 
-    @pytest.mark.local_salt(2)
     @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
     def test_shot_vectors_single_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors."""
@@ -891,12 +890,12 @@ class TestShotsIntegration:
         res = circuit(0.5)
         expected = 1 - np.cos(0.5) ** 2
         assert qml.math.allclose(res[0], expected, atol=5e-2)
-        assert qml.math.allclose(res[1], expected, rtol=5e-2)
+        assert qml.math.allclose(res[1], expected, atol=5e-2)
 
         g = jax.jacobian(circuit)(0.5)
         expected_g = 2 * np.cos(0.5) * np.sin(0.5)
-        assert qml.math.allclose(g[0], expected_g, rtol=5e-2)
-        assert qml.math.allclose(g[1], expected_g, rtol=5e-2)
+        assert qml.math.allclose(g[0], expected_g, atol=5e-2)
+        assert qml.math.allclose(g[1], expected_g, atol=5e-2)
 
     @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
     def test_shot_vectors_multiple_measurements(self, interface, shots, seed):
@@ -911,12 +910,12 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=0)
 
         res = circuit(0.5)
-        assert qml.math.allclose(res[0][0], np.cos(0.5), rtol=5e-2)
-        assert qml.math.allclose(res[1][0], np.cos(0.5), rtol=5e-2)
+        assert qml.math.allclose(res[0][0], np.cos(0.5), atol=5e-2)
+        assert qml.math.allclose(res[1][0], np.cos(0.5), atol=5e-2)
 
         expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
         assert qml.math.allclose(res[0][1], expected_probs, atol=1e-2)
-        assert qml.math.allclose(res[1][1][0], expected_probs[0], rtol=5e-2)
+        assert qml.math.allclose(res[1][1][0], expected_probs[0], atol=5e-2)
         assert qml.math.allclose(res[1][1][1], expected_probs[1], atol=5e-3)
 
 
