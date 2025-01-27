@@ -1166,7 +1166,7 @@ class TestQNodeAutographIntegration:
     def test_pennylane_while_loop_lambda(self, autograph):
         """Test that a native Pennylane while loop can be used with the QNode."""
         if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition")
+            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
 
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
