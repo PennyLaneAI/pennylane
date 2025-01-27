@@ -30,9 +30,9 @@
   2: ──H────────┤  State
   >>> circuit(3)
   Array([0.43879125+0.j        , 0.43879125+0.j        ,
-       0.        -0.23971277j, 0.        -0.23971277j,
-       0.43879125+0.j        , 0.43879125+0.j        ,
-       0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+         0.        -0.23971277j, 0.        -0.23971277j,
+         0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
   ```
 
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
