@@ -384,12 +384,15 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
 
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
-def handle_for_loop(self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice):
+def handle_for_loop(
+    self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+):
     """Handle a for loop primitive."""
     init_state = args[args_slice]
+    abstract_shapes = args[abstract_shapes_slice]
 
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        copy(self), jaxpr_body_fn, args[consts_slice], start, *init_state
+        copy(self), jaxpr_body_fn, args[consts_slice], *abstract_shapes, start, *init_state
     )
 
     return for_loop_prim.bind(
@@ -400,6 +403,7 @@ def handle_for_loop(self, start, stop, step, *args, jaxpr_body_fn, consts_slice,
         jaxpr_body_fn=new_jaxpr_body_fn,
         consts_slice=consts_slice,
         args_slice=args_slice,
+        abstract_shapes_slice=abstract_shapes_slice,
     )
 
 
@@ -423,15 +427,27 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 
 @PlxprInterpreter.register_primitive(while_loop_prim)
 def handle_while_loop(
-    self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice
+    self,
+    *invals,
+    jaxpr_body_fn,
+    jaxpr_cond_fn,
+    body_slice,
+    cond_slice,
+    args_slice,
+    abstract_shapes_slice,
 ):
     """Handle a while loop primitive."""
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
+    abstract_shapes = invals[abstract_shapes_slice]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts_body, *init_state)
-    new_jaxpr_cond_fn = jaxpr_to_jaxpr(copy(self), jaxpr_cond_fn, consts_cond, *init_state)
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(
+        copy(self), jaxpr_body_fn, consts_body, *abstract_shapes, *init_state
+    )
+    new_jaxpr_cond_fn = jaxpr_to_jaxpr(
+        copy(self), jaxpr_cond_fn, consts_cond, *abstract_shapes, *init_state
+    )
 
     return while_loop_prim.bind(
         *invals,
@@ -440,6 +456,7 @@ def handle_while_loop(
         body_slice=body_slice,
         cond_slice=cond_slice,
         args_slice=args_slice,
+        abstract_shapes_slice=abstract_shapes_slice,
     )
 
 
@@ -481,16 +498,24 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
 
 
 def flatten_while_loop(
-    self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice
+    self,
+    *invals,
+    jaxpr_body_fn,
+    jaxpr_cond_fn,
+    body_slice,
+    cond_slice,
+    args_slice,
+    abstract_shapes_slice,
 ):
     """Handle the while loop by a flattened python strategy."""
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
+    abstract_shapes = invals[abstract_shapes_slice]
 
     fn_res = init_state
-    while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
-        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *fn_res)
+    while copy(self).eval(jaxpr_cond_fn, consts_cond, *abstract_shapes, *fn_res)[0]:
+        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *abstract_shapes, *fn_res)
 
     return fn_res
 
@@ -514,14 +539,17 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 
-def flattened_for(self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice):
+def flattened_for(
+    self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+):
     """Handle the for loop by a flattened python strategy."""
     consts = invals[consts_slice]
     init_state = invals[args_slice]
+    abstract_shapes = invals[abstract_shapes_slice]
 
     res = init_state
     for i in range(start, stop, step):
-        res = copy(self).eval(jaxpr_body_fn, consts, i, *res)
+        res = copy(self).eval(jaxpr_body_fn, consts, *abstract_shapes, i, *res)
 
     return res
 
