@@ -141,5 +141,48 @@ class TestAdjointRepr:
             qml.pauli.structure_constants(generators)
 
 
-# class TestInterfacesStructureConstants:
-#     """Test interfaces jax, torch and tensorflow with structure constants"""
+dla0 = qml.lie_closure([qml.X(0) @ qml.X(1), qml.Z(0), qml.Z(1)], matrix=True)
+adj0 = qml.structure_constants(dla0, matrix=True)
+
+
+class TestInterfacesStructureConstants:
+    """Test interfaces jax, torch and tensorflow with structure constants"""
+
+    @pytest.mark.jax
+    def test_jax_structure_constants(
+        self,
+    ):
+        """Test jax interface for structure constants"""
+
+        import jax.numpy as jnp
+
+        dla_jax = jnp.array(dla0)
+        adj_jax = qml.structure_constants(dla_jax, matrix=True)
+
+        assert qml.math.allclose(adj_jax, adj0)
+
+    @pytest.mark.torch
+    def test_torch_structure_constants(
+        self,
+    ):
+        """Test torch interface for structure constants"""
+
+        import torch
+
+        dla_torch = torch.tensor(dla0)
+        adj_torch = qml.structure_constants(dla_torch, matrix=True)
+
+        assert qml.math.allclose(adj_torch, adj0)
+
+    @pytest.mark.tf
+    def test_tf_structure_constants(
+        self,
+    ):
+        """Test tf interface for structure constants"""
+
+        import tensorflow as tf
+
+        dla_tf = tf.constant(dla0)
+        adj_tf = qml.structure_constants(dla_tf, matrix=True)
+
+        assert qml.math.allclose(adj_tf, adj0)

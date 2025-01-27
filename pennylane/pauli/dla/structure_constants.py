@@ -293,8 +293,8 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
 
     chi = qml.math.shape(g[0])[0]
     assert qml.math.shape(g) == (len(g), chi, chi)
-    assert np.allclose(
-        g.conj().transpose((0, 2, 1)), g
+    assert qml.math.allclose(
+        qml.math.transpose(qml.math.conj(g), (0, 2, 1)), g
     ), "Input matrices to structure_constants not Hermitian"
 
     # matrix_in = isinstance(g, np.ndarray) or all(isinstance(op, np.ndarray) for op in g)
@@ -325,14 +325,16 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     # project commutators on the basis of g, see docstring for details.
     # Axis ordering is (dimg, _chi_, *chi*) x (dimg, *chi*, dimg, _chi_) -> (dimg, dimg, dimg)
     # Normalize trace inner product by dimension chi
-    adj = (1j * qml.math.tensordot(g / chi, all_coms, axes=[[1, 2], [3, 1]])).real
+    adj = qml.math.real(1j * qml.math.tensordot(g / chi, all_coms, axes=[[1, 2], [3, 1]]))
 
     if is_orthogonal:
         # Orthogonal but not normalized inputs. Need to correct by (diagonal) Gram matrix
         # todo:
         gram_diag = qml.math.real(
             qml.math.sum(
-                qml.math.diagonal(qml.math.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1),
+                qml.math.diagonal(
+                    qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1
+                ),  # offset, axis1, axis2 arguments are called differently in torch
                 axis=0,
             )
         )

@@ -472,7 +472,11 @@ def _transpose_tf(a, axes=None):
 
 
 ar.register_function("tensorflow", "transpose", _transpose_tf)
-ar.register_function("tensorflow", "diagonal", lambda x, *args: _i("tf").linalg.diag_part(x))
+ar.register_function(
+    "tensorflow",
+    "diagonal",
+    lambda x, *args, **kwargs: _i("tf").keras.ops.diagonal(x, *args, **kwargs),
+)
 ar.register_function("tensorflow", "outer", lambda a, b: _i("tf").tensordot(a, b, axes=0))
 
 # for some reason Autoray modifies the default behaviour, so we change it back here
