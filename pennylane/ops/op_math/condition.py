@@ -28,6 +28,17 @@ from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
+def all_output_shapes(f):
+    def new_f(*args, **kwargs):
+        out = f(*args, **kwargs)
+        shapes = []
+        for x in out:
+            shapes.extend(x.shape)
+        return *shapes, *out
+
+    return new_f
+
+
 class ConditionalTransformError(ValueError):
     """Error for using qml.cond incorrectly"""
 
@@ -243,7 +254,8 @@ class CondCallable:  # pylint:disable=too-few-public-methods
                 consts_slices.append(slice(0, 0))
             else:
                 jaxpr = jax.make_jaxpr(
-                    functools.partial(fn, **kwargs), abstracted_axes=abstracted_axes
+                    all_output_shapes(FlatFn(functools.partial(fn, **kwargs))),
+                    abstracted_axes=abstracted_axes,
                 )(*args)
                 jaxpr_branches.append(jaxpr.jaxpr)
                 consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
@@ -261,7 +273,8 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             args_slice=slice(end_const_ind, None),
         )
         assert flat_true_fn.out_tree is not None
-        if flat_true_fn.out_tree.num_leaves != len(results):
+        results = results[-flat_true_fn.out_tree.num_leaves :]
+        if False:  # flat_true_fn.out_tree.num_leaves != len(results):
             # undefined false fn leads to empty results
             return results
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
@@ -661,7 +674,10 @@ def _validate_abstract_values(
         )
 
     for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
-        if outval != expected_outval:
+        if (
+            all(not qml.math.is_abstract(o) for o in (outval, expected_outval))
+            and outval != expected_outval
+        ):
             raise ValueError(
                 f"Mismatch in output abstract values in {branch_type} branch"
                 f"{'' if index is None else ' #' + str(index)} at position {i}: "
@@ -758,8 +774,6 @@ def _get_cond_qfunc_prim():
 
     def custom_staging_rule(jaxpr_trace, *invars, **params):
 
-        outer_invars = [jaxpr_trace.getvar(x) for x in invars]
-
         jaxpr = params["jaxpr_branches"][0]
 
         env = {}
@@ -781,7 +795,7 @@ def _get_cond_qfunc_prim():
             env[outvar] = new_var
 
         eqn = pe.new_jaxpr_eqn(
-            outer_invars,
+            [jaxpr_trace.getvar(x) for x in invars],
             returned_vars,
             cond_prim,
             params,
