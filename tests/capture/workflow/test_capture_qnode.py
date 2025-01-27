@@ -1155,6 +1155,7 @@ class TestQNodeAutographIntegration:
             @qml.for_loop(n)
             def loop(i):
                 qml.H(wires=i)
+
             loop()
             return qml.state()
 
@@ -1175,6 +1176,7 @@ class TestQNodeAutographIntegration:
             def loop(i):
                 qml.H(wires=i)
                 return i + 1
+
             loop(0)
             return qml.state()
 
@@ -1190,10 +1192,12 @@ class TestQNodeAutographIntegration:
         def circuit(n: int):
             def condition(i):
                 return i < n
+
             @qml.while_loop(condition)
             def loop(i):
                 qml.H(wires=i)
                 return i + 1
+
             loop(0)
             return qml.state()
 
