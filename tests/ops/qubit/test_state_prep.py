@@ -16,8 +16,8 @@ Unit tests for the available qubit state preparation operations.
 """
 # pylint: disable=protected-access
 import numpy as np
-import scipy as sp
 import pytest
+import scipy as sp
 
 import pennylane as qml
 from pennylane.wires import WireError
