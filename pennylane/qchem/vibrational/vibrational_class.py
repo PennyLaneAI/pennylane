@@ -162,12 +162,13 @@ def _import_geometric():
 
 
 def optimize_geometry(molecule, method="rhf"):
-    r"""Computes the equilibrium geometry of a molecule.
+    r"""Compute the equilibrium geometry of a molecule.
 
     Args:
-        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-        method (str): Electronic structure method that can be either restricted and unrestricted
-            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        molecule (~qchem.molecule.Molecule): the molecule object
+        method (str): Electronic structure method used to perform geometry optimization.
+            Available options are ``"rhf"`` and ``"uhf"`` for restricted and unrestricted
+            Hartree-Fock, respectively. Default is ``"rhf"``.
 
     Returns:
         array[array[float]]: optimized atomic positions in Cartesian coordinates
@@ -176,7 +177,7 @@ def optimize_geometry(molecule, method="rhf"):
 
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
-                             [0.0, 0.0,  1.0]])
+    ...                      [0.0, 0.0, 1.0]])
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> eq_geom = qml.qchem.optimize_geometry(mol)
     >>> eq_geom
