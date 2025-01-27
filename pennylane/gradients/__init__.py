@@ -71,6 +71,7 @@ Utility functions
     :toctree: api
 
     finite_diff_coeffs
+    finite_diff_jvp
     generate_shifted_tapes
     generate_multishifted_tapes
     generate_shift_rule
@@ -345,7 +346,7 @@ from . import (
 )
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .classical_jacobian import classical_jacobian
-from .finite_difference import finite_diff, finite_diff_coeffs
+from .finite_difference import finite_diff, finite_diff_coeffs, finite_diff_jvp
 from .fisher import classical_fisher, quantum_fisher
 from .general_shift_rules import (
     eigvals_to_frequencies,
