@@ -30,6 +30,13 @@
    'State': Array([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j], dtype=complex64)} 
   ```
 
+* The higher order primitives in program capture can now accept inputs with abstract shapes.
+  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
+
+* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
+  `jnp.arange`, and `jnp.full`.
+  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
+
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
@@ -67,6 +74,13 @@
 
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
+
+* `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
+  function.
+  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
+
+* With program capture enabled, `QNode`'s can now be differentiated with `diff_method="finite-diff"`.
+  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
 
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
@@ -108,6 +122,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `mcm_method` keyword in `qml.execute` has been deprecated. 
+  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
+  [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
+
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
   and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
   keyword argument `gradient_kwargs` via an explicit dictionary. This change will improve qnode argument
@@ -121,8 +139,12 @@
 * The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
+  [(#6879)](https://github.com/PennyLaneAI/pennylane/pull/6879)
 
 <h3>Internal changes ⚙️</h3>
+
+* Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
+  [(#6877)](https://github.com/PennyLaneAI/pennylane/pull/6877)
 
 * Added a `QmlPrimitive` class that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` module.
   This class contains a `prim_type` property so that we can differentiate between different sets of PennyLane primitives.

@@ -60,11 +60,11 @@ def _convert_to_interface(result, interface: Interface):
 def _make_execution_config(
     circuit: Optional["QNode"], diff_method=None, mcm_config=None
 ) -> "qml.devices.ExecutionConfig":
-    circuit_interface = getattr(circuit, "interface", Interface.NUMPY)
+    circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
     grad_on_execution = execute_kwargs.get("grad_on_execution")
-    if circuit_interface == Interface.JAX:
+    if circuit_interface in {Interface.JAX.value, Interface.JAX_JIT.value}:
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
@@ -105,6 +105,10 @@ def _to_qfunc_output_type(
         results = (results,)
 
     return qml.pytrees.unflatten(results, qfunc_output_structure)
+
+
+def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
+    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
@@ -567,17 +571,18 @@ class QNode:
         self.device = device
         self._interface = get_canonical_interface_name(interface)
         self.diff_method = diff_method
-        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
 
         # execution keyword arguments
+        _validate_mcm_config(postselect_mode, mcm_method)
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
             "device_vjp": device_vjp,
-            "mcm_config": mcm_config,
+            "postselect_mode": postselect_mode,
+            "mcm_method": mcm_method,
         }
 
         # internal data attributes

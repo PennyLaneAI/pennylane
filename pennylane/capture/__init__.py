@@ -33,6 +33,7 @@ quantum-classical programs.
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
+    ~determine_abstracted_axes
     ~expand_plxpr_transforms
     ~run_autograph
     ~make_plxpr
@@ -170,6 +171,7 @@ from .capture_measurements import (
 )
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr, run_autograph
+from .dynamic_shapes import determine_abstracted_axes
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
