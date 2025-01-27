@@ -12,22 +12,27 @@
   ```python
   qml.capture.enable()
 
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit(x):
-      if x > 3:
-        qml.Hadamard(0)
-        qml.CNOT([0,1])
-      else:
-        qml.X(0)
-      return {"Probabilities": qml.probs(), "State": qml.state()}
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+  @qml.qnode(dev, autograph=True)
+  def circuit(num_loops: int):
+      for i in range(num_loops):
+          if i % 2 == 0:
+              qml.H(i)
+          else:
+              qml.RX(1,i)
+      return qml.state()
   ```
   ```pycon
-  >>> circuit(3.5)
-  {'Probabilities': Array([0.49999997, 0.        , 0.        , 0.49999997], dtype=float32),
-   'State': Array([0.70710677+0.j, 0.        +0.j, 0.        +0.j, 0.70710677+0.j],      dtype=complex64)}
-  >>> circuit(2.5)
-  {'Probabilities': Array([0., 0., 1., 0.], dtype=float32),
-   'State': Array([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j], dtype=complex64)} 
+  >>> print(qml.draw(circuit)(num_loops=3))
+  0: ──H────────┤  State
+  1: ──RX(1.00)─┤  State
+  2: ──H────────┤  State
+  >>> circuit(3)
+  Array([0.43879125+0.j        , 0.43879125+0.j        ,
+       0.        -0.23971277j, 0.        -0.23971277j,
+       0.43879125+0.j        , 0.43879125+0.j        ,
+       0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
   ```
 
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
