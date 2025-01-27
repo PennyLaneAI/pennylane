@@ -459,18 +459,18 @@ class StatePrep(StatePrepBase):
     def _preprocess_csr(state, wires, pad_with, normalize, validate_norm):
         """Validate and pre-process inputs as follows:
 
-        * If state is batched, the processing that follows is applied to each state set in the batch.
+        * If the state is batched, the following processing is applied to each state set in the batch.
         * Check that the state tensor is one-dimensional.
         * pad_with has to be None.
-        * If normalize is false, check that last dimension of state is normalised to one. Else, normalise the
+        * If normalize is false, check that the last dimension of the state is normalized to one. Else, normalize the
           state tensor.
         """
 
         if pad_with:
-            raise ValueError("Non-zero Padding is not supported for csr_matrix state")
+            raise ValueError("Non-zero Padding is not supported for sparse states")
         shape = state.shape
 
-        # check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is 2D array
+        # Check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is a 2D array
         if shape[0] != 1:
             raise ValueError(f"State must be a one-dimensional tensor; got shape {shape}.")
 
@@ -568,7 +568,7 @@ class QubitDensityMatrix(Operation):
     grad_method = None
 
 
-def _sparse_statevec_permute(state: csr_matrix, wires: list, wire_order: list) -> csr_matrix:
+def _sparse_statevec_permute_and_embed(state: csr_matrix, wires: list, wire_order: list) -> csr_matrix:
     """Permutes the wires of a statevector represented as a scipy.sparse.csr_matrix.
 
     Args:
@@ -593,7 +593,7 @@ def _sparse_statevec_permute(state: csr_matrix, wires: list, wire_order: list) -
     n_wires = len(wires)
     n_states = 2 ** len(wire_order)
 
-    # # create an empty csr_matrix of the permuted state
+    # Create an empty csr_matrix of the permuted state
     permuted_state = csr_matrix((1, n_states), dtype=complex)
 
     # Enumerate over the nonzero values of state
@@ -604,9 +604,7 @@ def _sparse_statevec_permute(state: csr_matrix, wires: list, wire_order: list) -
         pos_bin = format(pos, f"0{n_wires}b")
         wire_values_map = {wire: pos_bin[i] for i, wire in enumerate(wires)}
         pos_bin_perm = [wire_values_map[wire] if wire in wires else "0" for wire in wire_order]
-        # pos_bin_perm = [pos_bin[w] for w in permuted_wires]
         pos_perm = int("".join(pos_bin_perm), 2)
-        # print(pos, pos_perm)
         # Update the permuted statevector
         permuted_state[0, pos_perm] = state[0, pos]
 
