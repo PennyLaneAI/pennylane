@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* The program capture execution pipeline supports control flow pipelines (`if/else`, `for`, `while`)  if program capture is enabled. 
+* Add support for native Python control flow (`if/else`, `for`, `while`) when program capture is enabled. 
   [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
 
   ```python
