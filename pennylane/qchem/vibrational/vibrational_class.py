@@ -176,7 +176,7 @@ def optimize_geometry(molecule, method="rhf"):
 
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
-    ...                      [0.0, 0.0,  1.0]])
+    ...                      [0.0, 0.0, 1.0]])
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> eq_geom = qml.qchem.optimize_geometry(mol)
     >>> eq_geom
