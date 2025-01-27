@@ -194,8 +194,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
         # pylint: disable=unused-import
         import jax
 
-        from pennylane.capture.primitives import (AbstractMeasurement,
-                                                  AbstractOperator)
+        from pennylane.capture.primitives import AbstractMeasurement, AbstractOperator
     except ImportError:  # pragma: no cover
         return None, None
 
