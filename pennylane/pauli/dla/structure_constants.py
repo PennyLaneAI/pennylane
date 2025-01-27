@@ -337,8 +337,8 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
             gram_diag = qml.math.real(
                 qml.math.sum(
                     keras.ops.diagonal(
-                        keras.ops.diagonal(prod, 0, 1, 3), 0, 0, 1
-                    ),  # offset, axis1, axis2 arguments are called differently in torch
+                        keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
+                    ),
                     axis=0,
                 )
             )
