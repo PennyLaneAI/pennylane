@@ -483,8 +483,7 @@ class Prod(CompositeOp):
 
         .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
-            "Prod.coeffs is deprecated and will be removed in Pennylane v0.42. ",
-            "You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
+            "Prod.coeffs is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         coeffs, _ = self.terms()
