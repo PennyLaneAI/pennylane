@@ -1076,7 +1076,7 @@ class TestQNodeVmapIntegration:
 
 
 class TestQNodeAutographIntegration:
-    """Tests for autograph integration with QNodes."""
+    """Tests for Autograph integration with QNodes."""
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_python_for_loop(self, autograph):
