@@ -389,26 +389,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         result:
         [Array([-0.96939224, -0.38207346], dtype=float32)]
 
-    Can now be used with execution pipeline workflow,
-
-    .. code-block:: python
-
-        qml.capture.enable()
-        dev = qml.device('lightning.qubit', wires=3)
-
-        @qml.qnode(dev, autograph=True)
-        def circuit(x):
-            if x > 1.967:
-                qml.Hadamard(2)
-            else:
-                qml.Y(1)
-
-            return qml.state()
-
-    >>> circuit(3)
-    array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j,
-           0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j])
-
     """
 
     if "shots" in kwargs:
