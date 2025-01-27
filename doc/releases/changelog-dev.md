@@ -105,6 +105,9 @@
 * `BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
 
+* Fixed a bug in `qml.labs.vibrational.christiansen_integrals_dipole` that caused one-mode and two-mode dipole operators to be computed incorrectly.
+  [#6870](https://github.com/PennyLaneAI/pennylane/pull/6870)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -114,5 +117,6 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Austin Huang,
 Christina Lee,
 Andrija Paurevic

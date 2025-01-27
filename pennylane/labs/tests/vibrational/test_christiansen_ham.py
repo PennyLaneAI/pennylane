@@ -150,6 +150,7 @@ def test_christiansen_integrals_dipole():
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
 
+
 def test_christiansen_integrals_dipole_conditional():
     """Test that christiansen_integrals_dipole works even when there is only two mode dipoles."""
     coeffs = christiansen_integrals_dipole(pes=pes_object_2D, n_states=4)
