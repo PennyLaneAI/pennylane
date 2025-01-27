@@ -179,10 +179,13 @@ def finite_diff_jvp(
     r"""Compute the jvp of a generic function using finite differences.
 
     Args:
-        f (Callable): a generic function that a pytree of tensors. Note that this
+        f (Callable): a generic function that returns a pytree of tensors. Note that this
+
             function should not have keyword arguments.
-        args (tuple[TensorLike]): The tuple of arguments to ``f``
-        tangents (tuple[TensorLike]): the tuple of tangents for the arguments.
+        args (tuple[TensorLike]): the tuple of arguments to the function ``f``
+
+        tangents (tuple[TensorLike]): the tuple of tangents for the arguments ``args``
+
 
     Keyword Args:
         h=1e-7 (float): finite difference method step size
@@ -197,7 +200,8 @@ def finite_diff_jvp(
             unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
 
     Returns:
-        tuple(TensorLike, TensorLike): The results and the cotangents of the results
+        tuple(TensorLike, TensorLike): the results and their cotangents
+
 
     >>> def f(x, y):
     ...     return 2 * x * y, x**2
@@ -224,7 +228,8 @@ def finite_diff_jvp(
         if qml.math.get_dtype_name(args[i]) in ("float32", "complex64"):
 
             warn(
-                "Detected 32 bits precision parameter with finite differences. It is recommended to use  64 bit precision when computing finite differences.",
+                "Detected 32 bits precision parameter with finite differences. It is recommended to use 64 bit precision when computing finite differences.",
+
                 UserWarning,
             )
 
