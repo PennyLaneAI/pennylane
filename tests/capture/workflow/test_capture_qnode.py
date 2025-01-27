@@ -1080,7 +1080,7 @@ class TestQNodeAutographIntegration:
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_loop_autograph(self, autograph):
-        """Tests that for loops can be used with the QNode and raises CaptureError if autograph=False."""
+        """Tests that native Python for loops can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         @qml.qnode(dev, autograph=autograph)
@@ -1101,7 +1101,7 @@ class TestQNodeAutographIntegration:
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_while_loop_autograph(self, autograph):
-        """Tests that for loops can be used with the QNode and raises CaptureError if autograph=False."""
+        """Tests that native Python while loops can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         @qml.qnode(dev, autograph=autograph)
@@ -1124,7 +1124,7 @@ class TestQNodeAutographIntegration:
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_conditional_autograph(self, autograph):
-        """Test that conditional statements can be used with the QNode."""
+        """Test that native Python conditional statements can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0])
 
         @qml.qnode(dev, autograph=autograph)
@@ -1149,7 +1149,7 @@ class TestQNodeAutographIntegration:
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_native_for_loop(self, autograph):
-        """Test that a native for loop can be used with the QNode."""
+        """Test that a native Pennylane for loop can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         @qml.qnode(dev, autograph=autograph)
@@ -1166,7 +1166,7 @@ class TestQNodeAutographIntegration:
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_native_while_loop_lambda(self, autograph):
-        """Test that a native for loop can be used with the QNode."""
+        """Test that a native Pennylane while loop can be used with the QNode."""
         if autograph:
             pytest.xfail(reason="Autograph bug with lambda functions as condition")
 
@@ -1188,7 +1188,7 @@ class TestQNodeAutographIntegration:
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_native_while_loop(self, autograph):
-        """Test that a native for loop can be used with the QNode."""
+        """Test that a native Pennylane while loop can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         @qml.qnode(dev, autograph=autograph)
@@ -1210,7 +1210,7 @@ class TestQNodeAutographIntegration:
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_native_conditional_statements(self, autograph):
-        """Test that a native for loop can be used with the QNode."""
+        """Test that a native Pennylane conditional statements can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1])
 
         @qml.qnode(dev, autograph=autograph)
