@@ -36,7 +36,7 @@ def trace_inner_product(
         sums of Pauli operators are assumed to have real-valued coefficients.
         We recommend to use matrix representations for non-Hermitian inputs.
         In case of non-Hermitian :class:`~PauliSentence` or :class:`Operator` inputs,
-        the Hermitian conjugation needs to be done manually by inputting :math:`A = A^\dagger`.
+        the Hermitian conjugation needs to be done manually by inputting :math:`A^\dagger`.
 
     Args:
         A (Union[PauliSentence, Operator, np.ndarray]): First operator

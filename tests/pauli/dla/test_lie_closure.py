@@ -685,7 +685,6 @@ Y0 = qml.matrix(Y(0))
 Z0 = qml.matrix(Z(0))
 
 
-@pytest.mark.all_interfaces
 class TestLieClosureInterfaces:
     """Test input for matrix inputs from AD interfaces"""
 

@@ -72,7 +72,6 @@ def test_NotImplementedError():
         _ = qml.pauli.trace_inner_product(qml.CNOT((0, 1)), qml.X(0))
 
 
-@pytest.mark.all_interfaces
 class TestInterfaces:
     @pytest.mark.jax
     def test_jax_jit_input(
