@@ -404,9 +404,10 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     flat_fn = FlatFn(qfunc)
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
+    qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
     qnode_kwargs = {
@@ -419,6 +420,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
+        *abstract_shapes,
         *flat_args,
         shots=shots,
         qnode=qnode,
