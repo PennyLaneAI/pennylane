@@ -27,8 +27,10 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
-from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.math import (cast, conj, eye, norm, sqrt, sqrt_matrix,
+                            transpose, zeros)
+from pennylane.operation import (AnyWires, DecompositionUndefinedError,
+                                 FlatPytree, Operation)
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -156,13 +158,13 @@ class QubitUnitary(Operation):
         if isinstance(U, csr_matrix):
             U_dagger = U.conjugate().transpose()
             identity = csr_matrix(np.eye(dim))
-            return sp.sparse.linalg.norm(U @ U_dagger - identity) < 1e-10
+            return qml.math.norm(U @ U_dagger - identity) < 1e-10
         return qml.math.allclose(
             qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
             qml.math.eye(dim),
             atol=1e-6,
         )
-        
+
     @staticmethod
     def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -247,6 +249,8 @@ class QubitUnitary(Operation):
 
     def pow(self, z: Union[int, float]):
         mat = self.matrix()
+        if isinstance(mat, csr_matrix):
+            return sp.sparse.linalg.matrix_power(mat, z)
         if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             pow_mat = qml.math.linalg.matrix_power(mat, z)
         elif self.batch_size is not None or qml.math.shape(z) != ():

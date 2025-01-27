@@ -19,6 +19,7 @@ from collections.abc import Sequence
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as onp
+import scipy as sp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
@@ -849,6 +850,10 @@ def expm(tensor, like=None):
         import tensorflow as tf
 
         return tf.linalg.expm(tensor)
+    if isinstance(tensor, sp.sparse.csr_matrix):
+        from scipy.sparse.linalg import expm as scipy_expm
+
+        return scipy_expm(tensor)
     from scipy.linalg import expm as scipy_expm
 
     return scipy_expm(tensor)
@@ -874,6 +879,9 @@ def norm(tensor, like=None, **kwargs):
         like == "autograd" and kwargs.get("ord", None) is None and kwargs.get("axis", None) is None
     ):
         norm = _flat_autograd_norm
+
+    elif isinstance(tensor, sp.sparse.csr_matrix):
+        from scipy.sparse.linalg import norm
 
     else:
         from scipy.linalg import norm
