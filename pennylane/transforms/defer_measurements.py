@@ -270,7 +270,7 @@ def _get_plxpr_defer_measurements():
             if postselect is None:
                 qml.CNOT(wires=cnot_wires[::-1])
             elif postselect == 1:
-                qml.X(wires=wires)
+                qml.PauliX(wires=wires)
 
         self._cur_idx += 1
         return MeasurementValue([meas], lambda x: x)
@@ -282,7 +282,8 @@ def _get_plxpr_defer_measurements():
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
         if not any(isinstance(c, MeasurementValue) for c in conditions):
-            return super()._primitive_registrations[cond_prim](
+            return PlxprInterpreter._primitive_registrations[cond_prim](
+                self,
                 *invals,
                 jaxpr_branches=jaxpr_branches,
                 consts_slices=consts_slices,
