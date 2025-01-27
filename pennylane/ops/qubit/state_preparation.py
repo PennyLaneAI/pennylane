@@ -477,9 +477,10 @@ class StatePrep(StatePrepBase):
 
         n_states = shape[-1]
         dim = 2 ** len(Wires(wires))
-        assert (
-            n_states <= dim
-        ), f"Input state must be of length {dim} or smaller; got length {n_states}."
+        if n_states > dim:
+            raise ValueError(
+                f"State must be of length {dim} or " f"smaller to be padded; got length {n_states}."
+            )
         if n_states < dim:
             warn(
                 f"State must be of length {dim}; got length {n_states}. "
