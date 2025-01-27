@@ -59,7 +59,7 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
 
     """
     if isinstance(result, dict):
-        return {key: jnp.array(value) for key, value in result.items()}
+        return {key: _to_jax(value) for key, value in result.items()}
     if isinstance(result, (list, tuple)):
         return tuple(_to_jax(r) for r in result)
     return jnp.array(result)

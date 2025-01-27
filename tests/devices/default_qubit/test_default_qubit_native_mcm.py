@@ -389,11 +389,10 @@ class TestJaxIntegration:
         results1 = func1(*params)
 
         jaxpr = str(jax.make_jaxpr(func)(*params))
-        if diff_method == "best":
-            assert "pure_callback" in jaxpr
-            pytest.xfail("QNode with diff_method='best' cannot be compiled with jax.jit.")
-        else:
-            assert "pure_callback" not in jaxpr
+        # will change once we solve the compilation overhead issue
+        # assert "pure_callback" not in jaxpr
+        # TODO: [sc-82874]
+        assert "pure_callback" in jaxpr
 
         func2 = jax.jit(func)
         results2 = func2(*params)

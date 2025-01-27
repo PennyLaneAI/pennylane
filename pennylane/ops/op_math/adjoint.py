@@ -18,7 +18,6 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
-from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
@@ -190,10 +189,14 @@ def create_adjoint_op(fn, lazy):
 def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
 
-    adjoint_prim = create_non_interpreted_prim()("adjoint_transform")
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    adjoint_prim = NonInterpPrimitive("adjoint_transform")
     adjoint_prim.multiple_results = True
+    adjoint_prim.prim_type = "higher_order"
 
     @adjoint_prim.def_impl
     def _(*args, jaxpr, lazy, n_consts):
@@ -222,9 +225,16 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
-        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
+        flat_args = jax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
-            *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+            *jaxpr.consts,
+            *abstract_shapes,
+            *flat_args,
+            jaxpr=jaxpr.jaxpr,
+            lazy=lazy,
+            n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc
