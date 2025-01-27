@@ -442,7 +442,7 @@ class TestSparseStateVector:
         """Test that sparse_state_vector does not support padding with nonzero values."""
         init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
         with pytest.raises(
-            ValueError, match="Non-zero Padding is not supported for csr_matrix state"
+            ValueError, match="Non-zero Padding is not supported"
         ):
             qml.StatePrep._preprocess_csr(
                 init_state, wires=[1, 2], pad_with=1, normalize=False, validate_norm=False
