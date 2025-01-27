@@ -14,8 +14,6 @@
 """Utility tools for dynamical Lie algebra functionality"""
 from typing import Iterable, Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
@@ -23,7 +21,7 @@ from pennylane.typing import TensorLike
 
 
 def trace_inner_product(
-    A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
+    A: Union[PauliSentence, Operator, TensorLike], B: Union[PauliSentence, Operator, TensorLike]
 ):
     r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)` between two operators :math:`A` and :math:`B`.
 
@@ -39,11 +37,11 @@ def trace_inner_product(
         the Hermitian conjugation needs to be done manually by inputting :math:`A^\dagger`.
 
     Args:
-        A (Union[PauliSentence, Operator, np.ndarray]): First operator
-        B (Union[PauliSentence, Operator, np.ndarray]): Second operator
+        A (Union[PauliSentence, Operator, TensorLike]): First operator
+        B (Union[PauliSentence, Operator, TensorLike]): Second operator
 
     Returns:
-        Union[float, np.ndarray]: Result is either a single float or a batch of floats.
+        Union[float, TensorLike]: Result is either a single float or a batch of floats.
 
     **Example**
 

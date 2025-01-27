@@ -67,10 +67,10 @@ def lie_closure(
 
     **Example**
 
-    Let us walk through a simple example of computing the Lie closure of the generators of the transverse field Ising model on two qubits.
-
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
+    >>> dla = qml.lie_closure(ops)
 
+    Let us walk through what happens in this simple example of computing the Lie closure of these generators (the transverse field Ising model on two qubits).
     A first round of commutators between all elements yields:
 
     >>> qml.commutator(X(0) @ X(1), Z(0))
