@@ -128,13 +128,12 @@ def _get_plxpr_defer_measurements():
 
         # pylint: disable=unnecessary-lambda-assignment, attribute-defined-outside-init
 
-        def __init__(self, num_wires):
+        def __init__(self, aux_wires):
             super().__init__()
-            self._num_wires = num_wires
+            self._aux_wires = Wires(aux_wires)
 
             # State variables
-            self._cur_wire = None
-            self._cur_measurement_idx = None
+            self._cur_idx = None
 
         def setup(self) -> None:
             """Initialize the instance before interpreting equations.
@@ -143,8 +142,7 @@ def _get_plxpr_defer_measurements():
             needed by an interpreter. For example, a device interpreter could initialize a statevector,
             or a compilation interpreter could initialize a staging area for the latest operation on each wire.
             """
-            self._cur_wire = self._num_wires - 1
-            self._cur_measurement_idx = 0
+            self._cur_idx = 0
 
         def cleanup(self) -> None:
             """Perform any final steps after iterating through all equations.
@@ -153,8 +151,7 @@ def _get_plxpr_defer_measurements():
             this method can be used to deallocate qubits and registers when converting to
             a Catalyst variant jaxpr.
             """
-            self._cur_wire = None
-            self._cur_measurement_idx = None
+            self._cur_idx = None
 
         def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
             """Interpret a measurement process instance.
@@ -249,16 +246,22 @@ def _get_plxpr_defer_measurements():
 
     @DeferMeasurementsInterpreter.register_primitive(measure_prim)
     def _(self, wires, reset=False, postselect=None):
+        if self._cur_idx >= len(self._aux_wires):
+            raise ValueError(
+                "Not enough auxiliary wires provided to apply specified number of mid-circuit "
+                "measurements using qml.defer_measurements."
+            )
+
         with qml.QueuingManager.stop_recording():
             meas = type.__call__(
                 MidMeasureMP,
-                Wires(self._cur_wire),
+                Wires(self._aux_wires[self._cur_idx]),
                 reset=reset,
                 postselect=postselect,
-                id=self._cur_measurement_idx,
+                id=self._cur_idx,
             )
 
-        cnot_wires = (wires, self._cur_wire)
+        cnot_wires = (wires, self._aux_wires[self._cur_idx])
         if postselect is not None:
             qml.Projector(jax.numpy.array([postselect]), wires=wires)
 
@@ -269,8 +272,7 @@ def _get_plxpr_defer_measurements():
             elif postselect == 1:
                 qml.X(wires=wires)
 
-        self._cur_measurement_idx += 1
-        self._cur_wire -= 1
+        self._cur_idx += 1
         return MeasurementValue([meas], lambda x: x)
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
@@ -316,10 +318,15 @@ def _get_plxpr_defer_measurements():
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
 
-        if (num_wires := tkwargs.pop("num_wires", None)) is None:
-            raise ValueError("'num_wires' argument not provided >:(")
+        if (aux_wires := tkwargs.pop("aux_wires", None)) is None:
+            raise ValueError(
+                "'aux_wires' argument for defer_measurements must be provided when "
+                "qml.capture.enabled() is True."
+            )
+        if tkwargs.pop("reduce_postselected", False):
+            raise ValueError("Cannot set 'reduced-postselected=True' with qml.capture.enabled().")
 
-        interpreter = DeferMeasurementsInterpreter(num_wires=num_wires)
+        interpreter = DeferMeasurementsInterpreter(aux_wires=aux_wires)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
@@ -338,7 +345,7 @@ def defer_measurements(
     tape: QuantumScript,
     reduce_postselected: bool = True,
     allow_postselect: bool = True,
-    num_wires: Optional[int] = None,
+    aux_wires: Optional[int] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
