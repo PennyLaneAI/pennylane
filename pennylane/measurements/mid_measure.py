@@ -243,9 +243,12 @@ def _create_mid_measure_primitive():
         measurement.
 
     """
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
 
-    mid_measure_p = jax.core.Primitive("measure")
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    mid_measure_p = NonInterpPrimitive("measure")
 
     @mid_measure_p.def_impl
     def _(wires, reset=False, postselect=None):
