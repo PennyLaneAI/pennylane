@@ -253,7 +253,8 @@ class CondCallable:  # pylint:disable=too-few-public-methods
                 consts_slices.append(slice(0, 0))
             else:
                 jaxpr = jax.make_jaxpr(
-                    all_output_shapes(FlatFn(functools.partial(fn, **kwargs))), abstracted_axes=abstracted_axes
+                    all_output_shapes(FlatFn(functools.partial(fn, **kwargs))),
+                    abstracted_axes=abstracted_axes,
                 )(*args)
                 jaxpr_branches.append(jaxpr.jaxpr)
                 consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
@@ -793,7 +794,8 @@ def _get_cond_qfunc_prim():
             new_var = jaxpr_trace.makevar(out_tracer)
             returned_vars.append(new_var)
             out_tracers.append(out_tracer)
-            env[outvar] = new_var
+            if not isinstance(outvar, jax.core.Literal):
+                env[outvar] = new_var
 
         eqn = pe.new_jaxpr_eqn(
             [jaxpr_trace.getvar(x) for x in invars],
