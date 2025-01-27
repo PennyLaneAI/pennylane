@@ -14,8 +14,6 @@
 """Utility tools for dynamical Lie algebra functionality"""
 from typing import Iterable, Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
@@ -23,25 +21,27 @@ from pennylane.typing import TensorLike
 
 
 def trace_inner_product(
-    A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
+    A: Union[PauliSentence, Operator, TensorLike], B: Union[PauliSentence, Operator, TensorLike]
 ):
     r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)` between two operators :math:`A` and :math:`B`.
 
     If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
     inputs.
 
-    .. warn:: Operator inputs are assumed to be Hermitian. In particular,
+    .. warning::
+
+        Operator inputs are assumed to be Hermitian. In particular,
         sums of Pauli operators are assumed to have real-valued coefficients.
         We recommend to use matrix representations for non-Hermitian inputs.
         In case of non-Hermitian :class:`~PauliSentence` or :class:`Operator` inputs,
-        the Hermitian conjugation needs to be done manually by inputting :math:`A = A^\dagger`.
+        the Hermitian conjugation needs to be done manually by inputting :math:`A^\dagger`.
 
     Args:
-        A (Union[PauliSentence, Operator, np.ndarray]): First operator
-        B (Union[PauliSentence, Operator, np.ndarray]): Second operator
+        A (Union[PauliSentence, Operator, TensorLike]): First operator
+        B (Union[PauliSentence, Operator, TensorLike]): Second operator
 
     Returns:
-        Union[float, np.ndarray]: Result is either a single float or a batch of floats.
+        Union[float, TensorLike]: Result is either a single float or a batch of floats.
 
     **Example**
 
@@ -95,7 +95,7 @@ def trace_inner_product(
         assert A.shape[-2:] == B.shape[-2:]
         # The axes of the first input are switched, compared to tr[A@B], because we need to
         # transpose A.
-        return qml.math.tensordot(A.conj(), B, axes=[[-2, -1], [-2, -1]]) / A.shape[-1]
+        return qml.math.tensordot(qml.math.conj(A), B, axes=[[-2, -1], [-2, -1]]) / A.shape[-1]
 
     raise NotImplementedError(
         "Inputs to pennylane.pauli.trace_inner_product need to be iterables of matrices or operators with a pauli_rep"

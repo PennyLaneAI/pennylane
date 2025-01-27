@@ -407,6 +407,22 @@ def test_qnode_jit():
     assert qml.math.allclose(res, jax.numpy.cos(x))
 
 
+# pylint: disable=unused-argument
+def test_dynamic_shape_input(enable_disable_dynamic_shapes):
+    """Test that the qnode can accept an input with a dynamic shape."""
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit(x):
+        qml.RX(jax.numpy.sum(x), 0)
+        return qml.expval(qml.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit, abstracted_axes=("a",))(jax.numpy.arange(4))
+
+    [output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+    expected = jax.numpy.cos(0 + 1 + 2)
+    assert jax.numpy.allclose(expected, output)
+
+
 # pylint: disable=too-many-public-methods
 class TestQNodeVmapIntegration:
     """Tests for integrating JAX vmap with the QNode primitive."""

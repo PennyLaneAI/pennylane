@@ -13,13 +13,12 @@
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
 import warnings
-from collections.abc import Iterable
 from copy import copy
 from functools import reduce
 
 # pylint: disable=too-many-arguments
 from itertools import product
-from typing import Union
+from typing import Iterable, Union
 
 import numpy as np
 import scipy
@@ -33,7 +32,7 @@ from .util import trace_inner_product
 
 
 def lie_closure(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
+    generators: Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
@@ -48,7 +47,7 @@ def lie_closure(
     All these operators together form the DLA, see e.g. section IIB of `arXiv:2308.01432 <https://arxiv.org/abs/2308.01432>`__.
 
     Args:
-        generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
+        generators (Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]]): generating set for which to compute the
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure
@@ -68,10 +67,10 @@ def lie_closure(
 
     **Example**
 
-    Let us walk through a simple example of computing the Lie closure of the generators of the transverse field Ising model on two qubits.
-
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
+    >>> dla = qml.lie_closure(ops)
 
+    Let us walk through what happens in this simple example of computing the Lie closure of these generators (the transverse field Ising model on two qubits).
     A first round of commutators between all elements yields:
 
     >>> qml.commutator(X(0) @ X(1), Z(0))
@@ -512,9 +511,9 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
-        if not qml.math.allclose(A.conj().T, A):
+        if not qml.math.allclose(qml.math.transpose(qml.math.conj(A)), A):
             A = 1j * A
-            if not qml.math.allclose(A.conj().T, A):
+            if not qml.math.allclose(qml.math.transpose(qml.math.conj(A)), A):
                 raise ValueError(f"At least one basis matrix is not (skew-)Hermitian:\n{A}")
 
         B = copy(A)
@@ -524,7 +523,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
         if (
             norm := qml.math.real(qml.math.sqrt(trace_inner_product(B, B)))
         ) > tol:  # Tolerance for numerical stability
-            B /= norm
+            B /= qml.math.cast_like(norm, B)
             basis.append(B)
     return qml.math.array(basis)
 
