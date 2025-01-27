@@ -229,7 +229,6 @@ def finite_diff_jvp(
 
             warn(
                 "Detected 32 bits precision parameter with finite differences. It is recommended to use 64 bit precision when computing finite differences.",
-
                 UserWarning,
             )
 
