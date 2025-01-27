@@ -541,11 +541,6 @@ class QNode:
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
-        warnings.warn(
-            "This is yet another test.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
         gradient_kwargs = gradient_kwargs or {}
         if kwargs:
             if any(k in qml.gradients.SUPPORTED_GRADIENT_KWARGS for k in list(kwargs.keys())):
