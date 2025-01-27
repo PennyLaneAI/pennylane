@@ -1131,7 +1131,6 @@ class TestQNodeAutographIntegration:
         def circuit(x):
             if x > 1:
                 qml.Hadamard(0)
-
             else:
                 qml.I(0)
 
