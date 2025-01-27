@@ -32,7 +32,7 @@ from .util import trace_inner_product
 
 
 def lie_closure(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
+    generators: Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
@@ -47,7 +47,7 @@ def lie_closure(
     All these operators together form the DLA, see e.g. section IIB of `arXiv:2308.01432 <https://arxiv.org/abs/2308.01432>`__.
 
     Args:
-        generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
+        generators (Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]]): generating set for which to compute the
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure
