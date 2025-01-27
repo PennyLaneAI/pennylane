@@ -732,10 +732,10 @@ class TestLieClosureInterfaces:
         """Test lie_closure can handle tf inputs in matrix mode"""
         import tensorflow as tf
 
-        su2 = qml.math.stack([X0, Y0, -Z0], like="tf")
-        gens_list = [tf.Tensor(X0), tf.Tensor(Y0)]
+        su2 = qml.math.stack([X0, Y0, -Z0], like="tensorflow")
+        gens_list = [tf.constant(X0), tf.constant(Y0)]
 
-        gens = tf.Tensor([X0, Y0])
+        gens = qml.math.stack([tf.constant(X0), tf.constant(Y0)])
 
         res = qml.lie_closure(gens, matrix=True)
         assert qml.math.allclose(res, su2)

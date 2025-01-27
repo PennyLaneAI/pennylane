@@ -97,7 +97,7 @@ def trace_inner_product(
         assert A.shape[-2:] == B.shape[-2:]
         # The axes of the first input are switched, compared to tr[A@B], because we need to
         # transpose A.
-        return qml.math.tensordot(A.conj(), B, axes=[[-2, -1], [-2, -1]]) / A.shape[-1]
+        return qml.math.tensordot(qml.math.conj(A), B, axes=[[-2, -1], [-2, -1]]) / A.shape[-1]
 
     raise NotImplementedError(
         "Inputs to pennylane.pauli.trace_inner_product need to be iterables of matrices or operators with a pauli_rep"
