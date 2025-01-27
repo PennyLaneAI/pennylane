@@ -134,6 +134,10 @@
   code examples.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
 
+* The docstrings for `qml.qchem.localize_normal_modes` and `qml.qchem.VibrationalPES` have been updated to include
+  examples that can be copied.
+  [(#6834)](https://github.com/PennyLaneAI/pennylane/pull/6834)
+
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
