@@ -112,8 +112,8 @@ class TestInterfaces:
         """Test tf inputs are handled correctly"""
         import tensorflow as tf
 
-        A = tf.Tensor(np.array([qml.matrix(X(0)), qml.matrix(X(0))]))
-        B = tf.Tensor(np.array([qml.matrix(X(0)), qml.matrix(X(0))]))
+        A = tf.constant(np.array([qml.matrix(X(0)), qml.matrix(X(0))]))
+        B = tf.constant(np.array([qml.matrix(Y(0)), qml.matrix(Y(0))]))
 
         assert qml.math.allclose(trace_inner_product(A, B), 0)
         assert qml.math.allclose(trace_inner_product(A, A), 1)
