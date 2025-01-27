@@ -150,6 +150,10 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, params)
 
+    @classmethod
+    def tracking_name(cls, num_wires) -> str:
+        return f"StatePrep({num_wires})"
+
 
 class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     """Resource class for BasisRotations."""
@@ -239,6 +243,22 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
     def resource_rep(cls, cmpr_ops) -> CompressedResourceOp:
         params = {"cmpr_ops": cmpr_ops}
         return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def pow_resource_decomp(cls, z, cmpr_ops) -> Dict[CompressedResourceOp, int]:
+        gate_types = {}
+
+        num_ops = len(cmpr_ops)
+        num_wires = int(qnp.log2(num_ops))
+
+        prep = ResourceStatePrep.resource_rep(num_wires)
+        pow_sel = re.ResourcePow.resource_rep(ResourceSelect, {"cmpr_ops": cmpr_ops}, z)
+        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
+
+        gate_types[prep] = 1
+        gate_types[pow_sel] = 1
+        gate_types[prep_dag] = 1
+        return gate_types
 
 
 class ResourceReflection(qml.Reflection, ResourceOperator):
