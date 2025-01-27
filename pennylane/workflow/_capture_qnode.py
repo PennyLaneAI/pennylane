@@ -389,6 +389,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         result:
         [Array([-0.96939224, -0.38207346], dtype=float32)]
 
+
     """
 
     if "shots" in kwargs:
