@@ -256,7 +256,8 @@ class Prod(CompositeOp):
         # This is temporary property to smoothen the transition to the new operator arithmetic system.
         # In particular, the __matmul__ (@ python operator) method between operators now generates Prod instead of Tensor instances.
         warnings.warn(
-            "Accessing the terms of a tensor product operator via op.obs is deprecated, please use op.operands instead.",
+            "Accessing the terms of a tensor product operator via op.obs is deprecated and will be removed "
+            "in Pennylane v0.42. Instead, please use op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         return self.operands
@@ -482,7 +483,8 @@ class Prod(CompositeOp):
 
         .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
-            "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            "Prod.coeffs is deprecated and will be removed in Pennylane v0.42. ",
+            "You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         coeffs, _ = self.terms()
@@ -497,7 +499,7 @@ class Prod(CompositeOp):
 
         .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
-            "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
+            "Prod.ops is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         _, ops = self.terms()
