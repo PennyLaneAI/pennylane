@@ -332,12 +332,12 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
         # Orthogonal but not normalized inputs. Need to correct by (diagonal) Gram matrix
 
         if interface == "tensorflow":
-            import tensorflow as tf  # pylint: disable=import-outside-toplevel
+            import keras  # pylint: disable=import-outside-toplevel
 
             gram_diag = qml.math.real(
                 qml.math.sum(
-                    tf.keras.ops.diagonal(
-                        tf.keras.ops.diagonal(prod, 0, 1, 3), 0, 0, 1
+                    keras.ops.diagonal(
+                        keras.ops.diagonal(prod, 0, 1, 3), 0, 0, 1
                     ),  # offset, axis1, axis2 arguments are called differently in torch
                     axis=0,
                 )
