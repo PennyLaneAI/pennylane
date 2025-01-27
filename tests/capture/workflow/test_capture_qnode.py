@@ -127,7 +127,7 @@ def test_simple_qnode():
     assert eqn0.params["device"] == dev
     assert eqn0.params["qnode"] == circuit
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
-    expected_kwargs = {"diff_method": "best"}
+    expected_kwargs = {"diff_method": "best", "gradient_kwargs": {}}
     expected_kwargs.update(circuit.execute_kwargs)
     assert eqn0.params["qnode_kwargs"] == expected_kwargs
 
@@ -285,6 +285,7 @@ def test_capture_qnode_kwargs():
         "device_vjp": False,
         "mcm_method": None,
         "postselect_mode": None,
+        "gradient_kwargs": {},
     }
     assert jaxpr.eqns[0].params["qnode_kwargs"] == expected
 
