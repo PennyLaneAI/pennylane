@@ -550,11 +550,14 @@ class TestDynamicShapes:
     """Test that our interpreters can handle dynamic array creation."""
 
     @pytest.mark.parametrize("reinterpret", (True, False))
-    def test_creating_ones(self, reinterpret):
+    @pytest.mark.parametrize(
+        "creation_fn", [jax.numpy.ones, jax.numpy.zeros, lambda s: jax.numpy.full(s, 0.5)]
+    )
+    def test_broadcast_in_dim(self, reinterpret, creation_fn):
         """Test that broadcast_in_dim can be executed with PlxprInterpreter."""
 
         def f(n):
-            return 2 * jax.numpy.ones((2, n + 1))
+            return 2 * creation_fn((2, n + 1))
 
         interpreter = PlxprInterpreter()
 
@@ -568,7 +571,7 @@ class TestDynamicShapes:
 
         assert len(output) == 2  # shape and array
         assert jax.numpy.allclose(output[0], 5)  # 4 + 1
-        assert jax.numpy.allclose(output[1], 2 * jax.numpy.ones((2, 5)))
+        assert jax.numpy.allclose(output[1], 2 * creation_fn((2, 5)))
 
     @pytest.mark.parametrize("reinterpret", (True, False))
     def test_arange(self, reinterpret):

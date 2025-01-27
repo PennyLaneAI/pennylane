@@ -9,47 +9,42 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``tape`` and ``qtape`` properties of ``QNode`` have been deprecated. 
-  Instead, use the ``qml.workflow.construct_tape`` function.
+* The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
+  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
 
-  - Deprecated in v0.40
-  - Will be removed in v0.41
+  - Deprecated in v0.41
+  - Will be removed in v0.42
 
-* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` is deprecated. 
+* Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
+  and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
+  keyword argument ``gradient_kwargs`` via an explicit dictionary, like ``gradient_kwargs={"h": 1e-4}``.
 
-  - Deprecated in v0.40
-  - Will be removed in v0.41
+  - Deprecated in v0.41
+  - Will be removed in v0.42
 
-* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` is deprecated. 
+* The `qml.gradients.hamiltonian_grad` function has been deprecated.
+  This gradient recipe is not required with the new operator arithmetic system.
 
-  - Deprecated in v0.40
-  - Will be removed in v0.41
+  - Deprecated in v0.41
+  - Will be removed in v0.42
 
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been deprecated. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
+  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
 
-  - Deprecated in v0.40
-  - Will be removed in v0.41
+  - Deprecated in v0.41
+  - Will be removed in v0.42
 
-* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
-
-  - Deprecated in v0.40
-  - Will be removed in v0.41
-
-* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
+* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been deprecated. Instead, please use
   :meth:`~.Operator.terms` instead.
 
-  - deprecated in v0.35
+  - Deprecated in v0.35
+  - Will be removed in v0.42
 
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
 
   - Deprecated in v0.36
-
-* ``MultiControlledX`` is the only controlled operation that still supports specifying control
-  values with a bit string. In the future, it will no longer accepts strings as control values.
-
-  - Deprecated in v0.36
+  - Will be removed in v0.42
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
@@ -78,6 +73,43 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* ``MultiControlledX`` no longer accepts strings as control values.
+
+  - Deprecated in v0.36
+  - Removed in v0.41
+
+* The input argument ``control_wires`` of ``MultiControlledX`` has been removed.
+
+  - Deprecated in v0.22
+  - Removed in v0.41
+
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+  Instead, use the ``qml.workflow.construct_tape`` function.
+  
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
+
+  - Deprecated in v0.40
+  - Removed in v0.41
+
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
+  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+  
+  - Deprecated in v0.40
+  - Removed in v0.41
 
 * The ``output_dim`` property of ``qml.tape.QuantumScript`` has been removed. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
 

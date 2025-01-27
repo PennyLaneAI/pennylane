@@ -20,7 +20,6 @@ from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
-from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
@@ -254,8 +253,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
                 consts_slices.append(slice(0, 0))
             else:
                 jaxpr = jax.make_jaxpr(
-                    all_output_shapes(FlatFn(functools.partial(fn, **kwargs))),
-                    abstracted_axes=abstracted_axes,
+                    all_output_shapes(FlatFn(functools.partial(fn, **kwargs))), abstracted_axes=abstracted_axes
                 )(*args)
                 jaxpr_branches.append(jaxpr.jaxpr)
                 consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
@@ -705,8 +703,11 @@ def _get_cond_qfunc_prim():
     import jax  # pylint: disable=import-outside-toplevel
     from jax._src.interpreters import partial_eval as pe
 
-    cond_prim = create_non_interpreted_prim()("cond")
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    cond_prim = NonInterpPrimitive("cond")
     cond_prim.multiple_results = True
+    cond_prim.prim_type = "higher_order"
 
     @cond_prim.def_impl
     def _(*all_args, jaxpr_branches, consts_slices, args_slice):

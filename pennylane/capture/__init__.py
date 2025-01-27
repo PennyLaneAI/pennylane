@@ -196,9 +196,9 @@ def __getattr__(key):
         return _get_abstract_measurement()
 
     if key == "qnode_prim":
-        from ..workflow._capture_qnode import _get_qnode_prim
+        from ..workflow._capture_qnode import qnode_prim
 
-        return _get_qnode_prim()
+        return qnode_prim
 
     if key == "PlxprInterpreter":
         from .base_interpreter import PlxprInterpreter
