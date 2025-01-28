@@ -21,7 +21,7 @@ jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
 from pennylane.operation import Operation
-from pennylane.transforms.decompose import DynamicDecomposeInterpreter
+from pennylane.transforms.decompose import DynamicDecomposeInterpreter, DecomposeInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -34,6 +34,13 @@ class SimpleCustomOp(Operation):
 
     def _init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
+
+    def decomposition(self) -> list["Operator"]:
+        return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
+
+    @staticmethod
+    def compute_decomposition(wires):
+        return [qml.Hadamard(wires=wires)]
 
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
 
@@ -215,6 +222,35 @@ class CustomOpAutograph(Operation):
 
         else:
             qml.RY(phi, wires=wires)
+
+
+class CustomOpNestedDecomp(Operation):
+    """Custom operation that contains a nested decomposition in its decomposition"""
+
+    num_wires = 1
+    num_params = 1
+
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
+
+    def decomposition(self) -> list["Operator"]:
+        return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        return [qml.RX(phi, wires=wires), SimpleCustomOp(wires=wires)]
+
+    @staticmethod
+    def compute_matrix(phi, wires):
+        return qml.math.tensor(qml.RX(phi, wires=wires).matrix, SimpleCustomOp(wires=wires).matrix)
+
+    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
+        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
+
+    @staticmethod
+    def _compute_plxpr_decomposition(phi, wires):
+        qml.RX(phi, wires=wires)
+        SimpleCustomOp(wires=wires)
 
 
 class TestDynamicDecomposeInterpreter:
@@ -526,3 +562,43 @@ class TestDynamicDecomposeInterpreter:
         )
 
         assert qml.math.allclose(*result, *result_comparison)
+
+    @pytest.mark.parametrize("x", [0.2, 0.8])
+    @pytest.mark.parametrize("wire", [0, 1])
+    @pytest.mark.parametrize("max_expansion", [2])
+    def test_qnode_nested_decomp(self, x, wire, max_expansion):
+        """Test that a QNode with a nested decomposition custom operation is correctly decomposed."""
+
+        @DynamicDecomposeInterpreter(max_expansion=max_expansion)
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit(x, wire):
+            CustomOpNestedDecomp(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        jaxpr = jax.make_jaxpr(circuit)(x, wire)
+
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
+
+        @DecomposeInterpreter(max_expansion=0)
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit_comparison(x, wire):
+            qml.RX(x, wires=wire)
+            CustomOpNestedDecomp(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        # Autograph requires to capture the function first
+        # jaxpr_comparison = qml.capture.make_plxpr(circuit_comparison)(x, wire)
+        # result_comparison = jax.core.eval_jaxpr(
+        #    jaxpr_comparison.jaxpr, jaxpr_comparison.consts, x, wire
+        # )
+
+        result_comparison = circuit_comparison(x, wire)
+
+        assert qml.math.allclose(*result, result_comparison)

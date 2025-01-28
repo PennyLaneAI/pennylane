@@ -205,6 +205,24 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
         Experimental Plxpr Interpreter for applying a dynamic decomposition to operations when program capture is enabled.
         """
 
+        def __init__(self, gate_set=None, max_expansion=None):
+            self.max_expansion = max_expansion
+
+            if gate_set is None:
+                gate_set = set(qml.ops.__all__)
+
+            if isinstance(gate_set, (str, type)):
+                gate_set = set([gate_set])
+
+            if isinstance(gate_set, Iterable):
+                gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+                gate_names = set(gate for gate in gate_set if isinstance(gate, str))
+                self.gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
+            else:
+                self.gate_set = gate_set
+
+            super().__init__()
+
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether or not an operator needs to be decomposed or not.
 
@@ -226,7 +244,9 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                 return True
             return self.gate_set(op)
 
-        def eval_dynamic_decomposition(self, jaxpr_decomp: "jax.core.Jaxpr", *args, current_depth: int = 0):
+        def eval_dynamic_decomposition(
+            self, jaxpr_decomp: "jax.core.Jaxpr", *args, current_depth: int = 0
+        ):
             """
             Evaluate a dynamic decomposition of a Jaxpr.
 
@@ -275,7 +295,9 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
 
-            if hasattr(op, "_compute_plxpr_decomposition"):
+            if hasattr(op, "_compute_plxpr_decomposition") and isinstance(
+                eqn.outvars[0], jax.core.DropVar
+            ):
 
                 if self.max_expansion is not None and current_depth >= self.max_expansion:
                     return super().interpret_operation_eqn(eqn)
@@ -287,12 +309,10 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                 args = (*op.parameters, *op.wires, *op.hyperparameters)
 
                 return self.eval_dynamic_decomposition(
-                    jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args, current_depth=current_depth + 1
+                    jaxpr_decomp.jaxpr, *args, current_depth=current_depth + 1
                 )
 
-                return super().interpret_operation(op)
-
-            return op
+            return super().interpret_operation_eqn(eqn)
 
     return DynamicDecomposeInterpreter
 
