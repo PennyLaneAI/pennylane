@@ -145,9 +145,6 @@ class ControlledQubitUnitary(ControlledOp):
 
         if hasattr(base, "wires") and len(wires) != 0:
             warnings.warn(
-                "base operator already has wires; values specified through wires kwarg will be ignored."
-            )
-            warnings.warn(
                 "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
                 "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
                 qml.PennyLaneDeprecationWarning,
@@ -213,8 +210,12 @@ class ControlledQubitUnitary(ControlledOp):
     def _controlled(self, wire):
         ctrl_wires = wire + self.control_wires
         values = None if self.control_values is None else [True] + self.control_values
+        base = self.base
+        if isinstance(self.base, qml.QubitUnitary):
+            base = self.base.matrix()
+
         return ControlledQubitUnitary(
-            self.base,
+            base,
             wires=ctrl_wires + self.wires,
             control_values=values,
             work_wires=self.work_wires,
