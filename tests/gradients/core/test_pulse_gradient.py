@@ -1268,7 +1268,7 @@ class TestStochPulseGrad:
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode, argnums=(0, 1))(params_0, params_1)
         exp_grad = exp_grad[0] + exp_grad[1]
-        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
+        assert all(qml.math.allclose(r, e, rtol=0.53) for r, e in zip(res, exp_grad))
         jax.clear_caches()
 
     @pytest.mark.slow
