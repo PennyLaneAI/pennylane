@@ -733,3 +733,19 @@ class TestLieClosureInterfaces:
 
         res_list = qml.lie_closure(gens_list, matrix=True)
         assert qml.math.allclose(res_list, su2)
+
+    @pytest.mark.autograd
+    def test_autograd_lie_closure_matrix(self):
+        """Test lie_closure can handle autograd inputs in matrix mode"""
+        import pennylane.numpy as pnp
+
+        su2 = pnp.array([X0, Y0, -Z0])
+        gens_list = [pnp.array(X0), pnp.array(Y0)]
+
+        gens = pnp.array([X0, Y0])
+
+        res = qml.lie_closure(gens, matrix=True)
+        assert qml.math.allclose(res, su2)
+
+        res_list = qml.lie_closure(gens_list, matrix=True)
+        assert qml.math.allclose(res_list, su2)
