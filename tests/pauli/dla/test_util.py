@@ -72,12 +72,22 @@ def test_NotImplementedError():
         _ = qml.pauli.trace_inner_product(qml.CNOT((0, 1)), qml.X(0))
 
 
-class TestInterfaces:
+class TestTraceInnerProductInterfaces:
+    @pytest.mark.autograd
+    def test_autograd_input(self):
+        """Test autograd inputs are handled correctly"""
+
+        import pennylane.numpy as pnp
+
+        A = pnp.array([qml.matrix(X(0)), qml.matrix(X(0))])
+        B = pnp.array([qml.matrix(Y(0)), qml.matrix(Y(0))])
+
+        assert qml.math.allclose(trace_inner_product(A, B), 0)
+        assert qml.math.allclose(trace_inner_product(A, A), 1)
+
     @pytest.mark.jax
-    def test_jax_jit_input(
-        self,
-    ):
-        """Test jax inputs are handled correctly"""
+    def test_jax_jit_input(self):
+        """Test jax inputs are handled correctly with JITing"""
         import jax
         import jax.numpy as jnp
 
@@ -92,9 +102,7 @@ class TestInterfaces:
         assert jnp.allclose(f(A, A), 1)
 
     @pytest.mark.torch
-    def test_torch_input(
-        self,
-    ):
+    def test_torch_input(self):
         """Test torch inputs are handled correctly"""
         import torch
 
@@ -105,9 +113,7 @@ class TestInterfaces:
         assert qml.math.allclose(trace_inner_product(A, A), 1)
 
     @pytest.mark.tf
-    def test_tf_input(
-        self,
-    ):
+    def test_tf_input(self):
         """Test tf inputs are handled correctly"""
         import tensorflow as tf
 

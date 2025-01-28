@@ -139,7 +139,7 @@ def lie_closure(
     if matrix:
         return _lie_closure_matrix(generators, max_iterations, verbose, tol)
 
-    if not all(isinstance(op, (PauliSentence, PauliWord, np.ndarray)) for op in generators):
+    if not all(isinstance(op, (PauliSentence, PauliWord)) for op in generators):
         if pauli:
             raise TypeError(
                 "All generators need to be of type PauliSentence or PauliWord when using pauli=True in lie_closure."
@@ -588,7 +588,7 @@ def _lie_closure_matrix(
         chi = 2**n
         assert np.shape(generators) == (len(generators), chi, chi)
 
-    if isinstance(generators[0], TensorLike) and isinstance(generators, (list, tuple)):
+    elif isinstance(generators[0], TensorLike) and isinstance(generators, (list, tuple)):
         # list of matrices
         interface = qml.math.get_interface(generators[0])
         generators = qml.math.stack(generators, like=interface)

@@ -671,9 +671,7 @@ class TestLieClosureDense:
         ]
         assert PauliVSpace(res) == PauliVSpace(true_res)
 
-    def test_non_hermitian_error(
-        self,
-    ):
+    def test_non_hermitian_error(self):
         """Test that an error is raised for non-Hermitian input"""
         ops = [np.array([[0.0, 1.0], [0.0, 0.0]])]
         with pytest.raises(ValueError, match="At least one basis matrix"):
@@ -689,9 +687,7 @@ class TestLieClosureInterfaces:
     """Test input for matrix inputs from AD interfaces"""
 
     @pytest.mark.jax
-    def test_jax_lie_closure_matrix(
-        self,
-    ):
+    def test_jax_lie_closure_matrix(self):
         """Test lie_closure can handle jax inputs in matrix mode"""
         import jax.numpy as jnp
 
@@ -707,9 +703,7 @@ class TestLieClosureInterfaces:
         assert qml.math.allclose(res_list, su2)
 
     @pytest.mark.torch
-    def test_torch_lie_closure_matrix(
-        self,
-    ):
+    def test_torch_lie_closure_matrix(self):
         """Test lie_closure can handle torch inputs in matrix mode"""
         import torch
 
@@ -725,9 +719,7 @@ class TestLieClosureInterfaces:
         assert qml.math.allclose(res_list, su2)
 
     @pytest.mark.tf
-    def test_tf_lie_closure_matrix(
-        self,
-    ):
+    def test_tf_lie_closure_matrix(self):
         """Test lie_closure can handle tf inputs in matrix mode"""
         import tensorflow as tf
 
@@ -735,6 +727,22 @@ class TestLieClosureInterfaces:
         gens_list = [tf.constant(X0), tf.constant(Y0)]
 
         gens = qml.math.stack([tf.constant(X0), tf.constant(Y0)])
+
+        res = qml.lie_closure(gens, matrix=True)
+        assert qml.math.allclose(res, su2)
+
+        res_list = qml.lie_closure(gens_list, matrix=True)
+        assert qml.math.allclose(res_list, su2)
+
+    @pytest.mark.autograd
+    def test_autograd_lie_closure_matrix(self):
+        """Test lie_closure can handle autograd inputs in matrix mode"""
+        import pennylane.numpy as pnp
+
+        su2 = pnp.array([X0, Y0, -Z0])
+        gens_list = [pnp.array(X0), pnp.array(Y0)]
+
+        gens = pnp.array([X0, Y0])
 
         res = qml.lie_closure(gens, matrix=True)
         assert qml.math.allclose(res, su2)
