@@ -201,7 +201,7 @@ class TestValidation:
 
         with warnings.catch_warnings(record=True) as w:
 
-            @qml.qnode(dev, random_kwarg=qml.gradients.finite_diff)
+            @qml.qnode(dev, gradient_kwargs={"random_kwarg": qml.gradients.finite_diff})
             def circuit(params):
                 qml.RX(params[0], wires=0)
                 return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
@@ -627,7 +627,7 @@ class TestIntegration:
         y = pnp.array(-0.654, requires_grad=True)
 
         @qnode(
-            dev, diff_method=diff_method, argnum=[1]
+            dev, diff_method=diff_method, gradient_kwargs={"argnum": [1]}
         )  # <--- we only choose one trainable parameter
         def circuit(x, y):
             qml.RX(x, wires=[0])
