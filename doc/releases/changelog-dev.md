@@ -148,6 +148,7 @@
 
 * The interface is now detected for data in the circuit, not arguments to the QNode. This allows
   interface data to be strictly passed as closure variables and still be detected.
+  [(#6892)](https://github.com/PennyLaneAI/pennylane/pull/6892)
 
 * `BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
