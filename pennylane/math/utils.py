@@ -280,9 +280,9 @@ def is_abstract(tensor, like=None):
             # the conversion to a jnp array to check if the tensor has a concrete value.
             try: 
                 jax.numpy.asarray(tensor)
+                return False
+            except Exception:
                 return True
-            except Exeption:
-                    return False
 
         return isinstance(tensor, DynamicJaxprTracer)
 
