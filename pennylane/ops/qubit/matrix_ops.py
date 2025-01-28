@@ -225,6 +225,8 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
+            if isinstance(U, csr_matrix):
+                return qml.ops.one_qubit_decomposition(U.toarray(), Wires(wires)[0])
             return qml.ops.one_qubit_decomposition(U, Wires(wires)[0])
 
         if shape_without_batch_dim == (4, 4):
@@ -233,6 +235,8 @@ class QubitUnitary(Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
                 )
+            if isinstance(U, csr_matrix):
+                return qml.ops.one_qubit_decomposition(U.toarray(), Wires(wires)[0])
 
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
@@ -244,6 +248,8 @@ class QubitUnitary(Operation):
         return len(self.wires) < 3
 
     def adjoint(self) -> "QubitUnitary":
+        if isinstance(self.parameters[0], csr_matrix):
+            return QubitUnitary(self.parameters[0].conjugate().transpose(), wires=self.wires)
         U = self.matrix()
         return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
 
