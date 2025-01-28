@@ -118,7 +118,7 @@ class TestControlledQubitUnitary:
 
     def test_initialization_from_matrix_and_operator(self):
         base_op = QubitUnitary(X, wires=1)
-        with pytest.raises(
+        with pytest.warns(
             qml.PennyLaneDeprecationWarning,
             match="QubitUnitary input to ControlledQubitUnitary is deprecated",
         ):
