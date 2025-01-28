@@ -107,7 +107,6 @@ features is non-exhaustive.
 
 """
 from copy import copy
-from dataclasses import asdict
 from functools import partial
 from numbers import Number
 from warnings import warn
@@ -399,18 +398,19 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     flat_fn = FlatFn(qfunc)
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
+    qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
-    mcm_config = asdict(execute_kwargs.pop("mcm_config"))
-    qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
+    qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs}
 
     flat_args = jax.tree_util.tree_leaves(args)
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
+        *abstract_shapes,
         *flat_args,
         shots=shots,
         qnode=qnode,

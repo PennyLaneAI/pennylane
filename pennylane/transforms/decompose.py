@@ -20,10 +20,9 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 import warnings
 from collections.abc import Callable, Generator, Iterable
 from functools import lru_cache, partial
-from typing import Optional, Sequence
+from typing import Optional
 
 import pennylane as qml
-from pennylane.capture.primitives import AbstractMeasurement, AbstractOperator
 from pennylane.transforms.core import transform
 
 
@@ -194,6 +193,8 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
         # pylint: disable=import-outside-toplevel
         # pylint: disable=unused-import
         import jax
+
+        from pennylane.capture.primitives import AbstractMeasurement, AbstractOperator
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -201,27 +202,8 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
     class DynamicDecomposeInterpreter(qml.capture.PlxprInterpreter):
         """
-        Experimental Plxpr Interpreter for applying a dynamic decomposition to operations program capture is enabled.
-
+        Experimental Plxpr Interpreter for applying a dynamic decomposition to operations when program capture is enabled.
         """
-
-        def __init__(self, gate_set=None, max_expansion=None):
-            self.max_expansion = max_expansion
-
-            if gate_set is None:
-                gate_set = set(qml.ops.__all__)
-
-            if isinstance(gate_set, (str, type)):
-                gate_set = set([gate_set])
-
-            if isinstance(gate_set, Iterable):
-                gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-                gate_names = set(gate for gate in gate_set if isinstance(gate, str))
-                self.gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
-            else:
-                self.gate_set = gate_set
-
-            super().__init__()
 
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether or not an operator needs to be decomposed or not.
@@ -244,9 +226,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                 return True
             return self.gate_set(op)
 
-        def eval_dynamic_decomposition(
-            self, jaxpr_decomp: "jax.core.Jaxpr", consts: Sequence, *args, current_depth: int = 0
-        ):
+        def eval_dynamic_decomposition(self, jaxpr_decomp: "jax.core.Jaxpr", *args, current_depth: int = 0):
             """
             Evaluate a dynamic decomposition of a Jaxpr.
 
@@ -259,8 +239,6 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
             for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
                 self._env[invar] = arg
-            for const, constvar in zip(consts, jaxpr_decomp.constvars, strict=True):
-                self._env[constvar] = const
 
             for inner_eqn in jaxpr_decomp.eqns:
 
@@ -312,7 +290,9 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                     jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args, current_depth=current_depth + 1
                 )
 
-            return super().interpret_operation_eqn(eqn)
+                return super().interpret_operation(op)
+
+            return op
 
     return DynamicDecomposeInterpreter
 
