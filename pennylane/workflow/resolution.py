@@ -37,26 +37,9 @@ SupportedDiffMethods = Literal[
 ]
 
 
-def _get_jax_interface_name(tapes):
-    """Check all parameters in each tape and output the name of the suitable
-    JAX interface.
-
-    This function checks each tape and determines if any of the gate parameters
-    was transformed by a JAX transform such as ``jax.jit``. If so, it outputs
-    the name of the JAX interface with jit support.
-
-    Note that determining if jit support should be turned on is done by
-    checking if parameters are abstract. Parameters can be abstract not just
-    for ``jax.jit``, but for other JAX transforms (vmap, pmap, etc.) too. The
-    reason is that JAX doesn't have a public API for checking whether or not
-    the execution is within the jit transform.
-
-    Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-
-    Returns:
-        str: name of JAX interface that fits the tape parameters, "jax" or
-        "jax-jit"
+def _get_jax_interface_name() -> Interface:
+    """Check if we are in a jitting context by creating a dummy array and seeing if it
+    abstract.
     """
     x = qml.math.asarray([0], like="jax")
     return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
@@ -111,7 +94,7 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
                 "version of jax to enable the 'jax' interface."  # pragma: no cover
             ) from e  # pragma: no cover
 
-        interface = _get_jax_interface_name(tapes)
+        interface = _get_jax_interface_name()
 
     return interface
 
