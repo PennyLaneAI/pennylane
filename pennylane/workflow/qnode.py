@@ -107,6 +107,10 @@ def _to_qfunc_output_type(
     return qml.pytrees.unflatten(results, qfunc_output_structure)
 
 
+def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
+    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
+
+
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
     for kwarg in gradient_kwargs:
         if kwarg == "expansion_strategy":
@@ -133,7 +137,8 @@ def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
         elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
             warnings.warn(
                 f"Received gradient_kwarg {kwarg}, which is not included in the list of "
-                "standard qnode gradient kwargs."
+                "standard qnode gradient kwargs. Please specify all gradient kwargs through "
+                "the gradient_kwargs argument as a dictionary."
             )
 
 
@@ -284,9 +289,7 @@ class QNode:
             as the name suggests. If not provided,
             the device will determine the best choice automatically. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-
-    Keyword Args:
-        **kwargs: Any additional keyword arguments provided are passed to the differentiation
+        gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
 
@@ -505,10 +508,12 @@ class QNode:
         device_vjp: Union[None, bool] = False,
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
-        **gradient_kwargs,
+        gradient_kwargs: Optional[dict] = None,
+        **kwargs,
     ):
         self._init_args = locals()
         del self._init_args["self"]
+        del self._init_args["kwargs"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -536,7 +541,16 @@ class QNode:
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
+        gradient_kwargs = gradient_kwargs or {}
+        if kwargs:
+            if any(k in qml.gradients.SUPPORTED_GRADIENT_KWARGS for k in list(kwargs.keys())):
+                warnings.warn(
+                    f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please specify all arguments in the gradient_kwargs argument.",
+                    qml.PennyLaneDeprecationWarning,
+                )
+            gradient_kwargs |= kwargs
         _validate_gradient_kwargs(gradient_kwargs)
+
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
                 "Detected 'shots' as an argument to the given quantum function. "
@@ -553,17 +567,18 @@ class QNode:
         self.device = device
         self._interface = get_canonical_interface_name(interface)
         self.diff_method = diff_method
-        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
 
         # execution keyword arguments
+        _validate_mcm_config(postselect_mode, mcm_method)
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
             "device_vjp": device_vjp,
-            "mcm_config": mcm_config,
+            "postselect_mode": postselect_mode,
+            "mcm_method": mcm_method,
         }
 
         # internal data attributes
@@ -676,16 +691,19 @@ class QNode:
         tensor(0.5403, dtype=torch.float64)
         """
         if not kwargs:
-            valid_params = (
-                set(self._init_args.copy().pop("gradient_kwargs"))
-                | qml.gradients.SUPPORTED_GRADIENT_KWARGS
-            )
+            valid_params = set(self._init_args.copy()) | qml.gradients.SUPPORTED_GRADIENT_KWARGS
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
         original_init_args = self._init_args.copy()
-        gradient_kwargs = original_init_args.pop("gradient_kwargs")
-        original_init_args.update(gradient_kwargs)
+        # gradient_kwargs defaults to None
+        original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
+        # nested dictionary update
+        new_gradient_kwargs = kwargs.pop("gradient_kwargs", {})
+        old_gradient_kwargs = original_init_args.get("gradient_kwargs").copy()
+        old_gradient_kwargs.update(new_gradient_kwargs)
+        kwargs["gradient_kwargs"] = old_gradient_kwargs
+
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
         # pylint: disable=protected-access

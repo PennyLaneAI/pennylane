@@ -768,6 +768,7 @@ class TestIntegration:
         grad = jax.grad(circ)(phi)
         assert qml.math.allclose(grad, -jnp.sin(phi))
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/catalyst/pull/1452")
     @pytest.mark.catalyst
     @pytest.mark.external
     def test_catalyst_qnode(self):
