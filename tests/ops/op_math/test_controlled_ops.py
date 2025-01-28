@@ -52,11 +52,11 @@ X_broadcasted = np.array([X] * 3)
 # pylint: disable=too-many-public-methods
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
-    
+
     def test_noniterable_base(self):
         """Test that an error is raised if the user provides a non-iterable base operator"""
         # make a non-iterable, non-QubitUnitary base operator
-        base_op = lambda x:1 if x==0 else 0 # pauliX as a mapping
+        base_op = lambda x: 1 if x == 0 else 0  # pauliX as a mapping
 
         with pytest.raises(ValueError, match="Base must be a matrix"):
             qml.ControlledQubitUnitary(base_op, wires=[0, 1])
