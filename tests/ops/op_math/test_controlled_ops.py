@@ -72,6 +72,8 @@ class TestControlledQubitUnitary:
         ):
             qml.ControlledQubitUnitary(base_op, wires=[0, 1])
 
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_deprecation_unitary_base_primitive_bind(self):
         """Test that a deprecation warning is raised when using the QubitUnitary base arg in the primitive_bind method"""
         base_op = [[0, 1], [1, 0]]
@@ -81,7 +83,6 @@ class TestControlledQubitUnitary:
             qml.PennyLaneDeprecationWarning,
             match="QubitUnitary input to ControlledQubitUnitary is deprecated",
         ):
-            qml.capture.enable()
             qml.ControlledQubitUnitary(base_op, wires=[0, 1])
 
     def test_wires_is_none(self):
