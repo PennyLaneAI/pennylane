@@ -9,8 +9,7 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``QubitUnitary``-type ``base`` argument in the ``qml.ControlledQubitUnitary`` class is deprecated. 
-  Instead, use the ``qml.ctrl`` to specifically control a ``QubitUnitary``.
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
 
   - Deprecated in v0.41
   - Will be removed in v0.42
