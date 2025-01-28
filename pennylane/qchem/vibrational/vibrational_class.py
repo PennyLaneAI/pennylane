@@ -57,7 +57,7 @@ class VibrationalPES:
     ...                    [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
     ...                    [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]]
     >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
-    ...                          uloc = None, pes_data=[pes_onebody, pes_twobody],
+    ...                          uloc=None, pes_data=[pes_onebody, pes_twobody],
     ...                          dipole_data=[dipole_onebody], localized=False)
     >>> vib_obj.freqs
     array([0.01885397])
