@@ -35,7 +35,7 @@ from pennylane.capture import make_plxpr  # pylint: disable=wrong-import-positio
 def test_error_is_raised_with_capture_disabled():
     dev = qml.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qml.qnode(dev, autograph=False)
     def circ(x):
         qml.RX(x, 0)
         qml.Hadamard(0)
