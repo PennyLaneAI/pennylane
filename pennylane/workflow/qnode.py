@@ -815,6 +815,7 @@ class QNode:
             (tape,),
             device=self.device,
             diff_method=self.diff_method,
+            interface=self.interface,
             transform_program=self._transform_program,
             gradient_kwargs=self.gradient_kwargs,
             **self.execute_kwargs,
