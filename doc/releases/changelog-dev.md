@@ -4,6 +4,33 @@
 
 <h3>New features since last release</h3>
 
+* `qml.defer_measurements` can now be used with program capture enabled. Using `qml.defer_measurements` with program capture
+  enables many new features, including:
+  * Significantly richer variety of classical processing on mid-circuit measurement values.
+  * Using mid-circuit measurement values as gate parameters.
+
+  Functions such as the following can now be captured:
+
+  ```python
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  def processing_fn(m1, m2):
+      a = jnp.sin(0.5 * jnp.pi * m1)
+      b = a - (m2 + 1) ** 4
+      return b
+
+  def f(x):
+      m0 = qml.measure(0)
+      m1 = qml.measure(0)
+      inval = processing_fn(m0, m1)
+
+      qml.s_prod(x, qml.RZ(inval, 0))
+
+      return qml.expval(qml.Z(0))
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
