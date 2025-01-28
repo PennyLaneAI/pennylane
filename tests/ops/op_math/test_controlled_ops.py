@@ -85,22 +85,22 @@ class TestControlledQubitUnitary:
         ):
             qml.ControlledQubitUnitary(base_op, wires=[0, 1])
 
+    def test_deprecated_interface_still_available(self):
+        """Test that the deprecated interface is still available"""
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The control_wires input to ControlledQubitUnitary is deprecated",
+        ):
+            qml.ControlledQubitUnitary(
+                qml.QubitUnitary(np.eye(2), wires=0), control_wires=[1, 2, 3]
+            )
+
     def test_wires_is_none(self):
         """Test that an error is raised if the user provides no target wires for an iterable base operator"""
         base_op = [[0, 1], [1, 0]]
 
         with pytest.raises(TypeError, match="Must specify a set of wires"):
             qml.ControlledQubitUnitary(base_op, wires=None)
-
-    def test_deprecation_control_wires(self):
-        """Test that a deprecation warning is raised when using the control_wires arg"""
-        base_op = [[0, 1], [1, 0]]
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The control_wires input to ControlledQubitUnitary is deprecated",
-        ):
-            qml.ControlledQubitUnitary(base_op, wires=[0, 1], control_wires=[2, 3])
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
