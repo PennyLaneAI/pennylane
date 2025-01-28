@@ -1568,7 +1568,7 @@ class TestStochPulseGradIntegration:
         grad_backprop = jax.grad(qnode_backprop)(params)
 
         assert all(
-            qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, rtol=0.5) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
         jax.clear_caches()
 

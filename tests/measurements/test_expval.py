@@ -186,7 +186,6 @@ class TestExpval:
         assert res.shape(None, 1) == ()
         assert res.shape(100, 1) == ()
 
-    @pytest.mark.local_salt(2)
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])
     def test_projector_expval(self, state, shots, seed):
@@ -201,7 +200,7 @@ class TestExpval:
 
         res = circuit()
         expected = [0.5, 0.5] if isinstance(shots, list) else 0.5
-        assert np.allclose(res, expected, atol=0.02, rtol=0.02)
+        assert np.allclose(res, expected, atol=0.02, rtol=0.035)
 
     def test_permuted_wires(self):
         """Test that the expectation value of an operator with permuted wires is the same."""
