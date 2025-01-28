@@ -172,13 +172,17 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
         return gate_types
 
     def resource_params(self) -> dict:
-        unitary_matrix = self.hyperparameters["unitary_matrix"]
+        unitary_matrix = self.parameters[0]
         return {"dim_N": qml.math.shape(unitary_matrix)[0]}
 
     @classmethod
     def resource_rep(cls, dim_N) -> CompressedResourceOp:
         params = {"dim_N": dim_N}
         return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def tracking_name(cls, dim_N) -> str:
+        return f"BasisRotation({dim_N})"
 
 
 class ResourceSelect(qml.Select, ResourceOperator):
