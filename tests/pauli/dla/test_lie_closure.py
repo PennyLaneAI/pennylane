@@ -671,9 +671,7 @@ class TestLieClosureDense:
         ]
         assert PauliVSpace(res) == PauliVSpace(true_res)
 
-    def test_non_hermitian_error(
-        self,
-    ):
+    def test_non_hermitian_error(self):
         """Test that an error is raised for non-Hermitian input"""
         ops = [np.array([[0.0, 1.0], [0.0, 0.0]])]
         with pytest.raises(ValueError, match="At least one basis matrix"):

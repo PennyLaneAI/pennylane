@@ -74,9 +74,7 @@ def test_NotImplementedError():
 
 class TestInterfaces:
     @pytest.mark.jax
-    def test_jax_jit_input(
-        self,
-    ):
+    def test_jax_jit_input(self):
         """Test jax inputs are handled correctly"""
         import jax
         import jax.numpy as jnp
@@ -92,9 +90,7 @@ class TestInterfaces:
         assert jnp.allclose(f(A, A), 1)
 
     @pytest.mark.torch
-    def test_torch_input(
-        self,
-    ):
+    def test_torch_input(self):
         """Test torch inputs are handled correctly"""
         import torch
 
@@ -105,9 +101,7 @@ class TestInterfaces:
         assert qml.math.allclose(trace_inner_product(A, A), 1)
 
     @pytest.mark.tf
-    def test_tf_input(
-        self,
-    ):
+    def test_tf_input(self):
         """Test tf inputs are handled correctly"""
         import tensorflow as tf
 
