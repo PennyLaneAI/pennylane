@@ -94,13 +94,6 @@ class ControlledQubitUnitary(ControlledOp):
     Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
         [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
 
-    Alternatively, the same operator can be constructed with a QubitUnitary:
-
-    >>> base = qml.QubitUnitary(U, wires=2)
-    >>> qml.ControlledQubitUnitary(base, wires=[0, 1, 2])
-    Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
-        [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
-
     Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
     it is necessary to apply a gate conditioned on all qubits being in the
