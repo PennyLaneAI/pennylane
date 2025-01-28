@@ -588,7 +588,7 @@ def _lie_closure_matrix(
         chi = 2**n
         assert np.shape(generators) == (len(generators), chi, chi)
 
-    if isinstance(generators[0], TensorLike) and isinstance(generators, (list, tuple)):
+    elif isinstance(generators[0], TensorLike) and isinstance(generators, (list, tuple)):
         # list of matrices
         interface = qml.math.get_interface(generators[0])
         generators = qml.math.stack(generators, like=interface)
