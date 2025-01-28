@@ -58,17 +58,8 @@ def _get_jax_interface_name(tapes):
         str: name of JAX interface that fits the tape parameters, "jax" or
         "jax-jit"
     """
-    for t in tapes:
-        for op in t:
-            # Unwrap the observable from a MeasurementProcess
-            if not isinstance(op, qml.ops.Prod):
-                op = getattr(op, "obs", op)
-            if op is not None:
-                # Some MeasurementProcess objects have op.obs=None
-                if any(qml.math.is_abstract(param) for param in op.data):
-                    return Interface.JAX_JIT
-
-    return Interface.JAX
+    x = qml.math.asarray([0], like="jax")
+    return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
 
 
 # pylint: disable=import-outside-toplevel
