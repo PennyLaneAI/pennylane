@@ -689,9 +689,7 @@ class TestLieClosureInterfaces:
     """Test input for matrix inputs from AD interfaces"""
 
     @pytest.mark.jax
-    def test_jax_lie_closure_matrix(
-        self,
-    ):
+    def test_jax_lie_closure_matrix(self):
         """Test lie_closure can handle jax inputs in matrix mode"""
         import jax.numpy as jnp
 
@@ -707,9 +705,7 @@ class TestLieClosureInterfaces:
         assert qml.math.allclose(res_list, su2)
 
     @pytest.mark.torch
-    def test_torch_lie_closure_matrix(
-        self,
-    ):
+    def test_torch_lie_closure_matrix(self):
         """Test lie_closure can handle torch inputs in matrix mode"""
         import torch
 
@@ -725,9 +721,7 @@ class TestLieClosureInterfaces:
         assert qml.math.allclose(res_list, su2)
 
     @pytest.mark.tf
-    def test_tf_lie_closure_matrix(
-        self,
-    ):
+    def test_tf_lie_closure_matrix(self):
         """Test lie_closure can handle tf inputs in matrix mode"""
         import tensorflow as tf
 
