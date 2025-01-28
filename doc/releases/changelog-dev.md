@@ -144,6 +144,10 @@
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
+* The code example in the docstring for `qml.BasisRotation` was corrected by including `wire_order` in the 
+  call to `qml.matrix`.
+  
+
 <h3>Bug fixes 🐛</h3>
 
 * `BasisState` now casts its input to integers.

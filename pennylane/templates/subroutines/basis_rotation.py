@@ -68,7 +68,7 @@ class BasisRotation(Operation):
         ...    for idx, eigenval in enumerate(eigen_vals):
         ...        qml.RZ(eigenval, wires=[idx])
         ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
-        >>> circ_unitary = qml.matrix(circuit)()
+        >>> circ_unitary = qml.matrix(circuit, wire_order=wires)()
         >>> np.round(circ_unitary/circ_unitary[0][0], 3)
         tensor([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
                 [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
