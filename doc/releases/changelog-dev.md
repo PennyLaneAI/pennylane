@@ -87,8 +87,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `QubitUnitary`-type `base` argument in the `qml.ControlledQubitUnitary` class is deprecated.
-  Instead, use the `qml.ctrl` to specifically control a `QubitUnitary`.
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
   [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
 
 * The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
