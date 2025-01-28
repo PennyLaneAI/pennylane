@@ -72,10 +72,10 @@ def test_NotImplementedError():
         _ = qml.pauli.trace_inner_product(qml.CNOT((0, 1)), qml.X(0))
 
 
-class TestInterfaces:
+class TestTraceInnerProductInterfaces:
     @pytest.mark.jax
     def test_jax_jit_input(self):
-        """Test jax inputs are handled correctly"""
+        """Test jax inputs are handled correctly with JITing"""
         import jax
         import jax.numpy as jnp
 
