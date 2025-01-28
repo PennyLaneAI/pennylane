@@ -156,12 +156,19 @@
   Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
   [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
 
+* The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
+  [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
+
 <h3>Documentation 📝</h3>
 
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`, 
   `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better 
   code examples.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
+
+* The docstrings for `qml.qchem.localize_normal_modes` and `qml.qchem.VibrationalPES` have been updated to include
+  examples that can be copied.
+  [(#6834)](https://github.com/PennyLaneAI/pennylane/pull/6834)
 
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
