@@ -153,6 +153,54 @@ def _get_plxpr_defer_measurements():
             """
             self._cur_idx = None
 
+        def interpret_dynamic_operation(self, data, struct, idx):
+            """Interpret an operation that uses mid-circuit measurement outcomes as parameters.
+
+            * This will not work if mid-circuit measurement values are used to specify
+              operator wires.
+            * This will not work if more than one parameter uses mid-circuit measurement values.
+
+            Args:
+                data (TensorLike): Flattened data of the operator
+                struct (PyTreeDef): Pytree structure of the operator
+                idx (int): Index of mid-circuit measurement value in ``data``
+
+            Returns:
+                None
+            """
+            mv = data[idx]
+            for branch, value in mv.items():
+                data[idx] = value
+                op = jax.tree_util.tree_unflatten(struct, data)
+                qml.ctrl(op, mv.wires, control_values=branch)
+
+        def interpret_operation(self, op: "pennylane.operation.Operator"):
+            """Interpret a PennyLane operation instance.
+
+            Args:
+                op (Operator): a pennylane operator instance
+
+            Returns:
+                Any
+
+            This method is only called when the operator's output is a dropped variable,
+            so the output will not affect later equations in the circuit.
+
+            See also: :meth:`~.interpret_operation_eqn`.
+
+            """
+            data, struct = jax.tree_util.tree_flatten(op)
+
+            idx = -1
+            for i, d in enumerate(data):
+                if isinstance(d, MeasurementValue):
+                    idx = i
+                    break
+            if idx != -1:
+                return self.interpret_dynamic_operation(data, struct, idx)
+
+            return jax.tree_util.tree_unflatten(struct, data)
+
         def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
             """Interpret a measurement process instance.
 
@@ -174,6 +222,7 @@ def _get_plxpr_defer_measurements():
         def resolve_mcm_values(self, eqn, invals) -> MeasurementValue:
             """Create a ``MeasurementValue`` that captures all classical processing in its
             ``processing_fn``."""
+            # pylint: disable=protected-access
             assert len(invals) <= 2
 
             if len(invals) == 1:
@@ -300,7 +349,7 @@ def _get_plxpr_defer_measurements():
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
 
-                for branch, value in condition._items():
+                for branch, value in condition.items():
                     cur_consts = invals[consts_slices[i]]
                     qml.cond(value, ctrl_transform_prim.bind)(
                         *cur_consts,
@@ -628,10 +677,10 @@ def _add_control_gate(op, control_wires, reduce_postselected):
     """Helper function to add control gates"""
     if reduce_postselected:
         control = [control_wires[m.id] for m in op.meas_val.measurements if m.postselect is None]
-        items = op.meas_val._postselected_items()
+        items = op.meas_val.postselected_items()
     else:
         control = [control_wires[m.id] for m in op.meas_val.measurements]
-        items = op.meas_val._items()
+        items = op.meas_val.items()
 
     new_ops = []
 

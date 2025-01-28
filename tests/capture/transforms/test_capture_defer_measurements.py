@@ -127,6 +127,50 @@ class TestDeferMeasurementsInterpreter:
         with pytest.raises(ValueError, match="Not enough auxiliary wires"):
             f(0)
 
+    def test_mcms_as_gate_parameters(self):
+        """Test that MCMs can be used as gate parameters."""
+
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        def f(x):
+            m = qml.measure(0)
+            qml.RX(x * m, 0)
+
+        x = 1.5
+        jaxpr = jax.make_jaxpr(f)(x)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.ops.Controlled(qml.RX(jnp.array(0), 0), 5, control_values=[0]),
+            qml.ops.Controlled(qml.RX(jnp.array(x), 0), 5, control_values=[1]),
+        ]
+        assert ops == expected_ops
+
+    def test_mcms_as_nested_gate_parameters(self):
+        """Test that MCMs can be used as gate parameters."""
+
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        def f(x, y):
+            m = qml.measure(0)
+            qml.s_prod(y, qml.RX(x * m, 0))
+
+        args = (1.5, 2.5)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.ops.Controlled(qml.s_prod(args[1], qml.RX(jnp.array(0), 0)), 5, control_values=[0]),
+            qml.ops.Controlled(
+                qml.s_prod(args[1], qml.RX(jnp.array(args[0]), 0)), 5, control_values=[1]
+            ),
+        ]
+        assert ops == expected_ops
+
     def test_simple_cond(self):
         """Test that a qml.cond using a single MCM predicate is transformed correctly."""
 

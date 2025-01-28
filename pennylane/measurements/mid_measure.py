@@ -243,7 +243,7 @@ def _create_mid_measure_primitive():
         measurement.
 
     """
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel, no-member
     import jax
 
     from pennylane.capture.custom_primitives import NonInterpPrimitive
@@ -387,14 +387,14 @@ class MeasurementValue(Generic[T]):
         self.measurements = measurements
         self.processing_fn = processing_fn
 
-    def _items(self):
+    def items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
         num_meas = len(self.measurements)
         for i in range(2**num_meas):
             branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             yield branch, self.processing_fn(*branch)
 
-    def _postselected_items(self):
+    def postselected_items(self):
         """A generator representing all the possible outcomes of the MeasurementValue,
         taking postselection into account."""
         # pylint: disable=stop-iteration-return
