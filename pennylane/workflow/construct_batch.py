@@ -67,7 +67,8 @@ def _get_full_transform_program(
             **qnode.gradient_kwargs,
         )
 
-    config = _make_execution_config(qnode, gradient_fn)
+    mcm_config = qnode.execute_kwargs.get("mcm_config", None)
+    config = _make_execution_config(qnode, gradient_fn, mcm_config)
     return program + qnode.device.preprocess_transforms(config)
 
 
