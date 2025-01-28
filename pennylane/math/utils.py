@@ -276,10 +276,13 @@ def is_abstract(tensor, like=None):
                 jax.interpreters.partial_eval.JaxprTracer,
             ),
         ):
-            # Tracer objects will be used when computing gradients or applying transforms.
-            # If the value of the tracer is known, it will contain a ConcreteArray.
-            # Otherwise, it will be abstract.
-            return not isinstance(tensor.aval, jax.core.ConcreteArray)
+            # To avoid relying on jax core internals, which are subject to change, we use
+            # the conversion to a jnp array to check if the tensor has a concrete value.
+            try: 
+                jax.numpy.asarray(tensor)
+                return True
+            except Exeption:
+                    return False
 
         return isinstance(tensor, DynamicJaxprTracer)
 
