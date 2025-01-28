@@ -70,9 +70,19 @@ class TestControlledQubitUnitary:
             qml.PennyLaneDeprecationWarning,
             match="QubitUnitary input to ControlledQubitUnitary is deprecated",
         ):
-            c_op = qml.ControlledQubitUnitary(base_op, wires=[0, 1])
-            # pylint: disable=protected-access
-            c_op._primitive_bind_call(base_op, wires=[0, 1])
+            qml.ControlledQubitUnitary(base_op, wires=[0, 1])
+
+    def test_deprecation_unitary_base_primitive_bind(self):
+        """Test that a deprecation warning is raised when using the QubitUnitary base arg in the primitive_bind method"""
+        base_op = [[0, 1], [1, 0]]
+        base_op = QubitUnitary(base_op, wires=1)
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="QubitUnitary input to ControlledQubitUnitary is deprecated",
+        ):
+            qml.capture.enable()
+            qml.ControlledQubitUnitary(base_op, wires=[0, 1])
 
     def test_wires_is_none(self):
         """Test that an error is raised if the user provides no target wires for an iterable base operator"""
