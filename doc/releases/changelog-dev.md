@@ -146,7 +146,7 @@
 
 * The code example in the docstring for `qml.BasisRotation` was corrected by including `wire_order` in the 
   call to `qml.matrix`.
-  
+  [(#6891)](https://github.com/PennyLaneAI/pennylane/pull/6891)
 
 <h3>Bug fixes 🐛</h3>
 
