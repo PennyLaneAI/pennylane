@@ -28,7 +28,6 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
-from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
@@ -233,10 +232,15 @@ def _ctrl_transform(op, control, control_values, work_wires):
 def _get_ctrl_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
-    import jax  # pylint: disable=import-outside-toplevel
 
-    ctrl_prim = create_non_interpreted_prim()("ctrl_transform")
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    ctrl_prim = NonInterpPrimitive("ctrl_transform")
     ctrl_prim.multiple_results = True
+    ctrl_prim.prim_type = "higher_order"
 
     @ctrl_prim.def_impl
     def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
@@ -268,11 +272,16 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
-        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs))(*args)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(
+            *args
+        )
+        flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
         ctrl_prim.bind(
             *jaxpr.consts,
-            *args,
+            *abstract_shapes,
+            *flat_args,
             *control_wires,
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),

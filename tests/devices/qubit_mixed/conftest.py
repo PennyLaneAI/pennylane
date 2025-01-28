@@ -17,7 +17,7 @@ import pytest
 from scipy.stats import unitary_group
 
 
-def get_random_mixed_state(num_qubits):
+def get_random_mixed_state(num_qubits: int) -> np.ndarray:
     """
     Generates a random mixed state for testing purposes.
 

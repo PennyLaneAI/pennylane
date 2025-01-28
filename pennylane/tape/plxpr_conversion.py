@@ -60,8 +60,9 @@ class CollectOpsandMeas(PlxprInterpreter):
             return qml.probs(wires=0), qml.expval(qml.Z(1))
 
     >>> from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+    >>> from jax import make_jaxpr
     >>> qml.capture.enable()
-    >>> plxpr = jax.make_plxpr(f)(0.5)
+    >>> plxpr = make_jaxpr(f)(0.5)
     >>> collector = CollectOpsandMeas()
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
     [probs(wires=[0]), expval(Z(1))]
@@ -223,7 +224,7 @@ def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> Quantum
         qml.capture.enable()
 
         plxpr = jax.make_jaxpr(f)(0.5)
-        tape = qml.capture.convert_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
+        tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
         print(qml.drawer.tape_text(tape, decimals=2))
 
     .. code-block::
