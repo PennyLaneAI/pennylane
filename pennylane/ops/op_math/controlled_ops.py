@@ -146,22 +146,7 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
     ):
         _deprecate_control_wires(control_wires)
-        if control_wires != "unset":
-
-            wires = Wires(() if wires is None else wires)
-            work_wires = Wires(() if work_wires is None else work_wires)
-
-            if hasattr(base, "wires") and len(wires) != 0:
-                warnings.warn(
-                    "base operator already has wires; values specified through wires kwarg will be ignored."
-                )
-                wires = Wires(())
-
-            all_wires = control_wires + wires
-            return cls._primitive.bind(
-                base, control_wires=all_wires, control_values=control_values, work_wires=work_wires
-            )
-        else:
+        if control_wires == "unset":
 
             work_wires = Wires(() if work_wires is None else work_wires)
 
@@ -175,6 +160,21 @@ class ControlledQubitUnitary(ControlledOp):
                 base, wires=wires, control_values=control_values, work_wires=work_wires
             )
 
+        # Below is the legacy interface, where control_wires provided
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+
+        if hasattr(base, "wires") and len(wires) != 0:
+            warnings.warn(
+                "base operator already has wires; values specified through wires kwarg will be ignored."
+            )
+            wires = Wires(())
+
+        all_wires = control_wires + wires
+        return cls._primitive.bind(
+            base, control_wires=all_wires, control_values=control_values, work_wires=work_wires
+        )
+
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
@@ -186,7 +186,29 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
     ):
         _deprecate_control_wires(control_wires)
-        if control_wires != "unset":
+        if control_wires == "unset":
+            if not wires:
+                raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
+            work_wires = Wires(() if work_wires is None else work_wires)
+            control_wires = wires[:-1]  # default
+
+            if hasattr(base, "wires") and len(wires) != 0:
+                warnings.warn(
+                    "base operator already has wires; values specified through wires kwarg will be ignored."
+                )
+                # base should have the target_wires. Then control_wires should be the ones in wires that are not in base.wires
+                control_wires = [w for w in wires if w not in base.wires]
+
+            if isinstance(base, Iterable):
+                num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+                target_wires = wires[-num_base_wires:]
+                control_wires = wires[:-num_base_wires]
+                # We use type.__call__ instead of calling the class directly so that we don't bind the
+                # operator primitive when new program capture is enabled
+                base = type.__call__(
+                    qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
+                )
+        else:
             wires = Wires(() if wires is None else wires)
             work_wires = Wires(() if work_wires is None else work_wires)
             control_wires = Wires(control_wires)
@@ -211,28 +233,6 @@ class ControlledQubitUnitary(ControlledOp):
                 # operator primitive when new program capture is enabled
                 base = type.__call__(
                     qml.QubitUnitary, base, wires=wires, unitary_check=unitary_check
-                )
-        else:
-            if not wires:
-                raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
-            work_wires = Wires(() if work_wires is None else work_wires)
-            control_wires = wires[:-1]  # default
-
-            if hasattr(base, "wires") and len(wires) != 0:
-                warnings.warn(
-                    "base operator already has wires; values specified through wires kwarg will be ignored."
-                )
-                # base should have the target_wires. Then control_wires should be the ones in wires that are not in base.wires
-                control_wires = [w for w in wires if w not in base.wires]
-
-            if isinstance(base, Iterable):
-                num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
-                target_wires = wires[-num_base_wires:]
-                control_wires = wires[:-num_base_wires]
-                # We use type.__call__ instead of calling the class directly so that we don't bind the
-                # operator primitive when new program capture is enabled
-                base = type.__call__(
-                    qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
                 )
 
         super().__init__(
