@@ -1082,7 +1082,7 @@ def _check_and_convert_control_values(control_values, control_wires):
 
 
 class MultiControlledX(ControlledOp):
-    r"""MultiControlledX(control_wires, wires, control_values, work_wires)
+    r"""MultiControlledX(wires)
     Apply a Pauli X gate controlled on an arbitrary computational basis state.
 
     **Details:**
@@ -1092,8 +1092,6 @@ class MultiControlledX(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        control_wires (Union[Wires, Sequence[int], or int]): Deprecated way to indicate the control wires.
-            Now users should use "wires" to indicate both the control wires and the target wire.
         wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
             the operation acts on
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
