@@ -14,7 +14,6 @@
 """
 Tests for capturing a qnode into jaxpr.
 """
-from dataclasses import asdict
 from functools import partial
 
 # pylint: disable=protected-access
@@ -128,9 +127,8 @@ def test_simple_qnode():
     assert eqn0.params["device"] == dev
     assert eqn0.params["qnode"] == circuit
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
-    expected_kwargs = {"diff_method": "best"}
+    expected_kwargs = {"diff_method": "best", "gradient_kwargs": {}}
     expected_kwargs.update(circuit.execute_kwargs)
-    expected_kwargs.update(asdict(expected_kwargs.pop("mcm_config")))
     assert eqn0.params["qnode_kwargs"] == expected_kwargs
 
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
@@ -287,6 +285,7 @@ def test_capture_qnode_kwargs():
         "device_vjp": False,
         "mcm_method": None,
         "postselect_mode": None,
+        "gradient_kwargs": {},
     }
     assert jaxpr.eqns[0].params["qnode_kwargs"] == expected
 
@@ -407,6 +406,22 @@ def test_qnode_jit():
     x = jax.numpy.array(-0.5)
     res = jax.jit(circuit)(0.5)
     assert qml.math.allclose(res, jax.numpy.cos(x))
+
+
+# pylint: disable=unused-argument
+def test_dynamic_shape_input(enable_disable_dynamic_shapes):
+    """Test that the qnode can accept an input with a dynamic shape."""
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit(x):
+        qml.RX(jax.numpy.sum(x), 0)
+        return qml.expval(qml.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit, abstracted_axes=("a",))(jax.numpy.arange(4))
+
+    [output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+    expected = jax.numpy.cos(0 + 1 + 2)
+    assert jax.numpy.allclose(expected, output)
 
 
 # pylint: disable=too-many-public-methods
