@@ -15,9 +15,51 @@
 Contains the MPSPrep template.
 """
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.wires import Wires
+
+
+def complete_unitary(columns):
+    """
+    Completes a unitary matrix given a list of orthonormal columns.
+
+    Args:
+        columns (List[Array]): List of initial orthonormal columns of dimension d.
+
+    Returns:
+        Array: Completed unitary matrix of dimension :math:`(d, d)`.
+    """
+
+    columns = qml.math.stack(columns).T
+    d = columns.shape[0]
+    k = columns.shape[1]
+
+    unitary = qml.math.zeros_like(columns @ columns.T)
+
+    if qml.math.get_interface(columns) == "jax":
+        unitary = unitary.at[:, :k].set(columns)
+
+    else:
+        unitary[:, :k] = columns
+
+    # Complete the remaining columns using Gram-Schmidt
+    np.random.seed(42)
+    for j in range(k, d):
+        random_vec = qml.math.array(np.random.rand(d)) + 1j * qml.math.array(np.random.rand(d))
+        for i in range(j):
+            random_vec -= qml.math.dot(qml.math.conj(unitary[:, i]), random_vec) * unitary[:, i]
+
+        random_vec /= qml.math.linalg.norm(random_vec)
+
+        if qml.math.get_interface(columns) == "jax":
+            unitary = unitary.at[:, j].set(random_vec)
+        else:
+            unitary[:, j] = random_vec
+
+    return unitary
 
 
 class MPSPrep(Operation):
@@ -25,7 +67,11 @@ class MPSPrep(Operation):
 
     .. note::
 
-        Currently, this operator can only be used with ``qml.device(“lightning.tensor”)``.
+        Tensor simulators are designed to run MPS structures more efficiently.
+        However, it may be useful to use state vector simulator if you are looking for a gate decomposition that
+        prepares the mps in a quantum circuit. For the gate decomposition is required to introduce work qubits
+        for the decomposition.
+
 
 
     Args:
@@ -33,6 +79,8 @@ class MPSPrep(Operation):
             product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
+        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The bond dimension of the mps
+                        is defined as ``2^len(work_wires)``. Default is ``None``
 
     **Example**
 
@@ -121,7 +169,7 @@ class MPSPrep(Operation):
             ]
     """
 
-    def __init__(self, mps, wires, id=None):
+    def __init__(self, mps, wires, work_wires=None, id=None):
 
         # Validate the shape and dimensions of the first tensor
         assert qml.math.isclose(
@@ -169,7 +217,17 @@ class MPSPrep(Operation):
         assert qml.math.isclose(
             new_dj0, dj2
         ), "Dimension mismatch: the last tensor's first dimension does not match the previous third dimension."
-        super().__init__(*mps, wires=wires, id=id)
+
+        self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
+
+        if work_wires:
+            self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
+            all_wires = self.hyperparameters["input_wires"] + self.hyperparameters["work_wires"]
+        else:
+            self.hyperparameters["work_wires"] = None
+            all_wires = self.hyperparameters["input_wires"]
+
+        super().__init__(*mps, wires=all_wires, id=id)
 
     @property
     def mps(self):
@@ -177,7 +235,10 @@ class MPSPrep(Operation):
         return self.data
 
     def _flatten(self):
-        hyperparameters = (("wires", self.wires),)
+        hyperparameters = (
+            ("wires", self.hyperparameters["input_wires"]),
+            ("work_wires", self.hyperparameters["work_wires"]),
+        )
         return self.mps, hyperparameters
 
     @classmethod
@@ -186,8 +247,14 @@ class MPSPrep(Operation):
         return cls(data, **hyperparams_dict)
 
     def map_wires(self, wire_map):
-        new_wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        return MPSPrep(self.mps, new_wires)
+        new_wires = Wires(
+            [wire_map.get(wire, wire) for wire in self.hyperparameters["input_wires"]]
+        )
+        new_work_wires = Wires(
+            [wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]]
+        )
+
+        return MPSPrep(self.mps, new_wires, new_work_wires)
 
     @classmethod
     def _primitive_bind_call(cls, mps, wires, id=None):
@@ -196,6 +263,67 @@ class MPSPrep(Operation):
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, mps=mps, wires=wires, id=id)  # pragma: no cover
         return cls._primitive.bind(*mps, wires=wires, id=id)
+
+    def decomposition(self):  # pylint: disable=arguments-differ
+        filtered_hyperparameters = {
+            key: value for key, value in self.hyperparameters.items() if key != "input_wires"
+        }
+        return self.compute_decomposition(
+            self.parameters, wires=self.hyperparameters["input_wires"], **filtered_hyperparameters
+        )
+
+    @staticmethod
+    def compute_decomposition(mps, wires, work_wires):
+        r"""Representation of the operator as a product of other operators.
+
+        Args:
+            mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
+                product of site matrices. See the usage details section for more information.
+
+            wires (Sequence[int]): wires that the template acts on
+            work_wires (Sequence[int]): list of extra qubits needed. The bond dimension of the mps
+                is defined as ``2^len(work_wires)``
+
+        Returns:
+            list[.Operator]: Decomposition of the operator
+        """
+
+        if work_wires is None:
+            raise AssertionError("To decompose MPSPrep you must specify `work_wires`.")
+
+        ops = []
+        n_wires = len(work_wires) + 1
+
+        for i in range(len(mps)):
+            vectors = []
+            Ai = mps[i]
+
+            # encodes the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
+            if i == 0:
+                Ai = Ai.reshape((1, *Ai.shape))
+            elif i == len(mps) - 1:
+                Ai = Ai.reshape((*Ai.shape, 1))
+
+            for column in Ai:
+
+                vector = qml.math.zeros(2**n_wires, like=mps[0])
+
+                if qml.math.get_interface(mps[0]) == "jax":
+                    vector = vector.at[: len(column[0])].set(column[0])
+                    vector = vector.at[
+                        2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])
+                    ].set(column[1])
+
+                else:
+                    vector[: len(column[0])] = column[0]
+                    vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
+
+                vectors.append(vector)
+
+            matrix = complete_unitary(vectors)
+            ops.append(qml.QubitUnitary(matrix, wires=[wires[i]] + work_wires))
+
+        return ops
 
 
 if MPSPrep._primitive is not None:  # pylint: disable=protected-access
