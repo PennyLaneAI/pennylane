@@ -39,15 +39,17 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
+* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been deprecated. Instead, please use
   :meth:`~.Operator.terms` instead.
 
-  - deprecated in v0.35
+  - Deprecated in v0.35
+  - Will be removed in v0.42
 
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
 
   - Deprecated in v0.36
+  - Will be removed in v0.42
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------

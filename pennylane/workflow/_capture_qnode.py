@@ -189,8 +189,6 @@ def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_di
         raise NotImplementedError(
             "Overriding shots is not yet supported with the program capture execution."
         )
-    if qnode_kwargs["diff_method"] not in {"backprop", "best"}:
-        raise NotImplementedError("Only backpropagation derivatives are supported at this time.")
 
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
@@ -250,6 +248,7 @@ def _qnode_batching_rule(
                 "using parameter broadcasting to a quantum operation that supports batching.",
                 UserWarning,
             )
+
         # To resolve this ambiguity, we might add more properties to the AbstractOperator
         # class to indicate which operators support batching and check them here.
         # As above, at this stage we raise a warning and give the user full flexibility.
@@ -290,7 +289,14 @@ def _backprop(args, tangents, **impl_kwargs):
     return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
 
 
-diff_method_map = {"backprop": _backprop}
+def _finite_diff(args, tangents, **impl_kwargs):
+    f = partial(qnode_prim.bind, **impl_kwargs)
+    return qml.gradients.finite_diff_jvp(
+        f, args, tangents, **impl_kwargs["qnode_kwargs"]["gradient_kwargs"]
+    )
+
+
+diff_method_map = {"backprop": _backprop, "finite-diff": _finite_diff}
 
 
 def _resolve_diff_method(diff_method: str, device) -> str:
@@ -398,17 +404,23 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     flat_fn = FlatFn(qfunc)
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
+    qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
-    qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs}
+    qnode_kwargs = {
+        "diff_method": qnode.diff_method,
+        **execute_kwargs,
+        "gradient_kwargs": qnode.gradient_kwargs,
+    }
 
     flat_args = jax.tree_util.tree_leaves(args)
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
+        *abstract_shapes,
         *flat_args,
         shots=shots,
         qnode=qnode,
