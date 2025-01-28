@@ -253,9 +253,9 @@ class TestClassicalShadow:
         shots = 100
 
         circuit = get_circuit(wires, shots, True)
-        circuit.construct((), {})
+        tape = qml.workflow.construct_tape(circuit)()
 
-        res = qml.execute([circuit.tape], circuit.device, None)[0]
+        res = qml.execute([tape], circuit.device, None)[0]
         expected_shape = qml.classical_shadow(wires=range(wires)).shape(shots, wires)
 
         assert res.shape == expected_shape
@@ -365,6 +365,25 @@ class TestClassicalShadow:
         assert qml.math.shape(res[0]) == (2, shots, wires)
         assert qml.math.shape(res[1]) == ()
 
+    @pytest.mark.parametrize("shots", shots_list)
+    @pytest.mark.parametrize("params", [[0.1, 0.2], [0.1, 0.2, 0.3]])
+    def test_parameter_broadcasting(self, wires, shots, params):
+        """Test that the classical_shadow measurement process supports parameter broadcasting"""
+
+        @qml.qnode(qml.device("default.qubit", wires=wires, shots=shots))
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.classical_shadow(wires=range(wires))
+
+        result = circuit(params)
+        sequential_result = [circuit(i) for i in params]
+
+        assert isinstance(result, np.ndarray)
+        assert qml.math.shape(result) == (len(params), 2, shots, wires)
+        for seq_res, res in zip(sequential_result, result):
+            assert qml.math.shape(seq_res) == qml.math.shape(res)
+
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires, shots=shots)
@@ -430,9 +449,9 @@ class TestExpvalMeasurement:
         H = qml.PauliZ(0)
 
         circuit = hadamard_circuit(wires, shots)
-        circuit.construct((H,), {})
+        tape = qml.workflow.construct_tape(circuit)(H)
 
-        res = qml.execute([circuit.tape], circuit.device, None)[0]
+        res = qml.execute([tape], circuit.device, None)[0]
         expected_shape = qml.shadow_expval(H).shape(shots, wires)
 
         assert res.shape == expected_shape
@@ -460,16 +479,16 @@ class TestExpvalMeasurement:
         with pytest.raises(qml.DeviceError, match=msg):
             _ = circuit(H, k=10)
 
-    def test_multi_measurement_allowed(self):
+    def test_multi_measurement_allowed(self, seed):
         """Test that no error is raised when classical shadows is returned
         with other measurement processes"""
-        dev = qml.device("default.qubit", wires=2, shots=10000)
+        dev = qml.device("default.qubit", wires=2, shots=10000, seed=seed)
 
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+            return qml.shadow_expval(qml.PauliZ(0), seed=seed), qml.expval(qml.PauliZ(0))
 
         res = circuit()
         assert isinstance(res, tuple)
@@ -486,6 +505,24 @@ class TestExpvalMeasurement:
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], ShadowExpvalMP)
+
+    @pytest.mark.parametrize("params", [[0.1, 0.2], [0.1, 0.2, 0.3]])
+    def test_expval_parameter_broadcasting(self, params):
+        """Test that the shadow_expval measurement process supports parameter broadcasting"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2, shots=10))
+        def circuit(x):
+            qml.RX(x, wires=1)
+            qml.Hadamard(wires=0)
+            return qml.shadow_expval([qml.PauliZ(0), qml.PauliZ(1)])
+
+        result = circuit(params)
+        sequential_result = [circuit(i) for i in params]
+
+        assert isinstance(result, np.ndarray)
+        assert qml.math.shape(result)[0] == len(params)
+        for seq_res, res in zip(sequential_result, result):
+            assert qml.math.shape(seq_res) == qml.math.shape(res)
 
 
 obs_hadamard = [
@@ -567,11 +604,7 @@ class TestExpvalForward:
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)
 
-        legacy_msg = "Observable must be a linear combination of Pauli observables"
-        new_opmath_msg = "Observable must have a valid pauli representation."
-        msg = new_opmath_msg if qml.operation.active_new_opmath() else legacy_msg
-
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="Observable must have a valid pauli representation."):
             circuit(qml.Hadamard(0) @ qml.Hadamard(2))
 
 
@@ -758,9 +791,8 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
         wires, basis=circuit_basis, shots=shots, interface=interface, device=device
     )
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
-    new_bits, new_recipes = circuit.tape.measurements[0].process(
-        circuit.tape, circuit.device.target_device
-    )
+    tape = qml.workflow.construct_tape(circuit)()
+    new_bits, new_recipes = tape.measurements[0].process(tape, circuit.device.target_device)
 
     # test that the recipes follow a rough uniform distribution
     ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
@@ -807,8 +839,8 @@ def test_hadamard_expval(k=1, obs=obs_hadamard, expected=expected_hadamard):
     circuit = hadamard_circuit_legacy(3, shots=50000)
     actual = circuit(obs, k=k)
 
-    print(circuit.tape)
-    new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device.target_device)
+    tape = qml.workflow.construct_tape(circuit)(obs, k=k)
+    new_actual = tape.measurements[0].process(tape, circuit.device.target_device)
 
     assert actual.shape == (len(obs_hadamard),)
     assert actual.dtype == np.float64

@@ -56,8 +56,10 @@ class TestPauliVSpace:
         vspace = PauliVSpace(ops1)
 
         assert all(isinstance(op, PauliSentence) for op in vspace.basis)
-        assert np.allclose(vspace._M, [[1.0, 1.0], [1.0, 0.0]]) or np.allclose(
-            vspace._M, [[1.0, 0.0], [1.0, 1.0]]
+        assert np.allclose(
+            vspace._M, [[1 / np.sqrt(2), 1.0], [1 / np.sqrt(2), 0.0]]
+        ) or np.allclose(
+            vspace._M, [[1 / np.sqrt(2), 0.0], [1 / np.sqrt(2), 1.0]]
         )  # the ordering is random as it is taken from a dictionary that has no natural ordering
         assert vspace.basis == ops1[:-1]
         assert vspace._rank == 2

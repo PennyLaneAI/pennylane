@@ -26,7 +26,7 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -34,7 +34,7 @@ from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 
-from .composite import CompositeOp
+from .composite import CompositeOp, handle_recursion_error
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
@@ -98,7 +98,6 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
     """
-    ops = tuple(convert_to_opmath(op) for op in ops)
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
             return ops[0]
@@ -231,6 +230,7 @@ class Prod(CompositeOp):
 
     _op_symbol = "@"
     _math_op = math.prod
+    grad_method = None
 
     @property
     def is_hermitian(self):
@@ -256,7 +256,8 @@ class Prod(CompositeOp):
         # This is temporary property to smoothen the transition to the new operator arithmetic system.
         # In particular, the __matmul__ (@ python operator) method between operators now generates Prod instead of Tensor instances.
         warnings.warn(
-            "Accessing the terms of a tensor product operator via op.obs is deprecated, please use op.operands instead.",
+            "Accessing the terms of a tensor product operator via op.obs is deprecated and will be removed "
+            "in Pennylane v0.42. Instead, please use op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         return self.operands
@@ -272,6 +273,7 @@ class Prod(CompositeOp):
             return [qml.apply(op) for op in self[::-1]]
         return list(self[::-1])
 
+    @handle_recursion_error
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
         if self.pauli_rep:
@@ -280,13 +282,7 @@ class Prod(CompositeOp):
         mats: list[TensorLike] = []
         batched: list[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
-            gen = (
-                (
-                    (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix()),
-                    op.wires,
-                )
-                for op in ops
-            )
+            gen = ((op.matrix(), op.wires) for op in ops)
 
             reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
 
@@ -308,6 +304,7 @@ class Prod(CompositeOp):
             )
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
+    @handle_recursion_error
     def sparse_matrix(self, wire_order=None):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
@@ -325,11 +322,13 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     @property
+    @handle_recursion_error
     def has_sparse_matrix(self):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     # pylint: disable=protected-access
     @property
+    @handle_recursion_error
     def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
         This property is a temporary solution that should not exist long-term and should not be
@@ -352,14 +351,10 @@ class Prod(CompositeOp):
     def adjoint(self):
         return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
 
-    @property
-    def arithmetic_depth(self) -> int:
-        return 1 + max(factor.arithmetic_depth for factor in self)
-
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            return reduce(lambda a, b: a @ b, operand_pauli_reps)
+            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
 
     def _simplify_factors(self, factors: tuple[Operator]) -> tuple[complex, Operator]:
@@ -377,6 +372,7 @@ class Prod(CompositeOp):
         new_factors.remove_factors(wires=self.wires)
         return new_factors.global_phase, new_factors.factors
 
+    @handle_recursion_error
     def simplify(self) -> Union["Prod", Sum]:
         r"""
         Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
@@ -431,6 +427,7 @@ class Prod(CompositeOp):
 
         return op_list
 
+    @handle_recursion_error
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
@@ -486,7 +483,7 @@ class Prod(CompositeOp):
 
         .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
-            "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            "Prod.coeffs is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         coeffs, _ = self.terms()
@@ -501,7 +498,7 @@ class Prod(CompositeOp):
 
         .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
-            "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
+            "Prod.ops is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         _, ops = self.terms()

@@ -15,6 +15,7 @@
 import os
 import re
 import sys
+from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -56,7 +57,7 @@ ogp_social_cards = {
     "site_url": "https://docs.pennylane.ai/",
     "line_color": "#03b2ff",
 }
-ogp_image = "_static/header-tall.png"
+ogp_image = "_static/opengraph.png"
 
 
 # The base URL with a proper language and version.
@@ -82,7 +83,7 @@ copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {
     "demo": ("https://pennylane.ai/qml/", None),
-    "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None)
+    "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
 mathjax_path = (
@@ -102,7 +103,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "PennyLane"
-copyright = "2023, Xanadu Quantum Technologies"
+copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
 author = "Xanadu Inc."
 
 add_module_names = False
@@ -112,7 +113,9 @@ add_module_names = False
 # built documents.
 
 import pennylane
-pennylane.Hamiltonian = pennylane.ops.Hamiltonian
+
+pennylane.Hamiltonian = pennylane.ops.op_math.linear_combination.LinearCombination
+
 
 # The full version, including alpha/beta/rc tags.
 release = pennylane.__version__
@@ -253,11 +256,11 @@ html_theme = "pennylane"
 
 # Xanadu theme options (see theme.conf for more information).
 html_theme_options = {
-    "navbar_active_link": 4,
     "extra_copyrights": [
         "TensorFlow, the TensorFlow logo, and any related marks are trademarks " "of Google Inc."
     ],
     "google_analytics_tracking_id": "G-C480Z9JL0D",
+    "search_on_pennylane_ai": True,
 }
 
 edit_on_github_project = "PennyLaneAI/pennylane"

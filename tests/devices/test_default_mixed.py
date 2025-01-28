@@ -24,6 +24,8 @@ import pytest
 import pennylane as qml
 from pennylane import BasisState, DeviceError, StatePrep
 from pennylane.devices import DefaultMixed
+from pennylane.devices.default_mixed import DefaultMixedNewAPI
+from pennylane.math import Interface
 from pennylane.ops import (
     CNOT,
     CZ,
@@ -911,7 +913,6 @@ class TestApplyOperation:
             qml.probs(op=qml.Y(0)),
             qml.probs(op=qml.X(0) @ qml.Y(1)),
             qml.vn_entropy(wires=[0]),
-            qml.vn_entanglement_entropy(wires0=[1], wires1=[0]),
             qml.mutual_info(wires0=[1], wires1=[0]),
             qml.purity(wires=[1]),
         ],
@@ -1203,8 +1204,8 @@ class TestReadoutError:
 
     @pytest.mark.parametrize("prob", [0, 0.5, 1])
     @pytest.mark.parametrize("nr_wires", [2, 3])
-    def test_readout_vnentropy_and_vnentanglemententropy_and_mutualinfo(self, nr_wires, prob):
-        """Tests the output of qml.vn_entropy, qml.vn_entanglement_entropy, and qml.mutual_info
+    def test_readout_vnentropy_and_mutualinfo(self, nr_wires, prob):
+        """Tests the output of qml.vn_entropy and qml.mutual_info
         are not affected by readout error"""
         dev = qml.device("default.mixed", wires=nr_wires, readout_prob=prob)
 
@@ -1212,12 +1213,11 @@ class TestReadoutError:
         def circuit():
             return (
                 qml.vn_entropy(wires=0, log_base=2),
-                qml.vn_entanglement_entropy(wires0=[0], wires1=[1], log_base=2),
                 qml.mutual_info(wires0=[0], wires1=[1], log_base=2),
             )
 
         res = circuit()
-        expected = np.array([0, 0, 0])
+        expected = np.array([0, 0])
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("nr_wires", [2, 3])
@@ -1298,3 +1298,77 @@ class TestInit:
             match=msg,
         ):
             qml.device("default.mixed", wires=1, shots=1, analytic=True)
+
+
+class TestDefaultMixedNewAPIInit:
+    """Unit tests for DefaultMixedNewAPI initialization"""
+
+    def test_name_property(self):
+        """Test the name property returns correct device name"""
+        dev = DefaultMixedNewAPI(wires=1)
+        assert dev.name == "default.mixed"
+
+    @pytest.mark.parametrize("readout_prob", [-0.1, 1.1, 2.0])
+    def test_readout_probability_validation(self, readout_prob):
+        """Test readout probability validation during initialization"""
+        with pytest.raises(ValueError, match="readout error probability should be in the range"):
+            DefaultMixedNewAPI(wires=1, readout_prob=readout_prob)
+
+    @pytest.mark.parametrize("readout_prob", ["0.5", [0.5], (0.5,)])
+    def test_readout_probability_type_validation(self, readout_prob):
+        """Test readout probability type validation"""
+        with pytest.raises(TypeError, match="readout error probability should be an integer"):
+            DefaultMixedNewAPI(wires=1, readout_prob=readout_prob)
+
+    def test_seed_global(self):
+        """Test global seed initialization"""
+        dev = DefaultMixedNewAPI(wires=1, seed="global")
+        assert dev._rng is not None
+        assert dev._prng_key is None
+
+    @pytest.mark.jax
+    def test_seed_jax(self):
+        """Test JAX PRNGKey seed initialization"""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        dev = DefaultMixedNewAPI(wires=1, seed=jax.random.PRNGKey(0))
+        assert dev._rng is not None
+        assert dev._prng_key is not None
+
+    def test_supports_derivatives(self):
+        """Test supports_derivatives method"""
+        dev = DefaultMixedNewAPI(wires=1)
+        assert dev.supports_derivatives()
+        assert not dev.supports_derivatives(
+            execution_config=qml.devices.execution_config.ExecutionConfig(
+                gradient_method="finite-diff"
+            )
+        )
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3, 10, 22])
+    def test_valid_wire_numbers(self, nr_wires):
+        """Test initialization with different valid wire numbers"""
+        dev = DefaultMixedNewAPI(wires=nr_wires)
+        assert len(dev.wires) == nr_wires
+
+    def test_wire_initialization_list(self):
+        """Test initialization with wire list"""
+        dev = DefaultMixedNewAPI(wires=["a", "b", "c"])
+        assert dev.wires == qml.wires.Wires(["a", "b", "c"])
+
+    def test_too_many_wires(self):
+        """Test error raised when too many wires requested"""
+        with pytest.raises(ValueError, match="This device does not currently support"):
+            DefaultMixedNewAPI(wires=24)
+
+    def test_execute_no_diff_method(self):
+        """Test that the execute method is defined"""
+        dev = DefaultMixedNewAPI(wires=[0, 1])
+        execution_config = qml.devices.execution_config.ExecutionConfig(
+            gradient_method="finite-diff"
+        )  # in-valid one for this device
+        processed_config = dev._setup_execution_config(execution_config)
+        assert (
+            processed_config.interface is Interface.NUMPY
+        ), "The interface should be set to numpy for an invalid gradient method"

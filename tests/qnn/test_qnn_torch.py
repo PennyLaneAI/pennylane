@@ -572,12 +572,12 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
 
         x = torch.ones(n_qubits)
 
-        layer.construct((x,), {})
+        tape = qml.workflow.construct_tape(layer)(x)
 
-        assert layer.tape is not None
+        assert tape is not None
         assert (
-            len(layer.tape.get_parameters(trainable_only=False))
-            == len(layer.tape.get_parameters(trainable_only=True)) + 1
+            len(tape.get_parameters(trainable_only=False))
+            == len(tape.get_parameters(trainable_only=True)) + 1
         )
 
 
@@ -635,7 +635,7 @@ def test_qnode_interface_not_mutated(interface):
     assert (
         qlayer.qnode.interface
         == circuit.interface
-        == qml.workflow.execution.INTERFACE_MAP[interface]
+        == qml.math.get_canonical_interface_name(interface).value
     )
 
 

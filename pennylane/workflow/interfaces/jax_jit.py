@@ -59,7 +59,7 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
 
     """
     if isinstance(result, dict):
-        return {key: jnp.array(value) for key, value in result.items()}
+        return {key: _to_jax(value) for key, value in result.items()}
     if isinstance(result, (list, tuple)):
         return tuple(_to_jax(r) for r in result)
     return jnp.array(result)
@@ -169,7 +169,9 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
 
     # first order way of determining native parameter broadcasting support
     # will be inaccurate when inclusion of broadcast_expand depends on ExecutionConfig values (like adjoint)
-    device_supports_vectorization = qml.transforms.broadcast_expand not in device.preprocess()[0]
+    device_supports_vectorization = (
+        qml.transforms.broadcast_expand not in device.preprocess_transforms()
+    )
     out = jax.pure_callback(
         pure_callback_wrapper, shape_dtype_structs, params, vectorized=device_supports_vectorization
     )
@@ -240,7 +242,7 @@ def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the Jacobian for the input tapes.
-        device (pennylane.Device, pennylane.devices.Device): The device used for execution. Used to determine the shapes of outputs for
+        device (pennylane.devices.Device): The device used for execution. Used to determine the shapes of outputs for
             pure callback calls.
 
     Returns:
@@ -267,7 +269,7 @@ def jax_jit_vjp_execute(tapes, execute_fn, jpc, device=None):
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
             for the input tapes.
-        device (pennylane.Device, pennylane.devices.Device): The device used for execution. Used to determine the shapes of outputs for
+        device (pennylane.devices.Device): The device used for execution. Used to determine the shapes of outputs for
             pure callback calls.
 
     Returns:

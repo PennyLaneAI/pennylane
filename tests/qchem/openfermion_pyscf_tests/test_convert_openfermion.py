@@ -183,7 +183,7 @@ class TestFromOpenFermion:
         of_op = openfermion.FermionOperator("2^ 3")
         converted_op = qml.qchem.from_openfermion(of_op)
 
-        assert isinstance(converted_op, qml.fermi.FermiWord)
+        assert isinstance(converted_op, qml.FermiWord)
 
     def test_convert_fermionic_type_fs(self):
         r"""Test that FermiSentence object is returned when there are multiple
@@ -192,7 +192,7 @@ class TestFromOpenFermion:
         of_op = openfermion.FermionOperator("2^ 3") + openfermion.FermionOperator("1^ 2")
         converted_op = qml.qchem.from_openfermion(of_op)
 
-        assert isinstance(converted_op, qml.fermi.FermiSentence)
+        assert isinstance(converted_op, qml.FermiSentence)
 
     def test_tol_fermionic(self):
         r"""Test that terms with coefficients larger than tolerance are discarded"""
@@ -226,19 +226,17 @@ class TestFromOpenFermion:
 class TestToOpenFermion:
 
     FERMI_AND_OF_OPS = (
-        ((qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"})), (openfermion.FermionOperator("0^ 1"))),
+        ((qml.FermiWord({(0, 0): "+", (1, 1): "-"})), (openfermion.FermionOperator("0^ 1"))),
         (
-            (qml.fermi.FermiWord({(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"})),
+            (qml.FermiWord({(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"})),
             (openfermion.FermionOperator("1 0^ 3^ 2")),
         ),
         (
             (
-                qml.fermi.FermiSentence(
+                qml.FermiSentence(
                     {
-                        qml.fermi.FermiWord(
-                            {(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"}
-                        ): 0.5,
-                        qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"}): 0.3,
+                        qml.FermiWord({(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"}): 0.5,
+                        qml.FermiWord({(0, 0): "+", (1, 1): "-"}): 0.3,
                     }
                 )
             ),
@@ -272,12 +270,10 @@ class TestToOpenFermion:
 
     COMPLEX_OPS = (
         (
-            qml.fermi.FermiSentence(
+            qml.FermiSentence(
                 {
-                    qml.fermi.FermiWord(
-                        {(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"}
-                    ): 1e-08j,
-                    qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"}): 0.3,
+                    qml.FermiWord({(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"}): 1e-08j,
+                    qml.FermiWord({(0, 0): "+", (1, 1): "-"}): 0.3,
                 }
             )
         ),
@@ -310,7 +306,7 @@ class TestToOpenFermion:
         assert q_op == of_op
 
     INVALID_OPS = (
-        qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+        qml.prod(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
         qml.prod(qml.PauliX(0), qml.Hadamard(1)),
         qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
     )
@@ -321,7 +317,7 @@ class TestToOpenFermion:
         _match = "Expected a Pennylane operator with a valid Pauli word representation,"
 
         pl_op = qml.ops.LinearCombination(
-            np.array([0.1 + 0.0j, 0.0]), [qml.operation.Tensor(qml.PauliX(0)), op]
+            np.array([0.1 + 0.0j, 0.0]), [qml.prod(qml.PauliX(0)), op]
         )
         with pytest.raises(ValueError, match=_match):
             qml.to_openfermion(qml.to_openfermion(pl_op))
@@ -339,9 +335,9 @@ class TestToOpenFermion:
             )
 
     OPS_FERMI_WIRE = (
-        ((qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"})), ({0: "a", 1: 2})),
+        ((qml.FermiWord({(0, 0): "+", (1, 1): "-"})), ({0: "a", 1: 2})),
         (
-            (qml.fermi.FermiSentence({qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2})),
+            (qml.FermiSentence({qml.FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2})),
             ({0: "a", 1: 2}),
         ),
     )

@@ -33,9 +33,12 @@ quantum-classical programs.
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
-    ~qnode_call
+    ~determine_abstracted_axes
+    ~expand_plxpr_transforms
+    ~run_autograph
+    ~make_plxpr
+    ~PlxprInterpreter
     ~FlatFn
-
 
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
 primitives and abstract types.
@@ -55,6 +58,16 @@ import ``from pennylane.capture.primitives import *``.
     for_loop_prim
     qnode_prim
     while_loop_prim
+
+See also:
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~tape.plxpr_to_tape
+
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -146,6 +159,8 @@ If needed, developers can also override the implementation method of the primiti
     def _(*args, **kwargs):
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
+from typing import Callable
+
 from .switches import disable, enable, enabled
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .capture_operators import create_operator_primitive
@@ -154,8 +169,9 @@ from .capture_measurements import (
     create_measurement_wires_primitive,
     create_measurement_mcm_primitive,
 )
-from .capture_qnode import qnode_call
 from .flatfn import FlatFn
+from .make_plxpr import make_plxpr, run_autograph
+from .dynamic_shapes import determine_abstracted_axes
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -163,23 +179,36 @@ from .flatfn import FlatFn
 AbstractOperator: type
 AbstractMeasurement: type
 qnode_prim: "jax.core.Primitive"
+PlxprInterpreter: type  # pylint: disable=redefined-outer-name
+expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
 
 
+# pylint: disable=import-outside-toplevel, redefined-outer-name
 def __getattr__(key):
     if key == "AbstractOperator":
-        from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
+        from .primitives import _get_abstract_operator
 
         return _get_abstract_operator()
 
     if key == "AbstractMeasurement":
-        from .primitives import _get_abstract_measurement  # pylint: disable=import-outside-toplevel
+        from .primitives import _get_abstract_measurement
 
         return _get_abstract_measurement()
 
     if key == "qnode_prim":
-        from .capture_qnode import _get_qnode_prim  # pylint: disable=import-outside-toplevel
+        from ..workflow._capture_qnode import qnode_prim
 
-        return _get_qnode_prim()
+        return qnode_prim
+
+    if key == "PlxprInterpreter":
+        from .base_interpreter import PlxprInterpreter
+
+        return PlxprInterpreter
+
+    if key == "expand_plxpr_transforms":
+        from .expand_transforms import expand_plxpr_transforms
+
+        return expand_plxpr_transforms
 
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
@@ -194,9 +223,12 @@ __all__ = (
     "create_measurement_obs_primitive",
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
-    "qnode_call",
+    "expand_plxpr_transforms",
     "AbstractOperator",
     "AbstractMeasurement",
     "qnode_prim",
+    "PlxprInterpreter",
     "FlatFn",
+    "run_autograph",
+    "make_plxpr",
 )

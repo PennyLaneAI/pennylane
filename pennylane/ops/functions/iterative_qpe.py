@@ -15,29 +15,25 @@
 This module contains the qml.iterative_qpe function.
 """
 
-from warnings import warn
 
 import numpy as np
 
 import pennylane as qml
 
 
-def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
+def iterative_qpe(base, aux_wire, iters):
     r"""Performs the `iterative quantum phase estimation <https://arxiv.org/pdf/quant-ph/0610214.pdf>`_ circuit.
 
     Given a unitary :math:`U`, this function applies the circuit for iterative quantum phase
     estimation and returns a list of mid-circuit measurements with qubit reset.
 
     Args:
-      base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
-      aux_wire (Union[Wires, int, str]): the wire to be used for the estimation
-      iters (int): the number of measurements to be performed
-      ancilla (Union[Wires, int, str]): the wire to be used for the estimation. This argument
-        is deprecated, and the ``aux_wire`` argument should be used instead. If both arguments
-        are provided, ``aux_wire`` will be used and ``ancilla`` will be ignored.
+        base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
+        aux_wire (Union[Wires, int, str]): the wire to be used for the estimation
+        iters (int): the number of measurements to be performed
 
     Returns:
-      list[MidMeasureMP]: the list of measurements performed
+        list[MeasurementValue]: the abstract results of the mid-circuit measurements
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`, :func:`~.measure`
 
@@ -50,13 +46,13 @@ def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
         @qml.qnode(dev)
         def circuit():
 
-          # Initial state
-          qml.X(0)
+            # Initial state
+            qml.X(0)
 
-          # Iterative QPE
-          measurements = qml.iterative_qpe(qml.RZ(2.0, wires=[0]), aux_wire=1, iters=3)
+            # Iterative QPE
+            measurements = qml.iterative_qpe(qml.RZ(2.0, wires=[0]), aux_wire=1, iters=3)
 
-          return qml.sample(measurements)
+            return qml.sample(measurements)
 
     .. code-block:: pycon
 
@@ -79,37 +75,35 @@ def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
                                                                      ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                       ╚═══════╡ ╰Sample[MCM]
     """
-    missing = []
-    if aux_wire == "unset" and ancilla == "unset":
-        missing.append("'aux_wire'")
-    if iters == "unset":
-        missing.append("'iters'")
+    if qml.capture.enabled():
+        measurements = qml.math.zeros(iters, dtype=int, like="jax")
+    else:
+        measurements = [0] * iters
 
-    if missing:
-        missing_args = " and ".join(missing)
-        raise TypeError(
-            f"iterative_qpe() missing {len(missing)} required positional argument(s): {missing_args}"
-        )
-
-    if ancilla != "unset":
-        warn(
-            "The 'ancilla' argument for qml.iterative_qpe has been deprecated. Please use the "
-            "'aux_wire' argument instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        if aux_wire == "unset":
-            aux_wire = ancilla
-
-    measurements = []
-
-    for i in range(iters):
-        qml.Hadamard(wires=aux_wire)
-        qml.ctrl(qml.pow(base, z=2 ** (iters - i - 1)), control=aux_wire)
-
-        for ind, meas in enumerate(measurements):
-            qml.cond(meas, qml.PhaseShift)(-2.0 * np.pi / 2 ** (ind + 2), wires=aux_wire)
+    def measurement_loop(i, measurements, target):
+        # closure: aux_wire, iters, target
 
         qml.Hadamard(wires=aux_wire)
-        measurements.insert(0, qml.measure(wires=aux_wire, reset=True))
+        qml.ctrl(qml.pow(target, z=2 ** (iters - i - 1)), control=aux_wire)
 
-    return measurements
+        def conditional_loop(j):
+            # closure: measurements, iters, i, aux_wire
+            meas = measurements[iters - i + j]
+
+            def cond_func():
+                qml.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
+
+            qml.cond(meas, cond_func)()
+
+        qml.for_loop(i)(conditional_loop)()
+
+        qml.Hadamard(wires=aux_wire)
+        m = qml.measure(wires=aux_wire, reset=True)
+        if qml.capture.enabled():
+            measurements = measurements.at[iters - i - 1].set(m)
+        else:
+            measurements[iters - i - 1] = m
+
+        return measurements, target
+
+    return qml.for_loop(iters)(measurement_loop)(measurements, base)[0]

@@ -14,6 +14,8 @@
 """Contains transforms and helpers functions for decomposing arbitrary two-qubit
 unitary operations into elementary gates.
 """
+import warnings
+
 import numpy as np
 
 import pennylane as qml
@@ -41,6 +43,22 @@ from .single_qubit_unitary import one_qubit_decomposition
 #       Can't differentiate w.r.t. type <class 'jaxlib.xla_extension.Array'>
 #
 ###################################################################################
+
+
+def _check_differentiability_warning(U):
+    """Check conditions that may lead to non-differentiability and raise appropriate warnings.
+
+    Args:
+        U (tensor_like): Input unitary matrix to check.
+    """
+
+    if qml.math.requires_grad(U):
+        warnings.warn(
+            "The two-qubit decomposition may not be differentiable when the input "
+            "unitary depends on trainable parameters.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
 
 # This gate E is called the "magic basis". It can be used to convert between
@@ -114,6 +132,8 @@ def _compute_num_cnots(U):
     u = math.dot(Edag, math.dot(U, E))
     gammaU = math.dot(u, math.T(u))
     trace = math.trace(gammaU)
+    gU2 = math.dot(gammaU, gammaU)
+    id4 = math.eye(4)
 
     # Case: 0 CNOTs (tensor product), the trace is +/- 4
     # We need a tolerance of around 1e-7 here in order to work with the case where U
@@ -121,15 +141,9 @@ def _compute_num_cnots(U):
     if math.allclose(trace, 4, atol=1e-7) or math.allclose(trace, -4, atol=1e-7):
         return 0
 
-    # To distinguish between 1/2 CNOT cases, we need to look at the eigenvalues
-    evs = math.linalg.eigvals(gammaU)
-
-    sorted_evs = math.sort(math.imag(evs))
-
     # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
-    # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield
-    # a trace 0.
-    if math.allclose(trace, 0j, atol=1e-7) and math.allclose(sorted_evs, [-1, -1, 1, 1]):
+    # Try gammaU^2 + I = 0 along with zero trace
+    if math.allclose(trace, 0j, atol=1e-7) and math.allclose(gU2 + id4, 0):
         return 1
 
     # Case: 2 CNOTs, the trace has only a real part (or is 0)
@@ -604,6 +618,7 @@ def two_qubit_decomposition(U, wires):
      Rot(tensor(-3.78673588, requires_grad=True), tensor(2.03936812, requires_grad=True), tensor(-2.46956972, requires_grad=True), wires=[0])]
 
     """
+    _check_differentiability_warning(U)
     # First, we note that this method works only for SU(4) gates, meaning that
     # we need to rescale the matrix by its determinant.
     U = _convert_to_su4(U)

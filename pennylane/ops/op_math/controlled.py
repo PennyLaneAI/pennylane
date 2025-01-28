@@ -28,10 +28,9 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
-from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.compiler import compiler
 from pennylane.operation import Operator
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
@@ -103,7 +102,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None):
     and individual :class:`~.operation.Operator`'s.
 
     >>> qml.ctrl(qml.Hadamard(0), (1,2))
-    Controlled(Hadamard(wires=[0]), control_wires=[1, 2])
+    Controlled(H(0), control_wires=[1, 2])
 
     Controlled operations work with all other forms of operator math and simplification:
 
@@ -175,7 +174,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
     # Flatten nested controlled operations to a multi-controlled operation for better
     # decomposition algorithms. This includes special cases like CRX, CRot, etc.
     if isinstance(op, Controlled):
-        work_wires = work_wires or []
+        work_wires = () if work_wires is None else work_wires
         return ctrl(
             op.base,
             control=control + op.control_wires,
@@ -204,6 +203,9 @@ def _ctrl_transform(op, control, control_values, work_wires):
     def wrapper(*args, **kwargs):
         qscript = qml.tape.make_qscript(op)(*args, **kwargs)
 
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+
         # flip control_values == 0 wires here, so we don't have to do it for each individual op.
         flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
         op_control_values = None if flip_control_on_zero else control_values
@@ -230,10 +232,15 @@ def _ctrl_transform(op, control, control_values, work_wires):
 def _get_ctrl_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
-    import jax  # pylint: disable=import-outside-toplevel
 
-    ctrl_prim = create_non_jvp_primitive()("ctrl_transform")
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    ctrl_prim = NonInterpPrimitive("ctrl_transform")
     ctrl_prim.multiple_results = True
+    ctrl_prim.prim_type = "higher_order"
 
     @ctrl_prim.def_impl
     def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
@@ -265,11 +272,16 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
-        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs))(*args)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(
+            *args
+        )
+        flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
         ctrl_prim.bind(
             *jaxpr.consts,
-            *args,
+            *abstract_shapes,
+            *flat_args,
             *control_wires,
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
@@ -486,9 +498,16 @@ class Controlled(SymbolicOp):
         )
 
     # pylint: disable=too-many-function-args
-    def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
+    def __init__(
+        self,
+        base,
+        control_wires: WiresLike,
+        control_values=None,
+        work_wires: WiresLike = None,
+        id=None,
+    ):
         control_wires = Wires(control_wires)
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         if control_values is None:
             control_values = [True] * len(control_wires)

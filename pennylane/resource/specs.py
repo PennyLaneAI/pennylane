@@ -46,13 +46,13 @@ def specs(
 
     .. code-block:: python3
 
-        from pennylane import numpy as pnp
+        from pennylane import numpy as np
 
-        x = pnp.array([0.1, 0.2])
+        x = np.array([0.1, 0.2])
         hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
 
         dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=pnp.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
         def circuit(x, add_ry=True):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=(0,1))
@@ -103,8 +103,8 @@ def specs(
         return the same results:
 
         >>> print(qml.specs(circuit, level=0)(0.1)["resources"])
-        wires: 2
-        gates: 6
+        num_wires: 2
+        num_gates: 6
         depth: 6
         shots: Shots(total=None)
         gate_types:
@@ -115,8 +115,8 @@ def specs(
         We then check the resources after applying all transforms:
 
         >>> print(qml.specs(circuit, level=None)(0.1)["resources"])
-        wires: 2
-        gates: 2
+        num_wires: 2
+        num_gates: 2
         depth: 1
         shots: Shots(total=None)
         gate_types:
@@ -127,8 +127,8 @@ def specs(
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
         >>> print(qml.specs(circuit, level=2)(0.1)["resources"])
-        wires: 2
-        gates: 3
+        num_wires: 2
+        num_gates: 3
         depth: 3
         shots: Shots(total=None)
         gate_types:
@@ -194,7 +194,13 @@ def specs(
         batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
         for tape in batch:
+
+            program = qml.workflow.get_transform_program(qnode, level=level)
+            (diag_tape,), _ = program((qml.tape.QuantumScript(tape.diagonalizing_gates, []),))
+
             info = tape.specs.copy()
+
+            info["num_diagonalizing_gates"] = len(diag_tape.operations)
 
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires

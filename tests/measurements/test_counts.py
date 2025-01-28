@@ -91,10 +91,10 @@ class TestCounts:
 class TestProcessSamples:
     """Unit tests for the counts.process_samples method"""
 
-    def test_counts_shape_single_wires(self):
+    def test_counts_shape_single_wires(self, seed):
         """Test that the counts output is correct for single wires"""
         shots = 1000
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
 
         result = qml.counts(wires=0).process_samples(samples, wire_order=[0])
@@ -104,11 +104,11 @@ class TestProcessSamples:
         assert result["0"] == np.count_nonzero(samples[:, 0] == 0)
         assert result["1"] == np.count_nonzero(samples[:, 0] == 1)
 
-    def test_counts_shape_multi_wires(self):
+    def test_counts_shape_multi_wires(self, seed):
         """Test that the counts function outputs counts of the right size
         for multiple wires"""
         shots = 1000
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
 
         result = qml.counts(wires=[0, 1]).process_samples(samples, wire_order=[0, 1])
@@ -128,11 +128,11 @@ class TestProcessSamples:
             np.logical_and(samples[:, 0] == 1, samples[:, 1] == 1)
         )
 
-    def test_counts_with_nan_samples(self):
+    def test_counts_with_nan_samples(self, seed):
         """Test that the counts function disregards failed measurements (samples including
         NaN values) when totalling counts"""
         shots = 1000
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.float64)
 
         samples[0][0] = np.nan
@@ -173,10 +173,10 @@ class TestProcessSamples:
             assert sum(result.values()) == shots
             assert all("-" not in sample for sample in result.keys())
 
-    def test_counts_obs(self):
+    def test_counts_obs(self, seed):
         """Test that the counts function outputs counts of the right size for observables"""
         shots = 1000
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
 
         result = qml.counts(qml.PauliZ(0)).process_samples(samples, wire_order=[0])
@@ -186,11 +186,11 @@ class TestProcessSamples:
         assert result[1] == np.count_nonzero(samples[:, 0] == 0)
         assert result[-1] == np.count_nonzero(samples[:, 0] == 1)
 
-    def test_count_eigvals(self):
+    def test_count_eigvals(self, seed):
         """Tests that eigvals are used instead of obs for counts"""
 
         shots = 100
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         result = CountsMP(eigvals=[1, -1], wires=0).process_samples(samples, wire_order=[0])
         assert len(result) == 2
@@ -198,11 +198,11 @@ class TestProcessSamples:
         assert result[1] == np.count_nonzero(samples[:, 0] == 0)
         assert result[-1] == np.count_nonzero(samples[:, 0] == 1)
 
-    def test_counts_shape_single_measurement_value(self):
+    def test_counts_shape_single_measurement_value(self, seed):
         """Test that the counts output is correct for single mid-circuit measurement
         values."""
         shots = 1000
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         mv = qml.measure(0)
 
@@ -213,11 +213,11 @@ class TestProcessSamples:
         assert result[0] == np.count_nonzero(samples[:, 0] == 0)
         assert result[1] == np.count_nonzero(samples[:, 0] == 1)
 
-    def test_counts_shape_composite_measurement_value(self):
+    def test_counts_shape_composite_measurement_value(self, seed):
         """Test that the counts output is correct for composite mid-circuit measurement
         values."""
         shots = 1000
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         m0 = qml.measure(0)
         m1 = qml.measure(1)
@@ -230,11 +230,11 @@ class TestProcessSamples:
         assert result[0] == np.count_nonzero(samples == 0)
         assert result[1] == np.count_nonzero(samples == 1)
 
-    def test_counts_shape_measurement_value_list(self):
+    def test_counts_shape_measurement_value_list(self, seed):
         """Test that the counts output is correct for list mid-circuit measurement
         values."""
         shots = 1000
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         m0 = qml.measure(0)
         m1 = qml.measure(1)
@@ -395,6 +395,35 @@ class TestProcessSamples:
 
 class TestCountsIntegration:
     # pylint:disable=too-many-public-methods,not-an-iterable
+
+    def test_counts_all_outcomes_with_mcm(self):
+        """Test that all outcomes are present in results if requested."""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", shots=n_sample)
+
+        @qml.qnode(device=dev, mcm_method="one-shot")
+        def single_mcm():
+            m = qml.measure(0)
+            return qml.counts(m, all_outcomes=True)
+
+        res = single_mcm()
+
+        assert list(res.keys()) == [0.0, 1.0]
+        assert sum(res.values()) == n_sample
+        assert res[0.0] == n_sample
+
+        @qml.qnode(device=dev, mcm_method="one-shot")
+        def double_mcm():
+            m1 = qml.measure(0)
+            m2 = qml.measure(1)
+            return qml.counts([m1, m2], all_outcomes=True)
+
+        res = double_mcm()
+
+        assert list(res.keys()) == ["00", "01", "10", "11"]
+        assert sum(res.values()) == n_sample
+        assert res["00"] == n_sample
 
     def test_counts_dimension(self):
         """Test that the counts function outputs counts of the right size"""

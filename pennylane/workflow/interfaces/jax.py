@@ -175,41 +175,6 @@ def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
     return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
 
 
-def get_jax_interface_name(tapes):
-    """Check all parameters in each tape and output the name of the suitable
-    JAX interface.
-
-    This function checks each tape and determines if any of the gate parameters
-    was transformed by a JAX transform such as ``jax.jit``. If so, it outputs
-    the name of the JAX interface with jit support.
-
-    Note that determining if jit support should be turned on is done by
-    checking if parameters are abstract. Parameters can be abstract not just
-    for ``jax.jit``, but for other JAX transforms (vmap, pmap, etc.) too. The
-    reason is that JAX doesn't have a public API for checking whether or not
-    the execution is within the jit transform.
-
-    Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-
-    Returns:
-        str: name of JAX interface that fits the tape parameters, "jax" or
-        "jax-jit"
-    """
-    for t in tapes:
-        for op in t:
-            # Unwrap the observable from a MeasurementProcess
-            if not isinstance(op, qml.ops.Prod):
-                op = op.obs if hasattr(op, "obs") else op
-            if op is not None:
-                # Some MeasurementProcess objects have op.obs=None
-                for param in op.data:
-                    if qml.math.is_abstract(param):
-                        return "jax-jit"
-
-    return "jax"
-
-
 def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     """Converts an arbitrary result batch to one with jax arrays.
     Args:
@@ -221,7 +186,7 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
         return result
     if isinstance(result, (list, tuple)):
         return tuple(_to_jax(r) for r in result)
-    return jnp.array(result)
+    return result if qml.math.get_interface(result) == "jax" else jnp.array(result)
 
 
 def _execute_wrapper(params, tapes, execute_fn, jpc) -> ResultBatch:

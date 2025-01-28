@@ -160,8 +160,8 @@ class AQFT(Operation):
 
         **Example:**
 
-        >>> qml.AQFT.compute_decomposition((0, 1, 2), 3, order=1)
-        [Hadamard(wires=[0]), ControlledPhaseShift(1.5707963267948966, wires=[1, 0]), Hadamard(wires=[1]), ControlledPhaseShift(1.5707963267948966, wires=[2, 1]), Hadamard(wires=[2]), SWAP(wires=[0, 2])]
+        >>> qml.AQFT.compute_decomposition((0, 1, 2), order=1)
+        [H(0), ControlledPhaseShift(1.5707963267948966, wires=[1, 0]), H(1), ControlledPhaseShift(1.5707963267948966, wires=[2, 1]), H(2), SWAP(wires=[0, 2])]
 
         """
         n_wires = len(wires)

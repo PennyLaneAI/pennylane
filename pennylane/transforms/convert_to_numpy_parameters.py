@@ -64,7 +64,7 @@ def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumScriptBatch
     >>> circuit = qml.tape.QuantumScript(ops, measurements)
     >>> [new_circuit], _ = convert_to_numpy_parameters(circuit)
     >>> new_circuit.circuit
-    [S(wires=[0]),
+    [S(0),
     RX(0.1234000027179718, wires=[0]),
     state(wires=[]),
     expval(Hermitian(array([[1., 0.],

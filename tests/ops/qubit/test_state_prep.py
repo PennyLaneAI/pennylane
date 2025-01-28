@@ -14,13 +14,21 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.wires import WireError
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
+
+
+def test_basis_state_input_cast_to_int():
+    """Test that the input to BasisState is cast to an int."""
+
+    state = np.array([1.0, 0.0], dtype=np.float64)
+    op = qml.BasisState(state, wires=(0, 1))
+    assert op.data[0].dtype == np.int64
 
 
 @pytest.mark.parametrize(
@@ -34,12 +42,6 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 def test_adjoint_error_exception(op):
     with pytest.raises(qml.operation.AdjointUndefinedError):
         op.adjoint()
-
-
-def test_QubitStateVector_is_deprecated():
-    """Test that QubitStateVector is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QubitStateVector is deprecated"):
-        _ = qml.QubitStateVector([1, 0, 0, 0], wires=[0, 1])
 
 
 @pytest.mark.parametrize(

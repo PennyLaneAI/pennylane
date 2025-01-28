@@ -97,28 +97,6 @@ class TestCreateExpandFn:
         assert new_tape.operations[0].name == "U1"
         assert new_tape.operations[1].name == "Rot"
 
-    def test_depth_only_expansion(self):
-        """Test that passing a depth simply expands to that depth"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.2, wires=0)
-            qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
-            qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
-            qml.templates.StronglyEntanglingLayers(
-                qml.numpy.ones([2, 2, 3], requires_grad=True), wires=[0, 1]
-            )
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expand_fn = qml.transforms.create_expand_fn(depth=0)
-        new_tape = expand_fn(tape)
-        assert new_tape is tape
-
-        expand_fn = qml.transforms.create_expand_fn(depth=10)
-        new_tape = expand_fn(tape)
-        assert new_tape.operations[0] == tape.operations[0]
-        assert new_tape.operations[1] == tape.operations[1]
-        assert [op.name for op in new_tape.operations[2:5]] == ["RZ", "RY", "RZ"]
-        assert len(new_tape.operations[6:]) == 15
-
 
 class TestExpandMultipar:
     """Test the expansion of multi-parameter gates."""
@@ -327,7 +305,7 @@ class TestExpandInvalidTrainable:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(tape, "expand")
+        spy = mocker.spy(qml.transforms, "decompose")
         new_tape = qml.transforms.expand_invalid_trainable(tape)
 
         assert new_tape is not tape
@@ -806,15 +784,15 @@ class TestCreateCustomDecompExpandFn:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "CNOT"
 
-        assert dev.preprocess()[0][2].transform.__name__ == "decompose"
-        assert dev.preprocess()[0][2].kwargs.get("decomposer", None) is None
+        assert dev.preprocess_transforms()[2].transform.__name__ == "decompose"
+        assert dev.preprocess_transforms()[2].kwargs.get("decomposer", None) is None
 
         # Test within the context manager
         with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev):
             _ = circuit()
 
-            assert dev.preprocess()[0][2].transform.__name__ == "decompose"
-            assert dev.preprocess()[0][2].kwargs.get("decomposer", None) is not None
+            assert dev.preprocess_transforms()[2].transform.__name__ == "decompose"
+            assert dev.preprocess_transforms()[2].kwargs.get("decomposer", None) is not None
 
         tape = spy.call_args_list[1][0][0][0]
         ops_in_context = tape.operations
@@ -830,8 +808,8 @@ class TestCreateCustomDecompExpandFn:
         ops_in_context = tape.operations
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "CNOT"
-        assert dev.preprocess()[0][2].transform.__name__ == "decompose"
-        assert dev.preprocess()[0][2].kwargs.get("decomposer", None) is None
+        assert dev.preprocess_transforms()[2].transform.__name__ == "decompose"
+        assert dev.preprocess_transforms()[2].kwargs.get("decomposer", None) is None
 
     # pylint: disable=cell-var-from-loop
 

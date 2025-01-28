@@ -1,15 +1,16 @@
 numpy
-scipy<=1.13.0
+scipy
 cvxpy
 cvxopt
 networkx
 rustworkx
 autograd
-toml
+tomlkit
 appdirs
 packaging
-autoray>=0.6.1,<0.6.10
+autoray>=0.6.11
 matplotlib
 requests
 rich
-tomli # Drop once minimum Python version is 3.11
+diastatic-malt
+pandas

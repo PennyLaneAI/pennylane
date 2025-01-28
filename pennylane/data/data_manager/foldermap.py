@@ -38,7 +38,7 @@ class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
     file.
 
     A dictionary in the folder map can optionally specify a default
-    paramater using the '__default' key. This view hides that
+    parameter using the '__default' key. This view hides that
     key, and allows the default parameter to be accessed.
 
     For example, the underlying foldermap data will look like

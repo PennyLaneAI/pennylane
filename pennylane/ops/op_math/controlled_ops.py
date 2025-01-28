@@ -18,14 +18,15 @@ This submodule contains controlled operators based on the ControlledOp class.
 import warnings
 from collections.abc import Iterable
 from functools import lru_cache
+from typing import List, Union
 
 import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Wires
-from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
+from pennylane.wires import WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
@@ -120,23 +121,64 @@ class ControlledQubitUnitary(ControlledOp):
             data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
         )
 
-    # pylint: disable= too-many-arguments
-    def __init__(
-        self,
+    # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
+    @classmethod
+    def _primitive_bind_call(
+        cls,
         base,
-        control_wires,
-        wires=None,
+        control_wires: WiresLike,
+        wires: WiresLike = (),
         control_values=None,
         unitary_check=False,
-        work_wires=None,
+        work_wires: WiresLike = (),
     ):
-        if getattr(base, "wires", False) and wires is not None:
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+
+        if hasattr(base, "wires") and len(wires) != 0:
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
+            wires = Wires(())
+
+        all_wires = control_wires + wires
+        return cls._primitive.bind(
+            base, control_wires=all_wires, control_values=control_values, work_wires=work_wires
+        )
+
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(
+        self,
+        base,
+        control_wires: WiresLike,
+        wires: WiresLike = (),
+        control_values=None,
+        unitary_check=False,
+        work_wires: WiresLike = (),
+    ):
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+        control_wires = Wires(control_wires)
+
+        if hasattr(base, "wires") and len(wires) != 0:
+            warnings.warn(
+                "base operator already has wires; values specified through wires kwarg will be ignored."
+            )
+            wires = Wires(())
 
         if isinstance(base, Iterable):
-            base = QubitUnitary(base, wires=wires, unitary_check=unitary_check)
+            if len(wires) == 0:
+                if len(control_wires) > 1:
+                    num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+                    wires = control_wires[-num_base_wires:]
+                    control_wires = control_wires[:-num_base_wires]
+                else:
+                    raise TypeError(
+                        "Must specify a set of wires. None is not a valid `wires` label."
+                    )
+            # We use type.__call__ instead of calling the class directly so that we don't bind the
+            # operator primitive when new program capture is enabled
+            base = type.__call__(qml.QubitUnitary, base, wires=wires, unitary_check=unitary_check)
 
         super().__init__(
             base,
@@ -217,7 +259,11 @@ class CH(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
-        super().__init__(qml.Hadamard(wires=target_wires), control_wires, id=id)
+
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Hadamard, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CH(wires={self.wires.tolist()})"
@@ -329,7 +375,10 @@ class CY(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        super().__init__(qml.Y(wires[1:]), wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Y, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
@@ -384,7 +433,7 @@ class CY(ControlledOp):
         **Example:**
 
         >>> print(qml.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1])), S(wires=[0])]
+        [CRY(3.141592653589793, wires=[0, 1])), S(0)]
 
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
@@ -435,7 +484,10 @@ class CZ(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        super().__init__(qml.Z(wires=wires[1:]), wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Z, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
@@ -522,7 +574,11 @@ class CSWAP(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
-        super().__init__(qml.SWAP(wires=target_wires), control_wires, id=id)
+
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.SWAP, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
@@ -646,7 +702,11 @@ class CCZ(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
-        super().__init__(qml.PauliZ(wires=target_wires), control_wires, id=id)
+
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Z, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
@@ -709,20 +769,20 @@ class CCZ(ControlledOp):
 
         >>> qml.CCZ.compute_decomposition((0,1,2))
         [CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
+         T(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
-         T(wires=[1]),
+         T(2),
+         T(1),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2]),
-         T(wires=[0]),
-         Adjoint(T(wires=[1])),
+         H(2),
+         T(0),
+         Adjoint(T(1)),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2])]
+         H(2)]
 
         """
         return [
@@ -789,7 +849,10 @@ class CNOT(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        super().__init__(qml.PauliX(wires=wires[1:]), wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.X, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
 
     @property
     def has_decomposition(self):
@@ -900,7 +963,10 @@ class Toffoli(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
-        super().__init__(qml.PauliX(wires=target_wires), control_wires, id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.X, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
@@ -962,20 +1028,20 @@ class Toffoli(ControlledOp):
         **Example:**
 
         >>> qml.Toffoli.compute_decomposition((0,1,2))
-        [Hadamard(wires=[2]),
+        [H(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
+         T(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
-         T(wires=[1]),
+         T(2),
+         T(1),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2]),
-         T(wires=[0]),
-         Adjoint(T(wires=[1])),
+         H(2),
+         T(0),
+         Adjoint(T(1)),
          CNOT(wires=[0, 1])]
 
         """
@@ -1089,45 +1155,50 @@ class MultiControlledX(ControlledOp):
             *wires, n_wires=len(wires), control_values=control_values, work_wires=work_wires
         )
 
+    @staticmethod
+    def _validate_control_values(control_values):
+        if control_values is not None:
+            if not (
+                isinstance(control_values, (bool, int))
+                or (
+                    (
+                        isinstance(control_values, (list, tuple))
+                        and all(isinstance(val, (bool, int)) for val in control_values)
+                    )
+                )
+            ):
+                raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
+
     # pylint: disable=too-many-arguments
-    def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
+    def __init__(
+        self,
+        wires: WiresLike = (),
+        control_values: Union[bool, List[bool], int, List[int]] = None,
+        work_wires: WiresLike = (),
+    ):
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
-        # First raise deprecation warnings regardless of the validity of other arguments
-        if isinstance(control_values, str):
-            warnings.warn(
-                "Specifying control values using a bitstring is deprecated, and will not be "
-                "supported in future releases, Use a list of booleans or integers instead.",
-                qml.PennyLaneDeprecationWarning,
-            )
-        if control_wires is not None:
-            warnings.warn(
-                "The control_wires keyword for MultiControlledX is deprecated, and will "
-                "be removed soon. Use wires = (*control_wires, target_wire) instead.",
-                UserWarning,
-            )
+        self._validate_control_values(control_values)
 
-        if wires is None:
+        if len(wires) == 0:
             raise ValueError("Must specify the wires where the operation acts on")
 
-        wires = wires if isinstance(wires, Wires) else Wires(wires)
-
-        if control_wires is not None:
-            if len(wires) != 1:
-                raise ValueError("MultiControlledX accepts a single target wire.")
-            control_wires = Wires(control_wires)
-        else:
-            if len(wires) < 2:
-                raise ValueError(
-                    f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. "
-                    f"Need at least 2."
-                )
-            control_wires = wires[:-1]
-            wires = wires[-1:]
+        if len(wires) < 2:
+            raise ValueError(
+                f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. "
+                f"Need at least 2."
+            )
+        control_wires = wires[:-1]
+        wires = wires[-1:]
 
         control_values = _check_and_convert_control_values(control_values, control_wires)
 
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.X, wires=wires)
         super().__init__(
-            qml.X(wires),
+            base,
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -1144,7 +1215,7 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
-    def compute_matrix(control_wires, control_values=None, **kwargs):
+    def compute_matrix(control_wires: WiresLike, control_values=None, **kwargs):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1187,7 +1258,9 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
-    def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
+    def compute_decomposition(
+        wires: WiresLike = None, work_wires: WiresLike = None, control_values=None, **kwargs
+    ):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1214,6 +1287,7 @@ class MultiControlledX(ControlledOp):
         Toffoli(wires=[0, 1, 'aux'])]
 
         """
+        wires = Wires(() if wires is None else wires)
 
         if len(wires) < 2:
             raise ValueError(f"Wrong number of wires. {len(wires)} given. Need at least 2.")
@@ -1289,8 +1363,11 @@ class CRX(ControlledOp):
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+    def __init__(self, phi, wires: WiresLike, id=None):
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.RX, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
@@ -1303,7 +1380,7 @@ class CRX(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires, id=None):
+    def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @staticmethod
@@ -1354,7 +1431,7 @@ class CRX(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(phi, wires: WiresLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1443,7 +1520,10 @@ class CRY(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.RY, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
@@ -1596,7 +1676,10 @@ class CRZ(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.RZ, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRZ({self.data[0]}, wires={self.wires})"
@@ -1780,10 +1863,13 @@ class CRot(ControlledOp):
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
-    def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
-        super().__init__(
-            qml.Rot(phi, theta, omega, wires=wires[1:]), control_wires=wires[:1], id=id
-        )
+    def __init__(
+        self, phi, theta, omega, wires, id=None
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Rot, phi, theta, omega, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         params = ", ".join([repr(p) for p in self.parameters])
@@ -1798,7 +1884,9 @@ class CRot(ControlledOp):
 
     # pylint: disable=too-many-arguments
     @classmethod
-    def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
+    def _primitive_bind_call(
+        cls, phi, theta, omega, wires, id=None
+    ):  # pylint: disable=too-many-positional-arguments
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
 
     @staticmethod
@@ -1949,7 +2037,10 @@ class ControlledPhaseShift(ControlledOp):
     parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.PhaseShift, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
