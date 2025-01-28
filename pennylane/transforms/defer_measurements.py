@@ -14,7 +14,7 @@
 """Code for the tape transform implementing the deferred measurement principle."""
 
 from functools import lru_cache, partial
-from typing import Optional
+from typing import Optional, Sequence, Union
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
@@ -387,7 +387,7 @@ def defer_measurements(
     tape: QuantumScript,
     reduce_postselected: bool = True,
     allow_postselect: bool = True,
-    aux_wires: Optional[int] = None,
+    aux_wires: Optional[Union[int, Sequence[int], Wires]] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
@@ -441,10 +441,13 @@ def defer_measurements(
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
         reduce_postselected (bool): Whether to use postselection information to reduce the number
-            of operations and control wires in the output tape. Active by default.
+            of operations and control wires in the output tape. Active by default. This is currently
+            ignored if program capture is enabled.
         allow_postselect (bool): Whether postselection is allowed. In order to perform postselection
             with ``defer_measurements``, the device must support the :class:`~.Projector` operation.
-            Defaults to ``True``.
+            Defaults to ``True``. This is currently ignored if program capture is enabled.
+        aux_wires (Sequence): Optional sequence of wires to use to map mid-circuit measurements. This is
+            only used if program capture is enabled.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
@@ -554,6 +557,80 @@ def defer_measurements(
         5: ──────────────────────╰X─╰●─╰○────────┤
 
         There is only one controlled gate with only one control wire.
+
+    .. details::
+        :title: Deferred measurements with program capture
+
+        ``qml.defer_measurements`` can be applied to callables when program capture is enabled. To do so,
+        the ``aux_wires`` argument must be provided, which should be a sequence of integers to be used
+        as the target wires for transforming mid-circuit measurements. With program capture enabled, some
+        new features, as well as new restrictions are introduced, that are detailed below:
+
+        **New features**
+
+        * Arbitrary classical processing of mid-circuit measurement values is now possible. With
+          program capture disabled, only limited classical processing, as detailed in the
+          documentation for :func:`~pennylane.measure`. With program capture enabled, any ``jax.numpy``
+          functions that can be applied to scalars can be used with mid-circuit measurements.
+
+        * Using mid-circuit measurements as gate parameters is now possible. This feature currently
+          has the following restrictions:
+          * Mid-circuit measurement values cannot be used for multiple parameters of the same gate.
+          * Mid-circuit measurement values cannot be used as wires.
+
+          .. code-block:: python
+
+              from functools import partial
+              import jax
+              import jax.numpy as jnp
+
+              qml.capture.enable()
+
+              @qml.capture.expand_plxpr_transforms
+              @partial(qml.defer_measurements, aux_wires=list(range(5, 10)))
+              def f():
+                  m0 = qml.measure(0)
+
+                  phi = jnp.sin(jnp.pi * m0)
+                  qml.RX(phi, 0)
+                  return qml.expval(qml.PauliZ(0))
+
+          >>> jax.make_jaxpr(f)()
+          { lambda ; . let
+              _:AbstractOperator() = CNOT[n_wires=2] 0 5
+              a:f64[] = mul 0.0 3.141592653589793
+              b:f64[] = sin a
+              c:AbstractOperator() = RX[n_wires=1] b 0
+              _:AbstractOperator() = Controlled[
+                control_values=(False,)
+                work_wires=Wires([])
+              ] c 5
+              d:f64[] = mul 1.0 3.141592653589793
+              e:f64[] = sin d
+              f:AbstractOperator() = RX[n_wires=1] e 0
+              _:AbstractOperator() = Controlled[
+                control_values=(True,)
+                work_wires=Wires([])
+              ] f 5
+              g:AbstractOperator() = PauliZ[n_wires=1] 0
+              h:AbstractMeasurement(n_wires=None) = expval_obs g
+            in (h,) }
+
+        The above dummy example showcases how the transform is applied when the aforementioned
+        features are used.
+
+        **What doesn't work**
+
+        * Currently, mid-circuit measurement values cannot be used in the condition for a
+          :func:`~pennylane.while_loop`.
+        * Currently, :func:`~pennylane.measure` cannot be used inside the body of control flow
+          primitives. This includes :func:`~pennylane.cond`, :func:`~pennylane.while_loop`, and
+          :func:`~pennylane.for_loop`.
+        * Currently, if a branch of :func:`~pennylane.cond` uses mid-circuit measurements as its
+          predicate, then all other branches must also use mid-circuit measurement values as
+          predicates.
+        * Currently, :func:`~pennylane.measure` cannot be used inside the body of functions
+          being transformed with :func:`~pennylane.adjoint` or :func:`~pennylane.ctrl`.
     """
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
