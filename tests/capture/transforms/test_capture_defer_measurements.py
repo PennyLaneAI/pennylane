@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the ``DeferMeasurementsInterpreter`` class"""
 
+import numpy as np
+
 # pylint:disable=wrong-import-position, protected-access
 import pytest
 
@@ -21,17 +23,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import (
-    adjoint_transform_prim,
-    cond_prim,
-    ctrl_transform_prim,
-    for_loop_prim,
-    grad_prim,
-    jacobian_prim,
-    measure_prim,
-    qnode_prim,
-    while_loop_prim,
-)
+from pennylane.capture.primitives import grad_prim, jacobian_prim, qnode_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.defer_measurements import (
     DeferMeasurementsInterpreter,
@@ -267,17 +259,21 @@ class TestDeferMeasurementsInterpreter:
             qml.measure(0)
 
             @qml.cond(x > 2.0)
-            def true_fn(phi):
-                qml.RX(phi, 0)
+            def cond_fn(phi):
+                return qml.RX(phi, 0)
 
-            true_fn(x)
+            @cond_fn.otherwise
+            def _(phi):
+                return qml.RZ(phi, 0)
+
+            return cond_fn(x)
 
         x = 1.5
         jaxpr = jax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
-        expected_ops = [qml.CNOT([0, 5])]
+        expected_ops = [qml.CNOT([0, 5]), qml.RZ(x, 0)]
         assert ops == expected_ops
 
         x = 2.5
@@ -373,28 +369,252 @@ class TestDeferMeasurementsInterpreter:
         assert jnp.allclose(mp.eigvals(), expected_eigvals)
 
 
+@pytest.mark.parametrize("postselect", [None, 0, 1])
 class TestDeferMeasurementsHigherOrderPrimitives:
     """Unit tests for transforming higher-order primitives with DeferMeasurementsInterpreter."""
 
-    def test_for_loop(self):
+    def test_for_loop(self, postselect):
         """Test that a for_loop primitive is transformed correctly."""
+        n = jnp.array(3, dtype=int)
 
-    def test_while_loop(self):
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        def f(x):
+            qml.measure(0, postselect=postselect)
+
+            @qml.for_loop(n)
+            def loop_fn(i):
+                qml.RX(x, i)
+
+            loop_fn()
+
+        x = 1.5
+        jaxpr = jax.make_jaxpr(f)(x)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.RX(x, [0]),
+            qml.RX(x, [1]),
+            qml.RX(x, [2]),
+        ]
+        if postselect is not None:
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
+        assert ops == expected_ops
+
+    def test_while_loop(self, postselect):
         """Test that a while_loop primitive is transformed correctly."""
+        n = jnp.array(3, dtype=int)
 
-    def test_adjoint(self):
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        def f(x):
+            qml.measure(0, postselect=postselect)
+
+            @qml.while_loop(lambda a: a < n)
+            def loop_fn(i):
+                qml.RX(x, i)
+                return i + 1
+
+            loop_fn(0)
+
+        x = 1.5
+        jaxpr = jax.make_jaxpr(f)(x)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.RX(x, [0]),
+            qml.RX(x, [1]),
+            qml.RX(x, [2]),
+        ]
+        if postselect is not None:
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
+        assert ops == expected_ops
+
+    @pytest.mark.parametrize("lazy", [True, False])
+    def test_adjoint(self, lazy, postselect):
         """Test that the adjoint_transform primitive is transformed correctly."""
 
-    def test_control(self):
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        def f(x):
+            qml.measure(0, postselect=postselect)
+
+            def adjoint_fn(phi):
+                qml.RX(phi, 0)
+                qml.RY(phi, 0)
+
+            qml.adjoint(adjoint_fn, lazy=lazy)(x)
+
+        x = 1.5
+        jaxpr = jax.make_jaxpr(f)(x)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.ops.Adjoint(qml.RY(x, 0)) if lazy else qml.RY(-x, 0),
+            qml.ops.Adjoint(qml.RX(x, 0)) if lazy else qml.RX(-x, 0),
+        ]
+        if postselect is not None:
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
+        assert ops == expected_ops
+
+    def test_control(self, postselect):
         """Test that the ctrl_transform primitive is transformed correctly."""
+        ctrl_wires = [1, 2]
+        ctrl_vals = [True, False]
 
-    def test_qnode(self):
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        def f(x):
+            qml.measure(0, postselect=postselect)
+
+            def ctrl_fn(phi):
+                qml.RX(phi, 0)
+                qml.RY(phi, 0)
+
+            qml.ctrl(ctrl_fn, ctrl_wires, control_values=ctrl_vals)(x)
+
+        x = 1.5
+        jaxpr = jax.make_jaxpr(f)(x)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.ops.Controlled(qml.RX(x, 0), ctrl_wires, control_values=ctrl_vals),
+            qml.ops.Controlled(qml.RY(x, 0), ctrl_wires, control_values=ctrl_vals),
+        ]
+        if postselect is not None:
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
+        assert ops == expected_ops
+
+    def test_qnode(self, postselect):
         """Test that a qnode primitive is transformed correctly."""
+        dev = qml.device("default.qubit", wires=10, shots=10)
 
-    @pytest.mark.parametrize("diff_fn", [qml.grad, qml.jacobian])
-    def test_grad_jac(self, diff_fn):
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def f(x):
+            m0 = qml.measure(0, postselect=postselect)
+            m1 = qml.measure(
+                0, postselect=postselect if postselect is None else int(not postselect)
+            )
+
+            @qml.cond(2 * m0 + m1)
+            def true_fn(phi):
+                qml.RX(phi, 0)
+
+            true_fn(x)
+
+            return (
+                qml.expval(qml.Z(0)),
+                qml.probs(wires=[0, 1, 2]),
+                qml.sample(op=[m0, m1]),
+                qml.sample(op=m0 - 4.0 * m1),
+            )
+
+        x = 1.5
+        jaxpr = jax.make_jaxpr(f)(x)
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        assert jaxpr.eqns[0].params["device"] == dev
+        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "parameter-shift"
+
+        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        collector = CollectOpsandMeas()
+        collector.eval(inner_jaxpr, jaxpr.consts, x)
+
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.CNOT([0, 6]),
+            qml.ctrl(qml.RX(x, 0), [5, 6], [0, 1]),
+            qml.ctrl(qml.RX(x, 0), [5, 6], [1, 0]),
+            qml.ctrl(qml.RX(x, 0), [5, 6]),
+        ]
+        if postselect is not None:
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
+            expected_ops.insert(2, qml.Projector(np.array([int(not postselect)]), 0))
+        assert ops == expected_ops
+
+        measurements = collector.state["measurements"]
+        expected_measurements = [
+            qml.expval(qml.Z(0)),
+            qml.probs(wires=[0, 1, 2]),
+            qml.measurements.SampleMP(wires=[5, 6], eigvals=jnp.arange(0, 2**2)),
+            qml.measurements.SampleMP(wires=[5, 6], eigvals=qml.math.array([0.0, -4.0, 1.0, -3.0])),
+        ]
+        assert measurements == expected_measurements
+
+    @pytest.mark.parametrize(
+        "diff_fn, diff_prim", [(qml.grad, grad_prim), (qml.jacobian, jacobian_prim)]
+    )
+    def test_grad_jac(self, diff_fn, diff_prim, postselect):
         """Test that differentiation primitives are transformed correctly."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            m0 = qml.measure(0, postselect=postselect)
+
+            @qml.cond(m0)
+            def true_fn(phi):
+                qml.RX(phi, 0)
+
+            true_fn(x)
+            return qml.expval(qml.PauliZ(0))
+
+        x = 1.5
+        transformed_fn = DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))(
+            diff_fn(circuit)
+        )
+        jaxpr = jax.make_jaxpr(transformed_fn)(x)
+        assert jaxpr.eqns[0].primitive == diff_prim
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        assert inner_jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        collector = CollectOpsandMeas()
+        collector.eval(qfunc_jaxpr, jaxpr.consts, x)
+
+        ops = collector.state["ops"]
+        expected_ops = [qml.RX(x, 0), qml.CNOT([0, 5]), qml.CRX(x, [5, 0])]
+        if postselect is not None:
+            expected_ops.insert(1, qml.Projector(np.array([postselect]), 0))
+        assert ops == expected_ops
+
+        measurements = collector.state["measurements"]
+        expected_measurements = [qml.expval(qml.Z(0))]
+        assert measurements == expected_measurements
 
 
 def test_defer_measurements_plxpr_to_plxpr():
     """Test that transforming plxpr works."""
+
+    def f(x):
+        m = qml.measure(0)
+
+        @qml.cond(m)
+        def true_fn(phi):
+            qml.RX(phi, 0)
+
+        true_fn(x)
+
+    args = (1.5,)
+    targs = ()
+    tkwargs = {"aux_wires": list(range(5, 10))}
+    jaxpr = jax.make_jaxpr(f)(*args)
+    transformed_jaxpr = defer_measurements_plxpr_to_plxpr(
+        jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args
+    )
+    collector = CollectOpsandMeas()
+    collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, *args)
+
+    ops = collector.state["ops"]
+    expected_ops = [qml.CNOT([0, 5]), qml.CRX(args[0], [5, 0])]
+    assert ops == expected_ops
