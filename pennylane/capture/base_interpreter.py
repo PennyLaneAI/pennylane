@@ -490,16 +490,18 @@ def handle_for_loop(
     init_state = args[args_slice]
     abstract_shapes = args[abstract_shapes_slice]
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        copy(self), jaxpr_body_fn, args[consts_slice], *abstract_shapes, start, *init_state
+        copy(self), jaxpr_body_fn, consts, *abstract_shapes, start, *init_state
     )
 
     consts_slice = slice(0, len(new_jaxpr_body_fn.consts))
-    args_slice = slice(len(new_jaxpr_body_fn.consts), None)
+    abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
+    args_slice = slice(abstract_shapes_slice.stop, None)
     return for_loop_prim.bind(
         start,
         stop,
         step,
         *new_jaxpr_body_fn.consts,
+        *abstract_shapes,
         *init_state,
         jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
         consts_slice=consts_slice,
@@ -565,20 +567,20 @@ def handle_while_loop(
         copy(self), jaxpr_cond_fn, consts_cond, *abstract_shapes, *init_state
     )
 
-    n_bf_c = len(new_jaxpr_body_fn.consts)
-    n_cf_c = len(new_jaxpr_cond_fn.consts)
-    body_consts_slice = slice(0, n_bf_c)
-    cond_consts_slice = slice(n_bf_c, n_bf_c + n_cf_c)
-    args_slice = slice(n_cf_c + n_bf_c, None)
+    body_consts = slice(0, len(new_jaxpr_body_fn.consts))
+    cond_consts = slice(body_consts.stop, body_consts.stop + len(new_jaxpr_cond_fn.consts))
+    abstract_shapes_slice = slice(cond_consts.stop, cond_consts.stop + len(abstract_shapes))
+    args_slice = slice(abstract_shapes_slice.stop, None)
 
     return while_loop_prim.bind(
         *new_jaxpr_body_fn.consts,
         *new_jaxpr_cond_fn.consts,
+        *abstract_shapes,
         *init_state,
         jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
         jaxpr_cond_fn=new_jaxpr_cond_fn.jaxpr,
-        body_slice=body_consts_slice,
-        cond_slice=cond_consts_slice,
+        body_slice=body_consts,
+        cond_slice=cond_consts,
         args_slice=args_slice,
         abstract_shapes_slice=abstract_shapes_slice,
     )
