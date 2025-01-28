@@ -50,7 +50,7 @@ def jaxpr_to_jaxpr(
 
     f = partial(interpreter.eval, jaxpr, consts)
 
-    return jax.make_jaxpr(f)(*args).jaxpr
+    return jax.make_jaxpr(f)(*args)
 
 
 class PlxprInterpreter:
@@ -360,9 +360,11 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
     """Interpret an adjoint transform primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
-
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-    return adjoint_transform_prim.bind(*invals, jaxpr=jaxpr, lazy=lazy, n_consts=n_consts)
+
+    return adjoint_transform_prim.bind(
+        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+    )
 
 
 # pylint: disable=too-many-arguments
@@ -374,30 +376,33 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
     return ctrl_transform_prim.bind(
-        *invals,
+        *jaxpr.consts,
+        *args,
+        *invals[-n_control:],
         n_control=n_control,
-        jaxpr=jaxpr,
+        jaxpr=jaxpr.jaxpr,
         control_values=control_values,
         work_wires=work_wires,
-        n_consts=n_consts,
+        n_consts=len(jaxpr.consts),
     )
 
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
 def handle_for_loop(self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice):
     """Handle a for loop primitive."""
+    consts = args[consts_slice]
     init_state = args[args_slice]
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts, start, *init_state)
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        copy(self), jaxpr_body_fn, args[consts_slice], start, *init_state
-    )
-
+    consts_slice = slice(0, len(new_jaxpr_body_fn.consts))
+    args_slice = slice(len(new_jaxpr_body_fn.consts), None)
     return for_loop_prim.bind(
         start,
         stop,
         step,
-        *args,
-        jaxpr_body_fn=new_jaxpr_body_fn,
+        *new_jaxpr_body_fn.consts,
+        *init_state,
+        jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
         consts_slice=consts_slice,
         args_slice=args_slice,
     )
@@ -409,15 +414,30 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     args = invals[args_slice]
 
     new_jaxprs = []
+    new_consts = []
+    new_consts_slices = []
+    end_const_ind = len(jaxpr_branches)
+
     for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
         consts = invals[const_slice]
         if jaxpr is None:
             new_jaxprs.append(None)
+            new_consts_slices.append(slice(0, 0))
         else:
-            new_jaxprs.append(jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args))
+            new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+            new_jaxprs.append(new_jaxpr.jaxpr)
+            new_consts.extend(new_jaxpr.consts)
+            new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
+            end_const_ind += len(new_jaxpr.consts)
 
+    new_args_slice = slice(end_const_ind, None)
     return cond_prim.bind(
-        *invals, jaxpr_branches=new_jaxprs, consts_slices=consts_slices, args_slice=args_slice
+        *invals[: len(jaxpr_branches)],
+        *new_consts,
+        *args,
+        jaxpr_branches=new_jaxprs,
+        consts_slices=new_consts_slices,
+        args_slice=new_args_slice,
     )
 
 
@@ -433,12 +453,20 @@ def handle_while_loop(
     new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts_body, *init_state)
     new_jaxpr_cond_fn = jaxpr_to_jaxpr(copy(self), jaxpr_cond_fn, consts_cond, *init_state)
 
+    n_bf_c = len(new_jaxpr_body_fn.consts)
+    n_cf_c = len(new_jaxpr_cond_fn.consts)
+    body_consts_slice = slice(0, n_bf_c)
+    cond_consts_slice = slice(n_bf_c, n_bf_c + n_cf_c)
+    args_slice = slice(n_cf_c + n_bf_c, None)
+
     return while_loop_prim.bind(
-        *invals,
-        jaxpr_body_fn=new_jaxpr_body_fn,
-        jaxpr_cond_fn=new_jaxpr_cond_fn,
-        body_slice=body_slice,
-        cond_slice=cond_slice,
+        *new_jaxpr_body_fn.consts,
+        *new_jaxpr_cond_fn.consts,
+        *init_state,
+        jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
+        jaxpr_cond_fn=new_jaxpr_cond_fn.jaxpr,
+        body_slice=body_consts_slice,
+        cond_slice=cond_consts_slice,
         args_slice=args_slice,
     )
 
@@ -448,17 +476,19 @@ def handle_while_loop(
 def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
     consts = invals[:n_consts]
+    args = invals[n_consts:]
 
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *invals[n_consts:])
+    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *args)
 
     return qnode_prim.bind(
-        *invals,
+        *new_qfunc_jaxpr.consts,
+        *args,
         shots=shots,
         qnode=qnode,
         device=device,
         qnode_kwargs=qnode_kwargs,
-        qfunc_jaxpr=new_qfunc_jaxpr,
-        n_consts=n_consts,
+        qfunc_jaxpr=new_qfunc_jaxpr.jaxpr,
+        n_consts=len(new_qfunc_jaxpr.consts),
     )
 
 
@@ -468,7 +498,9 @@ def handle_grad(self, *invals, jaxpr, n_consts, **params):
     consts = invals[:n_consts]
     args = invals[n_consts:]
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-    return grad_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
+    return grad_prim.bind(
+        *new_jaxpr.consts, *args, jaxpr=new_jaxpr.jaxpr, n_consts=len(new_jaxpr.consts), **params
+    )
 
 
 @PlxprInterpreter.register_primitive(jacobian_prim)
@@ -477,7 +509,9 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     consts = invals[:n_consts]
     args = invals[n_consts:]
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-    return jacobian_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
+    return jacobian_prim.bind(
+        *new_jaxpr.consts, *args, jaxpr=new_jaxpr.jaxpr, n_consts=len(new_jaxpr.consts), **params
+    )
 
 
 def flatten_while_loop(
