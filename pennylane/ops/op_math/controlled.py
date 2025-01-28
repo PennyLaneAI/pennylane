@@ -330,7 +330,10 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
 
     if isinstance(op, qml.QubitUnitary):
         return qml.ControlledQubitUnitary(
-            op, wires=control + op.wires, control_values=control_values, work_wires=work_wires
+            op.matrix(),
+            wires=control + op.wires,
+            control_values=control_values,
+            work_wires=work_wires,
         )
 
     return None

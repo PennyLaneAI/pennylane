@@ -118,11 +118,14 @@ class TestControlledQubitUnitary:
 
     def test_initialization_from_matrix_and_operator(self):
         base_op = QubitUnitary(X, wires=1)
+        with pytest.raises(
+            qml.PennyLaneDeprecationWarning,
+            match="QubitUnitary input to ControlledQubitUnitary is deprecated",
+        ):
+            op1 = qml.ControlledQubitUnitary(X, wires=[0, 2, 1])
+            op2 = qml.ControlledQubitUnitary(base_op, wires=[0, 2, 1])
 
-        op1 = qml.ControlledQubitUnitary(X, wires=[0, 2, 1])
-        op2 = qml.ControlledQubitUnitary(base_op, wires=[0, 2, 1])
-
-        qml.assert_equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("target_wire", list(range(3)))
     def test_toffoli(self, target_wire):
