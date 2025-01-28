@@ -73,6 +73,18 @@ def test_NotImplementedError():
 
 
 class TestTraceInnerProductInterfaces:
+    @pytest.mark.autograd
+    def test_autograd_input(self):
+        """Test autograd inputs are handled correctly"""
+
+        import pennylane.numpy as pnp
+
+        A = pnp.array([qml.matrix(X(0)), qml.matrix(X(0))])
+        B = pnp.array([qml.matrix(Y(0)), qml.matrix(Y(0))])
+
+        assert qml.math.allclose(trace_inner_product(A, B), 0)
+        assert qml.math.allclose(trace_inner_product(A, A), 1)
+
     @pytest.mark.jax
     def test_jax_jit_input(self):
         """Test jax inputs are handled correctly with JITing"""
