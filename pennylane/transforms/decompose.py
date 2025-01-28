@@ -202,7 +202,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
     class DynamicDecomposeInterpreter(qml.capture.PlxprInterpreter):
         """
-        Experimental Plxpr Interpreter for applying a dynamic decomposition to operations program capture is enabled.
+        Experimental Plxpr Interpreter for applying a dynamic decomposition to operations when program capture is enabled.
         """
 
         def eval_dynamic_decomposition(self, jaxpr_decomp: "jax.core.Jaxpr", *args):
@@ -252,16 +252,20 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
 
-            if hasattr(op, "_compute_plxpr_decomposition"):
+            if isinstance(eqn.outvars[0], jax.core.DropVar):
 
-                jaxpr_decomp = op._plxpr_decomposition()
-                args = (*op.parameters, *op.wires, *op.hyperparameters.values())
+                if hasattr(op, "_plxpr_decomposition"):
 
-                # We assume that the JAXPR of the decomposition does not contain constants
-                # and that all the required parameters are passed as arguments
-                return self.eval_dynamic_decomposition(jaxpr_decomp.jaxpr, *args)
+                    jaxpr_decomp = op._plxpr_decomposition()
+                    args = (*op.parameters, *op.wires, *op.hyperparameters.values())
 
-            return super().interpret_operation_eqn(eqn)
+                    # We assume that the JAXPR of the decomposition does not contain constants
+                    # and that all the required parameters are passed as arguments
+                    return self.eval_dynamic_decomposition(jaxpr_decomp.jaxpr, *args)
+
+                return super().interpret_operation(op)
+
+            return op
 
     return DynamicDecomposeInterpreter
 
