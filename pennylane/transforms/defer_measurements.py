@@ -145,7 +145,7 @@ def _get_plxpr_defer_measurements():
             """
             self.state = {"cur_idx": 0}
 
-        def interpret_dynamic_operation(self, data, struct, idx):
+        def interpret_dynamic_operation(self, data, struct, idx):  # pylint: disable=no-self-use
             """Interpret an operation that uses mid-circuit measurement outcomes as parameters.
 
             * This will not work if mid-circuit measurement values are used to specify
@@ -211,10 +211,12 @@ def _get_plxpr_defer_measurements():
 
             return super().interpret_measurement(measurement)
 
-        def resolve_mcm_values(self, eqn, invals) -> MeasurementValue:
+        def resolve_mcm_values(
+            self, eqn, invals
+        ) -> MeasurementValue:  # pylint: disable=no-self-use
             """Create a ``MeasurementValue`` that captures all classical processing in its
             ``processing_fn``."""
-            # pylint: disable=protected-access
+            # pylint: disable=protected-access,unnecessary-lambda
             assert len(invals) <= 2
 
             if len(invals) == 1:
