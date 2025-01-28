@@ -130,6 +130,9 @@
 * The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
   [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
 
+*  Replace deprecated `jax.core.ConcreteArray` from `is_abstract`. 
+  [(#6890)](https://github.com/PennyLaneAI/pennylane/pull/6890)
+
 <h3>Documentation 📝</h3>
 
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`, 
@@ -149,6 +152,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Oriol Balló,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
