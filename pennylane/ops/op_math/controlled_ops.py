@@ -160,7 +160,7 @@ class ControlledQubitUnitary(ControlledOp):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        base,
+        base: Iterable,
         wires: WiresLike,
         control_wires: WiresLike = "unset",
         control_values=None,
@@ -191,6 +191,8 @@ class ControlledQubitUnitary(ControlledOp):
             base = type.__call__(
                 qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
             )
+        else:
+            raise ValueError("Base must be a matrix.")
 
         super().__init__(
             base,
