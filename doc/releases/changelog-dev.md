@@ -127,6 +127,9 @@
   Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
   [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
 
+* The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
+  [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
+
 <h3>Documentation 📝</h3>
 
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`, 
