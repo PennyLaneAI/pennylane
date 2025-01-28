@@ -45,8 +45,8 @@ def _deprecate_control_wires(control_wires):
 
 # pylint: disable=too-few-public-methods
 class ControlledQubitUnitary(ControlledOp):
-    r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
-    Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
+    r"""ControlledQubitUnitary(U, wires)
+    Apply an arbitrary fixed unitary matrix ``U`` to ``wires``. If ``n = len(wires) `` and ``U`` has ``k`` wires, then the first ``n - k`` from ``wires`` serve as control, and ``U`` lives on the last ``k`` wires.
 
     .. warning::
 
@@ -76,7 +76,7 @@ class ControlledQubitUnitary(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): the wires the full
         controlled unitary acts on, composed of the controlled wires followed
         by the target wires
-        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
+        control_wires (Union[Wires, Sequence[int], or int]): (deprecated) the control wire(s)
         control_values (List[int, bool]): a list providing the state of the control qubits to
             control on (default is the all 1s state)
         unitary_check (bool): whether to check whether an array U is unitary when creating the
