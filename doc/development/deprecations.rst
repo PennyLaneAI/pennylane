@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``QubitUnitary``-type ``base`` argument in the ``qml.ControlledQubitUnitary`` class is deprecated. 
+  Instead, use the ``qml.ctrl`` to specifically control a ``QubitUnitary``.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``control_wires`` argument in the ``qml.ControlledOperation`` class is deprecated. Instead, use the ``wires`` argument.
 
   - Deprecated in v0.41
@@ -89,8 +95,7 @@ Completed deprecation cycles
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been Controlled
   
   - Deprecated in v0.40
   - Removed in v0.41
