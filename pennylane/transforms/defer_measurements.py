@@ -132,17 +132,9 @@ def _get_plxpr_defer_measurements():
             super().__init__()
             self._aux_wires = Wires(aux_wires)
 
-            # State variables
-            self._cur_idx = None
-
-        def setup(self) -> None:
-            """Initialize the instance before interpreting equations.
-
-            Blank by default, this method can initialize any additional instance variables
-            needed by an interpreter. For example, a device interpreter could initialize a statevector,
-            or a compilation interpreter could initialize a staging area for the latest operation on each wire.
-            """
-            self._cur_idx = 0
+            # We use a dict here instead of a normal int variable because we want the state to mutate
+            # when we interpret higher-order primitives
+            self.state = {"cur_idx": 0}
 
         def cleanup(self) -> None:
             """Perform any final steps after iterating through all equations.
@@ -151,7 +143,7 @@ def _get_plxpr_defer_measurements():
             this method can be used to deallocate qubits and registers when converting to
             a Catalyst variant jaxpr.
             """
-            self._cur_idx = None
+            self.state = {"cur_idx": 0}
 
         def interpret_dynamic_operation(self, data, struct, idx):
             """Interpret an operation that uses mid-circuit measurement outcomes as parameters.
@@ -295,7 +287,7 @@ def _get_plxpr_defer_measurements():
 
     @DeferMeasurementsInterpreter.register_primitive(measure_prim)
     def _(self, wires, reset=False, postselect=None):
-        if self._cur_idx >= len(self._aux_wires):
+        if self.state["cur_idx"] >= len(self._aux_wires):
             raise ValueError(
                 "Not enough auxiliary wires provided to apply specified number of mid-circuit "
                 "measurements using qml.defer_measurements."
@@ -304,13 +296,13 @@ def _get_plxpr_defer_measurements():
         with qml.QueuingManager.stop_recording():
             meas = type.__call__(
                 MidMeasureMP,
-                Wires(self._aux_wires[self._cur_idx]),
+                Wires(self._aux_wires[self.state["cur_idx"]]),
                 reset=reset,
                 postselect=postselect,
-                id=self._cur_idx,
+                id=self.state["cur_idx"],
             )
 
-        cnot_wires = (wires, self._aux_wires[self._cur_idx])
+        cnot_wires = (wires, self._aux_wires[self.state["cur_idx"]])
         if postselect is not None:
             qml.Projector(jax.numpy.array([postselect]), wires=wires)
 
@@ -321,7 +313,7 @@ def _get_plxpr_defer_measurements():
             elif postselect == 1:
                 qml.PauliX(wires=wires)
 
-        self._cur_idx += 1
+        self.state["cur_idx"] += 1
         return MeasurementValue([meas], lambda x: x)
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
