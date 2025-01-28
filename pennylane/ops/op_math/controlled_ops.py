@@ -124,7 +124,7 @@ class ControlledQubitUnitary(ControlledOp):
     """Gradient computation method."""
 
     def _flatten(self):
-        return (self.base,), (self.wires, tuple(self.control_values), self.work_wires)
+        return (self.base.data[0],), (self.wires, tuple(self.control_values), self.work_wires)
 
     @classmethod
     def _unflatten(cls, data, metadata):
