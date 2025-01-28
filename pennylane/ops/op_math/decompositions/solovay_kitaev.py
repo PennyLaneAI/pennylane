@@ -339,7 +339,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
     with QueuingManager.stop_recording():
         # Build the approximate set with caching
         approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat = _approximate_set(
-            basis_set, max_length=basis_length
+            tuple(basis_set), max_length=basis_length
         )
 
         # Build the k-d tree with the current approximation set for querying in the base case
