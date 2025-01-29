@@ -90,15 +90,40 @@ class TestControlledQubitUnitary:
         ):
             qml.ControlledQubitUnitary(base_op, wires=[0, 1])
 
-    def test_deprecated_interface_still_available(self):
+    def test_deprecated_base_already_has_wires(self):
+        """Test initialization with invalid control values"""
+        U = np.array([[0, 1], [1, 0]])
+        U = qml.QubitUnitary(U, wires=0)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The control_wires input to ControlledQubitUnitary is deprecated",
+        ):
+            with pytest.warns(
+                UserWarning,
+                match="base operator already has wires; values specified through wires kwarg will be ignored.",
+            ):
+                qml.ControlledQubitUnitary(
+                    U, control_wires=[2, 3, 4], wires=[0, 1], control_values=[1, 0, 1]
+                )
+
+    def test_deprecated_control_wires_argument_error(self):
+        """Test initialization with deprecated control_wires argument"""
+        U = np.array([[0, 1], [1, 0]])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The control_wires input to ControlledQubitUnitary is deprecated",
+        ):
+            with pytest.raises(TypeError, match="Must specify a set of wires"):
+                qml.ControlledQubitUnitary(U, control_wires=[])
+
+    @pytest.mark.parametrize("base", (np.eye(2), qml.X(0)))
+    def test_deprecated_interface_still_available(self, base):
         """Test that the deprecated interface is still available"""
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
             match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
-            qml.ControlledQubitUnitary(
-                qml.QubitUnitary(np.eye(2), wires=0), control_wires=[1, 2, 3]
-            )
+            qml.ControlledQubitUnitary(base, control_wires=[1, 2, 3])
 
     def test_wires_is_none(self):
         """Test that an error is raised if the user provides no target wires for an iterable base operator"""
