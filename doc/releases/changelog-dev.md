@@ -119,6 +119,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove `QNode.get_gradient_fn` from source code.
+  [(#)]()
+
 * Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
   [(#6877)](https://github.com/PennyLaneAI/pennylane/pull/6877)
 
