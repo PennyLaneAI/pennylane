@@ -38,7 +38,7 @@ SupportedDiffMethods = Literal[
 
 
 def _get_jax_interface_name() -> Interface:
-    """Check if we are in a jitting context by creating a dummy array and seeing if it
+    """Check if we are in a jitting context by creating a dummy array and seeing if it's
     abstract.
     """
     x = qml.math.asarray([0], like="jax")
