@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function for setting up the inner and outer transform programs for execution of a QNode.
-
-"""
+"""Contains a function for setting up the inner and outer transform programs for execution of a QNode."""
 
 import warnings
 
