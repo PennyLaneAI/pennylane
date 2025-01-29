@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function to construct an execution configuration from a QNode instance."""
+import functools
 
 import pennylane as qml
+from pennylane.devices import ExecutionConfig, MCMConfig
 from pennylane.math import Interface
 from pennylane.workflow import construct_tape
 from pennylane.workflow.resolution import _resolve_execution_config
@@ -78,7 +80,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
     @functools.wraps(qnode)
     def wrapper(*args, **kwargs):
 
-        mcm_config = qml.devices.MCMConfig(
+        mcm_config = MCMConfig(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
             mcm_method=qnode.execute_kwargs["mcm_method"],
         )
@@ -89,7 +91,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
         elif grad_on_execution == "best":
             grad_on_execution = None
 
-        config = qml.devices.ExecutionConfig(
+        config = ExecutionConfig(
             interface=qnode.interface,
             gradient_method=qnode.diff_method,
             grad_on_execution=grad_on_execution,
