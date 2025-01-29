@@ -55,6 +55,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
 
     """
 
+    @functools.wraps(qnode)
     def wrapper(*args, **kwargs):
 
         mcm_config = qml.devices.MCMConfig(
