@@ -105,7 +105,7 @@ def _is_pauli_word(observable):  # pylint:disable=unused-argument
 @_is_pauli_word.register(PauliZ)
 @_is_pauli_word.register(Identity)
 def _is_pw_pauli(
-    observable: Union[PauliX, PauliY, PauliZ, Identity]
+    observable: Union[PauliX, PauliY, PauliZ, Identity],
 ):  # pylint:disable=unused-argument
     return True
 
