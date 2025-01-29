@@ -23,8 +23,8 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
     """Constructs the execution configuration of a QNode instance.
 
     Args:
-        qnode (QNode): the qnode we want to get the tapes and post-processing for
-        resolve (bool): whether or not to resolve the execution configuration
+        qnode (QNode): the qnode we want to get execution configuration for
+        resolve (bool): whether or not to validate and fill in undetermined values like `"best"`
 
     Returns:
         config (qml.devices.ExecutionConfig): the execution configuration
@@ -75,6 +75,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
 
     """
 
+    @functools.wraps(qnode)
     def wrapper(*args, **kwargs):
 
         mcm_config = qml.devices.MCMConfig(
