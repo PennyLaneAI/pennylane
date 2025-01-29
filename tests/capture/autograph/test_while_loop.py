@@ -84,10 +84,13 @@ class TestWhileLoops:
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0]
         assert result == 3
 
-    def test_whileloop_qnode(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_whileloop_qnode(self, autograph):
         """Test while-loop used with a qnode"""
+        if autograph:
+            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
-        @qml.qnode(qml.device("default.qubit", wires=4), autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=4), autograph=autograph)
         def f(p):
             w = int(0)
             while w < 4:

@@ -79,13 +79,15 @@ class TestPennyLaneTransformer:
         assert new_fn(1.23) == 2.46
         assert "inner_factory.<locals>.<lambda>" in str(new_fn)
 
-    def test_transform_on_qnode(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_transform_on_qnode(self, autograph):
         """Test the transform method on a QNode updates the qnode.func"""
-
+        if autograph:
+            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
         transformer = PennyLaneTransformer()
         user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
-        @qml.qnode(qml.device("default.qubit", wires=3), autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
         def circ(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
@@ -202,10 +204,13 @@ class TestIntegration:
         assert check_cache(fn)
         assert check_cache(inner)
 
-    def test_qnode(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_qnode(self, autograph):
         """Test autograph on a QNode."""
+        if autograph:
+            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
-        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def circ(x: float):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -258,10 +263,13 @@ class TestIntegration:
         assert check_cache(inner1.func)
         assert check_cache(inner2.func)
 
-    def test_adjoint_op(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_adjoint_op(self, autograph):
         """Test that the adjoint of an operator successfully passes through autograph"""
+        if autograph:
+            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
         def circ():
             qml.adjoint(qml.X(0))
             return qml.expval(qml.Z(0))
@@ -269,10 +277,13 @@ class TestIntegration:
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
-    def test_ctrl_op(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_ctrl_op(self, autograph):
         """Test that controlled operators successfully pass through autograph"""
+        if autograph:
+            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
         def circ():
             qml.X(1)
             qml.ctrl(qml.X(0), 1)
@@ -285,13 +296,16 @@ class TestIntegration:
         raises=NotImplementedError,
         reason="adjoint_transform_prim not implemented on DefaultQubitInterpreter",
     )
-    def test_adjoint_wrapper(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_adjoint_wrapper(self, autograph):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
+        if autograph:
+            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         def inner(x):
             qml.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def circ(x: float):
             inner(x * 2)
             qml.adjoint(inner)(x)
@@ -309,13 +323,16 @@ class TestIntegration:
         raises=NotImplementedError,
         reason="ctrl_transform_prim not implemented on DefaultQubitInterpreter",
     )
-    def test_ctrl_wrapper(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_ctrl_wrapper(self, autograph):
         """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
+        if autograph:
+            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         def inner(x):
             qml.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
         def circ(x: float):
             qml.PauliX(1)
             qml.ctrl(inner, control=1)(x)
@@ -360,9 +377,11 @@ class TestIntegration:
         assert check_cache(fn)
         assert check_cache(inner)
 
-    def test_tape_transform(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_tape_transform(self, autograph):
         """Test if tape transform is applied when autograph is on."""
-
+        if autograph:
+            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
         dev = dev = qml.device("default.qubit", wires=1)
 
         @qml.transform
@@ -370,9 +389,8 @@ class TestIntegration:
             raise NotImplementedError
 
         def fn(x):
-
             @my_quantum_transform
-            @qml.qnode(dev, autograph=False)
+            @qml.qnode(dev, autograph=autograph)
             def circuit(x):
                 qml.RY(x, wires=0)
                 qml.RX(x, wires=0)
