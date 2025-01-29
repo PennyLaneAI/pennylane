@@ -932,6 +932,11 @@ class DefaultQubit(Device):
         )
         return interpreter.eval(jaxpr, consts, *args)
 
+    def eval_jaxpr_and_jvp(self, jaxpr, args, tangents):
+        from .qubit.jaxpr_adjoint import execute_and_jvp
+
+        return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
+
 
 def _simulate_wrapper(circuit, kwargs):
     return simulate(circuit, **kwargs)

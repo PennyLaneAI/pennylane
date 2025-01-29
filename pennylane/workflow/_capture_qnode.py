@@ -291,14 +291,21 @@ def _backprop(args, tangents, **impl_kwargs):
     return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
 
 
-diff_method_map = {"backprop": _backprop}
+def _device_jvp(args, tangents, *, device: "qml.devices.Device", qfunc_jaxpr: jax.core.Jaxpr, **_):
+    return device.eval_jaxpr_and_jvp(qfunc_jaxpr, args, tangents)
+
+
+diff_method_map = {"backprop": _backprop, "device": _device_jvp}
 
 
 def _resolve_diff_method(diff_method: str, device) -> str:
     # check if best is backprop
-    if diff_method == "best":
-        config = qml.devices.ExecutionConfig(gradient_method=diff_method, interface="jax")
-        diff_method = device.setup_execution_config(config).gradient_method
+    config = qml.devices.ExecutionConfig(gradient_method=diff_method, interface="jax")
+    processed_config = device.setup_execution_config(config)
+    if processed_config.use_device_gradient and processed_config.gradient_method != "backprop":
+        diff_method = "device"
+    else:
+        diff_method = processed_config.gradient_method
 
     if diff_method not in diff_method_map:
         raise NotImplementedError(f"diff_method {diff_method} not yet implemented.")
