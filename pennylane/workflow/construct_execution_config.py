@@ -72,11 +72,11 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
                     gradient_keyword_arguments={},
                     device_options={'max_workers': None,
                                     'prng_key': None,
-                                    'rng': Generator(PCG64) at 0x17CFBBA00},
-                    interface=<Interface.AUTO: 'auto'>,
+                                    'rng': Generator(PCG64) at 0x15F6BB680},
+                    interface=<Interface.NUMPY: 'numpy'>,
                     derivative_order=1,
                     mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
-                convert_to_numpy=True)
+                        convert_to_numpy=True)
     """
 
     @functools.wraps(qnode)
