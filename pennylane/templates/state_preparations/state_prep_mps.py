@@ -47,18 +47,19 @@ def _complete_unitary(columns):
 
     # Complete the remaining columns using Gram-Schmidt
     rng = np.random.default_rng(42)
-    for j in range(k, d):
-        random_vec = qml.math.array(rng.random(d))
-        for i in range(j):
-            random_vec -= qml.math.dot(qml.math.conj(unitary[:, i]), random_vec) * unitary[:, i]
+    new_columns = qml.math.array(rng.random((d, d - k)))
 
-        random_vec /= qml.math.linalg.norm(random_vec)
+    ortogonal_projection_matrix = qml.math.eye(d) - qml.math.dot(unitary, qml.math.conj(unitary.T))
+    new_columns = qml.math.dot(ortogonal_projection_matrix, new_columns)
 
-        if qml.math.get_interface(columns) == "jax":
-            unitary = unitary.at[:, j].set(random_vec)
-        else:
-            unitary[:, j] = random_vec
+    q, _ = qml.math.linalg.qr(
+        new_columns
+    )  # apply QR decomposition to orthonormalize the new columns
 
+    if qml.math.get_interface(unitary) == "jax":
+        unitary = unitary.at[:, k:d].set(q[:, : d - k])
+    else:
+        unitary[:, k:d] = q[:, : d - k]
     return unitary
 
 
