@@ -34,7 +34,6 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
 
     .. code-block:: python
         import pennylane as qml
-        import pprint
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
