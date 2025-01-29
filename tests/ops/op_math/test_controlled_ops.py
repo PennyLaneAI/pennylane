@@ -55,7 +55,7 @@ class TestControlledQubitUnitary:
 
     def test_flatten_unflatten(self):
         """Test that the operation can be flattened and unflattened"""
-        op = qml.ControlledQubitUnitary(np.eye(2), (1, 2, 3))
+        op = qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3))
         qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def test_noniterable_base(self):
@@ -99,11 +99,11 @@ class TestControlledQubitUnitary:
             match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
             with pytest.warns(
-                UserWarning,
-                match="base operator already has wires; values specified through wires kwarg will be ignored.",
+                qml.PennyLaneDeprecationWarning,
+                match="QubitUnitary input to ControlledQubitUnitary is deprecated",
             ):
                 qml.ControlledQubitUnitary(
-                    U, control_wires=[2, 3, 4], wires=[0, 1], control_values=[1, 0, 1]
+                    U, control_wires=[2, 3, 4], wires=[1], control_values=[1, 0, 1]
                 )
 
     def test_deprecated_control_wires_argument_error(self):
@@ -116,14 +116,18 @@ class TestControlledQubitUnitary:
             with pytest.raises(TypeError, match="Must specify a set of wires"):
                 qml.ControlledQubitUnitary(U, control_wires=[])
 
-    @pytest.mark.parametrize("base", (np.eye(2), qml.X(0)))
+    @pytest.mark.parametrize("base", (qml.X(0), qml.PauliX(0) @ qml.RX(0.5, wires=1)))
     def test_deprecated_interface_still_available(self, base):
         """Test that the deprecated interface is still available"""
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
             match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
-            qml.ControlledQubitUnitary(base, control_wires=[1, 2, 3])
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="QubitUnitary input to ControlledQubitUnitary is deprecated",
+            ):
+                qml.ControlledQubitUnitary(base, control_wires=[1, 2, 3])
 
     def test_wires_is_none(self):
         """Test that an error is raised if the user provides no target wires for an iterable base operator"""
