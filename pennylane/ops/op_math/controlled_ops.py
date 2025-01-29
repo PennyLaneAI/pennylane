@@ -175,19 +175,20 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
     ):
         _deprecate_control_wires(control_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+
+        if hasattr(base, "wires"):
+            warnings.warn(
+                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+                "Instead, please use a full matrix as input.",
+                qml.PennyLaneDeprecationWarning,
+            )
+            base = base.matrix()
+
         if control_wires == "unset":
             if not wires:
                 raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
-            work_wires = Wires(() if work_wires is None else work_wires)
             control_wires = wires[:-1]  # default
-
-            if isinstance(base, qml.QubitUnitary):
-                warnings.warn(
-                    "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                    "Instead, please use a full matrix as input.",
-                    qml.PennyLaneDeprecationWarning,
-                )
-                base = base.matrix()
 
             if isinstance(base, Iterable):
                 num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
@@ -201,14 +202,9 @@ class ControlledQubitUnitary(ControlledOp):
             else:
                 raise ValueError("Base must be a matrix.")
         else:
+            # Below is the legacy interface, where control_wires provided
             wires = Wires(() if wires is None else wires)
-            work_wires = Wires(() if work_wires is None else work_wires)
             control_wires = Wires(control_wires)
-            if hasattr(base, "wires") and len(wires) != 0:
-                warnings.warn(
-                    "base operator already has wires; values specified through wires kwarg will be ignored."
-                )
-                wires = Wires(())
             if isinstance(base, Iterable):
                 if len(wires) == 0:
                     if len(control_wires) > 1:
@@ -224,7 +220,7 @@ class ControlledQubitUnitary(ControlledOp):
                 base = type.__call__(
                     qml.QubitUnitary, base, wires=wires, unitary_check=unitary_check
                 )
-        
+
         super().__init__(
             base,
             control_wires,
