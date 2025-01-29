@@ -17,7 +17,7 @@ import pennylane as qml
 from pennylane.math import Interface
 
 
-def construct_execution_config(qnode, resolve=True):
+def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
     """Constructs the execution configuration of a QNode instance.
 
     Args:
