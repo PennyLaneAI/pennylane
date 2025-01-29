@@ -15,6 +15,8 @@
 
 import pennylane as qml
 from pennylane.math import Interface
+from pennylane.workflow import construct_tape
+from pennylane.workflow.resolution import _resolve_execution_config
 
 
 def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
@@ -38,19 +40,37 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-    >>> config = qml.workflow.construct_execution_config(circuit)(1.0)
+    If we wish to construct an unresolved execution configuration, we can specify
+    ``resolve=False``. This will leave properties like ``gradient_method`` and ``interface``
+    in their unrefined state (e.g. ``"best"`` or ``"auto"`` respectively).
+    >>> config = qml.workflow.construct_execution_config(circuit, resolve=False)(1)
     >>> pprint.pprint(config)
+    ExecutionConfig(grad_on_execution=None,
+                    use_device_gradient=None,
+                    use_device_jacobian_product=False,
+                    gradient_method='best',
+                    gradient_keyword_arguments={},
+                    device_options={},
+                    interface=<Interface.AUTO: 'auto'>,
+                    derivative_order=1,
+                    mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
+                    convert_to_numpy=True)
+
+    Specifying ``resolve=True`` will then resolve these properties appropriately for the
+    given ``QNode`` configuration that was provided,
+    >>> resolved_config = qml.workflow.construct_execution_config(circuit, resolve=True)(1)
+    >>> pprint.pprint(resolved_config)
     ExecutionConfig(grad_on_execution=False,
-                use_device_gradient=True,
-                use_device_jacobian_product=False,
-                gradient_method='backprop',
-                gradient_keyword_arguments={},
-                device_options={'max_workers': None,
-                                'prng_key': None,
-                                'rng': Generator(PCG64) at 0x17D5BB220},
-                interface=<Interface.AUTO: 'auto'>,
-                derivative_order=1,
-                mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
+                    use_device_gradient=True,
+                    use_device_jacobian_product=False,
+                    gradient_method='backprop',
+                    gradient_keyword_arguments={},
+                    device_options={'max_workers': None,
+                                    'prng_key': None,
+                                    'rng': Generator(PCG64) at 0x17CFBBA00},
+                    interface=<Interface.AUTO: 'auto'>,
+                    derivative_order=1,
+                    mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
                 convert_to_numpy=True)
 
     """
@@ -79,9 +99,9 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
         )
 
         if resolve:
+            tape = construct_tape(qnode)(*args, **kwargs)
             # pylint:disable=protected-access
-            tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
-            config = qml.workflow.resolution._resolve_execution_config(
+            config = _resolve_execution_config(
                 config, qnode.device, (tape,), qnode._transform_program
             )
 
