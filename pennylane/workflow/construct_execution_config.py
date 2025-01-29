@@ -22,7 +22,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for
-        resolve (bool): whether or not to resolve the execution configuration
+        resolve (bool): whether or not to validate and fill in undetermined values like `"best"`
 
     Returns:
         config (qml.devices.ExecutionConfig): the execution configuration
