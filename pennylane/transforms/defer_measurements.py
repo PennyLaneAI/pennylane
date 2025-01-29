@@ -126,7 +126,7 @@ def _get_plxpr_defer_measurements():
     class DeferMeasurementsInterpreter(PlxprInterpreter):
         """Interpreter for applying the defer_measurements transform to plxpr."""
 
-        # pylint: disable=unnecessary-lambda-assignment, attribute-defined-outside-init
+        # pylint: disable=unnecessary-lambda-assignment,attribute-defined-outside-init,no-self-use
 
         def __init__(self, aux_wires):
             super().__init__()
@@ -145,7 +145,7 @@ def _get_plxpr_defer_measurements():
             """
             self.state = {"cur_idx": 0}
 
-        def interpret_dynamic_operation(self, data, struct, idx):  # pylint: disable=no-self-use
+        def interpret_dynamic_operation(self, data, struct, idx):
             """Interpret an operation that uses mid-circuit measurement outcomes as parameters.
 
             * This will not work if mid-circuit measurement values are used to specify
@@ -211,9 +211,7 @@ def _get_plxpr_defer_measurements():
 
             return super().interpret_measurement(measurement)
 
-        def resolve_mcm_values(
-            self, eqn, invals
-        ) -> MeasurementValue:  # pylint: disable=no-self-use
+        def resolve_mcm_values(self, eqn, invals) -> MeasurementValue:
             """Create a ``MeasurementValue`` that captures all classical processing in its
             ``processing_fn``."""
             # pylint: disable=protected-access,unnecessary-lambda
