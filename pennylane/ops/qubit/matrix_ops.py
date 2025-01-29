@@ -249,7 +249,7 @@ class QubitUnitary(Operation):
         return [QubitUnitary(pow_mat, wires=self.wires)]
 
     def _controlled(self, wire):
-        return qml.ControlledQubitUnitary(*self.parameters, wire + self.wires)
+        return qml.ControlledQubitUnitary(*self.parameters, wires=wire + self.wires)
 
     def label(
         self,

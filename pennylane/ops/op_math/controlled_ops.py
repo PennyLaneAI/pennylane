@@ -139,8 +139,8 @@ class ControlledQubitUnitary(ControlledOp):
     def _primitive_bind_call(
         cls,
         base,
-        wires: WiresLike = None,
         control_wires: WiresLike = "unset",
+        wires: WiresLike = None,
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
@@ -179,8 +179,8 @@ class ControlledQubitUnitary(ControlledOp):
     def __init__(
         self,
         base,
-        wires: WiresLike = None,
         control_wires: WiresLike = "unset",
+        wires: WiresLike = None,
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),

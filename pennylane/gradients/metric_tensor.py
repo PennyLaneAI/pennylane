@@ -564,7 +564,8 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
         if allow_nonunitary:
             mat = qml.matrix(qml.generator(op)[0])
             wires = [aux_wire, *op.wires]
-            return qml.ControlledQubitUnitary(mat, wires)
+            return qml.ControlledQubitUnitary(mat, wires=wires)
+
 
         raise ValueError(
             f"Generator for operation {op} not known and non-unitary operations "
