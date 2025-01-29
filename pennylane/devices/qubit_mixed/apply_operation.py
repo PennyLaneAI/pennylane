@@ -345,7 +345,7 @@ def apply_operation(
     **Example:**
 
     >>> state = np.zeros((2, 2, 2, 2))
-    >>> state[0][0] = 1
+    >>> state[0][0][0][0] = 1
     >>> state
     array([[[[1., 0.],
              [0., 0.]],
