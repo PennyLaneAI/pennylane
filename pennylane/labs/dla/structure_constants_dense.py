@@ -24,7 +24,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
 
     This function computes the structure constants of a Lie algebra provided by their dense matrix representation,
-    obtained from, e.g., :func:`~lie_closure` with `dense=True`.
+    obtained from, e.g., :func:`~lie_closure` with `matrix=True`.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
     :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
     that are sums of many Paulis.
@@ -32,7 +32,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qml/demos/tutorial_liesim/#lie-algebra-basics>`__.
 
     Args:
-        g (np.array): The (dynamical) Lie algebra provided as dense matrices, as generated from :func:`~lie_closure` with `dense=True`.
+        g (np.array): The (dynamical) Lie algebra provided as dense matrices, as generated from :func:`~lie_closure` with `matrix=True`.
             ``g`` should have shape ``(d, 2**n, 2**n)`` where ``d`` is the dimension of the algebra and ``n`` is the number of qubits. Each matrix ``g[i]`` should be Hermitian.
         is_orthonormal (bool): Whether or not the matrices in ``g`` are orthonormal with respect to the Hilbert-Schmidt inner product on
             (skew-)Hermitian matrices. If the inputs are orthonormal, it is recommended to set ``is_orthonormal`` to ``True`` to reduce
@@ -48,7 +48,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
 
     >>> n = 4
     >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
-    >>> g = qml.lie_closure(gens, dense=True)
+    >>> g = qml.lie_closure(gens, matrix=True)
     >>> g.shape
     (12, 16, 16)
 
