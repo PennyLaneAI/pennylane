@@ -19,60 +19,69 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.templates.state_preparations.state_prep_mps import _complete_unitary
 
 
-def test_standard_validity():
-    """Check the operation using the assert_valid function."""
-    mps = [
-        np.array([[0.0, 0.107], [0.994, 0.0]]),
-        np.array(
-            [
-                [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
-                [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
-            ]
-        ),
-        np.array(
-            [
-                [[-1.0, 0.0], [0.0, 0.0]],
-                [[0.0, 0.0], [0.0, 1.0]],
-                [[0.0, -1.0], [0.0, 0.0]],
-                [[0.0, 0.0], [1.0, 0.0]],
-            ]
-        ),
-        np.array([[-1.0, -0.0], [-0.0, -1.0]]),
-    ]
+def test_complete_unitary_func():
+    """Check that the auxiliar function _complete_unitary works properly."""
 
-    op = qml.MPSPrep(mps, wires=[0, 1, 2, 3], work_wires=[4, 5])
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    columns = np.array([[1.0, 0, 0, 0], [0, 1, 0, 0]])
+    unitary = _complete_unitary(columns)
+    identity = np.eye(unitary.shape[0])
+
+    assert np.allclose(np.conj(unitary.T) @ unitary, identity, atol=0.1)
 
 
-def test_access_to_param():
-    """tests that the parameter is accessible."""
-    mps = [
-        np.array([[0.0, 0.107], [0.994, 0.0]]),
-        np.array(
-            [
-                [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
-                [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
-            ]
-        ),
-        np.array(
-            [
-                [[-1.0, 0.0], [0.0, 0.0]],
-                [[0.0, 0.0], [0.0, 1.0]],
-                [[0.0, -1.0], [0.0, 0.0]],
-                [[0.0, 0.0], [1.0, 0.0]],
-            ]
-        ),
-        np.array([[-1.0, -0.0], [-0.0, -1.0]]),
-    ]
-    op = qml.MPSPrep(mps, wires=[0, 1, 2])
+class TestMPSPrep:
 
-    for arr1, arr2 in zip(mps, op.mps):
-        assert np.allclose(arr1, arr2)
+    def test_standard_validity(self):
+        """Check the operation using the assert_valid function."""
+        mps = [
+            np.array([[0.0, 0.107], [0.994, 0.0]]),
+            np.array(
+                [
+                    [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                    [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                ]
+            ),
+            np.array(
+                [
+                    [[-1.0, 0.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [0.0, 1.0]],
+                    [[0.0, -1.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [1.0, 0.0]],
+                ]
+            ),
+            np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+        ]
 
+        op = qml.MPSPrep(mps, wires=[0, 1, 2, 3], work_wires=[4, 5])
+        qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
-class TestQROM:
+    def test_access_to_param(self):
+        """tests that the parameter is accessible."""
+        mps = [
+            np.array([[0.0, 0.107], [0.994, 0.0]]),
+            np.array(
+                [
+                    [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                    [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                ]
+            ),
+            np.array(
+                [
+                    [[-1.0, 0.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [0.0, 1.0]],
+                    [[0.0, -1.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [1.0, 0.0]],
+                ]
+            ),
+            np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+        ]
+        op = qml.MPSPrep(mps, wires=[0, 1, 2])
+
+        for arr1, arr2 in zip(mps, op.mps):
+            assert np.allclose(arr1, arr2)
 
     @pytest.mark.parametrize(
         ("mps", "msg_match"),
@@ -365,73 +374,69 @@ class TestQROM:
             assert op.wires == qml.wires.Wires([2 + ind] + [0, 1])
             assert op.name == "QubitUnitary"
 
+    @pytest.mark.jax
+    def test_jax_jit_mps(self):
+        """Check the operation works with jax and jit."""
 
-@pytest.mark.jax
-def test_jax_jit_mps():
-    """Check the operation works with jax and jit."""
+        import jax
+        from jax import numpy as jnp
 
-    import jax
-    from jax import numpy as jnp
+        mps = [
+            jnp.array([[0.0, 0.107j], [0.994, 0.0]], dtype=complex),
+            jnp.array(
+                [
+                    [[0.0, 0.0], [1.0, 0.0]],
+                    [[0.0, 1.0], [0.0, 0.0]],
+                ],
+                dtype=complex,
+            ),
+            jnp.array([[-1.0, -0.0], [-0.0, -1.0]], dtype=complex),
+        ]
 
-    mps = [
-        jnp.array([[0.0, 0.107j], [0.994, 0.0]], dtype=complex),
-        jnp.array(
-            [
-                [[0.0, 0.0], [1.0, 0.0]],
-                [[0.0, 1.0], [0.0, 0.0]],
-            ],
-            dtype=complex,
-        ),
-        jnp.array([[-1.0, -0.0], [-0.0, -1.0]], dtype=complex),
-    ]
+        dev = qml.device("default.qubit")
 
-    dev = qml.device("default.qubit")
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit():
+            qml.MPSPrep(mps, wires=range(2, 5), work_wires=[0, 1])
+            return qml.state()
 
-    @jax.jit
-    @qml.qnode(dev)
-    def circuit():
-        qml.MPSPrep(mps, wires=range(2, 5), work_wires=[0, 1])
-        return qml.state()
+        output = circuit()[:8]
 
-    output = circuit()[:8]
+        state = [
+            0.0 + 0.0j,
+            -0.10705513j,
+            0.0 + 0.0j,
+            0.0 + 0.0j,
+            0.0 + 0.0j,
+            0.0 + 0.0j,
+            -0.99451217 + 0.0j,
+            0.0 + 0.0j,
+        ]
 
-    state = [
-        0.0 + 0.0j,
-        -0.10705513j,
-        0.0 + 0.0j,
-        0.0 + 0.0j,
-        0.0 + 0.0j,
-        0.0 + 0.0j,
-        -0.99451217 + 0.0j,
-        0.0 + 0.0j,
-    ]
+        assert jax.numpy.allclose(output, jax.numpy.array(state), rtol=0.01)
 
-    assert jax.numpy.allclose(output, jax.numpy.array(state), rtol=0.01)
+    def test_wires_decomposition(self):
+        """Checks that error is shown if no `work_wires` are given in decomposition"""
 
+        mps = [
+            np.array([[0.0, 0.107j], [0.994, 0.0]], dtype=complex),
+            np.array(
+                [
+                    [[0.0, 0.0], [1.0, 0.0]],
+                    [[0.0, 1.0], [0.0, 0.0]],
+                ],
+                dtype=complex,
+            ),
+            np.array([[-1.0, -0.0], [-0.0, -1.0]], dtype=complex),
+        ]
 
-def test_wires_decomposition():
-    """Checks that error is shown if no `work_wires` are given in decomposition"""
+        dev = qml.device("default.qubit")
 
-    import numpy as np
+        @qml.qnode(dev)
+        def circuit():
+            qml.MPSPrep(mps, wires=range(2, 5))
+            return qml.state()
 
-    mps = [
-        np.array([[0.0, 0.107j], [0.994, 0.0]], dtype=complex),
-        np.array(
-            [
-                [[0.0, 0.0], [1.0, 0.0]],
-                [[0.0, 1.0], [0.0, 0.0]],
-            ],
-            dtype=complex,
-        ),
-        np.array([[-1.0, -0.0], [-0.0, -1.0]], dtype=complex),
-    ]
-
-    dev = qml.device("default.qubit")
-
-    @qml.qnode(dev)
-    def circuit():
-        qml.MPSPrep(mps, wires=range(2, 5))
-        return qml.state()
-
-    with pytest.raises(AssertionError, match="To decompose MPSPrep you must specify"):
-        circuit()
+        with pytest.raises(AssertionError, match="To decompose MPSPrep you must specify"):
+            circuit()

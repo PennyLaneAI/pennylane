@@ -22,7 +22,7 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
-def complete_unitary(columns):
+def _complete_unitary(columns):
     """
     Completes a unitary matrix given a list of orthonormal columns.
 
@@ -48,7 +48,7 @@ def complete_unitary(columns):
     # Complete the remaining columns using Gram-Schmidt
     np.random.seed(42)
     for j in range(k, d):
-        random_vec = qml.math.array(np.random.rand(d)) + 1j * qml.math.array(np.random.rand(d))
+        random_vec = qml.math.array(np.random.rand(d))
         for i in range(j):
             random_vec -= qml.math.dot(qml.math.conj(unitary[:, i]), random_vec) * unitary[:, i]
 
@@ -320,7 +320,7 @@ class MPSPrep(Operation):
 
                 vectors.append(vector)
 
-            matrix = complete_unitary(vectors)
+            matrix = _complete_unitary(vectors)
             ops.append(qml.QubitUnitary(matrix, wires=[wires[i]] + work_wires))
 
         return ops
