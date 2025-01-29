@@ -46,9 +46,9 @@ def _complete_unitary(columns):
         unitary[:, :k] = columns
 
     # Complete the remaining columns using Gram-Schmidt
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     for j in range(k, d):
-        random_vec = qml.math.array(np.random.rand(d))
+        random_vec = qml.math.array(rng.random(d))
         for i in range(j):
             random_vec -= qml.math.dot(qml.math.conj(unitary[:, i]), random_vec) * unitary[:, i]
 
