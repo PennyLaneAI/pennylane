@@ -21,7 +21,7 @@ from typing import Hashable, Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements.mid_measure import MeasurementProcess, MeasurementValue
+from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
 
@@ -67,13 +67,13 @@ def _measure_impl(
 
 
 # ToDo: program capture compatibility (_create_midmeasure_primitive equivalent)
-class ParametricMidMeasureMP(MeasurementProcess):
+
+
+class ParametricMidMeasureMP(MidMeasureMP):
     """Parametric mid-circuit measurement.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
     Measurements on a single qubit in the computational basis are assumed.
-
-    Please refer to :func:`pennylane.measure` for detailed documentation.
 
     Args:
         angle (float): The angle in radians
@@ -111,11 +111,9 @@ class ParametricMidMeasureMP(MeasurementProcess):
         id: Optional[str] = None,
     ):
         self.batch_size = None
-        super().__init__(wires=Wires(wires), id=id)
+        super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, id=id)
         self.plane = plane
         self.angle = angle
-        self.reset = reset
-        self.postselect = postselect
 
     # pylint: disable=arguments-renamed, arguments-differ
     @property
@@ -131,34 +129,23 @@ class ParametricMidMeasureMP(MeasurementProcess):
 
         return hash(fingerprint)
 
-    def decomposition(self):
+    @property
+    def has_diagonalizing_gates(self):
+        """Whether there are gates that need to be applied for to diagonalize the measurement"""
+        return True
+
+    def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
         if self.plane == "XY":
-            U = qml.QubitUnitary(_xy_to_z(self.angle), wires=self.wires)
-        else:
-            raise NotImplementedError(f"{self.plane} plane not implemented")
+            return [qml.QubitUnitary(_xy_to_z(self.angle), wires=self.wires)]
 
-        return [U, qml.measurements.MidMeasureMP(self.wires, self.reset, self.postselect, self.id)]
+        raise NotImplementedError(f"{self.plane} plane not implemented")
 
+    # ToDo: is this needed anymore?
     @property
-    def _queue_category(self):
-        return "_ops"
-
-    @property
-    def data(self):
-        """The data of the measurement. Needed to match the Operator API."""
-        return []
-
-    @property
-    def name(self):
+    def has_matrix(self):
         """The name of the measurement. Needed to match the Operator API."""
-        return self.__class__.__name__
-
-    # ToDo: _primitive_bind_call
-    #
-    # ToDo: _abstract_eval
-    #
-    # ToDo: label
+        return False
 
 
 def _xy_to_z(angle):
