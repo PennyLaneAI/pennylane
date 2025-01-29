@@ -270,7 +270,7 @@ class TestIntegration:
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     def test_ctrl_op(self):
-        """Test that the adjoint of an operator successfully passes through autograph without raising an error"""
+        """Test that controlled operators successfully pass through autograph"""
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circ():

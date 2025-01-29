@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the necessary helper functions for setting up the workflow for execution.
-
-"""
+"""This module contains the necessary helper functions for setting up the workflow for execution."""
 from collections.abc import Callable
 from dataclasses import replace
 from typing import Literal, Optional, Union, get_args
@@ -37,38 +35,12 @@ SupportedDiffMethods = Literal[
 ]
 
 
-def _get_jax_interface_name(tapes):
-    """Check all parameters in each tape and output the name of the suitable
-    JAX interface.
-
-    This function checks each tape and determines if any of the gate parameters
-    was transformed by a JAX transform such as ``jax.jit``. If so, it outputs
-    the name of the JAX interface with jit support.
-
-    Note that determining if jit support should be turned on is done by
-    checking if parameters are abstract. Parameters can be abstract not just
-    for ``jax.jit``, but for other JAX transforms (vmap, pmap, etc.) too. The
-    reason is that JAX doesn't have a public API for checking whether or not
-    the execution is within the jit transform.
-
-    Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-
-    Returns:
-        str: name of JAX interface that fits the tape parameters, "jax" or
-        "jax-jit"
+def _get_jax_interface_name() -> Interface:
+    """Check if we are in a jitting context by creating a dummy array and seeing if it's
+    abstract.
     """
-    for t in tapes:
-        for op in t:
-            # Unwrap the observable from a MeasurementProcess
-            if not isinstance(op, qml.ops.Prod):
-                op = getattr(op, "obs", op)
-            if op is not None:
-                # Some MeasurementProcess objects have op.obs=None
-                if any(qml.math.is_abstract(param) for param in op.data):
-                    return Interface.JAX_JIT
-
-    return Interface.JAX
+    x = qml.math.asarray([0], like="jax")
+    return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
 
 
 # pylint: disable=import-outside-toplevel
@@ -86,9 +58,7 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(
-    interface: Union[str, Interface, None], tapes: QuantumScriptBatch
-) -> Interface:
+def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
     """Helper function to resolve an interface based on a set of tapes.
 
     Args:
@@ -98,7 +68,6 @@ def _resolve_interface(
     Returns:
         Interface: resolved interface
     """
-
     interface = get_canonical_interface_name(interface)
 
     if interface == Interface.AUTO:
@@ -106,11 +75,11 @@ def _resolve_interface(
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = get_interface(*params)
-        if interface != Interface.NUMPY:
-            try:
-                interface = get_canonical_interface_name(interface)
-            except ValueError:
-                interface = Interface.NUMPY
+        try:
+            interface = get_canonical_interface_name(interface)
+        except ValueError:
+            # If the interface is not recognized, default to numpy, like networkx
+            interface = Interface.NUMPY
     if interface == Interface.TF and _use_tensorflow_autograph():
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
@@ -123,7 +92,7 @@ def _resolve_interface(
                 "version of jax to enable the 'jax' interface."  # pragma: no cover
             ) from e  # pragma: no cover
 
-        interface = _get_jax_interface_name(tapes)
+        interface = _get_jax_interface_name()
 
     return interface
 
@@ -249,21 +218,23 @@ def _resolve_execution_config(
     ):
         updated_values["grad_on_execution"] = False
 
-    if execution_config.use_device_jacobian_product and isinstance(
-        device, qml.devices.LegacyDeviceFacade
-    ):
-        raise qml.QuantumFunctionError(
-            "device provided jacobian products are not compatible with the old device interface."
-        )
-
     if (
         "lightning" in device.name
-        and (transform_program and qml.metric_tensor in transform_program)
+        and transform_program
+        and qml.metric_tensor in transform_program
         and execution_config.gradient_method == "best"
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-
     execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+
+    if execution_config.use_device_jacobian_product and not device.supports_vjp(
+        execution_config, tapes[0]
+    ):
+        raise qml.QuantumFunctionError(
+            f"device_vjp=True is not supported for device {device},"
+            f" diff_method {execution_config.gradient_method},"
+            " and the provided circuit."
+        )
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
