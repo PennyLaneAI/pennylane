@@ -67,8 +67,8 @@ jobs:
       
       - name: PennyLane-Lightning Latest Version
         id: pennylane-lightning
-        run: echo "latest=git+https://github.com/PennyLaneAI/pennylane-lightning@replace-return_type-check" >> $GITHUB_OUTPUT
-      
+        run: echo "latest=--index https://test.pypi.org/simple/ --prerelease=allow --upgrade-package PennyLane-Lightning PennyLane-Lightning" >> $GITHUB_OUTPUT
+    
     outputs:
       jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
       tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
