@@ -241,7 +241,6 @@ class TestAutogradExecuteIntegration:
             res = qml.jacobian(cost)(a)
             assert res.shape == ()  # pylint: disable=no-member
 
-        # compare to standard tape jacobian
         expected = -qml.math.sin(a)
 
         assert expected.shape == ()
