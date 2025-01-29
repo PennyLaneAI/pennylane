@@ -121,6 +121,9 @@
 
 * Remove `QNode.get_gradient_fn` from source code.
   [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
+  
+* The source code has been updated use black 25.1.0
+  [(#6897)](https://github.com/PennyLaneAI/pennylane/pull/6897)
 
 * Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
   [(#6877)](https://github.com/PennyLaneAI/pennylane/pull/6877)
