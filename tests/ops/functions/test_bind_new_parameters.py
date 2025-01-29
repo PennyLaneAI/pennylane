@@ -160,7 +160,7 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
         (
             qml.ControlledQubitUnitary(qml.QubitUnitary(X, 0), wires=[1, 0]),
             [Y],
-            qml.ControlledQubitUnitary(qml.QubitUnitary(Y, 0), [1, 0]),
+            qml.ControlledQubitUnitary(qml.QubitUnitary(Y, 0), wires=[1, 0]),
         ),
     ],
 )
