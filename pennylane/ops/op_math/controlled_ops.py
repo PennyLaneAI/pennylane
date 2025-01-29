@@ -215,7 +215,8 @@ class ControlledQubitUnitary(ControlledOp):
 
             if hasattr(base, "wires") and len(wires) != 0:
                 warnings.warn(
-                    "base operator already has wires; values specified through wires kwarg will be ignored."
+                    "base operator already has wires; values specified through wires kwarg will be ignored.",
+                    UserWarning,
                 )
                 wires = Wires(())
 
