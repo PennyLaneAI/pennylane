@@ -9,10 +9,16 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class is deprecated. Instead, use the ``wires`` argument.
 
   - Deprecated in v0.41
   - Will be removed in v0.42
+
 
 * The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.

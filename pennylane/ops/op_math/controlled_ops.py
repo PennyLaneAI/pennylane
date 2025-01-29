@@ -94,13 +94,6 @@ class ControlledQubitUnitary(ControlledOp):
     Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
         [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
 
-    Alternatively, the same operator can be constructed with a QubitUnitary:
-
-    >>> base = qml.QubitUnitary(U, wires=2)
-    >>> qml.ControlledQubitUnitary(base, wires=[0, 1, 2])
-    Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
-        [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
-
     Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
     it is necessary to apply a gate conditioned on all qubits being in the
@@ -130,9 +123,12 @@ class ControlledQubitUnitary(ControlledOp):
     grad_method = None
     """Gradient computation method."""
 
+    def _flatten(self):
+        return (self.base.data[0],), (self.wires, tuple(self.control_values), self.work_wires)
+
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(data[0], metadata[0], control_values=metadata[1], work_wires=metadata[2])
+        return cls(data[0], wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
 
     # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
     @classmethod
@@ -146,29 +142,22 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
     ):
         _deprecate_control_wires(control_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+        if hasattr(base, "wires"):
+            warnings.warn(
+                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+                "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
+                qml.PennyLaneDeprecationWarning,
+            )
+            base = base.matrix()
+
         if control_wires == "unset":
-
-            work_wires = Wires(() if work_wires is None else work_wires)
-
-            if hasattr(base, "wires") and len(wires) != 0:
-                warnings.warn(
-                    "base operator already has wires; values specified through wires kwarg will be ignored."
-                )
-                # wires = Wires(())
 
             return cls._primitive.bind(
                 base, wires=wires, control_values=control_values, work_wires=work_wires
             )
-
         # Below is the legacy interface, where control_wires provided
         wires = Wires(() if wires is None else wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
-
-        if hasattr(base, "wires") and len(wires) != 0:
-            warnings.warn(
-                "base operator already has wires; values specified through wires kwarg will be ignored."
-            )
-            wires = Wires(())
 
         all_wires = control_wires + wires
         return cls._primitive.bind(
@@ -186,18 +175,20 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
     ):
         _deprecate_control_wires(control_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+
+        if hasattr(base, "wires"):
+            warnings.warn(
+                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+                "Instead, please use a full matrix as input.",
+                qml.PennyLaneDeprecationWarning,
+            )
+            base = base.matrix()
+
         if control_wires == "unset":
             if not wires:
                 raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
-            work_wires = Wires(() if work_wires is None else work_wires)
             control_wires = wires[:-1]  # default
-
-            if hasattr(base, "wires") and len(wires) != 0:
-                warnings.warn(
-                    "base operator already has wires; values specified through wires kwarg will be ignored."
-                )
-                # base should have the target_wires. Then control_wires should be the ones in wires that are not in base.wires
-                control_wires = [w for w in wires if w not in base.wires]
 
             if isinstance(base, Iterable):
                 num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
@@ -208,18 +199,12 @@ class ControlledQubitUnitary(ControlledOp):
                 base = type.__call__(
                     qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
                 )
+            else:
+                raise ValueError("Base must be a matrix.")
         else:
+            # Below is the legacy interface, where control_wires provided
             wires = Wires(() if wires is None else wires)
-            work_wires = Wires(() if work_wires is None else work_wires)
             control_wires = Wires(control_wires)
-
-            if hasattr(base, "wires") and len(wires) != 0:
-                warnings.warn(
-                    "base operator already has wires; values specified through wires kwarg will be ignored.",
-                    UserWarning,
-                )
-                wires = Wires(())
-
             if isinstance(base, Iterable):
                 if len(wires) == 0:
                     if len(control_wires) > 1:
@@ -247,8 +232,12 @@ class ControlledQubitUnitary(ControlledOp):
     def _controlled(self, wire):
         ctrl_wires = wire + self.control_wires
         values = None if self.control_values is None else [True] + self.control_values
+        base = self.base
+        if isinstance(self.base, qml.QubitUnitary):
+            base = self.base.matrix()
+
         return ControlledQubitUnitary(
-            self.base,
+            base,
             wires=ctrl_wires + self.wires,
             control_values=values,
             work_wires=self.work_wires,
