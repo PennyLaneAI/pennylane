@@ -59,7 +59,6 @@ class ControlledQubitUnitary(ControlledOp):
     * ``control_wires``: (deprecated) wires that act as control for the operation
     * ``wires``: wires of the final controlled unitary, consisting of control wires following by target wires
     * ``control_values``: the state on which to apply the controlled operation (see below)
-    * ``target_wires``: the wires the unitary matrix will be applied to
     * ``work_wires``: wires made use of during the decomposition of the operation into native operations
 
     **Details:**
