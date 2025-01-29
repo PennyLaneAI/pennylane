@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the ``DynamicDecomposeInterpreter`` class."""
 # pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods
+from functools import partial
+
 import pytest
 
 import pennylane as qml
@@ -58,22 +60,24 @@ class CustomOpMultiWire(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, *self.wires, *self.hyperparameters.values()
+        args = (*self.parameters, *self.wires)
+        return jax.make_jaxpr(partial(self._compute_plxpr_decomposition, **self.hyperparameters))(
+            *args
         )
 
     @staticmethod
-    def _compute_plxpr_decomposition(phi, *args):
-        wires = args[:4]
-        hyperparameters = args[4:]
+    def _compute_plxpr_decomposition(*args, **hyperparameters):
+
+        phi = args[0]
+        wires = args[1:]
+
         qml.CNOT(wires=[wires[0], wires[1]])
         qml.DoubleExcitation(phi, wires=wires)
         qml.CNOT(wires=[wires[0], wires[1]])
-        qml.RX(hyperparameters[0], wires=wires[0])
+        qml.RX(hyperparameters["key_1"], wires=wires[0])
         qml.RY(phi, wires=wires[1])
         qml.RZ(phi, wires=wires[2])
-        qml.RX(hyperparameters[1], wires=wires[3])
+        qml.RX(hyperparameters["key_2"], wires=wires[3])
 
 
 class CustomOpCond(Operation):
