@@ -388,14 +388,20 @@ class TestJaxIntegration:
         func1 = func
         results1 = func1(*params)
 
-        jaxpr = str(jax.make_jaxpr(func)(*params))
-        # will change once we solve the compilation overhead issue
-        # assert "pure_callback" not in jaxpr
-        # TODO: [sc-82874]
-        assert "pure_callback" in jaxpr
+        if diff_method == "best":
+            with pytest.warns(UserWarning, match="substantial compilation overheads"):
+                jaxpr = str(jax.make_jaxpr(func)(*params))
+        else:
+            jaxpr = str(jax.make_jaxpr(func)(*params))
+        assert "pure_callback" not in jaxpr
 
         func2 = jax.jit(func)
-        results2 = func2(*params)
+        if diff_method == "best":
+            # jitting parameter shift derivatives
+            with pytest.warns(UserWarning, match="substantial compilation overheads"):
+                results2 = func2(*params)
+        else:
+            results2 = func2(*params)
 
         measures = [
             qml.probs,

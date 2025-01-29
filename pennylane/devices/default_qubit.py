@@ -17,6 +17,7 @@ The default.qubit device is PennyLane's standard qubit-based device.
 
 import concurrent.futures
 import logging
+import warnings
 from dataclasses import replace
 from functools import partial
 from numbers import Number
@@ -611,6 +612,17 @@ class DefaultQubit(Device):
             # need numpy to use caching, and need caching higher order derivatives
             and execution_config.derivative_order == 1
         )
+        if not updated_values["convert_to_numpy"] and execution_config.gradient_method in {
+            qml.gradients.param_shift,
+            "parameter-shift",
+        }:
+            warnings.warn(
+                (
+                    "End to end jitting with parameter shift can have substantial compilation overheads. "
+                    "To turn off end-to-end jitting, please use an integer seed instead of a PRNGKey."
+                ),
+                UserWarning,
+            )
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")

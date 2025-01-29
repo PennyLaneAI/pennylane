@@ -157,7 +157,11 @@ class TestConfigSetup:
         config = qml.devices.ExecutionConfig(
             gradient_method=qml.gradients.param_shift, interface=interface
         )
-        processed = dev.setup_execution_config(config)
+        if use_key:
+            with pytest.warns(UserWarning, match="substantial compilation overheads"):
+                processed = dev.setup_execution_config(config)
+        else:
+            processed = dev.setup_execution_config(config)
         assert processed.convert_to_numpy != use_key
 
     def test_convert_to_numpy_with_adjoint(self):
