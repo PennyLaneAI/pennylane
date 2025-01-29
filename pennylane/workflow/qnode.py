@@ -813,14 +813,6 @@ class QNode:
         # construct the tape
         tape = self.construct(args, kwargs)
 
-        if self.interface == "auto":
-            interface = qml.math.get_interface(*args, *list(kwargs.values()))
-            try:
-                interface = get_canonical_interface_name(interface)
-            except ValueError:
-                interface = Interface.NUMPY
-        else:
-            interface = self.interface
         # Calculate the classical jacobians if necessary
         self._transform_program.set_classical_component(self, args, kwargs)
 
@@ -828,7 +820,7 @@ class QNode:
             (tape,),
             device=self.device,
             diff_method=self.diff_method,
-            interface=interface,
+            interface=self.interface,
             transform_program=self._transform_program,
             gradient_kwargs=self.gradient_kwargs,
             **self.execute_kwargs,
@@ -840,6 +832,7 @@ class QNode:
         if (
             len(tape.get_parameters(trainable_only=False)) == 0
             and not self._transform_program.is_informative
+            and self.interface != "auto"
         ):
             res = _convert_to_interface(res, qml.math.get_canonical_interface_name(self.interface))
 
