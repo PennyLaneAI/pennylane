@@ -62,7 +62,7 @@ For example:
 
 This execute method works in tandem with the optional :meth:`Device.preprocess_transforms <pennylane.devices.Device.preprocess_transforms>`
 and :meth:`Device.setup_execution_config`, described below in more detail. Preprocessing transforms
-turns generic circuits into ones supported by the device, or raises an error if the circuit is invalid.
+turns generic circuits into ones supported by the device or raises an error if the circuit is invalid.
 Execution produces numerical results from those supported circuits.
 
 In a more minimal example, for any initial batch of quantum tapes and a config object, we expect to be able to do:
@@ -376,7 +376,7 @@ Wires
 Devices can now either:
 
 1) Strictly use wires provided by the user on initialization: ``device(name, wires=wires)``
-2) Infer the number and ordering of wires provided by the submitted circuit.
+2) Infer the number and order of wires provided by the submitted circuit
 3) Strictly require specific wire labels
 
 Option 2 allows workflows to change the number and labeling of wires over time, but sometimes users want
@@ -434,18 +434,20 @@ The execution config stores two kinds of information:
 
 Device options are any device specific options used to configure the behavior of an execution. For
 example, ``default.qubit`` has ``max_workers``, ``rng``, and ``prng_key``. ``default.tensor`` has
-``contract``, ``cutoff``, ``dtype``, ``method``, and ``max_bond_dim``. These options are often set
+``contract``, ``contraction_optimizer``, ``cutoff``, ``c_dtype``, ``local_simplify``, ``method``, and ``max_bond_dim``. These options are often set
 with default values on initialization. These values should be placed into the ``ExecutionConfig.device_options``
 dictionary in :meth:`~.devices.Device.setup_execution_config`. Note that we do provide a default
 implementation of this method, but you will most likely need to override it yourself.
 
->>> dev = qml.device('default.tensor', wires=2, max_bond_dim=4, contract="nonlocal", dtype=np.complex64)
+>>> dev = qml.device('default.tensor', wires=2, max_bond_dim=4, contract="nonlocal", c_dtype=np.complex64)
 >>> dev.setup_execution_config().device_options
 {'contract': 'nonlocal',
- 'cutoff': 1.1920929e-07,
- 'dtype': numpy.complex64,
- 'method': 'mps',
- 'max_bond_dim': 4}
+ 'contraction_optimizer': 'auto-hq',
+ 'cutoff': None,
+ 'c_dtype': numpy.complex64,
+ 'local_simplify': 'ADCRS',
+ 'max_bond_dim': 4,
+ 'method': 'mps'}
 
 Even if the property is stored as an attribute on the device, execution should pull the value of
 these properties from the config instead of from the device instance. While not yet integrated at
@@ -470,12 +472,15 @@ pieces of functionality:
 Note that these properties are only applicable to devices that provided derivatives or VJPs. If your device
 does not provide derivatives, you can safely ignore these properties.
 
-The workflow options are ``use_device_gradient``, ``use_device_jacobian_product``, and ``grad_on_execution``. 
+The workflow options are ``use_device_gradient``, ``use_device_jacobian_product``, ``grad_on_execution``,
+and ``convert_to_numpy``. 
 ``use_device_gradient=True`` indicates that workflow should request derivatives from the device. 
 ``grad_on_execution=True`` indicates a preference to use ``execute_and_compute_derivatives`` instead
-of ``execute`` followed by ``compute_derivatives``. Finally, ``use_device_jacobian_product`` indicates
+of ``execute`` followed by ``compute_derivatives``. ``use_device_jacobian_product`` indicates
 a request to call ``compute_vjp`` instead of ``compute_derivatives``. Note that if ``use_device_jacobian_product``
-is ``True``, this takes precedence over calculating the full jacobian.
+is ``True``, this takes precedence over calculating the full jacobian. If the device can accept ML framework parameters, like
+jax, ``convert_to_numpy=False`` should be specified. Then the parameters will not be converted, and special
+interface-specific processing (like executing inside a ``jax.pure_callback`` when using ``jax.jit``) will be needed.
 
 >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 >>> processed_config = qml.device('default.qubit').setup_execution_config(config)
@@ -484,6 +489,8 @@ True
 >>> processed_config.use_device_gradient
 True
 >>> processed_config.grad_on_execution
+True
+>>> processed_config.convert_to_numpy
 True
 
 Execution

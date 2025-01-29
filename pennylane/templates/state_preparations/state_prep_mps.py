@@ -90,22 +90,14 @@ class MPSPrep(Operation):
             np.array([[0.0, 0.107], [0.994, 0.0]]),
             np.array(
                 [
-                    [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
-                    [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
-                ]
-            ),
-            np.array(
-                [
-                    [[-1.0, 0.0], [0.0, 0.0]],
-                    [[0.0, 0.0], [0.0, 1.0]],
-                    [[0.0, -1.0], [0.0, 0.0]],
                     [[0.0, 0.0], [1.0, 0.0]],
+                    [[0.0, 1.0], [0.0, 0.0]],
                 ]
             ),
             np.array([[-1.0, -0.0], [-0.0, -1.0]]),
         ]
 
-        dev = qml.device("lightning.tensor", wires = 3)
+        dev = qml.device("lightning.tensor", wires=3)
         @qml.qnode(dev)
         def circuit():
             qml.MPSPrep(mps, wires = [0,1,2])
@@ -114,9 +106,8 @@ class MPSPrep(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [ 0.    +0.j  0.    +0.j  0.    +0.j -0.1066+0.j  0.    +0.j  0.    +0.j
-          0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j
-          0.9943+0.j  0.    +0.j  0.    +0.j  0.    +0.j]
+        [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
+        0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
 
     .. details::
         :title: Usage Details

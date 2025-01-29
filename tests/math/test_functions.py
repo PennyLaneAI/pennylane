@@ -1024,6 +1024,18 @@ def test_get_interface(t, interface):
     assert res == interface
 
 
+# pylint: disable=too-few-public-methods
+class TestInterfaceEnum:
+    """Test the Interface enum class"""
+
+    def test_eq(self):
+        """Test that an error is raised if comparing to string"""
+        assert fn.Interface.NUMPY == fn.Interface.NUMPY
+        with pytest.raises(TypeError, match="Cannot compare Interface with str"):
+            # pylint: disable=pointless-statement
+            fn.Interface.NUMPY == "numpy"
+
+
 @pytest.mark.parametrize("t", test_data)
 def test_toarray(t):
     """Test that the toarray method correctly converts the input

@@ -24,6 +24,7 @@ to verify and test quantum gradient computations.
 .. autosummary::
     :toctree: api
 
+    capabilities
     default_qubit
     default_gaussian
     default_mixed
