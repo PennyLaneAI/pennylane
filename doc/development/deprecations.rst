@@ -19,7 +19,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-
 * The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
 
