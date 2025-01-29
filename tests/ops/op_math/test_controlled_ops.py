@@ -86,9 +86,13 @@ class TestControlledQubitUnitary:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match="QubitUnitary input to ControlledQubitUnitary is deprecated",
+            match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
-            qml.ControlledQubitUnitary(base_op, wires=[0, 1])
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="QubitUnitary input to ControlledQubitUnitary is deprecated",
+            ):
+                qml.ControlledQubitUnitary(base_op, wires=[1], control_wires=[0])
 
     def test_deprecated_base_already_has_wires(self):
         """Test initialization with invalid control values"""
