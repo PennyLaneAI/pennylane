@@ -264,7 +264,7 @@ class MPSPrep(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(mps, wires, work_wires):
+    def compute_decomposition(mps, wires, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -285,9 +285,8 @@ class MPSPrep(Operation):
         ops = []
         n_wires = len(work_wires) + 1
 
-        for i in range(len(mps)):
+        for i, Ai in enumerate(mps):
             vectors = []
-            Ai = mps[i]
 
             # encodes the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
             if i == 0:
