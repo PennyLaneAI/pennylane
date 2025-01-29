@@ -77,7 +77,7 @@ class TestControlledQubitUnitary:
             match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
             with pytest.raises(TypeError, match="Must specify a set of wires"):
-                op = qml.ControlledQubitUnitary(U, control_wires=[])
+                qml.ControlledQubitUnitary(U, control_wires=[])
 
     @pytest.mark.parametrize("base", (np.eye(2), qml.X(0)))
     def test_deprecated_interface_still_available(self, base):
