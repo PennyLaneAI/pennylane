@@ -52,10 +52,10 @@ X_broadcasted = np.array([X] * 3)
 # pylint: disable=too-many-public-methods
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
-    
+
     def test_flatten_unflatten(self):
         """Test that the operation can be flattened and unflattened"""
-        op = qml.ControlledQubitUnitary(np.eye(2), (1,2,3))
+        op = qml.ControlledQubitUnitary(np.eye(2), (1, 2, 3))
         qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def test_noniterable_base(self):
