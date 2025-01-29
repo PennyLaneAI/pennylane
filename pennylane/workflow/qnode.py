@@ -189,6 +189,10 @@ def _validate_diff_method(
 
     if device.supports_derivatives(config):
         return
+    if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
+        raise qml.QuantumFunctionError(
+            f"Device {device} does not support {diff_method} with requested circuit."
+        )
     if isinstance(diff_method, str) and diff_method in tuple(get_args(SupportedDiffMethods)):
         return
     if isinstance(diff_method, TransformDispatcher):
