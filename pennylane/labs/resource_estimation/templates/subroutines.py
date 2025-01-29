@@ -194,8 +194,8 @@ class ResourceSelect(qml.Select, ResourceOperator):
         x = re.ResourceX.resource_rep()
 
         num_ops = len(cmpr_ops)
-        num_ctrl_wires = int(qnp.log2(num_ops))
-        num_total_ctrl_possibilities = num_ctrl_wires * (2**num_ctrl_wires)  # n * 2^n
+        num_ctrl_wires = int(qnp.ceil(qnp.log2(num_ops)))
+        num_total_ctrl_possibilities = 2**num_ctrl_wires  # 2^n
 
         num_zero_controls = num_total_ctrl_possibilities // 2
         gate_types[x] = num_zero_controls * 2  # conjugate 0 controls
