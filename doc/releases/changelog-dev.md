@@ -61,6 +61,9 @@
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
 
+* The template `MPSPrep` now has a gate decomposition. This enables its use with any device.
+  [(#6896)](https://github.com/PennyLaneAI/pennylane/pull/6896)
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
@@ -153,6 +156,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
