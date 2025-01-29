@@ -183,17 +183,17 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
 
     Args:
-        freqs (list[float]): normal mode frequencies in ``cm^-1``
-        vecs (TensorLike[float]): displacement vectors for normal modes
+        freqs (list[float]): normal mode frequencies in reciprocal centimetre
+        vecs (TensorLike[float]): displacement vectors of the normal modes
         bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
             Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
 
     Returns:
         tuple: A tuple containing the following:
-         - list[float] : localized frequencies
+         - List[float] : localized frequencies in reciprocal centimetre
          - TensorLike[float] : localized displacement vectors
-         - TensorLike[float] : localization matrix describing the relationship between
-           original and localized modes.
+         - TensorLike[float] : localization matrix describing the relationship between the
+           original and the localized modes
 
     **Example**
 
