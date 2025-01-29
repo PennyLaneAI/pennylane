@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Assertion test for multi_dispatch function/decorator
-"""
+"""Assertion test for multi_dispatch function/decorator"""
 # pylint: disable=unused-argument,no-value-for-parameter,too-few-public-methods,wrong-import-order
 import autoray
 import numpy as onp
