@@ -26,7 +26,7 @@ from ..openfermion_pyscf import _import_pyscf
 
 @dataclass
 class VibrationalPES:
-    r"""Data class to save potential energy surface information computed along vibrational normal modes.
+    r"""Data class to store energy data computed along vibrational normal modes of a molecule.
 
     Args:
         freqs (list[float]): normal-mode frequencies in atomic units
