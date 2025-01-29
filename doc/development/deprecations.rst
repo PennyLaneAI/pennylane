@@ -116,7 +116,8 @@ Completed deprecation cycles
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been Controlled
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
+  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
   
   - Deprecated in v0.40
   - Removed in v0.41
