@@ -230,7 +230,7 @@ class TestQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, p):
             qml.RX(a, wires=0)
@@ -266,14 +266,15 @@ class TestQNode:
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
+        gradient_kwargs = {"h": 1e-8, "approx_order": 2}
+
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             interface=interface,
             diff_method="finite-diff",
-            h=1e-8,
-            approx_order=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -323,7 +324,7 @@ class TestVectorValuedQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -389,7 +390,7 @@ class TestVectorValuedQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -456,7 +457,7 @@ class TestVectorValuedQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -512,7 +513,7 @@ class TestVectorValuedQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -601,7 +602,7 @@ class TestVectorValuedQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -679,7 +680,7 @@ class TestVectorValuedQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **kwargs,
+            gradient_kwargs=kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -740,7 +741,7 @@ class TestVectorValuedQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1130,7 +1131,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1183,7 +1184,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1237,7 +1238,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1300,7 +1301,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1366,7 +1367,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1478,7 +1479,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -1593,7 +1594,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
@@ -1663,7 +1664,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
@@ -1862,7 +1863,7 @@ class TestJIT:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -2013,7 +2014,7 @@ class TestJIT:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -3062,7 +3063,7 @@ class TestSubsetArgnums:
             grad_on_execution=grad_on_execution,
             cache=False,
             device_vjp=device_vjp,
-            **kwargs,
+            gradient_kwargs=kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -3123,7 +3124,7 @@ class TestSubsetArgnums:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **kwargs,
+            gradient_kwargs=kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -3218,3 +3219,16 @@ class TestSinglePrecision:
         finally:
             jax.config.update("jax_enable_x64", True)
         jax.config.update("jax_enable_x64", True)
+
+
+def test_no_inputs_jitting():
+    """Test that if we jit a qnode with no inputs, we can still detect the jitting and proper interface."""
+
+    @jax.jit
+    @qml.qnode(qml.device("reference.qubit", wires=1))
+    def circuit():
+        qml.StatePrep(jax.numpy.array([1, 0]), 0)
+        return qml.state()
+
+    res = circuit()
+    assert qml.math.allclose(res, jax.numpy.array([1, 0]))

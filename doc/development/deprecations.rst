@@ -9,6 +9,19 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
+  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
+* Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
+  and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
+  keyword argument ``gradient_kwargs`` via an explicit dictionary, like ``gradient_kwargs={"h": 1e-4}``.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The `qml.gradients.hamiltonian_grad` function has been deprecated.
   This gradient recipe is not required with the new operator arithmetic system.
 
@@ -21,15 +34,17 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
+* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been deprecated. Instead, please use
   :meth:`~.Operator.terms` instead.
 
-  - deprecated in v0.35
+  - Deprecated in v0.35
+  - Will be removed in v0.42
 
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
 
   - Deprecated in v0.36
+  - Will be removed in v0.42
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------

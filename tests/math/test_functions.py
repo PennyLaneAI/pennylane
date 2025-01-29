@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for pennylane.math.single_dispatch
-"""
+"""Unit tests for pennylane.math.single_dispatch"""
 # pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
@@ -1022,6 +1021,18 @@ def test_get_interface(t, interface):
     is correctly returned."""
     res = fn.get_interface(t)
     assert res == interface
+
+
+# pylint: disable=too-few-public-methods
+class TestInterfaceEnum:
+    """Test the Interface enum class"""
+
+    def test_eq(self):
+        """Test that an error is raised if comparing to string"""
+        assert fn.Interface.NUMPY == fn.Interface.NUMPY
+        with pytest.raises(TypeError, match="Cannot compare Interface with str"):
+            # pylint: disable=pointless-statement
+            fn.Interface.NUMPY == "numpy"
 
 
 @pytest.mark.parametrize("t", test_data)
