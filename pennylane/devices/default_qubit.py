@@ -600,6 +600,17 @@ class DefaultQubit(Device):
         #    # need numpy to use caching, and need caching higher order derivatives
         #    or execution_config.derivative_order > 1
         # )
+
+        # If PRNGKey is present, we can't use a pure_callback, because that would cause leaked tracers
+        # we assume that if someone provides a PRNGkey, they want to jit end-to-end
+        jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
+        updated_values["convert_to_numpy"] = not (
+            self._prng_key is not None
+            and execution_config.interface in jax_interfaces
+            and execution_config.gradient_method != "adjoint"
+            # need numpy to use caching, and need caching higher order derivatives
+            and execution_config.derivative_order == 1
+        )
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")

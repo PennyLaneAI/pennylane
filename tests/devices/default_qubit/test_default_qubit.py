@@ -1486,6 +1486,34 @@ class TestPRNGKeySeed:
         first = next(iterator)
         assert all(np.array_equal(first, rest) for rest in iterator)
 
+    def test_integrate_prng_key_jitting(self):
+        """Test that a PRNGKey can be used with a jitted qnode."""
+
+        import jax
+
+        @jax.jit
+        def workflow(key, param):
+
+            dev = qml.device("default.qubit", seed=key, shots=100)
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x, 0)
+                return qml.sample(wires=0)
+
+            return circuit(param)
+
+        key1 = jax.random.PRNGKey(123456)
+        key2 = jax.random.PRNGKey(8877655)
+        x = jax.numpy.array(0.5)
+        # no leaked tracer errors
+        res1 = workflow(key1, x)
+        res1_again = workflow(key1, x)
+        res2 = workflow(key2, x)
+
+        assert qml.math.allclose(res1, res1_again)
+        assert not qml.math.allclose(res1, res2)
+
 
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for

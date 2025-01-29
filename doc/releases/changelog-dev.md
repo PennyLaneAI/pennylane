@@ -37,8 +37,8 @@
   ```
   
 * Devices can now configure whether or not ML framework data is sent to them
-  via an `ExecutionConfig.convert_to_numpy` parameter. This is not used on 
-  `default.qubit` due to compilation overheads when jitting.
+  via an `ExecutionConfig.convert_to_numpy` parameter. End-to-end jitting on
+  `default.qubit` is used if the user specified a `jax.random.PRNGKey` as a seed.
   [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
   [(#6869)](https://github.com/PennyLaneAI/pennylane/pull/6869)
 
