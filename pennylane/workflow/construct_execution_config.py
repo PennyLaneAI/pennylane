@@ -44,6 +44,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
     If we wish to construct an unresolved execution configuration, we can specify
     ``resolve=False``. This will leave properties like ``gradient_method`` and ``interface``
     in their unrefined state (e.g. ``"best"`` or ``"auto"`` respectively).
+
     >>> config = qml.workflow.construct_execution_config(circuit, resolve=False)(1)
     >>> pprint.pprint(config)
     ExecutionConfig(grad_on_execution=None,
@@ -59,6 +60,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
 
     Specifying ``resolve=True`` will then resolve these properties appropriately for the
     given ``QNode`` configuration that was provided,
+
     >>> resolved_config = qml.workflow.construct_execution_config(circuit, resolve=True)(1)
     >>> pprint.pprint(resolved_config)
     ExecutionConfig(grad_on_execution=False,
@@ -73,7 +75,6 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
                     derivative_order=1,
                     mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
                 convert_to_numpy=True)
-
     """
 
     @functools.wraps(qnode)
