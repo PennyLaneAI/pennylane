@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r""" Private functions implementing the error analysis for Trotter-Suzuki product formulas."""
+r"""Private functions implementing the error analysis for Trotter-Suzuki product formulas."""
 
 import math
 from functools import lru_cache, reduce
