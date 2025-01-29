@@ -25,7 +25,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
 
     Args:
         qnode (QNode): the qnode we want to get execution configuration for
-        resolve (bool): whether or not to validate and fill in undetermined values like `"best"`
+        resolve (bool): Whether or not to validate and fill in undetermined values like `"best"`. Defaults to ``True``.
 
     Returns:
         config (qml.devices.ExecutionConfig): the execution configuration
