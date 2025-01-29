@@ -368,7 +368,7 @@ def _get_plxpr_defer_measurements():
             )
         if tkwargs.pop("reduce_postselected", False):
             warn(
-                "Cannot set 'reduced-postselected=True' with qml.capture.enabled() "
+                "Cannot set 'reduce_postselected=True' with qml.capture.enabled() "
                 "when using qml.defer_measurements. Argument will be ignored.",
                 UserWarning,
             )
