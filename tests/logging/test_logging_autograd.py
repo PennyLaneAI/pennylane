@@ -103,7 +103,6 @@ class TestLogging:
         for expected, actual in zip(log_records_expected, caplog.records[:5]):
             assert expected[0] in actual.name
             for msg in expected[1]:
-                print(actual.getMessage())
                 assert msg in actual.getMessage()
 
     @pytest.mark.parametrize(
