@@ -15,6 +15,7 @@
 
 from functools import lru_cache, partial
 from typing import Optional, Sequence, Union
+from warnings import warn
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
@@ -118,7 +119,7 @@ def _get_plxpr_defer_measurements():
             ctrl_transform_prim,
             measure_prim,
         )
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return None, None
 
     # pylint: disable=redefined-outer-name
@@ -362,11 +363,15 @@ def _get_plxpr_defer_measurements():
 
         if (aux_wires := tkwargs.pop("aux_wires", None)) is None:
             raise ValueError(
-                "'aux_wires' argument for defer_measurements must be provided when "
-                "qml.capture.enabled() is True."
+                "'aux_wires' argument for qml.defer_measurements must be provided "
+                "when qml.capture.enabled() is True."
             )
         if tkwargs.pop("reduce_postselected", False):
-            raise ValueError("Cannot set 'reduced-postselected=True' with qml.capture.enabled().")
+            warn(
+                "Cannot set 'reduced-postselected=True' with qml.capture.enabled() "
+                "when using qml.defer_measurements. Argument will be ignored.",
+                UserWarning,
+            )
 
         interpreter = DeferMeasurementsInterpreter(aux_wires=aux_wires)
 

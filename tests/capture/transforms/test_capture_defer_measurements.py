@@ -618,3 +618,45 @@ def test_defer_measurements_plxpr_to_plxpr():
     ops = collector.state["ops"]
     expected_ops = [qml.CNOT([0, 5]), qml.CRX(args[0], [5, 0])]
     assert ops == expected_ops
+
+
+def test_defer_measurements_plxpr_to_plxpr_no_aux_wires_error():
+    """Test that an error is raised if ``aux_wires`` are not provided."""
+
+    def f(x):
+        m = qml.measure(0)
+
+        @qml.cond(m)
+        def true_fn(phi):
+            qml.RX(phi, 0)
+
+        true_fn(x)
+
+    args = (1.5,)
+    targs = ()
+    tkwargs = {}
+    jaxpr = jax.make_jaxpr(f)(*args)
+
+    with pytest.raises(ValueError, match="'aux_wires' argument for qml.defer_measurements must be"):
+        defer_measurements_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
+
+
+def test_defer_measurements_plxpr_to_plxpr_reduce_postselected_warning():
+    """Test that a warning is raised if ``reduce_postselected=True``."""
+
+    def f(x):
+        m = qml.measure(0)
+
+        @qml.cond(m)
+        def true_fn(phi):
+            qml.RX(phi, 0)
+
+        true_fn(x)
+
+    args = (1.5,)
+    targs = ()
+    tkwargs = {"aux_wires": list(range(5, 10)), "reduce_postselected": True}
+    jaxpr = jax.make_jaxpr(f)(*args)
+
+    with pytest.warns(UserWarning, match="Cannot set 'reduce_postselected=True'"):
+        defer_measurements_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
