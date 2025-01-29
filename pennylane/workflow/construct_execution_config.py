@@ -34,19 +34,21 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
 
     .. code-block:: python
 
-        import pennylane as qml
-
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
+
+    First, let's import ``pprint`` to make it easier to read the execution configuration objects.
+
+    >>> from pprint import pprint
 
     If we wish to construct an unresolved execution configuration, we can specify
     ``resolve=False``. This will leave properties like ``gradient_method`` and ``interface``
     in their unrefined state (e.g. ``"best"`` or ``"auto"`` respectively).
 
     >>> config = qml.workflow.construct_execution_config(circuit, resolve=False)(1)
-    >>> pprint.pprint(config)
+    >>> pprint(config)
     ExecutionConfig(grad_on_execution=None,
                     use_device_gradient=None,
                     use_device_jacobian_product=False,
@@ -62,7 +64,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
     given ``QNode`` configuration that was provided,
 
     >>> resolved_config = qml.workflow.construct_execution_config(circuit, resolve=True)(1)
-    >>> pprint.pprint(resolved_config)
+    >>> pprint(resolved_config)
     ExecutionConfig(grad_on_execution=False,
                     use_device_gradient=True,
                     use_device_jacobian_product=False,
