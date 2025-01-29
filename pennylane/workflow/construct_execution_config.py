@@ -33,6 +33,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
     **Example**
 
     .. code-block:: python
+
         import pennylane as qml
 
         @qml.qnode(qml.device("default.qubit", wires=1))
