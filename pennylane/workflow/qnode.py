@@ -178,6 +178,28 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
+def _validate_diff_method(
+    device: SupportedDeviceAPIs, diff_method: Union[str, TransformDispatcher]
+) -> None:
+    if diff_method is None:
+        return
+
+    # performs type validation
+    config = _make_execution_config(None, diff_method)
+
+    if device.supports_derivatives(config):
+        return
+    if isinstance(diff_method, str) and diff_method in tuple(get_args(SupportedDiffMethods)):
+        return
+    if isinstance(diff_method, TransformDispatcher):
+        return
+
+    raise qml.QuantumFunctionError(
+        f"Differentiation method {diff_method} not recognized. Allowed "
+        f"options are {tuple(get_args(SupportedDiffMethods))}."
+    )
+
+
 # pylint: disable=too-many-instance-attributes
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
@@ -567,6 +589,7 @@ class QNode:
         self.device = device
         self._interface = get_canonical_interface_name(interface)
         self.diff_method = diff_method
+        _validate_diff_method(self.device, self.diff_method)
         cache = (max_diff > 1) if cache == "auto" else cache
 
         # execution keyword arguments
@@ -589,10 +612,6 @@ class QNode:
 
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
-
-        # validation check.  Will raise error if bad diff_method
-        if diff_method is not None:
-            QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
 
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)

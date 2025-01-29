@@ -214,12 +214,16 @@ def specs(
                 else qnode.diff_method
             )
 
-            gradient_fn = qml.QNode.get_gradient_fn(
+            config = qml.devices.ExecutionConfig(
+                interface=qnode.interface, gradient_method=qnode.diff_method
+            )
+            # pylint: disable = protected-access
+            config = qml.workflow.resolution._resolve_diff_method(
+                config,
                 qnode.device,
-                qnode.interface,
-                qnode.diff_method,
                 tape=tape,
-            )[0]
+            )
+            gradient_fn = config.gradient_method
             if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
                 info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
 
