@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains decompositions for quantum circuits.
-"""
+r"""This module contains decompositions for quantum circuits."""
 
 from .clifford_t_transform import clifford_t_decomposition
