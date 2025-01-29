@@ -46,7 +46,7 @@ def execute(
     interface: Optional[InterfaceLike] = Interface.AUTO,
     *,
     transform_program: TransformProgram = None,
-    grad_on_execution: Literal[bool, "best"] = "best",
+    grad_on_execution: Literal[True, False, "best"] = "best",
     cache: Union[None, bool, dict, Cache] = True,
     cachesize: int = 10000,
     max_diff: int = 1,
