@@ -847,6 +847,7 @@ def christiansen_integrals_dipole(pes, n_states=16):
             path.unlink()
     comm.Barrier()
     dipole_cform_onebody = comm.bcast(dipole_cform_onebody, root=0)
+    D_arr = [dipole_cform_onebody]
 
     if pes.dipole_level > 1:
         local_dipole_cform_twobody = _cform_twomode_dipole(pes, n_states)
@@ -864,6 +865,7 @@ def christiansen_integrals_dipole(pes, n_states=16):
                 path.unlink()
         comm.Barrier()
         dipole_cform_twobody = comm.bcast(dipole_cform_twobody, root=0)
+        D_arr = [dipole_cform_onebody, dipole_cform_twobody]
 
     if pes.dipole_level > 2:
         local_dipole_cform_threebody = _cform_threemode_dipole(pes, n_states)
@@ -883,7 +885,5 @@ def christiansen_integrals_dipole(pes, n_states=16):
         dipole_cform_threebody = comm.bcast(dipole_cform_threebody, root=0)
 
         D_arr = [dipole_cform_onebody, dipole_cform_twobody, dipole_cform_threebody]
-    else:
-        D_arr = [dipole_cform_onebody, dipole_cform_twobody]
 
     return D_arr
