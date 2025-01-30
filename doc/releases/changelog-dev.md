@@ -117,6 +117,11 @@
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
   [(#6879)](https://github.com/PennyLaneAI/pennylane/pull/6879)
 
+* The property `MeasurementProcess.return_type` has been deprecated.
+  If observable type checking is needed, please use direct `isinstance`; if other text information is needed, please use class name, or another internal temporary private member `_shortname`.
+  [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
+  [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
+
 <h3>Internal changes ⚙️</h3>
 
 * The source code has been updated use black 25.1.0
@@ -148,9 +153,6 @@
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
 <h3>Bug fixes 🐛</h3>
-
-* `qml.noise` is still using `MeasurementProcess.return_type` which was deprecated. Replaced the problematic parts with equivalent code.
-  [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
 
 * The interface is now detected from the data in the circuit, not the arguments to the `QNode`. This allows
   interface data to be strictly passed as closure variables and still be detected.
