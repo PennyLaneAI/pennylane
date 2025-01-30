@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the ``DynamicDecomposeInterpreter`` class."""
 # pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods
-from functools import partial
-
 import pytest
 
 import pennylane as qml
