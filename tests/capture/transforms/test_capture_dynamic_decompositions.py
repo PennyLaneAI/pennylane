@@ -36,7 +36,7 @@ class SimpleCustomOp(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _plxpr_decomposition(wires):
+    def _compute_plxpr_decomposition(wires):
         qml.Hadamard(wires=wires)
 
 
@@ -54,7 +54,7 @@ class CustomOpMultiWire(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _plxpr_decomposition(*args, **hyperparameters):
+    def _compute_plxpr_decomposition(*args, **hyperparameters):
 
         phi = args[0]
         wires = args[1:]
@@ -78,7 +78,7 @@ class CustomOpCond(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _plxpr_decomposition(phi, wires):
+    def _compute_plxpr_decomposition(phi, wires):
 
         def true_fn(phi, wires):
             qml.RX(phi, wires=wires)
@@ -99,11 +99,11 @@ class CustomOpForLoop(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _plxpr_decomposition(phi, wires):
+    def _compute_plxpr_decomposition(phi, wires):
 
         @qml.for_loop(0, 3, 1)
         def loop_rx(i, phi):
-            qml.RX(phi, wires=wires)
+            qml.RX(phi, wires)
             return jax.numpy.sin(phi)
 
         # pylint: disable=unused-variable
@@ -120,11 +120,11 @@ class CustomOpWhileLoop(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _plxpr_decomposition(phi, wires):
+    def _compute_plxpr_decomposition(phi, wires):
 
         @qml.while_loop(lambda i: i < 3)
         def loop_fn(i):
-            qml.RX(phi, wires=wires)
+            qml.RX(phi, wires)
             return i + 1
 
         _ = loop_fn(0)
@@ -142,7 +142,7 @@ class CustomOpNestedCond(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _plxpr_decomposition(phi, wires):
+    def _compute_plxpr_decomposition(phi, wires):
 
         def true_fn(phi, wires):
 
@@ -178,7 +178,7 @@ class CustomOpAutograph(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _plxpr_decomposition(phi, wires):
+    def _compute_plxpr_decomposition(phi, wires):
 
         if phi > 0.5:
             qml.RX(phi, wires=wires)
@@ -189,6 +189,12 @@ class CustomOpAutograph(Operation):
 
 class TestDynamicDecomposeInterpreter:
     """Tests for the DynamicDecomposeInterpreter class"""
+
+    def test_error_no_plxpr_decomposition(self):
+        """Test that an error is raised if an operator does not have a plxpr decomposition."""
+
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            qml.RX(0.1, 0)._compute_plxpr_decomposition()
 
     def test_no_plxpr_decomposition(self):
         """Test that a function with a custom operation that does not have a plxpr decomposition is not decomposed."""
