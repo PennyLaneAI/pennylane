@@ -156,6 +156,10 @@
 * `BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
 
+* The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
+  passed to the `QNode`, instead of assuming the method is always `deferred`.
+  [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -163,6 +167,7 @@ This release contains contributions from (in alphabetical order):
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
+Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
