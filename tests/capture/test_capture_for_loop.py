@@ -234,6 +234,25 @@ class TestCaptureForLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    # pylint: disable=unused-argument
+    def test_dynamic_shape_input(self, enable_disable_dynamic_shapes):
+        """Test that the for loop can accept inputs with dynamic shapes."""
+
+        def f(x):
+            n = jax.numpy.shape(x)[0]
+
+            @qml.for_loop(n)
+            def g(_, y):
+                return y + y
+
+            return g(x)
+
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(5))
+
+        [output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+        expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
+        assert jax.numpy.allclose(output, expected)
+
 
 class TestCaptureCircuitsForLoop:
     """Tests for capturing for loops into jaxpr in the context of quantum circuits."""

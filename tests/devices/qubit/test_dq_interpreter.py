@@ -17,7 +17,7 @@ This module tests the default qubit interpreter.
 import pytest
 
 jax = pytest.importorskip("jax")
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 from jax import numpy as jnp  # pylint: disable=wrong-import-position
 
@@ -26,13 +26,6 @@ import pennylane as qml  # pylint: disable=wrong-import-position
 # must be below the importorskip
 # pylint: disable=wrong-import-position
 from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 def test_initialization():
@@ -553,3 +546,39 @@ class TestClassicalComponents:
 
         res2 = circuit(x, y, z, False, False)
         assert qml.math.allclose(res2, jnp.cos(y))  # false fn = y
+
+
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestDynamicShapes:
+    """Tests for creating arrays with a dynamic input."""
+
+    @pytest.mark.parametrize(
+        "creation_fn", [jax.numpy.ones, jax.numpy.zeros, lambda s: jax.numpy.full(s, 0.5)]
+    )
+    def test_broadcast_in_dim(self, creation_fn):
+        """Test that DefaultQubitInterpreter can handle jax.numpy.ones and the associated broadcast_in_dim primitive."""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f(n):
+            ones = creation_fn((n + 1,))
+            qml.RX(ones, wires=0)
+            return qml.expval(qml.Z(0))
+
+        output = f(3)
+        assert output.shape == (4,)
+        ones = creation_fn(4)
+        assert qml.math.allclose(output, jax.numpy.cos(ones))
+
+    def test_dynamic_shape_arange(self):
+        """Test that DefaultQubitInterpreter can handle jnp.arange."""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f(n):
+            x = jax.numpy.arange(n)
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        output = f(4)
+        assert output.shape == (4,)
+        x = jax.numpy.arange(4)
+        assert qml.math.allclose(output, jax.numpy.cos(x))

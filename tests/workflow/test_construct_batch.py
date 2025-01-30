@@ -448,3 +448,20 @@ class TestConstructBatch:
         )
         qml.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
+
+    @pytest.mark.parametrize(
+        "mcm_method, expected_op",
+        [("deferred", qml.CNOT), ("tree-traversal", qml.measurements.MidMeasureMP)],
+    )
+    def test_mcm_method(self, mcm_method, expected_op):
+        """Test that the tape is constructed using the mcm_method specified on the QNode"""
+
+        @qml.qnode(qml.device("default.qubit"), mcm_method=mcm_method)
+        def circuit():
+            qml.measure(0)
+            return qml.expval(qml.Z(0))
+
+        (tape,), _ = qml.workflow.construct_batch(circuit, level="device")()
+
+        assert len(tape.operations) == 1
+        assert isinstance(tape.operations[0], expected_op)

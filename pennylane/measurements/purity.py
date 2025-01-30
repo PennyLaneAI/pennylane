@@ -74,12 +74,13 @@ class PurityMP(StateMeasurement):
             applications where the instance has to be identified
     """
 
+    def __str__(self):
+        return "purity"
+
+    _shortname = Purity  #! Note: deprecated. Change the value to "purity" in v0.42
+
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
-
-    @property
-    def return_type(self):
-        return Purity
 
     @property
     def numeric_type(self):
