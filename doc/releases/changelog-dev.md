@@ -26,9 +26,10 @@
   def f(x):
       m0 = qml.measure(0)
       m1 = qml.measure(0)
-      inval = processing_fn(m0, m1)
+      a = jnp.sin(0.5 * jnp.pi * m0)
+      phi = a - (m1 + 1) ** 4
 
-      qml.s_prod(x, qml.RZ(inval, 0))
+      qml.s_prod(x, qml.RZ(phi, 0))
 
       return qml.expval(qml.Z(0))
   ```

@@ -14,6 +14,7 @@
 """Code for the tape transform implementing the deferred measurement principle."""
 
 from functools import lru_cache, partial
+from numbers import Number
 from typing import Optional, Sequence, Union
 from warnings import warn
 
@@ -112,13 +113,7 @@ def _get_plxpr_defer_measurements():
         import jax
 
         from pennylane.capture import PlxprInterpreter
-        from pennylane.capture.primitives import (
-            AbstractMeasurement,
-            AbstractOperator,
-            cond_prim,
-            ctrl_transform_prim,
-            measure_prim,
-        )
+        from pennylane.capture.primitives import cond_prim, ctrl_transform_prim, measure_prim
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -212,9 +207,20 @@ def _get_plxpr_defer_measurements():
 
             return super().interpret_measurement(measurement)
 
-        def resolve_mcm_values(self, eqn, invals) -> MeasurementValue:
-            """Create a ``MeasurementValue`` that captures all classical processing in its
-            ``processing_fn``."""
+        def resolve_mcm_values(
+            self, eqn: "jax.core.JaxprEqn", invals: Sequence[Union[MeasurementValue, Number]]
+        ) -> MeasurementValue:
+            """Create a ``MeasurementValue`` that captures all classical processing of the
+            input ``eqn`` in its ``processing_fn``.
+
+            Args:
+                eqn (jax.core.JaxprEqn): Jaxpr equation containing the primitive to apply
+                invals (Sequence[Union[MeasurementValue, Number]]): Inputs to the equation
+
+            Returns:
+                MeasurementValue: ``MeasurementValue`` containing classical processing information
+                for applying the input equation to mid-circuit measurement outcomes.
+            """
             # pylint: disable=protected-access,unnecessary-lambda
             assert len(invals) <= 2
 
@@ -253,23 +259,24 @@ def _get_plxpr_defer_measurements():
                 self._env[constvar] = const
 
             for eqn in jaxpr.eqns:
+                primitive = eqn.primitive
+                custom_handler = self._primitive_registrations.get(primitive, None)
 
-                custom_handler = self._primitive_registrations.get(eqn.primitive, None)
                 if custom_handler:
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
-                elif isinstance(eqn.outvars[0].aval, AbstractOperator):
+                elif getattr(primitive, "prim_type", "") == "operator":
                     outvals = self.interpret_operation_eqn(eqn)
-                elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
+                elif getattr(primitive, "prim_type", "") == "measurement":
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
                     invals = [self.read(invar) for invar in eqn.invars]
                     if any(isinstance(inval, MeasurementValue) for inval in invals):
                         outvals = self.resolve_mcm_values(eqn, invals)
                     else:
-                        outvals = eqn.primitive.bind(*invals, **eqn.params)
+                        outvals = primitive.bind(*invals, **eqn.params)
 
-                if not eqn.primitive.multiple_results:
+                if not primitive.multiple_results:
                     outvals = [outvals]
                 for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                     self._env[outvar] = outval
@@ -294,14 +301,13 @@ def _get_plxpr_defer_measurements():
                 "measurements using qml.defer_measurements."
             )
 
-        with qml.QueuingManager.stop_recording():
-            meas = type.__call__(
-                MidMeasureMP,
-                Wires(self._aux_wires[self.state["cur_idx"]]),
-                reset=reset,
-                postselect=postselect,
-                id=self.state["cur_idx"],
-            )
+        meas = type.__call__(
+            MidMeasureMP,
+            Wires(self._aux_wires[self.state["cur_idx"]]),
+            reset=reset,
+            postselect=postselect,
+            id=self.state["cur_idx"],
+        )
 
         cnot_wires = (wires, self._aux_wires[self.state["cur_idx"]])
         if postselect is not None:
