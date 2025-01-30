@@ -251,6 +251,7 @@ def _resolve_execution_config(
     )
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 
+    updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
 
     execution_config = replace(execution_config, **updated_values)
