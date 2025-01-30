@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -92,13 +92,16 @@ def _forward_pass(jaxpr: jax.core.Jaxpr, env: dict, num_wires: int):
             bras.append(bra)
         else:
             _other_prim_forward_pass(eqn, env)
-    return bras, ket
+
+    results = [_read(env, var)[0] for var in jaxpr.outvars]
+    return bras, ket, results
 
 
-def _backward_pass(jaxpr, bras, ket, env):
+def _backward_pass(jaxpr, bras, ket, results, env):
     """Calculate the jvps during the backward pass stage of an adjoint jvp."""
-    out_jvps = [jnp.array(0.0)] * len(bras)
+    out_jvps = [jnp.zeros_like(r) for r in results]
 
+    modified = False
     for eqn in reversed(jaxpr.eqns):
         if getattr(eqn.primitive, "prim_type", "") == "operator" and isinstance(
             eqn.outvars[0], jax.core.DropVar
@@ -111,6 +114,7 @@ def _backward_pass(jaxpr, bras, ket, env):
                 t = tangents[0]
                 if not isinstance(t, ad.Zero):
                     ket_temp = apply_operation(generator(op, format="observable"), ket)
+                    modified = True
                     for i, bra in enumerate(bras):
                         out_jvps[i] += -2 * t * jnp.imag(jnp.sum(jnp.conj(bra) * ket_temp))
                 if any(not isinstance(t, ad.Zero) for t in tangents[1:]):
@@ -122,7 +126,9 @@ def _backward_pass(jaxpr, bras, ket, env):
             ket = apply_operation(adj_op, ket)
             bras = [apply_operation(adj_op, bra) for bra in bras]
 
-    return out_jvps
+    if modified:
+        return out_jvps
+    return [ad.Zero(r.aval) for r in results]
 
 
 def execute_and_jvp(jaxpr: jax.core.Jaxpr, args: tuple, tangents: tuple, num_wires: int):
@@ -132,6 +138,5 @@ def execute_and_jvp(jaxpr: jax.core.Jaxpr, args: tuple, tangents: tuple, num_wir
         for var, arg, tangent in zip(jaxpr.constvars + jaxpr.invars, args, tangents, strict=True)
     }
 
-    bras, ket = _forward_pass(jaxpr, env, num_wires)
-    results = [_read(env, var)[0] for var in jaxpr.outvars]
-    return results, _backward_pass(jaxpr, bras, ket, env)
+    bras, ket, results = _forward_pass(jaxpr, env, num_wires)
+    return results, _backward_pass(jaxpr, bras, ket, results, env)
