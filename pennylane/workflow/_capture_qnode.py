@@ -410,9 +410,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
     flat_fn = FlatFn(qfunc)
     try:
-        qfunc_jaxpr = qml.capture.make_plxpr(
-            flat_fn, autograph=False, abstracted_axes=abstracted_axes
-        )(*args)
+        qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*args)
     except (
         jax.errors.TracerArrayConversionError,
         jax.errors.TracerIntegerConversionError,
