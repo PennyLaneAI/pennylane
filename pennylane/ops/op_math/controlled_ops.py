@@ -1096,7 +1096,7 @@ class MultiControlledX(ControlledOp):
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
-            the operation into a series of Toffoli gates
+            the operation into a series of :class:`~.Toffoli` gates
 
 
     .. note::
