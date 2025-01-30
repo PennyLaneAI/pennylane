@@ -91,11 +91,7 @@ class TestAutogradRun:
             res = qml.jacobian(cost)(a)
             assert res.shape == ()  # pylint: disable=no-member
 
-        # compare to standard tape jacobian
-        tape = qml.tape.QuantumScript([qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))])
-        tape.trainable_params = [0]
-        tapes, fn = qml.gradients.param_shift(tape)
-        expected = fn(device.execute(tapes))
+        expected = -qml.math.sin(a)
 
         assert expected.shape == ()
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
