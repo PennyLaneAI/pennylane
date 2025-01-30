@@ -256,8 +256,11 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
                 if hasattr(op, "_plxpr_decomposition"):
 
-                    jaxpr_decomp = op._plxpr_decomposition()
                     args = (*op.parameters, *op.wires)
+                    jaxpr_decomp = qml.capture.make_plxpr(
+                        partial(op._plxpr_decomposition, **op.hyperparameters)
+                    )(*args)
+
                     return self.eval_dynamic_decomposition(jaxpr_decomp.jaxpr, *args)
 
                 return super().interpret_operation(op)

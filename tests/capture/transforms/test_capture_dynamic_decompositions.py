@@ -37,12 +37,8 @@ class SimpleCustomOp(Operation):
     def _init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
 
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
-
     @staticmethod
-    def _compute_plxpr_decomposition(wires):
+    def _plxpr_decomposition(wires):
         qml.Hadamard(wires=wires)
 
 
@@ -59,25 +55,19 @@ class CustomOpMultiWire(Operation):
 
         super().__init__(phi, wires=wires, id=id)
 
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-        args = (*self.parameters, *self.wires)
-        return jax.make_jaxpr(partial(self._compute_plxpr_decomposition, **self.hyperparameters))(
-            *args
-        )
-
     @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
+    def _plxpr_decomposition(*args, **hyperparameters):
 
         phi = args[0]
         wires = args[1:]
 
-        qml.CNOT(wires=[wires[0], wires[1]])
-        qml.DoubleExcitation(phi, wires=wires)
-        qml.CNOT(wires=[wires[0], wires[1]])
-        qml.RX(hyperparameters["key_1"], wires=wires[0])
-        qml.RY(phi, wires=wires[1])
-        qml.RZ(phi, wires=wires[2])
-        qml.RX(hyperparameters["key_2"], wires=wires[3])
+        qml.CNOT([wires[0], wires[1]])
+        qml.DoubleExcitation(phi, wires)
+        qml.CNOT([wires[0], wires[1]])
+        qml.RX(hyperparameters["key_1"], wires[0])
+        qml.RY(phi, wires[1])
+        qml.RZ(phi, wires[2])
+        qml.RX(hyperparameters["key_2"], wires[3])
 
 
 class CustomOpCond(Operation):
@@ -89,12 +79,8 @@ class CustomOpCond(Operation):
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
 
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
-
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def _plxpr_decomposition(phi, wires):
 
         def true_fn(phi, wires):
             qml.RX(phi, wires=wires)
@@ -114,12 +100,8 @@ class CustomOpForLoop(Operation):
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
 
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
-
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def _plxpr_decomposition(phi, wires):
 
         @qml.for_loop(0, 3, 1)
         def loop_rx(i, phi):
@@ -139,12 +121,8 @@ class CustomOpWhileLoop(Operation):
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
 
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
-
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def _plxpr_decomposition(phi, wires):
 
         @qml.while_loop(lambda i: i < 3)
         def loop_fn(i):
@@ -165,18 +143,14 @@ class CustomOpNestedCond(Operation):
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
 
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
-
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def _plxpr_decomposition(phi, wires):
 
         def true_fn(phi, wires):
 
             @qml.for_loop(0, 3, 1)
             def loop_rx(i, phi):
-                qml.RX(phi, wires=wires)
+                qml.RX(phi, wires)
                 return jax.numpy.sin(phi)
 
             # pylint: disable=unused-variable
@@ -186,7 +160,7 @@ class CustomOpNestedCond(Operation):
 
             @qml.while_loop(lambda i: i < 3)
             def loop_fn(i):
-                qml.RX(phi, wires=wires)
+                qml.RX(phi, wires)
                 return i + 1
 
             _ = loop_fn(0)
@@ -205,14 +179,8 @@ class CustomOpAutograph(Operation):
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
 
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-
-        return qml.capture.make_plxpr(self._compute_plxpr_decomposition)(
-            *self.parameters, *self.wires
-        )
-
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def _plxpr_decomposition(phi, wires):
 
         if phi > 0.5:
             qml.RX(phi, wires=wires)
