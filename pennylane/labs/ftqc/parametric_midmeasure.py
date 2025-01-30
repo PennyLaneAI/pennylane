@@ -31,17 +31,22 @@ def measure_xy(
     """measure in the XY plane"""
     if qml.capture.enabled():
         raise NotImplementedError
+        # ToDo: implement arbitrary basis compatible _create_mid_measure_primitive
+        # ToDo: implement program capture instructions for the diagonalization transform
+        # ToDo: do we want separate measurement functions for the different planes?
+        #  Or just to have qml.measure accept angle and plane? Or some third UI?
         # primitive = _create_mid_measure_primitive()
         # return primitive.bind(wires, reset=reset, postselect=postselect)
 
-    return _measure_impl(angle, wires, reset=reset, postselect=postselect)
+    return _measure_impl(wires, reset=reset, postselect=postselect, angle=angle, plane="XY")
 
 
 def _measure_impl(
-    angle,
     wires: Union[Hashable, Wires],
     reset: Optional[bool] = False,
     postselect: Optional[int] = None,
+    angle=None,
+    plane=None,
 ):
     """Concrete implementation of qml.measure"""
     wires = Wires(wires)
@@ -52,23 +57,23 @@ def _measure_impl(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = ParametricMidMeasureMP(
-        angle, wires=wires, reset=reset, postselect=postselect, id=measurement_id, plane="XY"
-    )
+    if plane:
+        mp = ParametricMidMeasureMP(
+            angle=angle,
+            wires=wires,
+            reset=reset,
+            postselect=postselect,
+            id=measurement_id,
+            plane=plane,
+        )
+    else:
+        mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
-# ToDo: should this really be a MeasurementProcess, or is it just an operation?
-#  Does it matter in practice? Conceptually?
-
 # ToDo: generalize to other planes. Should plane options also include "ZX", "ZY" and "YX"?
-
 # ToDo: should some of the info be data instead of metadata?
-
-
-# ToDo: program capture compatibility (_create_midmeasure_primitive equivalent)
-
-
+# ToDo: does this need its own custom label? Or is it fine that it looks like a normal MCM in diagrams?
 class ParametricMidMeasureMP(MidMeasureMP):
     """Parametric mid-circuit measurement.
 
@@ -151,3 +156,20 @@ class ParametricMidMeasureMP(MidMeasureMP):
 def _xy_to_z(angle):
     """Project XY basis states onto computational basis states"""
     return np.array([[1, np.exp(-1j * angle)], [1, -np.exp(-1j * angle)]]) / np.sqrt(2)
+
+
+@qml.transform
+def diagonalize_mcms(tape):
+    """transform diagonalizing the parametrized MCMs"""
+
+    new_operations = []
+
+    for op in tape.operations:
+        if isinstance(op, ParametricMidMeasureMP):
+            new_operations.extend(op.diagonalizing_gates() + [op])
+        else:
+            new_operations.append(op)
+
+    new_tape = tape.copy(operations=new_operations)
+
+    return (new_tape,), lambda x: x[0]
