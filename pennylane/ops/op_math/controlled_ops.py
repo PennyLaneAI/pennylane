@@ -1082,8 +1082,7 @@ def _check_and_convert_control_values(control_values, control_wires):
 
 
 class MultiControlledX(ControlledOp):
-    r"""MultiControlledX(wires)
-    Apply a Pauli X gate controlled on an arbitrary computational basis state.
+    r"""Apply a Pauli X gate controlled on an arbitrary computational basis state.
 
     **Details:**
 
