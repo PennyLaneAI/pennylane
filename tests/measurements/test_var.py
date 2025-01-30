@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Variance, VarianceMP
+from pennylane.measurements import VarianceMP
 
 
 class TestVar:
@@ -47,18 +47,6 @@ class TestVar:
             assert res[1].dtype == r_dtype
         else:
             assert res.dtype == r_dtype
-
-    def test_observable_return_type_is_variance(self):
-        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.var(qml.PauliZ(0))
-            assert res.return_type is Variance
-            return res
-
-        circuit()
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))

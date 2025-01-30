@@ -186,7 +186,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
 
         operations = tape.operations + added_operations
 
-        if tape.measurements[0].return_type == qml.measurements.Expectation:
+        if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
             measurements = [qml.expval(-1 * qml.Z(controls[0]))]
         else:
             measurements = [qml.var(qml.Z(controls[0]))]
@@ -313,8 +313,9 @@ def sign_expand(  # pylint: disable=too-many-arguments
     if (
         not isinstance(hamiltonian, qml.ops.LinearCombination)
         or len(tape.measurements) > 1
-        or tape.measurements[0].return_type
-        not in [qml.measurements.Expectation, qml.measurements.Variance]
+        or not isinstance(
+            tape.measurements[0], (qml.measurements.ExpectationMP, qml.measurements.VarianceMP)
+        )
     ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)` or 'qml.var(H)', where H is of type `qml.Hamiltonian`"
@@ -328,7 +329,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     if circuit:
         tapes = construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls)
-        if tape.measurements[0].return_type == qml.measurements.Expectation:
+        if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
             # pylint: disable=function-redefined
             def processing_fn(res):
                 products = [a * b for a, b in zip(res, dEs)]
@@ -345,7 +346,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     # make one tape per observable
     tapes = []
     for proj in projs:
-        if tape.measurements[0].return_type == qml.measurements.Expectation:
+        if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
             measurements = [qml.expval(qml.Hermitian(proj, wires=wires))]
         else:
             measurements = [qml.var(qml.Hermitian(proj, wires=wires))]
@@ -358,7 +359,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     def processing_fn(res):
         return (
             qml.math.sum(res)
-            if tape.measurements[0].return_type == qml.measurements.Expectation
+            if isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
             else qml.math.sum(res) * len(res)
         )
 
