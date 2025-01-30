@@ -327,6 +327,24 @@ batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
 mlir.register_lowering(qnode_prim, mlir.lower_fun(qnode_prim.impl, multiple_results=True))
 
 
+_comp_cache = {}
+
+
+def _args_hash(args, kwargs):
+    serialized_args = ""
+    for a in args:
+        if qml.math.is_abstract(a):
+            a = getattr(a, "aval", a)
+            serialized_args += f"{a.shape},{a.dtype};"
+            continue
+
+        a = jax.numpy.asarray(a)
+        serialized_args += f"{a.shape},{a.dtype};"
+
+    serialized_kwargs = f"{tuple(kwargs.keys())};{tuple(kwargs.values())}"
+    return hash(serialized_args + serialized_kwargs)
+
+
 def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
@@ -404,10 +422,20 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
-    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+    flat_args = jax.tree_util.tree_leaves(args)
+    cache_key = _args_hash(flat_args, kwargs)
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     flat_fn = FlatFn(qfunc)
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*args)
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
+    using_cached_plxpr = False
+
+    if cache_key in _comp_cache:
+        print("Using cache!!")
+        qfunc_jaxpr, out_tree = _comp_cache[cache_key]
+        using_cached_plxpr = True
+    else:
+        print("Re-capturing :(")
+        qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
     qnode_kwargs = {
@@ -415,8 +443,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         **execute_kwargs,
         "gradient_kwargs": qnode.gradient_kwargs,
     }
-
-    flat_args = jax.tree_util.tree_leaves(args)
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
@@ -429,5 +455,10 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         qfunc_jaxpr=qfunc_jaxpr.jaxpr,
         n_consts=len(qfunc_jaxpr.consts),
     )
-    assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
-    return jax.tree_util.tree_unflatten(flat_fn.out_tree, res)
+
+    if not using_cached_plxpr:
+        assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
+        out_tree = flat_fn.out_tree
+        _comp_cache[cache_key] = (qfunc_jaxpr, out_tree)
+
+    return jax.tree_util.tree_unflatten(out_tree, res)
