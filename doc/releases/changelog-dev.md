@@ -131,6 +131,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The source code has been updated use black 25.1.0
+  [(#6897)](https://github.com/PennyLaneAI/pennylane/pull/6897)
+
 * Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
   [(#6877)](https://github.com/PennyLaneAI/pennylane/pull/6877)
 
@@ -149,10 +152,18 @@
   code examples.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
 
+* The docstrings for `qml.qchem.localize_normal_modes` and `qml.qchem.VibrationalPES` have been updated to include
+  examples that can be copied.
+  [(#6834)](https://github.com/PennyLaneAI/pennylane/pull/6834)
+
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
 <h3>Bug fixes 🐛</h3>
+
+* The interface is now detected from the data in the circuit, not the arguments to the `QNode`. This allows
+  interface data to be strictly passed as closure variables and still be detected.
+  [(#6892)](https://github.com/PennyLaneAI/pennylane/pull/6892)
 
 * `BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)

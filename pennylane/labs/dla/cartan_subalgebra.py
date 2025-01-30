@@ -157,7 +157,7 @@ def cartan_subalgebra(
         >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
         >>> gens += [Y(i) @ Y(i+1) for i in range(n-1)]
         >>> gens += [Z(i) @ Z(i+1) for i in range(n-1)]
-        >>> g = qml.lie_closure(gens, dense=True)
+        >>> g = qml.lie_closure(gens, matrix=True)
 
         Taking the Heisenberg Lie algebra, we can perform the Cartan decomposition. We take the :func:`~even_odd_involution` as a valid Cartan involution.
         The resulting vertical and horizontal subspaces :math:`\mathfrak{k}` and :math:`\mathfrak{m}` need to fulfill the commutation relations

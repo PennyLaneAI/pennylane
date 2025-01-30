@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,18 +84,19 @@ def trace_inner_product(
 
     if isinstance(A, Iterable) and isinstance(B, Iterable):
 
-        if not isinstance(A, TensorLike) or isinstance(A, (list, tuple)):
-            interface_A = qml.math.get_interface(A)
-            A = qml.math.array(A, like=interface_A)
+        if isinstance(A, (list, tuple)):
+            interface_A = qml.math.get_interface(A[0])
+            A = qml.math.stack(A, like=interface_A)
 
-        if not isinstance(B, TensorLike) or isinstance(B, (list, tuple)):
-            interface_B = qml.math.get_interface(B)
-            B = qml.math.array(B, like=interface_B)
+        if isinstance(B, (list, tuple)):
+            interface_B = qml.math.get_interface(B[0])
+            B = qml.math.stack(B, like=interface_B)
 
-        assert A.shape[-2:] == B.shape[-2:]
-        # The axes of the first input are switched, compared to tr[A@B], because we need to
-        # transpose A.
-        return qml.math.tensordot(qml.math.conj(A), B, axes=[[-2, -1], [-2, -1]]) / A.shape[-1]
+        # tr(A^dagger @ B) = (A^dagger)_ij B_ji = A^*_ji B_ji
+        return (
+            qml.math.tensordot(qml.math.conj(A), B, axes=[[-2, -1], [-2, -1]])
+            / qml.math.shape(A)[-1]
+        )
 
     raise NotImplementedError(
         "Inputs to pennylane.pauli.trace_inner_product need to be iterables of matrices or operators with a pauli_rep"

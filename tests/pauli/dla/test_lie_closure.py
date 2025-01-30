@@ -710,7 +710,7 @@ class TestLieClosureInterfaces:
         su2 = torch.tensor(np.array([X0, Y0, -Z0]))
         gens_list = [torch.tensor(X0), torch.tensor(Y0)]
 
-        gens = torch.tensor([X0, Y0])
+        gens = torch.tensor(np.array([X0, Y0]))
 
         res = qml.lie_closure(gens, matrix=True)
         assert qml.math.allclose(res, su2)

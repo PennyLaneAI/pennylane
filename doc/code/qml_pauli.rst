@@ -14,7 +14,7 @@ for Pauli-word partitioning functionality used in measurement optimization.
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:
-    :skip: lie_closure, structure_constants, center, trace_inner_product
+    :skip: lie_closure, structure_constants, center
 
 PauliWord and PauliSentence
 ---------------------------
@@ -168,14 +168,3 @@ See our `introduction to Dynamical Lie Algebras for quantum practitioners <https
     ~structure_constants
     ~center
 
-Utility functions
-^^^^^^^^^^^^^^^^^
-
-Utility functions for handling Pauli operators in the context of DLA functionality.
-
-.. currentmodule:: pennylane.pauli
-
-.. autosummary::
-    :toctree: api
-
-    ~trace_inner_product
