@@ -18,15 +18,13 @@ differentiation support.
 
 import inspect
 import logging
-from dataclasses import replace
 from typing import Callable, Literal, Optional, Union
 from warnings import warn
 
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.math import Interface
-from pennylane.math.interface_utils import InterfaceLike
+from pennylane.math import Interface, InterfaceLike
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
 from pennylane.typing import ResultBatch
@@ -56,7 +54,7 @@ def execute(
     postselect_mode=None,
     mcm_method=None,
     gradient_kwargs: dict = None,
-    mcm_config: "qml.devices.MCMConfig" = "unset",
+    mcm_config="unset",
     config="unset",
     inner_transform="unset",
 ) -> ResultBatch:
@@ -220,7 +218,6 @@ def execute(
     ### Specifying and preprocessing variables ####
 
     interface = _resolve_interface(interface, tapes)
-    # Only need to calculate derivatives with jax when we know it will be executed later.
 
     config = qml.devices.ExecutionConfig(
         interface=interface,
@@ -232,12 +229,6 @@ def execute(
         derivative_order=max_diff,
     )
     config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
-
-    config = replace(
-        config,
-        interface=interface,
-        derivative_order=max_diff,
-    )
 
     transform_program = transform_program or qml.transforms.core.TransformProgram()
     transform_program, inner_transform = _setup_transform_program(
