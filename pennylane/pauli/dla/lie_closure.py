@@ -28,7 +28,7 @@ from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
 from ..pauli_arithmetic import PauliSentence, PauliWord
-from .util import trace_inner_product
+from ..trace_inner_product import trace_inner_product
 
 
 def lie_closure(
