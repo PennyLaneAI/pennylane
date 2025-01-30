@@ -488,7 +488,6 @@ class MeasEq(qml.BooleanFn):
                 )
             self.condition.append(mp)
             self._cmps.append(mp if isclass(mp) else mp.__class__)
-            
         mp_ops = list(op._shortname if op._shortname else op.__class__.__name__ for op in self.condition) # pylint: disable=protected_access
         mp_names = [
             repr(op) if not isinstance(op, property) else repr(self.condition[idx].__name__)
