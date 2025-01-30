@@ -1091,7 +1091,7 @@ class MultiControlledX(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of `wires`) where
+        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of ``wires``) where
             the operation acts on
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
