@@ -149,6 +149,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.noise` is still using `MeasurementProcess.return_type` which was deprecated. Replaced the problematic parts with equivalent code.
+  [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
+
 * The interface is now detected from the data in the circuit, not the arguments to the `QNode`. This allows
   interface data to be strictly passed as closure variables and still be detected.
   [(#6892)](https://github.com/PennyLaneAI/pennylane/pull/6892)
