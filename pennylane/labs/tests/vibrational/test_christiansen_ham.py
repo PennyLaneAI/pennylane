@@ -151,6 +151,14 @@ def test_christiansen_integrals_dipole():
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
 
 
+def test_christiansen_integrals_dipole_conditional():
+    """Test that christiansen_integrals_dipole works even when there is only two mode dipoles."""
+    coeffs = christiansen_integrals_dipole(pes=pes_object_2D, n_states=4)
+    assert np.allclose(abs(coeffs[0]), abs(D1), atol=1e-8)
+    assert np.allclose(abs(coeffs[1]), abs(D2), atol=1e-8)
+    assert len(coeffs) == 2
+
+
 def test_cform_onemode():
     """Test that _cform_onemode produces the expected one-body integral."""
     flattened_H1 = H1.ravel()
