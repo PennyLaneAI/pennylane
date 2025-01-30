@@ -21,8 +21,7 @@ from inspect import isclass, signature
 
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
-from pennylane.measurements import (MeasurementProcess, MeasurementValue,
-                                    MidMeasureMP)
+from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
 from pennylane.operation import AnyWires
 from pennylane.ops import Adjoint, Controlled
 from pennylane.templates import ControlledSequence
