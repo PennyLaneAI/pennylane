@@ -118,7 +118,7 @@ class PTerrorTensor(PTerror):
             # create mpo for sum_{i<j} H_i
             if jj == 1:
                 h1e = self.h1e
-                g2e = self.cdf_eri*0
+                g2e = np.sum(self.cdf_eri*0, axis = 0)
                 A_mpo = self.driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=self.ecore, \
                                         iprint=0, add_ident=False)
             else:
