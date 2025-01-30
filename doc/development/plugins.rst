@@ -472,12 +472,15 @@ pieces of functionality:
 Note that these properties are only applicable to devices that provided derivatives or VJPs. If your device
 does not provide derivatives, you can safely ignore these properties.
 
-The workflow options are ``use_device_gradient``, ``use_device_jacobian_product``, and ``grad_on_execution``. 
+The workflow options are ``use_device_gradient``, ``use_device_jacobian_product``, ``grad_on_execution``,
+and ``convert_to_numpy``. 
 ``use_device_gradient=True`` indicates that workflow should request derivatives from the device. 
 ``grad_on_execution=True`` indicates a preference to use ``execute_and_compute_derivatives`` instead
-of ``execute`` followed by ``compute_derivatives``. Finally, ``use_device_jacobian_product`` indicates
+of ``execute`` followed by ``compute_derivatives``. ``use_device_jacobian_product`` indicates
 a request to call ``compute_vjp`` instead of ``compute_derivatives``. Note that if ``use_device_jacobian_product``
-is ``True``, this takes precedence over calculating the full jacobian.
+is ``True``, this takes precedence over calculating the full jacobian. If the device can accept ML framework parameters, like
+jax, ``convert_to_numpy=False`` should be specified. Then the parameters will not be converted, and special
+interface-specific processing (like executing inside a ``jax.pure_callback`` when using ``jax.jit``) will be needed.
 
 >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 >>> processed_config = qml.device('default.qubit').setup_execution_config(config)
@@ -486,6 +489,8 @@ True
 >>> processed_config.use_device_gradient
 True
 >>> processed_config.grad_on_execution
+True
+>>> processed_config.convert_to_numpy
 True
 
 Execution

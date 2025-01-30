@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function extracting the tapes at postprocessing at any stage of a transform program.
-
-"""
+"""Contains a function extracting the tapes at postprocessing at any stage of a transform program."""
 import inspect
 from collections.abc import Callable
 from contextlib import nullcontext
@@ -67,7 +65,12 @@ def _get_full_transform_program(
             **qnode.gradient_kwargs,
         )
 
-    config = _make_execution_config(qnode, gradient_fn)
+    mcm_config = qml.devices.MCMConfig(
+        postselect_mode=qnode.execute_kwargs["postselect_mode"],
+        mcm_method=qnode.execute_kwargs["mcm_method"],
+    )
+
+    config = _make_execution_config(qnode, gradient_fn, mcm_config)
     return program + qnode.device.preprocess_transforms(config)
 
 

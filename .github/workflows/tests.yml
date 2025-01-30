@@ -14,6 +14,9 @@ on:
   # Scheduled trigger on Monday at 2:47am UTC
   schedule:
     - cron: "47 2 * * 1"
+  merge_group:
+    types:
+      - checks_requested
 
 concurrency:
   group: unit-tests-${{ github.ref }}

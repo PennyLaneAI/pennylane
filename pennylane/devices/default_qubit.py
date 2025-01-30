@@ -162,6 +162,14 @@ def _conditional_broastcast_expand(tape):
 
 
 @qml.transform
+def no_counts(tape):
+    """Throws an error on counts measurements."""
+    if any(isinstance(mp, qml.measurements.CountsMP) for mp in tape.measurements):
+        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+    return (tape,), null_postprocessing
+
+
+@qml.transform
 def adjoint_state_measurements(
     tape: QuantumScript, device_vjp=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -535,6 +543,8 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
+        if config.interface == qml.math.Interface.JAX_JIT:
+            transform_program.add_transform(no_counts)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config
@@ -581,6 +591,15 @@ class DefaultQubit(Device):
         """
         updated_values = {}
 
+        # uncomment once compilation overhead with jitting improved
+        # TODO: [sc-82874]
+        # jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
+        # updated_values["convert_to_numpy"] = (
+        #    execution_config.interface not in jax_interfaces
+        #    or execution_config.gradient_method == "adjoint"
+        #    # need numpy to use caching, and need caching higher order derivatives
+        #    or execution_config.derivative_order > 1
+        # )
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")
@@ -616,7 +635,6 @@ class DefaultQubit(Device):
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         self.reset_prng_key()
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (
@@ -627,6 +645,7 @@ class DefaultQubit(Device):
         prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
 
         if max_workers is None:
+
             return tuple(
                 _simulate_wrapper(
                     c,

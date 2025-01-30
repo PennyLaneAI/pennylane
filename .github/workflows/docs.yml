@@ -16,15 +16,18 @@
 
 name: "Documentation check"
 on:
+  merge_group:
+    types:
+      - checks_requested
   pull_request:
     types:
       - opened
       - reopened
       - synchronize
       - ready_for_review
-  # Scheduled trigger on Wednesdays at 3:00am UTC
+  # Scheduled trigger on Monday at 2:47am UTC
   schedule:
-    - cron: "0 3 * * 3"
+    - cron: "47 2 * * 1"
 
 permissions: write-all
 

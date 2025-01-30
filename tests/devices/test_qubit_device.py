@@ -312,9 +312,7 @@ class TestObservables:
 
         # pylint: disable=too-few-public-methods
         class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return "SomeUnsupportedReturnType"
+            _shortname = "SomeUnsupportedReturnType"
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
@@ -380,18 +378,15 @@ class TestExtractStatistics:
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qubit_device_extract_stats, returntype):
-        """Tests that the statistics method returns an empty list if the return type is None"""
+        """Tests that the statistics method raises Unsupported QuantumFunctionError if the return type is None"""
 
         class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return returntype
+            _shortname = returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
         dev = mock_qubit_device_extract_stats()
-        results = dev.statistics(qscript)
-
-        assert results == []
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+            dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", ["not None"])
     def test_error_return_type_none(self, mock_qubit_device_extract_stats, returntype):
@@ -400,9 +395,7 @@ class TestExtractStatistics:
         assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
 
         class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return returntype
+            _shortname = returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 

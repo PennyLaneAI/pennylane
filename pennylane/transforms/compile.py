@@ -54,7 +54,9 @@ def compile(
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, a default of
             ``pennylane.ops.__all__`` will be used. This decomposes templates and
-            operator arithmetic.
+            operator arithmetic. If an empty basis set (e.g. ``[]``, ``()``, or
+            ``{}``) is provided, all operations that can be decomposed will be
+            decomposed.
         num_passes (int): The number of times to apply the set of transforms in
             ``pipeline``. The default is to perform each transform once;
             however, doing so may produce a new circuit where applying the set
@@ -180,7 +182,8 @@ def compile(
     # don't queue anything as a result of the expansion or transform pipeline
 
     with QueuingManager.stop_recording():
-        basis_set = basis_set or all_ops
+        if basis_set is None:
+            basis_set = all_ops
 
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):

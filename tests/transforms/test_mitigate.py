@@ -14,7 +14,7 @@
 """
 Tests for mitigation transforms.
 """
-# pylint:disable=no-self-use, unnecessary-lambda-assignment
+# pylint:disable=no-self-use, unnecessary-lambda-assignment, protected-access
 from functools import partial
 
 import pytest
@@ -62,7 +62,7 @@ def same_tape(tape1, tape2):
     )
     assert len(tape1.measurements) == len(tape2.measurements)
     assert all(
-        m1.return_type == m2.return_type for m1, m2 in zip(tape1.measurements, tape2.measurements)
+        m1._shortname == m2._shortname for m1, m2 in zip(tape1.measurements, tape2.measurements)
     )
     assert all(o1.name == o2.name for o1, o2 in zip(tape1.observables, tape2.observables))
     assert all(o1.wires == o2.wires for o1, o2 in zip(tape1.observables, tape2.observables))

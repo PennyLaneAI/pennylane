@@ -35,7 +35,7 @@ Array(1., dtype=float64)
 Note that we must provide the expected output shape for the function to use pure callbacks.
 
 """
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument, too-many-arguments, protected-access
 from functools import partial
 
 import jax
@@ -59,7 +59,7 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
 
     """
     if isinstance(result, dict):
-        return {key: jnp.array(value) for key, value in result.items()}
+        return {key: _to_jax(value) for key, value in result.items()}
     if isinstance(result, (list, tuple)):
         return tuple(_to_jax(r) for r in result)
     return jnp.array(result)
@@ -251,7 +251,11 @@ def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
 
     """
 
-    if any(m.return_type == qml.measurements.Counts for t in tapes for m in t.measurements):
+    if any(
+        isinstance(m, qml.measurements.CountsMP) and not (m.all_outcomes)
+        for t in tapes
+        for m in t.measurements
+    ):
         # Obtaining information about the shape of the Counts measurements is
         # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
@@ -277,7 +281,11 @@ def jax_jit_vjp_execute(tapes, execute_fn, jpc, device=None):
         the returned tuple corresponds in order to the provided tapes.
 
     """
-    if any(m.return_type == qml.measurements.Counts for t in tapes for m in t.measurements):
+    if any(
+        isinstance(m, qml.measurements.CountsMP) and not (m.all_outcomes)
+        for t in tapes
+        for m in t.measurements
+    ):
         # Obtaining information about the shape of the Counts measurements is
         # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")

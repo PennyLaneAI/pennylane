@@ -1016,12 +1016,13 @@ class TestPulseOdegenTape:
         op = qml.evolve(H)([x], t=t)
         tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))], shots=shots)
 
-        val = qml.execute([tape], dev)
         theta = integral_of_polyval(x, t)
-        assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
         _tapes, fn = pulse_odegen(tape)
         assert len(_tapes) == 2
+
+        val = qml.execute([tape], dev)
+        assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
         grad = fn(qml.execute(_tapes, dev))
         par_jac = jax.jacobian(integral_of_polyval)(x, t)
@@ -1090,9 +1091,7 @@ class TestPulseOdegenTape:
         op = qml.evolve(H)([x, y], t=t)
         tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))])
 
-        val = qml.execute([tape], dev)
         theta = integral_of_polyval(x, t) + y * (t[1] - t[0])
-        assert qml.math.allclose(val, jnp.cos(2 * theta))
 
         # Argnum=[0] or 0
         par_jac_0 = jax.jacobian(integral_of_polyval)(x, t)
@@ -1104,6 +1103,9 @@ class TestPulseOdegenTape:
 
         _tapes, fn = pulse_odegen(tape, argnum=argnum)
         assert len(_tapes) == 2
+
+        val = qml.execute([tape], dev)
+        assert qml.math.allclose(val, jnp.cos(2 * theta))
 
         grad = fn(qml.execute(_tapes, dev))
         assert isinstance(grad, tuple) and len(grad) == 2

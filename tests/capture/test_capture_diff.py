@@ -17,7 +17,6 @@ Tests for capturing differentiation into jaxpr.
 import pytest
 
 import pennylane as qml
-from pennylane.capture import qnode_prim
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -26,6 +25,7 @@ jax = pytest.importorskip("jax")
 from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
     grad_prim,
     jacobian_prim,
+    qnode_prim,
 )
 
 jnp = jax.numpy

@@ -243,9 +243,12 @@ def _create_mid_measure_primitive():
         measurement.
 
     """
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
 
-    mid_measure_p = jax.core.Primitive("measure")
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    mid_measure_p = NonInterpPrimitive("measure")
 
     @mid_measure_p.def_impl
     def _(wires, reset=False, postselect=None):
@@ -279,6 +282,8 @@ class MidMeasureMP(MeasurementProcess):
             state that is used for postselection will be considered in the remaining circuit.
         id (str): Custom label given to a measurement instance.
     """
+
+    _shortname = MidMeasure  #! Note: deprecated. Change the value to "measure" in v0.42
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
@@ -333,10 +338,6 @@ class MidMeasureMP(MeasurementProcess):
         _label += "├" if not self.reset else "│  │0⟩"
 
         return _label
-
-    @property
-    def return_type(self):
-        return MidMeasure
 
     @property
     def samples_computational_basis(self):

@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
-from pennylane.measurements import DensityMatrixMP, State, StateMP, density_matrix, expval, state
+from pennylane.measurements import DensityMatrixMP, StateMP, density_matrix, expval, state
 from pennylane.wires import WireError, Wires
 
 
@@ -39,7 +39,7 @@ class TestStateMP:
         """Test the processing of a state vector."""
 
         mp = StateMP(wires=None)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         processed = mp.process_state(vec, None)
@@ -137,13 +137,13 @@ class TestStateMP:
 
     @pytest.mark.parametrize(
         "dm",
-        [(np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531 + 0.0j)],
+        [np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531 + 0.0j],
     )
     def test_process_density_matrix(self, dm):
         """Test the processing of a state vector."""
 
         mp = StateMP(wires=None)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         # Expecting a NotImplementedError to be raised when process_density_matrix is called
@@ -170,7 +170,7 @@ class TestDensityMatrixMP:
         """Test the processing of a state vector into a matrix."""
 
         mp = DensityMatrixMP(wires=wires)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         num_wires = int(np.log2(len(vec)))
@@ -197,7 +197,7 @@ class TestDensityMatrixMP:
         """Test the processing of a density matrix into a matrix."""
 
         mp = DensityMatrixMP(wires=wires)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         num_wires = int(np.log2(len(mat)))
@@ -241,7 +241,7 @@ class TestState:
         tape = qml.workflow.construct_tape(func)()
         obs = tape.observables
         assert len(obs) == 1
-        assert obs[0].return_type is State
+        assert isinstance(obs[0], StateMP)
 
     @pytest.mark.parametrize("wires", range(2, 5))
     def test_state_correct_ghz(self, wires):
@@ -556,7 +556,7 @@ class TestDensityMatrix:
         tape = qml.workflow.construct_tape(func)()
         obs = tape.observables
         assert len(obs) == 1
-        assert obs[0].return_type is State
+        assert isinstance(obs[0], StateMP)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])

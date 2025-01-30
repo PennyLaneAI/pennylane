@@ -25,22 +25,6 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 
-def test_decomp_depth_argument_is_deprecated():
-    """Test that the decomp_depth argument in set_decomposition context manager is deprecated"""
-
-    dev = qml.device("default.mixed", wires=2)
-
-    @qml.qnode(dev)
-    def circuit():
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(wires=0))
-
-    # Test within the context manager
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="decomp_depth argument is deprecated"):
-        with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev, decomp_depth=10):
-            _ = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
-
-
 class TestCreateExpandFn:
     """Test creating expansion functions from stopping criteria."""
 
