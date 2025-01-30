@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation
 from pennylane.tape import QuantumScript
 from pennylane.transforms.add_noise import add_noise
 
@@ -109,7 +108,7 @@ class TestAddNoise:
         assert tape.observables[0].name == "Prod"
 
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_noise_tape_with_state_prep(self):
         """Test if the expected tape is returned with the transform"""
@@ -142,7 +141,7 @@ class TestAddNoise:
         assert tape.observables[0].name == "Prod"
 
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
 
 class TestAddNoiseInterface:
@@ -242,10 +241,10 @@ class TestAddNoiseInterface:
         assert tape.observables[0].name == "Prod"
 
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
         assert tape.observables[1].name == "PauliZ"
         assert tape.observables[1].wires.tolist() == [0]
-        assert tape.measurements[1].return_type is Expectation
+        assert isinstance(tape.measurements[1], qml.measurements.ExpectationMP)
 
         assert not np.allclose(res_without_noise, res_with_noise)
 
@@ -414,7 +413,7 @@ class TestAddNoiseLevels:
         @qml.transforms.undo_swaps
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)
@@ -447,7 +446,7 @@ class TestAddNoiseLevels:
         @qml.transforms.undo_swaps
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)

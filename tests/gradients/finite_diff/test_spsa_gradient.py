@@ -161,7 +161,7 @@ class TestSpsaGradient:
         """Tests that if sampler_rng has an unexpected type, an error is raised."""
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="spsa", sampler_rng="foo")
+        @qml.qnode(dev, diff_method="spsa", gradient_kwargs={"sampler_rng": "foo"})
         def circuit(param):
             qml.RX(param, wires=0)
             return qml.expval(qml.PauliZ(0))
