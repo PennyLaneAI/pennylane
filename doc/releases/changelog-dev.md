@@ -36,6 +36,33 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
+  Users can now construct the execution configuration from a particular `QNode` instance.
+  [(#6901)](https://github.com/PennyLaneAI/pennylane/pull/6901)
+
+  ```python
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit(x):
+      qml.RX(x, 0)
+      return qml.expval(qml.Z(0))
+  ```
+  ```pycon
+  >>> config = qml.workflow.construct_execution_config(circuit)(1)
+  >>> pprint.pprint(config)
+  ExecutionConfig(grad_on_execution=False,
+                  use_device_gradient=True,
+                  use_device_jacobian_product=False,
+                  gradient_method='backprop',
+                  gradient_keyword_arguments={},
+                  device_options={'max_workers': None,
+                                  'prng_key': None,
+                                  'rng': Generator(PCG64) at 0x15F6BB680},
+                  interface=<Interface.NUMPY: 'numpy'>,
+                  derivative_order=1,
+                  mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
+                  convert_to_numpy=True)
+  ```
+
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
   [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
 
@@ -147,6 +174,11 @@
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
   [(#6879)](https://github.com/PennyLaneAI/pennylane/pull/6879)
 
+* The property `MeasurementProcess.return_type` has been deprecated.
+  If observable type checking is needed, please use direct `isinstance`; if other text information is needed, please use class name, or another internal temporary private member `_shortname`.
+  [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
+  [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
+
 <h3>Internal changes ⚙️</h3>
 
 * The source code has been updated use black 25.1.0
@@ -186,6 +218,10 @@
 * `BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
 
+* The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
+  passed to the `QNode`, instead of assuming the method is always `deferred`.
+  [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -193,6 +229,7 @@ This release contains contributions from (in alphabetical order):
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
+Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,

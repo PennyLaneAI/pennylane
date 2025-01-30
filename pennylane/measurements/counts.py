@@ -182,6 +182,8 @@ class CountsMP(SampleMeasurement):
             outcomes (default), or whether it will display all possible outcomes for the system
     """
 
+    _shortname = Counts  #! Note: deprecated. Change the value to "counts" in v0.42
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -192,6 +194,7 @@ class CountsMP(SampleMeasurement):
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
+        self._shortname = AllCounts if all_outcomes else Counts
         if wires is not None:
             wires = Wires(wires)
         super().__init__(obs, wires, eigvals, id)
@@ -234,10 +237,6 @@ class CountsMP(SampleMeasurement):
         )
 
         return hash(fingerprint)
-
-    @property
-    def return_type(self):
-        return AllCounts if self.all_outcomes else Counts
 
     def process_samples(
         self,
