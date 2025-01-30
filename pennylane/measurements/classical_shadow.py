@@ -226,6 +226,8 @@ class ClassicalShadowMP(MeasurementTransform):
             where the instance has to be identified
     """
 
+    _shortname = Shadow  #! Note: deprecated. Change the value to "shadow" in v0.42
+
     def __init__(
         self,
         wires: Optional[WiresLike] = None,
@@ -446,10 +448,6 @@ class ClassicalShadowMP(MeasurementTransform):
     def numeric_type(self):
         return int
 
-    @property
-    def return_type(self):
-        return Shadow
-
     @classmethod
     def _abstract_eval(
         cls,
@@ -492,6 +490,8 @@ class ShadowExpvalMP(MeasurementTransform):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    _shortname = ShadowExpval  #! Note: deprecated. Change the value to "shadowexpval" in v0.42
 
     def _flatten(self):
         metadata = (
@@ -564,10 +564,6 @@ class ShadowExpvalMP(MeasurementTransform):
     @property
     def numeric_type(self):
         return float
-
-    @property
-    def return_type(self):
-        return ShadowExpval
 
     def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
         return () if isinstance(self.H, Operator) else (len(self.H),)
