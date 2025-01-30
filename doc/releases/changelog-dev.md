@@ -9,6 +9,33 @@
 * Converted current tests that used `default.mixed` to use other equivalent devices in-place.
   [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
 
+* Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
+  Users can now construct the execution configuration from a particular `QNode` instance.
+  [(#6901)](https://github.com/PennyLaneAI/pennylane/pull/6901)
+
+  ```python
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit(x):
+      qml.RX(x, 0)
+      return qml.expval(qml.Z(0))
+  ```
+  ```pycon
+  >>> config = qml.workflow.construct_execution_config(circuit)(1)
+  >>> pprint.pprint(config)
+  ExecutionConfig(grad_on_execution=False,
+                  use_device_gradient=True,
+                  use_device_jacobian_product=False,
+                  gradient_method='backprop',
+                  gradient_keyword_arguments={},
+                  device_options={'max_workers': None,
+                                  'prng_key': None,
+                                  'rng': Generator(PCG64) at 0x15F6BB680},
+                  interface=<Interface.NUMPY: 'numpy'>,
+                  derivative_order=1,
+                  mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
+                  convert_to_numpy=True)
+  ```
+
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
   [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
 
@@ -119,6 +146,11 @@
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
   [(#6879)](https://github.com/PennyLaneAI/pennylane/pull/6879)
+
+* The property `MeasurementProcess.return_type` has been deprecated.
+  If observable type checking is needed, please use direct `isinstance`; if other text information is needed, please use class name, or another internal temporary private member `_shortname`.
+  [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
+  [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
 
 <h3>Internal changes ⚙️</h3>
 
