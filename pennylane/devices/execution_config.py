@@ -15,7 +15,6 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass, field
-from pprint import pformat
 from typing import Optional, Union
 
 from pennylane.math import Interface, get_canonical_interface_name
@@ -136,9 +135,6 @@ class ExecutionConfig:
 
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
-
-    def __str__(self):
-        return pformat(self)
 
 
 DefaultExecutionConfig = ExecutionConfig()
