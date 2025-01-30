@@ -283,6 +283,8 @@ class MidMeasureMP(MeasurementProcess):
         id (str): Custom label given to a measurement instance.
     """
 
+    _shortname = MidMeasure  #! Note: deprecated. Change the value to "measure" in v0.42
+
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
         return (None, None), metadata
@@ -336,10 +338,6 @@ class MidMeasureMP(MeasurementProcess):
         _label += "├" if not self.reset else "│  │0⟩"
 
         return _label
-
-    @property
-    def return_type(self):
-        return MidMeasure
 
     @property
     def samples_computational_basis(self):
