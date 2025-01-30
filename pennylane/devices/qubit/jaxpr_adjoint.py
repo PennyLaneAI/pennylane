@@ -19,6 +19,7 @@ from jax import numpy as jnp
 from jax.interpreters import ad
 
 from pennylane import adjoint, generator
+from pennylane.capture import disable, enable
 from pennylane.capture.primitives import AbstractOperator
 
 from .apply_operation import apply_operation
@@ -33,8 +34,11 @@ def _read(env, var):
 def _operator_forward_pass(eqn, env, ket):
     """Apply an operator during the forward pass of the adjoint jvp."""
     invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
-    op = eqn.primitive.bind(*invals, **eqn.params)
+    op = eqn.primitive.impl(*invals, **eqn.params)
     env[eqn.outvars[0]] = (op, ad.Zero(AbstractOperator()))
+
+    if any(not isinstance(t, ad.Zero) for t in tangents[1:]):
+        raise NotImplementedError("adjoint jvp only differentiable parameters in the 0 position.")
 
     if isinstance(eqn.outvars[0], jax.core.DropVar):
         return apply_operation(op, ket)
@@ -49,13 +53,15 @@ def _measurement_forward_pass(eqn, env, ket):
     """Perform a measurement during the forward pass of the adjoint jvp."""
     invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
 
-    if any(not isinstance(t, ad.Zero) for t in tangents):
-        raise NotImplementedError
+    if any(not isinstance(t, ad.Zero) for t in tangents):  # pragma: no cover
+        # currently prevented by "no differentiable operator arithmetic."
+        # but better safe than sorry to keep this error
+        raise NotImplementedError  # pragma: no cover
 
     if eqn.primitive.name != "expval_obs":
         raise NotImplementedError("adjoint jvp only supports expectations of observables.")
 
-    mp = eqn.primitive.bind(*invals, **eqn.params)
+    mp = eqn.primitive.impl(*invals, **eqn.params)
     bra = apply_operation(mp.obs, ket)
     result = jnp.real(jnp.sum(jnp.conj(bra) * ket))
     env[eqn.outvars[0]] = (result, None)
@@ -69,7 +75,9 @@ def _other_prim_forward_pass(eqn: jax.core.JaxprEqn, env: dict) -> None:
     """
     invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
     if eqn.primitive not in ad.primitive_jvps:
-        raise NotImplementedError
+        raise NotImplementedError(
+            f"Primitive {eqn.primitive} does not have a jvp rule and is not supported.."
+        )
     outvals, doutvals = ad.primitive_jvps[eqn.primitive](invals, tangents, **eqn.params)
     if not eqn.primitive.multiple_results:
         outvals = [outvals]
@@ -109,20 +117,22 @@ def _backward_pass(jaxpr, bras, ket, results, env):
             op = env[eqn.outvars[0]][0]
 
             if eqn.invars:
-                tangents = [_read(env, var)[1] for var in eqn.invars]
-                # assuming just one tangent for now
-                t = tangents[0]
+                t = _read(env, eqn.invars[0])[1]
                 if not isinstance(t, ad.Zero):
-                    ket_temp = apply_operation(generator(op, format="observable"), ket)
+                    disable()
+                    try:
+                        ket_temp = apply_operation(generator(op, format="observable"), ket)
+                    finally:
+                        enable()
                     modified = True
                     for i, bra in enumerate(bras):
                         out_jvps[i] += -2 * t * jnp.imag(jnp.sum(jnp.conj(bra) * ket_temp))
-                if any(not isinstance(t, ad.Zero) for t in tangents[1:]):
-                    raise NotImplementedError(
-                        "adjoint jvp only differentiable parameters in the 0 position."
-                    )
 
-            adj_op = adjoint(op)
+            disable()
+            try:
+                adj_op = adjoint(op, lazy=False)
+            finally:
+                enable()
             ket = apply_operation(adj_op, ket)
             bras = [apply_operation(adj_op, bra) for bra in bras]
 
@@ -132,7 +142,18 @@ def _backward_pass(jaxpr, bras, ket, results, env):
 
 
 def execute_and_jvp(jaxpr: jax.core.Jaxpr, args: tuple, tangents: tuple, num_wires: int):
-    """Execute and calculate the jvp for a jaxpr."""
+    """Execute and calculate the jvp for a jaxpr.
+
+    Args:
+        jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+        args : an iterable of tensorlikes.  Should include the consts followed by the inputs
+        tangents: an interable of tensorlikes and ``jax.interpreter.ad.Zero`` objects.  Should
+            still include the consts followed by the inputs
+        num_wires (int): the number of wires to use.
+
+    Note that the consts for the jaxpr should be included in the beginning of both the ``args``
+    and ``tangents``.
+    """
     env = {
         var: (arg, tangent)
         for var, arg, tangent in zip(jaxpr.constvars + jaxpr.invars, args, tangents, strict=True)

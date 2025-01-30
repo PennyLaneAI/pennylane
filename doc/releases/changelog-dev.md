@@ -100,6 +100,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
+  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
+
 * Added a `QmlPrimitive` class that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` module.
   This class contains a `prim_type` property so that we can differentiate between different sets of PennyLane primitives.
   Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
