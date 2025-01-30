@@ -17,19 +17,10 @@ This module contains a class for executing plxpr using default qubit tools.
 
 import jax
 import numpy as np
-from jax import numpy as jnp
-from jax.interpreters import ad
 
-from pennylane import adjoint, generator
 from pennylane.capture import disable, enable
 from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
-from pennylane.capture.primitives import (
-    AbstractMeasurement,
-    AbstractOperator,
-    adjoint_transform_prim,
-    ctrl_transform_prim,
-    measure_prim,
-)
+from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.measurements import MidMeasureMP, Shots
 
 from .apply_operation import apply_operation
@@ -182,86 +173,3 @@ def _(self, *invals, jaxpr, n_consts, lazy=True):
 def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     # TODO: requires jaxpr -> list of ops first
     raise NotImplementedError
-
-
-def _read(env, var):
-    return (var.val, ad.Zero(var.aval)) if isinstance(var, jax.core.Literal) else env[var]
-
-
-def _forward_pass(jaxpr, env, num_wires):
-    bras = []
-    results = []
-    ket = create_initial_state(range(num_wires))
-
-    for eqn in jaxpr.eqns:
-        if isinstance(eqn.outvars[0].aval, AbstractOperator):
-            invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
-            op = eqn.primitive.bind(*invals, **eqn.params)
-
-            if isinstance(eqn.outvars[0], jax.core.DropVar):
-                ket = apply_operation(op, ket)
-            elif any(not isinstance(t, ad.Zero) for t in tangents):
-                # derivatives of op arithmetic. Should be possible later
-                raise NotImplementedError
-
-            env[eqn.outvars[0]] = (op, ad.Zero(AbstractOperator()))
-
-        elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
-            invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
-
-            if any(not isinstance(t, ad.Zero) for t in tangents):
-                raise NotImplementedError
-
-            mp = eqn.primitive.bind(*invals, **eqn.params)
-            bra = apply_operation(mp.obs, ket)
-            bras.append(2 * bra)
-            results.append(jnp.real(jnp.sum(jnp.conj(bra) * ket)))
-
-        else:
-            invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
-            if eqn.primitive not in ad.primitive_jvps:
-                raise NotImplementedError
-            outvals, doutvals = ad.primitive_jvps[eqn.primitive](invals, tangents, **eqn.params)
-            if not eqn.primitive.multiple_results:
-                outvals = [outvals]
-                doutvals = [doutvals]
-            for var, v, dv in zip(eqn.outvars, outvals, doutvals):
-                env[var] = (v, dv)
-
-    return results, bras, ket
-
-
-def _backward_pass(jaxpr, bras, ket, env):
-    out_jvps = [jnp.array(0.0)] * len(bras)
-
-    for eqn in reversed(jaxpr.eqns):
-        if isinstance(eqn.outvars[0].aval, AbstractOperator) and isinstance(
-            eqn.outvars[0], jax.core.DropVar
-        ):
-            op = env[eqn.outvars[0]][0]
-
-            if eqn.invars:
-                tangents = [_read(env, var)[1] for var in eqn.invars]
-                # assuming just one tangent for now
-                t = tangents[0]
-                if not isinstance(t, ad.Zero):
-                    ket_temp = 1j * apply_operation(generator(op, format="observable"), ket)
-                    for i, bra in enumerate(bras):
-                        out_jvps[i] += t * jnp.real(jnp.sum(jnp.conj(bra) * ket_temp))
-
-            adj_op = adjoint(op)
-            ket = apply_operation(adj_op, ket)
-            bras = [apply_operation(adj_op, bra) for bra in bras]
-
-    return out_jvps
-
-
-def execute_and_jvp(jaxpr, args, tangents, num_wires):
-    """Execute and calculate the jvp for a jaxpr."""
-    env = {
-        var: (arg, tangent)
-        for var, arg, tangent in zip(jaxpr.constvars + jaxpr.invars, args, tangents, strict=True)
-    }
-
-    results, bras, ket = _forward_pass(jaxpr, env, num_wires)
-    return results, _backward_pass(jaxpr, bras, ket, env)
