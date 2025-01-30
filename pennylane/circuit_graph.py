@@ -166,7 +166,7 @@ class CircuitGraph:
         for mp in self.observables_in_order:
             obs = mp.obs or mp
             data, name = ([], "Identity") if obs is mp else (obs.data, str(obs.name))
-            serialization_string += str(mp.return_type)
+            serialization_string += mp.__class__.__name__  # pylint: disable=protected-access
             serialization_string += delimiter
             serialization_string += name
             for param in data:
