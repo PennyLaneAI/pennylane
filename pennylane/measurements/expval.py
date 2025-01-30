@@ -92,7 +92,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    return_type = Expectation
+    _shortname = Expectation  #! Note: deprecated. Change the value to "expval" in v0.42
 
     @property
     def numeric_type(self):

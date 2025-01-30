@@ -15,20 +15,21 @@
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
 # TODO: Fix the latter two pylint warnings
-# pylint: disable=too-many-arguments, too-many-branches, too-many-statements
+# pylint: disable=too-many-arguments, too-many-branches, too-many-statements, protected-access
 
 from dataclasses import dataclass
 from typing import Optional
 
 import pennylane as qml
 from pennylane.measurements import (
-    Counts,
-    Expectation,
+    CountsMP,
+    DensityMatrixMP,
+    ExpectationMP,
     MidMeasureMP,
-    Probability,
-    Sample,
-    State,
-    Variance,
+    ProbabilityMP,
+    SampleMP,
+    StateMP,
+    VarianceMP,
 )
 
 from .drawable_layers import drawable_layers
@@ -173,12 +174,13 @@ def _add_mid_measure_op(op, layer_str, config):
 
 
 measurement_label_map = {
-    Expectation: lambda label: f"<{label}>",
-    Probability: lambda label: f"Probs[{label}]" if label else "Probs",
-    Sample: lambda label: f"Sample[{label}]" if label else "Sample",
-    Counts: lambda label: f"Counts[{label}]" if label else "Counts",
-    Variance: lambda label: f"Var[{label}]",
-    State: lambda label: "State",
+    ExpectationMP: lambda label: f"<{label}>",
+    ProbabilityMP: lambda label: f"Probs[{label}]" if label else "Probs",
+    SampleMP: lambda label: f"Sample[{label}]" if label else "Sample",
+    CountsMP: lambda label: f"Counts[{label}]" if label else "Counts",
+    VarianceMP: lambda label: f"Var[{label}]",
+    StateMP: lambda label: "State",
+    DensityMatrixMP: lambda label: "DensityMatrix",
 }
 
 
@@ -206,7 +208,7 @@ def _add_cwire_measurement(m, layer_str, config):
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
     mv_label = "MCM"
-    meas_label = measurement_label_map[m.return_type](mv_label)
+    meas_label = measurement_label_map[type(m)](mv_label)  # pylint: disable=protected-access
 
     n_wires = len(config.wire_map)
     for mcm in mcms:
@@ -227,10 +229,10 @@ def _add_measurement(m, layer_str, config):
         obs_label = None
     else:
         obs_label = m.obs.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-    if m.return_type in measurement_label_map:
-        meas_label = measurement_label_map[m.return_type](obs_label)
+    if type(m) in measurement_label_map:
+        meas_label = measurement_label_map[type(m)](obs_label)
     else:
-        meas_label = m.return_type.value
+        meas_label = str(m)
 
     if len(m.wires) == 0:  # state or probability across all wires
         n_wires = len(config.wire_map)

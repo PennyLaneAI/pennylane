@@ -65,7 +65,7 @@ class TestCond:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 4
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].base, qml.PauliX)
@@ -130,7 +130,7 @@ class TestCond:
 
         assert len(ops) == 5
 
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].base, qml.PauliX)
@@ -265,7 +265,7 @@ class TestOtherTransforms:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].base, qml.ops.op_math.Adjoint)
@@ -294,7 +294,7 @@ class TestOtherTransforms:
         ops = tape.operations
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].base, qml.ops.op_math.Controlled)
@@ -321,7 +321,7 @@ class TestOtherTransforms:
         ops = tape.operations
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.op_math.Controlled)
         assert isinstance(ops[1].base, qml.ops.Conditional)

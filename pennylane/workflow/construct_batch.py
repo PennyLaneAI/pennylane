@@ -65,7 +65,12 @@ def _get_full_transform_program(
             **qnode.gradient_kwargs,
         )
 
-    config = _make_execution_config(qnode, gradient_fn)
+    mcm_config = qml.devices.MCMConfig(
+        postselect_mode=qnode.execute_kwargs["postselect_mode"],
+        mcm_method=qnode.execute_kwargs["mcm_method"],
+    )
+
+    config = _make_execution_config(qnode, gradient_fn, mcm_config)
     return program + qnode.device.preprocess_transforms(config)
 
 

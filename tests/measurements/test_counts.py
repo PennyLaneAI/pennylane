@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import AllCounts, Counts, CountsMP
+from pennylane.measurements import CountsMP
 from pennylane.wires import Wires
 
 
@@ -30,9 +30,9 @@ class TestCounts:
         meas1 = qml.counts(wires=0)
         meas2 = qml.counts(op=qml.PauliX(0), all_outcomes=True)
         assert meas1.samples_computational_basis is True
-        assert meas1.return_type == Counts
+        assert isinstance(meas1, CountsMP)
         assert meas2.samples_computational_basis is False
-        assert meas2.return_type == AllCounts
+        assert meas2.all_outcomes is True
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
@@ -518,19 +518,6 @@ class TestCountsIntegration:
         assert len(result) == 3
         assert all(sum(r.values()) == n_sample for r in result)
         assert all(all(v.dtype == np.dtype("int") for v in r.values()) for r in result)
-
-    def test_observable_return_type_is_counts(self):
-        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Counts`"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.counts(qml.PauliZ(0))
-            return res
-
-        circuit()
-        assert circuit._qfunc_output.return_type is Counts  # pylint: disable=protected-access
 
     def test_providing_no_observable_and_no_wires_counts(self):
         """Test that we can provide no observable and no wires to sample function"""
