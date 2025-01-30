@@ -511,10 +511,11 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
-        if not qml.math.allclose(qml.math.transpose(qml.math.conj(A)), A):
-            A = 1j * A
+        if not qml.math.is_abstract(A):
             if not qml.math.allclose(qml.math.transpose(qml.math.conj(A)), A):
-                raise ValueError(f"At least one basis matrix is not (skew-)Hermitian:\n{A}")
+                A = 1j * A
+                if not qml.math.allclose(qml.math.transpose(qml.math.conj(A)), A):
+                    raise ValueError(f"At least one basis matrix is not (skew-)Hermitian:\n{A}")
 
         B = copy(A)
         if len(basis) > 0:
