@@ -156,6 +156,8 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
+    _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
+
     def __init__(self, obs=None, wires=None, eigvals=None, id=None):
 
         if isinstance(obs, MeasurementValue):
@@ -182,8 +184,6 @@ class SampleMP(SampleMeasurement):
             wires = Wires(wires)
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
-
-    return_type = Sample
 
     @classmethod
     def _abstract_eval(

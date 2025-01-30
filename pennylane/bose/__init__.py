@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A module containing utility functions and mappings for working with bosonic operators. """
+"""A module containing utility functions and mappings for working with bosonic operators."""
 
 from .bosonic import BoseSentence, BoseWord
 from .bosonic_mapping import binary_mapping, christiansen_mapping, unary_mapping

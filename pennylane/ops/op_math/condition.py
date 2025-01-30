@@ -233,13 +233,17 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         consts = []
         consts_slices = []
 
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+
         for pred, fn in branches:
             conditions.append(pred)
             if fn is None:
                 jaxpr_branches.append(None)
                 consts_slices.append(slice(0, 0))
             else:
-                jaxpr = jax.make_jaxpr(functools.partial(fn, **kwargs))(*args)
+                jaxpr = jax.make_jaxpr(
+                    functools.partial(fn, **kwargs), abstracted_axes=abstracted_axes
+                )(*args)
                 jaxpr_branches.append(jaxpr.jaxpr)
                 consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
                 consts += jaxpr.consts
@@ -249,6 +253,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         results = cond_prim.bind(
             *conditions,
             *consts,
+            *abstract_shapes,
             *flat_args,
             jaxpr_branches=jaxpr_branches,
             consts_slices=consts_slices,
