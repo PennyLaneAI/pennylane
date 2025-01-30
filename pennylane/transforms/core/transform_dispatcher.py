@@ -29,7 +29,7 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
 
 
-def register_primitive_for_expansion(primitive, plxpr_transform):
+def register_primitive_for_expansion(primitive, plxpr_transform, tape_transform):
     """Register a transform such that it can be expanded when applied to a function with
     program capture enabled."""
     # pylint: disable=import-outside-toplevel
@@ -45,7 +45,29 @@ def register_primitive_for_expansion(primitive, plxpr_transform):
         self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=too-many-arguments,missing-docstring
         if plxpr_transform is None:
-            raise NotImplementedError
+
+            def _plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
+                import jax
+
+                tape = qml.tape.plxpr_to_tape(jaxpr, consts, *args)
+                tapes, _ = tape_transform(tape, *targs, **tkwargs)
+
+                def wrapper():
+                    for op in tapes[0].operations:
+                        data, struct = jax.tree_util.tree_flatten(op)
+                        jax.tree_util.tree_unflatten(struct, data)
+
+                    out = []
+                    for mp in tapes[0].measurements:
+                        data, struct = jax.tree_util.tree_flatten(mp)
+                        out.append(jax.tree_util.tree_unflatten(struct, data))
+
+                    return tuple(out)
+
+                return jax.make_jaxpr(wrapper)()
+
+        else:
+            _plxpr_transform = plxpr_transform
 
         inner_args = invals[args_slice]
         inner_consts = invals[consts_slice]
@@ -55,7 +77,7 @@ def register_primitive_for_expansion(primitive, plxpr_transform):
             return copy(self).eval(inner_jaxpr, inner_consts, *args)
 
         unravelled_jaxpr = jax.make_jaxpr(wrapper)(*inner_args)
-        final_jaxpr = plxpr_transform(
+        final_jaxpr = _plxpr_transform(
             unravelled_jaxpr.jaxpr, unravelled_jaxpr.consts, targs, tkwargs, *inner_args
         )
         return copy(self).eval(final_jaxpr.jaxpr, final_jaxpr.consts, *inner_args)
@@ -118,7 +140,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         self._plxpr_transform = plxpr_transform
         self._primitive = _create_transform_primitive(self._transform.__name__)
-        register_primitive_for_expansion(self._primitive, self._plxpr_transform)
+        register_primitive_for_expansion(self._primitive, self._plxpr_transform, self._transform)
 
     def __call__(
         self, *targs, **tkwargs
