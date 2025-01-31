@@ -184,9 +184,7 @@ def get_transform_program(
 
     """
     if gradient_fn == "unset":
-        config = qml.devices.ExecutionConfig(
-            interface=qnode.interface, gradient_method=qnode.diff_method
-        )
+        config = qml.workflow.construct_execution_config(qnode, resolve=False)()
         # pylint: disable = protected-access
         config = qml.workflow.resolution._resolve_diff_method(
             config,
