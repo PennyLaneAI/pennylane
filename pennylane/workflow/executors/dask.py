@@ -20,12 +20,14 @@ from collections.abc import Callable, Sequence
 try:
     from dask.distributed import Client, LocalCluster
     from dask.distributed.deploy import Cluster
+
     DASK_FOUND = True
 except:
     DASK_FOUND = False
 from .base import ExtExecABC
 
 if DASK_FOUND:
+
     class DaskExec(ExtExecABC):
         """
         Dask distributed abstraction class functor.
@@ -56,3 +58,15 @@ if DASK_FOUND:
         @property
         def size(self):
             return self._size
+
+else:
+
+    class DaskExec(ExtExecABC):
+        """
+        Mock Dask distributed abstraction class functor.
+        """
+
+        def __init__(self, max_workers=4, client_provider=None, **kwargs):
+            raise RuntimeError(
+                "Dask Distributed cannot be found.\nPlease install via `pip install dask distributed`"
+            )

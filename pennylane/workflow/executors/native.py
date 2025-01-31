@@ -61,8 +61,12 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     def size(self):
         return self._size
 
-    def starmap(self, fn: Callable, data: Sequence):
-        return list(self._exec_backend().starmap(fn, data))
+    def starmap(self, fn: Callable, data: Sequence[tuple]):
+        if not hasattr(self._exec_backend(), "starmap"):
+            return super().starmap(fn, data)
+        if self._persist:
+            return list(self._backend.starmap(fn, data))
+        return list(self._exec_backend()(self._size).starmap(fn, data))
 
     def map(self, fn: Callable, data: Sequence):
         if self._persist:

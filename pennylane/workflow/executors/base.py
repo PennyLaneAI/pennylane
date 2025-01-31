@@ -52,14 +52,13 @@ class RemoteExecABC(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def map(fn: Callable, data: Sequence):
+    def map(self, fn: Callable, data: Sequence):
         """
         Single iterable map for batching execution of fn over data entries.
         """
         ...
 
-    @abc.abstractmethod
-    def starmap(fn: Callable, data: Sequence):
+    def starmap(self, fn: Callable, data: Sequence):
         """
         Single iterable map for batching execution of fn over data entries, with each entry being a tuple of arguments to fn.
         """

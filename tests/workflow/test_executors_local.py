@@ -23,12 +23,20 @@ from pennylane.workflow.executors import ExecBackends, create_executor
 from pennylane.workflow.executors.native import MPPoolExec, ProcPoolExec, ThreadPoolExec
 
 
-def custom_func1(scalar):
-    return np.cos(scalar) * np.exp(1j * scalar)
+def custom_func1(arg0):
+    return np.cos(arg0) * np.exp(1j * arg0)
 
 
-def custom_func2(scalar):
-    return scalar**2
+def custom_func2(arg0):
+    return arg0**2
+
+
+def custom_func3(arg0, arg1):
+    return arg0 + arg1
+
+
+def custom_func4(arg0, arg1, arg2):
+    return arg0 + arg1 - arg2
 
 
 @pytest.mark.parametrize(
@@ -62,13 +70,46 @@ class TestLocalExecutor:
         executor = create_executor(backend[0])
         if result is None:
             with pytest.raises(Exception) as e:
-                print(fn, data)
                 executor.map(fn, data)
         else:
             assert np.allclose(result, list(executor.map(fn, data)))
 
-    def test_starmap(self, backend):
-        pass
+    @pytest.mark.parametrize(
+        "fn,data,result",
+        [
+            (
+                custom_func3,
+                [(i, j) for i, j in zip(range(9), np.ones(9))],
+                [custom_func3(i, j) for i, j in zip(range(9), np.ones(9))],
+            ),
+            (
+                custom_func4,
+                [
+                    (i, j, k)
+                    for i, j, k in zip(
+                        [np.linspace(-5, 5, 10)], [np.linspace(-5, 5, 10)], np.ones(10)
+                    )
+                ],
+                [
+                    custom_func4(i, j, k)
+                    for i, j, k in zip(
+                        [np.linspace(-5, 5, 10)], [np.linspace(-5, 5, 10)], np.ones(10)
+                    )
+                ],
+            ),
+        ],
+    )
+    def test_starmap(self, fn, data, result, backend):
+        """
+        Test valid and invalid data mapping through the executor
+        """
+
+        executor = create_executor(backend[0])
+        if result is None:
+            with pytest.raises(Exception) as e:
+                executor.starmap(fn, data)
+        else:
+            assert np.allclose(result, executor.starmap(fn, data))
 
     @pytest.mark.parametrize(
         "workers",
@@ -84,9 +125,6 @@ class TestLocalExecutor:
             assert executor.size == cpu_count()
             return
         assert executor.size == workers
-
-    def test_call(self, backend):
-        pass
 
     def test_persistence(self, backend):
         executor_temporal = create_executor(backend[0])
