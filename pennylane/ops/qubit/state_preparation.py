@@ -203,9 +203,9 @@ class StatePrep(StatePrepBase):
     Args:
         state (array[complex] or csr_matrix (or whatever the formal type name is for that)): the state vector to prepare
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        pad_with (float or complex): if not ``None``, ``state`` is padded with this constant to be of size :math:`2^n`, where 
+        pad_with (float or complex): if not ``None``, ``state`` is padded with this constant to be of size :math:`2^n`, where
             :math:`n` is the number of wires.
-        normalize (bool): whether to normalize the state vector. To represent a valid quantum state vector, the L2-norm 
+        normalize (bool): whether to normalize the state vector. To represent a valid quantum state vector, the L2-norm
             of ``state`` must be one. The argument ``normalize`` can be set to ``True`` to automatically normalize the state.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
