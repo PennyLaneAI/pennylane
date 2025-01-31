@@ -252,10 +252,10 @@ class CondCallable:  # pylint:disable=too-few-public-methods
                 jaxpr_branches.append(None)
                 consts_slices.append(slice(0, 0))
             else:
-                jaxpr = jax.make_jaxpr(
-                    all_output_shapes(FlatFn(functools.partial(fn, **kwargs))),
-                    abstracted_axes=abstracted_axes,
-                )(*args)
+                f = FlatFn(functools.partial(fn, **kwargs))
+                if jax.config.jax_dynamic_shapes:
+                    f = all_output_shapes(f)
+                jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
                 jaxpr_branches.append(jaxpr.jaxpr)
                 consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
                 consts += jaxpr.consts
@@ -697,108 +697,32 @@ def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[Measurement
     return new_conds
 
 
-@functools.lru_cache
-def _get_cond_qfunc_prim():
-    """Get the cond primitive for quantum functions."""
-
-    import jax  # pylint: disable=import-outside-toplevel
+def _register_custom_staging_rule(cond_prim):
+    import jax
     from jax._src.interpreters import partial_eval as pe
 
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    def _new_outvar(jaxpr_trace, outvar, env):
+        new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
+        new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
+        new_var = jaxpr_trace.makevar(out_tracer)
 
-    cond_prim = NonInterpPrimitive("cond")
-    cond_prim.multiple_results = True
-    cond_prim.prim_type = "higher_order"
+        if not isinstance(outvar, jax.core.Literal):
+            env[outvar] = new_var
+        return out_tracer, new_var
 
-    @cond_prim.def_impl
-    def _(*all_args, jaxpr_branches, consts_slices, args_slice):
-        n_branches = len(jaxpr_branches)
-        conditions = all_args[:n_branches]
-        args = all_args[args_slice]
-
-        # Find predicates that use mid-circuit measurements. We don't check the last
-        # condition as that is always `True`.
-        mcm_conditions = tuple(
-            pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue)
-        )
-        if len(mcm_conditions) != 0:
-            if len(mcm_conditions) != len(conditions) - 1:
-                raise ConditionalTransformError(
-                    "Cannot use qml.cond with a combination of mid-circuit measurements "
-                    "and other classical conditions as predicates."
-                )
-            conditions = _get_mcm_predicates(mcm_conditions)
-
-        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
-            consts = all_args[const_slice]
-            if jaxpr is None:
-                continue
-            if isinstance(pred, qml.measurements.MeasurementValue):
-                with qml.queuing.AnnotatedQueue() as q:
-                    out = qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
-
-                if len(out) != 0:
-                    raise ConditionalTransformError(
-                        "Only quantum functions without return values can be applied "
-                        "conditionally with mid-circuit measurement predicates."
-                    )
-                for wrapped_op in q:
-                    Conditional(pred, wrapped_op.obj)
-            elif pred:
-                return qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
-
-        return ()
-
-    @cond_prim.def_abstract_eval
-    def _(*_, jaxpr_branches, **__):
-
-        outvals_true = [out.aval for out in jaxpr_branches[0].outvars]
-
-        for idx, jaxpr_branch in enumerate(jaxpr_branches):
-            if idx == 0:
-                continue
-
-            if jaxpr_branch is None:
-                if outvals_true:
-                    raise ValueError(
-                        "The false branch must be provided if the true branch returns any variables"
-                    )
-                # this is tested, but coverage does not pick it up
-                continue  # pragma: no cover
-
-            outvals_branch = [out.aval for out in jaxpr_branch.outvars]
-            branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
-            _validate_abstract_values(outvals_branch, outvals_true, branch_type, idx - 1)
-
-        # We return the abstract values of the true branch since the abstract values
-        # of the other branches (if they exist) should be the same
-        return outvals_true
-
-    def custom_staging_rule(jaxpr_trace, *invars, **params):
-
+    def custom_staging_rule(jaxpr_trace, *tracers, **params):
+        if not jax.config.jax_dynamic_shapes:
+            return jaxpr_trace.default_process_primitive(cond_prim, tracers, params)
         jaxpr = params["jaxpr_branches"][0]
 
         env = {}
-        returned_vars = []
-        out_tracers = []
-        for outvar in jaxpr.outvars:
-            new_shape = []
-            for s in outvar.aval.shape:
-                if isinstance(s, int):
-                    new_shape.append(s)
-                else:
-                    # is var
-                    new_shape.append(env[s])
-            new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
-            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
-            new_var = jaxpr_trace.makevar(out_tracer)
-            returned_vars.append(new_var)
-            out_tracers.append(out_tracer)
-            if not isinstance(outvar, jax.core.Literal):
-                env[outvar] = new_var
+        returned_vars, out_tracers = list(
+            zip(*(_new_outvar(jaxpr_trace, var, env) for var in jaxpr.outvars))
+        )
 
         eqn = pe.new_jaxpr_eqn(
-            [jaxpr_trace.getvar(x) for x in invars],
+            [jaxpr_trace.getvar(x) for x in tracers],
             returned_vars,
             cond_prim,
             params,
@@ -808,5 +732,84 @@ def _get_cond_qfunc_prim():
         return out_tracers
 
     pe.custom_staging_rules[cond_prim] = custom_staging_rule
+
+
+def _cond_impl(*all_args, jaxpr_branches, consts_slices, args_slice):
+    n_branches = len(jaxpr_branches)
+    conditions = all_args[:n_branches]
+    args = all_args[args_slice]
+
+    # Find predicates that use mid-circuit measurements. We don't check the last
+    # condition as that is always `True`.
+    mcm_conditions = tuple(pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue))
+    if len(mcm_conditions) != 0:
+        if len(mcm_conditions) != len(conditions) - 1:
+            raise ConditionalTransformError(
+                "Cannot use qml.cond with a combination of mid-circuit measurements "
+                "and other classical conditions as predicates."
+            )
+        conditions = _get_mcm_predicates(mcm_conditions)
+
+    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+        consts = all_args[const_slice]
+        if jaxpr is None:
+            continue
+        if isinstance(pred, qml.measurements.MeasurementValue):
+            with qml.queuing.AnnotatedQueue() as q:
+                out = qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
+
+            if len(out) != 0:
+                raise ConditionalTransformError(
+                    "Only quantum functions without return values can be applied "
+                    "conditionally with mid-circuit measurement predicates."
+                )
+            for wrapped_op in q:
+                Conditional(pred, wrapped_op.obj)
+        elif pred:
+            return qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
+
+    return ()
+
+
+def _cond_abstract_eval(*_, jaxpr_branches, **__):
+
+    outvals_true = [out.aval for out in jaxpr_branches[0].outvars]
+
+    for idx, jaxpr_branch in enumerate(jaxpr_branches):
+        if idx == 0:
+            continue
+
+        if jaxpr_branch is None:
+            if outvals_true:
+                raise ValueError(
+                    "The false branch must be provided if the true branch returns any variables"
+                )
+            # this is tested, but coverage does not pick it up
+            continue  # pragma: no cover
+
+        outvals_branch = [out.aval for out in jaxpr_branch.outvars]
+        branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
+        _validate_abstract_values(outvals_branch, outvals_true, branch_type, idx - 1)
+
+    # We return the abstract values of the true branch since the abstract values
+    # of the other branches (if they exist) should be the same
+    return outvals_true
+
+
+@functools.lru_cache
+def _get_cond_qfunc_prim():
+    """Get the cond primitive for quantum functions."""
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    cond_prim = NonInterpPrimitive("cond")
+    cond_prim.multiple_results = True
+    cond_prim.prim_type = "higher_order"
+
+    cond_prim.def_impl(_cond_impl)
+    cond_prim.def_abstract_eval(_cond_abstract_eval)
+    _register_custom_staging_rule(cond_prim)
 
     return cond_prim
