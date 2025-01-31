@@ -836,7 +836,7 @@ class TestIntegration:
         )
         state = circ()
 
-        assert qnp.allclose(expected_state, state)
+        assert qnp.allclose(state, expected_state)
 
     @pytest.mark.parametrize("order", (1, 2))
     @pytest.mark.parametrize("num_steps", (1, 2, 3))
@@ -878,7 +878,7 @@ class TestIntegration:
             @ initial_state
         )
         state = circ()
-        assert qnp.allclose(expected_state, state)
+        assert qnp.allclose(state, expected_state)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("time", (0.5, 1, 2))
@@ -911,7 +911,7 @@ class TestIntegration:
         )
 
         state = circ(time, coeffs)
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("time", (0.5, 1, 2))
@@ -950,7 +950,7 @@ class TestIntegration:
         )
 
         state = circ(time, c1, c2)
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("time", (0.5, 1, 2))
@@ -987,7 +987,7 @@ class TestIntegration:
         )
 
         state = circ(time, coeffs)
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("time", (0.5, 1, 2))
@@ -1020,7 +1020,7 @@ class TestIntegration:
         )
 
         state = circ(time, coeffs)
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("time", (0.5, 1, 2))
@@ -1051,7 +1051,7 @@ class TestIntegration:
         )
 
         state = circ(time, coeffs)
-        assert qnp.allclose(expected_state, state)
+        assert qnp.allclose(state, expected_state)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
@@ -1852,7 +1852,7 @@ class TestTrotterizedQfuncIntegration:
         )
 
         state = circ(time, *args, wires=wires, **kwargs)
-        assert qnp.allclose(expected_state, state)
+        assert qnp.allclose(state, expected_state)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("n", (1, 2, 3))
@@ -1918,7 +1918,7 @@ class TestTrotterizedQfuncIntegration:
         )
 
         state = circ(time, *args, wires=wires, **kwargs)
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("n", (1, 2, 3))
@@ -1987,7 +1987,7 @@ class TestTrotterizedQfuncIntegration:
         )
 
         state = circ(time, *args, wires=wires, **kwargs)
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     #   Circuit gradient tests:
     @pytest.mark.parametrize("n", (1, 2, 3))

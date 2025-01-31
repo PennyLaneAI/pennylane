@@ -653,7 +653,7 @@ class TestDecompositions:
 
         expected_mat = qml.matrix(op)
         decomp_mat = qml.matrix(decomp_op)
-        assert np.allclose(expected_mat, decomp_mat)
+        assert np.allclose(decomp_mat, expected_mat)
 
     def test_pc_phase_decomposition_broadcasted(self):
         """Test that the broadcasted PCPhase decomposition produces the same unitary"""
@@ -665,7 +665,7 @@ class TestDecompositions:
         decomp_mats = qml.matrix(decomp_op)
 
         for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
-            assert np.allclose(expected_mat, decomp_mat)
+            assert np.allclose(decomp_mat, expected_mat)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize(

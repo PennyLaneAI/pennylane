@@ -847,7 +847,7 @@ class TestPLDB:
         """Test that the _execute method works as expected."""
         PLDB.add_device(dev)
         executed_results = PLDB._execute((tape,))
-        assert qnp.allclose(expected_result, executed_results)
+        assert qnp.allclose(executed_results, expected_result)
         PLDB.reset_active_dev()
 
 

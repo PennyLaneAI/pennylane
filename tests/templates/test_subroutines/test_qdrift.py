@@ -205,7 +205,7 @@ class TestIntegration:
         )
         state = circ()
 
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.local_salt(8)
     @pytest.mark.autograd
@@ -237,7 +237,7 @@ class TestIntegration:
         )
         state = circ(time)
 
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
@@ -267,7 +267,7 @@ class TestIntegration:
         )
         state = circ(time)
 
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
@@ -297,7 +297,7 @@ class TestIntegration:
         )
         state = circ(time)
 
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
@@ -327,7 +327,7 @@ class TestIntegration:
         )
         state = circ(time)
 
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
@@ -359,7 +359,7 @@ class TestIntegration:
         )
         state = circ(time)
 
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.autograd
     def test_error_gradient_workflow_autograd(self):
