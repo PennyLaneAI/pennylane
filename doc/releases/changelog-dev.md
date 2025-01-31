@@ -20,6 +20,7 @@
          with 1 stored elements and shape (1, 4)>
     Coords        Values
     (0, 2)        (1+0j)
+  ```
 
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
   autograph=True` at the QNode level. 
