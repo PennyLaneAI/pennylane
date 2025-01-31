@@ -115,7 +115,7 @@ import jax
 from jax.interpreters import ad, batching, mlir
 
 import pennylane as qml
-from pennylane.capture import FlatFn
+from pennylane.capture import CaptureError, FlatFn
 from pennylane.capture.custom_primitives import QmlPrimitive
 from pennylane.typing import TensorLike
 
@@ -406,8 +406,20 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
+    # pylint: disable=protected-access
+    qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
     flat_fn = FlatFn(qfunc)
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*args)
+    try:
+        qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*args)
+    except (
+        jax.errors.TracerArrayConversionError,
+        jax.errors.TracerIntegerConversionError,
+        jax.errors.TracerBoolConversionError,
+    ) as exc:
+        raise CaptureError(
+            "Autograph must be used when Python control flow is dependent on a dynamic variable (a function input). "
+            "Please ensure autograph=True or use native control flow functions like for_loop, while_loop, etc."
+        ) from exc
 
     execute_kwargs = copy(qnode.execute_kwargs)
     qnode_kwargs = {
