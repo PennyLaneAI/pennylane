@@ -108,7 +108,7 @@ def test_result_has_correct_interface(op, interface):
 
 # pylint: disable=too-few-public-methods
 class TestStatePrepBase:
-    """Tests integration with various state prep methods."""
+    """Tests with state prep methods."""
 
     def test_basis_state(self):
         """Test that the BasisState operator prepares the desired state."""
@@ -249,7 +249,7 @@ class TestBroadcasting:
 
     @staticmethod
     def get_expected_state(x, subspace):
-        """Gets the expected final state of the circuit described in `get_ops_and_measurements`."""
+        """Gets the expected final state of the circuit."""
         state = []
         for x_val in x:
             vec = np.zeros(9, dtype=complex)
@@ -260,7 +260,7 @@ class TestBroadcasting:
 
     @staticmethod
     def get_expectation_values(x, subspace):
-        """Gets the expected final expvals of the circuit described in `get_ops_and_measurements`."""
+        """Gets the expected final expvals of the circuit."""
         if subspace == (0, 1):
             return [np.cos(x), -np.cos(x / 2) ** 2]
         if subspace == (0, 2):
@@ -345,7 +345,7 @@ class TestStatePadding:
 
     @staticmethod
     def get_expected_dm(x, extra_wires):
-        """Gets the final density matrix of the circuit described in `get_ops_and_measurements`."""
+        """Gets the final density matrix of the circuit."""
         vec = np.zeros(9, dtype=complex)
         vec[1] = -1j * np.cos(x / 2)
         vec[6] = -1j * np.sin(x / 2)
