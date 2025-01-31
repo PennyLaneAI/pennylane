@@ -6,6 +6,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add a `qml.capture.stop_recording()` context manager for pausing program capture in an error-safe way.
+
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
   autograph=True` at the QNode level. 
   [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)

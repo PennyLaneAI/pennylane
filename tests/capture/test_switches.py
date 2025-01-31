@@ -30,6 +30,37 @@ def test_switches_with_jax():
     assert qml.capture.enabled() is False
 
 
+@pytest.mark.jax
+def test_stop_recording():
+    """Test that pause recording stops program capture."""
+    qml.capture.enable()
+    import jax
+
+    def f():
+        with qml.capture.stop_recording():
+            qml.X(0)
+        return 2
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert len(jaxpr.eqns) == 0
+
+
+@pytest.mark.jax
+def test_stop_recording_if_error():
+    """Test that program capture stays enabled if an error occurs."""
+    qml.capture.enable()
+
+    def f():
+        with qml.capture.stop_recording():
+            raise ValueError
+        return 2
+
+    with pytest.raises(ValueError):
+        f()
+
+    assert qml.capture.enabled()
+
+
 def test_switches_without_jax():
     """Test switches and status reporting function."""
     # We want to skip the test if jax is installed

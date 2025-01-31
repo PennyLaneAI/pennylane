@@ -18,7 +18,7 @@ This module contains a class for executing plxpr using default qubit tools.
 import jax
 import numpy as np
 
-from pennylane.capture import disable, enable
+from pennylane.capture import stop_recording
 from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.measurements import MidMeasureMP, Shots
@@ -125,8 +125,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
 
     def interpret_measurement(self, measurement):
         # measurements can sometimes create intermediary mps, but those intermediaries will not work with capture enabled
-        disable()
-        try:
+        with stop_recording():
             if self.shots:
                 self.key, new_key = jax.random.split(self.key, 2)
                 # note that this does *not* group commuting measurements
@@ -140,8 +139,6 @@ class DefaultQubitInterpreter(PlxprInterpreter):
                 )[0]
             else:
                 output = measure(measurement, self.state, is_state_batched=self.is_state_batched)
-        finally:
-            enable()
         return output
 
 

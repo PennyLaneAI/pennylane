@@ -161,7 +161,7 @@ If needed, developers can also override the implementation method of the primiti
 """
 from typing import Callable
 
-from .switches import disable, enable, enabled
+from .switches import disable, enable, enabled, stop_recording
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .capture_operators import create_operator_primitive
 from .capture_measurements import (
