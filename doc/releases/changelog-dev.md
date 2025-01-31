@@ -6,8 +6,62 @@
 
 <h3>Improvements 🛠</h3>
 
-* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
-  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
+* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
+  autograph=True` at the QNode level. 
+  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
+
+  ```python
+  qml.capture.enable()
+
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+  @qml.qnode(dev, autograph=True)
+  def circuit(num_loops: int):
+      for i in range(num_loops):
+          if i % 2 == 0:
+              qml.H(i)
+          else:
+              qml.RX(1,i)
+      return qml.state()
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)(num_loops=3))
+  0: ──H────────┤  State
+  1: ──RX(1.00)─┤  State
+  2: ──H────────┤  State
+  >>> circuit(3)
+  Array([0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j,
+         0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+  ```
+
+* Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
+  Users can now construct the execution configuration from a particular `QNode` instance.
+  [(#6901)](https://github.com/PennyLaneAI/pennylane/pull/6901)
+
+  ```python
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit(x):
+      qml.RX(x, 0)
+      return qml.expval(qml.Z(0))
+  ```
+  ```pycon
+  >>> config = qml.workflow.construct_execution_config(circuit)(1)
+  >>> pprint.pprint(config)
+  ExecutionConfig(grad_on_execution=False,
+                  use_device_gradient=True,
+                  use_device_jacobian_product=False,
+                  gradient_method='backprop',
+                  gradient_keyword_arguments={},
+                  device_options={'max_workers': None,
+                                  'prng_key': None,
+                                  'rng': Generator(PCG64) at 0x15F6BB680},
+                  interface=<Interface.NUMPY: 'numpy'>,
+                  derivative_order=1,
+                  mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
+                  convert_to_numpy=True)
+  ```
 
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
   [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
@@ -63,6 +117,9 @@
 
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
+
+* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
+  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
 <h3>Breaking changes 💔</h3>
 
@@ -120,7 +177,18 @@
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
   [(#6879)](https://github.com/PennyLaneAI/pennylane/pull/6879)
 
+* The property `MeasurementProcess.return_type` has been deprecated.
+  If observable type checking is needed, please use direct `isinstance`; if other text information is needed, please use class name, or another internal temporary private member `_shortname`.
+  [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
+  [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
+
 <h3>Internal changes ⚙️</h3>
+
+* Remove `QNode.get_gradient_fn` from source code.
+  [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
+  
+* The source code has been updated use black 25.1.0.
+  [(#6897)](https://github.com/PennyLaneAI/pennylane/pull/6897)
 
 * Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
   [(#6877)](https://github.com/PennyLaneAI/pennylane/pull/6877)
@@ -130,6 +198,9 @@
   Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
   [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
 
+* The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
+  [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
+
 <h3>Documentation 📝</h3>
 
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`, 
@@ -137,13 +208,25 @@
   code examples.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
 
+* The docstrings for `qml.qchem.localize_normal_modes` and `qml.qchem.VibrationalPES` have been updated to include
+  examples that can be copied.
+  [(#6834)](https://github.com/PennyLaneAI/pennylane/pull/6834)
+
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
 <h3>Bug fixes 🐛</h3>
 
+* The interface is now detected from the data in the circuit, not the arguments to the `QNode`. This allows
+  interface data to be strictly passed as closure variables and still be detected.
+  [(#6892)](https://github.com/PennyLaneAI/pennylane/pull/6892)
+
 * `BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
+
+* The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
+  passed to the `QNode`, instead of assuming the method is always `deferred`.
+  [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
 
 <h3>Contributors ✍️</h3>
 
@@ -153,6 +236,7 @@ Utkarsh Azad,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
+Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,

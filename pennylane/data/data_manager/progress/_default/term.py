@@ -20,10 +20,10 @@ def cursor_up(n: int) -> str:
     """Return 'A' control sequence, which to moves the cursor up ``n`` columns.
 
     >>> cursor_up(2)
-    '\x1B[2;A'
+    '\x1b[2;A'
 
     """
-    return f"\x1B[{n};A"
+    return f"\x1b[{n};A"
 
 
 def erase_line() -> str:
@@ -31,6 +31,6 @@ def erase_line() -> str:
     the cursor.
 
     >>> erase_line()
-    '\x1B[0;K'
+    '\x1b[0;K'
     """
-    return "\x1B[0;K"
+    return "\x1b[0;K"
