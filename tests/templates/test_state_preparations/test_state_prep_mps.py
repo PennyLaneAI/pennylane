@@ -19,17 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.templates.state_preparations.state_prep_mps import _complete_unitary
-
-
-def test_complete_unitary_func():
-    """Check that the auxiliar function _complete_unitary works properly."""
-
-    columns = np.array([[1.0, 0, 0, 0], [0, 1, 0, 0]])
-    unitary = _complete_unitary(columns)
-    identity = np.eye(unitary.shape[0])
-
-    assert np.allclose(np.conj(unitary.T) @ unitary, identity, atol=0.1)
 
 
 class TestMPSPrep:

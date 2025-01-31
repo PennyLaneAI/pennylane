@@ -22,47 +22,6 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
-def _complete_unitary(columns):
-    """
-    Completes a unitary matrix given a list of orthonormal columns.
-
-    Args:
-        columns (List[Array]): List of initial orthonormal columns of dimension d.
-
-    Returns:
-        Array: Completed unitary matrix of dimension :math:`(d, d)`.
-    """
-
-    columns = qml.math.stack(columns).T
-    d = columns.shape[0]
-    k = columns.shape[1]
-
-    unitary = qml.math.zeros_like(columns @ columns.T)
-
-    if qml.math.get_interface(columns) == "jax":
-        unitary = unitary.at[:, :k].set(columns)
-
-    else:
-        unitary[:, :k] = columns
-
-    # Complete the remaining columns using Gram-Schmidt
-    rng = np.random.default_rng(42)
-    new_columns = qml.math.array(rng.random((d, d - k)))
-
-    ortogonal_projection_matrix = qml.math.eye(d) - qml.math.dot(unitary, qml.math.conj(unitary.T))
-    new_columns = qml.math.dot(ortogonal_projection_matrix, new_columns)
-
-    q, _ = qml.math.linalg.qr(
-        new_columns
-    )  # apply QR decomposition to orthonormalize the new columns
-
-    if qml.math.get_interface(unitary) == "jax":
-        unitary = unitary.at[:, k:d].set(q[:, : d - k])
-    else:
-        unitary[:, k:d] = q[:, : d - k]
-    return unitary
-
-
 class MPSPrep(Operation):
     r"""Prepares an initial state from a matrix product state (MPS) representation.
 
@@ -315,7 +274,17 @@ class MPSPrep(Operation):
 
                 vectors.append(vector)
 
-            matrix = _complete_unitary(vectors)
+            vectors = qml.math.stack(vectors).T
+            d = vectors.shape[0]
+            k = vectors.shape[1]
+
+            # The unitary is completed using QR decomposition
+            rng = np.random.default_rng(42)
+            new_columns = qml.math.array(rng.random((d, d - k)))
+
+            matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
+            matrix *= qml.math.sign(qml.math.diag(R))
+
             ops.append(qml.QubitUnitary(matrix, wires=[wires[i]] + work_wires))
 
         return ops
