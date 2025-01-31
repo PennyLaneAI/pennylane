@@ -370,12 +370,10 @@ def construct_batch(
             params = initial_tape.get_parameters(trainable_only=False)
             initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        config = qml.devices.ExecutionConfig(
-            interface=qnode.interface, gradient_method=qnode.diff_method
-        )
+        config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         # pylint: disable = protected-access
-        config = qml.workflow.resolution._resolve_diff_method(
-            config, qnode.device, tape=initial_tape
+        config = qml.workflow.resolution._resolve_execution_config(
+            config, qnode.device, tapes=(initial_tape,)
         )
         gradient_fn = config.gradient_method
         program = get_transform_program(qnode, level=level, gradient_fn=gradient_fn)
