@@ -610,18 +610,17 @@ def _sparse_statevec_permute_and_embed(
     if wires == wire_order:
         return state
 
-    n_wires = len(wires)
-
     # Convert state and map columns
     coo = state.tocoo()
-    index_map = _build_index_map(n_wires, wires, wire_order)
+    index_map = _build_index_map(wires, wire_order)
     new_cols = index_map[coo.col]
 
     permuted_coo = coo_matrix((coo.data, (coo.row, new_cols)), shape=(1, 2 ** len(wire_order)))
     return permuted_coo.tocsr()
 
 
-def _build_index_map(n_wires, wires, wire_order):
+def _build_index_map(wires, wire_order):
+    n_wires = len(wires)
     index_map = np.zeros(2**n_wires, dtype=int)
     for pos in range(2**n_wires):
         pos_bin = format(pos, f"0{n_wires}b")
