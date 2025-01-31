@@ -69,7 +69,7 @@ def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
     Args:
         op_mat (TensorLike): SU(2) matrix for the operation to be searched
         op_vecs (list(TensorLike)): list of quaternion for the operations that makes the search space.
-        kd_tree (scipy.spatial.KDTree): kd-tree object built from the list of quaternions. Default is ``None``.
+        kd_tree (scipy.spatial.KDTree): kd-tree built from the list of quaternions. Default is ``None``.
         tol (float): tolerance for the match to be considered ``True``.
 
     Returns:
