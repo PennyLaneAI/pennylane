@@ -478,7 +478,7 @@ class StatePrep(StatePrepBase):
         dim = 2 ** len(Wires(wires))
         if n_states > dim:
             raise ValueError(
-                f"State must be of length {dim} or " f"smaller to be padded; got length {n_states}."
+                f"State must be of length {dim} or smaller to be padded; got length {n_states}."
             )
         if n_states < dim:
             warn(
