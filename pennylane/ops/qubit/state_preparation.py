@@ -295,13 +295,13 @@ class StatePrep(StatePrepBase):
             >>> wire_order = [0, 1, 2]
             >>> ket = qsv_op.state_vector(wire_order=wire_order)
             >>> print(ket)  # Sparse representation
-            >>> print(ket.toarray().flatten())  # Dense representation: [0. 0. 1. 0.]
+            >>> print(ket.toarray().flatten())  # Dense representation: [0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
 
             # Normalization also works with sparse inputs:
             >>> init_state_sparse = sp.sparse.csr_matrix([1, 1, 1, 1]) # Unnormalized
             >>> qsv_op_norm = qml.StatePrep(init_state_sparse, wires=range(2), normalize=True)
             >>> ket_norm = qsv_op_norm.state_vector()
-            >>> print(ket_norm.toarray().flatten()) # Normalized dense representation
+            >>> print(ket_norm.toarray().flatten()) # Normalized dense representation, [0.5 0.5 0.5 0.5]
 
 
     """
