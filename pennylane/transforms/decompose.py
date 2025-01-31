@@ -205,7 +205,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
         Experimental Plxpr Interpreter for applying a dynamic decomposition to operations when program capture is enabled.
         """
 
-        def eval_dynamic_decomposition(self, jaxpr_decomp: "jax.core.Jaxpr", *args):
+        def eval_dynamic_decomposition(self, jaxpr_decomp: "jax.core.Jaxpr", consts, *args):
             """
             Evaluate a dynamic decomposition of a Jaxpr.
 
@@ -216,6 +216,9 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
             for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
                 self._env[invar] = arg
+
+            for const, constvar in zip(consts, jaxpr_decomp.constvars, strict=True):
+                self._env[constvar] = const
 
             for inner_eqn in jaxpr_decomp.eqns:
 
@@ -257,7 +260,9 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                 if op._has_plxpr_decomposition:
                     jaxpr_decomp = op._plxpr_decomposition()
                     args = (*op.parameters, *op.wires)
-                    return self.eval_dynamic_decomposition(jaxpr_decomp.jaxpr, *args)
+                    return self.eval_dynamic_decomposition(
+                        jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args
+                    )
 
                 return super().interpret_operation(op)
 

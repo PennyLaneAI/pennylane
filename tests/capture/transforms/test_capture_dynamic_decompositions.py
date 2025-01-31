@@ -40,6 +40,41 @@ class SimpleCustomOp(Operation):
         qml.Hadamard(wires=wires)
 
 
+const = jax.numpy.array(0.1)
+
+
+class CustomOpConstHyperparams(Operation):
+    """Custom operation that contains constants and hyperparameters in its decomposition"""
+
+    num_wires = 4
+    num_params = 1
+
+    def __init__(self, phi, wires, id=None):
+
+        self._hyperparameters = {
+            "key": const,
+            "CNOT": qml.CNOT,
+            "RX": qml.RX,
+            "phi": phi,
+        }
+
+        super().__init__(phi, wires=wires, id=id)
+
+    @staticmethod
+    def _compute_plxpr_decomposition(*args, **hyperparameters):
+
+        phi = args[0]
+        wires = args[1:]
+
+        hyperparameters["CNOT"](wires=[wires[0], wires[1]])
+        hyperparameters["RX"](phi, wires=wires[2])
+        hyperparameters["RX"](hyperparameters["key"], wires=wires[0])
+        hyperparameters["RX"](const, wires=wires[3])
+
+        qml.RY(hyperparameters["key"], wires[0])
+        qml.RZ(hyperparameters["phi"], wires[2])
+
+
 class CustomOpMultiWire(Operation):
     """Custom operation that acts on multiple wires"""
 
@@ -292,6 +327,47 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         comparison_result = circuit_comparison(0.5, wires)
+
+        assert qml.math.allclose(result[0], comparison_result[0])
+        assert qml.math.allclose(result[1], comparison_result[1])
+        assert qml.math.allclose(result[2], comparison_result[2])
+        assert qml.math.allclose(result[3], comparison_result[3])
+
+    @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [2, 3, 1, 0]])
+    @pytest.mark.parametrize("x", [0.2, 0.8])
+    def test_qnode_const_hyperparams(self, wires, x):
+        """Test that a QNode with a constant in the custom operation is correctly decomposed."""
+
+        @DynamicDecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=4))
+        def circuit(x, wires):
+            CustomOpConstHyperparams(x, wires=wires)
+            return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(x, wires=wires)
+
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive == qml.CNOT._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.RX._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.RX._primitive
+        assert qfunc_jaxpr.eqns[4].primitive == qml.RY._primitive
+        assert qfunc_jaxpr.eqns[5].primitive == qml.RZ._primitive
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, *wires)
+
+        @qml.qnode(device=qml.device("default.qubit", wires=4))
+        def circuit_comparison(x, wires):
+            qml.CNOT([wires[0], wires[1]])
+            qml.RX(x, wires=wires[2])
+            qml.RX(0.1, wires=wires[0])
+            qml.RX(0.1, wires=wires[3])
+            qml.RY(0.1, wires=wires[0])
+            qml.RZ(x, wires=wires[2])
+            return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
+
+        comparison_result = circuit_comparison(x, wires)
 
         assert qml.math.allclose(result[0], comparison_result[0])
         assert qml.math.allclose(result[1], comparison_result[1])
