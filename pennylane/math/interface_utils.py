@@ -225,13 +225,13 @@ def get_canonical_interface_name(user_input: InterfaceLike) -> Interface:
     """Helper function to get the canonical interface name.
 
     Args:
-        interface (str, Interface): Reference interface
+        interface (str, Interface): reference interface
 
     Raises:
-        ValueError: Key does not exist in the interface map
+        ValueError: key does not exist in the interface map
 
     Returns:
-        Interface: Canonical interface
+        Interface: canonical interface
     """
 
     if isinstance(user_input, Interface) and user_input in SUPPORTED_INTERFACE_NAMES:
