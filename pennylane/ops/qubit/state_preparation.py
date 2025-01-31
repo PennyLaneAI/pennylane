@@ -499,7 +499,7 @@ class StatePrep(StatePrepBase):
         norm = sp.sparse.linalg.norm(state)
 
         if normalize:
-            state = state / norm
+            state /= norm
 
         elif not math.allclose(norm, 1.0, atol=TOLERANCE):
             raise ValueError(
