@@ -180,7 +180,6 @@ class TestCliffordCompile:
             for op in tape.operations
         )
 
-    @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 7e-2])
     def test_phase_shift_decomposition(self):
         """Test decomposition for the Clifford transform applied to the circuits with phase shifts."""
         old_tape = qml.tape.make_qscript(circuit_6)()
@@ -194,7 +193,7 @@ class TestCliffordCompile:
         assert qml.equal(compiled_ops[2], qml.adjoint(qml.T(2)))
         assert qml.equal(compiled_ops[3], qml.T(3))
 
-    @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 9e-2])
+    @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 7e-2])
     @pytest.mark.parametrize("circuit", [circuit_3, circuit_4, circuit_5])
     def test_total_error(self, epsilon, circuit):
         """Ensure that given a certain epsilon, the total operator error is below the threshold."""
