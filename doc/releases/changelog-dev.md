@@ -13,10 +13,13 @@
   >>> import scipy as sp
   >>> init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
   >>> qsv_op = qml.StatePrep(init_state, wires=[1, 2])
+  >>> wire_order = [0, 1, 2]
   >>> ket = qsv_op.state_vector(wire_order=wire_order)
-  >>> ket
+  >>> print(ket)
   <Compressed Sparse Row sparse matrix of dtype 'float64'
-	  with 1 stored elements and shape (1, 4)>
+         with 1 stored elements and shape (1, 4)>
+    Coords        Values
+    (0, 2)        (1+0j)
   ```
 
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
