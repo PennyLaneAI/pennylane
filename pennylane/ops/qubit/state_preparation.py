@@ -21,7 +21,7 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
-from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 
 import pennylane as qml
 from pennylane import math
@@ -611,21 +611,21 @@ def _sparse_statevec_permute_and_embed(
         return state
 
     n_wires = len(wires)
-    n_states = 2 ** len(wire_order)
 
-    # Create an empty csr_matrix of the permuted state
-    permuted_state = csr_matrix((1, n_states), dtype=complex)
+    # Convert state and map columns
+    coo = state.tocoo()
+    index_map = _build_index_map(n_wires, wires, wire_order)
+    new_cols = index_map[coo.col]
 
-    # Enumerate over the nonzero values of state
-    for pos in state.nonzero()[1]:
-        # For a csr matrix, nonzero returns all the column indices of the nonzero values, which is the site info we want to loop over
+    permuted_coo = coo_matrix((coo.data, (coo.row, new_cols)), shape=(1, 2 ** len(wire_order)))
+    return permuted_coo.tocsr()
 
-        # Convert the position to a binary string
+
+def _build_index_map(n_wires, wires, wire_order):
+    index_map = np.zeros(2**n_wires, dtype=int)
+    for pos in range(2**n_wires):
         pos_bin = format(pos, f"0{n_wires}b")
         wire_values_map = {wire: pos_bin[i] for i, wire in enumerate(wires)}
         pos_bin_perm = [wire_values_map[wire] if wire in wires else "0" for wire in wire_order]
-        pos_perm = int("".join(pos_bin_perm), 2)
-        # Update the permuted statevector
-        permuted_state[0, pos_perm] = state[0, pos]
-
-    return permuted_state
+        index_map[pos] = int("".join(pos_bin_perm), 2)
+    return index_map
