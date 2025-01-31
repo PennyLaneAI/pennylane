@@ -71,6 +71,7 @@ class TestValidation:
         res = get_best_diff_method(qn_none)()
         assert res == "device"
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["jax", "tensorflow", "torch", "autograd"])
     def test_best_method_is_backprop(self, interface):
         """Test that the method for determining the best diff method
