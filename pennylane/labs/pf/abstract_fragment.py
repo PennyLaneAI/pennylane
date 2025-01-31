@@ -25,17 +25,16 @@ class Fragment(ABC):
         """Return the commutator [self, other]"""
         return (self @ other) - (other @ self)
 
+    def nested_commutator(self, a: Fragment, b: Fragment) -> Fragment:
+        """ Return the commutator [self, [a, b]]"""
+        return self.commutator(a.commutator(b))
+
     @abstractmethod
     def norm(self) -> float:
         """Compute the norm of the fragment"""
         raise NotImplementedError
 
     @abstractmethod
-    def lmul_state(self, state):
-        """Apply to a state on the left"""
-        raise NotImplementedError
-
-    @abstractmethod
-    def rmul_state(self, state):
+    def mul_state(self, state):
         """Apply to a state on the right"""
         raise NotImplementedError
