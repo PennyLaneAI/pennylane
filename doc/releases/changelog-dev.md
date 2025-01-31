@@ -74,6 +74,7 @@
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
   After constructing a `QNode`,
+
   ```python
   import pennylane as qml
 
@@ -83,8 +84,10 @@
     qml.CNOT([0,1])
     return qml.probs()
   ```
+
   its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
   of updating a QNode's `diff_method`:
+  
   ```pycon
   >>> print(circuit.diff_method)
   best
@@ -157,6 +160,13 @@
   [(#6827)](https://github.com/PennyLaneAI/pennylane/pull/6827)
 
 <h3>Deprecations 👋</h3>
+
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
+
+* The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
+  Instead, use the `wires` argument as the second positional argument.
+  [(#6839)](https://github.com/PennyLaneAI/pennylane/pull/6839)
 
 * The `mcm_method` keyword in `qml.execute` has been deprecated. 
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
