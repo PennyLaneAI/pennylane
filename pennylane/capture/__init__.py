@@ -183,6 +183,10 @@ PlxprInterpreter: type  # pylint: disable=redefined-outer-name
 expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
 
 
+class CaptureError(Exception):
+    """Errors related to PennyLane's Program Capture execution pipeline."""
+
+
 # pylint: disable=import-outside-toplevel, redefined-outer-name
 def __getattr__(key):
     if key == "AbstractOperator":
