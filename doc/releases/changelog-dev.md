@@ -9,6 +9,36 @@
 * Converted current tests that used `default.mixed` to use other equivalent devices in-place.
   [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
 
+* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
+  autograph=True` at the QNode level. 
+  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
+
+  ```python
+  qml.capture.enable()
+
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+  @qml.qnode(dev, autograph=True)
+  def circuit(num_loops: int):
+      for i in range(num_loops):
+          if i % 2 == 0:
+              qml.H(i)
+          else:
+              qml.RX(1,i)
+      return qml.state()
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)(num_loops=3))
+  0: ──H────────┤  State
+  1: ──RX(1.00)─┤  State
+  2: ──H────────┤  State
+  >>> circuit(3)
+  Array([0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j,
+         0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+  ```
+
 * Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
   Users can now construct the execution configuration from a particular `QNode` instance.
   [(#6901)](https://github.com/PennyLaneAI/pennylane/pull/6901)
