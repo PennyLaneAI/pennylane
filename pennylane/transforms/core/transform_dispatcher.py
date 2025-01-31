@@ -287,9 +287,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return qnode
 
     def _capture_qnode_transform(self, qnode, targs, tkwargs):
-        # qfunc = qnode.func
-        # transformed_qfunc = self._capture_qfunc_transform(qfunc, targs, tkwargs)
-        # return qnode.update(func=transformed_qfunc)
         qnode = self.default_qnode_transform(qnode, targs, tkwargs)
         return self._capture_qfunc_transform(qnode, targs, tkwargs)
 
