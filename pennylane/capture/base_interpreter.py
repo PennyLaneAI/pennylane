@@ -368,7 +368,8 @@ class PlxprInterpreter:
                 outvals = self.interpret_measurement_eqn(eqn)
             else:
                 invals = [self.read(invar) for invar in eqn.invars]
-                outvals = primitive.bind(*invals, **eqn.params)
+                extra_args, params = primitive.get_bind_params(eqn.params)
+                outvals = primitive.bind(*extra_args, *invals, **params)
 
             if not primitive.multiple_results:
                 outvals = [outvals]
