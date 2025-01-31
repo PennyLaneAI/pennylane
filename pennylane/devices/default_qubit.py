@@ -612,17 +612,6 @@ class DefaultQubit(Device):
             # need numpy to use caching, and need caching higher order derivatives
             and execution_config.derivative_order == 1
         )
-        if not updated_values["convert_to_numpy"] and execution_config.gradient_method in {
-            qml.gradients.param_shift,
-            "parameter-shift",
-        }:
-            warnings.warn(
-                (
-                    "End to end jitting with parameter shift can have substantial compilation overheads. "
-                    "To turn off end-to-end jitting, please use an integer seed instead of a PRNGKey."
-                ),
-                UserWarning,
-            )
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")
@@ -666,6 +655,19 @@ class DefaultQubit(Device):
             else None
         )
         prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
+
+        if (
+            not execution_config.convert_to_numpy
+            and execution_config.interface == qml.math.Interface.JAX_JIT
+            and len(circuits) > 10
+        ):
+            warnings.warn(
+                (
+                    "Jitting executions with many circuits may have substantial classical overhead."
+                    " To disable end-to-end jitting, please specify a integer seed instead of a PRNGKey."
+                ),
+                UserWarning,
+            )
 
         if max_workers is None:
 

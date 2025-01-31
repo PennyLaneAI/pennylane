@@ -808,6 +808,14 @@ class TestExecutingBatches:
         g3 = tf.Variable([temp, -temp, temp, -temp])
         assert qml.math.allclose(g1, g3)
 
+    @pytest.mark.jax
+    def test_warning_if_jitting_batch(self):
+        """Test that a warning is given if end-to-end jitting is enabled with a batch."""
+        config = qml.devices.ExecutionConfig(convert_to_numpy=False, interface="jax-jit")
+        batch = [qml.tape.QuantumScript([qml.RX(i, 0)], [qml.expval(qml.Z(0))]) for i in range(11)]
+        with pytest.warns(UserWarning, match="substantial classical overhead"):
+            _ = DefaultQubit().execute(batch, config)
+
 
 @pytest.mark.slow
 class TestSumOfTermsDifferentiability:
