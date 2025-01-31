@@ -118,6 +118,9 @@
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
 
+* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
+  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
@@ -229,6 +232,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
