@@ -74,6 +74,7 @@
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
   After constructing a `QNode`,
+
   ```python
   import pennylane as qml
 
@@ -83,8 +84,10 @@
     qml.CNOT([0,1])
     return qml.probs()
   ```
+
   its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
   of updating a QNode's `diff_method`:
+  
   ```pycon
   >>> print(circuit.diff_method)
   best
@@ -117,6 +120,9 @@
 
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
+
+* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
+  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
 <h3>Breaking changes 💔</h3>
 
@@ -155,6 +161,13 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
+
+* The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
+  Instead, use the `wires` argument as the second positional argument.
+  [(#6839)](https://github.com/PennyLaneAI/pennylane/pull/6839)
+
 * The `mcm_method` keyword in `qml.execute` has been deprecated. 
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
@@ -182,7 +195,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* The source code has been updated use black 25.1.0
+* Remove `QNode.get_gradient_fn` from source code.
+  [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
+  
+* The source code has been updated use black 25.1.0.
   [(#6897)](https://github.com/PennyLaneAI/pennylane/pull/6897)
 
 * Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
@@ -227,6 +243,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
