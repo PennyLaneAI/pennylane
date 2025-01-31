@@ -17,39 +17,42 @@ Contains concurrent executor abstractions for task-based workloads based on supp
 
 from collections.abc import Callable, Sequence
 
-from dask.distributed import Client, LocalCluster
-from dask.distributed.deploy import Cluster
-
+try:
+    from dask.distributed import Client, LocalCluster
+    from dask.distributed.deploy import Cluster
+    DASK_FOUND = True
+except:
+    DASK_FOUND = False
 from .base import ExtExecABC
 
+if DASK_FOUND:
+    class DaskExec(ExtExecABC):
+        """
+        Dask distributed abstraction class functor.
+        """
 
-class DaskExec(ExtExecABC):
-    """
-    Dask distributed abstraction class functor.
-    """
+        def __init__(self, max_workers=4, client_provider=None, **kwargs):
+            super().__init__(max_workers=max_workers, **kwargs)
 
-    def __init__(self, max_workers=4, client_provider=None, **kwargs):
-        super().__init__(max_workers=max_workers, **kwargs)
+            if client_provider is None:
+                cluster = LocalCluster(n_workers=max_workers, processes=True)
+                self._exec_backend = Client(cluster)
 
-        if client_provider is None:
-            cluster = LocalCluster(n_workers=max_workers, processes=True)
-            self._exec_backend = Client(cluster)
+            # Note: urllib does not validate
+            # (see https://docs.python.org/3/library/urllib.parse.html#url-parsing-security),
+            # so branch on str as URL
+            elif isinstance(client_provider, str):
+                self._exec_backend = Client(client_provider)
 
-        # Note: urllib does not validate
-        # (see https://docs.python.org/3/library/urllib.parse.html#url-parsing-security),
-        # so branch on str as URL
-        elif isinstance(client_provider, str):
-            self._exec_backend = Client(client_provider)
+            elif isinstance(client_provider, Cluster):
+                self._exec_backend = client_provider.get_client()
 
-        elif isinstance(client_provider, Cluster):
-            self._exec_backend = client_provider.get_client()
+            self._size = len(self._exec_backend.scheduler_info()["workers"])
 
-        self._size = len(self._exec_backend.scheduler_info()["workers"])
+        def __call__(self, fn: Callable, data: Sequence):
+            output_f = self._exec_backend.map(fn, data)
+            return [o.result() for o in output_f]
 
-    def __call__(self, fn: Callable, data: Sequence):
-        output_f = self._exec_backend.map(fn, data)
-        return [o.result() for o in output_f]
-
-    @property
-    def size(self):
-        return self._size
+        @property
+        def size(self):
+            return self._size
