@@ -488,7 +488,6 @@ class StatePrep(StatePrepBase):
             )
             # pad a csr_matrix with zeros
             state.resize((1, dim))
-            print(state)
 
         if not validate_norm:
             return state
