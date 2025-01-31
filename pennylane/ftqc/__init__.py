@@ -25,5 +25,16 @@ Modules
     :toctree: api
 
 """
+from warnings import warn
+
+
+class ExperimentalWarning(UserWarning): ...
+
+
+warn(
+    ExperimentalWarning(
+        "This module is currently experimental and will not maintain API stability between releases."
+    )
+)
 
 __all__ = []
