@@ -28,7 +28,10 @@ Modules
 from warnings import warn
 
 
-class ExperimentalWarning(UserWarning): ...
+class ExperimentalWarning(UserWarning):
+    """
+    Warning raised on import to indicate experimental/non-stable module.
+    """
 
 
 warn(
