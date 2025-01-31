@@ -34,6 +34,7 @@
          0.        -0.23971277j, 0.        -0.23971277j,
          0.43879125+0.j        , 0.43879125+0.j        ,
          0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+  ```
 
 * Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
   Users can now construct the execution configuration from a particular `QNode` instance.
