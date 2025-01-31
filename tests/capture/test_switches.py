@@ -43,6 +43,7 @@ def test_stop_recording():
 
     jaxpr = jax.make_jaxpr(f)()
     assert len(jaxpr.eqns) == 0
+    qml.capture.disable()
 
 
 @pytest.mark.jax
@@ -59,6 +60,7 @@ def test_stop_recording_if_error():
         f()
 
     assert qml.capture.enabled()
+    qml.capture.disable()
 
 
 def test_switches_without_jax():
