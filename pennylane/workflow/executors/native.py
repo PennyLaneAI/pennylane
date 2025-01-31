@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains concurrent executor abstractions for task-based workloads based on 
+Contains concurrent executor abstractions for task-based workloads based on
 support provided by the Python standard library.
 """
 import abc
@@ -31,7 +31,12 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     Python standard library backed ABC for executor API.
     """
 
-    def __init__(self, max_workers=None, **kwargs):
+    def __init__(self, max_workers: int = None, persist: bool = False, **kwargs):
+        """
+        max_workers:    the maximum number of concurrent units (threads, processes) to use
+        persist:        allow the executor backend to persist between executions. True avoids
+                            potentially costly set-up and tear-down, where supported.
+        """
         super().__init__(max_workers=max_workers, **kwargs)
         if max_workers:
             self._size = max_workers
@@ -39,17 +44,30 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
             self._size = os.process_cpu_count()
         else:
             self._size = os.cpu_count()
+        self._persist = persist
+        if self._persist:
+            self._backend = self._exec_backend()(self._size)
 
     def __call__(self, fn: Callable, data: Sequence):
         exec_cls = self._exec_backend()
         chunksize = max(len(data) // self._size, 1)
-        with exec_cls(self._size) as executor:
-            output_f = executor.map(fn, data, chunksize=chunksize)
-        return output_f
+        if not self._persist:
+            with exec_cls(self._size) as executor:
+                output_f = executor.map(fn, data, chunksize=chunksize)
+            return output_f
+        return self._backend.map(fn, data, chunksize=chunksize)
 
     @property
     def size(self):
         return self._size
+
+    def starmap(self, fn: Callable, data: Sequence):
+        return list(self._exec_backend().starmap(fn, data))
+
+    def map(self, fn: Callable, data: Sequence):
+        if self._persist:
+            return list(self._backend.map(fn, data))
+        return list(self._exec_backend()(self._size).map(fn, data))
 
     @classmethod
     @abc.abstractmethod

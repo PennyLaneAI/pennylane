@@ -14,8 +14,8 @@
 """Unit tests for local `qml.workflow.executors`"""
 
 from multiprocessing import cpu_count
-import numpy as np
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -23,8 +23,13 @@ from pennylane.workflow.executors import ExecBackends, create_executor
 from pennylane.workflow.executors.native import MPPoolExec, ProcPoolExec, ThreadPoolExec
 
 
-def custom_func(scalar):
-    return np.cos(scalar)*np.exp(1j*scalar)
+def custom_func1(scalar):
+    return np.cos(scalar) * np.exp(1j * scalar)
+
+
+def custom_func2(scalar):
+    return scalar**2
+
 
 @pytest.mark.parametrize(
     "backend",
@@ -44,18 +49,23 @@ class TestLocalExecutor:
     @pytest.mark.parametrize(
         "fn,data,result",
         [
-            (lambda x: x**2),
-            (),
-            (),
-            (),
-            (),
-            ()            
+            (custom_func1, range(7), [custom_func1(i) for i in range(7)]),
+            (custom_func2, range(3), list(map(lambda x: x**2, range(3)))),
+            (sum, range(16), None),
         ],
     )
-    def test_map(self, backend, fn, data, result):
-        executor = create_executor(backend[0]):
+    def test_map(self, fn, data, result, backend):
+        """
+        Test valid and invalid data mapping through the executor
+        """
 
-
+        executor = create_executor(backend[0])
+        if result is None:
+            with pytest.raises(Exception) as e:
+                print(fn, data)
+                executor.map(fn, data)
+        else:
+            assert np.allclose(result, list(executor.map(fn, data)))
 
     def test_starmap(self, backend):
         pass
@@ -68,7 +78,7 @@ class TestLocalExecutor:
         """
         Test executor creation with a fixed worker count
         """
-        executor = create_executor(backend[0], num_workers=workers)
+        executor = create_executor(backend[0], max_workers=workers)
 
         if workers is None:
             assert executor.size == cpu_count()

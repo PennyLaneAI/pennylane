@@ -37,6 +37,6 @@ class ExecBackends(Enum):
 
 def create_executor(backend: ExecBackends = ExecBackends.MP_Pool, **kwargs):
     """
-    Create an instance of the specified exector backend with forwarded keyword arguments
+    Create an instance of the specified executor backend with forwarded keyword arguments
     """
     return backend.value(**kwargs)
