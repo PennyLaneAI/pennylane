@@ -14,7 +14,7 @@
 """
 Contains the batch dimension transform.
 """
-
+from functools import lru_cache, partial
 import itertools
 
 # pylint: disable=import-outside-toplevel
@@ -54,11 +54,125 @@ def null_postprocessing(results):
     return results[0]
 
 
-def _get_plxpr_cancel_inverses():
-    return
+@lru_cache
+def _get_plxpr_dynamic_one_shot():  # pylint: disable=missing-function-docstring
+    try:
+        import jax
+        from pennylane.capture import PlxprInterpreter
+        from pennylane.capture.primitives import AbstractOperator, measure_prim, qnode_prim
+    except ImportError:
+        return None, None
+
+    # pylint: disable=redefined-outer-name
+
+    class DynamicOneShotInterpreter(PlxprInterpreter):
+        """PlxprInterpreter for applying the ``dynamic_one_shot`` transform natively to plxpr."""
+
+        def __init__(self):
+            self.mcms = []
+            self.non_mcm_mps = []
+            self.original_mps = []
+            self.original_mp_outvars = []
+
+        def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
+            """Interpret an equation corresponding to a measurement process.
+
+            Args:
+                eqn (jax.core.JaxprEqn)
+
+            See also :meth:`~.interpret_measurement`.
+
+            """
+            invals = (self.read(invar) for invar in eqn.invars)
+            with qml.QueuingManager.stop_recording():
+                mp = eqn.primitive.impl(*invals, **eqn.params)
+
+            # We only save
+            if measurement.obs is not None or isinstance(
+                measurement.obs, (qml.operation.Operator, AbstractOperator)
+            ):
+                self.non_mcm_mps.append(measurement)
+            self.original_mps.append(measurement)
+            return measurement
+
+        def collect_measurements
+
+        def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
+            """Evaluate a jaxpr.
+
+            Args:
+                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                consts (list[TensorLike]): the constant variables for the jaxpr
+                *args (tuple[TensorLike]): The arguments for the jaxpr.
+
+            Returns:
+                list[TensorLike]: the results of the execution.
+
+            """
+            self._env = {}
+            self.setup()
+
+            for arg, invar in zip(args, jaxpr.invars, strict=True):
+                self._env[invar] = arg
+            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+                self._env[constvar] = const
+
+            for eqn in jaxpr.eqns:
+                primitive = eqn.primitive
+                custom_handler = self._primitive_registrations.get(primitive, None)
+
+                if custom_handler:
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    outvals = custom_handler(self, *invals, **eqn.params)
+                elif getattr(primitive, "prim_type", "") == "operator":
+                    outvals = self.interpret_operation_eqn(eqn)
+                elif getattr(primitive, "prim_type", "") == "measurement":
+                    outvals = self.interpret_measurement_eqn(eqn)
+                else:
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    outvals = primitive.bind(*invals, **eqn.params)
+
+                if not primitive.multiple_results:
+                    outvals = [outvals]
+                for outvar, outval in zip(eqn.outvars, outvals, strict=True):
+                    self._env[outvar] = outval
+
+            self.collect_measurements()
+
+            # Read the final result of the Jaxpr from the environment
+            outvals = []
+            for var in jaxpr.outvars:
+                outval = self.read(var)
+                if isinstance(outval, qml.operation.Operator):
+                    outvals.append(self.interpret_operation(outval))
+                else:
+                    outvals.append(outval)
+            self.cleanup()
+            self._env = {}
+            return outvals
+
+    @DynamicOneShotInterpreter.register_primitive(measure_prim)
+    def _(self, wires, reset=False, postselect=None):
+        mcm = measure_prim.bind(wires, reset=reset, postselect=postselect)
+        self.mcms.append(mcm)
+        return mcm
+
+    def dynamic_one_shot_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        assert len(jaxpr.eqns) == 1 and jaxpr.eqns.primitive == qnode_prim, "Jaxpr can only contain a QNode primitive"
+        interpreter = DynamicOneShotInterpreter()
+
+        def wrapper(*inner_args):
+            return interpreter.eval(jaxpr, consts, *inner_args)
+
+        return jax.make_jaxpr(wrapper)(*args)
+
+    return DynamicOneShotInterpreter, dynamic_one_shot_plxpr_to_plxpr
 
 
-@transform
+DynamicOneShotInterpreter, dynamic_one_shot_plxpr_to_plxpr = _get_plxpr_dynamic_one_shot()
+
+
+@partial(transform, plxpr_transform=dynamic_one_shot_plxpr_to_plxpr)
 def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
