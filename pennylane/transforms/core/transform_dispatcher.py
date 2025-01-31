@@ -158,7 +158,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if isinstance(obj, qml.QNode):
             if qml.capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
+                return self._capture_qnode_transform(obj, targs, tkwargs)
             return self._qnode_transform(obj, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
@@ -173,7 +173,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if callable(obj):
             if qml.capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
+                return self._capture_qfunc_transform(obj, targs, tkwargs)
             return self._qfunc_transform(obj, targs, tkwargs)
 
         if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
@@ -286,7 +286,14 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         )
         return qnode
 
-    def _capture_callable_transform(self, qfunc, targs, tkwargs):
+    def _capture_qnode_transform(self, qnode, targs, tkwargs):
+        # qfunc = qnode.func
+        # transformed_qfunc = self._capture_qfunc_transform(qfunc, targs, tkwargs)
+        # return qnode.update(func=transformed_qfunc)
+        qnode = self.default_qnode_transform(qnode, targs, tkwargs)
+        return self._capture_qfunc_transform(qnode, targs, tkwargs)
+
+    def _capture_qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function when program capture is enabled"""
 
         @functools.wraps(qfunc)
