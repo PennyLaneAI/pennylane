@@ -68,10 +68,10 @@ class MPSPrep(Operation):
 
     .. note::
 
-        Tensor simulators are designed to run MPS structures more efficiently.
-        However, it may be useful to use state vector simulator if you are looking for a gate decomposition that
-        prepares the mps in a quantum circuit. For the gate decomposition is required to introduce work qubits
-        for the decomposition.
+        Tensor simulators are designed to efficiently run MPS structures.
+
+        However, for non-`lightning.tensor` devices, a state-vector simulator may be useful if a gate decomposition is required.
+        This decomposition introduces work (auxiliary) qubits to prepare the MPS in a quantum circuit.
 
 
 
@@ -267,6 +267,7 @@ class MPSPrep(Operation):
     @staticmethod
     def compute_decomposition(mps, wires, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
+        The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
 
         Args:
             mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
@@ -281,7 +282,10 @@ class MPSPrep(Operation):
         """
 
         if work_wires is None:
-            raise AssertionError("To decompose MPSPrep you must specify `work_wires`.")
+            raise AssertionError(
+                "The qml.MPSPREP decomposition requires `work_wires` to be specified, "
+                "and the bond dimension cannot exceed `2**len(work_wires)`."
+            )
 
         ops = []
         n_wires = len(work_wires) + 1

@@ -438,5 +438,5 @@ class TestMPSPrep:
             qml.MPSPrep(mps, wires=range(2, 5))
             return qml.state()
 
-        with pytest.raises(AssertionError, match="To decompose MPSPrep you must specify"):
+        with pytest.raises(AssertionError, match="The qml.MPSPREP decomposition requires"):
             circuit()
