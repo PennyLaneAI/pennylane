@@ -21,7 +21,7 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
-from scipy.sparse import coo_matrix, csr_matrix
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import math
@@ -610,13 +610,10 @@ def _sparse_statevec_permute_and_embed(
     if wires == wire_order:
         return state
 
-    # Convert state and map columns
-    coo = state.tocoo()
     index_map = _build_index_map(wires, wire_order)
-    new_cols = index_map[coo.col]
-
-    permuted_coo = coo_matrix((coo.data, (coo.row, new_cols)), shape=(1, 2 ** len(wire_order)))
-    return permuted_coo.tocsr()
+    perm_pos = index_map[state.indices]
+    new_csr = csr_matrix((state.data, perm_pos, state.indptr), shape=(1, 2 ** len(wire_order)))
+    return new_csr
 
 
 def _build_index_map(wires, wire_order):
