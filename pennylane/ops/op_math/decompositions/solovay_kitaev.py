@@ -68,9 +68,9 @@ def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
 
     Args:
         op_mat (TensorLike): SU(2) matrix for the operation to be searched
-        op_vecs (list(TensorLike)): List of quaternion for the operations that makes the search space.
-        kd_tree (KDTree): KDTree object built from the list of quaternions. Default is ``None``.
-        tol (float): Tolerance for the match to be considered ``True``.
+        op_vecs (list(TensorLike)): list of quaternion for the operations that makes the search space.
+        kd_tree (scipy.spatial.KDTree): kd-tree object built from the list of quaternions. Default is ``None``.
+        tol (float): tolerance for the match to be considered ``True``.
 
     Returns:
         Tuple(bool, TensorLike, int): A tuple including `True`/`False` for whether an operation similar to the
@@ -124,9 +124,8 @@ def _approximate_set(basis_gates, max_length=10):
     r"""Builds an approximate unitary set required for the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     Args:
-        basis_gates (list(str)): Basis set to be used for Solovay-Kitaev decomposition build using
-            following terms, ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where `*` refers
-            to the gate adjoint.
+        basis_gates (tuple[str]): Basis set to be used for Solovay-Kitaev decomposition build using the following
+        terms, ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where `*` refers to the gate adjoint.
         max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
 
     Returns:
@@ -293,9 +292,9 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
     Keyword Args:
         max_depth (int): The maximum number of approximation passes. A smaller :math:`\epsilon` would generally require
             a greater number of passes. Default is ``5``.
-        basis_set (list[str]): Basis set to be used for the decomposition and building an approximate set internally.
-            It accepts the following gate terms: ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where ``*`` refers
-            to the gate adjoint. Default value is ``['T', 'T*', 'H']``.
+        basis_set (tuple[str]): Basis set to be used for the decomposition and building an approximate set internally.
+            It accepts the following gate terms: ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where ``*`` refers
+            to the gate adjoint. Default value is ``('T', 'T*', 'H')``.
         basis_length (int): Maximum expansion length of Clifford+T sequences in the internally-built approximate set.
             Default is ``10``.
 
