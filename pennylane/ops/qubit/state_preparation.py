@@ -570,7 +570,7 @@ class QubitDensityMatrix(Operation):
 def _sparse_statevec_permute_and_embed(
     state: csr_matrix, wires: list, wire_order: list
 ) -> csr_matrix:
-    """Permutes the wires of a statevector represented as a scipy.sparse.csr_matrix.
+    """Permutes the wires of a statevector represented as a scipy.sparse.csr_matrix. If `wire_order` contains `wires`, then embed the `state` with corresponding orders, padding with bit 0 on other wires.
 
     Args:
         state (csr_matrix): the input statevector
