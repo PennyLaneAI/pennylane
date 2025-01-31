@@ -686,8 +686,6 @@ def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     cond_prim = NonInterpPrimitive("cond")
@@ -718,18 +716,18 @@ def _get_cond_qfunc_prim():
             if jaxpr is None:
                 continue
             if isinstance(pred, qml.measurements.MeasurementValue):
-                with qml.queuing.AnnotatedQueue() as q:
-                    out = jax.core.eval_jaxpr(jaxpr, consts, *args)
+                interpreter = qml.tape.plxpr_conversion.CollectOpsandMeas()
+                results = interpreter.eval(jaxpr, consts, *args)
 
-                if len(out) != 0:
+                if len(results) != 0:
                     raise ConditionalTransformError(
                         "Only quantum functions without return values can be applied "
                         "conditionally with mid-circuit measurement predicates."
                     )
-                for wrapped_op in q:
-                    Conditional(pred, wrapped_op.obj)
+                for op in interpreter.state["ops"]:
+                    Conditional(pred, op)
             elif pred:
-                return jax.core.eval_jaxpr(jaxpr, consts, *args)
+                return qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
 
         return ()
 
