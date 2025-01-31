@@ -4,9 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* `StatePrep` accepts sparse matrices as input. Now, users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
-  [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
-
 <h3>Improvements 🛠</h3>
 
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
