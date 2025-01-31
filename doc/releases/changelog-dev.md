@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `qml.StatePrep` now accepts sparse state vectors
+* `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
   ```pycon
