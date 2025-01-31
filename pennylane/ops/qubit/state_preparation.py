@@ -488,19 +488,18 @@ class StatePrep(StatePrepBase):
             )
             # pad a csr_matrix with zeros
             state.resize((1, dim))
-            print(state)
 
         if not validate_norm:
             return state
 
         # normalize
-        if "int" in str(state.dtype):
+        if np.issubdtype(state.dtype, np.integer):
             state = state.astype(float)
 
         norm = sp.sparse.linalg.norm(state)
 
         if normalize:
-            state = state / norm
+            state /= norm
 
         elif not math.allclose(norm, 1.0, atol=TOLERANCE):
             raise ValueError(
