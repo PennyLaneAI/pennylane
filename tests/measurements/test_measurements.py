@@ -18,20 +18,15 @@ import pytest
 import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadowMP,
-    Counts,
     CountsMP,
-    Expectation,
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
     MeasurementValue,
-    MidMeasure,
     MidMeasureMP,
     MutualInfoMP,
-    Probability,
     ProbabilityMP,
     PurityMP,
-    Sample,
     SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
@@ -39,7 +34,6 @@ from pennylane.measurements import (
     State,
     StateMeasurement,
     StateMP,
-    Variance,
     VarianceMP,
     VnEntropyMP,
     expval,
@@ -54,29 +48,7 @@ from pennylane.wires import Wires
 
 
 class NotValidMeasurement(MeasurementProcess):
-    @property
-    def return_type(self):
-        return "NotValidReturnType"
-
-
-@pytest.mark.parametrize(
-    "return_type, value",
-    [
-        (Expectation, "expval"),
-        (Sample, "sample"),
-        (Counts, "counts"),
-        (Variance, "var"),
-        (Probability, "probs"),
-        (State, "state"),
-        (MidMeasure, "measure"),
-    ],
-)
-def test_ObservableReturnTypes(return_type, value):
-    """Test the ObservableReturnTypes enum value, repr, and enum membership."""
-
-    assert return_type.value == value
-    assert isinstance(return_type, qml.measurements.ObservableReturnTypes)
-    assert repr(return_type) == value
+    _shortname = "NotValidReturnType"
 
 
 def test_no_measure():
@@ -121,11 +93,16 @@ def test_none_return_type():
     """Test that a measurement process without a return type property has return_type
     `None`"""
 
-    class NoReturnTypeMeasurement(MeasurementProcess):
-        """Dummy measurement process with no return type."""
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="MeasurementProcess property return_type is deprecated",
+    ):
 
-    mp = NoReturnTypeMeasurement()
-    assert mp.return_type is None
+        class NoReturnTypeMeasurement(MeasurementProcess):
+            """Dummy measurement process with no return type."""
+
+        mp = NoReturnTypeMeasurement()
+        assert mp.return_type is None
 
 
 def test_eq_correctness():
@@ -209,7 +186,7 @@ def test_jax_pytree_integration(mp):
 
 
 @pytest.mark.parametrize(
-    "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
+    "stat_func,return_type", [(expval, ExpectationMP), (var, VarianceMP), (sample, SampleMP)]
 )
 class TestStatisticsQueuing:
     """Tests for annotating the return types of the statistics functions"""
@@ -227,8 +204,7 @@ class TestStatisticsQueuing:
 
         assert len(q.queue) == 1
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
@@ -242,8 +218,7 @@ class TestStatisticsQueuing:
 
         assert len(q.queue) == 1
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -265,8 +240,7 @@ class TestStatisticsQueuing:
 
         assert len(q.queue) == 1
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -290,8 +264,7 @@ class TestStatisticsQueuing:
         assert len(q.queue) == 1
 
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
 
 class TestProperties:
@@ -421,7 +394,7 @@ class TestExpansion:
         assert tape.operations[3].wires.tolist() == [1]
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], ExpectationMP)
         assert tape.measurements[0].wires.tolist() == [0, 1]
         assert np.all(tape.measurements[0].eigvals() == np.array([1, -1, -1, 1]))
 
@@ -445,7 +418,7 @@ class TestExpansion:
         )
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], ExpectationMP)
         assert tape.measurements[0].wires.tolist() == ["a"]
         assert np.all(tape.measurements[0].eigvals() == np.array([0, 5]))
 
@@ -590,10 +563,6 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-            @property
-            def return_type(self):
-                return Sample
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -618,9 +587,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            @property
-            def return_type(self):
-                return State
+            _shortname = State
 
             def shape(self):
                 return ()
@@ -640,9 +607,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            @property
-            def return_type(self):
-                return State
+            _shortname = State
 
             def shape(self):
                 return ()
@@ -723,6 +688,14 @@ class TestMeasurementProcess:
         (qml.mutual_info(wires0=0, wires1=1), ()),
         (qml.vn_entropy(wires=[0, 1]), ()),
     ]
+
+    def test_deprecation_return_type(self):
+        """Test that the return_type property is deprecated."""
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="MeasurementProcess property return_type is deprecated",
+        ):
+            _ = MeasurementProcess().return_type
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_no_shots)
     def test_output_shapes_no_shots(self, measurement, expected_shape):
