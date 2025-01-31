@@ -55,7 +55,7 @@ class CustomDeviceWithDiffMethod(qml.devices.Device):
 class TestValidation:
     """Tests for QNode creation and validation"""
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     def test_best_method_is_device(self):
         """Test that the method for determining the best diff method
         for a device that is a child of qml.devices.Device and has a
@@ -63,7 +63,7 @@ class TestValidation:
 
         dev = CustomDeviceWithDiffMethod()
         qn_jax = qml.QNode(dummyfunc, dev, "jax")
-        qn_none = qml.QNode(dummyfunc, dev, None)
+        qn_none = qml.QNode(dummyfunc, dev)
 
         res = get_best_diff_method(qn_jax)()
         assert res == "device"
