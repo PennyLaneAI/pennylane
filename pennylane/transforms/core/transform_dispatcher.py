@@ -547,6 +547,8 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
 def _create_transform_primitive(name):
     try:
         # pylint: disable=import-outside-toplevel
+        import jax
+
         from pennylane.capture.custom_primitives import NonInterpPrimitive
     except ImportError:
         return None
@@ -559,7 +561,9 @@ def _create_transform_primitive(name):
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
-        raise NotImplementedError
+        consts = all_args[consts_slice]
+        args = all_args[args_slice]
+        return jax.core.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
     def _(*_, inner_jaxpr, **__):
