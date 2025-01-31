@@ -17,6 +17,7 @@ Contains concurrent executor abstractions for task-based workloads.
 
 import abc
 from collections.abc import Callable, Sequence
+from itertools import starmap
 
 
 class RemoteExecABC(abc.ABC):
@@ -24,24 +25,46 @@ class RemoteExecABC(abc.ABC):
     Abstract base class for defining a task-based parallel executor backend for running python functions
     """
 
-    def __init__(self, *args, **kwargs): ...
+    def __init__(self, max_workers: int = None, persist: bool = False, *args, **kwargs):
+        self._size = max_workers
+        self._persist = persist
+
     @abc.abstractmethod
     def __call__(self, fn: Callable, data: Sequence):
         """
         fn:     the callable function to run on the executor backend
         data:   is a sequence where each work-item is a packaged chunk for execution
         """
-        ...
+        return self.map(fn, data)
 
     @property
     def size(self):
         return self._size
+
+    @property
+    def persist(self):
+        return self._persist
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
+
+    @abc.abstractmethod
+    def map(fn: Callable, data: Sequence):
+        """
+        Single iterable map for batching execution of fn over data entries.
+        """
+        ...
+
+    @abc.abstractmethod
+    def starmap(fn: Callable, data: Sequence):
+        """
+        Single iterable map for batching execution of fn over data entries, with each entry being a tuple of arguments to fn.
+        """
+        ...
+        return list(starmap(fn, data))
 
 
 class IntExecABC(RemoteExecABC, abc.ABC):
