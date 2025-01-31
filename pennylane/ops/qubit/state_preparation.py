@@ -207,7 +207,7 @@ class StatePrep(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        state (array[complex]): the state vector to prepare
+        state (array[complex] or csr_matrix (or whatever the formal type name is for that)): the state vector to prepare
         wires (Sequence[int] or int): the wire(s) the operation acts on
         pad_with (float or complex):  if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to normalize the state vector
@@ -238,6 +238,9 @@ class StatePrep(StatePrepBase):
 
         >>> state
         tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
+
+
+    .. usage-details::
 
         **Differentiating with respect to the state**
 
@@ -279,6 +282,26 @@ class StatePrep(StatePrepBase):
 
         >>> state
         tensor([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j], requires_grad=True)
+
+        **Sparse state input**
+        `state` can also be provided as a sparse matrix.  The state will be implicitly
+        zero-padded to the full Hilbert space dimension.
+
+        .. code-block:: pycon
+
+            >>> import scipy as sp
+            >>> init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
+            >>> qsv_op = qml.StatePrep(init_state, wires=[1, 2])
+            >>> wire_order = [0, 1, 2]
+            >>> ket = qsv_op.state_vector(wire_order=wire_order)
+            >>> print(ket)  # Sparse representation
+            >>> print(ket.toarray().flatten())  # Dense representation: [0. 0. 1. 0.]
+
+            # Normalization also works with sparse inputs:
+            >>> init_state_sparse = sp.sparse.csr_matrix([1, 1, 1, 1]) # Unnormalized
+            >>> qsv_op_norm = qml.StatePrep(init_state_sparse, wires=range(2), normalize=True)
+            >>> ket_norm = qsv_op_norm.state_vector()
+            >>> print(ket_norm.toarray().flatten()) # Normalized dense representation
 
 
     """
