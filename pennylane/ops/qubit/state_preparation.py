@@ -240,7 +240,8 @@ class StatePrep(StatePrepBase):
         tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
 
 
-    .. usage-details::
+    .. details::
+        :title: Usage Details
 
         **Differentiating with respect to the state**
 
