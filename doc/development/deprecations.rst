@@ -9,6 +9,22 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
+* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class is deprecated. Instead, use the ``wires`` argument.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
+* The property ```MeasurementProcess.return_type``` has been deprecated.
+  If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
 
@@ -34,15 +50,17 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
+* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been deprecated. Instead, please use
   :meth:`~.Operator.terms` instead.
 
-  - deprecated in v0.35
+  - Deprecated in v0.35
+  - Will be removed in v0.42
 
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
 
   - Deprecated in v0.36
+  - Will be removed in v0.42
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------

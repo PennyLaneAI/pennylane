@@ -847,3 +847,19 @@ class TestPytree:
         assert isinstance(q.queue[0], qml.measurements.MidMeasureMP)
         assert isinstance(q.queue[1], qml.ops.Conditional)
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
+
+
+# pylint: disable=unused-argument
+def test_cond_abstracted_axes(enable_disable_dynamic_shapes):
+    """Test cond can accept inputs with dynamic shapes."""
+
+    def workflow(x, predicate):
+        return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
+
+    jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
+
+    output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
+    assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
+
+    output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
+    assert qml.math.allclose(output_false[0], 0)  # 0 * 1

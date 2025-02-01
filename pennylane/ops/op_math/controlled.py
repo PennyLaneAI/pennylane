@@ -272,11 +272,16 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
-        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs))(*args)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(
+            *args
+        )
+        flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
         ctrl_prim.bind(
             *jaxpr.consts,
-            *args,
+            *abstract_shapes,
+            *flat_args,
             *control_wires,
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
@@ -334,7 +339,10 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
 
     if isinstance(op, qml.QubitUnitary):
         return qml.ControlledQubitUnitary(
-            op, control_wires=control, control_values=control_values, work_wires=work_wires
+            op.matrix(),
+            wires=control + op.wires,
+            control_values=control_values,
+            work_wires=work_wires,
         )
 
     return None

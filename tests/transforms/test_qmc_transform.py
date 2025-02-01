@@ -109,7 +109,7 @@ def test_apply_controlled_z(n_wires):
     # because two Zs are used.
     z_ideal = -_make_Z(2**n_wires)
 
-    circ = lambda: qml.ControlledQubitUnitary(z_ideal, wires=wires, control_wires=control_wire)
+    circ = lambda: qml.ControlledQubitUnitary(z_ideal, wires=control_wire + wires)
     u_ideal = get_unitary(circ, n_all_wires)
 
     assert np.allclose(u, u_ideal)
@@ -131,7 +131,7 @@ def test_apply_controlled_v(n_wires):
     # because two Vs are used.
     v_ideal = -_make_V(2**n_wires)
 
-    circ = lambda: qml.ControlledQubitUnitary(v_ideal, wires=wires, control_wires=control_wire)
+    circ = lambda: qml.ControlledQubitUnitary(v_ideal, wires=control_wire + wires)
     u_ideal = get_unitary(circ, n_all_wires)
 
     assert np.allclose(u, u_ideal)
@@ -166,7 +166,7 @@ class TestApplyControlledQ:
 
         u = get_unitary(circ, n_all_wires)
 
-        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=wires, control_wires=control_wire)
+        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=Wires(control_wire) + Wires(wires))
         u_ideal = get_unitary(circ, n_all_wires)
 
         assert np.allclose(u_ideal, u)

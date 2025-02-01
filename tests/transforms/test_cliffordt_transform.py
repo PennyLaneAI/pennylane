@@ -99,6 +99,15 @@ def circuit_5():
     return qml.expval(qml.PauliZ(0))
 
 
+def circuit_6():
+    """Circuit 6 with adjoint S and T"""
+    qml.adjoint(qml.S(wires=0))
+    qml.PhaseShift(5 * math.pi / 2, wires=1)
+    qml.adjoint(qml.T(wires=2))
+    qml.PhaseShift(-3 * math.pi / 4, wires=3)
+    return qml.expval(qml.PauliZ(0))
+
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -145,7 +154,7 @@ class TestCliffordCompile:
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
     def test_qnode_decomposition(self):
-        """Test decomposition for the Clifford transform."""
+        """Test decomposition for the Clifford transform applied to a QNode."""
 
         dev = qml.device("default.qubit")
 
@@ -171,7 +180,20 @@ class TestCliffordCompile:
             for op in tape.operations
         )
 
-    @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 9e-2])
+    def test_phase_shift_decomposition(self):
+        """Test decomposition for the Clifford transform applied to the circuits with phase shifts."""
+        old_tape = qml.tape.make_qscript(circuit_6)()
+
+        [new_tape], _ = clifford_t_decomposition(old_tape, max_depth=3)
+
+        compiled_ops = new_tape.operations
+
+        assert qml.equal(compiled_ops[0], qml.adjoint(qml.S(0)))
+        assert qml.equal(compiled_ops[1], qml.S(1))
+        assert qml.equal(compiled_ops[2], qml.adjoint(qml.T(2)))
+        assert qml.equal(compiled_ops[3], qml.T(3))
+
+    @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 7e-2])
     @pytest.mark.parametrize("circuit", [circuit_3, circuit_4, circuit_5])
     def test_total_error(self, epsilon, circuit):
         """Ensure that given a certain epsilon, the total operator error is below the threshold."""
@@ -411,7 +433,7 @@ class TestCliffordCompile:
 
         [tape], _ = qml.clifford_t_decomposition(tape)
 
-        assert not sum([isinstance(op, qml.GlobalPhase) for op in tape.operations])
+        assert not sum(isinstance(op, qml.GlobalPhase) for op in tape.operations)
 
     def test_raise_with_decomposition_method(self):
         """Test that exception is correctly raise when using incorrect decomposing method"""
