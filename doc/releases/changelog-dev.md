@@ -111,6 +111,10 @@
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
 
+* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly impacts
+  the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` gates.
+  [(#6855)](https://github.com/PennyLaneAI/pennylane/pull/6855)
+
 * `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
   function.
   [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
