@@ -56,27 +56,27 @@ class TestCircuitGraphHash:
     observable3 = qml.prod(qml.PauliZ(0), qml.PauliZ(1))
 
     numeric_observable_queue = [
-        (returntype1, observable1, "|||ObservableReturnTypes.Expectation!PauliZ[0]"),
+        (returntype1, observable1, "|||ExpectationMP!PauliZ[0]"),
         (
             returntype1,
             observable2,
-            "|||ObservableReturnTypes.Expectation!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
+            "|||ExpectationMP!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
         ),
         (
             returntype1,
             observable3,
-            "|||ObservableReturnTypes.Expectation!Prod[0, 1]",
+            "|||ExpectationMP!Prod[0, 1]",
         ),
-        (returntype2, observable1, "|||ObservableReturnTypes.Variance!PauliZ[0]"),
+        (returntype2, observable1, "|||VarianceMP!PauliZ[0]"),
         (
             returntype2,
             observable2,
-            "|||ObservableReturnTypes.Variance!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
+            "|||VarianceMP!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
         ),
         (
             returntype2,
             observable3,
-            "|||ObservableReturnTypes.Variance!Prod[0, 1]",
+            "|||VarianceMP!Prod[0, 1]",
         ),
     ]
 
@@ -98,8 +98,8 @@ class TestCircuitGraphHash:
     returntype5 = qml.sample
 
     numeric_observable_queue = [
-        (returntype4, "|||ObservableReturnTypes.Probability!Identity[0]"),
-        (returntype5, "|||ObservableReturnTypes.Sample!Identity[0]"),
+        (returntype4, "|||ProbabilityMP!Identity[0]"),
+        (returntype5, "|||SampleMP!Identity[0]"),
     ]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
@@ -119,7 +119,7 @@ class TestCircuitGraphHash:
     returntype6 = qml.state
 
     numeric_observable_queue = [
-        (returntype6, "PauliX[0]|||ObservableReturnTypes.State!Identity[]"),
+        (returntype6, "PauliX[0]|||StateMP!Identity[]"),
     ]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
@@ -141,7 +141,7 @@ class TestCircuitGraphHash:
     returntype7 = qml.density_matrix
 
     numeric_observable_queue = [
-        (returntype7, "|||ObservableReturnTypes.State!Identity[0, 1]"),
+        (returntype7, "|||DensityMatrixMP!Identity[0, 1]"),
     ]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)

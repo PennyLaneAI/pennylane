@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import MeasurementProcess, Probability, ProbabilityMP
+from pennylane.measurements import MeasurementProcess, ProbabilityMP
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -87,7 +87,7 @@ class TestProbs:
 
         meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == Probability
+        assert isinstance(meas_proc, ProbabilityMP)
 
     def test_probs_empty_wires(self):
         """Test that using ``qml.probs`` with an empty wire list raises an error."""
