@@ -43,9 +43,13 @@ class TestUnitaryToRotInterpreter:
 
         U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
         jaxpr = jax.make_jaxpr(f)(U)
+
+        # Qubit Unitary decomposition
         assert jaxpr.eqns[-5].primitive == qml.RZ._primitive
         assert jaxpr.eqns[-4].primitive == qml.RY._primitive
         assert jaxpr.eqns[-3].primitive == qml.RZ._primitive
+
+        # Measurement
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
