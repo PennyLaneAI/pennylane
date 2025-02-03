@@ -54,6 +54,24 @@ class TestQubitUnitaryCSR:
         with pytest.warns(UserWarning, match="may not be unitary"):
             qml.QubitUnitary(sparse, wires=0, unitary_check=True)
 
+    def test_csr_matrix_pow_integer(self):
+        """Test that QubitUnitary.pow() works for integer exponents with csr_matrix."""
+        dense = np.eye(4)
+        sparse = csr_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        powered_ops = op.pow(2)
+        assert len(powered_ops) == 1
+
+        powered_op = powered_ops[0]
+        assert isinstance(powered_op, qml.QubitUnitary)
+        assert isinstance(powered_op.matrix(), csr_matrix)
+        # The resulting matrix should still be the identity
+        final_mat = powered_op.matrix()
+        # If it's still sparse, compare .toarray()
+        if isinstance(final_mat, csr_matrix):
+            final_mat = final_mat.toarray()
+        assert qml.math.allclose(final_mat, dense)
+
 
 class TestQubitUnitary:
     """Tests for the QubitUnitary class."""
