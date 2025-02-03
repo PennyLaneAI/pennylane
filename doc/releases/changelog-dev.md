@@ -6,12 +6,28 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
+  [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
+
+  ```pycon
+  >>> import scipy as sp
+  >>> init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
+  >>> qsv_op = qml.StatePrep(init_state, wires=[1, 2])
+  >>> wire_order = [0, 1, 2]
+  >>> ket = qsv_op.state_vector(wire_order=wire_order)
+  >>> print(ket)
+  <Compressed Sparse Row sparse matrix of dtype 'float64'
+         with 1 stored elements and shape (1, 8)>
+    Coords        Values
+    (0, 2)        1.0
+  ```
+
 * A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
   is greater than `0.4.28`.
   [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
 
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
-  autograph=True` at the QNode level. 
+  `autograph=True` at the QNode level. 
   [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
 
   ```python
@@ -28,6 +44,7 @@
               qml.RX(1,i)
       return qml.state()
   ```
+
   ```pycon
   >>> print(qml.draw(circuit)(num_loops=3))
   0: ──H────────┤  State
@@ -50,6 +67,7 @@
       qml.RX(x, 0)
       return qml.expval(qml.Z(0))
   ```
+
   ```pycon
   >>> config = qml.workflow.construct_execution_config(circuit)(1)
   >>> pprint.pprint(config)
@@ -91,7 +109,7 @@
 
   its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
   of updating a QNode's `diff_method`:
-  
+
   ```pycon
   >>> print(circuit.diff_method)
   best
@@ -110,7 +128,7 @@
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
-* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed. 
+* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed.
    [(#6821)](https://github.com/PennyLaneAI/pennylane/pull/6821)
 
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
@@ -145,21 +163,21 @@
 * `qml.execute` now has a collection of keyword-only arguments.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
-* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed.
   [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
 
-* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed.
   [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
 
-* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed.
   Instead, use the ``qml.workflow.construct_tape`` function.
   [(#6825)](https://github.com/PennyLaneAI/pennylane/pull/6825)
 
 * The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
   [(#6830)](https://github.com/PennyLaneAI/pennylane/pull/6830)
   
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed.
+  Instead, use the ``qml.workflow.get_best_diff_method`` function.
   [(#6823)](https://github.com/PennyLaneAI/pennylane/pull/6823)
 
 * The `output_dim` property of `qml.tape.QuantumScript` has been removed. Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the same information.
@@ -177,7 +195,7 @@
   Instead, use the `wires` argument as the second positional argument.
   [(#6839)](https://github.com/PennyLaneAI/pennylane/pull/6839)
 
-* The `mcm_method` keyword in `qml.execute` has been deprecated. 
+* The `mcm_method` keyword in `qml.execute` has been deprecated.
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
 
@@ -223,8 +241,8 @@
 
 <h3>Documentation 📝</h3>
 
-* The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`, 
-  `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better 
+* The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`,
+  `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better
   code examples.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
 
