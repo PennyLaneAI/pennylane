@@ -115,15 +115,23 @@ class TestQNodeIntegration:
         @qml.qnode(dev)
         def f(U):
             qml.QubitUnitary(U, 0)
+            qml.Hadamard(0)
             return qml.expval(qml.Z(0))
 
         U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
         jaxpr = jax.make_jaxpr(f)(U)
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[-5].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[-4].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+
+        # Qubit unitary decomposition
+        assert qfunc_jaxpr.eqns[-6].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[-5].primitive == qml.RY._primitive
+        assert qfunc_jaxpr.eqns[-4].primitive == qml.RZ._primitive
+
+        # Hadamard
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
+
+        # Measurement
         assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
