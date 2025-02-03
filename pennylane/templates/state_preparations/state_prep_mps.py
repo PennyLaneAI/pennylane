@@ -27,10 +27,7 @@ class MPSPrep(Operation):
 
     .. note::
 
-        Tensor simulators are designed to efficiently run MPS structures.
-
-        However, for non-`lightning.tensor` devices, a state-vector simulator may be useful if a gate decomposition is required.
-        This decomposition introduces work (auxiliary) qubits to prepare the MPS in a quantum circuit.
+        This operator is natively supported on the ``lightning.tensor`` device, designed to run MPS structures efficiently. For other devices, implementing this operation uses a gate-based decomposition which requires auxiliary qubits (via ``work_wires``) to prepare the state vector represented by the MPS in a quantum circuit.
 
 
 
