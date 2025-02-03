@@ -36,6 +36,40 @@
 
 <h3>Improvements 🛠</h3>
 
+* A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
+  is greater than `0.4.28`.
+  [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
+
+* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
+  autograph=True` at the QNode level. 
+  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
+
+  ```python
+  qml.capture.enable()
+
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+  @qml.qnode(dev, autograph=True)
+  def circuit(num_loops: int):
+      for i in range(num_loops):
+          if i % 2 == 0:
+              qml.H(i)
+          else:
+              qml.RX(1,i)
+      return qml.state()
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)(num_loops=3))
+  0: ──H────────┤  State
+  1: ──RX(1.00)─┤  State
+  2: ──H────────┤  State
+  >>> circuit(3)
+  Array([0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j,
+         0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+  ```
+
 * Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
   Users can now construct the execution configuration from a particular `QNode` instance.
   [(#6901)](https://github.com/PennyLaneAI/pennylane/pull/6901)
@@ -74,6 +108,7 @@
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
   After constructing a `QNode`,
+
   ```python
   import pennylane as qml
 
@@ -83,8 +118,10 @@
     qml.CNOT([0,1])
     return qml.probs()
   ```
+
   its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
   of updating a QNode's `diff_method`:
+  
   ```pycon
   >>> print(circuit.diff_method)
   best
@@ -94,8 +131,9 @@
   ```
   
 * Devices can now configure whether or not ML framework data is sent to them
-  via an `ExecutionConfig.convert_to_numpy` parameter. This is not used on 
-  `default.qubit` due to compilation overheads when jitting.
+  via an `ExecutionConfig.convert_to_numpy` parameter. End-to-end jitting on
+  `default.qubit` is used if the user specified a `jax.random.PRNGKey` as a seed.
+  [(#6899)](https://github.com/PennyLaneAI/pennylane/pull/6899)
   [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
   [(#6869)](https://github.com/PennyLaneAI/pennylane/pull/6869)
 
@@ -108,6 +146,10 @@
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
 
+* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly impacts
+  the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` gates.
+  [(#6855)](https://github.com/PennyLaneAI/pennylane/pull/6855)
+
 * `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
   function.
   [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
@@ -117,6 +159,9 @@
 
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
+
+* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
+  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
 <h3>Breaking changes 💔</h3>
 
@@ -155,6 +200,13 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
+
+* The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
+  Instead, use the `wires` argument as the second positional argument.
+  [(#6839)](https://github.com/PennyLaneAI/pennylane/pull/6839)
+
 * The `mcm_method` keyword in `qml.execute` has been deprecated. 
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
@@ -178,10 +230,14 @@
   If observable type checking is needed, please use direct `isinstance`; if other text information is needed, please use class name, or another internal temporary private member `_shortname`.
   [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
   [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
+  [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
 
-* The source code has been updated use black 25.1.0
+* Remove `QNode.get_gradient_fn` from source code.
+  [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
+  
+* The source code has been updated use black 25.1.0.
   [(#6897)](https://github.com/PennyLaneAI/pennylane/pull/6897)
 
 * Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
@@ -226,6 +282,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
