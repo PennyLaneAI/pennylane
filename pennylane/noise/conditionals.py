@@ -16,7 +16,6 @@
 Developer note: Conditionals inherit from BooleanFn and store the condition they
 utilize in the ``condition`` attribute.
 """
-
 from inspect import isclass, signature
 
 import pennylane as qml
@@ -489,9 +488,8 @@ class MeasEq(qml.BooleanFn):
             self.condition.append(mp)
             self._cmps.append(mp if isclass(mp) else mp.__class__)
 
-        # Temporrary fix from PR6906, Should be refactored in 0.42
         mp_ops = list(
-            getattr(op, "_shortname", op.__class__.__name__) for op in self.condition
+            op.__class__.__name__ for op in self.condition
         )  # pylint: disable=protected_access
         mp_names = [
             repr(op) if not isinstance(op, property) else repr(self.condition[idx].__name__)

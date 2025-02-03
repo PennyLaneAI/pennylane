@@ -81,7 +81,6 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
 
     @functools.wraps(qnode)
     def wrapper(*args, **kwargs):
-
         mcm_config = qml.devices.MCMConfig(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
             mcm_method=qnode.execute_kwargs["mcm_method"],
@@ -104,7 +103,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
         )
 
         if resolve:
-            tape = construct_tape(qnode)(*args, **kwargs)
+            tape = construct_tape(qnode, level=0)(*args, **kwargs)
             # pylint:disable=protected-access
             config = _resolve_execution_config(
                 config, qnode.device, (tape,), qnode._transform_program
