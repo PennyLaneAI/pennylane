@@ -1222,9 +1222,7 @@ class TestQubitDeviceNewUnits:
 
         # pylint: disable=too-few-public-methods
         class DummyMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return "SomeUnsupportedReturnType"
+            _shortname = "SomeUnsupportedReturnType"
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)

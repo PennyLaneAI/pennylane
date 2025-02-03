@@ -6,6 +6,63 @@
 
 <h3>Improvements 🛠</h3>
 
+* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
+  autograph=True` at the QNode level. 
+  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
+
+  ```python
+  qml.capture.enable()
+
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+  @qml.qnode(dev, autograph=True)
+  def circuit(num_loops: int):
+      for i in range(num_loops):
+          if i % 2 == 0:
+              qml.H(i)
+          else:
+              qml.RX(1,i)
+      return qml.state()
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)(num_loops=3))
+  0: ──H────────┤  State
+  1: ──RX(1.00)─┤  State
+  2: ──H────────┤  State
+  >>> circuit(3)
+  Array([0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j,
+         0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+  ```
+
+* Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
+  Users can now construct the execution configuration from a particular `QNode` instance.
+  [(#6901)](https://github.com/PennyLaneAI/pennylane/pull/6901)
+
+  ```python
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit(x):
+      qml.RX(x, 0)
+      return qml.expval(qml.Z(0))
+  ```
+  ```pycon
+  >>> config = qml.workflow.construct_execution_config(circuit)(1)
+  >>> pprint.pprint(config)
+  ExecutionConfig(grad_on_execution=False,
+                  use_device_gradient=True,
+                  use_device_jacobian_product=False,
+                  gradient_method='backprop',
+                  gradient_keyword_arguments={},
+                  device_options={'max_workers': None,
+                                  'prng_key': None,
+                                  'rng': Generator(PCG64) at 0x15F6BB680},
+                  interface=<Interface.NUMPY: 'numpy'>,
+                  derivative_order=1,
+                  mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
+                  convert_to_numpy=True)
+  ```
+
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
   [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
 
@@ -17,6 +74,7 @@
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
   After constructing a `QNode`,
+
   ```python
   import pennylane as qml
 
@@ -26,8 +84,10 @@
     qml.CNOT([0,1])
     return qml.probs()
   ```
+
   its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
   of updating a QNode's `diff_method`:
+  
   ```pycon
   >>> print(circuit.diff_method)
   best
@@ -51,6 +111,10 @@
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
 
+* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly impacts
+  the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` gates.
+  [(#6855)](https://github.com/PennyLaneAI/pennylane/pull/6855)
+
 * `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
   function.
   [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
@@ -60,6 +124,9 @@
 
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
+
+* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
+  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
 <h3>Breaking changes 💔</h3>
 
@@ -98,6 +165,13 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
+
+* The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
+  Instead, use the `wires` argument as the second positional argument.
+  [(#6839)](https://github.com/PennyLaneAI/pennylane/pull/6839)
+
 * The `mcm_method` keyword in `qml.execute` has been deprecated. 
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
@@ -117,9 +191,18 @@
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
   [(#6879)](https://github.com/PennyLaneAI/pennylane/pull/6879)
 
+* The property `MeasurementProcess.return_type` has been deprecated.
+  If observable type checking is needed, please use direct `isinstance`; if other text information is needed, please use class name, or another internal temporary private member `_shortname`.
+  [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
+  [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
+  [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
+
 <h3>Internal changes ⚙️</h3>
 
-* The source code has been updated use black 25.1.0
+* Remove `QNode.get_gradient_fn` from source code.
+  [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
+  
+* The source code has been updated use black 25.1.0.
   [(#6897)](https://github.com/PennyLaneAI/pennylane/pull/6897)
 
 * Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
@@ -160,13 +243,19 @@
 * `BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
 
+* The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
+  passed to the `QNode`, instead of assuming the method is always `deferred`.
+  [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
+Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
