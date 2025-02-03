@@ -492,6 +492,12 @@ class PhaseShift(Operation):
         return qml.math.exp(product)
 
     @staticmethod
+    def _compute_plxpr_decomposition(phi, wires):
+
+        RZ(phi, wires=wires)
+        qml.GlobalPhase(-phi / 2)
+
+    @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> "qml.operation.Operator":
         r"""Representation of the operator as a product of other operators (static method). :
 

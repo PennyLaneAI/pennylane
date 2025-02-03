@@ -233,7 +233,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                 bool: Whether or not ``op`` is valid or needs to be decomposed. ``True`` means
                 that the operator does not need to be decomposed.
             """
-            if not hasattr(op, "_compute_plxpr_decomposition"):
+            if not op._has_plxpr_decomposition:
                 if not self.gate_set(op):
                     warnings.warn(
                         f"Operator {op.name} does not define a plxpr decomposition and was not "
@@ -298,9 +298,10 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
 
-            if hasattr(op, "_compute_plxpr_decomposition") and isinstance(
-                eqn.outvars[0], jax.core.DropVar
-            ):
+            if isinstance(eqn.outvars[0], jax.core.DropVar):
+
+                if self.gate_set(op):
+                    return super().interpret_operation(op)
 
                 if self.max_expansion is not None and current_depth >= self.max_expansion:
                     return super().interpret_operation_eqn(eqn)
@@ -309,10 +310,10 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                     return super().interpret_operation_eqn(eqn)
 
                 jaxpr_decomp = op._plxpr_decomposition()
-                args = (*op.parameters, *op.wires, *op.hyperparameters)
+                args = (*op.parameters, *op.wires)
 
                 return self.eval_dynamic_decomposition(
-                    jaxpr_decomp.jaxpr, *args, current_depth=current_depth + 1
+                    jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args, current_depth=current_depth + 1
                 )
 
             return super().interpret_operation_eqn(eqn)
