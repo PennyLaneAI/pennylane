@@ -23,7 +23,7 @@
   ```
 
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting
-  autograph=True` at the QNode level.
+  `autograph=True` at the QNode level.
   [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
 
   ```python
