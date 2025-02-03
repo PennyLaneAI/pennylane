@@ -291,12 +291,14 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     potential energy surface data.
 
     Args:
-        pes (VibrationalPES): object containing the vibrational potential energy surface data
-        max_deg (int): maximum degree of Taylor form polynomial
-        min_deg (int): minimum degree of Taylor form polynomial
+        pes (VibrationalPES): the vibrational potential energy surface data. Must be array of
+            shape ``(m, l)`` or ``(m, m, l, l)`` or ``(m, m, l, l, l, l)`` where ``m`` is the number
+            of normal modes and ``l`` is the number of energy points computed along each normal mode.
+        max_deg (int): maximum degree of the polynomial used to compute the coefficients
+        min_deg (int): minimum degree of the polynomial used to compute the coefficients
 
     Returns:
-        tuple(TensorLike[float]): the coefficients of the one-body, two-body and three-body terms
+        tuple(TensorLike[float]): the coefficients of the Taylor vibrational Hamiltonian
 
     **Example**
 
@@ -321,6 +323,14 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     >>> print(one)
     [[-0.00088528 -0.00361425  0.00068143]]
     """
+
+    # pes_shape = pes.shape
+    # if len(pes_shape) = 2:
+    #     return predicted_1D
+    # if len(pes_shape) = 4:
+    #     return predicted_2D
+    # if len(pes_shape) = 6:
+    #     return predicted_3D
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, max_deg, min_deg=min_deg)
