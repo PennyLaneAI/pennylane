@@ -206,7 +206,7 @@ class StatePrep(StatePrepBase):
         pad_with (float or complex): if not ``None``, ``state`` is padded with this constant to be of size :math:`2^n`, where
             :math:`n` is the number of wires.
         normalize (bool): whether to normalize the state vector. To represent a valid quantum state vector, the L2-norm
-            of ``state`` must be one. The argument ``normalize`` can be set to ``True``to normalize the state automatically.
+            of ``state`` must be one. The argument ``normalize`` can be set to ``True`` to normalize the state automatically.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
         validate_norm (bool): whether to validate the norm of the input state
