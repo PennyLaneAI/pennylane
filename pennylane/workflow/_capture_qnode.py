@@ -112,6 +112,7 @@ from numbers import Number
 from warnings import warn
 
 import jax
+from cachetools import LRUCache
 from jax.interpreters import ad, batching, mlir
 
 import pennylane as qml
@@ -327,12 +328,21 @@ batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
 mlir.register_lowering(qnode_prim, mlir.lower_fun(qnode_prim.impl, multiple_results=True))
 
 
-_comp_cache = {}
+_comp_cache = LRUCache(maxsize=100)
 
 
-def _args_hash(args, kwargs):
+def _args_hash(args, kwargs, static_argnums=None):
     serialized_args = ""
-    for a in args:
+    if static_argnums is None:
+        static_argnums = ()
+    elif isinstance(static_argnums, int):
+        static_argnums = (static_argnums,)
+
+    for i, a in enumerate(args):
+        if i in static_argnums:
+            serialized_args += str(a)
+            continue
+
         if qml.math.is_abstract(a):
             a = getattr(a, "aval", a)
             serialized_args += f"{a.shape},{a.dtype};"
