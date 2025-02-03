@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* `qml.capture.transforms.UnitaryToRotInterpreter`: this class decomposes pennylane operators 
+  following the same API as `qml.transforms.unitary_to_rot`.
+  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
+
 <h3>Improvements 🛠</h3>
 
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
