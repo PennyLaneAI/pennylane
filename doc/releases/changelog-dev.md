@@ -93,6 +93,7 @@
 
   After constructing a `QNode`,
 
+
   ```python
   import pennylane as qml
 
@@ -115,8 +116,9 @@
   ```
   
 * Devices can now configure whether or not ML framework data is sent to them
-  via an `ExecutionConfig.convert_to_numpy` parameter. This is not used on
-  `default.qubit` due to compilation overheads when jitting.
+  via an `ExecutionConfig.convert_to_numpy` parameter. End-to-end jitting on
+  `default.qubit` is used if the user specified a `jax.random.PRNGKey` as a seed.
+  [(#6899)](https://github.com/PennyLaneAI/pennylane/pull/6899)
   [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
   [(#6869)](https://github.com/PennyLaneAI/pennylane/pull/6869)
 
@@ -129,6 +131,10 @@
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
 
+* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly impacts
+  the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` gates.
+  [(#6855)](https://github.com/PennyLaneAI/pennylane/pull/6855)
+
 * `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
   function.
   [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
@@ -138,6 +144,9 @@
 
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
+
+* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
+  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
 <h3>Breaking changes 💔</h3>
 
@@ -176,7 +185,14 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `mcm_method` keyword in `qml.execute` has been deprecated.
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
+
+* The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
+  Instead, use the `wires` argument as the second positional argument.
+  [(#6839)](https://github.com/PennyLaneAI/pennylane/pull/6839)
+
+* The `mcm_method` keyword in `qml.execute` has been deprecated. 
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
 
@@ -199,6 +215,7 @@
   If observable type checking is needed, please use direct `isinstance`; if other text information is needed, please use class name, or another internal temporary private member `_shortname`.
   [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
   [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
+  [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
 
@@ -250,6 +267,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
