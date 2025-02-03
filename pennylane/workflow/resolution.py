@@ -89,8 +89,6 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
         Interface: resolved interface
     """
     interface = get_canonical_interface_name(interface)
-    if interface in (Interface.JAX, Interface.JAX_JIT):
-        _validate_jax_version()
 
     if interface == Interface.AUTO:
         params = []
@@ -99,11 +97,13 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
         interface = get_interface(*params)
         try:
             interface = get_canonical_interface_name(interface)
-            if interface in (Interface.JAX, Interface.JAX_JIT):
-                _validate_jax_version()
         except ValueError:
             # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
+
+    if interface in (Interface.JAX, Interface.JAX_JIT):
+        _validate_jax_version()
+
     if interface == Interface.TF and _use_tensorflow_autograph():
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
