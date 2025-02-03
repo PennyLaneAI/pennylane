@@ -332,6 +332,11 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     # if len(pes_shape) = 6:
     #     return predicted_3D
 
+    # shape of output: (m, r), (m, m, s), (m, m, m, t)
+    # r = max_deg - min_deg + 1
+    # s = sum((n - 1) for n in range(min_deg, max_deg + 1))
+    # t = sum((n - 1) * (n - 2) / 2 for n in range(min_deg, max_deg + 1))
+
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, max_deg, min_deg=min_deg)
     predicted_1D += harmonic_pes
