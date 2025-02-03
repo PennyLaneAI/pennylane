@@ -30,10 +30,6 @@ from pennylane.transforms.unitary_to_rot import (
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
-def check_jaxpr_eqn(eqn, expected_op, expected_wire) -> bool:
-    return eqn.primitive == expected_op._primitive and eqn.primitive.invars[1] == expected_wire
-
-
 class TestUnitaryToRotInterpreter:
     """Unit tests for the UnitaryToRotInterpreter class for decomposing plxpr."""
 
@@ -66,6 +62,9 @@ class TestUnitaryToRotInterpreter:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(U)
+
+        # Theoretical decomposition based on,
+        # https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.two_qubit_decomposition.html
 
         # C
         assert jaxpr.eqns[-20].primitive == qml.RZ._primitive
@@ -157,6 +156,9 @@ class TestQNodeIntegration:
         jaxpr = jax.make_jaxpr(f)(U)
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        # Theoretical decomposition based on,
+        # https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.two_qubit_decomposition.html
 
         # C
         assert qfunc_jaxpr.eqns[-20].primitive == qml.RZ._primitive
