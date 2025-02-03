@@ -277,7 +277,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     r"""Compute coefficients of Taylor vibrational Hamiltonian.
 
     The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^(n)` and
-    normal coordinates :math:`q` following Eq. 5 of `arXiv:1703.09313
+    normal coordinate operators :math:`q` following Eq. 5 of `arXiv:1703.09313
     <https://arxiv.org/abs/1703.09313>`_ as:
 
     .. math::
@@ -599,13 +599,32 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     """Return Taylor bosonic vibrational Hamiltonian.
 
-    The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_.
+    The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^(n)`,
+    normal coordinate operators :math:`q` and momentum operators :math:`p` following Eq. 5 of
+    `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ as:
+
+    .. math::
+
+        H = \sum_{i\geq j} K_{ij} p_i  p_j + \sum_{i\geq j} \Phi_{ij}^{(2)}  q_i  q_j +
+        \sum_{i\geq j\geq k} \Phi_{ijk}^{(3)}  q_i  q_j  q_k + \sum_{i\geq j\geq k\geq l}
+        \Phi_{ijkl}^{(4)} q_i  q_j  q_k  q_l  + \cdots.
+
+    This Hamiltonian can be represented in the bosonic basis by using mapping equations defined in
+    Eqs. 6, 7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_:
+
+    .. math::
+
+        \hat q_i = \frac{1}{\sqrt{2}}(b_i^\dagger + b_i), \quad
+        \hat p_i = \frac{1}{\sqrt{2}}(b_i^\dagger - b_i),
+
+    where :math:`b^\dagger` and :math:`b` are bosonic creation and annihilation operators,
+    respectively.
 
     Args:
-        coeffs (list(float)): the coefficients of the Hamiltonian
-        freqs (list(float)): the harmonic frequencies in atomic units
+        coeffs (array(float)): the coefficients of the Taylor Hamiltonian
+        freqs (array(float)): the harmonic vibrational frequencies in atomic units
         is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
-        uloc (list(list(float))): localization matrix indicating the relationship between original
+        uloc (array(array(float))): localization matrix indicating the relationship between original
             and localized modes
 
     Returns:
