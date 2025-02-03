@@ -621,8 +621,13 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     respectively.
 
     Args:
-        coeffs (array(float)): the coefficients of the Taylor Hamiltonian
         freqs (array(float)): the harmonic vibrational frequencies in atomic units
+        one_mode (array(float)): first-order coefficients of the Taylor Hamiltonian with shape
+            ``(m, l)`` where ``m = len(freqs)`` and ``l > 0``
+        two_mode (array(float)): second-order coefficients of the Taylor Hamiltonian with shape
+            ``(m, m, l, l))`` where ``m = len(freqs)`` and ``l > 0``
+        three_mode (array(float)): third-order coefficients of the Taylor Hamiltonian with shape
+            ``(m, m, l, l, l, l)`` where ``m = len(freqs)`` and ``l > 0``
         is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (array(array(float))): localization matrix indicating the relationship between original
             and localized modes
@@ -654,6 +659,9 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     + 0.0006814299999999998 * b⁺(0) b(0) b(0) b(0)
     + 0.00017035749999999995 * b(0) b(0) b(0) b(0)
     """
+    # there should be one_mode, two_mode = None, three_mode = None
+    # also, freqs first
+
     if is_local:
         start_deg = 2
     else:
