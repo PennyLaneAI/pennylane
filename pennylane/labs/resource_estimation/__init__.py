@@ -104,7 +104,9 @@ Symbolic Operators
 
     ~ResourceAdjoint
     ~ResourceControlled
+    ~ResourceExp
     ~ResourcePow
+    ~ResourceProd
 
 Templates
 ~~~~~~~~~
@@ -185,6 +187,7 @@ from .ops import (
     ResourcePow,
     ResourcePSWAP,
     ResourcePhaseShift,
+    ResourceProd,
     ResourceRot,
     ResourceRX,
     ResourceRY,

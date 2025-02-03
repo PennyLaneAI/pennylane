@@ -66,4 +66,5 @@ from .op_math import (
     ResourceControlled,
     ResourceControlledPhaseShift,
     ResourcePow,
+    ResourceProd,
 )

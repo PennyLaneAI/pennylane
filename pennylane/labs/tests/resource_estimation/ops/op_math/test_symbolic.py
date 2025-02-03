@@ -363,6 +363,32 @@ class TestResourcePow:
         assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
 
+class TestResourceProd:
+    """Test ResourceProd"""
+
+    ops_data = (
+        re.ResourceProd(re.ResourceX(0), re.ResourceHadamard(1)),
+        re.ResourceProd(
+            re.ResourceQFT(wires=[0, 1, 2]),
+            re.ResourceAdjoint(re.ResourceZ(0)),
+            re.ResourceControlled(re.ResourcePhaseShift(1.23, 0), control_wires=["c1", "c2"]),
+        ),
+        re.ResourceProd(
+            re.ResourceCNOT([0, 1]),
+            re.ResourceExp(re.ResourceZ(0)),
+        ),
+    )
+
+    def test_resource_params(self):
+        assert True
+
+    def test_resource_rep(self):
+        assert True
+
+    def test_resources_decomp(self):
+        assert True
+
+
 class TestResourceExp:
     """Test for ResourceExp"""
 

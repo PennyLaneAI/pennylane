@@ -227,7 +227,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         gate_types = {}
 
         num_ops = len(cmpr_ops)
-        num_wires = int(qnp.log2(num_ops))
+        num_wires = int(qnp.ceil(qnp.log2(num_ops)))
 
         prep = ResourceStatePrep.resource_rep(num_wires)
         sel = ResourceSelect.resource_rep(cmpr_ops)
@@ -253,7 +253,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         gate_types = {}
 
         num_ops = len(cmpr_ops)
-        num_wires = int(qnp.log2(num_ops))
+        num_wires = int(qnp.ceil(qnp.log2(num_ops)))
 
         prep = ResourceStatePrep.resource_rep(num_wires)
         pow_sel = re.ResourcePow.resource_rep(ResourceSelect, {"cmpr_ops": cmpr_ops}, z)
