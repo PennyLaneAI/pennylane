@@ -93,7 +93,6 @@
 
   After constructing a `QNode`,
 
-
   ```python
   import pennylane as qml
 
@@ -192,7 +191,7 @@
   Instead, use the `wires` argument as the second positional argument.
   [(#6839)](https://github.com/PennyLaneAI/pennylane/pull/6839)
 
-* The `mcm_method` keyword in `qml.execute` has been deprecated. 
+* The `mcm_method` keyword in `qml.execute` has been deprecated.
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
 
