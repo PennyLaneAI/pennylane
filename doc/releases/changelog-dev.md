@@ -4,8 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* `qml.capture.transforms.UnitaryToRotInterpreter`: this class decomposes pennylane operators 
-  following the same API as `qml.transforms.unitary_to_rot`.
+* Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes pennylane operators 
+  following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
 
 <h3>Improvements 🛠</h3>
