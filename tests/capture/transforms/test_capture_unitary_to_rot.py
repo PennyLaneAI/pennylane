@@ -55,7 +55,7 @@ class TestUnitaryToRotInterpreter:
 
     # TODO: Currently only supports three CNOT decomposition
     def test_two_qubit_three_cnot_conversion(self):
-        """Test that a two qubit unitary can be decompose correctly."""
+        """Test that a two qubit unitary can be decomposed correctly."""
         U1 = qml.Rot(1.0, 2.0, 3.0, wires=0)
         U2 = qml.Rot(1.0, 2.0, 3.0, wires=1)
         U = qml.prod(U1, U2).matrix()
@@ -144,7 +144,7 @@ class TestQNodeIntegration:
 
     # TODO: Currently only supports three CNOT decomposition
     def test_two_qubit_three_cnot_conversion_qnode(self):
-        """Test that a two qubit unitary can be decompose correctly."""
+        """Test that a two qubit unitary can be decomposed correctly."""
         dev = qml.device("default.qubit", wires=1)
 
         U1 = qml.Rot(1.0, 2.0, 3.0, wires=0)
@@ -233,7 +233,7 @@ class TestUnitaryToRotPlxprTransform:
 
     # TODO: Currently only supports three CNOT decomposition
     def test_two_qubit_three_cnot_plxpr_transform(self):
-        """Test that a two qubit unitary can be decompose correctly."""
+        """Test that a two qubit unitary can be decomposed correctly."""
 
         def circuit(U):
             qml.QubitUnitary(U, [0, 1])
