@@ -205,25 +205,86 @@ class TestQNodeIntegration:
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
-def test_unitary_to_rot_plxpr_to_plxpr():
-    """Test that transforming plxpr works correctly."""
+class TestUnitaryToRotPlxprTransform:
+    """Tests that transforming plxpr works correctly."""
 
-    def circuit(U):
-        qml.QubitUnitary(U, 0)
-        return qml.expval(qml.Z(0))
+    def test_one_qubit_plxpr_transform(self):
+        """Test that transforming plxpr works correctly."""
 
-    U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
-    args = (U,)
-    jaxpr = jax.make_jaxpr(circuit)(*args)
-    transformed_jaxpr = unitary_to_rot_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {}, *args)
+        def circuit(U):
+            qml.QubitUnitary(U, 0)
+            return qml.expval(qml.Z(0))
 
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
+        args = (U,)
+        jaxpr = jax.make_jaxpr(circuit)(*args)
+        transformed_jaxpr = unitary_to_rot_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {}, *args)
 
-    # Qubit unitary decomposition
-    assert transformed_jaxpr.eqns[-5].primitive == qml.RZ._primitive
-    assert transformed_jaxpr.eqns[-4].primitive == qml.RY._primitive
-    assert transformed_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
 
-    # Measurement
-    assert transformed_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
-    assert transformed_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+        # Qubit unitary decomposition
+        assert transformed_jaxpr.eqns[-5].primitive == qml.RZ._primitive
+        assert transformed_jaxpr.eqns[-4].primitive == qml.RY._primitive
+        assert transformed_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+
+        # Measurement
+        assert transformed_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert transformed_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    # TODO: Currently only supports three CNOT decomposition
+    def test_two_qubit_three_cnot_plxpr_transform(self):
+        """Test that a two qubit unitary can be decompose correctly."""
+
+        def circuit(U):
+            qml.QubitUnitary(U, [0, 1])
+            return qml.expval(qml.Z(0))
+
+        U1 = qml.Rot(1.0, 2.0, 3.0, wires=0)
+        U2 = qml.Rot(1.0, 2.0, 3.0, wires=1)
+        U = qml.prod(U1, U2).matrix()
+        args = (U,)
+        jaxpr = jax.make_jaxpr(circuit)(*args)
+        transformed_jaxpr = unitary_to_rot_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {}, *args)
+
+        # Theoretical decomposition based on,
+        # https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.two_qubit_decomposition.html
+
+        # C
+        assert transformed_jaxpr.eqns[-20].primitive == qml.RZ._primitive
+        assert transformed_jaxpr.eqns[-19].primitive == qml.RY._primitive
+        assert transformed_jaxpr.eqns[-18].primitive == qml.RZ._primitive
+
+        # D
+        assert transformed_jaxpr.eqns[-17].primitive == qml.RZ._primitive
+        assert transformed_jaxpr.eqns[-16].primitive == qml.RY._primitive
+        assert transformed_jaxpr.eqns[-15].primitive == qml.RZ._primitive
+
+        # CNOT 1
+        assert transformed_jaxpr.eqns[-14].primitive == qml.CNOT._primitive
+
+        # RZ RY
+        assert transformed_jaxpr.eqns[-13].primitive == qml.RZ._primitive
+        assert transformed_jaxpr.eqns[-12].primitive == qml.RY._primitive
+
+        # CNOT 2
+        assert transformed_jaxpr.eqns[-11].primitive == qml.CNOT._primitive
+
+        # RY
+        assert transformed_jaxpr.eqns[-10].primitive == qml.RY._primitive
+
+        # CNOT 3
+        assert transformed_jaxpr.eqns[-9].primitive == qml.CNOT._primitive
+
+        # A
+        assert transformed_jaxpr.eqns[-8].primitive == qml.RZ._primitive
+        assert transformed_jaxpr.eqns[-7].primitive == qml.RY._primitive
+        assert transformed_jaxpr.eqns[-6].primitive == qml.RZ._primitive
+
+        # B
+        assert transformed_jaxpr.eqns[-5].primitive == qml.RZ._primitive
+        assert transformed_jaxpr.eqns[-4].primitive == qml.RY._primitive
+        assert transformed_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+
+        # Measurement
+        assert transformed_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert transformed_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
