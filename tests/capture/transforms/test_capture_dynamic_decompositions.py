@@ -19,6 +19,8 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
+import numpy as np
+
 from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
 from pennylane.operation import Operation
 from pennylane.transforms.decompose import DynamicDecomposeInterpreter
@@ -578,3 +580,53 @@ class TestDynamicDecomposeInterpreter:
         )
 
         assert qml.math.allclose(*result, *result_comparison)
+
+    @pytest.mark.parametrize("layers", [1, 2, 3])
+    @pytest.mark.parametrize("n_wires", [2, 3])
+    @pytest.mark.parametrize("imprimitive", [qml.CNOT, qml.CZ])
+    def test_strongly_entangling(self, layers, n_wires, imprimitive):
+        """Test that the StronglyEntanglingLayer is correctly dynamically decomposed."""
+
+        weight_shape = (layers, n_wires, 3)
+        weights = np.random.random(size=weight_shape)
+
+        @DynamicDecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+        def circuit():
+            qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        # Outermost for loop
+        assert qfunc_jaxpr.eqns[0].primitive == for_loop_prim
+        qfunc_jaxpr_body_fn_0 = qfunc_jaxpr.eqns[0].params["jaxpr_body_fn"]
+        # rot_loop
+        assert qfunc_jaxpr_body_fn_0.eqns[0].primitive == for_loop_prim
+        qfunc_jaxpr_body_fn_00 = qfunc_jaxpr_body_fn_0.eqns[0].params["jaxpr_body_fn"]
+        assert qfunc_jaxpr_body_fn_00.eqns[-1].primitive == qml.Rot._primitive
+        # imprim
+        assert qfunc_jaxpr_body_fn_0.eqns[1].primitive == cond_prim
+        qfunc_jaxpr_body_fn_01 = qfunc_jaxpr_body_fn_0.eqns[1]
+        assert qfunc_jaxpr_body_fn_01.params["jaxpr_branches"][0].eqns[0].primitive == for_loop_prim
+        assert (
+            qfunc_jaxpr_body_fn_01.params["jaxpr_branches"][0]
+            .eqns[0]
+            .params["jaxpr_body_fn"]
+            .eqns[-1]
+            .primitive
+            == imprimitive._primitive
+        )
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        qml.capture.disable()
+
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+        def circuit_comparison():
+            qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
+            return qml.state()
+
+        print(circuit_comparison())
+        assert qml.math.allclose(*result, circuit_comparison())
