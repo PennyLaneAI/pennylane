@@ -49,22 +49,23 @@ def register_primitive_for_expansion(primitive, plxpr_transform, tape_transform)
             def _plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
                 import jax
 
-                tape = qml.tape.plxpr_to_tape(jaxpr, consts, *args)
-                tapes, _ = tape_transform(tape, *targs, **tkwargs)
+                def wrapper(*inner_args):
 
-                def wrapper():
-                    for op in tapes[0].operations:
+                    tape = qml.tape.plxpr_to_tape(jaxpr, consts, *inner_args)
+                    [tape], _ = tape_transform(tape, *targs, **tkwargs)
+
+                    for op in tape.operations:
                         data, struct = jax.tree_util.tree_flatten(op)
                         jax.tree_util.tree_unflatten(struct, data)
 
                     out = []
-                    for mp in tapes[0].measurements:
+                    for mp in tape.measurements:
                         data, struct = jax.tree_util.tree_flatten(mp)
                         out.append(jax.tree_util.tree_unflatten(struct, data))
 
                     return tuple(out)
 
-                return jax.make_jaxpr(wrapper)()
+                return jax.make_jaxpr(wrapper)(*args)
 
         else:
             _plxpr_transform = plxpr_transform
