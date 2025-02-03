@@ -17,31 +17,11 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 # pylint:disable=
 
 import pennylane as qml
-from qualtran import Bloq, CompositeBloq, Soquet, LeftDangle, Register
+from qualtran import Bloq, CompositeBloq, Soquet, LeftDangle, Register, Side
 from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
-
-BLOQ_TO_OP_MAP = {
-    "XGate": qml.X,
-    "YGate": qml.Y,
-    "ZGate": qml.Z,
-    "Hadamard": qml.Hadamard,
-    "CNOT": qml.CNOT,
-    "CZ": qml.CZ,
-    "TwoBitSwap": qml.SWAP,
-    "Rx": qml.RX,
-    "Ry": qml.RY,
-    "Rz": qml.RZ,
-    "Identity": qml.I,
-    "TwoBitCSwap": qml.CSWAP,
-    "GlobalPhase": qml.GlobalPhase,
-    "Toffoli": qml.Toffoli,
-    "SGate": qml.S,
-    "TGate": qml.T,
-    "CYGate": qml.CY,
-    "CHadamard": qml.CH,
-}
+import numpy as np
 
 def get_named_registers(registers):
     """Returns a `qml.registers` object with the juices"""
@@ -51,6 +31,43 @@ def get_named_registers(registers):
         temp_register_dict[reg.name] = reg.bitsize
 
     return qml.registers(temp_register_dict)
+
+def bloq_to_op(bloq, wires):
+    BLOQ_TO_OP_MAP = {
+        "XGate": qml.PauliX,
+        "YGate": qml.PauliY,
+        "ZGate": qml.PauliZ,
+        "Hadamard": qml.Hadamard,
+        "CNOT": qml.CNOT,
+        "CZ": qml.CZ,
+        "TwoBitSwap": qml.SWAP,
+        "Rx": qml.RX,
+        "Ry": qml.RY,
+        "Rz": qml.RZ,
+        "Identity": qml.I,
+        "TwoBitCSwap": qml.CSWAP,
+        "GlobalPhase": qml.GlobalPhase,
+        "Toffoli": qml.Toffoli,
+        "SGate": qml.S,
+        "TGate": qml.T,
+        "CYGate": qml.CY,
+        "CHadamard": qml.CH,
+    }
+
+    total_wires = []
+    for ws in wires.values():
+        for w in list(ws.flatten()):
+            total_wires.append(w)
+
+    reg_wires = Wires(total_wires)
+    if type(bloq).__name__ in BLOQ_TO_OP_MAP:
+        pl_op = BLOQ_TO_OP_MAP[type(bloq).__name__]
+        params = []
+        if hasattr(bloq, "angle"):
+            params.append(bloq.angle)
+        
+        return pl_op(*params, wires=reg_wires)
+    return None
 
 
 class FromBloq(Operation):
@@ -68,25 +85,37 @@ class FromBloq(Operation):
         super().__init__(wires=wires, id=None)
 
     def compute_decomposition(self, wires, **kwargs):
-        b = self._hyperparameters["bloq"]
-        if type(b).__name__ in BLOQ_TO_OP_MAP:
-            pl_op = BLOQ_TO_OP_MAP[type(b).__name__]
-            params = []
-            if hasattr(b, "angle"):
-                params.append(b.angle)
-            
-            return [pl_op(*params, wires=wires)]
+        ops = []
+        bloq = self._hyperparameters["bloq"]
         
-        if isinstance(b, CompositeBloq):
-            temp_registers = get_named_registers(b.signature.lefts())
+        if isinstance(bloq, CompositeBloq):
+            temp_registers = get_named_registers(bloq.signature.lefts())
             qvar_to_qreg = {
-                Soquet(LeftDangle, reg.name, idx): temp_registers[reg.name]
-                for reg in b.signature.lefts()
+                Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])
+                for reg in bloq.signature.lefts()
                 for idx in reg.all_idxs()
             }
 
-            for binst, pred_cxns, succ_cxns, in b.flatten().iter_bloqnections():
+            for binst, pred_cxns, succ_cxns, in bloq.iter_bloqnections():
+                in_quregs = {
+                    reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object)
+                    for reg in binst.bloq.signature.lefts()
+                }
                 for pred in pred_cxns:
-                    qvar_to_qreg[pred.right] = Wires(qvar_to_qreg[pred.left])
+                    soq = pred.right
+                    #assert soq in qvar_to_qreg, f"{soq=} should exist in {qvar_to_qreg=}."
+                    qvar_to_qreg[soq] = qvar_to_qreg[pred.left]
+                    in_quregs[soq.reg.name][soq.idx] = qvar_to_qreg[soq]
+                    # if soq.reg.side == Side.LEFT:
+                    #     del qvar_to_qreg[soq]
+                op = bloq_to_op(binst.bloq, in_quregs)
+                if op:
+                    ops.append(op)
+                for succ in succ_cxns:
+                    if succ.left.reg.side == Side.RIGHT and len(succ.left.idx) > 0:
+                        qvar_to_qreg[succ.left] = qvar_to_qreg[pred.right][succ.left.idx[0]]
+        else:
+            op = bloq_to_op(bloq, wires)
+            ops.append(op)
 
-        return [qml.X(1)]
+        return ops
