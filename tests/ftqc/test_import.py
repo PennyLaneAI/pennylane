@@ -15,14 +15,17 @@
 
 import pytest
 
-from pennylane import ExperimentalWarning
+import pennylane as qml
 
 
 def test_import_warning():
     """Test importing the module raises an experimental module warning."""
 
     with pytest.warns(
-        ExperimentalWarning,
+        qml.ExperimentalWarning,
         match=r"This module is currently experimental",
-    ):
+    ) as record:
         import pennylane.ftqc
+
+    assert len(record) == 1
+    assert "This module is currently experimental" in record[0].message.args[0]
