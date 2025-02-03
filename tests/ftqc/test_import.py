@@ -25,6 +25,7 @@ def test_import_warning():
         qml.ExperimentalWarning,
         match=r"This module is currently experimental",
     ) as record:
+        # pylint: disable=import-outside-toplevel, unused-import
         import pennylane.ftqc
 
     assert len(record) == 1
