@@ -22,8 +22,8 @@
     (0, 2)        (1+0j)
   ```
 
-* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
-  autograph=True` at the QNode level. 
+* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting
+  `autograph=True` at the QNode level.
   [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
 
   ```python
@@ -40,6 +40,7 @@
               qml.RX(1,i)
       return qml.state()
   ```
+
   ```pycon
   >>> print(qml.draw(circuit)(num_loops=3))
   0: ──H────────┤  State
@@ -62,6 +63,7 @@
       qml.RX(x, 0)
       return qml.expval(qml.Z(0))
   ```
+
   ```pycon
   >>> config = qml.workflow.construct_execution_config(circuit)(1)
   >>> pprint.pprint(config)
@@ -90,6 +92,7 @@
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
   After constructing a `QNode`,
+
   ```python
   import pennylane as qml
 
@@ -99,8 +102,10 @@
     qml.CNOT([0,1])
     return qml.probs()
   ```
+
   its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
   of updating a QNode's `diff_method`:
+
   ```pycon
   >>> print(circuit.diff_method)
   best
@@ -108,9 +113,9 @@
   >>> print(new_circuit.diff_method)
   'parameter-shift'
   ```
-  
+
 * Devices can now configure whether or not ML framework data is sent to them
-  via an `ExecutionConfig.convert_to_numpy` parameter. This is not used on 
+  via an `ExecutionConfig.convert_to_numpy` parameter. This is not used on
   `default.qubit` due to compilation overheads when jitting.
   [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
   [(#6869)](https://github.com/PennyLaneAI/pennylane/pull/6869)
@@ -118,7 +123,7 @@
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
-* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed. 
+* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed.
    [(#6821)](https://github.com/PennyLaneAI/pennylane/pull/6821)
 
 * An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
@@ -146,21 +151,21 @@
 * `qml.execute` now has a collection of keyword-only arguments.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
-* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed.
   [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
 
-* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed.
   [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
 
-* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed.
   Instead, use the ``qml.workflow.construct_tape`` function.
   [(#6825)](https://github.com/PennyLaneAI/pennylane/pull/6825)
 
 * The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
   [(#6830)](https://github.com/PennyLaneAI/pennylane/pull/6830)
   
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed.
+  Instead, use the ``qml.workflow.get_best_diff_method`` function.
   [(#6823)](https://github.com/PennyLaneAI/pennylane/pull/6823)
 
 * The `output_dim` property of `qml.tape.QuantumScript` has been removed. Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the same information.
@@ -171,7 +176,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `mcm_method` keyword in `qml.execute` has been deprecated. 
+* The `mcm_method` keyword in `qml.execute` has been deprecated.
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
 
@@ -216,8 +221,8 @@
 
 <h3>Documentation 📝</h3>
 
-* The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`, 
-  `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better 
+* The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`,
+  `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better
   code examples.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
 
