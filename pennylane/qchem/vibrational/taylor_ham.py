@@ -274,20 +274,21 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 
 
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
-    r"""Compute fitted coefficients for Taylor vibrational Hamiltonian.
+    r"""Compute coefficients of Taylor vibrational Hamiltonian.
 
-    The coefficients are defined following Eq. 5 of `arXiv:1703.09313
+    The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^(n)` and
+    normal coordinates :math:`q` following Eq. 5 of `arXiv:1703.09313
     <https://arxiv.org/abs/1703.09313>`_ as:
 
     .. math::
 
-        \Phi_{ijk} = \frac{k_{ijk}}{\sqrt{\omega_i \omega_j \omega_k}}
-        \quad \text{and} \quad
-        \Phi_{ijkl} = \frac{k_{ijkl}}{\sqrt{\omega_i \omega_j \omega_k \omega_l}},
+        H = H_{kinetic} + \sum_{i\geq j} \Phi_{ij}^{(2)}  q_i  q_j + \sum_{i\geq j\geq k}
+        \Phi_{ijk}^{(3)}  q_i  q_j  q_k + \sum_{i\geq j\geq k\geq l} \Phi_{ijkl}^{(4)}
+        q_i  q_j  q_k  q_l  + \cdots,
 
-    where :math:`\Phi_{ijk}` and :math:`\Phi_{ijkl}` are the third- and fourth-order reduced force
-    constants, respectively, defined in terms of the third- and fourth-order partial derivatives
-    of the potential energy surface data.
+    where :math:`H_{kinetic}` is the Kinetic component of the Hamiltonian. The coefficients
+    :math:`\Phi^n` are tensors of rank :math:`n`. These coefficients are typically computed from
+    potential energy surface data.
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data

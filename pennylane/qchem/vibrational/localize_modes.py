@@ -177,16 +177,19 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     """
     Compute spatially localized vibrational normal modes.
 
-    The normal modes are localized by separating frequencies into specified ranges following the
-    procedure described in `J. Chem. Phys. 141, 104105 (2014)
+    The normal modes are localized following the procedure described in
+    `J. Chem. Phys. 141, 104105 (2014)
     <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/
-    Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
+    Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_. The normal modes
+    can be separately localized, to prevent mixing between specific groups of normal modes, by
+    defining frequency ranges in ``bins``. For instance, ``bins = [2600]`` allows to separately
+    localize modes that have frequencies above and below 2600 reciprocal centimetre.
 
     Args:
-        freqs (list[float]): normal mode frequencies in reciprocal centimetre
+        freqs (List[float]): normal mode frequencies in reciprocal centimetre
         vecs (TensorLike[float]): displacement vectors of the normal modes
-        bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
-            Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
+        bins (List[float]): grid of frequencies for grouping normal modes.
+            Default is ``None`` which means localizing all modes together.
 
     Returns:
         tuple: A tuple containing the following:
