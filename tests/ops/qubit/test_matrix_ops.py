@@ -20,12 +20,39 @@ from functools import reduce
 import numpy as np
 import pytest
 from gate_data import H, I, S, T, X, Z
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
 from pennylane.wires import Wires
+
+
+class TestQubitUnitaryCSR:
+    """Tests for using csr_matrix in QubitUnitary."""
+
+    def test_csr_matrix_init_success(self):
+        """Test that a valid 2-wire csr_matrix can be instantiated."""
+        # 4x4 Identity as a csr_matrix
+        dense = np.eye(4)
+        sparse = csr_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        assert qml.math.allclose(op.matrix().toarray(), dense)
+
+    def test_csr_matrix_shape_mismatch(self):
+        """Test that shape mismatch with csr_matrix raises an error."""
+        dense = np.eye(2)  # Only 2x2
+        sparse = csr_matrix(dense)
+        with pytest.raises(ValueError, match="Input unitary must be of shape"):
+            qml.QubitUnitary(sparse, wires=[0, 1])
+
+    def test_csr_matrix_unitary_check_fail(self):
+        """Test that unitary_check warns if the matrix may not be unitary."""
+        dense = np.array([[1, 0], [0, 0.5]])  # Not a unitary
+        sparse = csr_matrix(dense)
+        with pytest.warns(UserWarning, match="may not be unitary"):
+            qml.QubitUnitary(sparse, wires=0, unitary_check=True)
 
 
 class TestQubitUnitary:
