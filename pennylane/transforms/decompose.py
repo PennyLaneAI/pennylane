@@ -245,7 +245,7 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
             return self.gate_set(op)
 
         def eval_dynamic_decomposition(
-            self, jaxpr_decomp: "jax.core.Jaxpr", *args, current_depth: int = 0
+            self, jaxpr_decomp: "jax.core.Jaxpr", consts, *args, current_depth: int = 0
         ):
             """
             Evaluate a dynamic decomposition of a Jaxpr.
@@ -259,6 +259,9 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
 
             for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
                 self._env[invar] = arg
+
+            for const, constvar in zip(consts, jaxpr_decomp.constvars, strict=True):
+                self._env[constvar] = const
 
             for inner_eqn in jaxpr_decomp.eqns:
 

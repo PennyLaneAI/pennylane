@@ -1359,7 +1359,7 @@ class TestIntegrationMultipleReturns:
 
         assert isinstance(res, tuple)
 
-        if comp_basis_sampling.return_type == qml.measurements.Sample:
+        if isinstance(comp_basis_sampling, qml.measurements.SampleMP):
             assert res[0].shape == (shot_num, num_wires)
         else:
             assert isinstance(res[0], dict)

@@ -225,6 +225,7 @@ import copy
 import warnings
 from collections.abc import Hashable, Iterable
 from enum import IntEnum
+from functools import partial
 from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
@@ -1321,6 +1322,30 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self.compute_decomposition(
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
+
+    @classproperty
+    def _has_plxpr_decomposition(cls) -> bool:
+        """Whether or not the Operator returns a defined plxpr decomposition."""
+
+        return (
+            cls._compute_plxpr_decomposition != Operator._compute_plxpr_decomposition
+            or cls._plxpr_decomposition != Operator._plxpr_decomposition
+        )
+
+    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
+        """Representation of the operator as a plxpr decomposition."""
+
+        args = (*self.parameters, *self.wires)
+        jaxpr_decomp = qml.capture.make_plxpr(
+            partial(self._compute_plxpr_decomposition, **self.hyperparameters)
+        )(*args)
+
+        return jaxpr_decomp
+
+    @staticmethod
+    def _compute_plxpr_decomposition(*args, **hyperparameters):
+        """Experimental method to compute the plxpr decomposition of the operator."""
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_decomposition(
