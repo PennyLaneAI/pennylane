@@ -19,7 +19,7 @@
   <Compressed Sparse Row sparse matrix of dtype 'float64'
          with 1 stored elements and shape (1, 8)>
     Coords        Values
-    (0, 2)        (1+0j)
+    (0, 2)        1.0
   ```
 
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting
