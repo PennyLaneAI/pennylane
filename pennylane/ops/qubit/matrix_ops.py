@@ -27,10 +27,8 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.math import (cast, conj, eye, norm, sqrt, sqrt_matrix,
-                            transpose, zeros)
-from pennylane.operation import (AnyWires, DecompositionUndefinedError,
-                                 FlatPytree, Operation)
+from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
+from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -139,7 +137,7 @@ class QubitUnitary(Operation):
         if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):
             raise ValueError(
                 f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
-                f"to act on {len(wires)} wires."
+                f"to act on {len(wires)} wires. Got shape {U_shape} instead."
             )
 
         # Check for unitarity; due to variable precision across the different ML frameworks,
