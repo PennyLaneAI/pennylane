@@ -201,7 +201,7 @@ class StatePrep(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        state (array[complex] or csr_matrix: the state vector to prepare
+        state (array[complex] or csr_matrix): the state vector to prepare
         wires (Sequence[int] or int): the wire(s) the operation acts on
         pad_with (float or complex): if not ``None``, ``state`` is padded with this constant to be of size :math:`2^n`, where
             :math:`n` is the number of wires.
@@ -295,13 +295,15 @@ class StatePrep(StatePrepBase):
                     with 1 stored elements and shape (1, 8)>
               Coords        Values
               (0, 2)        1.0
-            >>> print(ket.toarray().flatten())  # Dense representation: [0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+            >>> print(ket.toarray().flatten())  # Dense representation
+            [0. 0. 1. 0. 0. 0. 0. 0.]
 
             # Normalization also works with sparse inputs:
             >>> init_state_sparse = sp.sparse.csr_matrix([1, 1, 1, 1]) # Unnormalized
             >>> qsv_op_norm = qml.StatePrep(init_state_sparse, wires=range(2), normalize=True)
             >>> ket_norm = qsv_op_norm.state_vector()
-            >>> print(ket_norm.toarray().flatten()) # Normalized dense representation, [0.5 0.5 0.5 0.5]
+            >>> print(ket_norm.toarray().flatten()) # Normalized dense representation
+            [0.5 0.5 0.5 0.5]
 
 
     """
