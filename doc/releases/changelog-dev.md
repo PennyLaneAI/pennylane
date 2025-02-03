@@ -16,7 +16,7 @@
   >>> wire_order = [0, 1, 2]
   >>> ket = qsv_op.state_vector(wire_order=wire_order)
   >>> print(ket)
-  <Compressed Sparse Row sparse matrix of dtype 'float128'
+  <Compressed Sparse Row sparse matrix of dtype 'complex128'
          with 1 stored elements and shape (1, 8)>
     Coords        Values
     (0, 2)        (1+0j)
