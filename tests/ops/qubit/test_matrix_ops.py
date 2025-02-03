@@ -360,7 +360,7 @@ class TestQubitUnitary:
         U = qml.PauliX.compute_matrix()
         base = qml.QubitUnitary(U, wires=0)
 
-        expected = qml.ControlledQubitUnitary(U, control_wires="a", wires=0)
+        expected = qml.ControlledQubitUnitary(U, wires=["a", 0])
 
         out = base._controlled("a")
         qml.assert_equal(out, expected)
@@ -735,7 +735,7 @@ class TestDiagonalQubitUnitary:
 labels = [X, X, [1, 1]]
 ops = [
     qml.QubitUnitary(X, wires=0),
-    qml.ControlledQubitUnitary(X, control_wires=0, wires=1),
+    qml.ControlledQubitUnitary(X, wires=[0, 1]),
     qml.DiagonalQubitUnitary([1, 1], wires=0),
 ]
 
@@ -1179,7 +1179,7 @@ class TestInterfaceMatricesLabel:
 control_data = [
     (qml.QubitUnitary(X, wires=0), Wires([])),
     (qml.DiagonalQubitUnitary([1, 1], wires=1), Wires([])),
-    (qml.ControlledQubitUnitary(X, control_wires=0, wires=1), Wires([0])),
+    (qml.ControlledQubitUnitary(X, wires=[0, 1]), Wires([0])),
 ]
 
 

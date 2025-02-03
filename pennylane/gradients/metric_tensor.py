@@ -73,7 +73,9 @@ def _expand_metric_tensor(
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:  # pylint: disable=too-many-arguments
+) -> tuple[
+    QuantumScriptBatch, PostprocessingFn
+]:  # pylint: disable=too-many-arguments, too-many-positional-arguments
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
 
@@ -88,7 +90,7 @@ def _expand_metric_tensor(
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-def metric_tensor(  # pylint:disable=too-many-arguments
+def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arguments
     tape: QuantumScript,
     argnum=None,
     approx=None,
@@ -561,7 +563,8 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
     except KeyError as e:
         if allow_nonunitary:
             mat = qml.matrix(qml.generator(op)[0])
-            return qml.ControlledQubitUnitary(mat, control_wires=aux_wire, wires=op.wires)
+            wires = [aux_wire, *op.wires]
+            return qml.ControlledQubitUnitary(mat, wires=wires)
 
         raise ValueError(
             f"Generator for operation {op} not known and non-unitary operations "
