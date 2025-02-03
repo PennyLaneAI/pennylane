@@ -291,6 +291,10 @@ class StatePrep(StatePrepBase):
             >>> wire_order = [0, 1, 2]
             >>> ket = qsv_op.state_vector(wire_order=wire_order)
             >>> print(ket)  # Sparse representation
+            <Compressed Sparse Row sparse matrix of dtype 'float64'
+                    with 1 stored elements and shape (1, 8)>
+              Coords        Values
+              (0, 2)        1.0
             >>> print(ket.toarray().flatten())  # Dense representation: [0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
 
             # Normalization also works with sparse inputs:
