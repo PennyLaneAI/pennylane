@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
+  is greater than `0.4.28`.
+  [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
+
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
   autograph=True` at the QNode level. 
   [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
