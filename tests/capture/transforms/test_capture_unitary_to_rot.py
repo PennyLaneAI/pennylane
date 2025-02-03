@@ -66,10 +66,12 @@ class TestUnitaryToRotInterpreter:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(U)
+
         # C
         assert jaxpr.eqns[-20].primitive == qml.RZ._primitive
         assert jaxpr.eqns[-19].primitive == qml.RY._primitive
         assert jaxpr.eqns[-18].primitive == qml.RZ._primitive
+
         # D
         assert jaxpr.eqns[-17].primitive == qml.RZ._primitive
         assert jaxpr.eqns[-16].primitive == qml.RY._primitive
@@ -81,11 +83,13 @@ class TestUnitaryToRotInterpreter:
         # RZ RY
         assert jaxpr.eqns[-13].primitive == qml.RZ._primitive
         assert jaxpr.eqns[-12].primitive == qml.RY._primitive
+
         # CNOT 2
         assert jaxpr.eqns[-11].primitive == qml.CNOT._primitive
 
         # RY
         assert jaxpr.eqns[-10].primitive == qml.RY._primitive
+
         # CNOT 3
         assert jaxpr.eqns[-9].primitive == qml.CNOT._primitive
 
@@ -153,10 +157,12 @@ class TestQNodeIntegration:
         jaxpr = jax.make_jaxpr(f)(U)
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
         # C
         assert qfunc_jaxpr.eqns[-20].primitive == qml.RZ._primitive
         assert qfunc_jaxpr.eqns[-19].primitive == qml.RY._primitive
         assert qfunc_jaxpr.eqns[-18].primitive == qml.RZ._primitive
+
         # D
         assert qfunc_jaxpr.eqns[-17].primitive == qml.RZ._primitive
         assert qfunc_jaxpr.eqns[-16].primitive == qml.RY._primitive
@@ -168,11 +174,13 @@ class TestQNodeIntegration:
         # RZ RY
         assert qfunc_jaxpr.eqns[-13].primitive == qml.RZ._primitive
         assert qfunc_jaxpr.eqns[-12].primitive == qml.RY._primitive
+
         # CNOT 2
         assert qfunc_jaxpr.eqns[-11].primitive == qml.CNOT._primitive
 
         # RY
         assert qfunc_jaxpr.eqns[-10].primitive == qml.RY._primitive
+
         # CNOT 3
         assert qfunc_jaxpr.eqns[-9].primitive == qml.CNOT._primitive
 
@@ -205,12 +213,11 @@ def test_unitary_to_rot_plxpr_to_plxpr():
 
     assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
 
-    NUM_OF_DECOMP_EQNS = 39
-    assert transformed_jaxpr.eqns[NUM_OF_DECOMP_EQNS + 1].primitive == qml.RZ._primitive
-    assert transformed_jaxpr.eqns[NUM_OF_DECOMP_EQNS + 2].primitive == qml.RY._primitive
-    assert transformed_jaxpr.eqns[NUM_OF_DECOMP_EQNS + 3].primitive == qml.RZ._primitive
-    assert transformed_jaxpr.eqns[NUM_OF_DECOMP_EQNS + 4].primitive == qml.PauliZ._primitive
-    assert (
-        transformed_jaxpr.eqns[NUM_OF_DECOMP_EQNS + 5].primitive
-        == qml.measurements.ExpectationMP._obs_primitive
-    )
+    # Qubit unitary decomposition
+    assert transformed_jaxpr.eqns[-5].primitive == qml.RZ._primitive
+    assert transformed_jaxpr.eqns[-4].primitive == qml.RY._primitive
+    assert transformed_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+
+    # Measurement
+    assert transformed_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+    assert transformed_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
