@@ -280,7 +280,7 @@ class MPSPrep(Operation):
             new_columns = qml.math.array(rng.random((d, d - k)))
 
             matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
-            matrix *= qml.math.sign(qml.math.diag(R))
+            matrix *= qml.math.sign(qml.math.diag(R)) # enforces uniqueness for QR decomposition
 
             ops.append(qml.QubitUnitary(matrix, wires=[wires[i]] + work_wires))
 
