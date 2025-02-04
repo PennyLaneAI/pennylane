@@ -77,7 +77,7 @@ def _get_abstract_operator() -> type:
         def _pow(a, b):
             return qml.pow(a, b)
 
-    jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
+    # jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
 
     return AbstractOperator
 
