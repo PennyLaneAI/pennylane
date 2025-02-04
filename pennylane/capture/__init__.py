@@ -178,7 +178,7 @@ from .dynamic_shapes import determine_abstracted_axes
 # on use of from capture import AbstractOperator
 AbstractOperator: type
 AbstractMeasurement: type
-qnode_prim: "jax.core.Primitive"
+qnode_prim: "jax.extend.core.Primitive"
 PlxprInterpreter: type  # pylint: disable=redefined-outer-name
 expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
 

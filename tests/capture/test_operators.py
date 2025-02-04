@@ -204,7 +204,7 @@ def test_parametrized_op_jvp_tracer():
     assert len(q) == 1
     op = q.queue[0]
     assert isinstance(op, qml.RX)
-    assert isinstance(op.data[0], jax._src.interpreters.ad.JVPTracer)
+    assert isinstance(op.data[0], jax.interpreters.ad.JVPTracer)
 
 
 class TestSpecialOps:

@@ -239,7 +239,7 @@ def _create_mid_measure_primitive():
     Called when using :func:`~pennylane.measure`.
 
     Returns:
-        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        jax.extend.core.Primitive: A new jax primitive corresponding to a mid-circuit
         measurement.
 
     """

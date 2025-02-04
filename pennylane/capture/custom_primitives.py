@@ -31,7 +31,7 @@ class PrimitiveType(Enum):
 
 
 # pylint: disable=too-few-public-methods,abstract-method
-class QmlPrimitive(jax.core.Primitive):
+class QmlPrimitive(jax.extend.core.Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives."""
 

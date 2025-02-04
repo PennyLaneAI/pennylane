@@ -231,7 +231,7 @@
 * Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
   [(#6877)](https://github.com/PennyLaneAI/pennylane/pull/6877)
 
-* Added a `QmlPrimitive` class that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` module.
+* Added a `QmlPrimitive` class that inherits `jax.extend.core.Primitive` to a new `qml.capture.custom_primitives` module.
   This class contains a `prim_type` property so that we can differentiate between different sets of PennyLane primitives.
   Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
   [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)

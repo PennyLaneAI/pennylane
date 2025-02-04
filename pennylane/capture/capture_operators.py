@@ -84,7 +84,7 @@ def _get_abstract_operator() -> type:
 
 def create_operator_primitive(
     operator_type: Type["qml.operation.Operator"],
-) -> Optional["jax.core.Primitive"]:
+) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
     Called when defining any :class:`~.Operator` subclass, and is used to set the
@@ -94,7 +94,7 @@ def create_operator_primitive(
         operator_type (type): a subclass of qml.operation.Operator
 
     Returns:
-        Optional[jax.core.Primitive]: A new jax primitive with the same name as the operator subclass.
+        Optional[jax.extend.core.Primitive]: A new jax primitive with the same name as the operator subclass.
         ``None`` is returned if jax is not available.
 
     """

@@ -674,9 +674,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
-    _primitive: Optional["jax.core.Primitive"] = None
+    _primitive: Optional["jax.extend.core.Primitive"] = None
     """
-    Optional[jax.core.Primitive]
+    Optional[jax.extend.core.Primitive]
     """
 
     def __init_subclass__(cls, **_):

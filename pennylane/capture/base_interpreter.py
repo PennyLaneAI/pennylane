@@ -35,7 +35,7 @@ from .primitives import (
     while_loop_prim,
 )
 
-FlattenedHigherOrderPrimitives: dict["jax.core.Primitive", Callable] = {}
+FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
 """
 A dictionary containing flattened style cond, while, and for loop higher order primitives.
 .. code-block::
@@ -217,7 +217,7 @@ class PlxprInterpreter:
     """
 
     _env: dict
-    _primitive_registrations: dict["jax.core.Primitive", Callable] = {}
+    _primitive_registrations: dict["jax.extend.core.Primitive", Callable] = {}
 
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
@@ -226,11 +226,13 @@ class PlxprInterpreter:
         self._env = {}
 
     @classmethod
-    def register_primitive(cls, primitive: "jax.core.Primitive") -> Callable[[Callable], Callable]:
+    def register_primitive(
+        cls, primitive: "jax.extend.core.Primitive"
+    ) -> Callable[[Callable], Callable]:
         """Registers a custom method for handling a primitive
 
         Args:
-            primitive (jax.core.Primitive): the primitive we want custom behavior for
+            primitive (jax.extend.core.Primitive): the primitive we want custom behavior for
 
         Returns:
             Callable: a decorator for adding a function to the custom registrations map
@@ -241,7 +243,7 @@ class PlxprInterpreter:
 
         .. code-block:: python
 
-            my_primitive = jax.core.Primitive("my_primitve")
+            my_primitive = jax.extend.core.Primitive("my_primitve")
 
             @Interpreter_Type.register(my_primitive)
             def handle_my_primitive(self: Interpreter_Type, *invals, **params)

@@ -41,7 +41,7 @@ class CaptureMeta(type):
 
         class MyObj(metaclass=qml.capture.CaptureMeta):
 
-            primitive = jax.core.Primitive("MyObj")
+            primitive = jax.extend.core.Primitive("MyObj")
 
             @classmethod
             def _primitive_bind_call(cls, a):
