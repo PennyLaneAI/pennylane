@@ -21,7 +21,7 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import qnode_prim
+from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
 from pennylane.transforms.unitary_to_rot import (
     UnitaryToRotInterpreter,
     unitary_to_rot_plxpr_to_plxpr,
@@ -288,3 +288,128 @@ class TestUnitaryToRotPlxprTransform:
         # Measurement
         assert transformed_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+class TestHigherOrderPrimitiveIntegration:
+    """Test that the transform works with higher order primitives."""
+
+    def test_for_loop_higher_order_primitive(self):
+        """Test that the for_loop primitive is correctly interpreted"""
+
+        @UnitaryToRotInterpreter()
+        def f(U, n):
+            @qml.for_loop(n)
+            def g(i):
+                qml.QubitUnitary(U, i)
+
+            g()
+
+            return qml.expval(qml.Z(0))
+
+        U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
+        args = (U, 3)
+        jaxpr = jax.make_jaxpr(f)(*args)
+
+        # Measurement
+        assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        # For loop jaxpr
+        assert jaxpr.eqns[0].primitive == for_loop_prim
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert inner_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[-2].primitive == qml.RY._primitive
+        assert inner_jaxpr.eqns[-1].primitive == qml.RZ._primitive
+
+    def test_while_loop_higher_order_primitive(self):
+        """Test that the while_loop primitive is correctly interpreted"""
+
+        @UnitaryToRotInterpreter()
+        def f(U, n):
+            @qml.while_loop(lambda i: i < n)
+            def g(i):
+                qml.QubitUnitary(U, i)
+                return i + 1
+
+            g(0)
+            return qml.expval(qml.Z(0))
+
+        U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
+        args = (U, 3)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[0].primitive == while_loop_prim
+        # Measurement
+        assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        # While loop jaxpr
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        # Last primitive is the i+1 in the while loop
+        assert inner_jaxpr.eqns[-4].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[-3].primitive == qml.RY._primitive
+        assert inner_jaxpr.eqns[-2].primitive == qml.RZ._primitive
+
+    def test_cond_higher_order_primitive(self):
+        """Test that the cond primitive is correctly interpreted"""
+
+        @UnitaryToRotInterpreter()
+        def f(U, n):
+            @qml.cond(n > 0)
+            def cond_f():
+                qml.QubitUnitary(U, 0)
+                return qml.expval(qml.Z(0))
+
+            @cond_f.else_if(n > 1)
+            def _():
+                qml.QubitUnitary(U, 1)
+                return qml.expval(qml.Y(0))
+
+            @cond_f.otherwise
+            def _():
+                qml.QubitUnitary(U, 2)
+                return qml.expval(qml.X(0))
+
+            out = cond_f()
+            return out
+
+        U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
+        args = (U, 3)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        # First 2 primitives are the conditions for the true and elif branches
+        assert jaxpr.eqns[2].primitive == cond_prim
+
+        # True branch
+        branch_jaxpr = jaxpr.eqns[2].params["jaxpr_branches"][0]
+        # Qubit unitary decomposition
+        assert branch_jaxpr.eqns[-5].primitive == qml.RZ._primitive
+        assert branch_jaxpr.eqns[-4].primitive == qml.RY._primitive
+        assert branch_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+        # Make sure its on wire=0
+        assert qml.math.allclose(branch_jaxpr.eqns[-3].invars[1], 0)
+        # Measurement
+        assert branch_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        # Elif branch
+        branch_jaxpr = jaxpr.eqns[2].params["jaxpr_branches"][1]
+        # Qubit unitary decomposition
+        assert branch_jaxpr.eqns[-5].primitive == qml.RZ._primitive
+        assert branch_jaxpr.eqns[-4].primitive == qml.RY._primitive
+        assert branch_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+        # Make sure its on wire=1
+        assert qml.math.allclose(branch_jaxpr.eqns[-3].invars[1], 1)
+        # Measurement
+        assert branch_jaxpr.eqns[-2].primitive == qml.PauliY._primitive
+        assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        # Else branch
+        branch_jaxpr = jaxpr.eqns[2].params["jaxpr_branches"][2]
+        # Qubit unitary decomposition
+        assert branch_jaxpr.eqns[-5].primitive == qml.RZ._primitive
+        assert branch_jaxpr.eqns[-4].primitive == qml.RY._primitive
+        assert branch_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+        # Make sure its on wire=2
+        assert qml.math.allclose(branch_jaxpr.eqns[-3].invars[1], 2)
+        # Measurement
+        assert branch_jaxpr.eqns[-2].primitive == qml.PauliX._primitive
+        assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
