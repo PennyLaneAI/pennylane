@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Compute the jvp of a jaxpr using the jacobian jacobian method.
+Compute the jvp of a jaxpr using the adjoint Jacobian method.
 """
 import jax
 from jax import numpy as jnp
@@ -82,12 +82,12 @@ def _other_prim_forward_pass(eqn: jax.core.JaxprEqn, env: dict) -> None:
     if not eqn.primitive.multiple_results:
         outvals = [outvals]
         doutvals = [doutvals]
-    for var, v, dv in zip(eqn.outvars, outvals, doutvals):
+    for var, v, dv in zip(eqn.outvars, outvals, doutvals, strict=True):
         env[var] = (v, dv)
 
 
 def _forward_pass(jaxpr: jax.core.Jaxpr, env: dict, num_wires: int):
-    """Calculate the forward pass off an adjoint jvp calculation."""
+    """Calculate the forward pass of an adjoint jvp calculation."""
     bras = []
     ket = create_initial_state(range(num_wires))
 
@@ -142,13 +142,13 @@ def _backward_pass(jaxpr, bras, ket, results, env):
 
 
 def execute_and_jvp(jaxpr: jax.core.Jaxpr, args: tuple, tangents: tuple, num_wires: int):
-    """Execute and calculate the jvp for a jaxpr.
+    """Execute and calculate the jvp for a jaxpr using the adjoint method.
 
     Args:
         jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
         args : an iterable of tensorlikes.  Should include the consts followed by the inputs
-        tangents: an interable of tensorlikes and ``jax.interpreter.ad.Zero`` objects.  Should
-            still include the consts followed by the inputs
+        tangents: an iterable of tensorlikes and ``jax.interpreter.ad.Zero`` objects.  Should
+            include the consts followed by the inputs.
         num_wires (int): the number of wires to use.
 
     Note that the consts for the jaxpr should be included in the beginning of both the ``args``
