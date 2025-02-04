@@ -32,12 +32,16 @@ from pennylane.wires import Wires
 class TestQubitUnitaryCSR:
     """Tests for using csr_matrix in QubitUnitary."""
 
-    def test_csr_matrix_init_success(self):
-        """Test that a valid 2-wire csr_matrix can be instantiated."""
+    @pytest.mark.parametrize(
+        "dense",
+        [H, I, S, T, X, Z],
+    )
+    def test_csr_matrix_init_success(self, dense):
+        """Test that a valid 2-wire csr_matrix can be instantiated, covering necessary single-qubit gates."""
         # 4x4 Identity as a csr_matrix
-        dense = np.eye(4)
         sparse = csr_matrix(dense)
-        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        op = qml.QubitUnitary(sparse, wires=[0])
+        assert isinstance(op.matrix(), csr_matrix)  # Should still be sparse
         assert qml.math.allclose(op.matrix().toarray(), dense)
 
     def test_csr_matrix_shape_mismatch(self):
