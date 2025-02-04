@@ -25,6 +25,8 @@ from typing import Optional
 import pennylane as qml
 from pennylane.transforms.core import transform
 
+from pennylane.capture.autograph.transformer import run_autograph
+
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
@@ -187,7 +189,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                         return super().interpret_operation_eqn(eqn)
 
                     args = (*op.parameters, *op.wires)
-                    return_ops_decomposition = op.compute_decomposition(*args, **op.hyperparameters)
+                    return_ops_decomposition = run_autograph(op.compute_decomposition)(
+                        *args, **op.hyperparameters
+                    )
 
                     if return_ops_decomposition is not None:
                         for sub_op in return_ops_decomposition:
