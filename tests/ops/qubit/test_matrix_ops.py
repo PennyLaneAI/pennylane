@@ -110,7 +110,8 @@ class TestQubitUnitaryCSR:
         data = [1.0]
 
         sparse_large = csr_matrix((data, (row_indices, col_indices)), shape=(dim, dim))
-        op = qml.QubitUnitary(sparse_large, wires=range(N))
+        with pytest.warns(UserWarning, match="may not be unitary"):
+            op = qml.QubitUnitary(sparse_large, wires=range(N), unitary_check=True)
         adj_op = op.adjoint()
 
         assert isinstance(adj_op, qml.QubitUnitary)
@@ -119,6 +120,22 @@ class TestQubitUnitaryCSR:
         # The single element should remain 1 at [12345,12345] after conjugate transpose
         final_mat = adj_op.matrix()
         assert final_mat[12345, 12345] == 1.0
+
+    def test_csr_matrix_decomposition(self):
+        """Test that QubitUnitary.decomposition() works with csr_matrix."""
+        # 4x4 Identity as a csr_matrix
+        dense = np.eye(4)
+        sparse = csr_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        decomp = op.decomposition()
+        assert len(decomp) == 6
+
+        # 2x2 Identity as a csr_matrix
+        dense = np.eye(2)
+        sparse = csr_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0])
+        decomp = op.decomposition()
+        assert len(decomp) == 3
 
 
 class TestQubitUnitary:
