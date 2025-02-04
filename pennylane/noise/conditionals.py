@@ -518,8 +518,8 @@ class MeasEq(qml.BooleanFn):
 
 
 def meas_eq(mps):
-    """Builds a conditional as a :class:`~.BooleanFn` for evaluating
-    if a given measurement process is equal to the specified measurement process.
+    """Builds a conditional as a :class:`~.BooleanFn` for evaluating if a given
+    measurement process is of the same type as the specified measurement process.
 
     Args:
         mps (MeasurementProcess, Callable): An instance(s) of any class that inherits from

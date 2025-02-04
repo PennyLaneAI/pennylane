@@ -253,6 +253,9 @@
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
+* The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Bug fixes 🐛</h3>
 
 * The interface is now detected from the data in the circuit, not the arguments to the `QNode`. This allows
