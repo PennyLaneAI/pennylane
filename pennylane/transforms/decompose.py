@@ -82,8 +82,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         when program capture is enabled.
         """
 
-        def __init__(self, gate_set=None, max_expansion=None):
+        def __init__(self, gate_set=None, max_expansion=None, dynamic_decomposition=False):
             self.max_expansion = max_expansion
+            self.dynamic_decomposition = dynamic_decomposition
 
             if gate_set is None:
                 gate_set = set(qml.ops.__all__)
@@ -173,18 +174,24 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
             if isinstance(eqn.outvars[0], jax.core.DropVar):
 
-                if self.gate_set(op):
-                    return self.interpret_operation(op)
+                if not self.dynamic_decomposition:
 
-                if self.max_expansion is not None and current_depth >= self.max_expansion:
-                    return super().interpret_operation_eqn(eqn)
+                    return self.decompose_operation(op, current_depth=current_depth)
 
-                args = (*op.parameters, *op.wires)
-                return_ops_decomposition = op.compute_decomposition(*args, **op.hyperparameters)
+                else:
 
-                if return_ops_decomposition is not None:
-                    for sub_op in return_ops_decomposition:
-                        self.interpret_operation(sub_op)
+                    if self.gate_set(op):
+                        return self.interpret_operation(op)
+
+                    if self.max_expansion is not None and current_depth >= self.max_expansion:
+                        return super().interpret_operation_eqn(eqn)
+
+                    args = (*op.parameters, *op.wires)
+                    return_ops_decomposition = op.compute_decomposition(*args, **op.hyperparameters)
+
+                    if return_ops_decomposition is not None:
+                        for sub_op in return_ops_decomposition:
+                            self.interpret_operation(sub_op)
 
             return op
 
