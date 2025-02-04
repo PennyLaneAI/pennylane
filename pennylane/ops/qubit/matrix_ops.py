@@ -88,7 +88,7 @@ class QubitUnitary(Operation):
     * Gradient recipe: None
 
     Args:
-        U (array[complex]): square unitary matrix
+        U (array[complex] or csr_matrix): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
