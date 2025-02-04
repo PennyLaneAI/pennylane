@@ -19,4 +19,4 @@ Experimental FTQC functionality
 
 """
 
-from .parametric_midmeasure import ParametricMidMeasureMP, diagonalize_mcms, measure_xy
+from .parametric_midmeasure import ParametricMidMeasureMP, diagonalize_mcms, measure_xy, DiagonalizeMCMInterpreter, diagonalize_mcms_plxpr_to_plxpr

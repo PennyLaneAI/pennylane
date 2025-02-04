@@ -16,8 +16,8 @@
 parameterized measurement axis."""
 
 import uuid
-from typing import Hashable, Optional, Union
 from functools import lru_cache, partial
+from typing import Hashable, Optional, Union
 
 import numpy as np
 
@@ -32,9 +32,9 @@ def measure_xy(
     """measure in the XY plane"""
     if qml.capture.enabled():
         primitive = _create_parametric_mid_measure_primitive()
-        return primitive.bind(angle, wires, reset=reset, postselect=postselect, plane="XY")
+        return primitive.bind(wires, angle=angle, plane="XY", reset=reset, postselect=postselect)
 
-    return _measure_impl(angle, wires, reset=reset, postselect=postselect, plane="XY")
+    return _measure_impl(wires, angle=angle, plane="XY", reset=reset, postselect=postselect)
 
 
 @lru_cache
@@ -53,10 +53,10 @@ def _create_parametric_mid_measure_primitive():
 
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
-    mid_measure_p = NonInterpPrimitive("measure")
+    mid_measure_p = NonInterpPrimitive("parametrized_measure")
 
     @mid_measure_p.def_impl
-    def _(angle, wires, reset=False, postselect=None, plane="XY"):
+    def _(wires, angle=None, plane=None, reset=False, postselect=None):
         return _measure_impl(angle, wires, reset=reset, postselect=postselect, plane=plane)
 
     @mid_measure_p.def_abstract_eval
@@ -65,6 +65,9 @@ def _create_parametric_mid_measure_primitive():
         return jax.core.ShapedArray((), dtype)
 
     return mid_measure_p
+
+
+parametric_measure_prim = _create_parametric_mid_measure_primitive()
 
 
 def _measure_impl(
@@ -86,10 +89,10 @@ def _measure_impl(
     mp = ParametricMidMeasureMP(
         wires=wires,
         angle=angle,
+        plane=plane,
         reset=reset,
         postselect=postselect,
         id=measurement_id,
-        plane=plane,
     )
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
@@ -143,9 +146,19 @@ class ParametricMidMeasureMP(MidMeasureMP):
         self.angle = angle
 
     @classmethod
-    def _primitive_bind_call(cls, wires=None, angle=None, plane=None, reset=False, postselect=None, id=None, ):
+    def _primitive_bind_call(
+        cls,
+        wires=None,
+        angle=None,
+        plane=None,
+        reset=False,
+        postselect=None,
+        id=None,
+    ):
         wires = () if wires is None else wires
-        return cls._wires_primitive.bind(*wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=id)
+        return cls._wires_primitive.bind(
+            *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=id
+        )
 
     # pylint: disable=arguments-renamed, arguments-differ
     @property
@@ -166,16 +179,22 @@ class ParametricMidMeasureMP(MidMeasureMP):
         """Whether there are gates that need to be applied for to diagonalize the measurement"""
         return True
 
+    @staticmethod
+    def compute_diagonalizing_gates(wires, angle, plane):
+        if plane == "XY":
+            return [qml.QubitUnitary(_xy_to_z(angle), wires=wires)]
+        if plane == "XZ":
+            return [qml.RY(-angle, wires)]
+        if plane == "YZ":
+            return [qml.RX(-angle, wires)]
+
+        raise NotImplementedError(
+            f"{plane} plane not implemented. Available plans are 'XY' 'XZ' and 'YZ'."
+        )
+
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
-        if self.plane == "XY":
-            return [qml.QubitUnitary(_xy_to_z(self.angle), wires=self.wires)]
-        if self.plane == "XZ":
-            return [qml.RY(-self.angle, self.wires)]
-        if self.plane == "YZ":
-            return [qml.RX(-self.angle, self.wires)]
-
-        raise NotImplementedError(f"{self.plane} plane not implemented. Available plans are 'XY' 'XZ' and 'YZ'.")
+        return self.compute_diagonalizing_gates(self.wires, self.angle, self.plane)
 
     # ToDo: is this needed anymore?
     @property
@@ -213,30 +232,52 @@ def _get_plxpr_diagonalize_mcms():  # pylint: disable=missing-docstring
         when program capture is enabled.
         """
 
-        def diagonalize_mcm(self, mp: ParametricMidMeasureMP):
-            """Diagonalize a PennyLane MCM if it is not in the computational basis.
+        def __init__(self):
+            super().__init__()
 
-            Args:
-                mp (Operator): a pennylane operator instance
+            # honestly not sure if I'm using this right, ask Mudit if it makes sense
+            self.state = {"cur_idx": 0}
 
-            Returns:
-                Any
-
-            This method is only called when the operator's output is a dropped variable,
-            so the output will not affect later equations in the circuit.
-
-            See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
+        def cleanup(self) -> None:
+            """Perform any final steps after iterating through all equations.
+            Blank by default, this method can clean up instance variables. Particularly,
+            this method can be used to deallocate qubits and registers when converting to
+            a Catalyst variant jaxpr.
             """
+            self.state = {"cur_idx": 0}
 
-            qml.capture.disable()
-            try:
-                diag_gate = mp.diagonalizing_gates()
-            finally:
-                qml.capture.enable()
+    @DiagonalizeMCMInterpreter.register_primitive(parametric_measure_prim)
+    def _(self, wires, angle=None, plane=None, reset=False, postselect=None):
 
-            return [self.interpret_operation(diag_gate), self.interpret_measurement(mp)]
+        ParametricMidMeasureMP.compute_diagonalizing_gates(wires=wires, angle=angle, plane=plane)
 
-    def diagonalize_mcms_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):  # pylint: disable=unused-argument
+        meas = type.__call__(
+            ParametricMidMeasureMP,
+            Wires(wires),
+            angle=angle,
+            plane=plane,
+            reset=reset,
+            postselect=postselect,
+            id=self.state["cur_idx"],
+        )
+
+        # will this be specific to the mcm method? (I would think so)
+        # Should mcm transform be applied first, and will that impact what needs to happen here?
+
+        # if postselect is not None:
+        #     qml.Projector(jax.numpy.array([postselect]), wires=wires)
+
+        # if reset:
+            # if postselect is None:
+            #     qml.CNOT(wires=cnot_wires[::-1])
+            # elif postselect == 1:
+            #     qml.PauliX(wires=wires)
+
+        self.state["cur_idx"] += 1
+        return MeasurementValue([meas], lambda x: x)
+    def diagonalize_mcms_plxpr_to_plxpr(
+        jaxpr, consts, targs, tkwargs, *args
+    ):  # pylint: disable=unused-argument
         """Function from decomposing jaxpr."""
         diagonalizer = DiagonalizeMCMInterpreter()
 
@@ -261,7 +302,9 @@ def diagonalize_mcms(tape):
         if isinstance(op, ParametricMidMeasureMP):
             new_operations.extend(op.diagonalizing_gates() + [op])
         elif isinstance(op, qml.ops.Conditional) and isinstance(op.base, ParametricMidMeasureMP):
-            diag_gate = qml.ops.Conditional(expr=op.hyperparameters["meas_val"], then_op=op.diagonalizing_gates()[0])
+            diag_gate = qml.ops.Conditional(
+                expr=op.hyperparameters["meas_val"], then_op=op.diagonalizing_gates()[0]
+            )
             new_operations.extend([diag_gate, op])
         else:
             new_operations.append(op)
