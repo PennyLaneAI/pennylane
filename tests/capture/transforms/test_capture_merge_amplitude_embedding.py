@@ -20,6 +20,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import (
+    ctrl_transform_prim,
     adjoint_transform_prim,
     cond_prim,
     for_loop_prim,
@@ -99,8 +100,30 @@ class TestMergeAmplitudeEmbeddingPlxprTransform:
 class TestHigherOrderPrimitiveIntegration:
     """Test that the transform works correctly when applied with higher order primitives."""
 
-    def test_adjoint_transform_prim(self):
+    def test_ctrl_transform_prim(self):
+        """Test that the transform works correctly when applied with ctrl_transform_prim."""
         pass
+
+    @pytest.mark.parametrize("lazy", [True, False])
+    def test_adjoint_transform_prim(self, lazy):
+        """Test that the transform works correctly when applied with adjoint_transform_prim."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f():
+            def g():
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+
+            qml.adjoint(g, lazy=lazy)()
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == adjoint_transform_prim
+        assert jaxpr.eqns[0].params["lazy"] == lazy
+
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        assert len(inner_jaxpr.eqns) == 1
+        assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
 
     def test_cond_prim(self):
         pass
