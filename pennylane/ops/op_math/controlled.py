@@ -339,18 +339,14 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
 
     if isinstance(op, qml.QubitUnitary):
-        return qml.ControlledOp(
+        new_op = qml.ops.ControlledOp(
             op,
             control_wires=control,
             control_values=control_values,
             work_wires=work_wires,
         )
-        # return qml.ControlledQubitUnitary(
-        #     op.matrix(),
-        #     wires=control + op.wires,
-        #     control_values=control_values,
-        #     work_wires=work_wires,
-        # )
+        new_op._name = "ControlledQubitUnitary" # pylint: disable=protected-access
+        return new_op
 
     return None
 

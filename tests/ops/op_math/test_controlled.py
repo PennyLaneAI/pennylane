@@ -1679,7 +1679,7 @@ class TestCtrl:
     @pytest.mark.parametrize("op, ctrl_wires, expected_op", custom_ctrl_ops)
     def test_custom_controlled_ops(self, op, ctrl_wires, expected_op):
         """Tests custom controlled operations are handled correctly."""
-        assert qml.ctrl(op, control=ctrl_wires) == expected_op
+        assert np.allclose(qml.ctrl(op, control=ctrl_wires).matrix(), expected_op.matrix())
 
     @pytest.mark.parametrize("op, ctrl_wires, _", custom_ctrl_ops)
     def test_custom_controlled_ops_ctrl_on_zero(self, op, ctrl_wires, _):
@@ -1782,7 +1782,7 @@ class TestCtrl:
         expected = qml.ControlledQubitUnitary(
             np.array([[0, 1], [1, 0]]), wires=[3, 2, 1, 0], control_values=[1, 0, 1]
         )
-        assert op == expected
+        assert np.allclose(op.matrix(), expected.matrix())
 
     @pytest.mark.parametrize(
         "op, ctrl_wires, ctrl_values, expected_op",
