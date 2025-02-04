@@ -22,7 +22,9 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import (
+    adjoint_transform_prim,
     cond_prim,
+    ctrl_transform_prim,
     for_loop_prim,
     grad_prim,
     jacobian_prim,
@@ -299,6 +301,50 @@ class TestUnitaryToRotPlxprTransform:
 
 class TestHigherOrderPrimitiveIntegration:
     """Test that the transform works with higher order primitives."""
+
+    def test_ctrl_higher_order_primitive_not_implemented(self):
+        """Test that evaluating a ctrl higher order primitive works correctly"""
+
+        def ctrl_fn(U):
+            qml.QubitUnitary(U, 0)
+
+        @UnitaryToRotInterpreter()
+        def f(U):
+            qml.RX(0, 1)
+            qml.ctrl(ctrl_fn, [2, 3])(U)
+            qml.RY(0, 1)
+
+        jaxpr = jax.make_jaxpr(f)(qml.Rot(1.0, 2.0, 3.0, wires=0).matrix())
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == ctrl_transform_prim
+        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+
+        inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]
+        assert inner_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[-2].primitive == qml.RY._primitive
+        assert inner_jaxpr.eqns[-1].primitive == qml.RZ._primitive
+
+    @pytest.mark.parametrize("lazy", [True, False])
+    def test_adjoint_higher_order_primitive(self, lazy):
+        """Test that the adjoint primitive is correctly interpreted"""
+
+        @UnitaryToRotInterpreter()
+        def f(U):
+            def g(matrix):
+                qml.QubitUnitary(matrix, 0)
+
+            qml.adjoint(g, lazy=lazy)(U)
+
+        jaxpr = jax.make_jaxpr(f)(qml.Rot(1.0, 2.0, 3.0, wires=0).matrix())
+
+        assert jaxpr.eqns[0].primitive == adjoint_transform_prim
+        assert jaxpr.eqns[0].params["lazy"] == lazy
+
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        assert inner_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[-2].primitive == qml.RY._primitive
+        assert inner_jaxpr.eqns[-1].primitive == qml.RZ._primitive
 
     def test_for_loop_higher_order_primitive(self):
         """Test that the for_loop primitive is correctly interpreted"""
