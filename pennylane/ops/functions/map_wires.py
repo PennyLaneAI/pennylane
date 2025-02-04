@@ -82,16 +82,14 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
 
         def interpret_operation(self, op: "qml.operation.Operation"):
             """Interpret an operation."""
-            qml.capture.disable()
-            op = op.map_wires(self.wire_map)
-            qml.capture.enable()
+            with qml.capture.pause():
+                op = op.map_wires(self.wire_map)
             return super().interpret_operation(op)
 
         def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
             """Interpret a measurement operation."""
-            qml.capture.disable()
-            measurement = measurement.map_wires(self.wire_map)
-            qml.capture.enable()
+            with qml.capture.pause():
+                measurement = measurement.map_wires(self.wire_map)
             return super().interpret_measurement(measurement)
 
     def map_wires_plxpr_to_plxpr(
