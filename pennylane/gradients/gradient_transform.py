@@ -382,13 +382,13 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
     num_measurements = len(tape.measurements)
     has_partitioned_shots = tape.shots.has_partitioned_shots
 
-    if isinstance(qjac, tuple) and len(qjac) == 1:
+    if isinstance(qjac, (tuple, list)) and len(qjac) == 1:
         qjac = qjac[0]
 
-    if isinstance(cjac, tuple) and len(cjac) == 1:
+    if isinstance(cjac, (tuple, list)) and len(cjac) == 1:
         cjac = cjac[0]
 
-    cjac_is_tuple = isinstance(cjac, tuple)
+    cjac_is_tuple = isinstance(cjac, (tuple, list))
 
     multi_meas = num_measurements > 1
 
@@ -402,7 +402,7 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
             _qjac = _qjac[0]
         if has_partitioned_shots:
             _qjac = _qjac[0]
-        single_tape_param = not isinstance(_qjac, tuple)
+        single_tape_param = not isinstance(_qjac, (tuple, list))
 
     if single_tape_param:
         # Without dimension (e.g. expval) or with dimension (e.g. probs)

@@ -16,7 +16,7 @@ This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
 from functools import partial
-from itertools import zip_longest
+from itertools import islice, zip_longest
 
 import numpy as np
 
@@ -318,12 +318,6 @@ def _postprocess_probs(res, measurement, tape):
 def processing_fn(results, tape, coeffs, generators_per_parameter):
     """Post processing function for computing a hadamard gradient."""
 
-    measurements_probs = [
-        idx
-        for idx, m in enumerate(tape.measurements)
-        if isinstance(m, qml.measurements.ProbabilityMP)
-    ]
-
     final_res = []
     for coeff, res in zip(coeffs, results):
         if isinstance(res, (tuple, list)):
@@ -333,6 +327,11 @@ def processing_fn(results, tape, coeffs, generators_per_parameter):
         final_res.append(new_val)
 
     # Post process for probs
+    measurements_probs = [
+        idx
+        for idx, m in enumerate(tape.measurements)
+        if isinstance(m, qml.measurements.ProbabilityMP)
+    ]
     if measurements_probs:
         for idx, res in enumerate(final_res):
             for prob_idx in measurements_probs:
@@ -340,20 +339,18 @@ def processing_fn(results, tape, coeffs, generators_per_parameter):
                     res[prob_idx], tape.measurements[prob_idx], tape
                 )
 
-    grads = [
-        [] for _ in tape.measurements
-    ]  # first index = into measurements, second index = into parameters
-    idx = 0
+    # first index = into measurements, second index = into parameters
+    grads = tuple([] for _ in tape.measurements)
+    results = iter(final_res)
     for num_generators in generators_per_parameter:
-        sub_results = final_res[idx : idx + num_generators]
-        summed_sub_results = (
-            sum(r) for r in zip(*sub_results)
-        )  # sum over batch, iterate over measurements
+        sub_results = islice(results, num_generators)  # take the next number of results
+
+        # sum over batch, iterate over measurements
+        summed_sub_results = (sum(r) for r in zip(*sub_results))
 
         # fill value zero for when no generators/ no gradient
-        for g, r in zip_longest(grads, summed_sub_results, fillvalue=np.array(0)):
-            g.append(r)
-        idx += num_generators
+        for g_for_parameter, r in zip_longest(grads, summed_sub_results, fillvalue=np.array(0)):
+            g_for_parameter.append(r)
 
     if len(tape.measurements) == 1:
         return grads[0][0] if len(tape.trainable_params) == 1 else grads[0]
@@ -368,8 +365,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
     argnums = argnum or tape.trainable_params
     g_tapes = []
     coeffs = []
-
     generators_per_parameter = []
+
     for trainable_param_idx, _ in enumerate(tape.trainable_params):
         if trainable_param_idx not in argnums:
             # parameter has zero gradient
@@ -409,7 +406,7 @@ def _new_measurement(mp, aux_wire, all_wires):
 
 def _get_pauli_generators(trainable_op):
     """From a trainable operation, extract the unitary generators and their coefficients.
-    Any oeprator with a generator is supported
+    Any operator with a generator is supported.
     """
     generator = qml.generator(trainable_op, format="observable")
     if generator.pauli_rep is None:

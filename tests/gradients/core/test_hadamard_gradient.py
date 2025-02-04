@@ -310,7 +310,7 @@ class TestHadamardGrad:
             ]
         )
 
-        assert isinstance(grad, tuple)
+        assert isinstance(grad, (tuple, list))
         assert len(grad) == 5
         assert np.allclose(-grad[1] / 2, expected[0], atol=tol, rtol=0)
         assert np.allclose(-grad[2] / 2, expected[1], atol=tol, rtol=0)
@@ -434,7 +434,7 @@ class TestHadamardGrad:
         res_hadamard, tapes = grad_fn(tape, dev)
 
         assert len(tapes) == 2
-        assert isinstance(res_hadamard, tuple)
+        assert isinstance(res_hadamard, (tuple, list))
         assert len(res_hadamard) == 2
 
         assert res_hadamard[0].shape == (2,)
@@ -472,10 +472,10 @@ class TestHadamardGrad:
 
         assert len(tapes) == 2
 
-        assert isinstance(res_hadamard, tuple)
+        assert isinstance(res_hadamard, (tuple, list))
         assert len(res_hadamard) == 3
 
-        assert isinstance(res_hadamard[0], tuple)
+        assert isinstance(res_hadamard[0], (tuple, list))
         assert len(res_hadamard[0]) == 2
 
         # assert isinstance(res_hadamard[0][0], np.ndarray)
@@ -484,7 +484,7 @@ class TestHadamardGrad:
         assert res_hadamard[0][1].shape == ()
 
         for res in res_hadamard[1:]:
-            assert isinstance(res, tuple)
+            assert isinstance(res, (tuple, list))
             assert len(res) == 2
 
             assert isinstance(res[0], np.ndarray)
@@ -803,7 +803,7 @@ class TestHadamardGradEdgeCases:
 
         assert len(tapes) == 1
 
-        assert isinstance(res_hadamard, tuple)
+        assert isinstance(res_hadamard, (tuple, list))
         assert len(res_hadamard) == 2
         assert res_hadamard[0].shape == ()
         assert res_hadamard[1].shape == ()
@@ -1127,7 +1127,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = qml.gradients.hadamard_grad(tape)
 
-            return fn(dev.execute(tapes))
+            return tuple(fn(dev.execute(tapes)))
 
         def cost_p(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1139,7 +1139,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = qml.gradients.param_shift(tape)
 
-            return fn(dev.execute(tapes))
+            return tuple(fn(dev.execute(tapes)))
 
         res_hadamard = torch.autograd.functional.jacobian(cost_h, params)
         res_param_shift = torch.autograd.functional.jacobian(cost_p, params)
