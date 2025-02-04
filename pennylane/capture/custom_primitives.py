@@ -17,7 +17,10 @@ This submodule offers custom primitives for the PennyLane capture module.
 from enum import Enum
 from typing import Union
 
-import jax
+# import jax
+from jax.extend.core import Primitive
+from jax.interpreters.ad import JVPTrace
+from jax.interpreters.batching import BatchTrace
 
 
 class PrimitiveType(Enum):
@@ -31,7 +34,7 @@ class PrimitiveType(Enum):
 
 
 # pylint: disable=too-few-public-methods,abstract-method
-class QmlPrimitive(jax.extend.core.Primitive):
+class QmlPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives."""
 
@@ -59,6 +62,6 @@ class NonInterpPrimitive(QmlPrimitive):
 
         If the trace is a ``JVPTrace``or a ``BatchTrace``, binding falls back to a standard Python function call.
         Otherwise, the bind call of JAX's standard Primitive is used."""
-        if isinstance(trace, (jax.interpreters.ad.JVPTrace, jax.interpreters.batching.BatchTrace)):
+        if isinstance(trace, (JVPTrace, BatchTrace)):
             return self.impl(*args, **params)
         return super().bind_with_trace(trace, args, params)

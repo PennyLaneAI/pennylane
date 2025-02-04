@@ -271,6 +271,9 @@ def is_abstract(tensor, like=None):
         import jax
         from jax.interpreters.partial_eval import DynamicJaxprTracer
 
+        # if Version(metadata.version("jax")) == Version("0.5.0"):
+        #     return isinstance(tensor, jax.core.Tracer)
+
         if isinstance(
             tensor,
             (
