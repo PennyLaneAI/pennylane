@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added class `qml.capture.transforms.MergeAmplitudeEmbedding` that decomposes pennylane operators 
+  following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
+  [(#6925)](https://github.com/PennyLaneAI/pennylane/pull/6925)
+
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
