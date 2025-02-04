@@ -1,7 +1,9 @@
 """The Fragment class"""
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
+
 
 class Fragment(ABC):
     """Abstract class specifying which methods a Fragment class should implement"""
@@ -11,7 +13,7 @@ class Fragment(ABC):
         raise NotImplementedError
 
     def __sub__(self, other: Fragment) -> Fragment:
-        return self + (-1)*other
+        return self + (-1) * other
 
     @abstractmethod
     def __mul__(self, scalar: float) -> Fragment:
@@ -26,11 +28,11 @@ class Fragment(ABC):
         return (self @ other) - (other @ self)
 
     def nested_commutator(self, a: Fragment, b: Fragment) -> Fragment:
-        """ Return the commutator [self, [a, b]]"""
+        """Return the commutator [self, [a, b]]"""
         return self.commutator(a.commutator(b))
 
     @abstractmethod
-    def norm(self) -> float:
+    def norm(self, *args) -> float:
         """Compute the norm of the fragment"""
         raise NotImplementedError
 
