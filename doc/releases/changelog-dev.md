@@ -152,6 +152,7 @@
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
 * `null.qubit` can now execute jaxpr.
+  [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
 <h3>Breaking changes 💔</h3>
 
