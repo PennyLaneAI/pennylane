@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
+
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
