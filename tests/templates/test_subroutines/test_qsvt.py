@@ -39,6 +39,25 @@ def lst_phis(phis):
     """Used to test queuing in the next test."""
     return [qml.PCPhase(i, 2, wires=[0, 1]) for i in phis]
 
+def generate_polynomial_coeffs(degree, parity=None):
+    np.random.seed(123)
+    if parity is None:
+        polynomial_coeffs_in_canonical_basis = np.random.normal(size=degree+1)
+        return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
+    if parity == 0:
+        assert degree % 2 == 0.
+        polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
+        polynomial_coeffs_in_canonical_basis[0::2] = np.random.normal(size=degree//2+1)
+        return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
+    
+    if parity == 1:
+        assert degree % 2 == 1.
+        polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
+        polynomial_coeffs_in_canonical_basis[0::2] = np.random.uniform(size=degree//2+1)
+        return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
+    
+    raise ValueError(f"parity must be None, 0 or 1 but got {parity}")
+
 
 class TestQSVT:
     """Test the qml.QSVT template."""
@@ -641,24 +660,6 @@ class Testqsvt:
 
 
 class TestRootFindingSolver:
-    def generate_polynomial_coeffs(degree, parity=None):
-        np.random.seed(123)
-        if parity is None:
-            polynomial_coeffs_in_canonical_basis = np.random.normal(size=degree+1)
-            return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
-        if parity == 0:
-            assert degree % 2 == 0.
-            polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
-            polynomial_coeffs_in_canonical_basis[0::2] = np.random.normal(size=degree//2+1)
-            return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
-        
-        if parity == 1:
-            assert degree % 2 == 1.
-            polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
-            polynomial_coeffs_in_canonical_basis[0::2] = np.random.uniform(size=degree//2+1)
-            return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
-        
-        raise ValueError(f"parity must be None, 0 or 1 but got {parity}")
 
     @pytest.mark.parametrize(
         "P",
@@ -691,57 +692,6 @@ class TestRootFindingSolver:
             assert np.isclose(P_magnitude_squared + Q_magnitude_squared, 1, atol=1e-7)
 
     
-    @pytest.mark.parametrize(
-        "polynomial_coeffs_in_cheby_basis",
-        [
-            (generate_polynomial_coeffs(10,0)),
-            (generate_polynomial_coeffs(7,1)),
-            (generate_polynomial_coeffs(12,0)),
-        ]
-    )
-    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
-        degree = len(polynomial_coeffs_in_cheby_basis) - 1
-        parity = degree % 2
-        if parity:
-            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
-        else:
-            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
-        phis, cost_func = qsp_optimization(degree, target_polynomial_coeffs)
-        x_point = np.random.uniform(size=1, high=1, low=-1)
-        x_point = x_point.item()
-        delta = abs(
-            np.real(qsp_iterates(phis, x_point)[0, 0])
-            - poly_func(target_polynomial_coeffs, degree, parity, x_point)
-        )
-        print(f"delta {delta}")
-        # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
-        # which \implies |target_poly(x)-approx_poly(x)|\leq 2\sqrt(cost_func) \sum_i |T_i(x)|
-        tolerance = (
-            np.sum(
-                np.array(
-                    [
-                        2 * np.sqrt(cost_func) * abs(cheby_pol(degree=2 * i, x=x_point))
-                        for i in range(len(target_polynomial_coeffs))
-                    ]
-                )
-            )
-            if not parity
-            else np.sum(
-                np.array(
-                    [
-                        2 * np.sqrt(cost_func) * abs(cheby_pol(degree=2 * i + 1, x=x_point))
-                        for i in range(len(target_polynomial_coeffs))
-                    ]
-                )
-            )
-        )
-
-        assert np.isclose(
-            np.real(qsp_iterates(phis, x_point)[0, 0]),
-            poly_func(coeffs=target_polynomial_coeffs, degree=degree, parity=parity, x=x_point),
-            atol=tolerance,
-        )
-
     @pytest.mark.parametrize(
         "angles",
         [
@@ -884,3 +834,57 @@ class TestRootFindingSolver:
 
         with pytest.raises(AssertionError, match=msg_match):
             _ = qml.poly_to_angles(poly, routine, angle_solver)
+
+
+class TestIterativeSolver:
+    @pytest.mark.parametrize(
+        "polynomial_coeffs_in_cheby_basis",
+        [
+            (generate_polynomial_coeffs(10,0)),
+            (generate_polynomial_coeffs(7,1)),
+            (generate_polynomial_coeffs(12,0)),
+        ]
+    )
+    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
+        degree = len(polynomial_coeffs_in_cheby_basis) - 1
+        parity = degree % 2
+        if parity:
+            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
+        else:
+            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
+        phis, cost_func = qsp_optimization(degree, target_polynomial_coeffs)
+        x_point = np.random.uniform(size=1, high=1, low=-1)
+        x_point = x_point.item()
+        delta = abs(
+            np.real(qsp_iterates(phis, x_point)[0, 0])
+            - poly_func(target_polynomial_coeffs, degree, parity, x_point)
+        )
+        print(f"delta {delta}")
+        # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
+        # which \implies |target_poly(x)-approx_poly(x)|\leq 2\sqrt(cost_func) \sum_i |T_i(x)|
+        tolerance = (
+            np.sum(
+                np.array(
+                    [
+                        2 * np.sqrt(cost_func) * abs(cheby_pol(degree=2 * i, x=x_point))
+                        for i in range(len(target_polynomial_coeffs))
+                    ]
+                )
+            )
+            if not parity
+            else np.sum(
+                np.array(
+                    [
+                        2 * np.sqrt(cost_func) * abs(cheby_pol(degree=2 * i + 1, x=x_point))
+                        for i in range(len(target_polynomial_coeffs))
+                    ]
+                )
+            )
+        )
+
+        assert np.isclose(
+            np.real(qsp_iterates(phis, x_point)[0, 0]),
+            poly_func(coeffs=target_polynomial_coeffs, degree=degree, parity=parity, x=x_point),
+            atol=tolerance,
+        )
+ 
