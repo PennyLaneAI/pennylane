@@ -148,7 +148,7 @@ def test_different_wires(w, as_kwarg):
     eqn = jaxpr.eqns[0]
     assert eqn.primitive == qml.X._primitive
     assert len(eqn.invars) == 1
-    assert isinstance(eqn.invars[0], jax.core.Literal)
+    assert isinstance(eqn.invars[0], jax.extend.core.Literal)
     assert eqn.invars[0].val == 0
 
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)

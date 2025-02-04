@@ -181,7 +181,7 @@ class TestMidMeasureCapture:
 
         # 3.1 * m1
         assert jaxpr.eqns[4].primitive.name == "mul"
-        assert isinstance(jaxpr.eqns[4].invars[0], jax.core.Literal)
+        assert isinstance(jaxpr.eqns[4].invars[0], jax.extend.core.Literal)
         assert jaxpr.eqns[4].invars[1] == mcm1_f
         a = jaxpr.eqns[4].outvars[0]
 
