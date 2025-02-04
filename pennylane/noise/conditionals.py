@@ -466,11 +466,12 @@ def op_eq(ops):
 
 
 class MeasEq(qml.BooleanFn):
-    """A conditional for evaluating if a given measurement process is equal to the specified measurement process.
+    """A conditional for evaluating if a given measurement process is of the same type
+    as the specified measurement process.
 
     Args:
-        mp(Union[Iterable[MeasurementProcess], MeasurementProcess, Callable]): A measurement process instance or
-            a measurement function to build the measurement set.
+        mp(Union[Iterable[MeasurementProcess], MeasurementProcess, Callable]): A measurement
+            process instance or a measurement function to build the measurement set.
 
     .. seealso:: Users are advised to use :func:`~.meas_eq` for a functional construction.
     """

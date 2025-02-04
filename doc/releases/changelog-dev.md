@@ -254,7 +254,7 @@
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
 * The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
 
