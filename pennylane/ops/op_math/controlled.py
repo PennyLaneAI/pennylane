@@ -345,7 +345,7 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
             control_values=control_values,
             work_wires=work_wires,
         )
-        new_op._name = "ControlledQubitUnitary" # pylint: disable=protected-access
+        new_op._name = "ControlledQubitUnitary"  # pylint: disable=protected-access
         return new_op
 
     return None
