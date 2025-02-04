@@ -370,6 +370,10 @@ class MidMeasureMP(MeasurementProcess):
         """The name of the measurement. Needed to match the Operator API."""
         return self.__class__.__name__
 
+    @property
+    def num_params(self):
+        return 0
+
 
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
