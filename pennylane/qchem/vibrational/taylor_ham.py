@@ -680,8 +680,35 @@ def taylor_hamiltonian(
 ):
     """Return Taylor vibrational Hamiltonian.
 
-    The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_.
-    The Hamiltonian is then converted to a qubit operator with a selected ``mapping`` method.
+    The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^(n)`,
+    normal coordinate operators :math:`q` and momentum operators :math:`p` following Eq. 5 of
+    `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ as:
+
+    .. math::
+
+        H = \sum_{i\geq j} K_{ij} p_i  p_j + \sum_{i\geq j} \Phi_{ij}^{(2)}  q_i  q_j +
+        \sum_{i\geq j\geq k} \Phi_{ijk}^{(3)}  q_i  q_j  q_k + \sum_{i\geq j\geq k\geq l}
+        \Phi_{ijkl}^{(4)} q_i  q_j  q_k  q_l  + \cdots.
+
+    This Hamiltonian can be represented in the bosonic basis by using equations defined in
+    Eqs. 6, 7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_:
+
+    .. math::
+
+        \hat q_i = \frac{1}{\sqrt{2}}(b_i^\dagger + b_i), \quad
+        \hat p_i = \frac{1}{\sqrt{2}}(b_i^\dagger - b_i),
+
+    where :math:`b^\dagger` and :math:`b` are bosonic creation and annihilation operators,
+    respectively.
+
+    The bosonic Hamiltonian is then converted to a qubit operator with a selected ``mapping``
+    method to obtain a linear combination as:
+
+    .. math::
+
+        H = \sum_{i} c_i P_i,
+
+    where :math:`P` is a tensor product of Pauli operator and :math:`c` is a constant.
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
