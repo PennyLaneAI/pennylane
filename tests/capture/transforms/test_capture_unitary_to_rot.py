@@ -21,7 +21,14 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
+from pennylane.capture.primitives import (
+    cond_prim,
+    for_loop_prim,
+    grad_prim,
+    jacobian_prim,
+    qnode_prim,
+    while_loop_prim,
+)
 from pennylane.transforms.unitary_to_rot import (
     UnitaryToRotInterpreter,
     unitary_to_rot_plxpr_to_plxpr,
@@ -413,3 +420,34 @@ class TestHigherOrderPrimitiveIntegration:
         # Measurement
         assert branch_jaxpr.eqns[-2].primitive == qml.PauliX._primitive
         assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    @pytest.mark.parametrize("grad_fn", [qml.grad, qml.jacobian])
+    def test_grad_and_jac_higher_order_primitive(self, grad_fn):
+        """Test that the grad and jacobian primitives are correctly interpreted"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @UnitaryToRotInterpreter()
+        def f(a, b, c):
+            @qml.qnode(dev)
+            def circuit(a, b, c):
+                with qml.QueuingManager.stop_recording():
+                    A = qml.Rot.compute_matrix(a, b, c)
+                qml.QubitUnitary(A, 0)
+                return qml.expval(qml.Z(0))
+
+            return grad_fn(circuit)(a, b, c)
+
+        jaxpr = jax.make_jaxpr(f)(1.0, 2.0, 3.0)
+
+        if grad_fn == qml.grad:
+            assert jaxpr.eqns[0].primitive == grad_prim
+        else:
+            assert jaxpr.eqns[0].primitive == jacobian_prim
+
+        grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[-5].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[-4].primitive == qml.RY._primitive
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
