@@ -268,13 +268,14 @@ def _get_plxpr_diagonalize_mcms():  # pylint: disable=missing-docstring
         #     qml.Projector(jax.numpy.array([postselect]), wires=wires)
 
         # if reset:
-            # if postselect is None:
-            #     qml.CNOT(wires=cnot_wires[::-1])
-            # elif postselect == 1:
-            #     qml.PauliX(wires=wires)
+        #     if postselect is None:
+        #         qml.CNOT(wires=cnot_wires[::-1])
+        #     elif postselect == 1:
+        #         qml.PauliX(wires=wires)
 
         self.state["cur_idx"] += 1
         return MeasurementValue([meas], lambda x: x)
+
     def diagonalize_mcms_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
