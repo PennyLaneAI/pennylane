@@ -3219,3 +3219,16 @@ class TestSinglePrecision:
         finally:
             jax.config.update("jax_enable_x64", True)
         jax.config.update("jax_enable_x64", True)
+
+
+def test_no_inputs_jitting():
+    """Test that if we jit a qnode with no inputs, we can still detect the jitting and proper interface."""
+
+    @jax.jit
+    @qml.qnode(qml.device("reference.qubit", wires=1))
+    def circuit():
+        qml.StatePrep(jax.numpy.array([1, 0]), 0)
+        return qml.state()
+
+    res = circuit()
+    assert qml.math.allclose(res, jax.numpy.array([1, 0]))

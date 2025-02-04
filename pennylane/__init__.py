@@ -175,6 +175,10 @@ class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
 
 
+class ExperimentalWarning(UserWarning):
+    """Warning raised to indicate experimental/non-stable feature or support."""
+
+
 def __getattr__(name):
 
     if name == "plugin_devices":
