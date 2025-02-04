@@ -124,7 +124,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 return True
             return self.gate_set(op)
 
-        def decompose_operation(self, op: qml.operation.Operator, current_depth: int = 0):
+        def decompose_operation(self, op: qml.operation.Operator):
             """Decompose a PennyLane operation instance if it does not satisfy the
             provided gate set.
 
@@ -144,16 +144,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
             qml.capture.disable()
 
-            max_expansion = (
-                self.max_expansion + current_depth if self.max_expansion is not None else None
-            )
-
             try:
                 decomposition = list(
                     _operator_decomposition_gen(
                         op,
                         self.stopping_condition,
-                        max_expansion=max_expansion,
+                        max_expansion=self.max_expansion,
                     )
                 )
             finally:
@@ -195,47 +191,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                             self.interpret_operation(sub_op)
 
             return op
-
-        def eval_dynamic_decomposition(
-            self, jaxpr_decomp: "jax.core.Jaxpr", consts, *args, current_depth: int = 0
-        ):
-            """
-            Evaluate a dynamic decomposition of a Jaxpr.
-
-            Args:
-                jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate.
-                consts (Sequence): the constants to use in the evaluation.
-                *args: the arguments to use in the evaluation.
-                current_depth (int): the current depth of decomposition. Defaults to 0.
-            """
-
-            for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
-                self._env[invar] = arg
-
-            for const, constvar in zip(consts, jaxpr_decomp.constvars, strict=True):
-                self._env[constvar] = const
-
-            for inner_eqn in jaxpr_decomp.eqns:
-
-                custom_handler = self._primitive_registrations.get(inner_eqn.primitive, None)
-
-                if custom_handler:
-                    invals = [self.read(invar) for invar in inner_eqn.invars]
-                    outvals = custom_handler(self, *invals, **inner_eqn.params)
-
-                elif isinstance(inner_eqn.outvars[0].aval, AbstractOperator):
-                    outvals = self.interpret_operation_eqn(inner_eqn)
-                elif isinstance(inner_eqn.outvars[0].aval, AbstractMeasurement):
-                    outvals = super().interpret_measurement_eqn(inner_eqn)
-                else:
-                    invals = [self.read(invar) for invar in inner_eqn.invars]
-                    outvals = inner_eqn.primitive.bind(*invals, **inner_eqn.params)
-
-                if not inner_eqn.primitive.multiple_results:
-                    outvals = [outvals]
-
-                for inner_outvar, inner_outval in zip(inner_eqn.outvars, outvals, strict=True):
-                    self._env[inner_outvar] = inner_outval
 
     # pylint: disable=unused-variable,missing-function-docstring
     @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
