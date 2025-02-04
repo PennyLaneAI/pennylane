@@ -170,6 +170,15 @@ def enable_disable_plxpr():
         qml.capture.disable()
 
 
+@pytest.fixture(scope="function")
+def enable_disable_dynamic_shapes():
+    jax.config.update("jax_dynamic_shapes", True)
+    try:
+        yield
+    finally:
+        jax.config.update("jax_dynamic_shapes", False)
+
+
 #######################################################################
 
 try:

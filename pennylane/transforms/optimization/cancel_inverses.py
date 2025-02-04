@@ -70,7 +70,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
 
-        from pennylane.capture import AbstractMeasurement, AbstractOperator, PlxprInterpreter
+        from pennylane.capture import PlxprInterpreter
         from pennylane.operation import Operator
     except ImportError:  # pragma: no cover
         return None, None
@@ -204,15 +204,15 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                     self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
-                elif len(eqn.outvars) > 0 and isinstance(eqn.outvars[0].aval, AbstractOperator):
+                elif getattr(eqn.primitive, "prim_type", "") == "operator":
                     outvals = self.interpret_operation_eqn(eqn)
-                elif len(eqn.outvars) > 0 and isinstance(eqn.outvars[0].aval, AbstractMeasurement):
+                elif getattr(eqn.primitive, "prim_type", "") == "measurement":
                     self.interpret_all_previous_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
                     # Transform primitives don't have custom handlers, so we check for them here
                     # to purge the stored ops in self.previous_ops
-                    if eqn.primitive.name.endswith("_transform"):
+                    if getattr(eqn.primitive, "prim_type", "") == "transform":
                         self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = eqn.primitive.bind(*invals, **eqn.params)

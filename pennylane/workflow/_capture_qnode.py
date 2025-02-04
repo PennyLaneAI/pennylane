@@ -107,7 +107,6 @@ features is non-exhaustive.
 
 """
 from copy import copy
-from dataclasses import asdict
 from functools import partial
 from numbers import Number
 from warnings import warn
@@ -116,7 +115,8 @@ import jax
 from jax.interpreters import ad, batching, mlir
 
 import pennylane as qml
-from pennylane.capture import FlatFn
+from pennylane.capture import CaptureError, FlatFn
+from pennylane.capture.custom_primitives import QmlPrimitive
 from pennylane.typing import TensorLike
 
 
@@ -177,8 +177,9 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
     return shapes
 
 
-qnode_prim = jax.core.Primitive("qnode")
+qnode_prim = QmlPrimitive("qnode")
 qnode_prim.multiple_results = True
+qnode_prim.prim_type = "higher_order"
 
 
 # pylint: disable=too-many-arguments, unused-argument
@@ -188,8 +189,6 @@ def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_di
         raise NotImplementedError(
             "Overriding shots is not yet supported with the program capture execution."
         )
-    if qnode_kwargs["diff_method"] not in {"backprop", "best"}:
-        raise NotImplementedError("Only backpropagation derivatives are supported at this time.")
 
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
@@ -277,14 +276,49 @@ def _qnode_batching_rule(
     return result, (0,) * len(result)
 
 
+### JVP CALCULATION #########################################################
+# This structure will change as we add more diff methods
+
+
 def _make_zero(tan, arg):
     return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
 
 
-def _qnode_jvp(args, tangents, **impl_kwargs):
+def _backprop(args, tangents, **impl_kwargs):
     tangents = tuple(map(_make_zero, tangents, args))
     return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
 
+
+def _finite_diff(args, tangents, **impl_kwargs):
+    f = partial(qnode_prim.bind, **impl_kwargs)
+    return qml.gradients.finite_diff_jvp(
+        f, args, tangents, **impl_kwargs["qnode_kwargs"]["gradient_kwargs"]
+    )
+
+
+diff_method_map = {"backprop": _backprop, "finite-diff": _finite_diff}
+
+
+def _resolve_diff_method(diff_method: str, device) -> str:
+    # check if best is backprop
+    if diff_method == "best":
+        config = qml.devices.ExecutionConfig(gradient_method=diff_method, interface="jax")
+        diff_method = device.setup_execution_config(config).gradient_method
+
+    if diff_method not in diff_method_map:
+        raise NotImplementedError(f"diff_method {diff_method} not yet implemented.")
+
+    return diff_method
+
+
+def _qnode_jvp(args, tangents, *, qnode_kwargs, device, **impl_kwargs):
+    diff_method = _resolve_diff_method(qnode_kwargs["diff_method"], device)
+    return diff_method_map[diff_method](
+        args, tangents, qnode_kwargs=qnode_kwargs, device=device, **impl_kwargs
+    )
+
+
+### END JVP CALCULATION #######################################################
 
 ad.primitive_jvps[qnode_prim] = _qnode_jvp
 
@@ -370,18 +404,35 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
+    # pylint: disable=protected-access
+    qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
     flat_fn = FlatFn(qfunc)
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
+    try:
+        qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*args)
+    except (
+        jax.errors.TracerArrayConversionError,
+        jax.errors.TracerIntegerConversionError,
+        jax.errors.TracerBoolConversionError,
+    ) as exc:
+        raise CaptureError(
+            "Autograph must be used when Python control flow is dependent on a dynamic variable (a function input). "
+            "Please ensure autograph=True or use native control flow functions like for_loop, while_loop, etc."
+        ) from exc
 
     execute_kwargs = copy(qnode.execute_kwargs)
-    mcm_config = asdict(execute_kwargs.pop("mcm_config"))
-    qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
+    qnode_kwargs = {
+        "diff_method": qnode.diff_method,
+        **execute_kwargs,
+        "gradient_kwargs": qnode.gradient_kwargs,
+    }
 
     flat_args = jax.tree_util.tree_leaves(args)
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
+        *abstract_shapes,
         *flat_args,
         shots=shots,
         qnode=qnode,

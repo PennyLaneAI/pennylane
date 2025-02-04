@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Defines the ``single_tape_support`` device modifier.
-
-"""
+"""Defines the ``single_tape_support`` device modifier."""
 from functools import wraps
 
 from pennylane.devices import DefaultExecutionConfig, Device
