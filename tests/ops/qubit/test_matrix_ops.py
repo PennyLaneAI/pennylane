@@ -72,6 +72,54 @@ class TestQubitUnitaryCSR:
             final_mat = final_mat.toarray()
         assert qml.math.allclose(final_mat, dense)
 
+    @pytest.mark.parametrize(
+        "dense",
+        [
+            np.eye(4),
+            np.array(
+                [[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]
+            ),  # sample permutation matrix
+        ],
+    )
+    def test_csr_matrix_adjoint(self, dense):
+        """Test that QubitUnitary.adjoint() works with csr_matrix, matching dense result."""
+        sparse = csr_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        adj_op = op.adjoint()
+
+        assert isinstance(adj_op, qml.QubitUnitary)
+        assert isinstance(adj_op.matrix(), csr_matrix)
+
+        final_mat = adj_op.matrix()
+        # Compare with dense representation if still sparse
+        if isinstance(final_mat, csr_matrix):
+            final_mat = final_mat.toarray()
+
+        # For real/complex conjugate transpose, if dense is unitary, final_mat == dense^\dagger
+        expected = dense.conjugate().T
+        assert qml.math.allclose(final_mat, expected)
+
+    def test_csr_matrix_adjoint_large(self):
+        """Construct a large sparse matrix (e.g. 2^20 dimension) but only store minimal elements."""
+        N = 20
+        dim = 2**N
+
+        # For demonstration, let's just store a single 1 on the diagonal
+        row_indices = [12345]  # some arbitrary index < dim
+        col_indices = [12345]
+        data = [1.0]
+
+        sparse_large = csr_matrix((data, (row_indices, col_indices)), shape=(dim, dim))
+        op = qml.QubitUnitary(sparse_large, wires=range(N))
+        adj_op = op.adjoint()
+
+        assert isinstance(adj_op, qml.QubitUnitary)
+        assert isinstance(adj_op.matrix(), csr_matrix)
+
+        # The single element should remain 1 at [12345,12345] after conjugate transpose
+        final_mat = adj_op.matrix()
+        assert final_mat[12345, 12345] == 1.0
+
 
 class TestQubitUnitary:
     """Tests for the QubitUnitary class."""
