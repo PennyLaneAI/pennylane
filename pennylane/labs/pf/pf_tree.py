@@ -1,12 +1,10 @@
 """AST for product formula expressions"""
 
 from __future__ import annotations
-
 from abc import abstractmethod
-from typing import Dict, List
+from typing import Dict
 
 from abstract_fragment import Fragment
-
 
 class PF_Node:
     """An AST expressing product formulas"""
@@ -51,7 +49,7 @@ class PF_Node:
 
     @staticmethod
     def empty_node() -> PF_Empty:
-        """Construt an EMPTY node"""
+        """ Construt an EMPTY node"""
 
         return PF_Empty()
 
@@ -76,29 +74,6 @@ class PF_Node:
         """Evaluate the expression"""
         raise NotImplementedError
 
-    @classmethod
-    def second_order_trotter(cls, labels: List[str]) -> PF_Node:
-        """Returns an AST representation of the second order trotter product formula"""
-        # scalar = -(delta**2) / 24
-        # epsilon = VibronicMatrix(self.states, self.modes, sparse=self.sparse)
-
-        # for i in range(self.states):
-        #    for j in range(i + 1, self.states + 1):
-        #        epsilon += self._commute_fragments(i, i, j)
-        #        for k in range(i + 1, self.states + 1):
-        #            epsilon += 2 * self._commute_fragments(k, i, j)
-
-        # epsilon *= scalar
-
-        n_fragments = len(labels)
-        fragments = [cls.fragment_node(label) for label in labels]
-        ast = cls.empty_node()
-
-        for i in range(n_fragments):
-            for j in range(i + 1, n_fragments + 1):
-                pass
-
-
 class PF_Add(PF_Node):
     """Product formula ADD node"""
 
@@ -115,7 +90,6 @@ class PF_Add(PF_Node):
         r_dict = {label: fragments[label] for label in self.r_fragments}
 
         return self.l_child.eval(l_dict) + self.r_child.eval(r_dict)
-
 
 class PF_Multiply(PF_Node):
     """Product formula MULTIPLY node"""
@@ -134,7 +108,6 @@ class PF_Multiply(PF_Node):
 
         return self.l_child.eval(l_dict) @ self.r_child.eval(r_dict)
 
-
 class PF_Commutator(PF_Node):
     """Product formula COMMUTATOR node"""
 
@@ -152,13 +125,11 @@ class PF_Commutator(PF_Node):
 
         return self.l_child.eval(l_dict).commutator(self.r_child.eval(r_dict))
 
-
 class PF_Nested_Commutator(PF_Node):
     """Producted formula NESTED_COMMUTATOR node"""
 
     def eval(self, fragments: Dict[str, Fragment]):
         raise NotImplementedError
-
 
 class PF_Scalar(PF_Node):
     """Product formula SCALAR node"""
@@ -171,7 +142,6 @@ class PF_Scalar(PF_Node):
     def eval(self, fragments: Dict[str, Fragment]) -> Fragment:
         return self.scalar * self.child.eval(fragments)
 
-
 class PF_Fragment(PF_Node):
     """Product formula FRAGMENT node"""
 
@@ -181,7 +151,6 @@ class PF_Fragment(PF_Node):
 
     def eval(self, fragments: Dict[str, Fragment]) -> Fragment:
         return fragments[self.label]
-
 
 class PF_Empty(PF_Node):
     """Product formula EMPTY node"""
