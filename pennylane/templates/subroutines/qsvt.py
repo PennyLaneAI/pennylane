@@ -21,6 +21,8 @@ from typing import Literal
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
 
+from jax import numpy as jnp
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops.op_math import adjoint
@@ -573,6 +575,38 @@ class QSVT(Operation):
         op_list.append(projectors[-1])
 
         return op_list
+
+    @staticmethod
+    def _compute_plxpr_decomposition(*args, **hyperparameters):
+        UA = hyperparameters["UA"]
+        projectors = hyperparameters["projectors"]
+        
+        # This is OK
+        projectors[0]._primitive_bind_call(*projectors[0].data, wires=projectors[0].wires)
+        UA._primitive_bind_call(wires=UA.wires)
+
+        @qml.for_loop(len(projectors))
+        def loop(i):
+            # But this fails...
+            projectors[i]._primitive_bind_call(*projectors[i].wires)
+        loop()
+        
+        #@qml.for_loop(len(projectors))
+        #def PU_loop(i):
+        #    projectors[i]._primitive_bind_call(*projectors[i].data, wires=projectors[i].wires)
+        #    
+        #    def even_fn():
+        #        UA._primitive_bind_call(wires=UA.wires)
+        #    
+        #    def odd_fn():
+        #        adjoint(UA)._primitive_bind_call(wires=UA.wires)
+        #        
+        #    qml.cond(i % 2 == 0, even_fn, odd_fn)
+        #    
+        #PU_loop()
+        #projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
+        #
+        
 
     def label(self, decimals=None, base_label=None, cache=None):
         op_label = base_label or self.__class__.__name__

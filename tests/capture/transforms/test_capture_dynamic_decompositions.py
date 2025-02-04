@@ -630,3 +630,18 @@ class TestDynamicDecomposeInterpreter:
 
         print(circuit_comparison())
         assert qml.math.allclose(*result, circuit_comparison())
+        
+    def test_qsvt(self):
+        """Test that the QSVT is correctly dynamically decomposed."""
+        n_wires = 6
+        block_encoding = qml.Hadamard(wires=0)
+        phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)] 
+
+        @DynamicDecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+        def circuit():
+            qml.QSVT(UA=block_encoding, projectors=phase_shifts)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        print(jaxpr)
