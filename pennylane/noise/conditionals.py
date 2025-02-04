@@ -537,7 +537,7 @@ def meas_eq(mps):
     **Example**
 
     One may use ``meas_eq`` with an instance of
-    :class:`MeasurementProcess <pennylane.operation.MeasurementProcess>`:
+    :class:`MeasurementProcess <pennylane.measurements.MeasurementProcess>`:
 
     >>> cond_func = qml.noise.meas_eq(qml.expval(qml.Y(0)))
     >>> cond_func(qml.expval(qml.Z(9)))
