@@ -161,7 +161,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
             return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
 
-        def interpret_operation_eqn(self, eqn, current_depth: int = 0):
+        def interpret_operation_eqn(self, eqn):
             """Interpret an equation corresponding to an operator.
 
             Args:
@@ -178,15 +178,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
                 if not self.dynamic_decomposition:
 
-                    return self.decompose_operation(op, current_depth=current_depth)
+                    return self.decompose_operation(op)
 
                 else:
 
                     if self.gate_set(op):
                         return self.interpret_operation(op)
-
-                    if self.max_expansion is not None and current_depth >= self.max_expansion:
-                        return super().interpret_operation_eqn(eqn)
 
                     args = (*op.parameters, *op.wires)
                     return_ops_decomposition = run_autograph(op.compute_decomposition)(
@@ -227,7 +224,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                     outvals = custom_handler(self, *invals, **inner_eqn.params)
 
                 elif isinstance(inner_eqn.outvars[0].aval, AbstractOperator):
-                    outvals = self.interpret_operation_eqn(inner_eqn, current_depth=current_depth)
+                    outvals = self.interpret_operation_eqn(inner_eqn)
                 elif isinstance(inner_eqn.outvars[0].aval, AbstractMeasurement):
                     outvals = super().interpret_measurement_eqn(inner_eqn)
                 else:
