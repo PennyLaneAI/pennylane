@@ -135,7 +135,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             if self.gate_set(op):
                 return self.interpret_operation(op)
 
-            with qml.capture.stop_recording():
+            with qml.capture.pause():
                 decomposition = list(
                     _operator_decomposition_gen(
                         op, self.stopping_condition, max_expansion=self.max_expansion

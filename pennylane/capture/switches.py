@@ -66,7 +66,7 @@ enable, disable, enabled = _make_switches()
 
 
 @contextmanager
-def stop_recording():
+def pause():
     """Temporarily stop program capture.
 
     >>> def f():

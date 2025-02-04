@@ -32,12 +32,12 @@ def test_switches_with_jax():
 
 # pylint: disable=unused-argument
 @pytest.mark.jax
-def test_stop_recording(enable_disable_plxpr):
+def test_pause(enable_disable_plxpr):
     """Test that pause recording stops program capture."""
     import jax
 
     def f():
-        with qml.capture.stop_recording():
+        with qml.capture.pause():
             qml.X(0)
         return 2
 
@@ -47,11 +47,11 @@ def test_stop_recording(enable_disable_plxpr):
 
 # pylint: disable=unused-argument
 @pytest.mark.jax
-def test_stop_recording_if_error(enable_disable_plxpr):
+def test_pause_with_error(enable_disable_plxpr):
     """Test that program capture stays enabled if an error occurs."""
 
     def f():
-        with qml.capture.stop_recording():
+        with qml.capture.pause():
             raise ValueError
         return 2
 
