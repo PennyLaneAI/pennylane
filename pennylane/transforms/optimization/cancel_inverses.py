@@ -215,7 +215,8 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                     if getattr(eqn.primitive, "prim_type", "") == "transform":
                         self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
-                    outvals = eqn.primitive.bind(*invals, **eqn.params)
+                    subfuns, params = eqn.primitive.get_bind_params(eqn.params)
+                    outvals = eqn.primitive.bind(*subfuns, *invals, **params)
 
                 if not eqn.primitive.multiple_results:
                     outvals = [outvals]
