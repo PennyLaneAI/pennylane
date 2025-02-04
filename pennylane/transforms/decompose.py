@@ -65,9 +65,13 @@ def _operator_decomposition_gen(
 def _get_plxpr_decompose():  # pylint: disable=missing-docstring
     try:
         # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
+        import jax
 
-        from pennylane.capture.primitives import ctrl_transform_prim
+        from pennylane.capture.primitives import (
+            ctrl_transform_prim,
+            AbstractMeasurement,
+            AbstractOperator,
+        )
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -117,7 +121,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 return True
             return self.gate_set(op)
 
-        def decompose_operation(self, op: qml.operation.Operator):
+        def decompose_operation(self, op: qml.operation.Operator, current_depth: int = 0):
             """Decompose a PennyLane operation instance if it does not satisfy the
             provided gate set.
 
@@ -136,10 +140,17 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 return self.interpret_operation(op)
 
             qml.capture.disable()
+
+            max_expansion = (
+                self.max_expansion + current_depth if self.max_expansion is not None else None
+            )
+
             try:
                 decomposition = list(
                     _operator_decomposition_gen(
-                        op, self.stopping_condition, max_expansion=self.max_expansion
+                        op,
+                        self.stopping_condition,
+                        max_expansion=max_expansion,
                     )
                 )
             finally:
@@ -147,7 +158,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
             return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
 
-        def interpret_operation_eqn(self, eqn):
+        def interpret_operation_eqn(self, eqn, current_depth: int = 0):
             """Interpret an equation corresponding to an operator.
 
             Args:
@@ -159,90 +170,23 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             invals = (self.read(invar) for invar in eqn.invars)
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
-            if eqn.outvars[0].__class__.__name__ == "DropVar":
-                return self.decompose_operation(op)
+
+            if isinstance(eqn.outvars[0], jax.core.DropVar):
+
+                if self.gate_set(op):
+                    return self.interpret_operation(op)
+
+                if self.max_expansion is not None and current_depth >= self.max_expansion:
+                    return super().interpret_operation_eqn(eqn)
+
+                args = (*op.parameters, *op.wires)
+                return_ops_decomposition = op.compute_decomposition(*args, **op.hyperparameters)
+
+                if return_ops_decomposition is not None:
+                    for sub_op in return_ops_decomposition:
+                        self.interpret_operation(sub_op)
+
             return op
-
-    # pylint: disable=unused-variable,missing-function-docstring
-    @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
-    def handle_ctrl_transform(*_, **__):
-        raise NotImplementedError
-
-    def decompose_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
-        """Function from decomposing jaxpr."""
-        decomposer = DecomposeInterpreter(
-            gate_set=tkwargs.pop("gate_set", None), max_expansion=tkwargs.pop("max_expansion", None)
-        )
-
-        def wrapper(*inner_args):
-            return decomposer.eval(jaxpr, consts, *inner_args)
-
-        return make_jaxpr(wrapper)(*args)
-
-    return DecomposeInterpreter, decompose_plxpr_to_plxpr
-
-
-DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
-
-
-@lru_cache
-def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
-    try:
-        # pylint: disable=import-outside-toplevel
-        # pylint: disable=unused-import
-        import jax
-
-        from pennylane.capture.primitives import AbstractMeasurement, AbstractOperator
-    except ImportError:  # pragma: no cover
-        return None, None
-
-    # pylint: disable=redefined-outer-name
-
-    class DynamicDecomposeInterpreter(qml.capture.PlxprInterpreter):
-        """
-        Experimental Plxpr Interpreter for applying a dynamic decomposition to operations when program capture is enabled.
-        """
-
-        def __init__(self, gate_set=None, max_expansion=None):
-            self.max_expansion = max_expansion
-
-            if gate_set is None:
-                gate_set = set(qml.ops.__all__)
-
-            if isinstance(gate_set, (str, type)):
-                gate_set = set([gate_set])
-
-            if isinstance(gate_set, Iterable):
-                gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-                gate_names = set(gate for gate in gate_set if isinstance(gate, str))
-                self.gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
-            else:
-                self.gate_set = gate_set
-
-            super().__init__()
-
-        def stopping_condition(self, op: qml.operation.Operator) -> bool:
-            """Function to determine whether or not an operator needs to be decomposed or not.
-
-            Args:
-                op (qml.operation.Operator): Operator to check.
-
-            Returns:
-                bool: Whether or not ``op`` is valid or needs to be decomposed. ``True`` means
-                that the operator does not need to be decomposed.
-            """
-            if not op._has_plxpr_decomposition:
-                if not self.gate_set(op):
-                    warnings.warn(
-                        f"Operator {op.name} does not define a plxpr decomposition and was not "
-                        f"found in the target gate set. To remove this warning, add the operator name "
-                        f"({op.name}) or type ({type(op)}) to the gate set.",
-                        UserWarning,
-                    )
-                return True
-            return self.gate_set(op)
 
         def eval_dynamic_decomposition(
             self, jaxpr_decomp: "jax.core.Jaxpr", consts, *args, current_depth: int = 0
@@ -285,43 +229,28 @@ def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
                 for inner_outvar, inner_outval in zip(inner_eqn.outvars, outvals, strict=True):
                     self._env[inner_outvar] = inner_outval
 
-        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn", current_depth: int = 0):
-            """
-            Interpret an equation corresponding to an operator with controlled decomposition depth.
+    # pylint: disable=unused-variable,missing-function-docstring
+    @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
+    def handle_ctrl_transform(*_, **__):
+        raise NotImplementedError
 
-            Args:
-                eqn (jax.core.JaxprEqn): a Jax equation for an operator.
-                current_depth (int): the current depth of decomposition. Defaults to 0.
-            """
+    def decompose_plxpr_to_plxpr(
+        jaxpr, consts, targs, tkwargs, *args
+    ):  # pylint: disable=unused-argument
+        """Function from decomposing jaxpr."""
+        decomposer = DecomposeInterpreter(
+            gate_set=tkwargs.pop("gate_set", None), max_expansion=tkwargs.pop("max_expansion", None)
+        )
 
-            invals = (self.read(invar) for invar in eqn.invars)
-            with qml.QueuingManager.stop_recording():
-                op = eqn.primitive.impl(*invals, **eqn.params)
+        def wrapper(*inner_args):
+            return decomposer.eval(jaxpr, consts, *inner_args)
 
-            if isinstance(eqn.outvars[0], jax.core.DropVar):
+        return jax.make_jaxpr(wrapper)(*args)
 
-                if self.gate_set(op):
-                    return super().interpret_operation(op)
-
-                if self.max_expansion is not None and current_depth >= self.max_expansion:
-                    return super().interpret_operation_eqn(eqn)
-
-                if self.stopping_condition(op):
-                    return super().interpret_operation_eqn(eqn)
-
-                jaxpr_decomp = op._plxpr_decomposition()
-                args = (*op.parameters, *op.wires)
-
-                return self.eval_dynamic_decomposition(
-                    jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args, current_depth=current_depth + 1
-                )
-
-            return super().interpret_operation_eqn(eqn)
-
-    return DynamicDecomposeInterpreter
+    return DecomposeInterpreter, decompose_plxpr_to_plxpr
 
 
-DynamicDecomposeInterpreter = _get_plxpr_dynamic_decompose()
+DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
 @partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)

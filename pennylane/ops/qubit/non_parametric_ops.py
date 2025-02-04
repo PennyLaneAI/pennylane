@@ -183,13 +183,6 @@ class Hadamard(Observable, Operation):
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
 
-    @staticmethod
-    def _compute_plxpr_decomposition(wires: WiresLike):
-
-        qml.PhaseShift(np.pi / 2, wires=wires)
-        qml.RX(np.pi / 2, wires=wires)
-        qml.PhaseShift(np.pi / 2, wires=wires)
-
     def _controlled(self, wire: WiresLike) -> "qml.CH":
         return qml.CH(wires=Wires(wire) + self.wires)
 

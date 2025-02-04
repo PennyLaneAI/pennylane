@@ -415,10 +415,6 @@ class GlobalPhase(Operation):
         return []
 
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires=()):
-        pass
-
-    @staticmethod
     def compute_decomposition(
         phi, wires: WiresLike = ()
     ):  # pylint:disable=arguments-differ,unused-argument

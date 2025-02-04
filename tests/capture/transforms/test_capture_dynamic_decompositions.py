@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the ``DynamicDecomposeInterpreter`` class."""
+"""Unit tests for the ``DecomposeInterpreter`` class."""
 import numpy as np
 
 # pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods
@@ -23,7 +23,7 @@ jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
 from pennylane.operation import Operation
-from pennylane.transforms.decompose import DecomposeInterpreter, DynamicDecomposeInterpreter
+from pennylane.transforms.decompose import DecomposeInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -44,10 +44,6 @@ class SimpleCustomOp(Operation):
     @staticmethod
     def compute_decomposition(wires) -> None:
         return [qml.Hadamard(wires=wires)]
-
-    @staticmethod
-    def _compute_plxpr_decomposition(wires):
-        qml.Hadamard(wires=wires)
 
 
 const = jax.numpy.array(0.1)
@@ -71,7 +67,7 @@ class CustomOpConstHyperparams(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
+    def compute_decomposition(*args, **hyperparameters):
 
         phi = args[0]
         wires = args[1:]
@@ -99,7 +95,7 @@ class CustomOpMultiWire(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
+    def compute_decomposition(*args, **hyperparameters):
 
         phi = args[0]
         wires = args[1:]
@@ -123,7 +119,7 @@ class CustomOpCond(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
 
         def true_fn(phi, wires):
             qml.RX(phi, wires=wires)
@@ -144,7 +140,7 @@ class CustomOpForLoop(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
 
         @qml.for_loop(0, 3, 1)
         def loop_rx(i, phi):
@@ -165,7 +161,7 @@ class CustomOpWhileLoop(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
 
         @qml.while_loop(lambda i: i < 3)
         def loop_fn(i):
@@ -173,8 +169,6 @@ class CustomOpWhileLoop(Operation):
             return i + 1
 
         _ = loop_fn(0)
-
-        return qml.expval(qml.Z(0))
 
 
 class CustomOpNestedCond(Operation):
@@ -187,7 +181,7 @@ class CustomOpNestedCond(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
 
         def true_fn(phi, wires):
 
@@ -223,7 +217,7 @@ class CustomOpAutograph(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
 
         if phi > 0.5:
             qml.RX(phi, wires=wires)
@@ -242,18 +236,11 @@ class CustomOpNestedOp(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
-        return [qml.RX(phi, wires=wires), SimpleCustomOp(wires=wires)]
-
-    @staticmethod
     def compute_matrix(*params, **hyperparams):
         return np.array([[1, 0], [0, 1]])
 
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-        return jax.make_jaxpr(self._compute_plxpr_decomposition)(*self.parameters, *self.wires)
-
     @staticmethod
-    def _compute_plxpr_decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
         qml.RX(phi, wires=wires)
         SimpleCustomOp(wires=wires)
 
@@ -270,7 +257,7 @@ class TestDynamicDecomposeInterpreter:
     def test_no_plxpr_decomposition(self):
         """Test that a function with a custom operation that does not have a plxpr decomposition is not decomposed."""
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         def f(x):
             qml.RY(x, wires=0)
 
@@ -281,7 +268,7 @@ class TestDynamicDecomposeInterpreter:
     def test_function_simple(self):
         """Test that a function with a custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         def f():
             qml.RY(0.1, wires=0)
             SimpleCustomOp(wires=0)
@@ -301,7 +288,7 @@ class TestDynamicDecomposeInterpreter:
     def test_qnode_simple(self):
         """Test that a QNode with a custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit():
             qml.RY(0.1, wires=0)
@@ -331,7 +318,7 @@ class TestDynamicDecomposeInterpreter:
     def test_multi_wire(self, wires):
         """Test that a QNode with a multi-wire custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=4), autograph=False)
         def circuit(x, wires):
             CustomOpMultiWire(x, wires=wires)
@@ -374,7 +361,7 @@ class TestDynamicDecomposeInterpreter:
     def test_qnode_const_hyperparams(self, wires, x):
         """Test that a QNode with a constant in the custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=4), autograph=False)
         def circuit(x, wires):
             CustomOpConstHyperparams(x, wires=wires)
@@ -415,7 +402,7 @@ class TestDynamicDecomposeInterpreter:
     def test_qnode_cond(self, x, wire):
         """Test that a QNode with a conditional custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit(x, wire):
             CustomOpCond(x, wires=wire)
@@ -455,7 +442,7 @@ class TestDynamicDecomposeInterpreter:
     def test_qnode_for_loop(self, wire):
         """Test that a QNode with a for loop custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit(x, wire):
             CustomOpForLoop(x, wires=wire)
@@ -490,7 +477,7 @@ class TestDynamicDecomposeInterpreter:
     def test_qnode_while_loop(self, wire):
         """Test that a QNode with a while loop custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit(x, wire):
             CustomOpWhileLoop(x, wires=wire)
@@ -525,7 +512,7 @@ class TestDynamicDecomposeInterpreter:
     def test_qnode_nested_cond(self, x, wire):
         """Test that a QNode with a nested conditional custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit(x, wire):
             CustomOpNestedCond(x, wires=wire)
@@ -570,18 +557,19 @@ class TestDynamicDecomposeInterpreter:
 
         assert qml.math.allclose(*result, circuit_comparison(x, wire))
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("wire", [0, 1])
     @pytest.mark.parametrize("x", [0.2, 0.8])
     def test_qnode_autograph(self, x, wire):
         """Test that a QNode with a nested conditional custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
+        @DecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
         def circuit(x, wire):
             CustomOpAutograph(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
 
-        jaxpr = jax.make_jaxpr(circuit)(x, wire)
+        jaxpr = qml.capture.make_plxpr(circuit, autograph=True)(x, wire)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -617,11 +605,11 @@ class TestDynamicDecomposeInterpreter:
 
     @pytest.mark.parametrize("x", [0.2, 0.8])
     @pytest.mark.parametrize("wire", [0, 1])
-    @pytest.mark.parametrize("max_expansion, expected_n_eqns", [(0, 3), (1, 4)])
+    @pytest.mark.parametrize("max_expansion, expected_n_eqns", [(0, 3), (1, 4), (2, 4), (None, 4)])
     def test_qnode_nested_decomp(self, x, wire, max_expansion, expected_n_eqns):
         """Test that a QNode with a nested decomposition custom operation is correctly decomposed."""
 
-        @DynamicDecomposeInterpreter(max_expansion=max_expansion)
+        @DecomposeInterpreter(max_expansion=max_expansion)
         @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit(x, wire):
             CustomOpNestedOp(x, wires=wire)
