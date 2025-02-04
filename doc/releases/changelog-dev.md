@@ -255,6 +255,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `_try_wrap_in_custom_ctrl_op` in `pennylane/ops/op_math/controlled.py` now directly generates the `ControlledOp`,
+  bypassing `ControlledQubitUnitary`, to avoid a known bug [(#1494)](https://github.com/PennyLaneAI/catalyst/issues/1494) found in Catalyst.
+  [(#6926)](https://github.com/PennyLaneAI/pennylane/pull/6926)
+
 * `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
   [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
 
