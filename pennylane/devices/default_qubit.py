@@ -57,6 +57,9 @@ logger.addHandler(logging.NullHandler())
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
+    if qml.capture.enabled():
+        return op.has_matrix
+
     if op.name == "QFT" and len(op.wires) >= 6:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
@@ -521,10 +524,35 @@ class DefaultQubit(Device):
             return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
         return False
 
+    def _preprocess_capture(
+        self, execution_config=DefaultExecutionConfig
+    ) -> tuple[TransformProgram, ExecutionConfig]:
+        updated_values = {}
+
+        if execution_config.gradient_method == "best":
+            updated_values["gradient_method"] = "backprop"
+
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        for option in self._device_options:
+            if option not in updated_values["device_options"]:
+                updated_values["device_options"][option] = getattr(self, f"_{option}")
+
+        execution_config = replace(execution_config, **updated_values)
+
+        for option, value in execution_config.device_options.items():
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
+
+            if option == "max_workers" and value is not None:
+                raise qml.DeviceError("Cannot set 'max_workers' if program capture is enabled.")
+
+        transform_program = TransformProgram()
+        transform_program.add_transform(qml.transforms.decompose, gate_set=stopping_condition)
+        return transform_program, execution_config
+
     @debug_logger
     def preprocess(
-        self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        self, execution_config: ExecutionConfig = DefaultExecutionConfig
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
@@ -540,6 +568,9 @@ class DefaultQubit(Device):
         This device supports any qubit operations that provide a matrix
 
         """
+        if qml.capture.enabled():
+            return self._preprocess_capture(execution_config=execution_config)
+
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 

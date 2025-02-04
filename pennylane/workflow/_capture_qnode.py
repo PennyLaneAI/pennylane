@@ -198,7 +198,14 @@ def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_di
         return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
     user_jaxpr = jax.make_jaxpr(user_transform_wrapper)(*non_const_args)
-    final_jaxpr = qnode.transform_program(user_jaxpr.jaxpr, user_jaxpr.consts, *non_const_args)
+    transformed_jaxpr = qnode.transform_program(
+        user_jaxpr.jaxpr, user_jaxpr.consts, *non_const_args
+    )
+
+    preprocess_program, _ = device.preprocess()
+    final_jaxpr = preprocess_program(
+        transformed_jaxpr.jaxpr, transformed_jaxpr.consts, *non_const_args
+    )
 
     if batch_dims is None:
         return device.eval_jaxpr(final_jaxpr.jaxpr, final_jaxpr.consts, *non_const_args)

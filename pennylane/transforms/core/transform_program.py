@@ -559,7 +559,7 @@ class TransformProgram:
         self, tapes: QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
     def __call__(self, *args, **kwargs):
-        if isinstance(args[0], QuantumScriptBatch):
+        if isinstance(args[0], Sequence):
             return self.__call_tapes(args[0])
         return self.__call_jaxpr(*args, **kwargs)
 
