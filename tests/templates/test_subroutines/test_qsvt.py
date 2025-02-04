@@ -887,4 +887,68 @@ class TestIterativeSolver:
             poly_func(coeffs=target_polynomial_coeffs, degree=degree, parity=parity, x=x_point),
             atol=tolerance,
         )
- 
+    
+    @pytest.mark.parametrize(
+        "poly",
+        [
+            (generate_polynomial_coeffs(4,0)),
+            (generate_polynomial_coeffs(3,1)),
+            (generate_polynomial_coeffs(6,0)),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "angle_solver",
+        [
+            "iterative",
+        ]
+    )
+    def test_correctness_iterative_QSP_angles(self, poly, angle_solver):
+        """Tests that angles generate desired poly"""
+
+        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
+        x = np.random.normal(size=1).item()
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit_qsp():
+            qml.RX(2 * angles[0], wires=0)
+            for angle in angles[1:]:
+                qml.RZ(-2 * np.arccos(x), wires=0)
+                qml.RX(2 * angle, wires=0)
+
+            return qml.state()
+
+        output = qml.matrix(circuit_qsp, wire_order=[0])()[0, 0]
+        expected = sum(coef * (x**i) for i, coef in enumerate(poly))
+        assert np.isclose(output.real, expected.real)
+
+    @pytest.mark.parametrize(
+        "poly",
+        [
+            (generate_polynomial_coeffs(4,0)),
+            (generate_polynomial_coeffs(3,1)),
+            (generate_polynomial_coeffs(6,0)),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "angle_solver",
+        [
+            "iterative",
+        ]
+    )
+    def test_correctness_iterative_QSVT_angles(self, poly, angle_solver):
+        """Tests that angles generate desired poly"""
+
+        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver)
+        x = np.random.normal(size=1).item()
+
+        block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
+        projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in angles]
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit_qsvt():
+            qml.QSVT(block_encoding, projectors)
+            return qml.state()
+
+        output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
+        expected = sum(coef * (x**i) for i, coef in enumerate(poly))
+        assert np.isclose(output.real, expected.real)
