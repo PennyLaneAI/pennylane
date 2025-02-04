@@ -156,7 +156,7 @@ class QubitUnitary(Operation):
         if isinstance(U, csr_matrix):
             U_dagger = U.conjugate().transpose()
             identity = csr_matrix(np.eye(dim))
-            return qml.math.norm(U @ U_dagger - identity) < 1e-10
+            return sp.sparse.linalg.norm(U @ U_dagger - identity) < 1e-10
         return qml.math.allclose(
             qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
             qml.math.eye(dim),
