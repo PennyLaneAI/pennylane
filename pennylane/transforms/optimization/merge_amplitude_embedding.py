@@ -13,6 +13,8 @@
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 
+from functools import lru_cache, partial
+
 import pennylane as qml
 from pennylane import AmplitudeEmbedding
 from pennylane.math import flatten, reshape
@@ -22,7 +24,137 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
-@transform
+@lru_cache
+def _get_plxpr_merge_amplitude_embedding():
+
+    try:
+        from jax import make_jaxpr, tree_util
+
+        from pennylane.capture import PlxprInterpreter
+        from pennylane.operation import Operator
+    except ImportError:
+        return None, None
+
+    # pylint: disable=redefined-outer-name
+    class MergeAmplitudeEmbeddingInterpreter(PlxprInterpreter):
+        """Plxpr Interpreter for merging AmplitudeEmbedding gates when program capture is enabled."""
+
+        def __init__(self):
+            self.new_operations = []
+            self.visited_wires = set()
+            self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
+
+        def setup(self) -> None:
+            self.new_operations = []
+            self.visited_wires = set()
+            self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
+
+        def cleanup(self) -> None:
+            self.new_operations = []
+            self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
+
+        def interpret_operation(self, op: Operator):
+            if not isinstance(op, AmplitudeEmbedding):
+                self.new_operations.append(op)
+                self.visited_wires = self.visited_wires.union(set(op.wires))
+                return
+
+            if len(self.visited_wires.intersection(set(op.wires))) > 0:
+                raise qml.DeviceError(
+                    f"Operation {op.name} cannot be used after other Operation applied in the same qubit "
+                )
+            self.input_wires.append(op.wires)
+            self.input_vectors.append(op.parameters[0])
+            self.input_batch_size.append(op.batch_size)
+            self.visited_wires = self.visited_wires.union(set(op.wires))
+
+        def interpret_measurement(self, measurement):
+            self.new_operations.append(measurement)
+
+        def purge_new_operations(self):
+            if len(self.input_wires) > 0:
+                final_wires = self.input_wires[0]
+                final_vector = self.input_vectors[0]
+                final_batch_size = self.input_batch_size[0]
+
+                for w, v, b in zip(
+                    self.input_wires[1:], self.input_vectors[1:], self.input_batch_size[1:]
+                ):
+                    final_vector = final_vector[..., :, None] * v[..., None, :]
+                    final_batch_size = final_batch_size or b
+                    final_wires = final_wires + w
+
+                    if final_batch_size:
+                        final_vector = reshape(final_vector, (final_batch_size, -1))
+                    else:
+                        final_vector = flatten(final_vector)
+
+                self.new_operations.insert(0, AmplitudeEmbedding(final_vector, wires=final_wires))
+
+            for op in self.new_operations:
+                super().interpret_operation(op)
+            self.cleanup()
+
+        def eval(self, jaxpr, consts, *args):
+            self._env = {}
+            self.setup()
+
+            for arg, invar in zip(args, jaxpr.invars, strict=True):
+                self._env[invar] = arg
+            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+                self._env[constvar] = const
+
+            for eqn in jaxpr.eqns:
+                primitive = eqn.primitive
+                custom_handler = self._primitive_registrations.get(primitive, None)
+
+                if custom_handler:
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    outvals = custom_handler(self, *invals, **eqn.params)
+                elif getattr(primitive, "prim_type", "") == "operator":
+                    outvals = self.interpret_operation_eqn(eqn)
+                elif getattr(primitive, "prim_type", "") == "measurement":
+                    outvals = self.interpret_measurement_eqn(eqn)
+                else:
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    extra_args, params = primitive.get_bind_params(eqn.params)
+                    outvals = primitive.bind(*extra_args, *invals, **params)
+
+                if not primitive.multiple_results:
+                    outvals = [outvals]
+                for outvar, outval in zip(eqn.outvars, outvals, strict=True):
+                    self._env[outvar] = outval
+
+            self.purge_new_operations()
+            # Read the final result of the Jaxpr from the environment
+            outvals = []
+            for var in jaxpr.outvars:
+                outval = self.read(var)
+                if isinstance(outval, qml.operation.Operator):
+                    outvals.append(super().interpret_operation(outval))
+                else:
+                    outvals.append(outval)
+            self.cleanup()
+            self._env = {}
+            return outvals
+
+    def merge_amplitude_embedding_plxpr_to_plxpr(jaxpr, consts, _, __, *args):
+        interpreter = MergeAmplitudeEmbeddingInterpreter()
+
+        def wrapper(*inner_args):
+            return interpreter.eval(jaxpr, consts, *inner_args)
+
+        return make_jaxpr(wrapper)(*args)
+
+    return MergeAmplitudeEmbeddingInterpreter, merge_amplitude_embedding_plxpr_to_plxpr
+
+
+MergeAmplitudeEmbeddingInterpreter, merge_amplitude_embedding_plxpr_to_plxpr = (
+    _get_plxpr_merge_amplitude_embedding()
+)
+
+
+@partial(transform, plxpr_transform=merge_amplitude_embedding_plxpr_to_plxpr)
 def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to combine amplitude embedding templates that act on different qubits.
 
