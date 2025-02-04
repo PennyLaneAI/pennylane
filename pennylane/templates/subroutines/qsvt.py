@@ -734,7 +734,16 @@ Implementation of the QSP (Quantum Signal Processing) algorithm proposed in http
 import scipy
 
 def cheby_pol(x, degree):
-    """cos(degree*arcos(x))"""
+    r"""
+    return the value of the chebychev polynomila cos(degree*arcos(x)) at point x
+    
+    Args:
+        x (float):
+        degree (int)
+    
+    Returns:
+        float: vlaue of cos(degree*arcos(x))
+    """
     if np.abs(x) > 1:
         raise ValueError()
     return qml.math.cos(degree * qml.math.arccos(x))
@@ -742,17 +751,43 @@ def cheby_pol(x, degree):
 def poly_func(
     coeffs, degree, parity, x
     ):
-    """\sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(karccos(x))"""
+    r"""
+    evaluate a polynomial function of degree degree and given parity expressed in the Chebychev basis at value x
+    
+    Args:
+        coeffs (numpy.ndarray): coefficient of the polynomial function in the Chebychev basis
+        degree (int): degree of polynomial
+        parity (int): 0 or 1 for odd/even polynomials respectively
+        x (float): point at which to evaluate the polynomial function
+
+    Returns:
+        float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(karccos(x))
+    """
     ind = qml.math.arange(len(coeffs))
     return sum(
         [coeffs[i] * cheby_pol(x, degree=2 * i + parity) for i in ind]
     )
 
 def z_rotation(phi):
+    r"""
+    Args:
+        phi (float): angle parameter
+    
+    Returns:
+        numpy.ndarray: Z rotation matrix
+    """
     return qml.math.array([[qml.math.exp(1j * phi), 0.0], [0.0, qml.math.exp(-1j * phi)]])
 
 def W_of_x(x):
-    """W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
+    r"""
+    W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    
+    Args:
+        x (float):
+    
+    Returns:
+        numpy.ndarray: 2x2 matrix of W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    """
 
     return qml.math.array(
         [
@@ -762,12 +797,30 @@ def W_of_x(x):
     )
 
 def qsp_iterate(phi, x):
-    """defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
+    r"""
+    defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    
+    Args:
+        phi (float): angle parameter
+        x (float):
+   
+    Returns:
+        numpy.ndarray: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    """
     return qml.math.dot(W_of_x(x=x), z_rotation(phi=phi))
 
 
 def qsp_iterates(phis, x):
-    """Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)"""
+    r"""
+    Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
+ 
+    Args:
+        phis (numpy.ndarray): array of QSP angles implementing a given polynomial
+        x (float):point at which to evaluate the polynomial
+    Returns:
+        numpy.ndarray: 2x2 block-encoding of polynomial implemented by the angles phi
+    """
+    
     mtx = qml.math.eye(2)
     for phi in phis[::-1][:-1]:
         mtx = qml.math.dot(qsp_iterate(x=x, phi=phi), mtx)
@@ -778,12 +831,31 @@ def qsp_iterates(phis, x):
 import math
 
 def grid_pts(degree):
-    """x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) Grid over which the polynomials are evaluated and the optimization is carried defined in page 8"""
+    r"""
+    generate the grid: x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) over which the polynomials are evaluated and the optimization is carried defined in page 8
+    
+    Args:
+        degree (int): degree of polynomial function
+    
+    Returns:
+        numpy.ndarray: optimization grid points
+    """
     d = (degree + 1)// 2 + (degree+1) % 2
     return qml.math.array([qml.math.cos((2 * j - 1) * math.pi / (4 * d)) for j in range(1, d + 1)])
 
 def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimize, opt_method="Newton-CG"):
-    """Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid"""
+    r"""
+    Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid
+    
+    Args:
+        degree (int): degree of polynomial function
+        coeffs_target_func (numpy.ndarray): coefficients of the polynomial function in ascending index order
+        optimizer: optimization function to be used
+        opt_method (str): specific optimization algorithm. Defaults is "Newton-CG"
+    
+    Returns:
+        tuple[numpy.ndarray, float]: A tuple containing QSP angles and the converged cost function value at QSP angles
+    """
     parity = degree % 2
 
     grid_points = grid_pts(degree)
