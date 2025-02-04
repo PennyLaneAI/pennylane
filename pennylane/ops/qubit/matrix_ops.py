@@ -234,7 +234,7 @@ class QubitUnitary(Operation):
                     "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
                 )
             if isinstance(U, csr_matrix):
-                return qml.ops.one_qubit_decomposition(U.toarray(), Wires(wires)[0])
+                return qml.ops.two_qubit_decomposition(U.toarray(), Wires(wires))
 
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
