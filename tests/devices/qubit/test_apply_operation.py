@@ -19,6 +19,7 @@ from functools import reduce
 import numpy as np
 import pytest
 from dummy_debugger import Debugger
+from scipy.sparse import csr_matrix, kron
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -52,7 +53,6 @@ methods = [
     apply_operation_einsum,
     apply_operation_tensordot,
     apply_operation,
-    apply_operation_sparse_wrapped,
 ]
 
 # pylint: disable=import-outside-toplevel,unsubscriptable-object,arguments-differ
@@ -83,8 +83,75 @@ def test_custom_operator_with_matrix():
     assert qml.math.allclose(new_state, mat @ state)
 
 
+class TestSparseOperation:
+    """Test the sparse matrix application method"""
+
+    def test_sparse_operation_dense_state(self):
+        """Test that apply_operation works with a sparse matrix operation"""
+
+        # Create a random unitary matrix
+        U = unitary_group.rvs(2**3)
+        U = qml.math.asarray(U, like="numpy")
+
+        # Create a random state vector
+        state = np.random.rand(2**3) + 1j * np.random.rand(2**3)
+        state = qml.math.asarray(state, like="numpy").reshape([2] * 3)
+
+        # Apply the operation
+        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(3))
+        new_state = apply_operation_csr_matrix(U_sp, state)
+        expected_state = state.reshape((1, 8)) @ U.reshape((8, 8)).T
+        expected_state = expected_state.reshape([2] * 3)
+
+        assert qml.math.allclose(new_state, expected_state)
+
+    def test_sparse_operation_sparse_state(self):
+        """Test that apply_operation works with a sparse matrix operation"""
+
+        # Create a random unitary matrix
+        U = unitary_group.rvs(2**3)
+        U = qml.math.asarray(U, like="numpy")
+
+        # Create a random state vector
+        state = np.random.rand(2**3) + 1j * np.random.rand(2**3)
+        state = csr_matrix(state)
+
+        # Apply the operation
+        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(3))
+        new_state = apply_operation_csr_matrix(U_sp, state)
+        expected_state = state.reshape((1, 8)) @ U.reshape((8, 8)).T
+
+        assert qml.math.allclose(new_state.toarray(), expected_state)
+
+    def test_sparse_operation_large_N(self):
+        N = 20
+        # Make a sparse unitary matrix by tensor producting several smaller unitaries
+        from gate_data import I, X, Y, Z
+
+        U_list = [I, X, Y, Z]
+        U_list = [csr_matrix(op) for op in U_list]
+        # Pick random indices, then choose unitaries
+        indices = np.random.choice(len(U_list), size=N)
+        Us = [U_list[idx] for idx in indices]
+
+        U = Us[0]
+        for i in range(1, N):
+            U = kron(U, Us[i], format="csr")
+
+        state = np.random.rand(2**N) + 1j * np.random.rand(2**N)
+        state = state / np.linalg.norm(state)
+        state = csr_matrix(state)
+
+        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(N))
+        new_state = apply_operation_csr_matrix(U_sp, state)
+
+        # Don't waste time constructing dense U to test, instead we just check that the U^Dagger @ state is correct
+        final_state = apply_operation_csr_matrix(U_sp, new_state)
+        assert np.allclose(final_state.toarray(), state.toarray())
+
+
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-@pytest.mark.parametrize("method", methods)
+@pytest.mark.parametrize("method", methods + [apply_operation_sparse_wrapped])
 @pytest.mark.parametrize("wire", (0, 1))
 class TestTwoQubitStateSpecialCases:
     """Test the special cases on a two qubit state.  Also tests the special cases for einsum and tensor application methods
@@ -316,7 +383,7 @@ def time_dependent_hamiltonian():
 class TestApplyParametrizedEvolution:
     """Test that apply_operation works with ParametrizedEvolution"""
 
-    @pytest.mark.parametrize("method", methods)
+    @pytest.mark.parametrize("method", methods + [apply_operation_sparse_wrapped])
     def test_parametrized_evolution_time_independent(self, method):
         """Test that applying a ParametrizedEvolution gives the expected state
         for a time-independent hamiltonian"""
@@ -863,7 +930,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert op.batch_size == 3
 
 
-@pytest.mark.parametrize("method", methods)
+@pytest.mark.parametrize("method", methods + [apply_operation_sparse_wrapped])
 class TestLargerOperations:
     """Tests matrix applications on states and operations with larger numbers of wires."""
 
