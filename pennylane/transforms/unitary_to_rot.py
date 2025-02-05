@@ -55,14 +55,11 @@ def _get_plxpr_unitary_to_rot():
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
             if isinstance(op, qml.QubitUnitary):
-                qml.capture.disable()
-                try:
+                with qml.capture.pause():
                     if qml.math.shape(op.parameters[0]) == (2, 2):
                         ops = one_qubit_decomposition(op.parameters[0], op.wires[0])
                     elif qml.math.shape(op.parameters[0]) == (4, 4):
                         ops = two_qubit_decomposition(op.parameters[0], op.wires)
-                finally:
-                    qml.capture.enable()
                 return [self.interpret_operation(decomp_op) for decomp_op in ops]
 
             return [self.interpret_operation(op)]
