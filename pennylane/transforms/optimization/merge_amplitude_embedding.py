@@ -54,43 +54,47 @@ def _get_plxpr_merge_amplitude_embedding():
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def interpret_operation(self, op: Operator):
-            if not isinstance(op, AmplitudeEmbedding):
-                self.new_operations.append(op)
-                self.visited_wires = self.visited_wires.union(set(op.wires))
-                return
+            with qml.capture.pause():
+                if not isinstance(op, AmplitudeEmbedding):
+                    self.new_operations.append(op)
+                    self.visited_wires = self.visited_wires.union(set(op.wires))
+                    return
 
-            if len(self.visited_wires.intersection(set(op.wires))) > 0:
-                raise qml.DeviceError(
-                    f"Operation {op.name} cannot be used after other Operation applied in the same qubit "
-                )
-            self.input_wires.append(op.wires)
-            self.input_vectors.append(op.parameters[0])
-            self.input_batch_size.append(op.batch_size)
-            self.visited_wires = self.visited_wires.union(set(op.wires))
+                if len(self.visited_wires.intersection(set(op.wires))) > 0:
+                    raise qml.DeviceError(
+                        f"Operation {op.name} cannot be used after other Operation applied in the same qubit "
+                    )
+                self.input_wires.append(op.wires)
+                self.input_vectors.append(op.parameters[0])
+                self.input_batch_size.append(op.batch_size)
+                self.visited_wires = self.visited_wires.union(set(op.wires))
 
         def interpret_measurement(self, measurement):
             self.purge_new_operations()
             return super().interpret_measurement(measurement)
 
         def purge_new_operations(self):
-            if len(self.input_wires) > 0:
-                final_wires = self.input_wires[0]
-                final_vector = self.input_vectors[0]
-                final_batch_size = self.input_batch_size[0]
+            with qml.capture.pause():
+                if len(self.input_wires) > 0:
+                    final_wires = self.input_wires[0]
+                    final_vector = self.input_vectors[0]
+                    final_batch_size = self.input_batch_size[0]
 
-                for w, v, b in zip(
-                    self.input_wires[1:], self.input_vectors[1:], self.input_batch_size[1:]
-                ):
-                    final_vector = final_vector[..., :, None] * v[..., None, :]
-                    final_batch_size = final_batch_size or b
-                    final_wires = final_wires + w
+                    for w, v, b in zip(
+                        self.input_wires[1:], self.input_vectors[1:], self.input_batch_size[1:]
+                    ):
+                        final_vector = final_vector[..., :, None] * v[..., None, :]
+                        final_batch_size = final_batch_size or b
+                        final_wires = final_wires + w
 
-                    if final_batch_size:
-                        final_vector = reshape(final_vector, (final_batch_size, -1))
-                    else:
-                        final_vector = flatten(final_vector)
+                        if final_batch_size:
+                            final_vector = reshape(final_vector, (final_batch_size, -1))
+                        else:
+                            final_vector = flatten(final_vector)
 
-                self.new_operations.insert(0, AmplitudeEmbedding(final_vector, wires=final_wires))
+                    self.new_operations.insert(
+                        0, AmplitudeEmbedding(final_vector, wires=final_wires)
+                    )
 
             for op in self.new_operations:
                 super().interpret_operation(op)
