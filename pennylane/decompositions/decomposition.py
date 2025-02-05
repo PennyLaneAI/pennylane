@@ -19,11 +19,11 @@ from __future__ import annotations
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, StopSearch, PruneSearch
 
+from pennylane.operation import Operator
+
 from .compressed_op import CompressedResourceOp
 from .decomposition_rule import DecompositionRule
 from .resources import Resources
-
-from pennylane.operation import Operator
 
 
 class DecompositionGraph:
