@@ -72,6 +72,27 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         assert transformed_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    def test_batch_preservation(self):
+        """Test that the batch dimension is preserved after the transform."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def qfunc():
+            qml.AmplitudeEmbedding(jax.numpy.array([[1, 0], [0, 1]]), wires=0)
+            qml.AmplitudeEmbedding(jax.numpy.array([1, 0]), wires=1)
+            qml.AmplitudeEmbedding(jax.numpy.array([[0, 1], [1, 0]]), wires=2)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+        args = ()
+        transformed_jaxpr = merge_amplitude_embedding_plxpr_to_plxpr(
+            jaxpr.jaxpr, jaxpr.consts, [], {}, *args
+        )
+
+        assert len(transformed_jaxpr.eqns) == 3
+        assert transformed_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+        assert transformed_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
 
 # pylint:disable=too-few-public-methods
 class TestMergeAmplitudeEmbeddingPlxprTransform:
