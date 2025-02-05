@@ -340,7 +340,7 @@ class TestDeferMeasurementsInterpreter:
             a = jnp.sin(0.5 * jnp.pi * ms[0])
             b = a - (ms[1] + 1) ** 4
             c = jnp.sinh(b) ** (-ms[2] + 2)
-            return c
+            return ms[0] * ms[1] * c
 
         @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
         def f():

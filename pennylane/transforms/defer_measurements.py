@@ -228,22 +228,32 @@ def _get_plxpr_defer_measurements():
                 MeasurementValue: ``MeasurementValue`` containing classical processing information
                 for applying the input equation to mid-circuit measurement outcomes.
             """
-            # pylint: disable=protected-access,unnecessary-lambda
+            # pylint: disable=protected-access
+            # MeasurementValue._apply is for applying a new operation to the current
+            # MeasurementValue
+            # It is used when either:
+            # 1. A unary operation is performed on one MeasurementValue, e.g., ~m0
+            # 2. A binary operation is performed on a MeasurementValue and a scalar,
+            #    e.g., m0 + 1
+            #
+            # MeasurementValue._transform_bin_op is for applying a binary operation
+            # to two MeasurementValues
             assert len(invals) <= 2
+            processing_fn = partial(eqn.primitive.bind, **eqn.params)
 
+            # One MeasurementValue
             if len(invals) == 1:
-                meas_val = invals[0]
-                processing_fn = lambda x: eqn.primitive.bind(x, **eqn.params)
-                return meas_val._apply(processing_fn)
+                m0 = invals[0]
+                return m0._apply(processing_fn)
 
+            # Two MeasurementValues
             if all(isinstance(inval, MeasurementValue) for inval in invals):
-                processing_fn = lambda *x: eqn.primitive.bind(*x, **eqn.params)
-                return invals[0]._transform_bin_op(processing_fn, invals[1])
+                m0, m1 = invals
+                return m0._transform_bin_op(processing_fn, m1)
 
             # One MeasurementValue, one number
-            [meas_val, other] = invals if isinstance(invals[0], MeasurementValue) else invals[::-1]
-            processing_fn = lambda x: eqn.primitive.bind(x, other, **eqn.params)
-            return meas_val._apply(processing_fn)
+            [m0, other] = invals if isinstance(invals[0], MeasurementValue) else invals[::-1]
+            return m0._apply(lambda x: processing_fn(x, other))
 
         def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
