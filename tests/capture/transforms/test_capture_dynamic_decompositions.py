@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-
+from jax import numpy as jnp
 jax = pytest.importorskip("jax")
 
 import numpy as np
@@ -635,8 +635,9 @@ class TestDynamicDecomposeInterpreter:
         """Test that the QSVT is correctly dynamically decomposed."""
         n_wires = 6
         block_encoding = qml.Hadamard(wires=0)
-        phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)] 
-
+        #phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)] 
+        phase_shifts = [qml.RZ(0.1, wires=0), qml.RZ(0.1, wires=0), qml.RZ(0.1, wires=0)]
+        #jnp.array(phase_shifts)
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
         def circuit():

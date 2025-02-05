@@ -580,17 +580,18 @@ class QSVT(Operation):
     def _compute_plxpr_decomposition(*args, **hyperparameters):
         UA = hyperparameters["UA"]
         projectors = hyperparameters["projectors"]
-        
-        # This is OK
-        projectors[0]._primitive_bind_call(*projectors[0].data, wires=projectors[0].wires)
         UA._primitive_bind_call(wires=UA.wires)
-
-        @qml.for_loop(len(projectors))
-        def loop(i):
-            # But this fails...
-            projectors[i]._primitive_bind_call(*projectors[i].wires)
-        loop()
         
+        for idx, op in enumerate(projectors[:-1]):
+            op._primitive_bind_call(*op.data, wires=op.wires)
+            if idx % 2 == 0:
+                UA._primitive_bind_call(wires=UA.wires)
+            else:
+                pass
+            
+        projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
+            
+
         #@qml.for_loop(len(projectors))
         #def PU_loop(i):
         #    projectors[i]._primitive_bind_call(*projectors[i].data, wires=projectors[i].wires)
