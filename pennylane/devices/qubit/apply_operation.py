@@ -231,11 +231,11 @@ def apply_operation(
 
     """
     if isinstance(op.matrix(), csr_matrix):
-        return _apply_operation_csr_matrix(op, state, is_state_batched, debugger)
+        return apply_operation_csr_matrix(op, state, is_state_batched)
     return _apply_operation_default(op, state, is_state_batched, debugger)
 
 
-def _apply_operation_csr_matrix(op, state, is_state_batched, debugger):
+def apply_operation_csr_matrix(op, state, is_state_batched: bool = False):
     """The csr_matrix specialized version apply operation."""
     # Calculate the num wires by state shape
     if isinstance(state, csr_matrix):  # Then the first is batch and the second is state dim
