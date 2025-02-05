@@ -31,6 +31,9 @@
         [0., 0., 0., 1.]])
   ```
 
+* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
+
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
@@ -279,6 +282,13 @@
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
+  [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
+
+* `qml.capture.PlxprInterpreter` now uses `Primitive.get_bind_params` to resolve primitive calling signatures before binding
+  primitives.
+  [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
 
 * The interface is now detected from the data in the circuit, not the arguments to the `QNode`. This allows
   interface data to be strictly passed as closure variables and still be detected.
