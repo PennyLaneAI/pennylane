@@ -93,6 +93,20 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    def test_returned_op_is_not_cancelled(self):
+        """Test that ops that are returned by the function being transformed are not cancelled."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f():
+            qml.AmplitudeEmbedding(jax.numpy.array([1, 0]), wires=0)
+            return qml.AmplitudeEmbedding(jax.numpy.array([1, 0]), wires=1)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 2
+        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert jaxpr.eqns[1].primitive == qml.AmplitudeEmbedding._primitive
+        assert jaxpr.jaxpr.outvars[0] == jaxpr.eqns[1].outvars[0]
+
 
 # pylint:disable=too-few-public-methods
 class TestMergeAmplitudeEmbeddingPlxprTransform:
