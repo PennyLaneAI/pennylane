@@ -12,24 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the classes and functions for midcircuit measurements with a
-parameterized measurement axis."""
+"""This module contains the classes and functions for creating and diagonalizing
+midcircuit measurements with a parameterized measurement axis."""
 
 from typing import Optional
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.wires import Wires
 
 
 # ToDo: should some of the info be data instead of metadata?
 class ParametricMidMeasureMP(MidMeasureMP):
-    """Parametric mid-circuit measurement.
+    """Parametric mid-circuit measurement. The basis for the measurement is parametrized by
+    a plane ("XY", "XZ" or "YZ"), and an angle within the plane.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
-    Measurements on a single qubit in the computational basis are assumed.
+    Measurements on a single qubit are assumed.
+
+    .. warning::
+        Measurements should be diagonalized before execution for any device that only natively supports
+        mid-circuit measurements in the computational basis. To diagonalize, the :func:`diagonalize_mcms <pennylane.ftqc.diagonalize_mcms>`
+        transform can be applied.
+
+        Skipping diagonalization for a circuit containing parametric mid-circuit measurements may result
+        in a completed execution with incorrect results.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -50,12 +60,13 @@ class ParametricMidMeasureMP(MidMeasureMP):
         self,
         wires: Optional[Wires],
         *,
-        angle: Optional[float],
-        plane: Optional[str] = "XY",
+        angle: Optional[float] = 0,
+        plane: Optional[str] = "YZ",
         reset: Optional[bool] = False,
         postselect: Optional[int] = None,
         id: Optional[str] = None,
     ):
+        self._shortname = f"measure_{plane.lower()}"
         self.batch_size = None
         super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, id=id)
         self.plane = plane
@@ -85,6 +96,10 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
         return hash(fingerprint)
 
+    def __repr__(self):
+        """Representation of this class."""
+        return f"{self._shortname}(wires={self.wires.tolist()}, angle={self.angle})"
+
     @property
     def has_diagonalizing_gates(self):
         """Whether there are gates that need to be applied for to diagonalize the measurement"""
@@ -93,7 +108,10 @@ class ParametricMidMeasureMP(MidMeasureMP):
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
         if self.plane == "XY":
-            return [qml.QubitUnitary(_xy_to_z(self.angle), wires=self.wires)]
+            mat = np.array(
+                [[1, np.exp(-1j * self.angle)], [1, -np.exp(-1j * self.angle)]]
+            ) / np.sqrt(2)
+            return [qml.QubitUnitary(mat, wires=self.wires)]
         if self.plane == "XZ":
             return [qml.RY(-self.angle, self.wires)]
         if self.plane == "YZ":
@@ -103,12 +121,6 @@ class ParametricMidMeasureMP(MidMeasureMP):
             f"{self.plane} plane not implemented. Available plans are 'XY' 'XZ' and 'YZ'."
         )
 
-    # ToDo: is this needed anymore?
-    @property
-    def has_matrix(self):
-        """The name of the measurement. Needed to match the Operator API."""
-        return False
-
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
@@ -116,14 +128,18 @@ class ParametricMidMeasureMP(MidMeasureMP):
             decimals=None (Int): If ``None``, no parameters are included. Else,
                 how to round the parameters.
             base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
-                Must be same length as ``obs`` attribute.
+                Required to match general call signature. Not used.
             cache=None (dict): dictionary that carries information between label calls
-                in the same drawing
+                in the same drawing. Required to match general call signature. Not used.
 
         Returns:
             str: label to use in drawings
         """
-        _label = "┤↗ᶿ"
+        superscripts = {"X": "ˣ", "Y": "ʸ", "Z": "ᶻ"}
+        _plane = "".join([superscripts[i] for i in self.plane])
+
+        _label = f"┤↗{_plane}"
+
         if self.postselect is not None:
             _label += "₁" if self.postselect == 1 else "₀"
 
@@ -136,14 +152,98 @@ class ParametricMidMeasureMP(MidMeasureMP):
                     # If the parameter can't be displayed as a float
                     return format(x)
 
-            data = (_format(self.angle), self.plane)
-            _label += data
+            _label += f"({float(_format(self.angle))})"
 
         _label += "├" if not self.reset else "│  │0⟩"
 
         return _label
 
 
-def _xy_to_z(angle):
-    """Project XY basis states onto computational basis states"""
-    return np.array([[1, np.exp(-1j * angle)], [1, -np.exp(-1j * angle)]]) / np.sqrt(2)
+@_add_operation_to_drawer.register
+def _(op: ParametricMidMeasureMP, drawer, layer, _):
+    text = op.plane
+    drawer.measure(layer, op.wires[0], text=text)  # assume one wire
+
+    if op.reset:
+        drawer.erase_wire(layer, op.wires[0], 1)
+        drawer.box_gate(
+            layer + 1,
+            op.wires[0],
+            "|0⟩",
+            box_options={"zorder": 4},
+            text_options={"zorder": 5},
+        )
+
+
+def null_postprocessing(results):
+    """A postprocessing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
+@qml.transform
+def diagonalize_mcms(tape):
+    """Diagonalize any mid-circuit measurements in a parameterized basis into the computational basis.
+
+    Args:
+        tape (QNode or QuantumScript or Callable): The quantum circuit to modify the mid-circuit measurements of.
+
+    Returns:
+        qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    **Examples:**
+
+    This transform allows us to transform mid-circuit measurements into the measurement basis by adding
+    the relevant diagonalizing gates to the tape just before the measurement is performed.
+
+    .. code-block:: python3
+
+        from pennylane.ftqc import diagonalize_mcms, ParametricMidMeasureMP
+
+        dev = qml.device("default.qubit")
+
+        @diagonalize_mcms
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            ParametricMidMeasureMP(0, angle=x[1], plane="XY")
+            return qml.expval(qml.Z(0))
+
+    Applying the transform inserts the relevant gates before the measurement to allow
+    measurements to be in the Z basis, so the original circuit
+
+    >>> print(qml.draw(circuit, level=0)([np.pi/4, np.pi/4]))
+    0: ──RY(0.79)──┤↗ˣʸ(3.14)├─┤  <Z>
+
+    becomes
+
+    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    0: ──RY(0.79)──U(M0)──┤↗ʸᶻ(0.0)├─┤  <Z>
+    M0 =
+    [[ 0.70710678+0.j   0.5       -0.5j]
+     [ 0.70710678+0.j  -0.5       +0.5j]]
+
+    """
+
+    new_operations = []
+
+    for op in tape.operations:
+        if isinstance(op, ParametricMidMeasureMP):
+            diag_gate = op.diagonalizing_gates()[0]
+            op.angle = 0
+            op.plane = "YZ"
+            new_operations.extend([diag_gate, op])
+        elif isinstance(op, qml.ops.Conditional) and isinstance(op.base, ParametricMidMeasureMP):
+            diag_gate = qml.ops.Conditional(
+                expr=op.hyperparameters["meas_val"], then_op=op.diagonalizing_gates()[0]
+            )
+            op.base.angle = 0
+            op.base.plane = "YZ"
+            new_operations.extend([diag_gate, op])
+        else:
+            new_operations.append(op)
+
+    new_tape = tape.copy(operations=new_operations)
+
+    return (new_tape,), null_postprocessing

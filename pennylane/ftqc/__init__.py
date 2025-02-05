@@ -27,6 +27,7 @@ Modules
 """
 from warnings import warn
 from pennylane import ExperimentalWarning
+from .parametric_midmeasure import ParametricMidMeasureMP, diagonalize_mcms
 
 warn(
     ExperimentalWarning(
@@ -34,4 +35,7 @@ warn(
     )
 )
 
-__all__ = []
+__all__ = [
+    "ParametricMidMeasureMP",
+    "diagonalize_mcms",
+]
