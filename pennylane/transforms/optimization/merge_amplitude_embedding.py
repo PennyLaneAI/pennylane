@@ -32,7 +32,7 @@ def _get_plxpr_merge_amplitude_embedding():
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.operation import Operator
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return None, None
 
     # pylint: disable=redefined-outer-name
