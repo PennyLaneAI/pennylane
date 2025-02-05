@@ -157,7 +157,18 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
             if eqn.outvars[0].__class__.__name__ == "DropVar":
-                return self.decompose_operation(op)
+
+                if op.has_plxpr_decomposition:
+
+                    args = (*op.parameters, *op.wires)
+                    qml.capture.run_autograph(op.compute_plxpr_decomposition)(
+                        *args, **op.hyperparameters
+                    )
+
+                else:
+
+                    return self.decompose_operation(op)
+
             return op
 
     # pylint: disable=unused-variable,missing-function-docstring
@@ -182,93 +193,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
 
 DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
-
-
-@lru_cache
-def _get_plxpr_dynamic_decompose():  # pylint: disable=missing-docstring
-    try:
-        # pylint: disable=import-outside-toplevel
-        # pylint: disable=unused-import
-        import jax
-
-        from pennylane.capture.primitives import AbstractMeasurement, AbstractOperator
-    except ImportError:  # pragma: no cover
-        return None, None
-
-    # pylint: disable=redefined-outer-name
-
-    class DynamicDecomposeInterpreter(qml.capture.PlxprInterpreter):
-        """
-        Experimental Plxpr Interpreter for applying a dynamic decomposition to operations when program capture is enabled.
-        """
-
-        def eval_dynamic_decomposition(self, jaxpr_decomp: "jax.core.Jaxpr", consts, *args):
-            """
-            Evaluate a dynamic decomposition of a Jaxpr.
-
-            Args:
-                jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate
-                *args: the arguments to use in the evaluation
-            """
-
-            for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
-                self._env[invar] = arg
-
-            for const, constvar in zip(consts, jaxpr_decomp.constvars, strict=True):
-                self._env[constvar] = const
-
-            for inner_eqn in jaxpr_decomp.eqns:
-
-                custom_handler = self._primitive_registrations.get(inner_eqn.primitive, None)
-
-                if custom_handler:
-                    invals = [self.read(invar) for invar in inner_eqn.invars]
-                    outvals = custom_handler(self, *invals, **inner_eqn.params)
-
-                elif isinstance(inner_eqn.outvars[0].aval, AbstractOperator):
-                    # This does not currently support nested decompositions
-                    outvals = super().interpret_operation_eqn(inner_eqn)
-                elif isinstance(inner_eqn.outvars[0].aval, AbstractMeasurement):
-                    outvals = super().interpret_measurement_eqn(inner_eqn)
-                else:
-                    invals = [self.read(invar) for invar in inner_eqn.invars]
-                    outvals = inner_eqn.primitive.bind(*invals, **inner_eqn.params)
-
-                if not inner_eqn.primitive.multiple_results:
-                    outvals = [outvals]
-
-                for inner_outvar, inner_outval in zip(inner_eqn.outvars, outvals, strict=True):
-                    self._env[inner_outvar] = inner_outval
-
-        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
-            """
-            Interpret an equation corresponding to an operator.
-
-            Args:
-                eqn (jax.core.JaxprEqn): a jax equation for an operator.
-            """
-
-            invals = (self.read(invar) for invar in eqn.invars)
-            with qml.QueuingManager.stop_recording():
-                op = eqn.primitive.impl(*invals, **eqn.params)
-
-            if isinstance(eqn.outvars[0], jax.core.DropVar):
-
-                if op._has_plxpr_decomposition:
-                    jaxpr_decomp = op._plxpr_decomposition()
-                    args = (*op.parameters, *op.wires)
-                    return self.eval_dynamic_decomposition(
-                        jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args
-                    )
-
-                return super().interpret_operation(op)
-
-            return op
-
-    return DynamicDecomposeInterpreter
-
-
-DynamicDecomposeInterpreter = _get_plxpr_dynamic_decompose()
 
 
 @partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)

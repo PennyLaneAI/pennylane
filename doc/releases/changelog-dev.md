@@ -150,7 +150,8 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* Implemented a new `DynamicDecomposeInterpreter` to capture decompositions of operators with control-flow instructions.
+* Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
+  with program capture enabled.
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
 
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
