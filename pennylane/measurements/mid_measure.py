@@ -558,6 +558,31 @@ class MeasurementValue(Generic[T]):
         return f"MeasurementValue(wires={self.wires.tolist()})"
 
 
+def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
+    r"""Function to make mid-circuit measurement predicates mutually exclusive.
+
+    The ``conditions`` are predicates to the ``if`` and ``elif`` branches of ``qml.cond``.
+    This function updates all the ``MeasurementValue``\ s in ``conditions`` such that
+    reconciling the correct branch is never ambiguous.
+
+    Args:
+        conditions (Sequence[MeasurementValue]): Sequence containing predicates for ``if``
+            and all ``elif`` branches of a function decorated with :func:`~pennylane.cond`.
+
+    Returns:
+        Sequence[MeasurementValue]: Updated sequence of mutually exclusive predicates.
+    """
+    new_conds = [conditions[0]]
+    false_cond = ~conditions[0]
+
+    for c in conditions[1:]:
+        new_conds.append(false_cond & c)
+        false_cond = false_cond & ~c
+
+    new_conds.append(false_cond)
+    return new_conds
+
+
 def find_post_processed_mcms(circuit):
     """Return the subset of mid-circuit measurements which are required for post-processing.
 
