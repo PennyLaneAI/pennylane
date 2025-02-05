@@ -24,6 +24,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
+    apply_operation_csr_matrix,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
@@ -38,7 +39,21 @@ ml_frameworks_list = [
 ]
 
 
-methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
+def apply_operation_sparse_wrapped(op, state, is_state_batched: bool = False):
+    """Apply an operation to a state using the sparse matrix method"""
+    # Convert op to a CSR matrix
+    op = qml.QubitUnitary(qml.math.asarray(op.matrix(), like="numpy"), wires=op.wires)
+    # Convert state into numpy
+    state = qml.math.asarray(state, like="numpy")
+    return apply_operation_csr_matrix(op, state, is_state_batched)
+
+
+methods = [
+    apply_operation_einsum,
+    apply_operation_tensordot,
+    apply_operation,
+    apply_operation_sparse_wrapped,
+]
 
 # pylint: disable=import-outside-toplevel,unsubscriptable-object,arguments-differ
 
@@ -252,7 +267,8 @@ class TestTwoQubitStateSpecialCases:
 
     def test_globalphase(self, method, wire, ml_framework):
         """Test the application of a GlobalPhase gate on a two qubit state."""
-
+        if method == apply_operation_sparse_wrapped:
+            pytest.skip("GlobalPhase not supported by sparse method")
         initial_state = np.array(
             [
                 [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
