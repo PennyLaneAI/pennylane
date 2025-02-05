@@ -246,6 +246,7 @@
 
 * The definitition of the `pipeline` argument for `qml.compile` was clarified in
   its docstring.
+  [(#6930)](https://github.com/PennyLaneAI/pennylane/pull/6930)
 
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`,
   `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better
