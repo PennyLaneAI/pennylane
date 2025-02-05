@@ -98,12 +98,12 @@ class FromBloq(Operation):
 
             for binst, pred_cxns, succ_cxns, in bloq.iter_bloqnections():
                 in_quregs = {
-                    reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object)
+                    reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.lefts()
                 }
                 for pred in pred_cxns:
                     soq = pred.right
-                    #assert soq in qvar_to_qreg, f"{soq=} should exist in {qvar_to_qreg=}."
+                    # assert soq in qvar_to_qreg, f"{soq=} should exist in {qvar_to_qreg=}."
                     qvar_to_qreg[soq] = qvar_to_qreg[pred.left]
                     in_quregs[soq.reg.name][soq.idx] = qvar_to_qreg[soq]
                     # if soq.reg.side == Side.LEFT:
@@ -112,8 +112,13 @@ class FromBloq(Operation):
                 if op:
                     ops.append(op)
                 for succ in succ_cxns:
-                    if succ.left.reg.side == Side.RIGHT and len(succ.left.idx) > 0:
-                        qvar_to_qreg[succ.left] = qvar_to_qreg[pred.right][succ.left.idx[0]]
+                    soq = succ.left
+                    if len(in_quregs) == 0 and soq.reg.side == Side.RIGHT:
+                        total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
+                        ascending_vals = np.arange(len(qvar_to_qreg), total_elements+len(qvar_to_qreg), dtype=object)
+                        in_quregs[soq.reg.name] = ascending_vals.reshape((*soq.reg.shape, soq.reg.bitsize))
+                    if succ.left.reg.side == Side.RIGHT:
+                        qvar_to_qreg[soq] = in_quregs[soq.reg.name][soq.idx]
         else:
             op = bloq_to_op(bloq, wires)
             ops.append(op)
