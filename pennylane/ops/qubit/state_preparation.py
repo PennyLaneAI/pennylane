@@ -610,12 +610,12 @@ def _sparse_statevec_permute_and_embed(
         )
 
     if wires == wire_order:
-        return csr_matrix(state.T)
+        return state
 
     index_map = _build_index_map(wires, wire_order)
     perm_pos = index_map[state.indices]
     new_csr = csr_matrix((state.data, perm_pos, state.indptr), shape=(1, 2 ** len(wire_order)))
-    return csr_matrix(new_csr.T)
+    return new_csr
 
 
 def _build_index_map(wires, wire_order):

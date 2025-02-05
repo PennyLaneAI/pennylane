@@ -433,9 +433,9 @@ class TestSparseStateVector:
         ket = qsv_op.state_vector(wire_order=wire_order)
         # Convert one position from binary to integer
         one_position = int("".join([str(i) for i in one_position]), 2)
-        assert ket.shape == (2**num_wires, 1)
-        assert ket[one_position, 0] == 1
-        ket[one_position, 0] = 0
+        assert ket.shape == (1, 2**num_wires)
+        assert ket[0, one_position] == 1
+        ket[0, one_position] = 0
         assert ket.count_nonzero() == 0
 
     def test_preprocess_nonzero_padding_unsupported(self):
