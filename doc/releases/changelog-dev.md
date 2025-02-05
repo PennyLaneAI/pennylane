@@ -244,6 +244,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The definitition of the `pipeline` argument for `qml.compile` was clarified in
+  its docstring.
+
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`,
   `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better
   code examples.
