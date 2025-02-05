@@ -23,20 +23,21 @@ env:
 jobs:
   gpu-tests:
     runs-on:
-      - self-hosted
-      - ubuntu-22.04
-      - gpu
-
-    if: >-
-      ${{
-        github.event_name == 'push' ||
-        (
-          github.event_name == 'pull_request' &&
-          github.event.pull_request.draft == false &&
-          contains(github.event.pull_request.labels.*.name, 'gpu') &&
-          github.event.pull_request.state == 'open'
-        )
-      }}
+      - single-gpu-x64
+    
+    # Updated so I can test gpu runner while PR is in draft mode
+    if: contains(github.event.pull_request.labels.*.name, 'gpu')
+    
+    # TODO: Revert back to this before merging
+    # ${{
+    #   github.event_name == 'push' ||
+    #   (
+    #     github.event_name == 'pull_request' &&
+    #     github.event.pull_request.draft == false &&
+    #     contains(github.event.pull_request.labels.*.name, 'gpu') &&
+    #     github.event.pull_request.state == 'open'
+    #   )
+    # }}
 
     strategy:
       max-parallel: 2
