@@ -649,15 +649,17 @@ def defer_measurements(
 
         **What doesn't work**
 
-        * Currently, mid-circuit measurement values cannot be used in the condition for a
+        * mid-circuit measurement values cannot be used in the condition for a
           :func:`~pennylane.while_loop`.
-        * Currently, :func:`~pennylane.measure` cannot be used inside the body of control flow
-          primitives. This includes :func:`~pennylane.cond`, :func:`~pennylane.while_loop`, and
-          :func:`~pennylane.for_loop`.
-        * Currently, if a branch of :func:`~pennylane.cond` uses mid-circuit measurements as its
-          predicate, then all other branches must also use mid-circuit measurement values as
-          predicates.
-        * Currently, :func:`~pennylane.measure` cannot be used inside the body of functions
+        * :func:`~pennylane.measure` cannot be used inside the body of loop primitives
+          primitives (:func:`~pennylane.while_loop`, :func:`~pennylane.for_loop`).
+        * If a branch of :func:`~pennylane.cond` uses mid-circuit measurements as its
+          predicate, then all other branches must also use mid-circuit measurement values
+          as predicates.
+        * :func:`~pennylane.measure` can only be used in the bodies of branches of
+          :func:`~pennylane.cond` if none of the branches use mid-circuit measurements
+          as predicates
+        * :func:`~pennylane.measure` cannot be used inside the body of functions
           being transformed with :func:`~pennylane.adjoint` or :func:`~pennylane.ctrl`.
     """
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):

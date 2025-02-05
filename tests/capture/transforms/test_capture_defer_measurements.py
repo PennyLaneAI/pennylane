@@ -251,38 +251,6 @@ class TestDeferMeasurementsInterpreter:
         ]
         assert ops == expected_ops
 
-    def test_cond_non_mcm(self):
-        """Test that a qml.cond that does not use MCM predicates is transformed correctly."""
-
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
-        def f(x):
-            qml.measure(0)
-
-            @qml.cond(x > 2.0)
-            def cond_fn(phi):
-                return qml.RX(phi, 0)
-
-            @cond_fn.otherwise
-            def _(phi):
-                return qml.RZ(phi, 0)
-
-            return cond_fn(x)
-
-        x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
-        ops = collector.state["ops"]
-        expected_ops = [qml.CNOT([0, 5]), qml.RZ(x, 0)]
-        assert ops == expected_ops
-
-        x = 2.5
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
-        ops = collector.state["ops"]
-        expected_ops = [qml.CNOT([0, 5]), qml.RX(x, 0)]
-        assert ops == expected_ops
-
     @pytest.mark.parametrize(
         "mp_fn, mp_class",
         [
@@ -432,6 +400,116 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         ]
         if postselect is not None:
             expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
+        assert ops == expected_ops
+
+    def test_cond_non_mcm(self, postselect):
+        """Test that a qml.cond that does not use MCM predicates is transformed correctly."""
+
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        def f(x):
+            qml.measure(0, postselect=postselect)
+
+            @qml.cond(x > 2.0)
+            def cond_fn(phi):
+                return qml.RX(phi, 0)
+
+            @cond_fn.otherwise
+            def _(phi):
+                return qml.RZ(phi, 0)
+
+            return cond_fn(x)
+
+        x = 1.5
+        jaxpr = jax.make_jaxpr(f)(x)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+        ops = collector.state["ops"]
+        expected_ops = [qml.CNOT([0, 5]), qml.RZ(x, 0)]
+        if postselect is not None:
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
+        assert ops == expected_ops
+
+        x = 2.5
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+        ops = collector.state["ops"]
+        expected_ops = [qml.CNOT([0, 5]), qml.RX(x, 0)]
+        if postselect is not None:
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
+        assert ops == expected_ops
+
+    def test_cond_body_mcm(self, postselect):
+        """Test that a qml.cond containing MCMs in its body is transformed correctly."""
+
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 15)))
+        def f(x):
+            qml.measure(0)
+
+            @qml.cond(x > 2.0)
+            def cond_fn(phi):
+                qml.measure(1, postselect=postselect)
+                qml.RX(phi, 0)
+                qml.measure(1)
+
+            @cond_fn.else_if(x > 1.0)
+            def _(phi):
+                qml.measure(2, postselect=postselect)
+                qml.RY(phi, 0)
+                qml.measure(2)
+
+            @cond_fn.otherwise
+            def _(phi):
+                qml.measure(3, postselect=postselect)
+                qml.RZ(phi, 0)
+                qml.measure(3)
+
+            cond_fn(x)
+            qml.measure(4)
+
+        x = 2.5
+        jaxpr = jax.make_jaxpr(f)(x)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.CNOT([1, 6]),
+            qml.RX(x, 0),
+            qml.CNOT([1, 7]),
+            qml.CNOT([4, 12]),
+        ]
+        if postselect is not None:
+            expected_ops.insert(1, qml.Projector(np.array([postselect]), 1))
+        assert ops == expected_ops
+
+        x = 1.5
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.CNOT([2, 8]),
+            qml.RY(x, 0),
+            qml.CNOT([2, 9]),
+            qml.CNOT([4, 12]),
+        ]
+        if postselect is not None:
+            expected_ops.insert(1, qml.Projector(np.array([postselect]), 2))
+        assert ops == expected_ops
+
+        x = 0.5
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.CNOT([0, 5]),
+            qml.CNOT([3, 10]),
+            qml.RZ(x, 0),
+            qml.CNOT([3, 11]),
+            qml.CNOT([4, 12]),
+        ]
+        if postselect is not None:
+            expected_ops.insert(1, qml.Projector(np.array([postselect]), 3))
         assert ops == expected_ops
 
     @pytest.mark.parametrize("lazy", [True, False])
