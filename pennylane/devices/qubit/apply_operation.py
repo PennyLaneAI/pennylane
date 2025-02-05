@@ -236,8 +236,12 @@ def apply_operation(
 
 def _apply_operation_csr_matrix(op, state, is_state_batched, debugger):
     """The csr_matrix specialized version apply operation."""
-    # For csr
-    return op.matrix() @ state
+    # Calculate the num wires by state shape
+    len_state = state.shape[
+        0
+    ]  # The first dimension represents the length of the state vector; the second dimension (if present) can represent the batch size
+    ndim = int(math.log2(len_state))
+    return op.matrix(wire_order=range(ndim)) @ state
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):
