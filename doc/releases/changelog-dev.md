@@ -192,7 +192,10 @@
 <h3>Deprecations 👋</h3>
 
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  `_try_wrap_in_custom_ctrl_op` in `pennylane/ops/op_math/controlled.py` now removes the input `op` from `QueuingManager` before calling `ControlledQubitUnitary`,
+  to avoid a [known bug](https://github.com/PennyLaneAI/catalyst/issues/1494) found in Catalyst.
   [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
+  [(#6926)](https://github.com/PennyLaneAI/pennylane/pull/6926)
 
 * The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
   Instead, use the `wires` argument as the second positional argument.
@@ -257,10 +260,6 @@
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
 <h3>Bug fixes 🐛</h3>
-
-* `_try_wrap_in_custom_ctrl_op` in `pennylane/ops/op_math/controlled.py` now removes the input `op` from `QueuingManager`
-  before calling `ControlledQubitUnitary`, to avoid a [known bug](https://github.com/PennyLaneAI/catalyst/issues/1494) found in Catalyst.
-  [(#6926)](https://github.com/PennyLaneAI/pennylane/pull/6926)
 
 * `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
   [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
