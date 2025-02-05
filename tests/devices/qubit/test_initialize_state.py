@@ -115,7 +115,7 @@ class TestInitializeState:
         state = qml.devices.qubit.create_initial_state((0, 1))
         assert qml.math.get_interface(state) == "numpy"
         assert state.dtype == np.complex128
-        
+
     def test_create_initial_state_with_sparse(self):
         """Test create_initial_state with a sparse state input."""
         sparse_vec = sp.sparse.csr_matrix([0, 1, 0, 0])

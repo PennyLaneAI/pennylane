@@ -379,9 +379,7 @@ class StatePrep(StatePrepBase):
     def state_vector(self, wire_order: Optional[WiresLike] = None):
 
         if self.is_sparse:
-            return (
-                _sparse_statevec_permute_and_embed(self.parameters[0], self.wires, wire_order)
-            )
+            return _sparse_statevec_permute_and_embed(self.parameters[0], self.wires, wire_order)
 
         num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
