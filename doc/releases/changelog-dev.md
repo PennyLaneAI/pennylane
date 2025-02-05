@@ -244,9 +244,6 @@
 
 <h3>Documentation 📝</h3>
 
-* The definitition of the `pipeline` argument for `qml.compile` was clarified in
-  its docstring.
-
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`,
   `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better
   code examples.
@@ -258,10 +255,6 @@
 
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
-
-* The code example in the docstring for `qml.BasisRotation` was corrected by including `wire_order` in the 
-  call to `qml.matrix`.
-  
 
 <h3>Bug fixes 🐛</h3>
 
