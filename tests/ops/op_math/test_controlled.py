@@ -1670,7 +1670,7 @@ custom_ctrl_ops = [
 
 class TestCtrl:
     """Tests for the ctrl transform."""
-    
+
     def test_no_redundant_queue(self):
         """Test that the ctrl transform does not add redundant operations to the queue. https://github.com/PennyLaneAI/pennylane/pull/6926"""
         with qml.queuing.AnnotatedQueue() as q:
