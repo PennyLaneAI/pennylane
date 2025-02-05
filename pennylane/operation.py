@@ -225,7 +225,6 @@ import copy
 import warnings
 from collections.abc import Hashable, Iterable
 from enum import IntEnum
-from functools import partial
 from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
