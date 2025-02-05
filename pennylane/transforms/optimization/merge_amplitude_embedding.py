@@ -69,7 +69,8 @@ def _get_plxpr_merge_amplitude_embedding():
             self.visited_wires = self.visited_wires.union(set(op.wires))
 
         def interpret_measurement(self, measurement):
-            self.new_operations.append(measurement)
+            self.purge_new_operations()
+            return super().interpret_measurement(measurement)
 
         def purge_new_operations(self):
             if len(self.input_wires) > 0:
@@ -109,6 +110,7 @@ def _get_plxpr_merge_amplitude_embedding():
                 custom_handler = self._primitive_registrations.get(primitive, None)
 
                 if custom_handler:
+                    self.purge_new_operations()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
                 elif getattr(primitive, "prim_type", "") == "operator":

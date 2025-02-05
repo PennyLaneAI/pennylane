@@ -282,9 +282,10 @@ class TestHigherOrderPrimitiveIntegration:
         assert jaxpr.eqns[0].primitive == grad_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.AmplitudeEmbedding._primitive
+        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_jacobian_prim(self):
 
@@ -305,6 +306,6 @@ class TestHigherOrderPrimitiveIntegration:
         assert jaxpr.eqns[0].primitive == jacobian_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.AmplitudeEmbedding._primitive
+        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
