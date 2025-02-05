@@ -27,6 +27,8 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.wires import WiresLike
+from pennylane.decompositions.decomposition_rule import decomposition
+from pennylane.decompositions.compressed_op import CompressedResourceOp
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
@@ -954,6 +956,21 @@ class CNOT(ControlledOp):
 
     def _controlled(self, wire):
         return qml.Toffoli(wires=wire + self.wires)
+
+
+@decomposition(CNOT)
+def _cnot_to_cz_h(wires):
+    qml.H(wires[1])
+    qml.CZ(wires=wires)
+    qml.H(wires[1])
+
+
+@_cnot_to_cz_h.resources
+def _cnot_to_cz_h_resources(*_, **__):
+    return {
+        CompressedResourceOp(qml.H): 2,
+        CompressedResourceOp(qml.CZ): 1,
+    }
 
 
 class Toffoli(ControlledOp):
@@ -2213,6 +2230,23 @@ class ControlledPhaseShift(ControlledOp):
             qml.CNOT(wires=wires),
             qml.PhaseShift(phi / 2, wires=wires[1]),
         ]
+
+
+@decomposition(ControlledPhaseShift)
+def _cphase_to_rz_cnot(phi, wires):
+    qml.RZ(phi / 2, wires=wires[0])
+    qml.CNOT(wires=wires)
+    qml.RZ(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RZ(phi / 2, wires=wires[1])
+
+
+@_cphase_to_rz_cnot.resources
+def _cphase_to_rz_cnot_resources(*_, **__):
+    return {
+        CompressedResourceOp(qml.RZ): 3,
+        CompressedResourceOp(qml.CNOT): 2,
+    }
 
 
 CPhase = ControlledPhaseShift

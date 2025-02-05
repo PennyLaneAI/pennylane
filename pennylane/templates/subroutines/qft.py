@@ -21,6 +21,8 @@ import functools
 import numpy as np
 
 import pennylane as qml
+from pennylane.decompositions.decomposition_rule import decomposition
+from pennylane.decompositions.compressed_op import CompressedResourceOp
 from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -201,3 +203,32 @@ class QFT(Operation):
             decomp_ops.append(swap)
 
         return decomp_ops
+
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
+
+@decomposition(QFT)
+def _qft_decomposition(wires: WiresLike):
+
+    n_wires = len(wires)
+    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+    shift_len = len(shifts)
+    for i, wire in enumerate(wires):
+        qml.Hadamard(wire)
+        for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :]):
+            qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
+    first_half_wires = wires[: n_wires // 2]
+    last_half_wires = wires[-(n_wires // 2) :]
+
+    for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+        qml.SWAP(wires=[wire1, wire2])
+
+
+@_qft_decomposition.resources
+def _qft_decomposition_resources(num_wires):
+    return {
+        CompressedResourceOp(qml.Hadamard): num_wires,
+        CompressedResourceOp(qml.SWAP): num_wires // 2,
+        CompressedResourceOp(qml.ControlledPhaseShift): num_wires * (num_wires - 1) // 2,
+    }

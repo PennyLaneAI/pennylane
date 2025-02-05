@@ -28,6 +28,7 @@ import pennylane as qml
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
+from pennylane.decompositions import decomposition, CompressedResourceOp
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -195,6 +196,35 @@ class Hadamard(Observable, Operation):
 
     def pow(self, z: Union[int, float]):
         return super().pow(z % 2)
+
+
+@decomposition(Hadamard)
+def _hadamard_to_rz_rx(wires: WiresLike):
+    qml.RZ(np.pi / 2, wires=wires)
+    qml.RX(np.pi / 2, wires=wires)
+    qml.RZ(np.pi / 2, wires=wires)
+
+
+@_hadamard_to_rz_rx.resources
+def _hadamard_to_rz_rx_resources(*_, **__):
+    return {
+        CompressedResourceOp(qml.RZ, {}): 2,
+        CompressedResourceOp(qml.RX, {}): 1,
+    }
+
+
+@decomposition(Hadamard)
+def _hadamard_to_rz_ry(wires: WiresLike):
+    qml.RZ(np.pi, wires=wires)
+    qml.RY(np.pi / 2, wires=wires)
+
+
+@_hadamard_to_rz_ry.resources
+def _hadamard_to_rz_ry_resources(*_, **__):
+    return {
+        CompressedResourceOp(qml.RZ, {}): 1,
+        CompressedResourceOp(qml.RY, {}): 1,
+    }
 
 
 H = Hadamard
@@ -1304,6 +1334,18 @@ class SWAP(Operation):
     @property
     def is_hermitian(self) -> bool:
         return True
+
+
+@decomposition(SWAP)
+def _swap_to_cnot(wires):
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[1], wires[0]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+
+
+@_swap_to_cnot.resources
+def _swap_to_cnot_resources(*_, **__):
+    return {CompressedResourceOp(qml.CNOT): 3}
 
 
 class ECR(Operation):

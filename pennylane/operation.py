@@ -1322,6 +1322,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
+    @property
+    def resource_params(self) -> dict:
+        """A dictionary containing the minimal information needed to compute a
+        resource estimate of the operator's decomposition."""
+        return {}
+
     @staticmethod
     def compute_decomposition(
         *params: TensorLike,
