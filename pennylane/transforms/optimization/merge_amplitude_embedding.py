@@ -24,11 +24,12 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
+# pylint: disable=too-many-statements
 @lru_cache
-def _get_plxpr_merge_amplitude_embedding():
-
+def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
     try:
-        from jax import make_jaxpr, tree_util
+        # pylint: disable=import-outside-toplevel
+        from jax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.operation import Operator
@@ -40,20 +41,40 @@ def _get_plxpr_merge_amplitude_embedding():
         """Plxpr Interpreter for merging AmplitudeEmbedding gates when program capture is enabled."""
 
         def __init__(self):
+            self._env = {}
             self.new_operations = []
             self.visited_wires = set()
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def setup(self) -> None:
+            """Setup the interpreter for a new evaluation."""
             self.new_operations = []
             self.visited_wires = set()
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def cleanup(self) -> None:
+            """Cleanup the interpreter after an evaluation."""
             self.new_operations = []
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def interpret_operation(self, op: Operator):
+            """Interpret a PennyLane operation instance.
+
+            If the operator is not an AmplitudeEmbedding, it is added to the new operations list.
+            If the operator is an AmplitudeEmbedding, the wires and parameters are stored for future merging.
+
+            Args:
+                op (Operator): a pennylane operator instance
+
+            Returns:
+                None: returns None
+
+            This method is only called when the operator's output is a dropped variable,
+            so the output will not affect later equations in the circuit.
+
+            See also: :meth:`~.interpret_operation_eqn`.
+
+            """
             with qml.capture.pause():
                 if not isinstance(op, AmplitudeEmbedding):
                     self.new_operations.append(op)
@@ -70,10 +91,21 @@ def _get_plxpr_merge_amplitude_embedding():
                 self.visited_wires = self.visited_wires.union(set(op.wires))
 
         def interpret_measurement(self, measurement):
+            """Interpret a measurement process instance.
+
+            First purge the new operations list to merge the AmplitudeEmbedding gates and intepret seen gates.
+
+            Args:
+                measurement (MeasurementProcess): a measurement instance.
+
+            See also :meth:`~.interpret_measurement_eqn`.
+
+            """
             self.purge_new_operations()
             return super().interpret_measurement(measurement)
 
         def purge_new_operations(self):
+            """Purge the new operations list to merge the AmplitudeEmbedding gates and interpret seen gates."""
             with qml.capture.pause():
                 if len(self.input_wires) > 0:
                     final_wires = self.input_wires[0]
@@ -101,6 +133,17 @@ def _get_plxpr_merge_amplitude_embedding():
             self.cleanup()
 
         def eval(self, jaxpr, consts, *args):
+            """Evaluate a jaxpr.
+
+            Args:
+                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                consts (list[TensorLike]): the constant variables for the jaxpr
+                *args (tuple[TensorLike]): The arguments for the jaxpr.
+
+            Returns:
+                list[TensorLike]: the results of the execution.
+
+            """
             self._env = {}
             self.setup()
 
