@@ -131,10 +131,11 @@ class TestQNodeIntegration:
         @qml.qnode(dev)
         def f(U):
             qml.QubitUnitary(U, 0)
-            qml.Hadamard(0)
+            qml.X(0)
             return qml.expval(qml.Z(0))
 
-        U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
+        U = qml.Rot(jax.numpy.pi, 0, 0, wires=0).matrix()
+
         jaxpr = jax.make_jaxpr(f)(U)
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -144,27 +145,31 @@ class TestQNodeIntegration:
         assert qfunc_jaxpr.eqns[-5].primitive == qml.RY._primitive
         assert qfunc_jaxpr.eqns[-4].primitive == qml.RZ._primitive
 
-        # Hadamard
-        assert qfunc_jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
+        # X gate
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.PauliX._primitive
 
         # Measurement
         assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, U)
+        assert qml.math.allclose(res, -1.0)
+
     # TODO: Currently only supports three CNOT decomposition
     def test_two_qubit_three_cnot_conversion_qnode(self):
         """Test that a two qubit unitary can be decomposed correctly."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=2)
 
-        U1 = qml.Rot(1.0, 2.0, 3.0, wires=0)
-        U2 = qml.Rot(1.0, 2.0, 3.0, wires=1)
+        U1 = qml.Rot(jax.numpy.pi, 0, 0, wires=0)
+        U2 = qml.Rot(jax.numpy.pi, 0, 0, wires=1)
+
         U = qml.prod(U1, U2).matrix()
 
         @UnitaryToRotInterpreter()
         @qml.qnode(dev)
         def f(U):
             qml.QubitUnitary(U, [0, 1])
-            return qml.expval(qml.Z(0))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
         jaxpr = jax.make_jaxpr(f)(U)
         assert jaxpr.eqns[0].primitive == qnode_prim
@@ -174,44 +179,51 @@ class TestQNodeIntegration:
         # https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.two_qubit_decomposition.html
 
         # C
+        assert qfunc_jaxpr.eqns[-22].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[-21].primitive == qml.RY._primitive
         assert qfunc_jaxpr.eqns[-20].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[-19].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[-18].primitive == qml.RZ._primitive
 
         # D
+        assert qfunc_jaxpr.eqns[-19].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[-18].primitive == qml.RY._primitive
         assert qfunc_jaxpr.eqns[-17].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[-16].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[-15].primitive == qml.RZ._primitive
 
         # CNOT 1
-        assert qfunc_jaxpr.eqns[-14].primitive == qml.CNOT._primitive
+        assert qfunc_jaxpr.eqns[-16].primitive == qml.CNOT._primitive
 
         # RZ RY
-        assert qfunc_jaxpr.eqns[-13].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[-12].primitive == qml.RY._primitive
+        assert qfunc_jaxpr.eqns[-15].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[-14].primitive == qml.RY._primitive
 
         # CNOT 2
-        assert qfunc_jaxpr.eqns[-11].primitive == qml.CNOT._primitive
+        assert qfunc_jaxpr.eqns[-13].primitive == qml.CNOT._primitive
 
         # RY
-        assert qfunc_jaxpr.eqns[-10].primitive == qml.RY._primitive
+        assert qfunc_jaxpr.eqns[-12].primitive == qml.RY._primitive
 
         # CNOT 3
-        assert qfunc_jaxpr.eqns[-9].primitive == qml.CNOT._primitive
+        assert qfunc_jaxpr.eqns[-11].primitive == qml.CNOT._primitive
 
         # A
+        assert qfunc_jaxpr.eqns[-10].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[-9].primitive == qml.RY._primitive
         assert qfunc_jaxpr.eqns[-8].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[-7].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[-6].primitive == qml.RZ._primitive
 
         # B
+        assert qfunc_jaxpr.eqns[-7].primitive == qml.RZ._primitive
+        assert qfunc_jaxpr.eqns[-6].primitive == qml.RY._primitive
         assert qfunc_jaxpr.eqns[-5].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[-4].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[-3].primitive == qml.RZ._primitive
 
-        # Measurement
+        # Measurement 1
+        assert qfunc_jaxpr.eqns[-4].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        # Measurement 2
         assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, U)
+        assert qml.math.allclose(res, (1.0, 1.0))
 
 
 class TestUnitaryToRotPlxprTransform:
