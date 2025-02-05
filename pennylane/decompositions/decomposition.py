@@ -112,6 +112,32 @@ class DecompositionGraph:
         )
         self._graph.remove_node(dummy_node)
 
+    def resource_estimates(self, op: Operator) -> Resources:
+        """Returns the resource estimates for a given operator.
+
+        Args:
+            op (Operator): The operator for which to return the resource estimates.
+
+        Returns:
+            Resources: The resource estimates.
+
+        """
+        op_node = CompressedResourceOp(op, op.resource_params)
+        return self._visitor.d[op_node]
+
+    def decomposition(self, op: Operator) -> DecompositionRule:
+        """Returns the optimal decomposition for a given operator.
+
+        Args:
+            op (Operator): The operator for which to return the optimal decomposition.
+
+        Returns:
+            DecompositionRule: The optimal decomposition.
+
+        """
+        op_node = CompressedResourceOp(op, op.resource_params)
+        return self._visitor.p[op_node]
+
 
 class _DecompositionSearchVisitor(DijkstraVisitor):
     """The visitor used in the dijkstra search for the optimal decomposition."""
