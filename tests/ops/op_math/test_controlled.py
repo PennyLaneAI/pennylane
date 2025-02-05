@@ -1670,6 +1670,13 @@ custom_ctrl_ops = [
 
 class TestCtrl:
     """Tests for the ctrl transform."""
+    
+    def test_no_redundant_queue(self):
+        """Test that the ctrl transform does not add redundant operations to the queue. https://github.com/PennyLaneAI/pennylane/pull/6926"""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.ctrl(qml.QubitUnitary(np.eye(2), 0), 1)
+
+        assert len(q.queue) == 1
 
     def test_invalid_input_error(self):
         """Test that a ValueError is raised upon invalid inputs."""
