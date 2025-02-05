@@ -18,6 +18,7 @@ from functools import singledispatch
 from string import ascii_letters as alphabet
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -228,7 +229,15 @@ def apply_operation(
         [1., 0.]], requires_grad=True)
 
     """
+    if isinstance(op.matrix(), sp.sparse.csr_matrix):
+        return _apply_operation_csr_matrix(op, state, is_state_batched, debugger)
     return _apply_operation_default(op, state, is_state_batched, debugger)
+
+
+def _apply_operation_csr_matrix(op, state, is_state_batched, debugger):
+    """The csr_matrix specialized version apply operation."""
+    # For csr
+    return op.matrix() @ state
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):
