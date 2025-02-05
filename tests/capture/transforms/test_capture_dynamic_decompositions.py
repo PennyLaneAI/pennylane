@@ -618,7 +618,6 @@ class TestDynamicDecomposeInterpreter:
             .primitive
             == imprimitive._primitive
         )
-
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         qml.capture.disable()
@@ -628,16 +627,14 @@ class TestDynamicDecomposeInterpreter:
             qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
             return qml.state()
 
-        print(circuit_comparison())
         assert qml.math.allclose(*result, circuit_comparison())
         
     def test_qsvt(self):
         """Test that the QSVT is correctly dynamically decomposed."""
         n_wires = 6
         block_encoding = qml.Hadamard(wires=0)
-        #phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)] 
-        phase_shifts = [qml.RZ(0.1, wires=0), qml.RZ(0.1, wires=0), qml.RZ(0.1, wires=0)]
-        #jnp.array(phase_shifts)
+        phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)] 
+
         @DynamicDecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
         def circuit():
@@ -646,3 +643,93 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(circuit)()
         print(jaxpr)
+        # still need to fix
+        
+        
+    def test_grover(self):
+        """Test that Grover is correctly dynamically decomposed."""
+
+        @DynamicDecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+        def circuit():
+            qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        print(jaxpr)
+        # add test
+        
+    
+    def test_qft(self):
+        """Test that QFT is correctly dynamically decomposed."""
+
+        @DynamicDecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+        def circuit():
+            qml.QFT(wires=(0, 1, 2, 3, 4))
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        print(jaxpr)
+        # add test
+        
+    
+
+    test_data_decomposition = [
+        (
+            [[0, 1, 2]],
+            [],
+            np.array([3.815]),
+            1,
+            [
+                [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+                [1, qml.RX, [0], [-np.pi / 2]],
+                [5, qml.RZ, [2], [1.9075]],
+                [6, qml.CNOT, [1, 2], []],
+            ],
+        ),
+    ]
+    @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
+    def test_uccsd(self, s_wires, d_wires, weights, n_repeats, _):
+        """Test that uccsd is correctly dynamically decomposed."""
+        cnots = 0
+        for s_wires_ in s_wires:
+            cnots += 4 * (len(s_wires_) - 1)
+
+        for d_wires_ in d_wires:
+            cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
+
+        cnots *= n_repeats
+
+        N = 6
+        wires = range(N)
+
+        ref_state = np.array([1, 1, 0, 0, 0, 0])
+        @DynamicDecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+        def circuit():
+            qml.UCCSD(
+            weights,
+            wires,
+            s_wires=s_wires,
+            d_wires=d_wires,
+            init_state=ref_state,
+            n_repeats=n_repeats,
+        )
+        
+        jaxpr = jax.make_jaxpr(circuit)()
+        print(jaxpr)
+        
+    def test_arbitrary_state_prep(self):
+        """Test that arbitrary state prep is correctly dynamically decomposed."""
+        
+        
+        weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
+        @DynamicDecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
+        def circuit():
+            qml.ArbitraryStatePreparation(weights, wires=[0, 1])
+        jaxpr = jax.make_jaxpr(circuit)()
+        print(jaxpr)
+
+

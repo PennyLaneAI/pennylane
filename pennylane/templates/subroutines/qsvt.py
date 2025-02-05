@@ -587,7 +587,7 @@ class QSVT(Operation):
             if idx % 2 == 0:
                 UA._primitive_bind_call(wires=UA.wires)
             else:
-                pass
+                pass # do adjoint?
             
         projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
             

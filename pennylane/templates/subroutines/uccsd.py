@@ -18,7 +18,7 @@ Contains the UCCSD template.
 import copy
 
 import numpy as np
-
+from jax import numpy as jnp
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BasisState
@@ -284,3 +284,15 @@ class UCCSD(Operation):
                 op_list.append(qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
         return op_list
+
+
+    @staticmethod
+    def _compute_plxpr_decomposition(*args, **hyperparameters):
+        weights = args[0]
+        wires = jnp.array(args[1:])
+        s_wires = hyperparameters["s_wires"]
+        d_wires = hyperparameters["d_wires"]
+        init_state = hyperparameters["init_state"]
+        n_repeats = hyperparameters["n_repeats"]
+        print(f"{init_state=}")
+        BasisState(init_state, wires=wires)
