@@ -244,7 +244,7 @@
 
 <h3>Documentation 📝</h3>
 
-* The definitition of the `pipeline` argument for `qml.compile` was clarified in
+* The definition of the `pipeline` argument for `qml.compile` was clarified in
   its docstring.
   [(#6930)](https://github.com/PennyLaneAI/pennylane/pull/6930)
 
