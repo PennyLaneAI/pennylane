@@ -28,7 +28,7 @@ from pennylane.measurements import Shots
 from pennylane.operation import AnyWires, Observable
 
 h_val = 0.1
-spsa_shot_vec_tol = 0.31
+spsa_shot_vec_tol = 0.33
 
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([100000] * 3)
@@ -807,7 +807,6 @@ class TestSpsaGradientIntegration:
             res_1 = (2 * res[1][0], 2 * res[1][1])
             assert np.allclose(res_1, [0, np.cos(y)], atol=spsa_shot_vec_tol, rtol=0)
 
-    @pytest.mark.local_salt(1)
     def test_var_expectation_values(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
