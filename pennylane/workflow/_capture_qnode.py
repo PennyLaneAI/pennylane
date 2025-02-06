@@ -327,6 +327,60 @@ batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
 mlir.register_lowering(qnode_prim, mlir.lower_fun(qnode_prim.impl, multiple_results=True))
 
 
+def _flatten_args(args, static_argnums):
+    if len(static_argnums) == 0:
+        return *jax.tree_util.tree_flatten(args), ()
+
+    flat_args = []
+    structs = []
+    flat_static_argnums = []
+    flat_argnum = 0
+    static_iter = iter(static_argnums)
+    static_argnum = next(static_iter)
+    i = 0
+
+    while i < len(args):
+        arg = args[i]
+        flat_arg, struct = jax.tree_util.tree_flatten(arg)
+        flat_args.extend(flat_arg)
+        structs.append(struct)
+
+        if i == static_argnum:
+            flat_static_argnums.extend(range(flat_argnum, flat_argnum + len(flat_arg)))
+            if (static_argnum := next(static_iter, None)) is None:
+                break
+
+        flat_argnum += len(flat_arg)
+
+    if i < len(args) - 1:
+        flat_args.extend(jax.tree_util.tree_leaves(args[i + 1 :]))
+
+    final_struct = jax.tree_util.treedef_tuple(structs)
+    return flat_args, final_struct, flat_static_argnums
+
+
+def _flatten_static_argnums(args, static_argnums):
+    if len(static_argnums) == 0:
+        return ()
+
+    flat_static_argnums = []
+    flat_argnum = 0
+    static_iter = iter(static_argnums)
+    static_argnum = next(static_iter)
+
+    for i, arg in enumerate(args):
+        n_flat_args = len(jax.tree_util.tree_leaves(arg))
+
+        if i == static_argnum:
+            flat_static_argnums.extend(range(flat_argnum, flat_argnum + len(n_flat_args)))
+            if (static_argnum := next(static_iter, None)) is None:
+                break
+
+        flat_argnum += n_flat_args
+
+    return flat_static_argnums
+
+
 def _args_hash(args, kwargs, static_argnums):
     """Create a hash using the arguments and keyword arguments of a QNode.
 
@@ -425,8 +479,8 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
-    flat_args = jax.tree_util.tree_leaves(args)
-    cache_key = _args_hash(flat_args, kwargs, qnode.static_argnums)
+    flat_args, args_structure, static_argnums = _flatten_args(args, qnode.static_argnums)
+    cache_key = _args_hash(flat_args, kwargs, static_argnums)
     using_cached_plxpr = False
 
     # pylint: disable=protected-access
@@ -436,11 +490,11 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         using_cached_plxpr = True
     else:
         print("MISS :(")
-        qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-        flat_fn = FlatFn(qfunc)
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
+        qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
+        flat_fn = FlatFn(qfunc, in_tree=args_structure)
         qfunc_jaxpr = jax.make_jaxpr(
-            flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
+            flat_fn, abstracted_axes=abstracted_axes, static_argnums=static_argnums
         )(*flat_args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
