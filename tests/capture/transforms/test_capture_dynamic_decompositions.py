@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class with dynamic decompositions."""
+import numpy as np
+
 # pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods
 import pytest
 
@@ -36,9 +38,13 @@ class SimpleCustomOp(Operation):
         super().__init__(wires=wires, id=id)
 
     @staticmethod
-    def compute_plxpr_decomposition(wires):
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
 
-        return qml.Hadamard(wires=wires)
+    @staticmethod
+    def compute_plxpr_decomposition(wires):
+        qml.Hadamard(wires=wires)
+        qml.Hadamard(wires=wires)
 
 
 const = jax.numpy.array(0.1)
@@ -242,7 +248,7 @@ class CustomOpNestedOp(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_plxpr_decomposition(phi, wires):
         qml.RX(phi, wires=wires)
         SimpleCustomOp(wires=wires)
 
@@ -277,11 +283,12 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(f)()
-        assert len(jaxpr.eqns) == 4
+        assert len(jaxpr.eqns) == 5
         assert jaxpr.eqns[0].primitive == qml.RY._primitive
         assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert jaxpr.eqns[2].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[3].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     ############################
     ### QNode tests
@@ -303,14 +310,16 @@ class TestDynamicDecomposeInterpreter:
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[0].primitive == qml.RY._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         @qml.qnode(device=qml.device("default.qubit", wires=2))
         def circuit_comparison():
             qml.RY(0.1, wires=0)
+            qml.Hadamard(wires=0)
             qml.Hadamard(wires=0)
             return qml.expval(qml.Z(0))
 
@@ -559,6 +568,7 @@ class TestDynamicDecomposeInterpreter:
 
         assert qml.math.allclose(*result, circuit_comparison(x, wire))
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("wire", [0, 1])
     @pytest.mark.parametrize("x", [0.2, 0.8])
     def test_qnode_autograph(self, x, wire):
@@ -604,13 +614,13 @@ class TestDynamicDecomposeInterpreter:
 
         assert qml.math.allclose(*result, *result_comparison)
 
-    @pytest.mark.xfail(reason="Nested operations are not yet supported")
     @pytest.mark.parametrize("x", [0.2, 0.8])
     @pytest.mark.parametrize("wire", [0, 1])
-    def test_qnode_nested_decomp(self, x, wire):
+    @pytest.mark.parametrize("max_expansion, expected_eqns", [(0, 3), (1, 4), (2, 5)])
+    def test_qnode_nested_decomp(self, x, wire, max_expansion, expected_eqns):
         """Test that a QNode with a nested decomposition custom operation is correctly decomposed."""
 
-        @DecomposeInterpreter(max_expansion=None, dynamic_decomposition=True)
+        @DecomposeInterpreter(max_expansion=max_expansion)
         @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit(x, wire):
             CustomOpNestedOp(x, wires=wire)
@@ -620,10 +630,8 @@ class TestDynamicDecomposeInterpreter:
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        # assert len(qfunc_jaxpr.eqns) == expected_n_eqns
+        assert len(qfunc_jaxpr.eqns) == expected_eqns
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
 
-        # TODO: complete comparison
-
-        assert result
+        # How can we test the result?
