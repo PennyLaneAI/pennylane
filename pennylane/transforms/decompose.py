@@ -165,26 +165,18 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             invals = (self.read(invar) for invar in eqn.invars)
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
+            if eqn.outvars[0].__class__.__name__ == "DropVar":
 
-            if isinstance(eqn.outvars[0], jax.core.DropVar):
-
-                if not self.dynamic_decomposition:
-
-                    return self.decompose_operation(op)
-
-                else:
-
-                    if self.gate_set(op):
-                        return self.interpret_operation(op)
+                if op.has_plxpr_decomposition:
 
                     args = (*op.parameters, *op.wires)
-                    return_ops_decomposition = run_autograph(op.compute_decomposition)(
+                    qml.capture.run_autograph(op.compute_plxpr_decomposition)(
                         *args, **op.hyperparameters
                     )
 
-                    if return_ops_decomposition is not None:
-                        for sub_op in return_ops_decomposition:
-                            self.interpret_operation(sub_op)
+                else:
+
+                    return self.decompose_operation(op)
 
             return op
 

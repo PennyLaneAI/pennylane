@@ -225,7 +225,6 @@ import copy
 import warnings
 from collections.abc import Hashable, Iterable
 from enum import IntEnum
-from functools import partial
 from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
@@ -1323,30 +1322,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
-    @classproperty
-    def _has_plxpr_decomposition(cls) -> bool:
-        """Whether or not the Operator returns a defined plxpr decomposition."""
-
-        return (
-            cls._compute_plxpr_decomposition != Operator._compute_plxpr_decomposition
-            or cls._plxpr_decomposition != Operator._plxpr_decomposition
-        )
-
-    def _plxpr_decomposition(self) -> "jax.core.Jaxpr":
-        """Representation of the operator as a plxpr decomposition."""
-
-        args = (*self.parameters, *self.wires)
-        jaxpr_decomp = qml.capture.make_plxpr(
-            partial(self._compute_plxpr_decomposition, **self.hyperparameters)
-        )(*args)
-
-        return jaxpr_decomp
-
-    @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
-        """Experimental method to compute the plxpr decomposition of the operator."""
-        raise DecompositionUndefinedError
-
     @staticmethod
     def compute_decomposition(
         *params: TensorLike,
@@ -1372,6 +1347,33 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         Returns:
             list[Operator]: decomposition of the operator
         """
+        raise DecompositionUndefinedError
+
+    @classproperty
+    def has_plxpr_decomposition(cls) -> bool:
+        """Whether or not the Operator returns a defined plxpr decomposition."""
+        return cls.compute_plxpr_decomposition != Operator.compute_plxpr_decomposition
+
+    @staticmethod
+    def compute_plxpr_decomposition(*args, **hyperparameters) -> None:
+        r"""Experimental method to compute the dynamic decomposition of the operator with program capture enabled.
+
+        When the program capture feature is enabled with ``qml.capture.enable()``, the decomposition of the operator
+        is computed with this method if it is defined. Otherwise, the :meth:`~.Operator.compute_decomposition` method is used.
+
+        If this method is defined, the control flow operations within the method are recorded in the JAX representation
+        of the operator's decomposition.
+
+        This method is experimental and subject to change.
+
+        .. seealso:: :meth:`~.Operator.compute_decomposition`.
+
+        Args:
+            *args (list): positional arguments passed to the operator, including trainable parameters and wires
+            **hyperparameters (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        """
+
         raise DecompositionUndefinedError
 
     # pylint: disable=no-self-argument, comparison-with-callable
