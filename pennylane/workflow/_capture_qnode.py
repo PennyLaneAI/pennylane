@@ -337,7 +337,7 @@ def _flatten_args(args, static_argnums):
     flat_argnum = 0
     static_iter = iter(static_argnums)
     static_argnum = next(static_iter)
-    i = 0
+    i = 0  # Just adding this to suppress pylint undefined-loop-variable error
 
     for i, arg in enumerate(args):
         flat_arg, struct = jax.tree_util.tree_flatten(arg)
