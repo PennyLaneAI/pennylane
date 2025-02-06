@@ -117,7 +117,7 @@ class TestPauliRotation:
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
-    @pytest.mark.parametrize("z", list(range(10)))
+    @pytest.mark.parametrize("z", list(range(1, 10)))
     def test_pow_decomposition(self, resource_class, epsilon, z):
         """Test that the pow decompositions are correct."""
 

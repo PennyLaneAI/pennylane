@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 from pennylane import numpy as qnp
+from pennylane.ops import LinearCombination
 
 # pylint: disable=no-self-use
 
@@ -27,42 +28,131 @@ class TestQubitization:
     """Test the ResourceQubitization class"""
 
     op_data = (
-        re.ResourcePrepSelPrep(),
-        re.ResourcePrepSelPrep(),
-        re.ResourcePrepSelPrep(),
+        re.ResourceQubitization(
+            LinearCombination([1.23, -4.5], [re.ResourceX(0), re.ResourceZ(0)]),
+            control=["c1"],
+        ),
+        re.ResourceQubitization(
+            LinearCombination(
+                [1.0, 1.0, 1.0, 1.0],
+                [
+                    re.ResourceRX(1.2, 0),
+                    re.ResourceRZ(-3.4, 1),
+                    re.ResourceCNOT([0, 1]),
+                    re.ResourceHadamard(0),
+                ],
+            ),
+            control=["c1", "c2"],
+        ),
+        re.ResourceQubitization(
+            LinearCombination(
+                (0.1, -2.3, 4.5, -6, 0.78),
+                (
+                    re.ResourceProd(re.ResourceZ(0), re.ResourceZ(1)),
+                    re.ResourceProd(re.ResourceX(0), re.ResourceX(2)),
+                    re.ResourceProd(re.ResourceY(2), re.ResourceY(1)),
+                    re.ResourceAdjoint(
+                        re.ResourceProd(re.ResourceX(0), re.ResourceY(1), re.ResourceZ(2))
+                    ),
+                    re.ResourceQFT([0, 1, 2]),
+                ),
+            ),
+            control=["c1", "c2", "c3"],
+        ),
     )
 
     resource_data = (
         {
-            re.ResourcePhaseShift.resource_rep(): 10,
-            re.ResourceSingleExcitation.resource_rep(): 6,
+            re.ResourceReflection.resource_rep(re.ResourceIdentity, {}, 1): 1,
+            re.ResourcePrepSelPrep.resource_rep(
+                cmpr_ops=(
+                    re.ResourceX.resource_rep(),
+                    re.ResourceZ.resource_rep(),
+                ),
+            ): 1,
         },
         {
-            re.ResourcePhaseShift.resource_rep(): 36,
-            re.ResourceSingleExcitation.resource_rep(): 28,
+            re.ResourceReflection.resource_rep(re.ResourceIdentity, {}, 2): 1,
+            re.ResourcePrepSelPrep.resource_rep(
+                cmpr_ops=(
+                    re.ResourceRX.resource_rep(),
+                    re.ResourceRZ.resource_rep(),
+                    re.ResourceCNOT.resource_rep(),
+                    re.ResourceHadamard.resource_rep(),
+                ),
+            ): 1,
         },
         {
-            re.ResourcePhaseShift.resource_rep(): 136,
-            re.ResourceSingleExcitation.resource_rep(): 120,
+            re.ResourceReflection.resource_rep(re.ResourceIdentity, {}, 3): 1,
+            re.ResourcePrepSelPrep.resource_rep(
+                cmpr_ops=(
+                    re.ResourceProd.resource_rep(
+                        (re.ResourceZ.resource_rep(), re.ResourceZ.resource_rep())
+                    ),
+                    re.ResourceProd.resource_rep(
+                        (re.ResourceX.resource_rep(), re.ResourceX.resource_rep())
+                    ),
+                    re.ResourceProd.resource_rep(
+                        (re.ResourceY.resource_rep(), re.ResourceY.resource_rep())
+                    ),
+                    re.ResourceAdjoint.resource_rep(
+                        base_class=re.ResourceProd,
+                        base_params={
+                            "cmpr_factors": (
+                                re.ResourceX.resource_rep(),
+                                re.ResourceY.resource_rep(),
+                                re.ResourceZ.resource_rep(),
+                            )
+                        },
+                    ),
+                    re.ResourceQFT.resource_rep(num_wires=3),
+                ),
+            ): 1,
         },
     )
 
     resource_params_data = (
         {
-            "dim_N": 4,
+            "cmpr_ops": (
+                re.ResourceX.resource_rep(),
+                re.ResourceZ.resource_rep(),
+            ),
+            "num_ctrl_wires": 1,
         },
         {
-            "dim_N": 8,
+            "cmpr_ops": (
+                re.ResourceRX.resource_rep(),
+                re.ResourceRZ.resource_rep(),
+                re.ResourceCNOT.resource_rep(),
+                re.ResourceHadamard.resource_rep(),
+            ),
+            "num_ctrl_wires": 2,
         },
         {
-            "dim_N": 16,
+            "cmpr_ops": (
+                re.ResourceProd.resource_rep(
+                    (re.ResourceZ.resource_rep(), re.ResourceZ.resource_rep())
+                ),
+                re.ResourceProd.resource_rep(
+                    (re.ResourceX.resource_rep(), re.ResourceX.resource_rep())
+                ),
+                re.ResourceProd.resource_rep(
+                    (re.ResourceY.resource_rep(), re.ResourceY.resource_rep())
+                ),
+                re.ResourceAdjoint.resource_rep(
+                    base_class=re.ResourceProd,
+                    base_params={
+                        "cmpr_factors": (
+                            re.ResourceX.resource_rep(),
+                            re.ResourceY.resource_rep(),
+                            re.ResourceZ.resource_rep(),
+                        )
+                    },
+                ),
+                re.ResourceQFT.resource_rep(num_wires=3),
+            ),
+            "num_ctrl_wires": 3,
         },
-    )
-
-    name_data = (
-        "BasisRotation(4)",
-        "BasisRotation(8)",
-        "BasisRotation(16)",
     )
 
     @pytest.mark.parametrize(
@@ -71,7 +161,7 @@ class TestQubitization:
     def test_resources(self, op, params, expected_res):
         """Test the resources method returns the correct dictionary"""
         res_from_op = op.resources(**op.resource_params())
-        res_from_func = re.ResourceBasisRotation.resources(**params)
+        res_from_func = re.ResourceQubitization.resources(**params)
 
         assert res_from_op == expected_res
         assert res_from_func == expected_res
@@ -84,10 +174,5 @@ class TestQubitization:
     @pytest.mark.parametrize("expected_params", resource_params_data)
     def test_resource_rep(self, expected_params):
         """Test the resource_rep returns the correct CompressedResourceOp"""
-        expected = re.CompressedResourceOp(re.ResourceBasisRotation, expected_params)
-        assert re.ResourceBasisRotation.resource_rep(**expected_params) == expected
-
-    @pytest.mark.parametrize("params, expected_name", zip(resource_params_data, name_data))
-    def test_tracking_name(self, params, expected_name):
-        """Test that the tracking name is correct."""
-        assert re.ResourceBasisRotation.tracking_name(**params) == expected_name
+        expected = re.CompressedResourceOp(re.ResourceQubitization, expected_params)
+        assert re.ResourceQubitization.resource_rep(**expected_params) == expected

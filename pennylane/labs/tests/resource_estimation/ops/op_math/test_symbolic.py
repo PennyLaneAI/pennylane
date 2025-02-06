@@ -55,6 +55,7 @@ class DummyOp(re.ResourceOperator, Operation):
         return re.CompressedResourceOp(cls, {"a": a, "b": b})
 
 
+z_pauli_rep = qml.Z(0).pauli_rep
 lc_op = qml.ops.LinearCombination(
     [1.11, 0.12, -3.4, 5], [qml.X(0) @ qml.X(1), qml.Z(2), qml.Y(0) @ qml.Y(1), qml.I((0, 1, 2))]
 )
@@ -109,8 +110,8 @@ class TestResourceAdjoint:
         assert op.resource_params() == expected
 
     expected_names = [
-        "Adjoint(QFT)",
-        "Adjoint(Adjoint(QFT))",
+        "Adjoint(QFT(2))",
+        "Adjoint(Adjoint(QFT(2)))",
         "Adjoint(Pow(X, 5))",
     ]
 
@@ -158,8 +159,8 @@ class TestResourceAdjoint:
         assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
     expected_resources = [
-        re.Resources(gate_types={"Adjoint(QFT)": 1}, num_gates=1, num_wires=2),
-        re.Resources(gate_types={"Adjoint(Adjoint(QFT))": 1}, num_gates=1, num_wires=2),
+        re.Resources(gate_types={"Adjoint(QFT(2))": 1}, num_gates=1, num_wires=2),
+        re.Resources(gate_types={"Adjoint(Adjoint(QFT(2)))": 1}, num_gates=1, num_wires=2),
         re.Resources(gate_types={"Adjoint(Pow(X, 5))": 1}, num_gates=1, num_wires=1),
     ]
 
@@ -232,10 +233,10 @@ class TestResourceControlled:
         assert op.resource_params() == expected
 
     expected_names = [
-        "C(QFT,1,0,0)",
-        "C(C(QFT,1,0,0),1,0,0)",
-        "C(QFT,2,1,0)",
-        "C(Adjoint(QFT),2,1,1)",
+        "C(QFT(2),1,0,0)",
+        "C(C(QFT(2),1,0,0),1,0,0)",
+        "C(QFT(2),2,1,0)",
+        "C(Adjoint(QFT(2)),2,1,1)",
     ]
 
     @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_names))
@@ -266,11 +267,11 @@ class TestResourceControlled:
         assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
     expected_resources = [
-        re.Resources(gate_types={"C(QFT,1,0,0)": 1}, num_gates=1, num_wires=3),
-        re.Resources(gate_types={"C(C(QFT,1,0,0),1,0,0)": 1}, num_gates=1, num_wires=4),
-        re.Resources(gate_types={"C(QFT,2,1,0)": 1}, num_gates=1, num_wires=4),
+        re.Resources(gate_types={"C(QFT(2),1,0,0)": 1}, num_gates=1, num_wires=3),
+        re.Resources(gate_types={"C(C(QFT(2),1,0,0),1,0,0)": 1}, num_gates=1, num_wires=4),
+        re.Resources(gate_types={"C(QFT(2),2,1,0)": 1}, num_gates=1, num_wires=4),
         re.Resources(
-            gate_types={"C(Adjoint(QFT),2,1,1)": 1}, num_gates=1, num_wires=4
+            gate_types={"C(Adjoint(QFT(2)),2,1,1)": 1}, num_gates=1, num_wires=4
         ),  # PL does not count work wires for controlled operators
     ]
 
@@ -312,9 +313,9 @@ class TestResourcePow:
         assert op.resource_params() == expected
 
     expected_names = [
-        "Pow(QFT, 2)",
-        "Pow(Adjoint(QFT), 2)",
-        "Pow(Pow(QFT, 2), 3)",
+        "Pow(QFT(2), 2)",
+        "Pow(Adjoint(QFT(2)), 2)",
+        "Pow(Pow(QFT(2), 2), 3)",
     ]
 
     @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_names))
@@ -325,9 +326,9 @@ class TestResourcePow:
         assert name == expected
 
     expected_resources = [
-        re.Resources(gate_types={"Pow(QFT, 2)": 1}, num_gates=1, num_wires=2),
-        re.Resources(gate_types={"Pow(Adjoint(QFT), 2)": 1}, num_gates=1, num_wires=2),
-        re.Resources(gate_types={"Pow(Pow(QFT, 2), 3)": 1}, num_gates=1, num_wires=2),
+        re.Resources(gate_types={"Pow(QFT(2), 2)": 1}, num_gates=1, num_wires=2),
+        re.Resources(gate_types={"Pow(Adjoint(QFT(2)), 2)": 1}, num_gates=1, num_wires=2),
+        re.Resources(gate_types={"Pow(Pow(QFT(2), 2), 3)": 1}, num_gates=1, num_wires=2),
     ]
 
     @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_resources))
@@ -366,7 +367,7 @@ class TestResourcePow:
 class TestResourceProd:
     """Test ResourceProd"""
 
-    ops_data = (
+    op_data = (
         re.ResourceProd(re.ResourceX(0), re.ResourceHadamard(1)),
         re.ResourceProd(
             re.ResourceQFT(wires=[0, 1, 2]),
@@ -375,18 +376,79 @@ class TestResourceProd:
         ),
         re.ResourceProd(
             re.ResourceCNOT([0, 1]),
-            re.ResourceExp(re.ResourceZ(0)),
+            re.ResourceExp(re.ResourceZ(0), 0.1j),
+            re.ResourceProd(re.ResourceX(1), re.ResourceY(2)),
+            re.ResourceZ(3),
         ),
     )
 
-    def test_resource_params(self):
-        assert True
+    resource_data = (
+        {
+            re.ResourceX.resource_rep(): 1,
+            re.ResourceHadamard.resource_rep(): 1,
+        },
+        {
+            re.ResourceQFT.resource_rep(3): 1,
+            re.ResourceAdjoint.resource_rep(re.ResourceZ, {}): 1,
+            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 2, 0, 0): 1,
+        },
+        {
+            re.ResourceCNOT.resource_rep(): 1,
+            re.ResourceExp.resource_rep(re.ResourceZ, {}, z_pauli_rep, 0.1j, None): 1,
+            re.ResourceProd.resource_rep(
+                cmpr_factors=(re.ResourceX.resource_rep(), re.ResourceY.resource_rep())
+            ): 1,
+            re.ResourceZ.resource_rep(): 1,
+        },
+    )
 
-    def test_resource_rep(self):
-        assert True
+    resource_params_data = (
+        {
+            "cmpr_factors": (
+                re.ResourceX.resource_rep(),
+                re.ResourceHadamard.resource_rep(),
+            ),
+        },
+        {
+            "cmpr_factors": (
+                re.ResourceQFT.resource_rep(3),
+                re.ResourceAdjoint.resource_rep(re.ResourceZ, {}),
+                re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 2, 0, 0),
+            ),
+        },
+        {
+            "cmpr_factors": (
+                re.ResourceCNOT.resource_rep(),
+                re.ResourceExp.resource_rep(re.ResourceZ, {}, z_pauli_rep, 0.1j, None),
+                re.ResourceProd.resource_rep(
+                    cmpr_factors=(re.ResourceX.resource_rep(), re.ResourceY.resource_rep())
+                ),
+                re.ResourceZ.resource_rep(),
+            ),
+        },
+    )
 
-    def test_resources_decomp(self):
-        assert True
+    @pytest.mark.parametrize(
+        "op, params, expected_res", zip(op_data, resource_params_data, resource_data)
+    )
+    def test_resources(self, op, params, expected_res):
+        """Test the resources method returns the correct dictionary"""
+        res_from_op = op.resources(**op.resource_params())
+        res_from_func = re.ResourceProd.resources(**params)
+
+        assert res_from_op == expected_res
+        assert res_from_func == expected_res
+
+    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data))
+    def test_resource_params(self, op, expected_params):
+        """Test that the resource params are correct"""
+        assert op.resource_params() == expected_params
+
+    @pytest.mark.parametrize("expected_params", resource_params_data)
+    def test_resource_rep(self, expected_params):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+        expected = re.CompressedResourceOp(re.ResourceProd, expected_params)
+        assert re.ResourceProd.resource_rep(**expected_params) == expected
 
 
 class TestResourceExp:

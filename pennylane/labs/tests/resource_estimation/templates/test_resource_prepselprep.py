@@ -20,8 +20,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane import numpy as qnp
-from pennylane.ops import LinearCombination, Sum
+from pennylane.ops import LinearCombination
 
 # pylint: disable=no-self-use
 

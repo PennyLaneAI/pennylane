@@ -269,14 +269,19 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
     """Resource class for Reflection."""
 
     @staticmethod
-    def _resource_decomp(base, num_ref_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(
+        base_class, base_params, num_ref_wires, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
         gate_types = {}
+        base = base_class.resource_rep(**base_params)
 
         x = re.ResourceX.resource_rep()
         gp = re.ResourceGlobalPhase.resource_rep()
-        adj_base = re.ResourceAdjoint.resource_rep(base.op_type, base.params)
+        adj_base = re.ResourceAdjoint.resource_rep(base_class, base_params)
         ps = (
-            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, num_ref_wires - 1, 0, 0)
+            re.ResourceControlled.resource_rep(
+                re.ResourcePhaseShift, {}, num_ref_wires - 1, num_ref_wires - 1, 0
+            )
             if num_ref_wires > 1
             else re.ResourcePhaseShift.resource_rep()
         )
@@ -293,11 +298,19 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
         base_cmpr_rep = self.hyperparameters["base"].resource_rep_from_op()
         num_ref_wires = len(self.hyperparameters["reflection_wires"])
 
-        return {"base": base_cmpr_rep, "num_ref_wires": num_ref_wires}
+        return {
+            "base_class": base_cmpr_rep.op_type,
+            "base_params": base_cmpr_rep.params,
+            "num_ref_wires": num_ref_wires,
+        }
 
     @classmethod
-    def resource_rep(cls, base, num_ref_wires) -> CompressedResourceOp:
-        params = {"base": base, "num_ref_wires": num_ref_wires}
+    def resource_rep(cls, base_class, base_params, num_ref_wires) -> CompressedResourceOp:
+        params = {
+            "base_class": base_class,
+            "base_params": base_params,
+            "num_ref_wires": num_ref_wires,
+        }
         return CompressedResourceOp(cls, params)
 
 
@@ -307,7 +320,7 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
     @staticmethod
     def _resource_decomp(cmpr_ops, num_ctrl_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         gate_types = {}
-        ref = ResourceReflection.resource_rep(re.ResourceIdentity.resource_rep(), num_ctrl_wires)
+        ref = ResourceReflection.resource_rep(re.ResourceIdentity, {}, num_ctrl_wires)
         psp = ResourcePrepSelPrep.resource_rep(cmpr_ops)
 
         gate_types[ref] = 1

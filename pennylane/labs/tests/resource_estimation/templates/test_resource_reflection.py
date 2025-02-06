@@ -27,42 +27,62 @@ class TestReflection:
     """Test the ResourceReflection class"""
 
     op_data = (
-        re.ResourcePrepSelPrep(),
-        re.ResourcePrepSelPrep(),
-        re.ResourcePrepSelPrep(),
+        re.ResourceReflection(re.ResourceHadamard(0)),
+        re.ResourceReflection(re.ResourceProd(re.ResourceX(0), re.ResourceY(1)), alpha=1.23),
+        re.ResourceReflection(re.ResourceQFT(range(4)), reflection_wires=range(3)),
     )
 
     resource_data = (
         {
-            re.ResourcePhaseShift.resource_rep(): 10,
-            re.ResourceSingleExcitation.resource_rep(): 6,
+            re.ResourceX.resource_rep(): 2,
+            re.ResourceGlobalPhase.resource_rep(): 1,
+            re.ResourceHadamard.resource_rep(): 1,
+            re.ResourceAdjoint.resource_rep(base_class=re.ResourceHadamard, base_params={}): 1,
+            re.ResourcePhaseShift.resource_rep(): 1,
         },
         {
-            re.ResourcePhaseShift.resource_rep(): 36,
-            re.ResourceSingleExcitation.resource_rep(): 28,
+            re.ResourceX.resource_rep(): 2,
+            re.ResourceGlobalPhase.resource_rep(): 1,
+            re.ResourceProd.resource_rep(
+                cmpr_factors=(re.ResourceX.resource_rep(), re.ResourceY.resource_rep())
+            ): 1,
+            re.ResourceAdjoint.resource_rep(
+                base_class=re.ResourceProd,
+                base_params={
+                    "cmpr_factors": (re.ResourceX.resource_rep(), re.ResourceY.resource_rep())
+                },
+            ): 1,
+            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 1, 1, 0): 1,
         },
         {
-            re.ResourcePhaseShift.resource_rep(): 136,
-            re.ResourceSingleExcitation.resource_rep(): 120,
+            re.ResourceX.resource_rep(): 2,
+            re.ResourceGlobalPhase.resource_rep(): 1,
+            re.ResourceQFT.resource_rep(num_wires=4): 1,
+            re.ResourceAdjoint.resource_rep(
+                base_class=re.ResourceQFT, base_params={"num_wires": 4}
+            ): 1,
+            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 2, 2, 0): 1,
         },
     )
 
     resource_params_data = (
         {
-            "dim_N": 4,
+            "base_class": re.ResourceHadamard,
+            "base_params": {},
+            "num_ref_wires": 1,
         },
         {
-            "dim_N": 8,
+            "base_class": re.ResourceProd,
+            "base_params": {
+                "cmpr_factors": (re.ResourceX.resource_rep(), re.ResourceY.resource_rep())
+            },
+            "num_ref_wires": 2,
         },
         {
-            "dim_N": 16,
+            "base_class": re.ResourceQFT,
+            "base_params": {"num_wires": 4},
+            "num_ref_wires": 3,
         },
-    )
-
-    name_data = (
-        "BasisRotation(4)",
-        "BasisRotation(8)",
-        "BasisRotation(16)",
     )
 
     @pytest.mark.parametrize(
@@ -71,7 +91,7 @@ class TestReflection:
     def test_resources(self, op, params, expected_res):
         """Test the resources method returns the correct dictionary"""
         res_from_op = op.resources(**op.resource_params())
-        res_from_func = re.ResourceBasisRotation.resources(**params)
+        res_from_func = re.ResourceReflection.resources(**params)
 
         assert res_from_op == expected_res
         assert res_from_func == expected_res
@@ -84,10 +104,5 @@ class TestReflection:
     @pytest.mark.parametrize("expected_params", resource_params_data)
     def test_resource_rep(self, expected_params):
         """Test the resource_rep returns the correct CompressedResourceOp"""
-        expected = re.CompressedResourceOp(re.ResourceBasisRotation, expected_params)
-        assert re.ResourceBasisRotation.resource_rep(**expected_params) == expected
-
-    @pytest.mark.parametrize("params, expected_name", zip(resource_params_data, name_data))
-    def test_tracking_name(self, params, expected_name):
-        """Test that the tracking name is correct."""
-        assert re.ResourceBasisRotation.tracking_name(**params) == expected_name
+        expected = re.CompressedResourceOp(re.ResourceReflection, expected_params)
+        assert re.ResourceReflection.resource_rep(**expected_params) == expected
