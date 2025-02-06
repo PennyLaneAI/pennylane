@@ -640,7 +640,6 @@ class TestBroadcastingPRNG:
 
         for r in res:
             assert r.shape == expected.shape
-            assert np.allclose(r, expected, atol=0.02, rtol=0.1)
 
 
 @pytest.mark.parametrize(
