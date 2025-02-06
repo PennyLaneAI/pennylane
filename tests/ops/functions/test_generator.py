@@ -115,7 +115,7 @@ class SumOpSameCoeff(CustomOp):
 
     def generator(self):
         return qml.sum(
-            0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.Identity(self.wires[1])),
+            0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.Z(self.wires[1])),
             0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.PauliY(self.wires[1])),
         )
 
@@ -127,7 +127,7 @@ class SumOpSameAbsCoeff(CustomOp):
 
     def generator(self):
         return qml.sum(
-            0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.Identity(self.wires[1])),
+            0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.Z(self.wires[1])),
             -0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.PauliY(self.wires[1])),
         )
 
@@ -266,7 +266,7 @@ class TestPrefactorReturn:
         """Test a generator that returns a Hamiltonian"""
         gen, prefactor = qml.generator(HamiltonianOp, format="prefactor")(0.5, wires=[0, 1])
         assert prefactor == 1.0
-        assert gen.name == "Sum"
+        assert gen.name == "LinearCombination"
 
     def test_hamiltonian_with_same_term(self):
         """Test a generator that returns a Hamiltonian with multiple terms, all containing the same

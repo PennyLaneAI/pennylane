@@ -37,20 +37,6 @@ from .gradient_transform import (
 )
 from .metric_tensor import _get_aux_wire
 
-hadamard_trainable_ops = (
-    "RX",
-    "RY",
-    "RZ",
-    "PhaseShift",
-    "U1",
-    "CRX",
-    "CRY",
-    "CRZ",
-    "IsingXX",
-    "IsingYY",
-    "IsingZZ",
-)
-
 
 def _hadamard_stopping_condition(op) -> bool:
     if not op.has_decomposition:
@@ -348,9 +334,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
     )
 
 
-def _new_measurement(
-    mp, aux_wire, all_wires: qml.wires.Wires
-):
+def _new_measurement(mp, aux_wire, all_wires: qml.wires.Wires):
     obs = mp.obs or qml.prod(*(qml.Z(w) for w in mp.wires or all_wires))
     new_obs = qml.simplify(obs @ qml.Y(aux_wire))
     return type(mp)(obs=new_obs)

@@ -58,9 +58,11 @@ def _generator_prefactor(gen):
       of Pauli words.
     """
 
-    prefactor = 1.0
+    try:
+        coeffs, ops = gen.terms()
+    except qml.operation.TermsUndefinedError:
+        coeffs, ops = [1.0], [gen]
 
-    coeffs, ops = gen.terms()
     if len(ops) == 1:
         return ops[0], coeffs[0]
 
@@ -68,6 +70,7 @@ def _generator_prefactor(gen):
         # case where the Hamiltonian coefficients are all the same
         return qml.sum(*ops), coeffs[0]
 
+    prefactor = 1.0
     abs_coeffs = list(qml.math.abs(coeffs))
     if qml.math.allequal(abs_coeffs[0], abs_coeffs):
         # absolute value of coefficients is the same
