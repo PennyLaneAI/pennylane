@@ -25,7 +25,7 @@ import numpy as np
 
 
 def get_named_registers(registers):
-    """Returns a `qml.registers` object with the appropriate Wires"""
+    """Returns a `qml.registers` object associated with the named registers in the bloq"""
 
     temp_register_dict = {}
     for reg in registers:
@@ -79,7 +79,8 @@ class FromBloq(Operation):
     A shim for using bloqs as a PennyLane operation.
 
     Args:
-        bloq: The bloq to wrap.
+        bloq: the bloq to wrap
+        wires: the wires to act on
     """
 
     def __init__(self, bloq: Bloq, wires: WiresLike):
@@ -92,7 +93,7 @@ class FromBloq(Operation):
 
         if isinstance(bloq, CompositeBloq):
             temp_registers = get_named_registers(bloq.signature.lefts())
-            qvar_to_qreg = {
+            soq_to_wires = {
                 Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])
                 for reg in bloq.signature.lefts()
                 for idx in reg.all_idxs()
@@ -109,26 +110,25 @@ class FromBloq(Operation):
                 }
                 for pred in pred_cxns:
                     soq = pred.right
-                    # assert soq in qvar_to_qreg, f"{soq=} should exist in {qvar_to_qreg=}."
-                    qvar_to_qreg[soq] = qvar_to_qreg[pred.left]
-                    in_quregs[soq.reg.name][soq.idx] = qvar_to_qreg[soq]
-                    # if soq.reg.side == Side.LEFT:
-                    #     del qvar_to_qreg[soq]
+                    soq_to_wires[soq] = soq_to_wires[pred.left]
+                    in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
                 op = bloq_to_op(binst.bloq, in_quregs)
                 if op:
                     ops.append(op)
                 for succ in succ_cxns:
                     soq = succ.left
-                    if len(in_quregs) == 0 and soq.reg.side == Side.RIGHT:
-                        total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
-                        ascending_vals = np.arange(
-                            len(qvar_to_qreg), total_elements + len(qvar_to_qreg), dtype=object
-                        )
-                        in_quregs[soq.reg.name] = ascending_vals.reshape(
-                            (*soq.reg.shape, soq.reg.bitsize)
-                        )
-                    if succ.left.reg.side == Side.RIGHT:
-                        qvar_to_qreg[soq] = in_quregs[soq.reg.name][soq.idx]
+                    if soq.reg.side == Side.RIGHT:
+                        # If in_quregs is empty, we insert key, value pair where the key is
+                        # the register name, and the value is the list of wires associated with it
+                        if len(in_quregs) == 0 and soq.reg.side == Side.RIGHT:
+                            total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
+                            ascending_vals = np.arange(
+                                len(soq_to_wires), total_elements + len(soq_to_wires), dtype=object
+                            )
+                            in_quregs[soq.reg.name] = ascending_vals.reshape(
+                                (*soq.reg.shape, soq.reg.bitsize)
+                            )
+                        soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
         else:
             op = bloq_to_op(bloq, wires)
             ops.append(op)
