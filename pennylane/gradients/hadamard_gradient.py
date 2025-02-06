@@ -349,8 +349,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
 
 def _new_measurement(
-    mp: qml.measurement.MeasurementProcess, aux_wire, all_wires: qml.wires.Wires
-) -> qml.measurement.MeasurementProcess:
+    mp, aux_wire, all_wires: qml.wires.Wires
+):
     obs = mp.obs or qml.prod(*(qml.Z(w) for w in mp.wires or all_wires))
     new_obs = qml.simplify(obs @ qml.Y(aux_wire))
     return type(mp)(obs=new_obs)
