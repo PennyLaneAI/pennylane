@@ -60,30 +60,20 @@ def _generator_prefactor(gen):
 
     prefactor = 1.0
 
-    gen = qml.simplify(gen) if isinstance(gen, Prod) else gen
-
-    if isinstance(gen, LinearCombination):
-        gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
-
-    if isinstance(gen, Prod):
-        coeffs, ops = gen.terms()
+    coeffs, ops = gen.terms()
+    if len(ops) == 1:
         return ops[0], coeffs[0]
 
-    if isinstance(gen, Sum):
-        ops = [o.base if isinstance(o, SProd) else o for o in gen]
-        coeffs = [o.scalar if isinstance(o, SProd) else 1 for o in gen]
-        abs_coeffs = list(qml.math.abs(coeffs))
-        if qml.math.allequal(coeffs[0], coeffs):
-            # case where the Hamiltonian coefficients are all the same
-            return qml.sum(*ops), coeffs[0]
-        if qml.math.allequal(abs_coeffs[0], abs_coeffs):
-            # absolute value of coefficients is the same
-            prefactor = abs_coeffs[0]
-            coeffs = [c / prefactor for c in coeffs]
-            return qml.dot(coeffs, ops), prefactor
+    if qml.math.allequal(coeffs[0], coeffs):
+        # case where the Hamiltonian coefficients are all the same
+        return qml.sum(*ops), coeffs[0]
 
-    elif isinstance(gen, SProd):
-        return gen.base, gen.scalar
+    abs_coeffs = list(qml.math.abs(coeffs))
+    if qml.math.allequal(abs_coeffs[0], abs_coeffs):
+        # absolute value of coefficients is the same
+        prefactor = abs_coeffs[0]
+        coeffs = [c / prefactor for c in coeffs]
+        return qml.dot(coeffs, ops), prefactor
 
     return gen, prefactor
 

@@ -348,7 +348,9 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
     )
 
 
-def _new_measurement(mp, aux_wire, all_wires):
+def _new_measurement(
+    mp: qml.measurement.MeasurementProcess, aux_wire, all_wires: qml.wires.Wires
+) -> qml.measurement.MeasurementProcess:
     obs = mp.obs or qml.prod(*(qml.Z(w) for w in mp.wires or all_wires))
     new_obs = qml.simplify(obs @ qml.Y(aux_wire))
     return type(mp)(obs=new_obs)
@@ -358,7 +360,7 @@ def _get_pauli_generators(trainable_op):
     """From a trainable operation, extract the unitary generators and their coefficients.
     Any operator with a generator is supported.
     """
-    generator = qml.generator(trainable_op, format="observable")
+    generator = trainable_op.generator()
     if generator.pauli_rep is None:
         mat = qml.matrix(generator, wire_order=generator.wires)
         op = qml.pauli_decompose(mat, wire_order=generator.wires)
@@ -382,14 +384,15 @@ def _postprocess_probs(res, measurement, tape):
     return qml.math.tensordot(res, projector, axes=[[1], [0]])
 
 
-def processing_fn(results, tape, coeffs, generators_per_parameter):
+def processing_fn(results: qml.typing.ResultBatch, tape, coeffs, generators_per_parameter):
     """Post processing function for computing a hadamard gradient."""
 
     final_res = []
     for coeff, res in zip(coeffs, results):
-        if isinstance(res, (tuple, list)):
+        if isinstance(res, (tuple, list)):  # more than one measurement
             new_val = [qml.math.convert_like(2 * coeff * r, r) for r in res]
         else:
+            # add singleton dimension back in for one measurement
             new_val = [qml.math.convert_like(2 * coeff * res, res)]
         final_res.append(new_val)
 

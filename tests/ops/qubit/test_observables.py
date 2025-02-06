@@ -768,16 +768,10 @@ class TestBasisStateProjector:
 
     def test_projector_exceptions(self):
         """Tests that the projector construction raises the proper errors on incorrect inputs."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(basis_state):
-            obs = qml.Projector(basis_state, wires=range(2))
-            return qml.expval(obs)
 
         with pytest.raises(ValueError, match="Basis state must only consist of 0s"):
             basis_state = np.array([0, 2])
-            circuit(basis_state)
+            qml.Projector(basis_state, wires=range(2))
 
     @pytest.mark.parametrize(
         "basis_state,expected,n_wires",
@@ -825,6 +819,35 @@ class TestBasisStateProjector:
         res_static = BasisStateProjector.compute_matrix(basis_state)
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
+
+    def test_pauli_rep(self):
+        """Test that BasisStateProjector has a pauli rep."""
+
+        op = qml.Projector([0, 1], wires=(0, 1))
+
+        equivalent_op = 0.25 * (qml.I(0) + qml.Z(0)) @ (qml.I(1) - qml.Z(1))
+        assert op.pauli_rep == equivalent_op.pauli_rep
+
+        pr_mat = op.pauli_rep.to_mat(wire_order=(0, 1))
+        assert qml.math.allclose(op.matrix(wire_order=(0, 1)), pr_mat)
+
+    @pytest.mark.jax
+    def test_pauli_rep_jitting(self):
+        """Test that BasisStateProjector does not have a pauli rep when jitting."""
+
+        import jax
+
+        def f():
+            op = qml.Projector(jax.numpy.array([1, 0]), wires=(0, 1))
+            assert op.pauli_rep is None
+
+        _ = jax.jit(f)()
+
+        def f(x):
+            op = qml.Projector(x, wires=(0, 1))
+            assert op.pauli_rep is None
+
+        _ = jax.jit(f)(jax.numpy.array([1, 0]))
 
     def test_integration_batched_state(self):
         dev = qml.device("default.qubit", wires=1)

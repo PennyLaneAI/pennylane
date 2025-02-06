@@ -257,12 +257,12 @@ class TestHadamardGrad:
         res_hadamard, _ = grad_fn(tape, dev)
         res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
 
-        # assert isinstance(res_hadamard, tuple)
+        assert isinstance(res_hadamard, (list, tuple))
         assert np.allclose(res_hadamard[0], res_param_shift[0], atol=tol, rtol=0)
         assert np.allclose(res_hadamard[1], res_param_shift[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
-    @pytest.mark.parametrize("G", [qml.IsingXX, qml.IsingYY, qml.IsingZZ])
+    @pytest.mark.parametrize("G", [qml.IsingXX, qml.IsingYY, qml.IsingZZ, qml.IsingXY])
     def test_ising_gradient(self, G, theta, tol):
         """Test gradient of Ising coupling gates"""
         dev = qml.device("default.qubit", wires=3)
@@ -402,6 +402,7 @@ class TestHadamardGrad:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
+            qml.expval(qml.X(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
@@ -409,11 +410,11 @@ class TestHadamardGrad:
 
         assert len(tapes) == 2
 
-        assert len(res_hadamard) == 2
+        assert len(res_hadamard) == 3
         assert len(res_hadamard[0]) == 2
         assert len(res_hadamard[1]) == 2
 
-        expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
+        expected = np.array([[-np.sin(x), 0], [0, np.cos(y)], [0, 0]])
         assert np.allclose(res_hadamard[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res_hadamard[1], expected[1], atol=tol, rtol=0)
 

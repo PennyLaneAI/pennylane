@@ -6,6 +6,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
+
 * Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
   [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
 

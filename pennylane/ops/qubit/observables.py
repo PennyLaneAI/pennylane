@@ -528,6 +528,8 @@ class BasisStateProjector(Projector, Operation):
 
         pr = PauliWord({})
         for val, wire in zip(self.data[0], self.wires):
+            if qml.math.is_abstract(val):  # slicing can produce a tracer
+                return None
             if qml.math.allclose(val, 0):
                 pr @= 0.5 * PauliWord({}) + 0.5 * PauliWord({wire: "Z"})
             else:

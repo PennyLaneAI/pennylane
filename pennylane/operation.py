@@ -1418,7 +1418,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return cls.generator != Operator.generator
 
-    def generator(self):  # pylint: disable=no-self-use
+    def generator(self) -> "Operator":  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1435,8 +1435,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
 
-        The default value to return is ``None``, indicating that the operation has
-        no defined generator.
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
