@@ -237,6 +237,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 from pennylane.decompositions.decomposition_rule import DecompositionRule
+from pennylane.decompositions.resources import CompressedResourceOp
 
 from .pytrees import register_pytree
 
@@ -1339,6 +1340,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """A dictionary containing the minimal information needed to compute a
         resource estimate of the operator's decomposition."""
         return {}
+
+    @property
+    def resource_rep(self) -> CompressedResourceOp:
+        """The compressed resource representation of this operator."""
+        return CompressedResourceOp(type(self), self.resource_params)
 
     @staticmethod
     def compute_decomposition(
