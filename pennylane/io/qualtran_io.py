@@ -99,11 +99,7 @@ class FromBloq(Operation):
                 for idx in reg.all_idxs()
             }
 
-            for (
-                binst,
-                pred_cxns,
-                succ_cxns,
-            ) in bloq.iter_bloqnections():
+            for binst, pred_cxns, succ_cxns in bloq.iter_bloqnections():
                 in_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.lefts()
