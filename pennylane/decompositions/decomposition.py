@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, StopSearch, PruneSearch
 
@@ -26,67 +28,81 @@ from .decomposition_rule import DecompositionRule
 from .resources import Resources
 
 
+@dataclass(frozen=True)
+class _DecompositionNode:
+    """A node that represents a decomposition rule."""
+
+    rule: DecompositionRule
+    resource_decomp: Resources
+
+    def count(self, op: CompressedResourceOp):
+        """Find the number of occurrences of an operator in the decomposition."""
+        return self.resource_decomp.gate_counts.get(op, 0)
+
+
 class DecompositionGraph:
-    """A graph that models a gate set mapping problem.
+    """A graph that models a decomposition problem.
 
     Args:
-        operations (list[Operator]): The list of operations to decompose.
-        target_gate_set (set[str]): The set of supported operator names.
+        operations (list[Operator]): The list of operations to find decompositions for.
+        target_gate_set (set[str]): The names of the gates in the target gate set.
 
     """
 
     def __init__(self, operations: list[Operator], target_gate_set: set[str]):
         self._original_ops = operations
-        self._original_ops_indices: set[int] = set()
         self._target_gate_set = target_gate_set
-        self._target_gate_indices: list[int] = []
+        self._original_ops_indices: set[int] = set()
+        self._target_gate_indices: set[int] = set()
         self._graph = rx.PyDiGraph()
-        self._node_indices: dict[object, int] = {}
+        self._op_node_indices: dict[CompressedResourceOp, int] = {}
         self._construct_graph()
         self._visitor = None
 
     def _construct_graph(self):
         """Constructs the decomposition graph."""
         for op in self._original_ops:
-            node = CompressedResourceOp(op, op.resource_params)
-            idx = self._recursively_add_op_node(node)
+            op_node = CompressedResourceOp(type(op), op.resource_params)
+            idx = self._recursively_add_op_node(op_node)
             self._original_ops_indices.add(idx)
 
-    def _recursively_add_op_node(self, node: CompressedResourceOp) -> int:
-        """Recursively adds an operation node to the graph."""
+    def _recursively_add_op_node(self, op_node: CompressedResourceOp) -> int:
+        """Recursively adds an operation node to the graph.
 
-        if node in self._node_indices:
-            return self._node_indices[node]
+        An operator node is uniquely defined by its operator type and resource parameters, which
+        are conveniently wrapped in a ``CompressedResourceOp``.
 
-        op_node_idx = self._graph.add_node(node)
-        self._node_indices[node] = op_node_idx
-        if node.op_type.__name__ in self._target_gate_set:
-            self._target_gate_indices.append(op_node_idx)
+        """
+
+        if op_node in self._op_node_indices:
+            return self._op_node_indices[op_node]
+
+        op_node_idx = self._graph.add_node(op_node)
+        self._op_node_indices[op_node] = op_node_idx
+        if op_node.op_type.__name__ in self._target_gate_set:
+            self._target_gate_indices.add(op_node_idx)
             return op_node_idx
 
-        for decomposition in node.op_type.decompositions:
-            d_node_idx = self._recursively_add_decomposition_node(decomposition, node.params)
+        for decomposition in getattr(op_node.op_type, "decompositions", []):
+            d_node_idx = self._recursively_add_decomposition_node(decomposition, op_node.params)
             self._graph.add_edge(d_node_idx, op_node_idx, 0)
 
         return op_node_idx
 
-    def _recursively_add_decomposition_node(self, node: DecompositionRule, params: dict) -> int:
-        """Recursively adds a decomposition node to the graph."""
+    def _recursively_add_decomposition_node(self, rule: DecompositionRule, params: dict) -> int:
+        """Recursively adds a decomposition node to the graph.
 
-        d_node_idx = self._graph.add_node(node)
-        source_nodes = []
-        source_node_indices = []
-        resource_decomp = node.compute_resources(**params)
+        A decomposition node is defined by a decomposition rule and a first-order resource estimate
+        of this decomposition as computed with resource params passed from the operator node.
+
+        """
+
+        resource_decomp = rule.compute_resources(**params)
+        d_node = _DecompositionNode(rule, resource_decomp)
+        d_node_idx = self._graph.add_node(d_node)
         for op in resource_decomp.gate_counts:
             op_node_idx = self._recursively_add_op_node(op)
-            source_nodes.append(op)
-            source_node_indices.append(op_node_idx)
-        self._graph.add_edges_from(
-            [
-                (op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
-                for op_node_idx in source_node_indices
-            ]
-        )
+            self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
         return d_node_idx
 
     def solve(self, lazy=True):
@@ -98,19 +114,18 @@ class DecompositionGraph:
                 entire graph will be explored.
 
         """
-
         self._visitor = _DecompositionSearchVisitor(self._graph, self._original_ops_indices, lazy)
-        dummy_node = self._graph.add_node("dummy")
+        start = self._graph.add_node("dummy")
         self._graph.add_edges_from(
-            [(dummy_node, op_node_idx, 1) for op_node_idx in self._target_gate_indices]
+            [(start, op_node_idx, 1) for op_node_idx in self._target_gate_indices]
         )
         rx.dijkstra_search(
             self._graph,
-            source=[dummy_node],
+            source=[start],
             weight_fn=self._visitor.edge_weight,
             visitor=self._visitor,
         )
-        self._graph.remove_node(dummy_node)
+        self._graph.remove_node(start)
 
     def resource_estimates(self, op: Operator) -> Resources:
         """Returns the resource estimates for a given operator.
@@ -122,11 +137,12 @@ class DecompositionGraph:
             Resources: The resource estimates.
 
         """
-        op_node = CompressedResourceOp(op, op.resource_params)
-        return self._visitor.d[op_node]
+        op_node = CompressedResourceOp(type(op), op.resource_params)
+        op_node_idx = self._op_node_indices[op_node]
+        return self._visitor.d[op_node_idx]
 
     def decomposition(self, op: Operator) -> DecompositionRule:
-        """Returns the optimal decomposition for a given operator.
+        """Returns the optimal decomposition rule for a given operator.
 
         Args:
             op (Operator): The operator for which to return the optimal decomposition.
@@ -135,8 +151,10 @@ class DecompositionGraph:
             DecompositionRule: The optimal decomposition.
 
         """
-        op_node = CompressedResourceOp(op, op.resource_params)
-        return self._visitor.p[op_node]
+        op_node = CompressedResourceOp(type(op), op.resource_params)
+        op_node_idx = self._op_node_indices[op_node]
+        d_node_idx = self._visitor.p[op_node_idx]
+        return self._graph[d_node_idx].rule
 
 
 class _DecompositionSearchVisitor(DijkstraVisitor):
@@ -144,19 +162,18 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
     def __init__(self, graph: rx.PyDiGraph, original_op_indices: set[int], lazy: bool = True):
         self._graph = graph
-        self._original_op_indices = original_op_indices.copy()
-        self.d: dict[CompressedResourceOp | DecompositionRule, Resources] = {}
-        self.p: dict[CompressedResourceOp, DecompositionRule] = {}
-        self._num_edges_examined: dict[DecompositionRule, int] = {}
         self._lazy = lazy
+        self.d: dict[int, Resources] = {}  # maps node indices to the optimal resource estimates
+        self.p: dict[int, int] = {}  # maps operator nodes to the optimal decomposition nodes
+        self._original_op_indices = original_op_indices.copy()
+        self._num_edges_examined: dict[int, int] = {}  # keys are decomposition node indices
 
     def edge_weight(self, edge_obj):
         """Calculates the weight of an edge."""
         if not isinstance(edge_obj, tuple):
-            return edge_obj
+            return float(edge_obj)
         op_node_idx, d_node_idx = edge_obj
-        op_node, d_node = self._graph[op_node_idx], self._graph[d_node_idx]
-        return self.d[d_node].num_gates - self.d[op_node].num_gates
+        return self.d[d_node_idx].num_gates - self.d[op_node_idx].num_gates
 
     def discover_vertex(self, v, score):
         """Triggered when a vertex is about to be explored during the dijkstra search."""
@@ -166,19 +183,26 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
     def examine_edge(self, edge):
         """Triggered when an edge is examined during the dijkstra search."""
-        src, target, obj = edge
-        src_node = self._graph[src]
-        target_node = self._graph[target]
-        if not isinstance(target_node, DecompositionRule):
+        src_idx, target_idx, obj = edge
+        src_node = self._graph[src_idx]
+        target_node = self._graph[target_idx]
+        if not isinstance(target_node, _DecompositionNode):
             return  # nothing is to be done for edges leading to an operator node
-        self.d[target_node] = self.d.get(target_node, Resources()) + self.d[src_node]
-        self._num_edges_examined[target_node] += 1
-        if self._num_edges_examined[target_node] < obj[0].num_gate_types:
+        if target_idx not in self.d:
+            self.d[target_idx] = Resources()  # initialize with empty resource
+        self.d[target_idx] += self.d[src_idx] * target_node.count(src_node)
+        if target_idx not in self._num_edges_examined:
+            self._num_edges_examined[target_idx] = 0
+        self._num_edges_examined[target_idx] += 1
+        if self._num_edges_examined[target_idx] < target_node.resource_decomp.num_gate_types:
             raise PruneSearch
 
     def edge_relaxed(self, edge):
         """Triggered when an edge is relaxed during the dijkstra search."""
-        src, target, obj = edge
-        target_node = self._graph[target]
-        if isinstance(target_node, CompressedResourceOp):
-            self.p[target_node] = self._graph[src]
+        src_idx, target_idx, obj = edge
+        target_node = self._graph[target_idx]
+        if self._graph[src_idx] == "dummy":
+            self.d[target_idx] = Resources(1, {target_node: 1})
+        elif isinstance(target_node, CompressedResourceOp):
+            self.p[target_idx] = src_idx
+            self.d[target_idx] = self.d[src_idx]

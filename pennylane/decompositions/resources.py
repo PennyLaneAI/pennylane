@@ -47,7 +47,7 @@ class Resources:
 
     @property
     def num_gate_types(self):
-        r"""Returns the number of gate types."""
+        """Returns the number of unique gate types."""
         return len(self.gate_counts)
 
 

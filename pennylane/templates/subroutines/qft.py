@@ -204,6 +204,7 @@ class QFT(Operation):
 
         return decomp_ops
 
+    @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 

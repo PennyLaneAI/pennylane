@@ -46,7 +46,14 @@ class CompressedResourceOp:
         return hash((self.op_type, self._hashable_params))
 
     def __eq__(self, other: CompressedResourceOp) -> bool:
-        return (self.op_type == other.op_type) and (self.params == other.params)
+        return (
+            isinstance(other, CompressedResourceOp)
+            and (self.op_type == other.op_type)
+            and (self.params == other.params)
+        )
+
+    def __repr__(self):
+        return self.op_type.__name__
 
 
 def _make_hashable(d) -> tuple:
