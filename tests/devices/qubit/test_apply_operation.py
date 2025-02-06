@@ -19,6 +19,7 @@ from functools import reduce
 import numpy as np
 import pytest
 from dummy_debugger import Debugger
+from gate_data import I, X, Y, Z
 from scipy.sparse import csr_matrix, kron
 from scipy.stats import unitary_group
 
@@ -123,10 +124,10 @@ class TestSparseOperation:
 
         assert qml.math.allclose(new_state.toarray(), expected_state)
 
-    def test_sparse_operation_large_N(self):
-        N = 20
+    @pytest.mark.parametrize("N", range(2, 20, 2))
+    def test_sparse_operation_large_N(self, N):
+        """Test that apply_operation_csr_matrix works with a large number of wires"""
         # Make a sparse unitary matrix by tensor producting several smaller unitaries
-        from gate_data import I, X, Y, Z
 
         U_list = [I, X, Y, Z]
         U_list = [csr_matrix(op) for op in U_list]
@@ -148,6 +149,45 @@ class TestSparseOperation:
         # Don't waste time constructing dense U to test, instead we just check that the U^Dagger @ state is correct
         final_state = apply_operation_csr_matrix(U_sp, new_state)
         assert np.allclose(final_state.toarray(), state.toarray())
+
+    @pytest.mark.parametrize("N", range(2, 20, 2))
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.QubitUnitary(
+                csr_matrix(X),
+                wires=[0],
+            ),
+            qml.QubitUnitary(
+                csr_matrix(Y),
+                wires=[0],
+            ),
+            qml.QubitUnitary(
+                csr_matrix(Z),
+                wires=[0],
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("state_mode", ["dense", "sparse"])
+    def test_sparse_operation_dispatch(self, op, state_mode, N):
+        """Test that the operators dispatch correctly for sparse or dense states."""
+
+        if state_mode == "sparse":
+            expected_shape = (1, 2**N)
+            expected_type = csr_matrix
+            # Create a sparse state (size 8 unrolled)
+            state = csr_matrix(np.random.rand(2**N) + 1j * np.random.rand(2**N))
+        else:
+            expected_shape = (2,) * N
+            expected_type = np.ndarray
+            # Create a dense state, shape (2,2,2)
+            state = np.random.rand(*(2,) * N) + 1j * np.random.rand(*(2,) * N)
+
+        new_state = apply_operation(op, state)
+
+        # Confirm the return type and shape
+        assert isinstance(new_state, expected_type)
+        assert new_state.shape == expected_shape
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
