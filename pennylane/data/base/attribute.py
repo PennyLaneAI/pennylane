@@ -447,7 +447,7 @@ def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:
 
 
 def match_obj_type(
-    type_or_obj: Union[ValueType, Type[ValueType]]
+    type_or_obj: Union[ValueType, Type[ValueType]],
 ) -> Type[DatasetAttribute[HDF5Any, ValueType, ValueType]]:
     """
     Returns an ``DatasetAttribute`` that can accept an object of type ``type_or_obj``

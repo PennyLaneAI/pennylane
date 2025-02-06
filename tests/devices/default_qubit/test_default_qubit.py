@@ -808,6 +808,14 @@ class TestExecutingBatches:
         g3 = tf.Variable([temp, -temp, temp, -temp])
         assert qml.math.allclose(g1, g3)
 
+    @pytest.mark.jax
+    def test_warning_if_jitting_batch(self):
+        """Test that a warning is given if end-to-end jitting is enabled with a batch."""
+        config = qml.devices.ExecutionConfig(convert_to_numpy=False, interface="jax-jit")
+        batch = [qml.tape.QuantumScript([qml.RX(i, 0)], [qml.expval(qml.Z(0))]) for i in range(11)]
+        with pytest.warns(UserWarning, match="substantial classical overhead"):
+            _ = DefaultQubit().execute(batch, config)
+
 
 @pytest.mark.slow
 class TestSumOfTermsDifferentiability:
@@ -1485,6 +1493,34 @@ class TestPRNGKeySeed:
         iterator = iter(res)
         first = next(iterator)
         assert all(np.array_equal(first, rest) for rest in iterator)
+
+    def test_integrate_prng_key_jitting(self):
+        """Test that a PRNGKey can be used with a jitted qnode."""
+
+        import jax
+
+        @jax.jit
+        def workflow(key, param):
+
+            dev = qml.device("default.qubit", seed=key, shots=100)
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x, 0)
+                return qml.sample(wires=0)
+
+            return circuit(param)
+
+        key1 = jax.random.PRNGKey(123456)
+        key2 = jax.random.PRNGKey(8877655)
+        x = jax.numpy.array(0.5)
+        # no leaked tracer errors
+        res1 = workflow(key1, x)
+        res1_again = workflow(key1, x)
+        res2 = workflow(key2, x)
+
+        assert qml.math.allclose(res1, res1_again)
+        assert not qml.math.allclose(res1, res2)
 
 
 class TestHamiltonianSamples:
