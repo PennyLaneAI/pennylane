@@ -18,6 +18,9 @@ This module implements a graph-based decomposition algorithm that constructs a g
 connected by decomposition rules, and then traverses it using Dijkstra's algorithm to find the best
 decomposition pathways.
 
+The architecture of this module utilizes design patterns similar to those present in Qiskit's
+implementation of the basis translator, the Boost Graph library, and RustworkX.
+
 """
 
 from __future__ import annotations

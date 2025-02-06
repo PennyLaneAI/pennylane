@@ -209,7 +209,7 @@ class QFT(Operation):
 
 
 @decomposition
-def _qft_decomposition(wires: WiresLike):
+def _qft_decomposition(wires: WiresLike, **__):
 
     n_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]

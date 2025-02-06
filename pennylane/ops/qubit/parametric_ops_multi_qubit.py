@@ -214,7 +214,7 @@ class MultiRZ(Operation):
 
 
 @decomposition
-def _multi_rz_decomposition(theta, wires):
+def _multi_rz_decomposition(theta, wires, **__):
     for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
         qml.CNOT(wires=(w0, w1))
     qml.RZ(theta, wires=wires[0])
@@ -549,7 +549,7 @@ class PauliRot(Operation):
 
 
 @decomposition
-def _pauli_rot_decomposition(theta, pauli_word, wires):
+def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
     if set(pauli_word) == {"I"}:
         return  # TODO: track global phase
     active_wires, active_gates = zip(

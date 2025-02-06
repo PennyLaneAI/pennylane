@@ -199,7 +199,7 @@ class Hadamard(Observable, Operation):
 
 
 @decomposition
-def _hadamard_to_rz_rx(wires: WiresLike):
+def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qml.RZ(np.pi / 2, wires=wires)
     qml.RX(np.pi / 2, wires=wires)
     qml.RZ(np.pi / 2, wires=wires)
@@ -217,7 +217,7 @@ Hadamard.add_decomposition(_hadamard_to_rz_rx)
 
 
 @decomposition
-def _hadamard_to_rz_ry(wires: WiresLike):
+def _hadamard_to_rz_ry(wires: WiresLike, **__):
     qml.RZ(np.pi, wires=wires)
     qml.RY(np.pi / 2, wires=wires)
 
@@ -1343,7 +1343,7 @@ class SWAP(Operation):
 
 
 @decomposition
-def _swap_to_cnot(wires):
+def _swap_to_cnot(wires, **__):
     qml.CNOT(wires=[wires[0], wires[1]])
     qml.CNOT(wires=[wires[1], wires[0]])
     qml.CNOT(wires=[wires[0], wires[1]])

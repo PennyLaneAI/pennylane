@@ -94,7 +94,7 @@ class CompressedResourceOp:
     def __init__(self, op_type, params: dict = None):
         self.op_type = op_type
         self.params = params or {}
-        self._hashable_params = _make_hashable(params)
+        self._hashable_params = _make_hashable(params) if params else ()
 
     def __hash__(self) -> int:
         return hash((self.op_type, self._hashable_params))

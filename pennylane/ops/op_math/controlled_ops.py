@@ -958,7 +958,7 @@ class CNOT(ControlledOp):
 
 
 @decomposition
-def _cnot_to_cz_h(wires):
+def _cnot_to_cz_h(wires, **__):
     qml.H(wires[1])
     qml.CZ(wires=wires)
     qml.H(wires[1])
@@ -2235,7 +2235,7 @@ class ControlledPhaseShift(ControlledOp):
 
 
 @decomposition
-def _cphase_to_rz_cnot(phi, wires):
+def _cphase_to_rz_cnot(phi, wires, **__):
     qml.RZ(phi / 2, wires=wires[0])
     qml.CNOT(wires=wires)
     qml.RZ(-phi / 2, wires=wires[1])
