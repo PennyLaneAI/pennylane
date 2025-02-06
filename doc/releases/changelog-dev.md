@@ -155,6 +155,7 @@
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
 * Autograph can now be used with custom operations defined outside of the pennylane namespace.
+  [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
 
 <h3>Breaking changes 💔</h3>
 
