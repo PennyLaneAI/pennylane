@@ -13,10 +13,12 @@
 # limitations under the License.
 """Unit tests for the mid_measure module"""
 
+from functools import partial
+
+import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.ftqc import ParametricMidMeasureMP, diagonalize_mcms
 from pennylane.wires import Wires
 
@@ -215,6 +217,20 @@ class TestDrawParametricMidMeasure:
 
 
 class TestDiagonalization:
+
+    def test_diagonalize_mcm_with_no_parametrized_mcms(self):
+        """Test that the diagonalize_mcms transform leaves standard operations
+        and MidMeasureMP on the tape untouched"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(1.2, 0)
+            m = qml.measure(0)
+            qml.cond(m, qml.RY, qml.RX)(1.2, 0)
+
+        original_tape = qml.tape.QuantumScript.from_queue(q)
+        (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
+        assert qml.equal(original_tape, new_tape)
+
     def test_diagonalize_mcm_transform(self):
         """Test that the diagonalize_mcm transform works as expected on a tape
         containing ParametricMidMeasureMPs"""
@@ -222,12 +238,12 @@ class TestDiagonalization:
         tape = qml.tape.QuantumScript(
             [qml.RY(np.pi / 4, 0), ParametricMidMeasureMP(0, angle=np.pi, plane="XY")]
         )
+        diagonalizing_gate = tape.operations[1].diagonalizing_gates()[0]
 
         (new_tape,), _ = diagonalize_mcms(tape)
-
         assert len(new_tape.operations) == 3
-        assert new_tape.operations[0] == qml.RY(np.pi / 4, 0)
-        assert new_tape.operations[1] == tape.operations[1].diagonalizing_gates()[0]
+
+        assert new_tape.operations[1] == diagonalizing_gate
 
         assert isinstance(new_tape.operations[2], ParametricMidMeasureMP)
         assert new_tape.operations[2].wires == tape.operations[1].wires
@@ -238,10 +254,96 @@ class TestDiagonalization:
         )
 
     def test_diagonalize_mcm_in_cond(self):
-        raise RuntimeError
+        """Test that the diagonalize_mcm transform works as expected on a tape
+        containing a conditional with a ParametricMidMeasureMP"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(1.2, 0)
+            m = qml.measure(0)
+            qml.cond(m == 1, partial(ParametricMidMeasureMP, angle=1.2))(wires=2, plane="XY")
+
+        original_tape = qml.tape.QuantumScript.from_queue(q)
+        base_diagonalizing_gate = ParametricMidMeasureMP(
+            2, angle=1.2, plane="XY"
+        ).diagonalizing_gates()[0]
+
+        (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
+        assert len(new_tape.operations) == 4
+
+        # conditional diagonalizing gate
+        assert isinstance(new_tape.operations[2], qml.ops.Conditional)
+        assert new_tape.operations[2].base == base_diagonalizing_gate
+        assert new_tape.operations[2].wires == original_tape.operations[2].wires
+
+        # conditional diagonalized ParametricMidMeasureMP
+        assert isinstance(new_tape.operations[3], qml.ops.Conditional)
+        assert new_tape.operations[3].wires == original_tape.operations[2].wires
+        assert isinstance(new_tape.operations[3].base, ParametricMidMeasureMP)
+        assert new_tape.operations[3].base.angle == 0
+        assert new_tape.operations[3].base.plane == "YZ"
+        assert np.allclose(
+            new_tape.operations[3].base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
+        )
+
+        # conditional diagonalizing gate and conditional mcm rely on same measurement value
+        assert (
+            new_tape.operations[2].meas_val.measurements[0]
+            == new_tape.operations[3].meas_val.measurements[0]
+        )
+
+    def test_diagonalize_mcm_cond_two_outcomes(self):
+        """Test that the diagonalize_mcm transform works as expected on a tape
+        containing a conditional with two ParametricMidMeasureMPs as the true
+        and false condition respectively"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(1.2, 0)
+            m = qml.measure(0)
+            qml.cond(
+                m == 1,
+                partial(ParametricMidMeasureMP, angle=1.2),
+                partial(ParametricMidMeasureMP, angle=2.4),
+            )(wires=2, plane="XY")
+        original_tape = qml.tape.QuantumScript.from_queue(q)
+        true_diag_gate = ParametricMidMeasureMP(2, angle=1.2, plane="XY").diagonalizing_gates()[0]
+        false_diag_gate = ParametricMidMeasureMP(2, angle=2.4, plane="XY").diagonalizing_gates()[0]
+
+        (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
+        assert len(new_tape.operations) == 6
+
+        for idx1, idx2, base_diagonalizing_gate in [
+            (2, 3, true_diag_gate),
+            (4, 5, false_diag_gate),
+        ]:
+
+            diagonalizing_gate = new_tape.operations[idx1]
+            measurement = new_tape.operations[idx2]
+
+            # conditional diagonalizing gate
+            assert isinstance(diagonalizing_gate, qml.ops.Conditional)
+            assert diagonalizing_gate.base == base_diagonalizing_gate
+            assert diagonalizing_gate.wires == original_tape.operations[2].wires
+
+            # conditional diagonalized ParametricMidMeasureMP
+            assert isinstance(measurement, qml.ops.Conditional)
+            assert measurement.wires == original_tape.operations[2].wires
+            assert isinstance(measurement.base, ParametricMidMeasureMP)
+            assert measurement.base.angle == 0
+            assert measurement.base.plane == "YZ"
+            assert np.allclose(
+                measurement.base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
+            )
+
+            # conditional diagonalizing gate and conditional mcm rely on same measurement value
+            assert (
+                diagonalizing_gate.meas_val.measurements[0] == measurement.meas_val.measurements[0]
+            )
+
+        raise RuntimeError("still need to check opposite conditions on the two sets of Conds")
 
 
 class TestIntegration:
+
     # ToDo: ask Lee for input on testing practices - we want to know whether the
     #  combination of these MCM strategies and the MCM diagonalization play
     #  nicely together to give a meaningful result. This feels complicated
