@@ -14,6 +14,7 @@
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
+# pylint: disable=too-many-positional-arguments
 import functools
 import warnings
 from collections.abc import Callable, Sequence
@@ -338,6 +339,7 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
 
     if isinstance(op, qml.QubitUnitary):
+        qml.QueuingManager.remove(op)
         return qml.ControlledQubitUnitary(
             op.matrix(),
             wires=control + op.wires,
