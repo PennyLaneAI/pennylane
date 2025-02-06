@@ -22,7 +22,7 @@ import warnings
 from collections.abc import Callable, Iterable, Sequence
 from typing import Literal, Optional, Union, get_args
 
-from cachetools import Cache
+from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
@@ -501,6 +501,7 @@ class QNode:
         interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         *,
+        static_argnums: Union[int, Iterable[int]] = (),
         grad_on_execution: Literal[True, False, "best"] = "best",
         cache: Union[Cache, Literal["auto", True, False]] = "auto",
         cachesize: int = 10000,
@@ -568,6 +569,11 @@ class QNode:
         self._interface = get_canonical_interface_name(interface)
         self.diff_method = diff_method
         cache = (max_diff > 1) if cache == "auto" else cache
+
+        self._capture_cache = LRUCache(maxsize=1000)
+        if isinstance(static_argnums, int):
+            static_argnums = (static_argnums,)
+        self.static_argnums = static_argnums
 
         # execution keyword arguments
         _validate_mcm_config(postselect_mode, mcm_method)

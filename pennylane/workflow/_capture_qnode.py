@@ -112,7 +112,6 @@ from numbers import Number
 from warnings import warn
 
 import jax
-from cachetools import LRUCache
 from jax.interpreters import ad, batching, mlir
 
 import pennylane as qml
@@ -328,31 +327,25 @@ batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
 mlir.register_lowering(qnode_prim, mlir.lower_fun(qnode_prim.impl, multiple_results=True))
 
 
-_comp_cache = LRUCache(maxsize=100)
+def _args_hash(args, kwargs, static_argnums):
+    """Create a hash using the arguments and keyword arguments of a QNode.
 
-
-def _args_hash(args, kwargs, static_argnums=None):
-    serialized_args = ""
-    if static_argnums is None:
-        static_argnums = ()
-    elif isinstance(static_argnums, int):
-        static_argnums = (static_argnums,)
+    The hash is dependent on the abstract evaluation of ``args``. For any indices
+    in ``static_argnums``, the concrete value of the argument will be used to create
+    the hash. For keyword arguments, the keys and concrete evaluation of the values
+    will be used for the hash.
+    """
+    serialized = ""
 
     for i, a in enumerate(args):
-        if i in static_argnums:
-            serialized_args += str(a)
-            continue
+        serialized += (
+            f"{a};" if i in static_argnums else f"{qml.math.shape(a)},{qml.math.get_dtype_name(a)};"
+        )
 
-        if qml.math.is_abstract(a):
-            a = getattr(a, "aval", a)
-            serialized_args += f"{a.shape},{a.dtype};"
-            continue
+    for k, v in kwargs.items():
+        serialized += f"{k}:{v};"
 
-        a = jax.numpy.asarray(a)
-        serialized_args += f"{a.shape},{a.dtype};"
-
-    serialized_kwargs = f"{tuple(kwargs.keys())};{tuple(kwargs.values())}"
-    return hash(serialized_args + serialized_kwargs)
+    return hash(serialized)
 
 
 def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
@@ -433,19 +426,22 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
     flat_args = jax.tree_util.tree_leaves(args)
-    cache_key = _args_hash(flat_args, kwargs)
-    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-    flat_fn = FlatFn(qfunc)
-    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
+    cache_key = _args_hash(flat_args, kwargs, qnode.static_argnums)
     using_cached_plxpr = False
 
-    if cache_key in _comp_cache:
-        print("Using cache!!")
-        qfunc_jaxpr, out_tree = _comp_cache[cache_key]
+    # pylint: disable=protected-access
+    if cache_key in qnode._capture_cache:
+        print("HIT :)")
+        qfunc_jaxpr, out_tree, abstracted_axes, abstract_shapes = qnode._capture_cache[cache_key]
         using_cached_plxpr = True
     else:
-        print("Re-capturing :(")
-        qfunc_jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
+        print("MISS :(")
+        qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
+        flat_fn = FlatFn(qfunc)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
+        qfunc_jaxpr = jax.make_jaxpr(
+            flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
+        )(*flat_args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
     qnode_kwargs = {
@@ -469,6 +465,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not using_cached_plxpr:
         assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
         out_tree = flat_fn.out_tree
-        _comp_cache[cache_key] = (qfunc_jaxpr, out_tree)
+        qnode._capture_cache[cache_key] = (qfunc_jaxpr, out_tree, abstracted_axes, abstract_shapes)
 
     return jax.tree_util.tree_unflatten(out_tree, res)
