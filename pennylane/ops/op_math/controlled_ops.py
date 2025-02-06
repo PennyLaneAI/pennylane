@@ -27,8 +27,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.wires import WiresLike
-from pennylane.decompositions.decomposition_rule import decomposition
-from pennylane.decompositions.compressed_op import CompressedResourceOp
+from pennylane.decompositions import decomposition, CompressedResourceOp
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
