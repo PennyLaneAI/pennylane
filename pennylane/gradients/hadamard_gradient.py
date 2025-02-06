@@ -393,19 +393,19 @@ def processing_fn(results: qml.typing.ResultBatch, tape, coeffs, generators_per_
                     res[prob_idx], tape.measurements[prob_idx], tape
                 )
 
+    num_mps = tape.shots.num_copies if tape.shots.has_partitioned_shots else len(tape.measurements)
     # first index = into measurements, second index = into parameters
-    grads = tuple([] for _ in tape.measurements)
+    grads = tuple([] for _ in range(num_mps))
     results = iter(final_res)
     for num_generators in generators_per_parameter:
-        sub_results = islice(results, num_generators)  # take the next number of results
-
+        sub_results = list(islice(results, num_generators))  # take the next number of results
         # sum over batch, iterate over measurements
-        summed_sub_results = (sum(r) for r in zip(*sub_results))
+        summed_sub_results = [sum(r) for r in zip(*sub_results)]
 
         # fill value zero for when no generators/ no gradient
         for g_for_parameter, r in zip_longest(grads, summed_sub_results, fillvalue=np.array(0)):
             g_for_parameter.append(r)
 
-    if len(tape.measurements) == 1:
+    if num_mps == 1:
         return grads[0][0] if len(tape.trainable_params) == 1 else grads[0]
     return tuple(g[0] for g in grads) if len(tape.trainable_params) == 1 else grads
