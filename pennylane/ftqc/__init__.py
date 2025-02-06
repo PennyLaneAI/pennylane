@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""
+.. currentmodule:: pennylane
+
+This module contains experimental features for supporting fault-tolerant workloads in PennyLane
+
+.. currentmodule:: pennylane.ftqc
+
+Modules
+~~~~~~~
+
+.. autosummary::
+    :toctree: api
 
 """
-Version number (major.minor.patch[-label])
-"""
+from warnings import warn
+from pennylane import ExperimentalWarning
 
-__version__ = "0.41.0-dev24"
+warn(
+    ExperimentalWarning(
+        "This module is currently experimental and will not maintain API stability between releases."
+    )
+)
+
+__all__ = []
