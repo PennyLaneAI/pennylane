@@ -33,8 +33,11 @@ def get_named_registers(registers):
 
     return qml.registers(temp_register_dict)
 
-
+# TODO: Make the input of this function more consistent. It should take list of wires not dict
 def bloq_to_op(bloq, wires):
+    
+    # TODO: We need to map more bloqs to ops
+    # Alternative: create as_pl_op() function in Qualtran
     BLOQ_TO_OP_MAP = {
         "XGate": qml.PauliX,
         "YGate": qml.PauliY,
@@ -56,6 +59,7 @@ def bloq_to_op(bloq, wires):
         "CHadamard": qml.CH,
     }
 
+    # TODO: Delete this eventually
     if isinstance(wires, dict):
         total_wires = []
         for ws in wires.values():
@@ -100,6 +104,8 @@ class FromBloq(Operation):
             }
 
             for binst, pred_cxns, succ_cxns in bloq.iter_bloqnections():
+
+                # TODO: Rename this variable to something more intuitive
                 in_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.lefts()
