@@ -1127,8 +1127,8 @@ def param_shift(
 
     method = "analytic" if fallback_fn is None else "best"
 
-    trainable_params = choose_trainable_params(tape, argnum)
-    diff_methods = find_and_validate_gradient_methods(tape, method, trainable_params)
+    trainable_params_indices = choose_trainable_params(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, method, trainable_params_indices)
 
     if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)

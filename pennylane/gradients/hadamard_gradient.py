@@ -29,11 +29,11 @@ from .gradient_transform import (
     _all_zero_grad,
     _contract_qjac_with_cjac,
     _no_trainable_grad,
+    _try_zero_grad_from_graph_or_get_grad_method,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_no_variance,
     choose_trainable_params,
-    find_and_validate_gradient_methods,
 )
 from .metric_tensor import _get_aux_wire
 
@@ -290,8 +290,11 @@ def hadamard_grad(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    trainable_params = choose_trainable_params(tape, argnum)
-    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
+    trainable_param_indices = choose_trainable_params(tape, argnum)
+    diff_methods = {
+        idx: _try_zero_grad_from_graph_or_get_grad_method(tape, tape.trainable_params[idx], True)
+        for idx in trainable_param_indices
+    }
 
     if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
@@ -302,59 +305,6 @@ def hadamard_grad(
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
     return _expval_hadamard_grad(tape, argnum, aux_wire)
-
-
-def _postprocess_probs(res, measurement, tape):
-    projector = np.array([1, -1])
-    projector = qml.math.convert_like(projector, res)
-
-    num_wires_probs = len(measurement.wires)
-    if num_wires_probs == 0:
-        num_wires_probs = tape.num_wires
-    res = qml.math.reshape(res, (2**num_wires_probs, 2))
-    return qml.math.tensordot(res, projector, axes=[[1], [0]])
-
-
-def processing_fn(results, tape, coeffs, generators_per_parameter):
-    """Post processing function for computing a hadamard gradient."""
-
-    final_res = []
-    for coeff, res in zip(coeffs, results):
-        if isinstance(res, (tuple, list)):
-            new_val = [qml.math.convert_like(2 * coeff * r, r) for r in res]
-        else:
-            new_val = [qml.math.convert_like(2 * coeff * res, res)]
-        final_res.append(new_val)
-
-    # Post process for probs
-    measurements_probs = [
-        idx
-        for idx, m in enumerate(tape.measurements)
-        if isinstance(m, qml.measurements.ProbabilityMP)
-    ]
-    if measurements_probs:
-        for idx, res in enumerate(final_res):
-            for prob_idx in measurements_probs:
-                final_res[idx][prob_idx] = _postprocess_probs(
-                    res[prob_idx], tape.measurements[prob_idx], tape
-                )
-
-    # first index = into measurements, second index = into parameters
-    grads = tuple([] for _ in tape.measurements)
-    results = iter(final_res)
-    for num_generators in generators_per_parameter:
-        sub_results = islice(results, num_generators)  # take the next number of results
-
-        # sum over batch, iterate over measurements
-        summed_sub_results = (sum(r) for r in zip(*sub_results))
-
-        # fill value zero for when no generators/ no gradient
-        for g_for_parameter, r in zip_longest(grads, summed_sub_results, fillvalue=np.array(0)):
-            g_for_parameter.append(r)
-
-    if len(tape.measurements) == 1:
-        return grads[0][0] if len(tape.trainable_params) == 1 else grads[0]
-    return tuple(g[0] for g in grads) if len(tape.trainable_params) == 1 else grads
 
 
 def _expval_hadamard_grad(tape, argnum, aux_wire):
@@ -419,3 +369,56 @@ def _get_pauli_generators(trainable_op):
         del pauli_rep[qml.pauli.PauliWord({})]  # remove identity term
     sum_op = pauli_rep.operation()
     return sum_op.terms()
+
+
+def _postprocess_probs(res, measurement, tape):
+    projector = np.array([1, -1])
+    projector = qml.math.convert_like(projector, res)
+
+    num_wires_probs = len(measurement.wires)
+    if num_wires_probs == 0:
+        num_wires_probs = tape.num_wires
+    res = qml.math.reshape(res, (2**num_wires_probs, 2))
+    return qml.math.tensordot(res, projector, axes=[[1], [0]])
+
+
+def processing_fn(results, tape, coeffs, generators_per_parameter):
+    """Post processing function for computing a hadamard gradient."""
+
+    final_res = []
+    for coeff, res in zip(coeffs, results):
+        if isinstance(res, (tuple, list)):
+            new_val = [qml.math.convert_like(2 * coeff * r, r) for r in res]
+        else:
+            new_val = [qml.math.convert_like(2 * coeff * res, res)]
+        final_res.append(new_val)
+
+    # Post process for probs
+    measurements_probs = [
+        idx
+        for idx, m in enumerate(tape.measurements)
+        if isinstance(m, qml.measurements.ProbabilityMP)
+    ]
+    if measurements_probs:
+        for idx, res in enumerate(final_res):
+            for prob_idx in measurements_probs:
+                final_res[idx][prob_idx] = _postprocess_probs(
+                    res[prob_idx], tape.measurements[prob_idx], tape
+                )
+
+    # first index = into measurements, second index = into parameters
+    grads = tuple([] for _ in tape.measurements)
+    results = iter(final_res)
+    for num_generators in generators_per_parameter:
+        sub_results = islice(results, num_generators)  # take the next number of results
+
+        # sum over batch, iterate over measurements
+        summed_sub_results = (sum(r) for r in zip(*sub_results))
+
+        # fill value zero for when no generators/ no gradient
+        for g_for_parameter, r in zip_longest(grads, summed_sub_results, fillvalue=np.array(0)):
+            g_for_parameter.append(r)
+
+    if len(tape.measurements) == 1:
+        return grads[0][0] if len(tape.trainable_params) == 1 else grads[0]
+    return tuple(g[0] for g in grads) if len(tape.trainable_params) == 1 else grads
