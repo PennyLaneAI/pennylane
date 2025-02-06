@@ -339,8 +339,7 @@ def _flatten_args(args, static_argnums):
     static_argnum = next(static_iter)
     i = 0
 
-    while i < len(args):
-        arg = args[i]
+    for i, arg in enumerate(args):
         flat_arg, struct = jax.tree_util.tree_flatten(arg)
         flat_args.extend(flat_arg)
         structs.append(struct)
@@ -357,28 +356,6 @@ def _flatten_args(args, static_argnums):
 
     final_struct = jax.tree_util.treedef_tuple(structs)
     return flat_args, final_struct, flat_static_argnums
-
-
-def _flatten_static_argnums(args, static_argnums):
-    if len(static_argnums) == 0:
-        return ()
-
-    flat_static_argnums = []
-    flat_argnum = 0
-    static_iter = iter(static_argnums)
-    static_argnum = next(static_iter)
-
-    for i, arg in enumerate(args):
-        n_flat_args = len(jax.tree_util.tree_leaves(arg))
-
-        if i == static_argnum:
-            flat_static_argnums.extend(range(flat_argnum, flat_argnum + len(n_flat_args)))
-            if (static_argnum := next(static_iter, None)) is None:
-                break
-
-        flat_argnum += n_flat_args
-
-    return flat_static_argnums
 
 
 def _args_hash(args, kwargs, static_argnums):
@@ -506,9 +483,10 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
             jax.errors.TracerBoolConversionError,
         ) as exc:
             raise CaptureError(
-                "Autograph must be used when Python control flow is dependent on a dynamic variable (a function input). "
-                "Please ensure autograph=True or use native control flow functions like for_loop, while_loop, etc."
-            ) from exc 
+                "Autograph must be used when Python control flow is dependent on a dynamic "
+                "variable (a function input). Please ensure autograph=True or use native control "
+                "flow functions like for_loop, while_loop, etc."
+            ) from exc
 
     execute_kwargs = copy(qnode.execute_kwargs)
     qnode_kwargs = {
