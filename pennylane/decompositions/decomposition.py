@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implements the graph-based decomposition algorithm."""
+"""Implements the DecompositionGraph
+
+This module implements a graph-based decomposition algorithm that constructs a graph of operators
+connected by decomposition rules, and then traverses it using Dijkstra's algorithm to find the best
+decomposition pathways.
+
+"""
 
 from __future__ import annotations
 
@@ -23,9 +29,8 @@ from rustworkx.visit import DijkstraVisitor, StopSearch, PruneSearch
 
 from pennylane.operation import Operator
 
-from .. import CompressedResourceOp
 from .decomposition_rule import DecompositionRule
-from .resources import Resources
+from .resources import Resources, CompressedResourceOp
 
 
 @dataclass(frozen=True)
@@ -100,7 +105,8 @@ class DecompositionGraph:
         resource_decomp = rule.compute_resources(**params)
         d_node = _DecompositionNode(rule, resource_decomp)
         d_node_idx = self._graph.add_node(d_node)
-        for op in resource_decomp.gate_counts:
+        all_ops = [op for op, count in resource_decomp.gate_counts.items() if count > 0]
+        for op in all_ops:
             op_node_idx = self._recursively_add_op_node(op)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
         return d_node_idx

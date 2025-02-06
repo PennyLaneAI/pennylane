@@ -21,17 +21,9 @@ from typing import Callable
 from .resources import Resources
 
 
-def decomposition(cls):
-    """Decorator that assigns a DecompositionRule to the given class."""
-
-    def wrapper(qfunc: Callable) -> DecompositionRule:
-        decomposition_rule = DecompositionRule(qfunc)
-        if not hasattr(cls, "decompositions"):
-            cls.decompositions = []
-        cls.decompositions.append(decomposition_rule)
-        return decomposition_rule
-
-    return wrapper
+def decomposition(qfunc: Callable) -> DecompositionRule:
+    """Decorator that wraps a qfunc in a ``DecompositionRule``."""
+    return DecompositionRule(qfunc)
 
 
 class DecompositionRule:

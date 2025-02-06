@@ -236,6 +236,7 @@ from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
+from pennylane.decompositions.decomposition_rule import DecompositionRule
 
 from .pytrees import register_pytree
 
@@ -682,6 +683,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
+        cls._decompositions = []
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -1321,6 +1323,16 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self.compute_decomposition(
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
+
+    @classproperty
+    def decompositions(self) -> list[DecompositionRule]:
+        """A list of decomposition rules for the operator type."""
+        return self._decompositions
+
+    @classmethod
+    def add_decomposition(cls, decomposition: DecompositionRule):
+        """Register a decomposition rule with the class."""
+        cls._decompositions.append(decomposition)
 
     @property
     def resource_params(self) -> dict:

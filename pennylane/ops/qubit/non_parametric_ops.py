@@ -198,7 +198,7 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-@decomposition(Hadamard)
+@decomposition
 def _hadamard_to_rz_rx(wires: WiresLike):
     qml.RZ(np.pi / 2, wires=wires)
     qml.RX(np.pi / 2, wires=wires)
@@ -213,7 +213,10 @@ def _hadamard_to_rz_rx_resources(*_, **__):
     }
 
 
-@decomposition(Hadamard)
+Hadamard.add_decomposition(_hadamard_to_rz_rx)
+
+
+@decomposition
 def _hadamard_to_rz_ry(wires: WiresLike):
     qml.RZ(np.pi, wires=wires)
     qml.RY(np.pi / 2, wires=wires)
@@ -225,6 +228,9 @@ def _hadamard_to_rz_ry_resources(*_, **__):
         CompressedResourceOp(qml.RZ, {}): 1,
         CompressedResourceOp(qml.RY, {}): 1,
     }
+
+
+Hadamard.add_decomposition(_hadamard_to_rz_ry)
 
 
 H = Hadamard
@@ -1336,7 +1342,7 @@ class SWAP(Operation):
         return True
 
 
-@decomposition(SWAP)
+@decomposition
 def _swap_to_cnot(wires):
     qml.CNOT(wires=[wires[0], wires[1]])
     qml.CNOT(wires=[wires[1], wires[0]])
@@ -1346,6 +1352,9 @@ def _swap_to_cnot(wires):
 @_swap_to_cnot.resources
 def _swap_to_cnot_resources(*_, **__):
     return {CompressedResourceOp(qml.CNOT): 3}
+
+
+SWAP.add_decomposition(_swap_to_cnot)
 
 
 class ECR(Operation):

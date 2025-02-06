@@ -957,7 +957,7 @@ class CNOT(ControlledOp):
         return qml.Toffoli(wires=wire + self.wires)
 
 
-@decomposition(CNOT)
+@decomposition
 def _cnot_to_cz_h(wires):
     qml.H(wires[1])
     qml.CZ(wires=wires)
@@ -970,6 +970,9 @@ def _cnot_to_cz_h_resources(*_, **__):
         CompressedResourceOp(qml.H): 2,
         CompressedResourceOp(qml.CZ): 1,
     }
+
+
+CNOT.add_decomposition(_cnot_to_cz_h)
 
 
 class Toffoli(ControlledOp):
@@ -2231,7 +2234,7 @@ class ControlledPhaseShift(ControlledOp):
         ]
 
 
-@decomposition(ControlledPhaseShift)
+@decomposition
 def _cphase_to_rz_cnot(phi, wires):
     qml.RZ(phi / 2, wires=wires[0])
     qml.CNOT(wires=wires)
@@ -2247,5 +2250,7 @@ def _cphase_to_rz_cnot_resources(*_, **__):
         CompressedResourceOp(qml.CNOT): 2,
     }
 
+
+ControlledPhaseShift.add_decomposition(_cphase_to_rz_cnot)
 
 CPhase = ControlledPhaseShift

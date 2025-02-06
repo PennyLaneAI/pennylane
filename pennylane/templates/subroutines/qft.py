@@ -208,7 +208,7 @@ class QFT(Operation):
         return {"num_wires": len(self.wires)}
 
 
-@decomposition(QFT)
+@decomposition
 def _qft_decomposition(wires: WiresLike):
 
     n_wires = len(wires)
@@ -232,3 +232,6 @@ def _qft_decomposition_resources(num_wires):
         CompressedResourceOp(qml.SWAP): num_wires // 2,
         CompressedResourceOp(qml.ControlledPhaseShift): num_wires * (num_wires - 1) // 2,
     }
+
+
+QFT.add_decomposition(_qft_decomposition)
