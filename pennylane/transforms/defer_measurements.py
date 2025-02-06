@@ -186,13 +186,9 @@ def _get_plxpr_defer_measurements():
             """
             data, struct = jax.tree_util.tree_flatten(op)
 
-            idx = -1
             for i, d in enumerate(data):
                 if isinstance(d, MeasurementValue):
-                    idx = i
-                    break
-            if idx != -1:
-                return self.interpret_dynamic_operation(data, struct, idx)
+                    return self.interpret_dynamic_operation(data, struct, i)
 
             return jax.tree_util.tree_unflatten(struct, data)
 

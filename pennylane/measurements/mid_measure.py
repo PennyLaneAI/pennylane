@@ -243,7 +243,7 @@ def _create_mid_measure_primitive():
         measurement.
 
     """
-    # pylint: disable=import-outside-toplevel, no-member
+    # pylint: disable=import-outside-toplevel
     import jax
 
     from pennylane.capture.custom_primitives import NonInterpPrimitive
@@ -256,6 +256,7 @@ def _create_mid_measure_primitive():
 
     @mid_measure_p.def_abstract_eval
     def _(*_, **__):
+        # pylint: disable=no-member
         dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         return jax.core.ShapedArray((), dtype)
 
