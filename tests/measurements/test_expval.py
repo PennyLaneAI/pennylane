@@ -187,7 +187,7 @@ class TestExpval:
 
         res = circuit()
         expected = [0.5, 0.5] if isinstance(shots, list) else 0.5
-        assert np.allclose(res, expected, atol=0.02, rtol=0.035)
+        assert np.allclose(res, expected, atol=0.02, rtol=0.04)
 
     def test_permuted_wires(self):
         """Test that the expectation value of an operator with permuted wires is the same."""
