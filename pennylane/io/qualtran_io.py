@@ -23,14 +23,16 @@ from pennylane.wires import Wires, WiresLike
 
 import numpy as np
 
+
 def get_named_registers(registers):
-    """Returns a `qml.registers` object with the juices"""
+    """Returns a `qml.registers` object with the appropriate Wires"""
 
     temp_register_dict = {}
     for reg in registers:
         temp_register_dict[reg.name] = reg.bitsize
 
     return qml.registers(temp_register_dict)
+
 
 def bloq_to_op(bloq, wires):
     BLOQ_TO_OP_MAP = {
@@ -54,19 +56,21 @@ def bloq_to_op(bloq, wires):
         "CHadamard": qml.CH,
     }
 
-    total_wires = []
-    for ws in wires.values():
-        for w in list(ws.flatten()):
-            total_wires.append(w)
+    if isinstance(wires, dict):
+        total_wires = []
+        for ws in wires.values():
+            for w in list(ws.flatten()):
+                total_wires.append(w)
 
-    reg_wires = Wires(total_wires)
+        wires = Wires(total_wires)
+
     if type(bloq).__name__ in BLOQ_TO_OP_MAP:
         pl_op = BLOQ_TO_OP_MAP[type(bloq).__name__]
         params = []
         if hasattr(bloq, "angle"):
             params.append(bloq.angle)
-        
-        return pl_op(*params, wires=reg_wires)
+
+        return pl_op(*params, wires=wires)
     return None
 
 
@@ -79,15 +83,13 @@ class FromBloq(Operation):
     """
 
     def __init__(self, bloq: Bloq, wires: WiresLike):
-        self._hyperparameters = {
-            "bloq": bloq
-        }
+        self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
 
     def compute_decomposition(self, wires, **kwargs):
         ops = []
         bloq = self._hyperparameters["bloq"]
-        
+
         if isinstance(bloq, CompositeBloq):
             temp_registers = get_named_registers(bloq.signature.lefts())
             qvar_to_qreg = {
@@ -96,7 +98,11 @@ class FromBloq(Operation):
                 for idx in reg.all_idxs()
             }
 
-            for binst, pred_cxns, succ_cxns, in bloq.iter_bloqnections():
+            for (
+                binst,
+                pred_cxns,
+                succ_cxns,
+            ) in bloq.iter_bloqnections():
                 in_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.lefts()
@@ -115,8 +121,12 @@ class FromBloq(Operation):
                     soq = succ.left
                     if len(in_quregs) == 0 and soq.reg.side == Side.RIGHT:
                         total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
-                        ascending_vals = np.arange(len(qvar_to_qreg), total_elements+len(qvar_to_qreg), dtype=object)
-                        in_quregs[soq.reg.name] = ascending_vals.reshape((*soq.reg.shape, soq.reg.bitsize))
+                        ascending_vals = np.arange(
+                            len(qvar_to_qreg), total_elements + len(qvar_to_qreg), dtype=object
+                        )
+                        in_quregs[soq.reg.name] = ascending_vals.reshape(
+                            (*soq.reg.shape, soq.reg.bitsize)
+                        )
                     if succ.left.reg.side == Side.RIGHT:
                         qvar_to_qreg[soq] = in_quregs[soq.reg.name][soq.idx]
         else:
