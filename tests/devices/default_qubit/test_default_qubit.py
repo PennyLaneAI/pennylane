@@ -1505,7 +1505,7 @@ class TestHamiltonianSamples:
         res = dev.execute(qs)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
-        assert np.allclose(res, expected, atol=2e-2)
+        assert np.allclose(res, expected, atol=0.02)
 
     @pytest.mark.local_salt(3)
     @pytest.mark.parametrize("max_workers", max_workers_list)
