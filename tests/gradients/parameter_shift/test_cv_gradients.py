@@ -268,7 +268,11 @@ class TestCVGradient:
 
         grad_F = jax.grad(qf)(*par)
 
-        @qml.qnode(device=gaussian_dev, diff_method="parameter-shift", force_order2=True)
+        @qml.qnode(
+            device=gaussian_dev,
+            diff_method="parameter-shift",
+            gradient_kwargs={"force_order2": True},
+        )
         def qf2(x, y):
             qml.Displacement(0.5, 0, wires=[0])
             qml.Squeezing(x, 0, wires=[0])

@@ -138,10 +138,10 @@ class StateMP(StateMeasurement):
             where the instance has to be identified
     """
 
+    _shortname = State  #! Note: deprecated. Change the value to "state" in v0.42
+
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
-
-    return_type = State
 
     @classmethod
     def _abstract_eval(

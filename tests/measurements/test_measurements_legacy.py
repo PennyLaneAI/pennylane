@@ -30,9 +30,7 @@ from pennylane.wires import Wires
 
 
 class NotValidMeasurement(MeasurementProcess):
-    @property
-    def return_type(self):
-        return "NotValidReturnType"
+    _shortname = "NotValidReturnType"
 
 
 class TestSampleMeasurement:

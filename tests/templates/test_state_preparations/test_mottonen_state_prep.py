@@ -431,7 +431,7 @@ def test_jacobians_with_and_without_jit_match(seed):
         qml.MottonenStatePreparation(coeffs, wires=[0, 1])
         return qml.probs(wires=[0, 1])
 
-    circuit_fd = qml.QNode(circuit, dev, diff_method="finite-diff", h=0.05)
+    circuit_fd = qml.QNode(circuit, dev, diff_method="finite-diff", gradient_kwargs={"h": 0.05})
     circuit_ps = qml.QNode(circuit, dev, diff_method="parameter-shift")
     circuit_exact = qml.QNode(circuit, dev_no_shots)
 

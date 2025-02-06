@@ -128,7 +128,10 @@ def create_measurement_obs_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(name + "_obs")
+    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+
+    primitive = NonInterpPrimitive(name + "_obs")
+    primitive.prim_type = "measurement"
 
     @primitive.def_impl
     def _(obs, **kwargs):
@@ -165,7 +168,10 @@ def create_measurement_mcm_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(name + "_mcm")
+    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+
+    primitive = NonInterpPrimitive(name + "_mcm")
+    primitive.prim_type = "measurement"
 
     @primitive.def_impl
     def _(*mcms, single_mcm=True, **kwargs):
@@ -200,7 +206,10 @@ def create_measurement_wires_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(name + "_wires")
+    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+
+    primitive = NonInterpPrimitive(name + "_wires")
+    primitive.prim_type = "measurement"
 
     @primitive.def_impl
     def _(*args, has_eigvals=False, **kwargs):

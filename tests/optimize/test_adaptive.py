@@ -129,7 +129,7 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     assert len(set(selected_excitations)) < len(selected_excitations)
 
 
-@pytest.mark.parametrize("circuit", [(initial_circuit)])
+@pytest.mark.parametrize("circuit", [initial_circuit])
 def test_largest_gradient(circuit):
     """Test that step function selects the gate with the largest gradient."""
 
