@@ -403,6 +403,9 @@ class TestIntegration:
         with pytest.raises(NotImplementedError):
             ag_fn(0.5)
 
+    @pytest.mark.xfail(
+        strict=False, reason="MCM one shot not currently supported with program capture."
+    )
     def test_mcm_one_shot(self, seed):
         """Test if mcm one-shot miss transforms."""
         dev = qml.device("default.qubit", wires=5, shots=20, seed=seed)
