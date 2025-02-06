@@ -55,18 +55,19 @@ class ParametricMidMeasureMP(MidMeasureMP):
         id (str): Custom label given to a measurement instance.
     """
 
+    _shortname = "measure"
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Optional[Wires],
         *,
-        angle: Optional[float] = 0,
-        plane: Optional[str] = "YZ",
+        angle: Optional[float],
+        plane: Optional[str],
         reset: Optional[bool] = False,
         postselect: Optional[int] = None,
         id: Optional[str] = None,
     ):
-        self._shortname = f"measure_{plane.lower()}"
         self.batch_size = None
         super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, id=id)
         self.plane = plane
@@ -98,7 +99,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
     def __repr__(self):
         """Representation of this class."""
-        return f"{self._shortname}(wires={self.wires.tolist()}, angle={self.angle})"
+        return f"{self._shortname}_{self.plane.lower()}(wires={self.wires.tolist()}, angle={self.angle})"
 
     @property
     def has_diagonalizing_gates(self):
@@ -140,9 +141,6 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
         _label = f"┤↗{_plane}"
 
-        if self.postselect is not None:
-            _label += "₁" if self.postselect == 1 else "₀"
-
         if decimals is not None:
 
             def _format(x):
@@ -153,6 +151,9 @@ class ParametricMidMeasureMP(MidMeasureMP):
                     return format(x)
 
             _label += f"({float(_format(self.angle))})"
+
+        if self.postselect is not None:
+            _label += "₁" if self.postselect == 1 else "₀"
 
         _label += "├" if not self.reset else "│  │0⟩"
 
@@ -229,6 +230,8 @@ def diagonalize_mcms(tape):
     new_operations = []
 
     for op in tape.operations:
+        # ToDo: maybe this in-place modification is a bad idea, but
+        #  its also weird to diagonalize it and not update it
         if isinstance(op, ParametricMidMeasureMP):
             diag_gate = op.diagonalizing_gates()[0]
             op.angle = 0
