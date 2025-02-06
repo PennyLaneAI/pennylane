@@ -17,7 +17,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 # pylint:disable=
 
 import pennylane as qml
-from qualtran import Bloq, CompositeBloq, Soquet, LeftDangle, Register, Side
+from qualtran import Bloq, CompositeBloq, Soquet, LeftDangle, Side
 from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
