@@ -71,6 +71,8 @@ def bloq_to_op(bloq, wires):
     if type(bloq).__name__ in BLOQ_TO_OP_MAP:
         pl_op = BLOQ_TO_OP_MAP[type(bloq).__name__]
         params = []
+
+        # TODO: Consider if there's a better way to access information inside the bloq
         if hasattr(bloq, "angle"):
             params.append(bloq.angle)
 
