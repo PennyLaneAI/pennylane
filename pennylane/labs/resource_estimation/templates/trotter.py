@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -207,7 +207,7 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
 
     @staticmethod
     def _resource_decomp(
-        n, order, reverse, qfunc_compressed_reps, **kwargs
+        n, order, qfunc_compressed_reps, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         k = order // 2
         if order == 1:
@@ -240,18 +240,14 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         return {
             "n": self.hyperparameters["n"],
             "order": self.hyperparameters["order"],
-            "reverse": self.hyperparameters["reverse"],
             "qfunc_compressed_reps": qfunc_compressed_reps,
         }
 
     @classmethod
-    def resource_rep(
-        cls, qfunc_compressed_reps, n, order, reverse, name=None
-    ) -> CompressedResourceOp:
+    def resource_rep(cls, n, order, qfunc_compressed_reps, name=None) -> CompressedResourceOp:
         params = {
             "n": n,
             "order": order,
-            "reverse": reverse,
             "qfunc_compressed_reps": qfunc_compressed_reps,
         }
         return CompressedResourceOp(cls, params, name=name)
@@ -358,39 +354,3 @@ def resource_trotterize(qfunc, n=1, order=2, reverse=False):
         )
 
     return wrapper
-
-
-@qml.QueuingManager.stop_recording()
-def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs):
-    """Generate a list of operations using the
-    recursive expression which defines the Trotter product.
-    Args:
-        time (float): the evolution 'time'
-        order (int): the order of the Trotter expansion
-        ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
-    Returns:
-        list: the approximation as product of exponentials of the Hamiltonian terms
-    """
-    if order == 1:
-        tape = qml.tape.make_qscript(qfunc)(time, *qfunc_args, wires=wires, **qfunc_kwargs)
-        return tape.operations[::-1] if reverse else tape.operations
-
-    if order == 2:
-        tape = qml.tape.make_qscript(qfunc)(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
-        return (
-            tape.operations[::-1] + tape.operations
-            if reverse
-            else tape.operations + tape.operations[::-1]
-        )
-
-    scalar_1 = _scalar(order)
-    scalar_2 = 1 - 4 * scalar_1
-
-    ops_lst_1 = _recursive_qfunc(
-        scalar_1 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
-    )
-    ops_lst_2 = _recursive_qfunc(
-        scalar_2 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
-    )
-
-    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
