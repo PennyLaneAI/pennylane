@@ -253,6 +253,50 @@ class CustomOpNestedOp(Operation):
         SimpleCustomOp(wires=wires)
 
 
+class CustomOpNestedOpControlFlow(Operation):
+    """Custom operation that contains a nested decomposition in its decomposition"""
+
+    num_wires = 1
+    num_params = 1
+
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
+
+    @staticmethod
+    def compute_plxpr_decomposition(phi, wires):
+
+        def true_fn(phi, wires):
+
+            @qml.for_loop(0, 3, 1)
+            def loop_rx(i, phi):
+                CustomOpNestedOp(phi, wires)
+                return jax.numpy.sin(phi)
+
+            # pylint: disable=unused-variable
+            loop_rx(phi)
+
+        def false_fn(phi, wires):
+
+            def while_f(i):
+                return i < 3
+
+            @qml.while_loop(while_f)
+            def loop_fn(i):
+                SimpleCustomOp(wires)
+
+                return i + 1
+
+            _ = loop_fn(0)
+
+        qml.cond(phi > 0.5, true_fn, false_fn)(phi, wires)
+        qml.Rot(0.1, 0.2, 0.3, wires=wires)
+        CustomOpNestedOp(phi, wires)
+
+
 class TestDynamicDecomposeInterpreter:
     """Tests for the DynamicDecomposeInterpreter class"""
 

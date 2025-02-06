@@ -67,11 +67,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         # pylint: disable=import-outside-toplevel
         import jax
 
-        from pennylane.capture.primitives import (
-            AbstractMeasurement,
-            AbstractOperator,
-            ctrl_transform_prim,
-        )
+        from pennylane.capture.primitives import ctrl_transform_prim
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -172,15 +168,16 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
             for inner_eqn in jaxpr_decomp.eqns:
 
+                prim_type = getattr(inner_eqn.primitive, "prim_type", "")
                 custom_handler = self._primitive_registrations.get(inner_eqn.primitive, None)
 
                 if custom_handler:
                     invals = [self.read(invar) for invar in inner_eqn.invars]
                     outvals = custom_handler(self, *invals, **inner_eqn.params)
 
-                elif isinstance(inner_eqn.outvars[0].aval, AbstractOperator):
+                elif prim_type == "operator":
                     outvals = self.interpret_operation_eqn(inner_eqn, current_depth)
-                elif isinstance(inner_eqn.outvars[0].aval, AbstractMeasurement):
+                elif prim_type == "measurement":
                     outvals = super().interpret_measurement_eqn(inner_eqn)
                 else:
                     invals = [self.read(invar) for invar in inner_eqn.invars]
@@ -230,7 +227,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
                 else:
 
-                    return self.decompose_operation(op)
+                    return self.decompose_operation(op, current_depth=current_depth)
 
             return op
 
