@@ -133,7 +133,7 @@ def hadamard_grad(
     .. math::
 
         \frac{\partial f}{\partial \mathbf{p}} = -2 \Im[\bra{0} \hat{O} G \ket{0}] = i \left(\bra{0} \hat{O} G \ket{
-        0} - \bra{0} G\hat{O} \ket{0}\right) = -2 \bra{+}\bra{0} \texttt{ctrl}\left(-G^{\dagger}\right) (\hat{Y} \otimes \hat{O}) \texttt{ctrl}\left(-G\right)
+        0} - \bra{0} G\hat{O} \ket{0}\right) = -2 \bra{+}\bra{0} \texttt{ctrl}\left(G^{\dagger}\right) (\hat{Y} \otimes \hat{O}) \texttt{ctrl}\left(G\right)
         \ket{+}\ket{0}
 
     Here, :math:`G` is the generator of the unitary :math:`U`. `hadamard_grad` will work on any :math:`U` so long
