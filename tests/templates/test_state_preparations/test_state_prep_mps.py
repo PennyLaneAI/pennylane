@@ -226,8 +226,8 @@ class TestMPSPrep:
             qml.MPSPrep(mps, wires=[0, 1, 2])
 
     @pytest.mark.jax
-    def test_jax_mps(self):
-        """Check the operation works with jax."""
+    def test_jax_jit_mps(self):
+        """Check the operation works with jax and jit."""
 
         import jax
         from jax import numpy as jnp
@@ -243,15 +243,6 @@ class TestMPSPrep:
             jnp.array([[-1.0, -0.0], [-0.0, -1.0]]),
         ]
 
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.MPSPrep(mps, wires=range(2, 5), work_wires=[0, 1])
-            return qml.state()
-
-        output = circuit()[:8]
-
         state = [
             0.0 + 0.0j,
             -0.10705513j,
@@ -263,7 +254,18 @@ class TestMPSPrep:
             0.0 + 0.0j,
         ]
 
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.MPSPrep(mps, wires=range(2, 5), work_wires=[0, 1])
+            return qml.state()
+
+        output = circuit()[:8]
+        output_jit = jax.jit(circuit)()[:8]
+
         assert jax.numpy.allclose(output, jax.numpy.array(state), rtol=0.01)
+        assert jax.numpy.allclose(output_jit, jax.numpy.array(state), rtol=0.01)
 
     @pytest.mark.parametrize(
         ("mps", "state", "num_wires", "num_work_wires"),
@@ -288,7 +290,8 @@ class TestMPSPrep:
                     np.array([[1.0, 0.0], [0.0, 1.0]]),
                 ],
                 np.array([1 / 2, 1 / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 / 2, 1 / 2]),
-                4, 2
+                4,
+                2,
             ),
             (
                 [
@@ -371,7 +374,8 @@ class TestMPSPrep:
                         -0.07738196,
                     ]
                 ),
-                5, 2
+                5,
+                2,
             ),
             (
                 [
@@ -396,7 +400,8 @@ class TestMPSPrep:
                         0.0 + 0.0j,
                     ]
                 ),
-                3, 2
+                3,
+                2,
             ),
             (
                 [
@@ -1482,15 +1487,23 @@ class TestMPSPrep:
                         ]
                     )
                 ],
-                8, 4
+                8,
+                4,
             ),
         ],
     )
     def test_correctness(self, mps, state, num_wires, num_work_wires):
-        """Test correctness of the solution
+        """Test correctness of the state approximation with mps
 
         Data was generated adapting the functionality `decompose_dense` in
         pennylane-lightning/pennylane_lightning/lightning_tensor/_tensornet.py
+
+        Args:
+            mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
+                product of site matrices.
+            state (Array): target state that the mps is approaching
+            num_wires(int): number of wires to encode the state
+            num_work_wires(int): number of auxiliar wires used in the mps decomposition
         """
 
         wires = qml.registers({"work": num_work_wires, "state": num_wires})
@@ -1533,48 +1546,6 @@ class TestMPSPrep:
             assert op.wires == qml.wires.Wires([2 + ind] + [0, 1])
             assert op.name == "QubitUnitary"
 
-    @pytest.mark.jax
-    def test_jax_jit_mps(self):
-        """Check the operation works with jax and jit."""
-
-        import jax
-        from jax import numpy as jnp
-
-        mps = [
-            jnp.array([[0.0, 0.107j], [0.994, 0.0]], dtype=complex),
-            jnp.array(
-                [
-                    [[0.0, 0.0], [1.0, 0.0]],
-                    [[0.0, 1.0], [0.0, 0.0]],
-                ],
-                dtype=complex,
-            ),
-            jnp.array([[-1.0, -0.0], [-0.0, -1.0]], dtype=complex),
-        ]
-
-        dev = qml.device("default.qubit")
-
-        @jax.jit
-        @qml.qnode(dev)
-        def circuit():
-            qml.MPSPrep(mps, wires=range(2, 5), work_wires=[0, 1])
-            return qml.state()
-
-        output = circuit()[:8]
-
-        state = [
-            0.0 + 0.0j,
-            -0.10705513j,
-            0.0 + 0.0j,
-            0.0 + 0.0j,
-            0.0 + 0.0j,
-            0.0 + 0.0j,
-            -0.99451217 + 0.0j,
-            0.0 + 0.0j,
-        ]
-
-        assert jax.numpy.allclose(output, jax.numpy.array(state), rtol=0.01)
-
     def test_wires_decomposition(self):
         """Checks that error is shown if no `work_wires` are given in decomposition"""
 
@@ -1590,12 +1561,6 @@ class TestMPSPrep:
             np.array([[-1.0, -0.0], [-0.0, -1.0]], dtype=complex),
         ]
 
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.MPSPrep(mps, wires=range(2, 5))
-            return qml.state()
-
-        with pytest.raises(AssertionError, match="The qml.MPSPREP decomposition requires"):
-            circuit()
+        op = qml.MPSPrep(mps, wires=range(2, 5))
+        with pytest.raises(ValueError, match="The qml.MPSPrep decomposition requires"):
+            op.decomposition()

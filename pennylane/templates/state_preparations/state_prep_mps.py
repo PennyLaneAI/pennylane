@@ -37,7 +37,10 @@ class MPSPrep(Operation):
 
         wires (Sequence[int]): wires that the template acts on
         work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The bond dimension of the mps
-                        is defined as ``2^len(work_wires)``. Default is ``None``
+                        is defined as ``2^len(work_wires)``. Default is ``None``.
+
+
+    The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
 
     **Example**
 
@@ -227,7 +230,7 @@ class MPSPrep(Operation):
 
         Args:
             mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
-                product of site matrices. See the usage details section for more information.
+                product of site matrices.
 
             wires (Sequence[int]): wires that the template acts on
             work_wires (Sequence[int]): list of extra qubits needed. The bond dimension of the mps
@@ -238,28 +241,28 @@ class MPSPrep(Operation):
         """
 
         if work_wires is None:
-            raise AssertionError(
-                "The qml.MPSPREP decomposition requires `work_wires` to be specified, "
+            raise ValueError(
+                "The qml.MPSPrep decomposition requires `work_wires` to be specified, "
                 "and the bond dimension cannot exceed `2**len(work_wires)`."
             )
 
         ops = []
         n_wires = len(work_wires) + 1
 
+        mps[0] = mps[0].reshape((1, *mps[0].shape))
+        mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
+
         for i, Ai in enumerate(mps):
-            vectors = []
 
             # encodes the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
-            if i == 0:
-                Ai = Ai.reshape((1, *Ai.shape))
-            elif i == len(mps) - 1:
-                Ai = Ai.reshape((*Ai.shape, 1))
 
+            vectors = []
             for column in Ai:
 
-                vector = qml.math.zeros(2**n_wires, like=mps[0])
+                interface, dtype = qml.math.get_interface(mps[0]), mps[0].dtype
+                vector = qml.math.zeros(2**n_wires, like=interface, dtype=dtype)
 
-                if qml.math.get_interface(mps[0]) == "jax":
+                if interface == "jax":
                     vector = vector.at[: len(column[0])].set(column[0])
                     vector = vector.at[
                         2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])
@@ -280,7 +283,7 @@ class MPSPrep(Operation):
             new_columns = qml.math.array(rng.random((d, d - k)))
 
             matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
-            matrix *= qml.math.sign(qml.math.diag(R)) # enforces uniqueness for QR decomposition
+            matrix *= qml.math.sign(qml.math.diag(R))  # enforces uniqueness for QR decomposition
 
             ops.append(qml.QubitUnitary(matrix, wires=[wires[i]] + work_wires))
 
