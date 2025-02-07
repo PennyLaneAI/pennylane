@@ -93,14 +93,14 @@ def _process(wires):
     if len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
-    return tuple(itertools.chain(*(wire_map(x) for x in tuple_of_wires)))
+    return tuple(itertools.chain(*(flatten_wires_object(x) for x in tuple_of_wires)))
 
 
-def wire_map(wires):
+def flatten_wires_object(wire_label):
     """Converts the input to a tuple of wire labels."""
-    if isinstance(wires, Wires):
-        return wires.labels
-    return [wires]
+    if isinstance(wire_label, Wires):
+        return wire_label.labels
+    return [wire_label]
 
 
 class Wires(Sequence):
