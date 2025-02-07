@@ -24,8 +24,6 @@ class VibronicHamiltonian:
         phis: Sequence[np.ndarray],
         sparse: bool = False,
     ):
-        if not is_pow_2(states) or states == 0:
-            raise ValueError(f"States must be a positive power of 2, got {states} states.")
 
         for i, phi in enumerate(phis):
             shape = (states, states) + (modes,) * i
@@ -58,9 +56,10 @@ class VibronicHamiltonian:
 
     def v_word(self, i: int, j: int) -> RealspaceSum:
         """Get V_ij"""
-        if i > self.states or j > self.states:
+        if i > self.states-1 or j > self.states-1:
+            return RealspaceSum.zero()
             raise ValueError(
-                f"Dimension out of bounds. Got ({i}, {j}) but V is dimension ({self.states}, {self.states})."
+                f"Dimension out of bounds. Got ({i}, {j}) but V is shape ({self.states-1}, {self.states-1})."
             )
 
         realspace_ops = []

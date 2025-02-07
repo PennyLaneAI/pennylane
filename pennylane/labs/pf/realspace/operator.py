@@ -163,7 +163,7 @@ class RealspaceSum(Fragment):
         return self._lookup == other._lookup
 
     @classmethod
-    def zero_word(cls) -> RealspaceSum:
+    def zero(cls) -> RealspaceSum:
         """Return a RealspaceSum representing 0"""
         return RealspaceSum([RealspaceOperator.zero_term()])
 
