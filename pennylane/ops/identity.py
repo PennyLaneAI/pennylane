@@ -316,7 +316,6 @@ class GlobalPhase(Operation):
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
     def __init__(self, phi, wires: WiresLike = (), id=None):
-        self.hyperparameters["n_wires"] = len(qml.wires.Wires(wires))
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -417,7 +416,7 @@ class GlobalPhase(Operation):
 
     @staticmethod
     def compute_decomposition(
-        phi, wires: WiresLike = (), **kwargs
+        phi, wires: WiresLike = ()
     ):  # pylint:disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -455,6 +454,10 @@ class GlobalPhase(Operation):
     def matrix(self, wire_order=None):
         n_wires = len(wire_order) if wire_order else len(self.wires)
         return self.compute_matrix(self.data[0], n_wires=n_wires)
+
+    def sparse_matrix(self, wire_order=None):
+        n_wires = len(wire_order) if wire_order else len(self.wires)
+        return self.compute_sparse_matrix(self.data[0], n_wires=n_wires)
 
     def adjoint(self):
         return GlobalPhase(-1 * self.data[0], self.wires)
