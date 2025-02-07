@@ -93,8 +93,7 @@ def _process(wires):
     if len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
-    tuple_of_wires = tuple(itertools.chain(*(wire_map(x) for x in tuple_of_wires)))
-    return tuple_of_wires
+    return tuple(itertools.chain(*(wire_map(x) for x in tuple_of_wires)))
 
 
 def wire_map(wires):
