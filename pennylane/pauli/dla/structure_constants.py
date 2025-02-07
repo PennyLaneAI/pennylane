@@ -321,25 +321,6 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
         qml.math.transpose(qml.math.conj(g), (0, 2, 1)), g
     ), "Input matrices to structure_constants not Hermitian"
 
-    # matrix_in = isinstance(g, np.ndarray) or all(isinstance(op, np.ndarray) for op in g)
-
-    # if not matrix_in:
-    #     all_wires = qml.wires.Wires.all_wires([_.wires for _ in g])
-    #     n = len(all_wires)
-    #     assert all_wires.toset() == set(range(n))
-
-    #     g = np.array([qml.matrix(op, wire_order=range(n)) for op in g], dtype=complex)
-    #     chi = 2**n
-    #     assert g.shape == (len(g), chi, chi)
-
-    # else:
-    #     g = np.array(g)
-    #     chi = g[0].shape[0]
-    #     assert g.shape == (len(g), chi, chi)
-
-    # # Assert Hermiticity of the input. Otherwise we'll get the sign wrong
-    # assert np.allclose(g.conj().transpose((0, 2, 1)), g)
-
     # compute all commutators by computing all products first.
     # Axis ordering is (dimg, chi, _chi_) x (dimg, _chi_, chi) -> (dimg, chi, dimg, chi)
     prod = qml.math.tensordot(g, g, axes=[[2], [1]])
