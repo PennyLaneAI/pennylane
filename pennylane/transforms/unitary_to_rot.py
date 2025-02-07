@@ -65,7 +65,7 @@ def _get_plxpr_unitary_to_rot():
 
             return [self.interpret_operation(op)]
 
-        def interpret_operation_eqn(self, eqn):
+        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
             """Interpret an equation corresponding to an operator.
 
             Args:
