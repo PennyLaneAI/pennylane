@@ -62,7 +62,8 @@ class TestUnitaryToRotInterpreter:
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    # TODO: Currently only supports three CNOT decomposition
+    # two_qubit_decomposition only supports decomps with
+    # three CNOTs for abstract matrices
     def test_two_qubit_three_cnot_conversion(self):
         """Test that a two qubit unitary can be decomposed correctly."""
         U1 = qml.Rot(1.0, 2.0, 3.0, wires=0)
