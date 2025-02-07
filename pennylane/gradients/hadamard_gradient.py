@@ -321,13 +321,14 @@ def _hadamard_test(tape, trainable_param_idx, argnums, aux_wire) -> tuple[list, 
     # Get a generator and coefficients
     sub_coeffs, generators = _get_pauli_generators(trainable_op)
 
+    measurements = [_new_measurement(mp, aux_wire, tape.wires) for mp in tape.measurements]
+
     new_batch = []
     for gen in generators:
         ctrl_gen = [qml.ctrl(gen, control=aux_wire)]
         hadamard = [qml.Hadamard(wires=aux_wire)]
         ops = ops_to_trainable_op + hadamard + ctrl_gen + hadamard + ops_after_trainable_op
 
-        measurements = (_new_measurement(mp, aux_wire, tape.wires) for mp in tape.measurements)
         new_tape = qml.tape.QuantumScript(ops, measurements, shots=tape.shots)
         new_batch.append(new_tape)
     return new_batch, sub_coeffs
