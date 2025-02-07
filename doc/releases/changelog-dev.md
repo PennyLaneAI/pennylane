@@ -268,6 +268,9 @@
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
+* The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
+  [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
