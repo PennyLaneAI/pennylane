@@ -230,10 +230,6 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Fix `qml.wires.Wires` initialization to disallow `Wires` objects as wires labels.
-  Now, `Wires` is idempotent, e.g. `Wires([Wires([0]), Wires([1])])==Wires([0, 1])`.
-  [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933)
-
 * Remove `QNode.get_gradient_fn` from source code.
   [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
   
@@ -269,6 +265,10 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix `qml.wires.Wires` initialization to disallow `Wires` objects as wires labels.
+  Now, `Wires` is idempotent, e.g. `Wires([Wires([0]), Wires([1])])==Wires([0, 1])`.
+  [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933)
 
 * `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
   [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
