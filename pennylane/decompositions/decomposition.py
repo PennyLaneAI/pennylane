@@ -30,7 +30,7 @@ from dataclasses import dataclass
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, StopSearch, PruneSearch
 
-from pennylane.operation import Operator
+from pennylane.operation import Operator, DecompositionUndefinedError
 
 from .decomposition_rule import DecompositionRule
 from .resources import Resources, CompressedResourceOp
@@ -135,6 +135,12 @@ class DecompositionGraph:
             visitor=self._visitor,
         )
         self._graph.remove_node(start)
+        if self._visitor.unsolved_op_indices:
+            unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
+            op_names = set(op.op_type.__name__ for op in unsolved_ops)
+            raise DecompositionUndefinedError(
+                f"Decomposition not found for {op_names} to the gate set {self._target_gate_set}"
+            )
 
     def resource_estimates(self, op: Operator) -> Resources:
         """Returns the resource estimates for a given operator.
@@ -174,7 +180,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         self._lazy = lazy
         self.d: dict[int, Resources] = {}  # maps node indices to the optimal resource estimates
         self.p: dict[int, int] = {}  # maps operator nodes to the optimal decomposition nodes
-        self._original_op_indices = original_op_indices.copy()
+        self.unsolved_op_indices = original_op_indices.copy()
         self._num_edges_examined: dict[int, int] = {}  # keys are decomposition node indices
 
     def edge_weight(self, edge_obj):
@@ -186,8 +192,8 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
     def discover_vertex(self, v, score):
         """Triggered when a vertex is about to be explored during the dijkstra search."""
-        self._original_op_indices.discard(v)
-        if not self._original_op_indices and self._lazy:
+        self.unsolved_op_indices.discard(v)
+        if not self.unsolved_op_indices and self._lazy:
             raise StopSearch
 
     def examine_edge(self, edge):
