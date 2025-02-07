@@ -56,9 +56,10 @@ def _get_plxpr_unitary_to_rot():
             """
             if isinstance(op, qml.QubitUnitary):
                 with qml.capture.pause():
-                    if qml.math.shape(op.parameters[0]) == (2, 2):
+                    matrix_shape = qml.math.shape(op.parameters[0])
+                    if matrix_shape  == (2, 2):
                         ops = one_qubit_decomposition(op.parameters[0], op.wires[0])
-                    elif qml.math.shape(op.parameters[0]) == (4, 4):
+                    elif matrix_shape == (4, 4):
                         ops = two_qubit_decomposition(op.parameters[0], op.wires)
                 return [self.interpret_operation(decomp_op) for decomp_op in ops]
 
