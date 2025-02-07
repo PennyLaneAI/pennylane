@@ -1546,21 +1546,29 @@ class TestMPSPrep:
             assert op.wires == qml.wires.Wires([2 + ind] + [0, 1])
             assert op.name == "QubitUnitary"
 
-    def test_wires_decomposition(self):
+    @pytest.mark.parametrize(("work_wires"), [None, 1])
+    def test_wires_decomposition(self, work_wires):
         """Checks that error is shown if no `work_wires` are given in decomposition"""
 
         mps = [
-            np.array([[0.0, 0.107j], [0.994, 0.0]], dtype=complex),
+            np.array([[0.70710678, 0.0], [0.0, 0.70710678]]),
             np.array(
                 [
-                    [[0.0, 0.0], [1.0, 0.0]],
-                    [[0.0, 1.0], [0.0, 0.0]],
-                ],
-                dtype=complex,
+                    [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+                    [[0.0, 0.0, -0.0, 0.0], [-1.0, 0.0, 0.0, 0.0]],
+                ]
             ),
-            np.array([[-1.0, -0.0], [-0.0, -1.0]], dtype=complex),
+            np.array(
+                [
+                    [[0.00000000e00, 1.74315280e-32], [-7.07106781e-01, -7.07106781e-01]],
+                    [[7.07106781e-01, 7.07106781e-01], [0.00000000e00, 0.00000000e00]],
+                    [[0.00000000e00, 0.00000000e00], [-7.07106781e-01, 7.07106781e-01]],
+                    [[-7.07106781e-01, 7.07106781e-01], [0.00000000e00, 0.00000000e00]],
+                ]
+            ),
+            np.array([[1.0, 0.0], [0.0, 1.0]]),
         ]
 
-        op = qml.MPSPrep(mps, wires=range(2, 5))
+        op = qml.MPSPrep(mps, wires=range(2, 5), work_wires=work_wires)
         with pytest.raises(ValueError, match="The qml.MPSPrep decomposition requires"):
             op.decomposition()

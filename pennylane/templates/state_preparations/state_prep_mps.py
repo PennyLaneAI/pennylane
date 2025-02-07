@@ -36,8 +36,8 @@ class MPSPrep(Operation):
             product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
-        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The bond dimension of the mps
-                        is defined as ``2^len(work_wires)``. Default is ``None``.
+        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
+            dimension of the provided MPS is defined as ``2^len(work_wires)``. Default is ``None``.
 
 
     The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
@@ -233,14 +233,22 @@ class MPSPrep(Operation):
                 product of site matrices.
 
             wires (Sequence[int]): wires that the template acts on
-            work_wires (Sequence[int]): list of extra qubits needed. The bond dimension of the mps
-                is defined as ``2^len(work_wires)``
+            work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
+                dimension of the provided MPS is defined as ``2^len(work_wires)``. Default is ``None``.
 
         Returns:
             list[.Operator]: Decomposition of the operator
         """
 
-        if work_wires is None:
+        bond_dimensions = []
+
+        for i in range(len(mps) - 1):
+            bond_dim = mps[i].shape[-1]
+            bond_dimensions.append(bond_dim)
+
+        max_bond_dimension = max(bond_dimensions)
+
+        if work_wires is None or 2 ** len(work_wires) < max_bond_dimension:
             raise ValueError(
                 "The qml.MPSPrep decomposition requires `work_wires` to be specified, "
                 "and the bond dimension cannot exceed `2**len(work_wires)`."
