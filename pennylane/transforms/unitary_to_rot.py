@@ -40,7 +40,7 @@ def _get_plxpr_unitary_to_rot():
         """Plxpr Interpreter for applying the ``unitary_to_rot``
         transform when program capture is enabled."""
 
-        def decompose_operation(self, op: Operator):
+        def decompose_operation(self, op: Operator) -> list:
             """Decompose a PennyLane operation instance if it is a QubitUnitary.
 
             Args:
