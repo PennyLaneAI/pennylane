@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Advanced Lie algebra functionality
+Advanced Lie algebra features
+-----------------------------
 
-Overview
---------
+Advanced Lie algebra functionality in PennyLane.
+Relevant demos to check out:
+
+* :doc:`/demos/tutorial_liealgebra`__
+* :doc:`/demos/tutorial_liesim`
+* :doc:`/demos/tutorial_liesim_extension`
+* :doc:`/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition`
+* :doc:`/demos/tutorial_kak_decomposition`
+
 
 Functions
 ^^^^^^^^^
@@ -28,6 +36,8 @@ Functions
     ~lie_closure
     ~structure_constants
     ~center
+
+
 
 """
 
