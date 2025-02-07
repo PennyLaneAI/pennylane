@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.measurements import VarianceMP
+from pennylane.measurements import ExpectationMP, VarianceMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -380,10 +380,10 @@ def expval_param_shift(
             )
 
             # operation is a Hamiltonian
-            if tape[op_idx].return_type is not qml.measurements.Expectation:
+            if not isinstance(tape[op_idx], ExpectationMP):
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
-                    f"coefficients for expectations, not {tape[op_idx].return_type.value}"
+                    f"coefficients for expectations, not {tape[op_idx]}"
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
