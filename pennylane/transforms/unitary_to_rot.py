@@ -35,12 +35,12 @@ def _get_plxpr_unitary_to_rot():
     except ImportError:  # pragma: no cover
         return None, None
 
-    # pylint: disable=redefined-outer-name
+    # pylint: disable=redefined-outer-name, too-few-public-methods
     class UnitaryToRotInterpreter(PlxprInterpreter):
         """Plxpr Interpreter for applying the ``unitary_to_rot``
         transform when program capture is enabled."""
 
-        def decompose_operation(self, op: Operator) -> list:
+        def interpret_operation(self, op: Operator):
             """Decompose a PennyLane operation instance if it is a QubitUnitary.
 
             Args:
@@ -55,31 +55,16 @@ def _get_plxpr_unitary_to_rot():
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
             if isinstance(op, qml.QubitUnitary):
+                ops = []
                 with qml.capture.pause():
                     matrix_shape = qml.math.shape(op.parameters[0])
                     if matrix_shape == (2, 2):
                         ops = one_qubit_decomposition(op.parameters[0], op.wires[0])
                     elif matrix_shape == (4, 4):
                         ops = two_qubit_decomposition(op.parameters[0], op.wires)
-                return [self.interpret_operation(decomp_op) for decomp_op in ops]
+                return super().interpret_operation(ops)
 
-            return [self.interpret_operation(op)]
-
-        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
-            """Interpret an equation corresponding to an operator.
-
-            Args:
-                eqn (jax.core.JaxprEqn): a jax equation for an operator.
-
-            See also: :meth:`~.interpret_operation`.
-
-            """
-            invals = (self.read(invar) for invar in eqn.invars)
-            with qml.QueuingManager.stop_recording():
-                op = eqn.primitive.impl(*invals, **eqn.params)
-            if eqn.outvars[0].__class__.__name__ == "DropVar":
-                return self.decompose_operation(op)
-            return op
+            return super().interpret_operation(op)
 
     # pylint: disable=redefined-outer-name
     def unitary_to_rot_plxpr_to_plxpr(

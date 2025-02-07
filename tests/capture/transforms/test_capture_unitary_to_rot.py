@@ -119,7 +119,7 @@ class TestQNodeIntegration:
         with qml.capture.pause():
             QU = qml.QubitUnitary(U.matrix(), 0)
             decomp = jax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
-        for i, eqn in enumerate(qfunc_jaxpr.eqns[-len(decomp) : -3]):
+        for i, eqn in enumerate(qfunc_jaxpr.eqns[-len(decomp) - 3 : -3]):
             assert eqn.primitive == decomp[i]._primitive
 
         # X gate
@@ -158,7 +158,7 @@ class TestQNodeIntegration:
         with qml.capture.pause():
             QU = qml.QubitUnitary(U.matrix(), [0, 1])
             decomp = jax.jit(two_qubit_decomposition)(QU.parameters[0], QU.wires)
-        for i, eqn in enumerate(jaxpr.eqns[-len(decomp) - 4 : -4]):
+        for i, eqn in enumerate(qfunc_jaxpr.eqns[-len(decomp) - 4 : -4]):
             assert eqn.primitive == decomp[i]._primitive
 
         # Measurement 1
