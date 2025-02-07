@@ -16,7 +16,7 @@ This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
 from functools import partial
-from itertools import islice, zip_longest
+from itertools import islice
 
 import numpy as np
 
@@ -26,7 +26,6 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
-    _all_zero_grad,
     _contract_qjac_with_cjac,
     _no_trainable_grad,
     _try_zero_grad_from_graph_or_get_grad_method,
@@ -277,41 +276,37 @@ def hadamard_grad(
         return _no_trainable_grad(tape)
 
     trainable_param_indices = choose_trainable_params(tape, argnum)
-    diff_methods = {
-        idx: _try_zero_grad_from_graph_or_get_grad_method(tape, tape.trainable_params[idx], True)
-        for idx in trainable_param_indices
-    }
-
-    if all(g == "0" for g in diff_methods.values()):
-        return _all_zero_grad(tape)
-
-    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     # Validate or get default for aux_wire
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
-    argnums = argnum or tape.trainable_params
     g_tapes = []
     coeffs = []
     generators_per_parameter = []
 
     for trainable_param_idx, _ in enumerate(tape.trainable_params):
-        # can dispatch between different algorithms here in the future
-        # hadamard test, direct hadamard test, reversed, reversed direct, and flexible
-        batch, new_coeffs = _hadamard_test(tape, trainable_param_idx, argnums, aux_wire)
-        g_tapes += batch
-        coeffs += new_coeffs
-        generators_per_parameter.append(len(batch))
+        if (
+            trainable_param_idx not in trainable_param_indices
+            or _try_zero_grad_from_graph_or_get_grad_method(
+                tape, tape.trainable_params[trainable_param_idx], True
+            )
+            == "0"
+        ):
+            generators_per_parameter.append(0)
+        else:
+            # can dispatch between different algorithms here in the future
+            # hadamard test, direct hadamard test, reversed, reversed direct, and flexible
+            batch, new_coeffs = _hadamard_test(tape, trainable_param_idx, aux_wire)
+            g_tapes += batch
+            coeffs += new_coeffs
+            generators_per_parameter.append(len(batch))
 
     return g_tapes, partial(
         processing_fn, coeffs=coeffs, tape=tape, generators_per_parameter=generators_per_parameter
     )
 
 
-def _hadamard_test(tape, trainable_param_idx, argnums, aux_wire) -> tuple[list, list]:
-    if trainable_param_idx not in argnums:
-        # parameter has zero gradient
-        return [], [0]
+def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
 
@@ -393,19 +388,29 @@ def processing_fn(results: qml.typing.ResultBatch, tape, coeffs, generators_per_
                     res[prob_idx], tape.measurements[prob_idx], tape
                 )
 
-    num_mps = tape.shots.num_copies if tape.shots.has_partitioned_shots else len(tape.measurements)
+    mps = (
+        tape.measurements * tape.shots.num_copies
+        if tape.shots.has_partitioned_shots
+        else tape.measurements
+    )
     # first index = into measurements, second index = into parameters
-    grads = tuple([] for _ in range(num_mps))
+    grads = tuple([] for _ in mps)
     results = iter(final_res)
     for num_generators in generators_per_parameter:
-        sub_results = islice(results, num_generators)  # take the next number of results
-        # sum over batch, iterate over measurements
-        summed_sub_results = (sum(r) for r in zip(*sub_results))
+        if num_generators == 0:
+            for g_for_parameter, mp in zip(grads, mps):
+                zeros_like_mp = np.zeros(
+                    mp.shape(num_device_wires=len(tape.wires)), dtype=mp.numeric_type
+                )
+                g_for_parameter.append(zeros_like_mp)
+        else:
+            sub_results = islice(results, num_generators)  # take the next number of results
+            # sum over batch, iterate over measurements
+            summed_sub_results = (sum(r) for r in zip(*sub_results))
 
-        # fill value zero for when no generators/ no gradient
-        for g_for_parameter, r in zip_longest(grads, summed_sub_results, fillvalue=np.array(0)):
-            g_for_parameter.append(r)
+            for g_for_parameter, r in zip(grads, summed_sub_results, strict=True):
+                g_for_parameter.append(r)
 
-    if num_mps == 1:
+    if len(mps) == 1:
         return grads[0][0] if len(tape.trainable_params) == 1 else grads[0]
     return tuple(g[0] for g in grads) if len(tape.trainable_params) == 1 else grads

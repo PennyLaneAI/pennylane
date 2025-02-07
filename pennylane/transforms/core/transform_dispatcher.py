@@ -388,6 +388,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 """This function updates the original device transform program to be applied."""
                 program, config = self.original_device.preprocess(execution_config)
                 program.push_back(TransformContainer(self.transform, args=targs, kwargs=tkwargs))
+                print("program here: ", program)
                 return program, config
 
             @property

@@ -936,7 +936,7 @@ class TestHadamardGradEdgeCases:
 
         assert tapes == []
 
-        assert isinstance(res_hadamard, tuple)
+        assert isinstance(res_hadamard, (list, tuple))
 
         assert len(res_hadamard) == 3
 
@@ -1021,6 +1021,7 @@ class TestHadamardGradEdgeCases:
         result = qml.gradients.hadamard_grad(circuit)(params)
 
         assert isinstance(result, np.ndarray)
+        print(result)
         assert result.shape == (4, 3)
         assert np.allclose(result, 0)
 
