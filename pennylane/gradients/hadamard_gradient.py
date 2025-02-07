@@ -134,10 +134,10 @@ def hadamard_grad(
     .. math::
 
         \frac{\partial f}{\partial \mathbf{p}} = -2 \Im[\bra{0} \hat{O} G \ket{0}] = i \left(\bra{0} \hat{O} G \ket{
-        0} - \bra{0} G\hat{O} \ket{0}\right) = -2 \bra{+}\bra{0} ctrl-G^{\dagger} (\hat{Y} \otimes \hat{O}) ctrl-G
+        0} - \bra{0} G\hat{O} \ket{0}\right) = -2 \bra{+}\bra{0} \texttt{ctrl}\left(-G^{\dagger}\right) (\hat{Y} \otimes \hat{O}) \texttt{ctrl}\eft(-G\right)
         \ket{+}\ket{0}
 
-    Here, :math:`G` is the generator of the unitary :math:`U`.
+    Here, :math:`G` is the generator of the unitary :math:`U`. `hadamard_grad` 
 
     **Example**
 
@@ -241,27 +241,6 @@ def hadamard_grad(
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
         Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
-
-    .. note::
-
-        ``hadamard_grad`` will decompose the operations that are not in the list of supported operations.
-
-        - :class:`~.pennylane.RX`
-        - :class:`~.pennylane.RY`
-        - :class:`~.pennylane.RZ`
-        - :class:`~.pennylane.Rot`
-        - :class:`~.pennylane.PhaseShift`
-        - :class:`~.pennylane.U1`
-        - :class:`~.pennylane.CRX`
-        - :class:`~.pennylane.CRY`
-        - :class:`~.pennylane.CRZ`
-        - :class:`~.pennylane.IsingXX`
-        - :class:`~.pennylane.IsingYY`
-        - :class:`~.pennylane.IsingZZ`
-
-        The expansion will fail if a suitable decomposition in terms of supported operation is not found.
-        The number of trainable parameters may increase due to the decomposition.
-
     """
 
     transform_name = "Hadamard test"
