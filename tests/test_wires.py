@@ -38,6 +38,7 @@ class TestWires:
         """Tests that a Wires object can be used as a label for another Wires object."""
         assert Wires([0, 1]) == Wires([Wires([0]), Wires([1])])
         assert Wires(["a", "b", 1]) == Wires([Wires(["a", "b"]), Wires([1])])
+        assert Wires([Wires([(0, 0), (0, 1)])]) == Wires([(0, 0), (0, 1)])
 
     def test_error_if_wires_none(self):
         """Tests that a TypeError is raised if None is given as wires."""
