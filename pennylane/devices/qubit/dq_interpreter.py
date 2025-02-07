@@ -22,11 +22,15 @@ from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.ops import adjoint, ctrl
+from pennylane.ops.qubit import BasisStateProjector
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
+from .simulate import _postselection_postprocess  # pylint: disable=protected-access
 
 
 # pylint: disable=attribute-defined-outside-init, access-member-before-definition
@@ -159,15 +163,58 @@ def _(self, *invals, reset, postselect):
     return mcms[mp]
 
 
+@DefaultQubitInterpreter.register_primitive(BasisStateProjector._primitive)
+def _(self, *invals, **kwargs):
+    # pylint: disable=protected-access
+    op = BasisStateProjector._primitive.impl(*invals, **kwargs)
+    self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)
+    if op.batch_size:
+        self.is_state_batched = True
+
+    self.state, _ = _postselection_postprocess(self.state, self.is_state_batched, self.shots)
+    return []
+
+
 # pylint: disable=unused-argument
 @DefaultQubitInterpreter.register_primitive(adjoint_transform_prim)
 def _(self, *invals, jaxpr, n_consts, lazy=True):
     # TODO: requires jaxpr -> list of ops first
-    raise NotImplementedError
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+    recorder = CollectOpsandMeas()
+    recorder.eval(jaxpr, consts, *args)
+
+    ops = recorder.state["ops"]
+    with pause():
+        for op in ops[::-1]:
+            self.state = apply_operation(
+                adjoint(op, lazy=lazy), self.state, is_state_batched=self.is_state_batched
+            )
+            if op.batch_size:
+                self.is_state_batched = True
+
+    return []
 
 
 # pylint: disable=too-many-arguments
 @DefaultQubitInterpreter.register_primitive(ctrl_transform_prim)
 def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     # TODO: requires jaxpr -> list of ops first
-    raise NotImplementedError
+    consts = invals[:n_consts]
+    control_wires = invals[-n_control:]
+    args = invals[n_consts:-n_control]
+    recorder = CollectOpsandMeas()
+    recorder.eval(jaxpr, consts, *args)
+
+    ops = recorder.state["ops"]
+    with pause():
+        for op in ops:
+            self.state = apply_operation(
+                ctrl(op, control_wires, control_values=control_values, work_wires=work_wires),
+                self.state,
+                is_state_batched=self.is_state_batched,
+            )
+            if op.batch_size:
+                self.is_state_batched = True
+
+    return []
