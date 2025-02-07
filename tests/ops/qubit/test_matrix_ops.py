@@ -32,6 +32,13 @@ from pennylane.wires import Wires
 class TestQubitUnitaryCSR:
     """Tests for using csr_matrix in QubitUnitary."""
 
+    def test_compute_sparse_matrix(self):
+        """Test that the compute_sparse_matrix method works correctly."""
+        U = np.array([[0, 1], [1, 0]])
+        op = qml.QubitUnitary.compute_sparse_matrix(U, wires=[0])
+        assert isinstance(op, csr_matrix)
+        assert np.allclose(op.toarray(), U)
+
     def test_generic_sparse_convert_to_csr(self):
         """Test that other generic sparse matrices can be converted to csr_matrix."""
         # 4x4 Identity as a csr_matrix
