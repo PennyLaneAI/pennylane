@@ -466,11 +466,12 @@ def op_eq(ops):
 
 
 class MeasEq(qml.BooleanFn):
-    """A conditional for evaluating if a given measurement process is equal to the specified measurement process.
+    """A conditional for evaluating if a given measurement process is of the same type
+    as the specified measurement process.
 
     Args:
-        mp(Union[Iterable[MeasurementProcess], MeasurementProcess, Callable]): A measurement process instance or
-            a measurement function to build the measurement set.
+        mp(Union[Iterable[MeasurementProcess], MeasurementProcess, Callable]): A measurement
+            process instance or a measurement function to build the measurement set.
 
     .. seealso:: Users are advised to use :func:`~.meas_eq` for a functional construction.
     """
@@ -518,8 +519,8 @@ class MeasEq(qml.BooleanFn):
 
 
 def meas_eq(mps):
-    """Builds a conditional as a :class:`~.BooleanFn` for evaluating
-    if a given measurement process is equal to the specified measurement process.
+    """Builds a conditional as a :class:`~.BooleanFn` for evaluating if a given
+    measurement process is of the same type as the specified measurement process.
 
     Args:
         mps (MeasurementProcess, Callable): An instance(s) of any class that inherits from
@@ -536,7 +537,7 @@ def meas_eq(mps):
     **Example**
 
     One may use ``meas_eq`` with an instance of
-    :class:`MeasurementProcess <pennylane.operation.MeasurementProcess>`:
+    :class:`MeasurementProcess <pennylane.measurements.MeasurementProcess>`:
 
     >>> cond_func = qml.noise.meas_eq(qml.expval(qml.Y(0)))
     >>> cond_func(qml.expval(qml.Z(9)))
