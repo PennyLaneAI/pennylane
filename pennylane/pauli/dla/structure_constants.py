@@ -362,8 +362,8 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
             )
         else:
             # offset, axis1, axis2 arguments are called differently in torch, use positional arguments
-            gram_diag = qml.math.diagonal(qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1)
-            
+            pre_diag = qml.math.diagonal(qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1)
+
         gram_diag = qml.math.real(qml.math.sum(pre_diag, axis=0))
 
         adj = (chi / gram_diag[:, None, None]) * adj
