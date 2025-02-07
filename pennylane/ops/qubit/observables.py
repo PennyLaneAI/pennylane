@@ -517,27 +517,6 @@ class BasisStateProjector(Projector, Operation):
 
         super().__init__(state, wires=wires, id=id)
 
-    @property
-    def pauli_rep(self):
-        if self._pauli_rep is not None:
-            return self._pauli_rep
-        if qml.math.is_abstract(self.data[0]):
-            return None
-
-        PauliWord = qml.pauli.PauliWord
-
-        pr = PauliWord({})
-        for val, wire in zip(self.data[0], self.wires):
-            if qml.math.is_abstract(val):  # slicing can produce a tracer
-                return None
-            if qml.math.allclose(val, 0):
-                pr @= 0.5 * PauliWord({}) + 0.5 * PauliWord({wire: "Z"})
-            else:
-                pr @= 0.5 * PauliWord({}) - 0.5 * PauliWord({wire: "Z"})
-
-        self._pauli_rep = pr
-        return pr
-
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 

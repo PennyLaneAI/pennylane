@@ -476,13 +476,19 @@ class TestControlledMiscMethods:
         control_values = [0, 1]
         op = Controlled(base, ("b", "c"), control_values=control_values)
 
-        print(op.generator())
+        base_gen, base_gen_coeff = qml.generator(base, format="prefactor")
+        gen_tensor, gen_coeff = qml.generator(op, format="prefactor")
 
-        base_gen = base.generator()
-        gen = op.generator()
+        assert base_gen_coeff == gen_coeff
 
-        expected = qml.prod(qml.Projector([0], "b"), qml.Projector([1], "c"), base_gen)
-        qml.assert_equal(gen, expected)
+        for wire, val in zip(op.control_wires, control_values):
+            ob = list(op for op in gen_tensor.operands if op.wires == qml.wires.Wires(wire))
+            assert len(ob) == 1
+            assert ob[0].data == ([val],)
+
+        ob = list(op for op in gen_tensor.operands if op.wires == base.wires)
+        assert len(ob) == 1
+        assert ob[0].__class__ is base_gen.__class__
 
         expected = qml.exp(op.generator(), 1j * op.data[0])
         assert qml.math.allclose(

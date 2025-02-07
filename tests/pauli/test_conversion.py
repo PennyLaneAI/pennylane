@@ -551,7 +551,7 @@ class TestPauliSentence:
         warnings.simplefilter("ignore")
         error_ps = (
             qml.Hadamard(wires=0),
-            qml.Hamiltonian([1, 2], [qml.Hermitian(np.eye(2), wires=0), qml.PauliZ(wires=1)]),
+            qml.Hamiltonian([1, 2], [qml.Projector([0], wires=0), qml.PauliZ(wires=1)]),
             qml.RX(1.23, wires="a") + qml.PauliZ(wires=0),
         )
 
