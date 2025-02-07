@@ -787,10 +787,9 @@ class TestHadamardGradEdgeCases:
         ):
             qml.gradients.hadamard_grad(tape)
 
-    def test_independent_parameter(self, mocker):
+    def test_independent_parameter(self):
         """Test that an independent parameter is skipped
         during the Jacobian computation."""
-        spy = mocker.spy(qml.gradients.hadamard_gradient, "_expval_hadamard_grad")
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
@@ -808,9 +807,6 @@ class TestHadamardGradEdgeCases:
         assert len(res_hadamard) == 2
         assert res_hadamard[0].shape == ()
         assert res_hadamard[1].shape == ()
-
-        # only called for parameter 0
-        assert spy.call_args[0][0:2] == (tape, [0])
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):

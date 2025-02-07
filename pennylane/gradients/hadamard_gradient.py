@@ -290,48 +290,47 @@ def hadamard_grad(
     # Validate or get default for aux_wire
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
-    return _expval_hadamard_grad(tape, argnum, aux_wire)
-
-
-def _expval_hadamard_grad(tape, argnum, aux_wire):
-    r"""Compute the Hadamard test gradient of a tape that returns an expectation value (probabilities are expectations
-    values) with respect to a given set of all trainable gate parameters.
-    The auxiliary wire is the wire which is used to apply the Hadamard gates and controlled gates.
-    """
     argnums = argnum or tape.trainable_params
     g_tapes = []
     coeffs = []
     generators_per_parameter = []
 
     for trainable_param_idx, _ in enumerate(tape.trainable_params):
-        if trainable_param_idx not in argnums:
-            # parameter has zero gradient
-            generators_per_parameter.append(0)
-            continue
-
-        trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
-
-        ops_to_trainable_op = tape.operations[: idx + 1]
-        ops_after_trainable_op = tape.operations[idx + 1 :]
-
-        # Get a generator and coefficients
-        sub_coeffs, generators = _get_pauli_generators(trainable_op)
-        coeffs.extend(sub_coeffs)
-        generators_per_parameter.append(len(generators))
-
-        for gen in generators:
-            ctrl_gen = [qml.ctrl(gen, control=aux_wire)]
-            hadamard = [qml.Hadamard(wires=aux_wire)]
-            ops = ops_to_trainable_op + hadamard + ctrl_gen + hadamard + ops_after_trainable_op
-
-            measurements = (_new_measurement(mp, aux_wire, tape.wires) for mp in tape.measurements)
-            new_tape = qml.tape.QuantumScript(ops, measurements, shots=tape.shots)
-
-            g_tapes.append(new_tape)
+        # can dispatch between different algorithms here in the future
+        # hadamard test, direct hadamard test, reversed, reversed direct, and flexible
+        batch, new_coeffs = _hadamard_test(tape, trainable_param_idx, argnums, aux_wire)
+        g_tapes += batch
+        coeffs += new_coeffs
+        generators_per_parameter.append(len(batch))
 
     return g_tapes, partial(
         processing_fn, coeffs=coeffs, tape=tape, generators_per_parameter=generators_per_parameter
     )
+
+
+def _hadamard_test(tape, trainable_param_idx, argnums, aux_wire) -> tuple[list, list]:
+    if trainable_param_idx not in argnums:
+        # parameter has zero gradient
+        return [], [0]
+
+    trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
+
+    ops_to_trainable_op = tape.operations[: idx + 1]
+    ops_after_trainable_op = tape.operations[idx + 1 :]
+
+    # Get a generator and coefficients
+    sub_coeffs, generators = _get_pauli_generators(trainable_op)
+
+    new_batch = []
+    for gen in generators:
+        ctrl_gen = [qml.ctrl(gen, control=aux_wire)]
+        hadamard = [qml.Hadamard(wires=aux_wire)]
+        ops = ops_to_trainable_op + hadamard + ctrl_gen + hadamard + ops_after_trainable_op
+
+        measurements = (_new_measurement(mp, aux_wire, tape.wires) for mp in tape.measurements)
+        new_tape = qml.tape.QuantumScript(ops, measurements, shots=tape.shots)
+        new_batch.append(new_tape)
+    return new_batch, sub_coeffs
 
 
 def _new_measurement(mp, aux_wire, all_wires: qml.wires.Wires):
