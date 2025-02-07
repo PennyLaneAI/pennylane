@@ -96,8 +96,14 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
             super().__init__()
 
-        def sub_interpret_operation(self, op, current_depth):
-            """Interpret an operation, applying a plxpr decomposition if the operation has one."""
+        def sub_interpret_operation(self, op: qml.operation.Operator, current_depth: int):
+            """Interpret an operation, applying a plxpr decomposition if the operation has one.
+
+            Args:
+                op (qml.operation.Operator): the operation to interpret
+                current_depth (int): the current depth of the decomposition
+
+            """
 
             if not op.has_plxpr_decomposition:
                 return self.interpret_operation(op)
@@ -165,6 +171,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
         def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator, current_depth: int = 0):
             """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
+
+            if self.gate_set(op):
+                return self.interpret_operation(op)
 
             if self.max_expansion is not None and current_depth >= self.max_expansion:
                 return super().interpret_operation(op)

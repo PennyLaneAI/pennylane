@@ -28,6 +28,36 @@ from pennylane.transforms.decompose import DecomposeInterpreter
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
+def get_qnode_eqns(jaxpr):
+    """Get the equations of the QNode from the JAXPR."""
+
+    assert jaxpr.eqns[0].primitive == qnode_prim
+
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+    return qfunc_jaxpr.eqns
+
+
+def assert_jaxpr_eqns(qfunc_jaxpr_eqns, operations):
+    """Assert that the primitives of the jaxpr equations match the provided operations."""
+
+    assert len(qfunc_jaxpr_eqns) == len(operations)
+
+    for eqn, op in zip(qfunc_jaxpr_eqns, operations):
+        assert eqn.primitive == op._primitive, f"Expected {op._primitive}, but got {eqn.primitive}"
+
+
+def get_eqns_cond_branches(jaxpr_cond):
+    """Get the equations of the true and false branches of the cond primitive."""
+
+    assert jaxpr_cond.primitive == cond_prim
+
+    true_branch_eqns = jaxpr_cond.params["jaxpr_branches"][0].eqns
+    false_branch_eqns = jaxpr_cond.params["jaxpr_branches"][1].eqns
+
+    return true_branch_eqns, false_branch_eqns
+
+
 class SimpleCustomOp(Operation):
     """Simple custom operation that contains a single gate in its decomposition"""
 
@@ -327,6 +357,7 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(f)()
+
         assert len(jaxpr.eqns) == 5
         assert jaxpr.eqns[0].primitive == qml.RY._primitive
         assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
@@ -349,14 +380,8 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0))
 
         jaxpr = qml.capture.make_plxpr(circuit)()
-
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
+        assert_jaxpr_eqns(qfunc_jaxpr_eqns[0:3], [qml.RY, qml.Hadamard, qml.Hadamard])
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
@@ -380,16 +405,11 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(0.5, wires=wires)
-
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qml.CNOT._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.DoubleExcitation._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.CNOT._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[4].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[5].primitive == qml.RZ._primitive
-        assert qfunc_jaxpr.eqns[6].primitive == qml.RX._primitive
+        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
+        assert_jaxpr_eqns(
+            qfunc_jaxpr_eqns[0:7],
+            [qml.CNOT, qml.DoubleExcitation, qml.CNOT, qml.RX, qml.RY, qml.RZ, qml.RX],
+        )
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5, *wires)
 
@@ -423,15 +443,11 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(x, wires=wires)
-
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qml.CNOT._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[4].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[5].primitive == qml.RZ._primitive
+        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
+        assert_jaxpr_eqns(
+            qfunc_jaxpr_eqns[0:6],
+            [qml.CNOT, qml.RX, qml.RX, qml.RX, qml.RY, qml.RZ],
+        )
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, *wires)
 
@@ -464,18 +480,12 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(wires=wire))
 
         jaxpr = jax.make_jaxpr(circuit)(x, wire=wire)
+        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
 
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[1].primitive == cond_prim
-        assert (
-            qfunc_jaxpr.eqns[1].params["jaxpr_branches"][0].eqns[0].primitive == qml.RX._primitive
-        )
-        assert (
-            qfunc_jaxpr.eqns[1].params["jaxpr_branches"][1].eqns[0].primitive == qml.RY._primitive
-        )
-        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr_eqns[1].primitive == cond_prim
+        true_branch_eqns, false_branch_eqns = get_eqns_cond_branches(qfunc_jaxpr_eqns[1])
+        assert_jaxpr_eqns(true_branch_eqns, [qml.RX])
+        assert_jaxpr_eqns(false_branch_eqns, [qml.RY])
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
 
@@ -671,11 +681,6 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(wires=wire))
 
         jaxpr = jax.make_jaxpr(circuit)(x, wire)
-
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert len(qfunc_jaxpr.eqns) == expected_eqns
+        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
-
-        # How can we test the result?
