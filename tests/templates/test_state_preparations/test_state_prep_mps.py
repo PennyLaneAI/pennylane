@@ -1509,12 +1509,11 @@ class TestMPSPrep:
         wires = qml.registers({"work": num_work_wires, "state": num_wires})
         dev = qml.device("default.qubit")
 
-        @qml.qnode(dev)
-        def circuit():
-            qml.MPSPrep(mps, wires=wires["state"], work_wires=wires["work"])
-            return qml.state()
-
-        output = circuit()[: 2**num_wires]
+        qs = qml.tape.QuantumScript(
+            qml.MPSPrep.compute_decomposition(mps, wires=wires["state"], work_wires=wires["work"]),
+            [qml.state()],
+        )
+        output = dev.execute(qs)[: 2**num_wires]
 
         assert np.allclose(state, output, rtol=0.01)
 
