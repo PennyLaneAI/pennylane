@@ -105,6 +105,7 @@ def cost12(x):
     return qml.probs(op=qml.Hadamard(0) @ qml.Y(1) @ qml.Y(2))
 
 
+# pylint: disable=too-many-public-methods
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
@@ -114,6 +115,14 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
         _match = r"Computing the gradient of broadcasted tapes .* using the Hadamard test gradient"
         with pytest.raises(NotImplementedError, match=_match):
+            qml.gradients.hadamard_grad(tape)
+
+    def test_error_trainable_obs_probs(self):
+        """Test that there's an error if the observable is trainble with a probs."""
+
+        H = qml.numpy.array(2.0) * (qml.X(0) + qml.Y(0))
+        tape = qml.tape.QuantumScript([], [qml.probs(op=H)])
+        with pytest.raises(ValueError, match="Can only differentiate Hamiltonian coefficients"):
             qml.gradients.hadamard_grad(tape)
 
     def test_nontrainable_batched_tape(self):
@@ -936,7 +945,7 @@ class TestHadamardGradEdgeCases:
 
         assert tapes == []
 
-        assert isinstance(res_hadamard, tuple)
+        assert isinstance(res_hadamard, (list, tuple))
 
         assert len(res_hadamard) == 3
 
@@ -1021,6 +1030,7 @@ class TestHadamardGradEdgeCases:
         result = qml.gradients.hadamard_grad(circuit)(params)
 
         assert isinstance(result, np.ndarray)
+        print(result)
         assert result.shape == (4, 3)
         assert np.allclose(result, 0)
 
