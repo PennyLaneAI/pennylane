@@ -20,7 +20,7 @@ from functools import reduce
 import numpy as np
 import pytest
 from gate_data import H, I, S, T, X, Z
-from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -31,6 +31,17 @@ from pennylane.wires import Wires
 
 class TestQubitUnitaryCSR:
     """Tests for using csr_matrix in QubitUnitary."""
+
+    def test_generic_sparse_convert_to_csr(self):
+        """Test that other generic sparse matrices can be converted to csr_matrix."""
+        # 4x4 Identity as a csr_matrix
+        dense = np.eye(4)
+        sparse = coo_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        assert isinstance(op.matrix(), csr_matrix)
+        sparse = csc_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        assert isinstance(op.matrix(), csr_matrix)
 
     @pytest.mark.parametrize(
         "dense",

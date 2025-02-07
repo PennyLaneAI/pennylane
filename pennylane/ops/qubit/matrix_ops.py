@@ -140,6 +140,10 @@ class QubitUnitary(Operation):
                 f"to act on {len(wires)} wires. Got shape {U_shape} instead."
             )
 
+        # Sparse matrics: if the matrix is sparse, we need to convert it to a csr_matrix specifically
+        if sp.sparse.issparse(U):
+            U = U.tocsr()
+
         # Check for unitarity; due to variable precision across the different ML frameworks,
         # here we issue a warning to check the operation, instead of raising an error outright.
         if unitary_check and not self._unitary_check(U, dim):
