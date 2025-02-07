@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import I, X, Y, Z
-from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord, lie_closure
+from pennylane import I, X, Y, Z, lie_closure
+from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 
 ops1 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
@@ -311,7 +311,7 @@ dla11 = [
 
 
 class TestLieClosure:
-    """Tests for qml.pauli.lie_closure()"""
+    """Tests for qml.lie_closure()"""
 
     @pytest.mark.parametrize("matrix", [False, True])
     def test_verbose(self, capsys, matrix):
@@ -336,7 +336,7 @@ class TestLieClosure:
         gens = [X(0), X(1), Y(0) @ Y(1)]
 
         with pytest.raises(TypeError, match="All generators need to be of type PauliSentence"):
-            _ = qml.pauli.lie_closure(gens, pauli=True)
+            _ = qml.lie_closure(gens, pauli=True)
 
     @pytest.mark.parametrize("matrix", [False, True])
     def test_max_iterations(self, capsys, matrix):
@@ -350,7 +350,7 @@ class TestLieClosure:
         ]
 
         with pytest.warns(UserWarning, match="reached the maximum number of iterations"):
-            res = qml.pauli.lie_closure(generators, verbose=True, max_iterations=1, matrix=matrix)
+            res = qml.lie_closure(generators, verbose=True, max_iterations=1, matrix=matrix)
 
         captured = capsys.readouterr()
         assert (
@@ -424,7 +424,7 @@ class TestLieClosure:
         ]
         gen += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(n)]
 
-        res = qml.pauli.lie_closure(gen, pauli=True)
+        res = qml.lie_closure(gen, pauli=True)
         true_res = [
             PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
             PauliSentence({PauliWord({1: "X", 2: "X"}): 1.0, PauliWord({1: "Y", 2: "Y"}): 1.0}),
@@ -459,7 +459,7 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
-        res = qml.pauli.lie_closure(generators, matrix=matrix)
+        res = qml.lie_closure(generators, matrix=matrix)
         assert len(res) == (2 * n - 1) * (2 * n - 2) // 2
 
     @pytest.mark.parametrize("matrix", [False, True])
@@ -471,7 +471,7 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n)
         ]
 
-        res = qml.pauli.lie_closure(generators, matrix=matrix)
+        res = qml.lie_closure(generators, matrix=matrix)
         assert len(res) == 2 * n * (2 * n - 1)
 
     @pytest.mark.parametrize("matrix", [False, True])
@@ -490,7 +490,7 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "Z", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
-        res = qml.pauli.lie_closure(generators, matrix=matrix)
+        res = qml.lie_closure(generators, matrix=matrix)
         assert len(res) == (2 ** (n - 1)) ** 2 - 1
 
     @pytest.mark.parametrize("matrix", [False, True])
@@ -509,7 +509,7 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "Z", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
-        res = qml.pauli.lie_closure(generators, matrix=matrix)
+        res = qml.lie_closure(generators, matrix=matrix)
         assert len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
 
     @pytest.mark.parametrize("matrix", [False, True])
