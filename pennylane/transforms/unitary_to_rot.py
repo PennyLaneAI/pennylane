@@ -62,7 +62,7 @@ def _get_plxpr_unitary_to_rot():
                         ops = one_qubit_decomposition(op.parameters[0], op.wires[0])
                     elif matrix_shape == (4, 4):
                         ops = two_qubit_decomposition(op.parameters[0], op.wires)
-                return super().interpret_operation(ops)
+                return [super().interpret_operation(o) for o in ops]
 
             return super().interpret_operation(op)
 
