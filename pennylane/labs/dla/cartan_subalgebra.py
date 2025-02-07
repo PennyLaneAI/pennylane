@@ -19,7 +19,7 @@ import numpy as np
 from scipy.linalg import null_space
 
 import pennylane as qml
-from pennylane.pauli.dla.center import _intersect_bases
+from pennylane.liealg.center import _intersect_bases
 
 from .dense_util import adjvec_to_op, change_basis_ad_rep, op_to_adjvec
 

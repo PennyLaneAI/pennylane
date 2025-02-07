@@ -19,9 +19,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.typing import TensorLike
-
-from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
 def _all_commutators(ops):

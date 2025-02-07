@@ -20,7 +20,8 @@ from scipy.linalg import norm, null_space
 
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pauli.dla import structure_constants
+
+from .structure_constants import structure_constants
 
 
 def _intersect_bases(basis_0, basis_1, rcond=None):
