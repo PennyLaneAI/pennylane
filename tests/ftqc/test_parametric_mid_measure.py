@@ -216,7 +216,7 @@ class TestDrawParametricMidMeasure:
         assert qml.draw(circ)() == "0: ──┤↗ˣʸ(0.79)├─┤  <Z>"
 
 
-class TestDiagonalization:
+class TestDiagonalizeMCMs:
 
     def test_diagonalize_mcm_with_no_parametrized_mcms(self):
         """Test that the diagonalize_mcms transform leaves standard operations
@@ -269,27 +269,25 @@ class TestDiagonalization:
 
         (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
         assert len(new_tape.operations) == 4
+        diagonalizing_gate = new_tape.operations[2]
+        measurement = new_tape.operations[3]
 
         # conditional diagonalizing gate
-        assert isinstance(new_tape.operations[2], qml.ops.Conditional)
-        assert new_tape.operations[2].base == base_diagonalizing_gate
-        assert new_tape.operations[2].wires == original_tape.operations[2].wires
+        assert isinstance(diagonalizing_gate, qml.ops.Conditional)
+        assert diagonalizing_gate.base == base_diagonalizing_gate
+        assert diagonalizing_gate.wires == original_tape.operations[2].wires
 
         # conditional diagonalized ParametricMidMeasureMP
-        assert isinstance(new_tape.operations[3], qml.ops.Conditional)
-        assert new_tape.operations[3].wires == original_tape.operations[2].wires
-        assert isinstance(new_tape.operations[3].base, ParametricMidMeasureMP)
-        assert new_tape.operations[3].base.angle == 0
-        assert new_tape.operations[3].base.plane == "YZ"
-        assert np.allclose(
-            new_tape.operations[3].base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
-        )
+        assert isinstance(measurement, qml.ops.Conditional)
+        assert measurement.wires == original_tape.operations[2].wires
+        assert isinstance(measurement.base, ParametricMidMeasureMP)
+        assert measurement.base.angle == 0
+        assert measurement.base.plane == "YZ"
+        assert np.allclose(measurement.base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix())
 
-        # conditional diagonalizing gate and conditional mcm rely on same measurement value
-        assert (
-            new_tape.operations[2].meas_val.measurements[0]
-            == new_tape.operations[3].meas_val.measurements[0]
-        )
+        # cond(diagonalizing gate) and cond(mcm) rely on same measurement in the same way
+        assert diagonalizing_gate.meas_val.measurements[0] == measurement.meas_val.measurements[0]
+        assert diagonalizing_gate.meas_val.processing_fn == measurement.meas_val.processing_fn
 
     def test_diagonalize_mcm_cond_two_outcomes(self):
         """Test that the diagonalize_mcm transform works as expected on a tape
@@ -334,28 +332,64 @@ class TestDiagonalization:
                 measurement.base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
             )
 
-            # conditional diagonalizing gate and conditional mcm rely on same measurement value
-            assert (
-                diagonalizing_gate.meas_val.measurements[0] == measurement.meas_val.measurements[0]
-            )
+        # all 4 conditionals rely on the same measurement value
+        for gate in new_tape.operations[3:]:
+            assert gate.meas_val.measurements[0] == new_tape.operations[2].meas_val.measurements[0]
 
-        raise RuntimeError("still need to check opposite conditions on the two sets of Conds")
+        # diagonalized gates each have processing functions matching their respective cond(mcm)
+        assert (
+            new_tape.operations[2].meas_val.processing_fn
+            == new_tape.operations[3].meas_val.processing_fn
+        )
+        assert (
+            new_tape.operations[4].meas_val.processing_fn
+            == new_tape.operations[5].meas_val.processing_fn
+        )
+        assert (
+            new_tape.operations[2].meas_val.processing_fn
+            != new_tape.operations[4].meas_val.processing_fn
+        )
 
 
-class TestIntegration:
+class TestWorkflows:
 
-    # ToDo: ask Lee for input on testing practices - we want to know whether the
-    #  combination of these MCM strategies and the MCM diagonalization play
-    #  nicely together to give a meaningful result. This feels complicated
-    #  to test without just testing the full workflow, but also seems like something
-    #  he would say should be an integration test - and it could be, if I were
-    #  confident that I knew the expected output for applying the transform programs
-    #  to a plxpr to make something executable.
+    # parametrize over relevant combinations of single-branch-statistics (capture-only), dynamic-one-shot, tree-traversal
 
-    # parametrize over single-branch-statistics, dynamic-one-shot, tree-traversal
+    @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
+    def test_execution(self, mcm_method, shots):
+        """Test that we can execute a QNode with a ParametricMidMeasureMP and produce
+        an accurate result"""
 
-    def test_execution(self):
-        raise RuntimeError
+        dev = qml.device("default.qubit", shots=shots)
 
-    def test_execution_in_cond(self):
-        raise RuntimeError
+        @diagonalize_mcms
+        @qml.qnode(dev, mcm_method=mcm_method)
+        def circ():
+            qml.RX(2.345, 0)
+            ParametricMidMeasureMP(0, angle=np.pi / 2, plane="XY")
+            return qml.expval(qml.Z(0))
+
+        if shots:
+            assert np.isclose(circ(), -np.sin(2.345), atol=0.03)
+        else:
+            assert np.isclose(circ(), -np.sin(2.345))
+
+    @pytest.mark.xfail(reason="bug with all MidMeasureMPs in cond for both mcm_methods, ")
+    @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
+    def test_execution_in_cond(self, mcm_method, shots):
+        """Test that we can execute a QNode with a ParametricMidMeasureMP applied in a conditional,
+        and produce an accurate result"""
+
+        dev = qml.device("default.qubit", shots=shots)
+
+        @diagonalize_mcms
+        @qml.qnode(dev, mcm_method=mcm_method)
+        def circ():
+            qml.RX(np.pi, 0)
+            m = qml.measure(0)  # always 1
+
+            qml.RX(2.345, 1)
+            qml.cond(m == 1, ParametricMidMeasureMP)(1, angle=np.pi / 2, plane="XY")
+            return qml.expval(qml.Z(0))
+
+        assert np.isclose(circ(), -np.sin(2.345))
