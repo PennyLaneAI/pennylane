@@ -869,7 +869,7 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
         phase_shift = qml.PhaseShift(phi=-op.data[0], wires=op.control_wires[-1])
         if len(op.control_wires) > 1:
             phase_shift = ctrl(phase_shift, control=op.control_wires[:-1])
-        return phase_shift
+        return [phase_shift]
 
     # A multi-wire controlled PhaseShift should be decomposed first using the decomposition
     # of ControlledPhaseShift. This is because the decomposition of PhaseShift contains a
