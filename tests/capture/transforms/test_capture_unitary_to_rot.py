@@ -314,7 +314,7 @@ class TestUnitaryToRotPlxprTransform:
 class TestHigherOrderPrimitiveIntegration:
     """Test that the transform works with higher order primitives."""
 
-    def test_ctrl_higher_order_primitive_not_implemented(self):
+    def test_ctrl_higher_order_primitive(self):
         """Test that evaluating a ctrl higher order primitive works correctly"""
 
         def ctrl_fn(U):
