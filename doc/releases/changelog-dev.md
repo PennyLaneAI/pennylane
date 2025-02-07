@@ -18,11 +18,6 @@
 
   qml.capture.enable()
 
-  def processing_fn(m1, m2):
-      a = jnp.sin(0.5 * jnp.pi * m1)
-      b = a - (m2 + 1) ** 4
-      return b
-
   def f(x):
       m0 = qml.measure(0)
       m1 = qml.measure(0)
