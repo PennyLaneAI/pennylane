@@ -62,7 +62,7 @@ def structure_constants(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
-        matrix (bool): Whether or not matrix matrix representations are used and output in the structure constants computation. Default is ``False``.
+        matrix (bool): Whether or not matrix representations are used and output in the structure constants computation. Default is ``False``.
         is_orthogonal (bool): Whether the set of operators in ``g`` is orthogonal with respect to the trace inner product.
             Default is ``True``.
 
@@ -357,24 +357,14 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
         if interface == "tensorflow":
             import keras  # pylint: disable=import-outside-toplevel
 
-            gram_diag = qml.math.real(
-                qml.math.sum(
-                    keras.ops.diagonal(
-                        keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
-                    ),
-                    axis=0,
-                )
+            pre_diag = keras.ops.diagonal(
+                keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
             )
-
         else:
-            gram_diag = qml.math.real(
-                qml.math.sum(
-                    qml.math.diagonal(
-                        qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1
-                    ),  # offset, axis1, axis2 arguments are called differently in torch
-                    axis=0,
-                )
-            )
+            # offset, axis1, axis2 arguments are called differently in torch, use positional arguments
+            gram_diag = qml.math.diagonal(qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1)
+            
+        gram_diag = qml.math.real(qml.math.sum(pre_diag, axis=0))
 
         adj = (chi / gram_diag[:, None, None]) * adj
     else:

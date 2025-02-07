@@ -149,9 +149,7 @@ class TestInterfacesStructureConstants:
     """Test interfaces jax, torch and tensorflow with structure constants"""
 
     @pytest.mark.jax
-    def test_jax_structure_constants(
-        self,
-    ):
+    def test_jax_structure_constants(self):
         """Test jax interface for structure constants"""
 
         import jax.numpy as jnp
@@ -160,11 +158,10 @@ class TestInterfacesStructureConstants:
         adj_jax = qml.structure_constants(dla_jax, matrix=True)
 
         assert qml.math.allclose(adj_jax, adj0)
+        assert qml.math.get_interface(adj_jax) == "jax"
 
     @pytest.mark.torch
-    def test_torch_structure_constants(
-        self,
-    ):
+    def test_torch_structure_constants(self):
         """Test torch interface for structure constants"""
 
         import torch
@@ -173,11 +170,10 @@ class TestInterfacesStructureConstants:
         adj_torch = qml.structure_constants(dla_torch, matrix=True)
 
         assert qml.math.allclose(adj_torch, adj0)
+        assert qml.math.get_interface(adj_torch) == "torch"
 
     @pytest.mark.tf
-    def test_tf_structure_constants(
-        self,
-    ):
+    def test_tf_structure_constants(self):
         """Test tf interface for structure constants"""
 
         import tensorflow as tf
@@ -186,3 +182,4 @@ class TestInterfacesStructureConstants:
         adj_tf = qml.structure_constants(dla_tf, matrix=True)
 
         assert qml.math.allclose(adj_tf, adj0)
+        assert qml.math.get_interface(adj_tf) == "tensorflow"
