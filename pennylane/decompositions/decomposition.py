@@ -203,7 +203,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         if target_idx not in self._num_edges_examined:
             self._num_edges_examined[target_idx] = 0
         self._num_edges_examined[target_idx] += 1
-        if self._num_edges_examined[target_idx] < target_node.resource_decomp.num_gate_types:
+        if self._num_edges_examined[target_idx] < len(target_node.resource_decomp.gate_counts):
             raise PruneSearch
 
     def edge_relaxed(self, edge):

@@ -43,11 +43,6 @@ class Resources:
 
     __rmul__ = __mul__
 
-    @property
-    def num_gate_types(self):
-        """Returns the number of unique gate types."""
-        return len(self.gate_counts)
-
 
 def _combine_dict(dict1: dict, dict2: dict):
     r"""Combines two dictionaries and adds values of common keys."""
