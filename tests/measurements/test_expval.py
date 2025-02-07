@@ -48,6 +48,17 @@ def test_expval_identity_nowires_LQ():
 class TestExpval:
     """Tests for the expval function"""
 
+    @pytest.mark.parametrize("coeffs", [1, 0.5, 0.5j, 0.5 + 0.5j])
+    def test_expected_dtype(self, coeffs):
+        """Test that the return type of the expval function is correct"""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(coeffs):
+            return qml.expval(coeffs * qml.PauliZ(0))
+
+        res = circuit(coeffs)
+        assert np.allclose(res, coeffs)
+
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     def test_value(self, tol, shots, seed):
         """Test that the expval interface works"""
