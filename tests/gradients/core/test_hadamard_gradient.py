@@ -616,7 +616,7 @@ class TestHadamardGrad:
                     assert isinstance(r, np.ndarray)
                     assert len(r) == exp_shape[1]
 
-    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize("shots", [None, 100, (1000, 1000)])
     def test_shots_attribute(self, shots):
         """Tests that the shots attribute is copied to the new tapes"""
         dev = qml.device("default.qubit", wires=3)
