@@ -642,7 +642,7 @@ class TestDynamicDecomposeInterpreter:
         block_encoding = qml.Hadamard(wires=0)
         phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)] 
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
         def circuit():
             qml.QSVT(UA=block_encoding, projectors=phase_shifts)
