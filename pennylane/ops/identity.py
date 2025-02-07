@@ -417,7 +417,7 @@ class GlobalPhase(Operation):
 
     @staticmethod
     def compute_decomposition(
-        phi, wires: WiresLike = (), *args
+        phi, wires: WiresLike = (), **kwargs
     ):  # pylint:disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
