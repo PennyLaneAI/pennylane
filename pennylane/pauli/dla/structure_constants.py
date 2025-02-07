@@ -119,6 +119,29 @@ def structure_constants(
     >>> adjoint_rep[:, 0, 1] # commutator of X_0 and Y_0 consists of first and last operator
     array([-2.,  0.,  2.])
 
+    We can also use matrix representations for the computation, which is sometimes faster, in particular for sums of many Pauli words.
+    This is just affecting how the structure constants are computed internally, it does not change the result.
+
+    >>> adjoint_rep2 = qml.structure_constants(dla, is_orthogonal=False, matrix=True)
+    >>> qml.math.allclose(adjoint_rep, adjoint_rep2)
+    True
+
+    We can also input the DLA in form of matrices. For that we use :func:`~lie_closure` with the ``matrix=True``.
+
+    >>> n = 4
+    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
+    >>> g = qml.lie_closure(gens, matrix=True)
+    >>> g.shape
+    (12, 16, 16)
+
+    The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
+    Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
+
+    >>> from pennylane.labs.dla import structure_constants_matrix
+    >>> adj = structure_constants_matrix(g)
+    >>> adj.shape
+    (12, 12, 12)
+
     .. details::
         :title: Mathematical details
 

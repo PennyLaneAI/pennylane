@@ -163,7 +163,7 @@
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
-* ``pennylane.labs.dla.structure_constants`` is removed and integrated into ``qml.structure_constants`` using the new ``dense`` keyword.
+* ``pennylane.labs.dla.structure_constants_dense`` is removed and integrated into ``qml.structure_constants`` using the new ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 <h3>Breaking changes 💔</h3>
