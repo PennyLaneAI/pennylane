@@ -96,13 +96,6 @@ def _process(wires):
     return tuple(itertools.chain(*(flatten_wires_object(x) for x in tuple_of_wires)))
 
 
-def flatten_wires_object(wire_label):
-    """Converts the input to a tuple of wire labels."""
-    if isinstance(wire_label, Wires):
-        return wire_label.labels
-    return [wire_label]
-
-
 class Wires(Sequence):
     r"""
     A bookkeeping class for wires, which are ordered collections of unique objects.
@@ -737,6 +730,14 @@ class Wires(Sequence):
 
 
 WiresLike = Union[Wires, Iterable[Hashable], Hashable]
+
+
+def flatten_wires_object(wire_label):
+    """Converts the input to a tuple of wire labels."""
+    if isinstance(wire_label, Wires):
+        return wire_label.labels
+    return [wire_label]
+
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
