@@ -93,8 +93,15 @@ def _process(wires):
     if len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
-    tuple_of_wires = tuple(qml.pytrees.flatten(tuple(wires), is_leaf=lambda x: False)[0])
+    tuple_of_wires = tuple(itertools.chain(*(wire_map(x) for x in tuple_of_wires)))
     return tuple_of_wires
+
+
+def wire_map(wires):
+    """Converts the input to a tuple of wire labels."""
+    if isinstance(wires, Wires):
+        return wires.labels
+    return [wires]
 
 
 class Wires(Sequence):
@@ -121,7 +128,7 @@ class Wires(Sequence):
     """
 
     def _flatten(self):
-        """Serialize Wires into a flattened representation according to the PyTree convension."""
+        """Serialize Wires into a flattened representation according to the PyTree convention."""
         return self._labels, ()
 
     @classmethod
@@ -156,7 +163,6 @@ class Wires(Sequence):
     def contains_wires(self, wires):
         """Method to determine if Wires object contains wires in another Wires object."""
         if isinstance(wires, Wires):
-            wires = Wires(tuple(qml.pytrees.flatten(tuple(wires), is_leaf=lambda x: False)[0]))
             return set(wires.labels).issubset(set(self._labels))
         return False
 
