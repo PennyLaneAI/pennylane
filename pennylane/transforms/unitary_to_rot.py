@@ -47,7 +47,7 @@ def _get_plxpr_unitary_to_rot():
                 op (Operator): a pennylane operator instance
 
             Returns:
-                Any
+                list: The decomposed operations.
 
             This method is only called when the operator's output is a dropped variable,
             so the output will not affect later equations in the circuit.
