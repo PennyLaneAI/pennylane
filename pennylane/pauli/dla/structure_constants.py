@@ -50,7 +50,7 @@ def structure_constants(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
-        matrix (bool): Whether or not matrix matrix representations are used and output in the structure constants computation. Default is ``False``.
+        matrix (bool): Whether or not matrix representations are used and output in the structure constants computation. Default is ``False``.
         is_orthogonal (bool): Whether the set of operators in ``g`` is orthogonal with respect to the trace inner product.
             Default is ``True``.
 

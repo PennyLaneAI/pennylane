@@ -320,25 +320,6 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
         qml.math.transpose(qml.math.conj(g), (0, 2, 1)), g
     ), "Input matrices to structure_constants not Hermitian"
 
-    # matrix_in = isinstance(g, np.ndarray) or all(isinstance(op, np.ndarray) for op in g)
-
-    # if not matrix_in:
-    #     all_wires = qml.wires.Wires.all_wires([_.wires for _ in g])
-    #     n = len(all_wires)
-    #     assert all_wires.toset() == set(range(n))
-
-    #     g = np.array([qml.matrix(op, wire_order=range(n)) for op in g], dtype=complex)
-    #     chi = 2**n
-    #     assert g.shape == (len(g), chi, chi)
-
-    # else:
-    #     g = np.array(g)
-    #     chi = g[0].shape[0]
-    #     assert g.shape == (len(g), chi, chi)
-
-    # # Assert Hermiticity of the input. Otherwise we'll get the sign wrong
-    # assert np.allclose(g.conj().transpose((0, 2, 1)), g)
-
     # compute all commutators by computing all products first.
     # Axis ordering is (dimg, chi, _chi_) x (dimg, _chi_, chi) -> (dimg, chi, dimg, chi)
     prod = qml.math.tensordot(g, g, axes=[[2], [1]])
@@ -356,26 +337,17 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
         if interface == "tensorflow":
             import keras  # pylint: disable=import-outside-toplevel
 
-            gram_diag = qml.math.real(
-                qml.math.sum(
-                    keras.ops.diagonal(
-                        keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
-                    ),
-                    axis=0,
-                )
+            pre_diag = keras.ops.diagonal(
+                keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
             )
-
         else:
-            gram_diag = qml.math.real(
-                qml.math.sum(
-                    qml.math.diagonal(
-                        qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1
-                    ),  # offset, axis1, axis2 arguments are called differently in torch
-                    axis=0,
-                )
-            )
+            # offset, axis1, axis2 arguments are called differently in torch, use positional arguments
+            pre_diag = qml.math.diagonal(qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1)
+
+        gram_diag = qml.math.real(qml.math.sum(pre_diag, axis=0))
 
         adj = (chi / gram_diag[:, None, None]) * adj
+
     else:
         # Non-orthogonal inputs. Need to correct by (full) Gram matrix
         # Compute the Gram matrix and apply its (pseudo-)inverse to the obtained projections.

@@ -4,12 +4,15 @@
 
 <h3>New features since last release</h3>
 
-* ``qml.lie_closure`` now accepts and outputs dense inputs using the ``dense`` keyword.
+* ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 * Created a new ``qml.liealg`` module for advanved Lie algebra functionality.
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+
+* ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
+  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 <h3>Improvements 🛠</h3>
 
@@ -275,6 +278,9 @@
 
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
+
+* The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
+  [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
 
