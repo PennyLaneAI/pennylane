@@ -398,9 +398,9 @@ def processing_fn(results: qml.typing.ResultBatch, tape, coeffs, generators_per_
     grads = tuple([] for _ in range(num_mps))
     results = iter(final_res)
     for num_generators in generators_per_parameter:
-        sub_results = list(islice(results, num_generators))  # take the next number of results
+        sub_results = islice(results, num_generators)  # take the next number of results
         # sum over batch, iterate over measurements
-        summed_sub_results = [sum(r) for r in zip(*sub_results)]
+        summed_sub_results = (sum(r) for r in zip(*sub_results))
 
         # fill value zero for when no generators/ no gradient
         for g_for_parameter, r in zip_longest(grads, summed_sub_results, fillvalue=np.array(0)):
