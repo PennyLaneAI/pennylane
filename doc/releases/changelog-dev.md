@@ -227,6 +227,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Fix `qml.wires.Wires` initialization to disallow `Wires` objects as wires labels.
+  [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933)
+
 * Remove `QNode.get_gradient_fn` from source code.
   [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
   
