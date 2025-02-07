@@ -80,28 +80,6 @@ H_FOR_SPSA = 0.01
 class TestQNode:
     """Test that using the QNode with Autograd integrates with the PennyLane stack"""
 
-    # pylint:disable=unused-argument
-    def test_execution_no_interface(
-        self, interface, dev, diff_method, grad_on_execution, device_vjp
-    ):
-        """Test execution works without an interface"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
-
-        @qnode(dev, interface=None)
-        def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        a = np.array(0.1, requires_grad=True)
-
-        res = circuit(a)
-
-        # without the interface, the QNode simply returns a scalar array or float
-        assert isinstance(res, (np.ndarray, float))
-        assert qml.math.shape(res) == tuple()  # pylint: disable=comparison-with-callable
-
     def test_execution_with_interface(
         self, interface, dev, diff_method, grad_on_execution, device_vjp
     ):

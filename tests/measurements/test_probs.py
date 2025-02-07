@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import MeasurementProcess, Probability, ProbabilityMP
+from pennylane.measurements import MeasurementProcess, ProbabilityMP
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -87,7 +87,7 @@ class TestProbs:
 
         meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == Probability
+        assert isinstance(meas_proc, ProbabilityMP)
 
     def test_probs_empty_wires(self):
         """Test that using ``qml.probs`` with an empty wire list raises an error."""
@@ -275,7 +275,7 @@ class TestProbs:
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires",
-        [([3, 1, 0])],
+        [[3, 1, 0]],
     )
     def test_process_density_matrix_medium(self, interface, subset_wires):
         """Test processing of a random generated, medium-sized density matrices."""
@@ -359,9 +359,7 @@ class TestProbs:
         # expected probability, using [00, 01, 10, 11]
         # ordering, is [0.5, 0.5, 0, 0]
 
-        # TODO: [sc-82874]
-        # revert once we are able to jit end to end without extreme compilation overheads
-        assert "pure_callback" in str(jax.make_jaxpr(circuit)(params))
+        assert "pure_callback" not in str(jax.make_jaxpr(circuit)(params))
 
         res = jax.jit(circuit)(params)
         expected = np.array([0.5, 0.5, 0, 0])
