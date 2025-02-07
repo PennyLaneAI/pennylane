@@ -141,18 +141,24 @@ class TestConfigSetup:
 
         assert dev.tracker.totals["execute_and_derivative_batches"] == 1
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("interface", ("jax", "jax-jit"))
-    def test_convert_to_numpy_with_jax(self, interface):
+    @pytest.mark.parametrize("use_key", (True, False))
+    def test_convert_to_numpy_with_jax(self, interface, use_key):
         """Test that we will not convert to numpy when working with jax."""
         # separate test so we can easily update it once we solve the
         # compilation overhead issue
         # TODO: [sc-82874]
-        dev = qml.device("default.qubit")
+        import jax
+
+        key = jax.random.PRNGKey(12354) if use_key else None
+
+        dev = qml.device("default.qubit", seed=key)
         config = qml.devices.ExecutionConfig(
             gradient_method=qml.gradients.param_shift, interface=interface
         )
         processed = dev.setup_execution_config(config)
-        assert processed.convert_to_numpy
+        assert processed.convert_to_numpy != use_key
 
     def test_convert_to_numpy_with_adjoint(self):
         """Test that we will convert to numpy with adjoint."""

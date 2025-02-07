@@ -295,8 +295,8 @@ class TestDecomposeInterpreter:
             interpreter.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
     @pytest.mark.parametrize("lazy", [True, False])
-    def test_adjoint_higher_order_primitive_not_implemented(self, lazy):
-        """Test that evaluating a ctrl higher order primitive raises a NotImplementedError"""
+    def test_adjoint_higher_order_primitive(self, lazy):
+        """Test that adjoint higher order primitives are correctly interpreted."""
         gate_set = [qml.RX, qml.RY, qml.RZ]
 
         @DecomposeInterpreter(gate_set=gate_set)
