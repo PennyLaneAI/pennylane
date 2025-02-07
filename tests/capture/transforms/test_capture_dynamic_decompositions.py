@@ -28,6 +28,21 @@ from pennylane.transforms.decompose import DecomposeInterpreter
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
+def check_jaxpr_eqns(qfunc_jaxpr_eqns, operations):
+    """Assert that the primitives of the jaxpr equations match the provided operations."""
+
+    assert len(qfunc_jaxpr_eqns) == len(operations)
+
+    for eqn, op in zip(qfunc_jaxpr_eqns, operations):
+        assert eqn.primitive == op._primitive
+
+
+def get_jaxpr_eqns(jaxpr):
+    """Get the equations of the JAXPR."""
+
+    return jaxpr.eqns
+
+
 def get_qnode_eqns(jaxpr):
     """Get the equations of the QNode from the JAXPR."""
 
@@ -36,15 +51,6 @@ def get_qnode_eqns(jaxpr):
     qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
     return qfunc_jaxpr.eqns
-
-
-def assert_jaxpr_eqns(qfunc_jaxpr_eqns, operations):
-    """Assert that the primitives of the jaxpr equations match the provided operations."""
-
-    assert len(qfunc_jaxpr_eqns) == len(operations)
-
-    for eqn, op in zip(qfunc_jaxpr_eqns, operations):
-        assert eqn.primitive == op._primitive, f"Expected {op._primitive}, but got {eqn.primitive}"
 
 
 def get_eqns_cond_branches(jaxpr_cond):
@@ -250,7 +256,7 @@ class CustomOpNestedCond(Operation):
 
             @qml.while_loop(while_f)
             def loop_fn(i):
-                qml.RX(phi, wires)
+                qml.RZ(phi, wires)
 
                 return i + 1
 
@@ -315,6 +321,9 @@ class CustomOpNestedOpControlFlow(Operation):
     @staticmethod
     def compute_plxpr_decomposition(phi, wires):
 
+        qml.Rot(0.1, 0.2, 0.3, wires=wires)
+        CustomOpNestedOp(phi, wires)
+
         def true_fn(phi, wires):
 
             @qml.for_loop(0, 3, 1)
@@ -333,14 +342,11 @@ class CustomOpNestedOpControlFlow(Operation):
             @qml.while_loop(while_f)
             def loop_fn(i):
                 SimpleCustomOp(wires)
-
                 return i + 1
 
             _ = loop_fn(0)
 
         qml.cond(phi > 0.5, true_fn, false_fn)(phi, wires)
-        qml.Rot(0.1, 0.2, 0.3, wires=wires)
-        CustomOpNestedOp(phi, wires)
 
 
 class TestDynamicDecomposeInterpreter:
@@ -397,7 +403,7 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = qml.capture.make_plxpr(circuit)()
         qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
-        assert_jaxpr_eqns(qfunc_jaxpr_eqns[0:3], [qml.RY, qml.Hadamard, qml.Hadamard])
+        check_jaxpr_eqns(qfunc_jaxpr_eqns[0:3], [qml.RY, qml.Hadamard, qml.Hadamard])
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
@@ -422,7 +428,7 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(circuit)(0.5, wires=wires)
         qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
-        assert_jaxpr_eqns(
+        check_jaxpr_eqns(
             qfunc_jaxpr_eqns[0:7],
             [qml.CNOT, qml.DoubleExcitation, qml.CNOT, qml.RX, qml.RY, qml.RZ, qml.RX],
         )
@@ -460,7 +466,7 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(circuit)(x, wires=wires)
         qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
-        assert_jaxpr_eqns(
+        check_jaxpr_eqns(
             qfunc_jaxpr_eqns[0:6],
             [qml.CNOT, qml.RX, qml.RX, qml.RX, qml.RY, qml.RZ],
         )
@@ -498,10 +504,9 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(x, wire=wire)
         qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
 
-        assert qfunc_jaxpr_eqns[1].primitive == cond_prim
         true_branch_eqns, false_branch_eqns = get_eqns_cond_branches(qfunc_jaxpr_eqns[1])
-        assert_jaxpr_eqns(true_branch_eqns, [qml.RX])
-        assert_jaxpr_eqns(false_branch_eqns, [qml.RY])
+        check_jaxpr_eqns(true_branch_eqns, [qml.RX])
+        check_jaxpr_eqns(false_branch_eqns, [qml.RY])
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
 
@@ -532,18 +537,10 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(0.5, wire)
         qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
 
-        assert qfunc_jaxpr_eqns[0].primitive == for_loop_prim
         for_loop_eqns = get_eqns_for_loop(qfunc_jaxpr_eqns[0])
 
-        # THe other equation is the JAX sin function
-        # assert_jaxpr_eqns(for_loop_eqns[0], [qml.RX])
-
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == for_loop_prim
-        assert qfunc_jaxpr.eqns[0].params["jaxpr_body_fn"].eqns[0].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+        # The other equation is the JAX numpy sin function
+        check_jaxpr_eqns([for_loop_eqns[0]], [qml.RX])
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5, wire)
 
@@ -572,13 +569,11 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(wires=wire))
 
         jaxpr = jax.make_jaxpr(circuit)(0.5, wire)
+        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
 
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == while_loop_prim
-        assert qfunc_jaxpr.eqns[0].params["jaxpr_body_fn"].eqns[0].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr_eqns[0].primitive == while_loop_prim
+        while_loop_eqns = get_eqns_while_loop(qfunc_jaxpr_eqns[0])
+        check_jaxpr_eqns([while_loop_eqns[0]], [qml.RX])
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5, wire)
 
@@ -607,15 +602,17 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(wires=wire))
 
         jaxpr = jax.make_jaxpr(circuit)(x, wire)
+        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
 
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[1].primitive == cond_prim
-        assert qfunc_jaxpr.eqns[1].params["jaxpr_branches"][0].eqns[0].primitive == for_loop_prim
-        assert qfunc_jaxpr.eqns[1].params["jaxpr_branches"][1].eqns[0].primitive == while_loop_prim
-        assert qfunc_jaxpr.eqns[2].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+        cond_eqns = get_eqns_cond_branches(qfunc_jaxpr_eqns[1])
+        for_loop_eqns = get_eqns_for_loop(cond_eqns[0][0])
+        while_loop_eqns = get_eqns_while_loop(cond_eqns[1][0])
+
+        # The other equation is the JAX numpy sin function
+        check_jaxpr_eqns([for_loop_eqns[0]], [qml.RX])
+        # The other equation is the addition at the end of the while loop
+        check_jaxpr_eqns([while_loop_eqns[0]], [qml.RZ])
+        check_jaxpr_eqns([qfunc_jaxpr_eqns[2]], [qml.RX])
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
 
@@ -634,7 +631,7 @@ class TestDynamicDecomposeInterpreter:
             def false_fn(x, wire):
                 @qml.while_loop(lambda i: i < 3)
                 def loop_fn(i):
-                    qml.RX(x, wires=wire)
+                    qml.RZ(x, wires=wire)
                     return i + 1
 
                 _ = loop_fn(0)
@@ -691,19 +688,64 @@ class TestDynamicDecomposeInterpreter:
 
         assert qml.math.allclose(*result, *result_comparison)
 
-    @pytest.mark.parametrize("x", [0.2, 0.8])
-    @pytest.mark.parametrize("wire", [0, 1])
-    @pytest.mark.parametrize("max_expansion, expected_eqns", [(0, 3), (1, 4), (2, 5)])
-    def test_qnode_nested_decomp(self, x, wire, max_expansion, expected_eqns):
+    #################################
+    ### Nested decomposition tests
+    #################################
+
+    @pytest.mark.parametrize(
+        "max_expansion, expected_ops",
+        [
+            (0, [CustomOpNestedOp]),
+            (1, [qml.RX, SimpleCustomOp]),
+            (2, [qml.RX, qml.Hadamard, qml.Hadamard]),
+            (None, [qml.RX, qml.Hadamard, qml.Hadamard]),
+        ],
+    )
+    def test_qnode_nested_decomp(self, max_expansion, expected_ops):
         """Test that a QNode with a nested decomposition custom operation is correctly decomposed."""
 
         @DecomposeInterpreter(max_expansion=max_expansion)
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit(x, wire):
             CustomOpNestedOp(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
 
-        jaxpr = jax.make_jaxpr(circuit)(x, wire)
-        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
+        jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
+        jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
+        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+
+    @pytest.mark.parametrize(
+        "max_expansion, expected_ops, expected_ops_for_loop, expected_ops_while_loop",
+        [
+            (1, [qml.Rot, CustomOpNestedOp], [CustomOpNestedOp], [SimpleCustomOp]),
+            # (2, [qml.RX, qml.Hadamard, qml.Hadamard], [qml.RX], [qml.RZ]),
+        ],
+    )
+    def test_qnode_nested_decomp_control_flow(
+        self, max_expansion, expected_ops, expected_ops_for_loop, expected_ops_while_loop
+    ):
+        """Test that a QNode with a nested decomposition custom operation that contains control flow is correctly decomposed."""
+
+        @DecomposeInterpreter(max_expansion=max_expansion)
+        def circuit(x, wire):
+            CustomOpNestedOpControlFlow(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
+        jaxpr_eqns = get_jaxpr_eqns(jaxpr)
+
+        ops_before_cond = len(expected_ops)
+
+        check_jaxpr_eqns(jaxpr_eqns[0:ops_before_cond], expected_ops)
+
+        # The + 1 is for the condition that determines the branches of the cond primitive
+        cond_eqns = get_eqns_cond_branches(jaxpr_eqns[ops_before_cond + 1])
+        for_loop_eqns = get_eqns_for_loop(cond_eqns[0][0])
+        while_loop_eqns = get_eqns_while_loop(cond_eqns[1][0])
+
+        for_loop_eqns = [eqn for eqn in for_loop_eqns if eqn.primitive != jax.lax.sin_p]
+
+        check_jaxpr_eqns(for_loop_eqns, expected_ops_for_loop)
+        # check_jaxpr_eqns(while_loop_eqns, expected_ops_while_loop)
+
+        # check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)

@@ -172,6 +172,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator, current_depth: int = 0):
             """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
 
+            print(f"\n_evaluate_jaxpr_decomposition with op={op} and current_depth={current_depth}")
+
             if self.gate_set(op):
                 return self.interpret_operation(op)
 
@@ -201,6 +203,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 *args: the arguments to use in the evaluation
             """
 
+            print(f"\neval_dynamic_decomposition with current_depth={current_depth}")
+
             self._env.update(zip(jaxpr_decomp.invars, args, strict=True))
             self._env.update(zip(jaxpr_decomp.constvars, consts, strict=True))
 
@@ -210,6 +214,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 custom_handler = self._primitive_registrations.get(inner_eqn.primitive, None)
 
                 if custom_handler:
+                    print(f"\nCustom handler with custom_handler={custom_handler}")
                     invals = [self.read(invar) for invar in inner_eqn.invars]
                     outvals = custom_handler(self, *invals, **inner_eqn.params)
 
@@ -238,6 +243,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
+
+            print(f"\ninterpret_operation_eqn with op={op} and current_depth={current_depth}")
 
             if not eqn.outvars[0].__class__.__name__ == "DropVar":
                 return op
