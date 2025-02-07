@@ -58,6 +58,22 @@ def get_eqns_cond_branches(jaxpr_cond):
     return true_branch_eqns, false_branch_eqns
 
 
+def get_eqns_for_loop(jaxpr_for_loop):
+    """Get the equations of the body of the for loop primitive."""
+
+    assert jaxpr_for_loop.primitive == for_loop_prim
+
+    return jaxpr_for_loop.params["jaxpr_body_fn"].eqns
+
+
+def get_eqns_while_loop(jaxpr_while_loop):
+    """Get the equations of the body of the while loop primitive."""
+
+    assert jaxpr_while_loop.primitive == while_loop_prim
+
+    return jaxpr_while_loop.params["jaxpr_body_fn"].eqns
+
+
 class SimpleCustomOp(Operation):
     """Simple custom operation that contains a single gate in its decomposition"""
 
@@ -514,6 +530,13 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(wires=wire))
 
         jaxpr = jax.make_jaxpr(circuit)(0.5, wire)
+        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
+
+        assert qfunc_jaxpr_eqns[0].primitive == for_loop_prim
+        for_loop_eqns = get_eqns_for_loop(qfunc_jaxpr_eqns[0])
+
+        # THe other equation is the JAX sin function
+        # assert_jaxpr_eqns(for_loop_eqns[0], [qml.RX])
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
