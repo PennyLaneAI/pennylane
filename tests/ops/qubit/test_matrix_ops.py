@@ -35,7 +35,7 @@ class TestQubitUnitaryCSR:
     def test_compute_sparse_matrix(self):
         """Test that the compute_sparse_matrix method works correctly."""
         U = np.array([[0, 1], [1, 0]])
-        op = qml.QubitUnitary.compute_sparse_matrix(U, wires=[0])
+        op = qml.QubitUnitary.compute_sparse_matrix(U)
         assert isinstance(op, csr_matrix)
         assert np.allclose(op.toarray(), U)
 
