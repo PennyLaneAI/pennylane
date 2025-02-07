@@ -156,7 +156,8 @@ class TestQNodeIntegration:
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, U)
         assert qml.math.allclose(res, -1.0)
 
-    # TODO: Currently only supports three CNOT decomposition
+    # two_qubit_decomposition only supports decomps with
+    # three CNOTs for abstract matrices
     def test_two_qubit_three_cnot_conversion_qnode(self):
         """Test that a two qubit unitary can be decomposed correctly."""
         dev = qml.device("default.qubit", wires=2)
@@ -253,7 +254,8 @@ class TestUnitaryToRotPlxprTransform:
         assert transformed_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    # TODO: Currently only supports three CNOT decomposition
+    # two_qubit_decomposition only supports decomps with
+    # three CNOTs for abstract matrices
     def test_two_qubit_three_cnot_plxpr_transform(self):
         """Test that a two qubit unitary can be decomposed correctly."""
 
