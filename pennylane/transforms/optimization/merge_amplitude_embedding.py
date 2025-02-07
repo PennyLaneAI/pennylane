@@ -60,8 +60,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance.
 
-            If the operator is not an AmplitudeEmbedding, it is added to the new operations list.
-            If the operator is an AmplitudeEmbedding, the wires and parameters are stored for future merging.
+            If the operator is not an AmplitudeEmbedding operator, it is added to the new operations list.
+            If the operator is an AmplitudeEmbedding operator, the wires and parameters are stored.
 
             Args:
                 op (Operator): a pennylane operator instance
@@ -91,9 +91,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 self.visited_wires = self.visited_wires.union(set(op.wires))
 
         def interpret_measurement(self, measurement):
-            """Interpret a measurement process instance.
-
-            First purge the new operations list to merge the AmplitudeEmbedding gates and intepret seen gates.
+            """Purge the new operations list to merge the AmplitudeEmbedding gates and interpret seen gates. Then interpret the measurement.
 
             Args:
                 measurement (MeasurementProcess): a measurement instance.
@@ -105,7 +103,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             return super().interpret_measurement(measurement)
 
         def purge_new_operations(self):
-            """Purge the new operations list to merge the AmplitudeEmbedding gates and interpret seen gates."""
+            """Merge the gates and insert it at the beginning of the "seen" gates. Then interpret said gates."""
             with qml.capture.pause():
                 if len(self.input_wires) > 0:
                     final_wires = self.input_wires[0]
@@ -157,6 +155,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 custom_handler = self._primitive_registrations.get(primitive, None)
 
                 if custom_handler:
+                    # Need to purge "seen" operations before handling custom primitives
                     self.purge_new_operations()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
@@ -175,6 +174,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                     self._env[outvar] = outval
 
             self.purge_new_operations()
+
             # Read the final result of the Jaxpr from the environment
             outvals = []
             for var in jaxpr.outvars:
