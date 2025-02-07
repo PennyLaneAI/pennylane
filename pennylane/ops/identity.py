@@ -316,6 +316,7 @@ class GlobalPhase(Operation):
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
     def __init__(self, phi, wires: WiresLike = (), id=None):
+        self.hyperparameters["n_wires"] = len(wires)
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
