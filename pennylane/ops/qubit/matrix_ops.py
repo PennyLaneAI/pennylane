@@ -192,6 +192,26 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
+    def compute_sparse_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a sparse matrix (static method).
+
+        Args:
+            U (tensor_like): unitary matrix
+
+        Returns:
+            csr_matrix: sparse matrix representation
+
+        **Example**
+
+        >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        >>> qml.QubitUnitary.compute_sparse_matrix(U)
+        <2x2 sparse matrix of type '<class 'numpy.complex128'>'
+            with 2 stored elements in Compressed Sparse Row format>
+        """
+        U = qml.math.asarray(U, like="numpy")
+        return sp.sparse.csr_matrix(U)
+
+    @staticmethod
     def compute_decomposition(U: TensorLike, wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
 
