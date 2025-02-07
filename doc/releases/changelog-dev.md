@@ -8,6 +8,9 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Created a new ``qml.liealg`` module for advanved Lie algebra functionality.
+  [()]()
+
 <h3>Improvements 🛠</h3>
 
 * Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
@@ -236,6 +239,9 @@
   [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
   [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
+
+* Pauli module level imports of ``lie_closure``, ``structure_constants`` and ``center`` are deprecated as functionality is moved to new ``liealg`` module.
+  [()]()
 
 <h3>Internal changes ⚙️</h3>
 
