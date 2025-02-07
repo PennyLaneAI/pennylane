@@ -347,9 +347,9 @@ def _get_pauli_generators(trainable_op):
     generator = trainable_op.generator()
     if generator.pauli_rep is None:
         mat = qml.matrix(generator, wire_order=generator.wires)
-        op = qml.pauli_decompose(mat, wire_order=generator.wires)
-        return op.terms()
-    pauli_rep = generator.pauli_rep
+        pauli_rep = qml.pauli_decompose(mat, wire_order=generator.wires, pauli=True)
+    else:
+        pauli_rep = generator.pauli_rep
     id_pw = qml.pauli.PauliWord({})
     if id_pw in pauli_rep:
         del pauli_rep[qml.pauli.PauliWord({})]  # remove identity term
