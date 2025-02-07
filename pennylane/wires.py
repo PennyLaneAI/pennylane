@@ -93,7 +93,7 @@ def _process(wires):
     if len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
-    return tuple(itertools.chain(*(flatten_wires_object(x) for x in tuple_of_wires)))
+    return tuple(itertools.chain(*(_flatten_wires_object(x) for x in tuple_of_wires)))
 
 
 class Wires(Sequence):
@@ -732,7 +732,7 @@ class Wires(Sequence):
 WiresLike = Union[Wires, Iterable[Hashable], Hashable]
 
 
-def flatten_wires_object(wire_label):
+def _flatten_wires_object(wire_label):
     """Converts the input to a tuple of wire labels."""
     if isinstance(wire_label, Wires):
         return wire_label.labels
