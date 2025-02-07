@@ -380,7 +380,7 @@ def _get_plxpr_defer_measurements():
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
 
-        if (aux_wires := tkwargs.pop("aux_wires", None)) is None:
+        if (aux_wires := tkwargs.get("aux_wires", None)) is None:
             raise ValueError(
                 "'aux_wires' argument for qml.defer_measurements must be provided "
                 "when qml.capture.enabled() is True."
