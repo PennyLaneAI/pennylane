@@ -9,7 +9,7 @@
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 * Created a new ``qml.liealg`` module for advanved Lie algebra functionality.
-  [()]()
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
 
 <h3>Improvements 🛠</h3>
 
@@ -241,7 +241,7 @@
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 * Pauli module level imports of ``lie_closure``, ``structure_constants`` and ``center`` are deprecated as functionality is moved to new ``liealg`` module.
-  [()]()
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
 
 <h3>Internal changes ⚙️</h3>
 
