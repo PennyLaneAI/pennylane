@@ -239,27 +239,25 @@ class StronglyEntanglingLayers(Operation):
         return n_layers, n_wires, 3
 
     @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
-        weights = args[0]
+    def compute_plxpr_decomposition(*args, **hyperparameters):
+        weights = jnp.array(args[0])
         wires = args[1:]
         imprimitive = hyperparameters["imprimitive"]
         ranges = hyperparameters["ranges"]
 
         n_wires = len(wires)
-        n_layers = qml.math.shape(weights)[-3]
+        n_layers = weights.shape[0]
 
         @qml.for_loop(n_layers)
         def l_layers(l):
             @qml.for_loop(n_wires)
             def rot_loop(i):
                 qml.Rot(
-                    weights[..., l, i, 0],
-                    weights[..., l, i, 1],
-                    weights[..., l, i, 2],
+                    weights[l, i, 0],
+                    weights[l, i, 1],
+                    weights[l, i, 2],
                     wires=jnp.array(wires)[i],
                 )
-                # Weights should be of shape ``(L, M, 3)``, we don't need `...` for broadcasting? i.e.
-                # qml.Rot(weights[l, i, 0], weights[l, i, 1], weights[l, i, 2], wires=jnp.array(wires)[i])
 
             def imprim_true():
                 @qml.for_loop(n_wires)

@@ -205,7 +205,7 @@ class QFT(Operation):
 
 
     @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
+    def compute_plxpr_decomposition(*args, **hyperparameters):
         wires = jnp.array(args[0:])
         n_wires = len(wires)
         

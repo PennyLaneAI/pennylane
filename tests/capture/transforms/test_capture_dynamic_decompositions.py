@@ -597,7 +597,7 @@ class TestDynamicDecomposeInterpreter:
         weight_shape = (layers, n_wires, 3)
         weights = np.random.random(size=weight_shape)
 
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
         def circuit():
             qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
@@ -626,7 +626,6 @@ class TestDynamicDecomposeInterpreter:
             == imprimitive._primitive
         )
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
         qml.capture.disable()
 
         @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
@@ -635,6 +634,51 @@ class TestDynamicDecomposeInterpreter:
             return qml.state()
 
         assert qml.math.allclose(*result, circuit_comparison())
+        
+        
+    def test_grover(self):
+        """Test that Grover is correctly dynamically decomposed."""
+
+        @DecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+        def circuit():
+            qml.GroverOperator(wires=[0, 1, 2], work_wires=[3, 4])
+            return qml.state()
+        
+        jaxpr = jax.make_jaxpr(circuit)()
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        # add jaxpr test
+        
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+        def circuit_comparison():
+            qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
+            return qml.state()
+
+        assert qml.math.allclose(*result, circuit_comparison())
+
+    
+    def test_qft(self):
+        """Test that QFT is correctly dynamically decomposed."""
+
+        @DecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+        def circuit():
+            qml.QFT(wires=(0, 1, 2, 3, 4))
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        print(jaxpr)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+        def circuit_comparison():
+            qml.QFT(wires=(0, 1, 2, 3, 4))
+            return qml.state()
+
+        assert qml.math.allclose(*result, circuit_comparison())
+
+        # add test
         
     def test_qsvt(self):
         """Test that the QSVT is correctly dynamically decomposed."""
@@ -652,44 +696,16 @@ class TestDynamicDecomposeInterpreter:
         print(jaxpr)
         # still need to fix
         
-        
-    def test_grover(self):
-        """Test that Grover is correctly dynamically decomposed."""
-
-        @DynamicDecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
-        def circuit():
-            qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
-            return qml.state()
-
-        jaxpr = jax.make_jaxpr(circuit)()
-        print(jaxpr)
-        # add test
-        
-    
-    def test_qft(self):
-        """Test that QFT is correctly dynamically decomposed."""
-
-        @DynamicDecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
-        def circuit():
-            qml.QFT(wires=(0, 1, 2, 3, 4))
-            return qml.state()
-
-        jaxpr = jax.make_jaxpr(circuit)()
-        print(jaxpr)
-        # add test
-        
     
 
     test_data_decomposition = [
         (
             [[0, 1, 2]],
-            [],
-            np.array([3.815]),
+            [[[0, 1], [0, 1]]],
+            np.array([[3.815, 1.2]]),
             1,
             [
-                [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+                [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [jnp.array([1, 1, 0, 0, 0, 0])]],
                 [1, qml.RX, [0], [-np.pi / 2]],
                 [5, qml.RZ, [2], [1.9075]],
                 [6, qml.CNOT, [1, 2], []],
@@ -711,8 +727,8 @@ class TestDynamicDecomposeInterpreter:
         N = 6
         wires = range(N)
 
-        ref_state = np.array([1, 1, 0, 0, 0, 0])
-        @DynamicDecomposeInterpreter()
+        ref_state = jnp.array([1, 1, 0, 0, 0, 0])
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
         def circuit():
             qml.UCCSD(
@@ -732,7 +748,7 @@ class TestDynamicDecomposeInterpreter:
         
         
         weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
-        @DynamicDecomposeInterpreter()
+        @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit():
             qml.ArbitraryStatePreparation(weights, wires=[0, 1])

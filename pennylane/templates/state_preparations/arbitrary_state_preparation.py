@@ -132,7 +132,7 @@ class ArbitraryStatePreparation(Operation):
         return op_list
 
     @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
+    def compute_plxpr_decomposition(*args, **hyperparameters):
         weights = args[0]
         wires = jnp.array(args[1:])
         

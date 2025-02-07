@@ -287,12 +287,32 @@ class UCCSD(Operation):
 
 
     @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
-        weights = args[0]
+    def compute_plxpr_decomposition(*args, **hyperparameters):
+        weights = jnp.array(args[0])
         wires = jnp.array(args[1:])
-        s_wires = hyperparameters["s_wires"]
-        d_wires = hyperparameters["d_wires"]
-        init_state = hyperparameters["init_state"]
+        s_wires = jnp.array(hyperparameters["s_wires"])
+        d_wires = jnp.array(hyperparameters["d_wires"])
+        init_state = jnp.array(hyperparameters["init_state"])
         n_repeats = hyperparameters["n_repeats"]
-        print(f"{init_state=}")
+        
         BasisState(init_state, wires=wires)
+               
+        s_wires_len = len(s_wires)
+        d_wires_len = len(d_wires)
+        # Need to fix case for no d_wires of n_repeats==1 etc.
+        @qml.for_loop(n_repeats)
+        def layer_loop(layer):
+            @qml.for_loop(d_wires_len)
+            def double_excitation_loop(i):
+                qml.FermionicDoubleExcitation(
+                    weights[layer][s_wires_len + i], wires1=d_wires[i][0], wires2=d_wires[i][1]
+                )
+            
+            @qml.for_loop(s_wires_len)
+            def single_excitation_loop(j):
+                qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires[j])
+                
+            double_excitation_loop()
+            single_excitation_loop()
+        
+        layer_loop()

@@ -577,24 +577,27 @@ class QSVT(Operation):
         return op_list
 
     @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
+    def compute_plxpr_decomposition(*args, **hyperparameters):
         UA = hyperparameters["UA"]
         projectors = hyperparameters["projectors"]
         UA._primitive_bind_call(wires=UA.wires)
+        UA.adjoint()
+        #qml.adjoint(UA)
         
-        for idx, op in enumerate(projectors[:-1]):
-            op._primitive_bind_call(*op.data, wires=op.wires)
-            if idx % 2 == 0:
-                UA._primitive_bind_call(wires=UA.wires)
-            else:
-                pass # do adjoint?
-            
-        projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
+        #for idx, op in enumerate(projectors[:-1]):
+        #    op._primitive_bind_call(*op.data, wires=op.wires)
+        #    if idx % 2 == 0:
+        #        UA._primitive_bind_call(wires=UA.wires)
+        #    else:
+        #        pass # do adjoint?
+        #    
+        #projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
             
 
-        #@qml.for_loop(len(projectors))
-        #def PU_loop(i):
-        #    projectors[i]._primitive_bind_call(*projectors[i].data, wires=projectors[i].wires)
+        @qml.for_loop(len(projectors))
+        def PU_loop(i):
+            projectors[i]
+            #projectors[i]._primitive_bind_call(*projectors[i].data, wires=projectors[i].wires)
         #    
         #    def even_fn():
         #        UA._primitive_bind_call(wires=UA.wires)
@@ -604,7 +607,6 @@ class QSVT(Operation):
         #        
         #    qml.cond(i % 2 == 0, even_fn, odd_fn)
         #    
-        #PU_loop()
         #projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
         #
         

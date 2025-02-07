@@ -180,9 +180,9 @@ class GroverOperator(Operation):
         return op_list
 
     @staticmethod
-    def _compute_plxpr_decomposition(*args, **hyperparameters):
+    def compute_plxpr_decomposition(*args, **hyperparameters):
         wires = jnp.array(args[0:])
-        work_wires = hyperparameters["work_wires"]
+        work_wires = jnp.array(hyperparameters["work_wires"])
         ctrl_values = [0] * (len(wires) - 1)
 
         @qml.for_loop(len(wires)-1)
@@ -198,7 +198,7 @@ class GroverOperator(Operation):
             )
         PauliZ(wires[-1])
         h_loop()
-        GlobalPhase(np.pi, wires)
+        GlobalPhase(np.pi)
 
     @staticmethod
     def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument
