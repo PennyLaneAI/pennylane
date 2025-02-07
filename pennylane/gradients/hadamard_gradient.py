@@ -160,6 +160,32 @@ def hadamard_grad(
     .. details::
         :title: Usage Details
 
+        This gradient method can work with any operator that has a generator:
+
+        .. code-block:: pycon
+
+            >>> dev = qml.device('default.qubit')
+            >>> @qml.qnode(dev)
+            ... def circuit(x):
+            ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x )
+            ...     return qml.expval(qml.Z(0))
+            >>> print( qml.draw(qml.gradients.hadamard_grad(circuit))(qml.numpy.array(0.5)) )
+            0: ─╭Exp(-0.50j 𝓗)─╭X────┤ ╭<Z@Y>
+            1: ─╰Exp(-0.50j 𝓗)─│─────┤ │
+            2: ──H─────────────╰●──H─┤ ╰<Z@Y>
+
+            0: ─╭Exp(-0.50j 𝓗)─╭X@X────┤ ╭<Z@Y>
+            1: ─╰Exp(-0.50j 𝓗)─├X@X────┤ │
+            2: ──H─────────────╰●────H─┤ ╰<Z@Y>
+
+            0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<Z@Y>
+            1: ─╰Exp(-0.50j 𝓗)─│─────┤ │
+            2: ──H─────────────╰●──H─┤ ╰<Z@Y>
+
+            0: ─╭Exp(-0.50j 𝓗)─╭Z@Z────┤ ╭<Z@Y>
+            1: ─╰Exp(-0.50j 𝓗)─├Z@Z────┤ │
+            2: ──H─────────────╰●────H─┤ ╰<Z@Y>
+
         This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
         objects. However, for performance reasons, we recommend providing the gradient transform
         as the ``diff_method`` argument of the QNode decorator, and differentiating with your
@@ -241,25 +267,6 @@ def hadamard_grad(
         >>> jax.jacobian(circuit)(params)
         Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
 
-    .. note::
-
-        ``hadamard_grad`` will decompose the operations that are not in the list of supported operations.
-
-        - :class:`~.pennylane.RX`
-        - :class:`~.pennylane.RY`
-        - :class:`~.pennylane.RZ`
-        - :class:`~.pennylane.Rot`
-        - :class:`~.pennylane.PhaseShift`
-        - :class:`~.pennylane.U1`
-        - :class:`~.pennylane.CRX`
-        - :class:`~.pennylane.CRY`
-        - :class:`~.pennylane.CRZ`
-        - :class:`~.pennylane.IsingXX`
-        - :class:`~.pennylane.IsingYY`
-        - :class:`~.pennylane.IsingZZ`
-
-        The expansion will fail if a suitable decomposition in terms of supported operation is not found.
-        The number of trainable parameters may increase due to the decomposition.
 
     """
 
