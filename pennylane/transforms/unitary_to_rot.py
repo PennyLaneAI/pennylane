@@ -62,7 +62,10 @@ def _get_plxpr_unitary_to_rot():
                         ops = one_qubit_decomposition(op.parameters[0], op.wires[0])
                     elif matrix_shape == (4, 4):
                         ops = two_qubit_decomposition(op.parameters[0], op.wires)
-                return [super().interpret_operation(o) for o in ops]
+                # List omprehensions are run in a separate scope.
+                # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
+                # pylint: disable=super-with-arguments
+                return [super(UnitaryToRotInterpreter, self).interpret_operation(o) for o in ops]
 
             return super().interpret_operation(op)
 
