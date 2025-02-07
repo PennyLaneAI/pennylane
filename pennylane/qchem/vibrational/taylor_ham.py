@@ -292,7 +292,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
     Args:
         pes (VibrationalPES): the vibrational potential energy surface data. Must be array of
-            shape ``(m, l)`` or ``(m, m, l, l)`` or ``(m, m, l, l, l, l)`` where ``m`` is the number
+            shape ``(m, l)`` or ``(m, m, l, l)`` or ``(m, m, m, l, l, l)`` where ``m`` is the number
             of normal modes and ``l`` is the number of energy points computed along each normal mode.
         max_deg (int): maximum degree of the polynomial used to compute the coefficients
         min_deg (int): minimum degree of the polynomial used to compute the coefficients
@@ -597,7 +597,7 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 
 
 def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
-    """Return Taylor bosonic vibrational Hamiltonian.
+    r"""Return Taylor bosonic vibrational Hamiltonian.
 
     The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^(n)`,
     normal coordinate operators :math:`q` and momentum operators :math:`p` following Eq. 5 of
@@ -678,7 +678,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 def taylor_hamiltonian(
     pes, max_deg=4, min_deg=3, mapping="binary", n_states=2, wire_map=None, tol=1e-12
 ):
-    """Return Taylor vibrational Hamiltonian.
+    r"""Return Taylor vibrational Hamiltonian.
 
     The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^(n)`,
     normal coordinate operators :math:`q` and momentum operators :math:`p` following Eq. 5 of
@@ -751,6 +751,10 @@ def taylor_hamiltonian(
         + (-0.013079509779221888+0j) * Z(0)
     )
     """
+    # taylor_hamiltonian(pes_one, pes_two, pes_three,
+    # max_deg=4, min_deg=3, mapping="binary", n_states=2, wire_map=None, tol=1e-12
+    # ):
+
     mapping.lower().strip()
     if mapping not in ["binary", "unary"]:
         raise ValueError(

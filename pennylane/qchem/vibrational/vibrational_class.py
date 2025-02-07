@@ -66,12 +66,12 @@ class VibrationalPES:
 
     def __init__(
         self,
-        freqs,
-        grid,
-        gauss_weights,
-        uloc,
-        pes_data,
-        dipole_data,
+        freqs=None,
+        grid=None,
+        gauss_weights=None,
+        uloc=None,
+        pes_data=None,
+        dipole_data=None,
         localized=True,
         dipole_level=1,
     ):
