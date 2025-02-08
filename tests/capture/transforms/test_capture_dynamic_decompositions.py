@@ -91,8 +91,8 @@ class SimpleCustomOp(Operation):
         super().__init__(wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        return np.array([[1, 0], [0, 1]])
+    def compute_decomposition(wires):
+        raise NotImplementedError
 
     @staticmethod
     def compute_plxpr_decomposition(wires):
@@ -110,8 +110,8 @@ class SimpleCustomOpReturn(Operation):
         super().__init__(wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        return np.array([[1, 0], [0, 1]])
+    def compute_decomposition(wires):
+        raise NotImplementedError
 
     @staticmethod
     def compute_plxpr_decomposition(wires):
@@ -137,6 +137,10 @@ class CustomOpConstHyperparams(Operation):
         }
 
         super().__init__(phi, wires=wires, id=id)
+
+    @staticmethod
+    def compute_decomposition(wires):
+        raise NotImplementedError
 
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
@@ -167,6 +171,10 @@ class CustomOpMultiWire(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
+    def compute_decomposition(*args, **hyperparameters):
+        raise NotImplementedError
+
+    @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
 
         phi = args[0]
@@ -191,6 +199,10 @@ class CustomOpCond(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
+    def compute_decomposition(phi, wires):
+        raise NotImplementedError
+
+    @staticmethod
     def compute_plxpr_decomposition(phi, wires):
 
         def true_fn(phi, wires):
@@ -212,6 +224,10 @@ class CustomOpCondNoFalseBranch(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
+    def compute_decomposition(phi, wires):
+        raise NotImplementedError
+
+    @staticmethod
     def compute_plxpr_decomposition(phi, wires):
 
         def true_fn(phi, wires):
@@ -228,6 +244,10 @@ class CustomOpForLoop(Operation):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        raise NotImplementedError
 
     @staticmethod
     def compute_plxpr_decomposition(phi, wires):
@@ -251,6 +271,10 @@ class CustomOpWhileLoop(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
+    def compute_decomposition(phi, wires):
+        raise NotImplementedError
+
+    @staticmethod
     def compute_plxpr_decomposition(phi, wires):
 
         def while_f(i):
@@ -272,6 +296,10 @@ class CustomOpNestedCond(Operation):
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        raise NotImplementedError
 
     @staticmethod
     def compute_plxpr_decomposition(phi, wires):
@@ -314,6 +342,10 @@ class CustomOpAutograph(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
+    def compute_decomposition(phi, wires):
+        raise NotImplementedError
+
+    @staticmethod
     def compute_plxpr_decomposition(phi, wires):
 
         if phi > 0.5:
@@ -333,8 +365,8 @@ class CustomOpNestedOp(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        return np.array([[1, 0], [0, 1]])
+    def compute_decomposition(phi, wires):
+        raise NotImplementedError
 
     @staticmethod
     def compute_plxpr_decomposition(phi, wires):
@@ -352,8 +384,8 @@ class CustomOpNestedOpControlFlow(Operation):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        return np.array([[1, 0], [0, 1]])
+    def compute_decomposition(phi, wires):
+        raise NotImplementedError
 
     @staticmethod
     def compute_plxpr_decomposition(phi, wires):

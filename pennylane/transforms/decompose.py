@@ -239,7 +239,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 for outvar, outval in zip(inner_eqn.outvars, outvals, strict=True):
                     self._env[outvar] = outval
 
-            # Read the final result of the Jaxpr from the environment
             outvals = []
             for var in jaxpr_decomp.outvars:
                 outval = self.read(var)
@@ -287,6 +286,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
     @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
     def handle_ctrl_transform(*_, **__):
         raise NotImplementedError
+
+    # We register the primitives to propagate the current depth of the decomposition
+    # in the dynamic decomposition evaluation.
 
     @DecomposeInterpreter.register_primitive(cond_prim)
     def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, current_depth=0):
