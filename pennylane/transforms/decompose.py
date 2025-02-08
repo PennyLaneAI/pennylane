@@ -289,7 +289,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         raise NotImplementedError
 
     @DecomposeInterpreter.register_primitive(cond_prim)
-    def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, current_depth):
+    def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, current_depth=0):
         """Handle a cond primitive."""
 
         args = invals[args_slice]
@@ -336,7 +336,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         consts_slice,
         args_slice,
         abstract_shapes_slice,
-        current_depth,
+        current_depth=0,
     ):
         """Handle a for loop primitive."""
 
@@ -380,7 +380,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         cond_slice,
         args_slice,
         abstract_shapes_slice,
-        current_depth,
+        current_depth=0,
     ):
         """Handle a while loop primitive."""
         consts_body = invals[body_slice]
@@ -432,7 +432,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         )
 
         def wrapper(*inner_args):
-            return decomposer.eval(jaxpr, consts, *inner_args)
+            return decomposer.eval_dynamic_decomposition(jaxpr, consts, *inner_args)
 
         return jax.make_jaxpr(wrapper)(*args)
 
