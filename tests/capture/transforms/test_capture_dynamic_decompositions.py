@@ -53,13 +53,14 @@ def get_qnode_eqns(jaxpr):
     return qfunc_jaxpr.eqns
 
 
-def get_eqns_cond_branches(jaxpr_cond):
+def get_eqns_cond_branches(jaxpr_cond, false_branch=True):
     """Get the equations of the true and false branches of the cond primitive."""
 
     assert jaxpr_cond.primitive == cond_prim
 
     true_branch_eqns = jaxpr_cond.params["jaxpr_branches"][0].eqns
-    false_branch_eqns = jaxpr_cond.params["jaxpr_branches"][1].eqns
+
+    false_branch_eqns = jaxpr_cond.params["jaxpr_branches"][1].eqns if false_branch else []
 
     return true_branch_eqns, false_branch_eqns
 
@@ -97,6 +98,24 @@ class SimpleCustomOp(Operation):
     def compute_plxpr_decomposition(wires):
         qml.Hadamard(wires=wires)
         qml.Hadamard(wires=wires)
+
+
+class SimpleCustomOpReturn(Operation):
+    """Simple custom operation that contains a single gate in its decomposition"""
+
+    num_wires = 1
+    num_params = 0
+
+    def _init__(self, wires, id=None):
+        super().__init__(wires=wires, id=id)
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
+
+    @staticmethod
+    def compute_plxpr_decomposition(wires):
+        return qml.Hadamard(wires=wires)
 
 
 const = jax.numpy.array(0.1)
@@ -181,6 +200,24 @@ class CustomOpCond(Operation):
             qml.RY(phi, wires=wires)
 
         qml.cond(phi > 0.5, true_fn, false_fn)(phi, wires)
+
+
+class CustomOpCondNoFalseBranch(Operation):
+    """Custom operation that contains a conditional in its decomposition"""
+
+    num_wires = 1
+    num_params = 1
+
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
+
+    @staticmethod
+    def compute_plxpr_decomposition(phi, wires):
+
+        def true_fn(phi, wires):
+            qml.RX(phi, wires=wires)
+
+        qml.cond(phi > 0.5, true_fn)(phi, wires)
 
 
 class CustomOpForLoop(Operation):
@@ -387,6 +424,18 @@ class TestDynamicDecomposeInterpreter:
         assert jaxpr.eqns[3].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    def test_simple_return(self):
+        """Test that a function with a custom operation that returns a value is correctly decomposed."""
+
+        @DecomposeInterpreter()
+        def f():
+            SimpleCustomOpReturn(wires=0)
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == qml.Hadamard._primitive
+
     ############################
     ### QNode tests
     ############################
@@ -530,6 +579,37 @@ class TestDynamicDecomposeInterpreter:
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wire", [0, 1])
+    @pytest.mark.parametrize("x", [0.2, 0.8])
+    def test_qnode_cond_no_false_branch(self, x, wire, autograph):
+        """Test that a QNode with a conditional custom operation that does not have a false branch is correctly decomposed."""
+
+        @DecomposeInterpreter()
+        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=autograph)
+        def circuit(x, wire):
+            CustomOpCondNoFalseBranch(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        jaxpr = jax.make_jaxpr(circuit)(x, wire)
+        qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
+
+        true_branch_eqns, _ = get_eqns_cond_branches(qfunc_jaxpr_eqns[1], false_branch=False)
+        check_jaxpr_eqns(true_branch_eqns, [qml.RX])
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
+
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit_comparison(x, wire):
+            def true_fn(x, wire):
+                qml.RX(x, wires=wire)
+
+            qml.cond(x > 0.5, true_fn)(x, wire)
+
+            return qml.expval(qml.Z(wires=wire))
+
+        assert qml.math.allclose(*result, circuit_comparison(x, wire))
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    @pytest.mark.parametrize("wire", [0, 1])
     def test_qnode_for_loop(self, wire, autograph):
         """Test that a QNode with a for loop custom operation is correctly decomposed."""
 
@@ -577,7 +657,6 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(0.5, wire)
         qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
 
-        assert qfunc_jaxpr_eqns[0].primitive == while_loop_prim
         while_loop_eqns = get_eqns_while_loop(qfunc_jaxpr_eqns[0])
         check_jaxpr_eqns([while_loop_eqns[0]], [qml.RX])
 
