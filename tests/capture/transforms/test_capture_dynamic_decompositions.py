@@ -733,16 +733,11 @@ class TestDynamicDecomposeInterpreter:
     @pytest.mark.parametrize(
         "max_expansion, expected_ops, expected_ops_for_loop, expected_ops_while_loop",
         [
-            (
-                1,
-                [qml.Rot, CustomOpNestedOp],
-                [qml.RX, SimpleCustomOp],
-                [qml.Hadamard, qml.Hadamard],
-            ),
+            (1, [qml.Rot, CustomOpNestedOp], [CustomOpNestedOp], [SimpleCustomOp]),
             (
                 2,
                 [qml.Rot, qml.RX, SimpleCustomOp],
-                [qml.RX, qml.Hadamard, qml.Hadamard],
+                [qml.RX, SimpleCustomOp],
                 [qml.Hadamard, qml.Hadamard],
             ),
             (

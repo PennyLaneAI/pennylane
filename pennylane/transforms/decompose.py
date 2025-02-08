@@ -21,6 +21,7 @@ import warnings
 from collections.abc import Callable, Generator, Iterable
 from functools import lru_cache, partial
 from typing import Optional
+from copy import copy
 
 import pennylane as qml
 from pennylane.transforms.core import transform
@@ -67,7 +68,13 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         # pylint: disable=import-outside-toplevel
         import jax
 
-        from pennylane.capture.primitives import ctrl_transform_prim
+        from pennylane.capture.primitives import (
+            ctrl_transform_prim,
+            for_loop_prim,
+            while_loop_prim,
+            cond_prim,
+        )
+
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -202,8 +209,10 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 current_depth (int): the current depth of the decomposition
             """
 
-            self._env.update(zip(jaxpr_decomp.invars, args, strict=True))
-            self._env.update(zip(jaxpr_decomp.constvars, consts, strict=True))
+            for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
+                self._env[invar] = arg
+            for const, constvar in zip(consts, jaxpr_decomp.constvars, strict=True):
+                self._env[constvar] = const
 
             for inner_eqn in jaxpr_decomp.eqns:
 
@@ -212,7 +221,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
                 if custom_handler:
                     invals = [self.read(invar) for invar in inner_eqn.invars]
-                    outvals = custom_handler(self, *invals, **inner_eqn.params)
+                    outvals = custom_handler(
+                        self, *invals, **inner_eqn.params, current_depth=current_depth
+                    )
 
                 elif prim_type == "operator":
                     outvals = self.interpret_operation_eqn(inner_eqn, current_depth)
@@ -222,8 +233,22 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                     invals = [self.read(invar) for invar in inner_eqn.invars]
                     outvals = inner_eqn.primitive.bind(*invals, **inner_eqn.params)
 
-                outvals = [outvals] if not inner_eqn.primitive.multiple_results else outvals
-                self._env.update(zip(inner_eqn.outvars, outvals, strict=True))
+                if not inner_eqn.primitive.multiple_results:
+                    outvals = [outvals]
+
+                for outvar, outval in zip(inner_eqn.outvars, outvals, strict=True):
+                    self._env[outvar] = outval
+
+            # Read the final result of the Jaxpr from the environment
+            outvals = []
+            for var in jaxpr_decomp.outvars:
+                outval = self.read(var)
+                if isinstance(outval, qml.operation.Operator):
+                    outvals.append(self.interpret_operation(outval))
+                else:
+                    outvals.append(outval)
+
+            return outvals
 
         def interpret_operation_eqn(self, eqn, current_depth: int = 0):
             """Interpret an equation corresponding to an operator.
@@ -248,10 +273,155 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
             return self._evaluate_jaxpr_decomposition(op, current_depth)
 
+    def jaxpr_to_jaxpr_decomp(
+        interpreter: DecomposeInterpreter, jaxpr: "jax.core.Jaxpr", consts, *args, current_depth
+    ) -> "jax.core.Jaxpr":
+
+        f = partial(
+            interpreter.eval_dynamic_decomposition, jaxpr, consts, current_depth=current_depth
+        )
+
+        return jax.make_jaxpr(f)(*args)
+
     # pylint: disable=unused-variable,missing-function-docstring
     @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
     def handle_ctrl_transform(*_, **__):
         raise NotImplementedError
+
+    @DecomposeInterpreter.register_primitive(cond_prim)
+    def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, current_depth):
+        """Handle a cond primitive."""
+
+        args = invals[args_slice]
+
+        new_jaxprs = []
+        new_consts = []
+        new_consts_slices = []
+        end_const_ind = len(jaxpr_branches)
+
+        for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
+            consts = invals[const_slice]
+            if jaxpr is None:
+                new_jaxprs.append(None)
+                new_consts_slices.append(slice(0, 0))
+            else:
+                new_jaxpr = jaxpr_to_jaxpr_decomp(
+                    copy(self), jaxpr, consts, *args, current_depth=current_depth
+                )
+                new_jaxprs.append(new_jaxpr.jaxpr)
+                new_consts.extend(new_jaxpr.consts)
+                new_consts_slices.append(
+                    slice(end_const_ind, end_const_ind + len(new_jaxpr.consts))
+                )
+                end_const_ind += len(new_jaxpr.consts)
+
+        new_args_slice = slice(end_const_ind, None)
+        return cond_prim.bind(
+            *invals[: len(jaxpr_branches)],
+            *new_consts,
+            *args,
+            jaxpr_branches=new_jaxprs,
+            consts_slices=new_consts_slices,
+            args_slice=new_args_slice,
+        )
+
+    @DecomposeInterpreter.register_primitive(for_loop_prim)
+    def handle_for_loop(
+        self,
+        start,
+        stop,
+        step,
+        *args,
+        jaxpr_body_fn,
+        consts_slice,
+        args_slice,
+        abstract_shapes_slice,
+        current_depth,
+    ):
+        """Handle a for loop primitive."""
+
+        consts = args[consts_slice]
+        init_state = args[args_slice]
+        abstract_shapes = args[abstract_shapes_slice]
+
+        new_jaxpr_body_fn = jaxpr_to_jaxpr_decomp(
+            copy(self),
+            jaxpr_body_fn,
+            consts,
+            *abstract_shapes,
+            start,
+            *init_state,
+            current_depth=current_depth,
+        )
+
+        consts_slice = slice(0, len(new_jaxpr_body_fn.consts))
+        abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
+        args_slice = slice(abstract_shapes_slice.stop, None)
+        return for_loop_prim.bind(
+            start,
+            stop,
+            step,
+            *new_jaxpr_body_fn.consts,
+            *abstract_shapes,
+            *init_state,
+            jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
+            consts_slice=consts_slice,
+            args_slice=args_slice,
+            abstract_shapes_slice=abstract_shapes_slice,
+        )
+
+    @DecomposeInterpreter.register_primitive(while_loop_prim)
+    def handle_while_loop(
+        self,
+        *invals,
+        jaxpr_body_fn,
+        jaxpr_cond_fn,
+        body_slice,
+        cond_slice,
+        args_slice,
+        abstract_shapes_slice,
+        current_depth,
+    ):
+        """Handle a while loop primitive."""
+        consts_body = invals[body_slice]
+        consts_cond = invals[cond_slice]
+        init_state = invals[args_slice]
+        abstract_shapes = invals[abstract_shapes_slice]
+
+        new_jaxpr_body_fn = jaxpr_to_jaxpr_decomp(
+            copy(self),
+            jaxpr_body_fn,
+            consts_body,
+            *abstract_shapes,
+            *init_state,
+            current_depth=current_depth,
+        )
+        new_jaxpr_cond_fn = jaxpr_to_jaxpr_decomp(
+            copy(self),
+            jaxpr_cond_fn,
+            consts_cond,
+            *abstract_shapes,
+            *init_state,
+            current_depth=current_depth,
+        )
+
+        body_consts = slice(0, len(new_jaxpr_body_fn.consts))
+        cond_consts = slice(body_consts.stop, body_consts.stop + len(new_jaxpr_cond_fn.consts))
+        abstract_shapes_slice = slice(cond_consts.stop, cond_consts.stop + len(abstract_shapes))
+        args_slice = slice(abstract_shapes_slice.stop, None)
+
+        return while_loop_prim.bind(
+            *new_jaxpr_body_fn.consts,
+            *new_jaxpr_cond_fn.consts,
+            *abstract_shapes,
+            *init_state,
+            jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
+            jaxpr_cond_fn=new_jaxpr_cond_fn.jaxpr,
+            body_slice=body_consts,
+            cond_slice=cond_consts,
+            args_slice=args_slice,
+            abstract_shapes_slice=abstract_shapes_slice,
+        )
 
     def decompose_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args
