@@ -119,10 +119,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             """
 
-            if not op.has_plxpr_decomposition:
-                return self.interpret_operation(op)
-
-            if self.gate_set(op):
+            if not op.has_plxpr_decomposition or self.gate_set(op):
                 return super().interpret_operation(op)
 
             return self._evaluate_jaxpr_decomposition(op, current_depth)
@@ -163,10 +160,10 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
             if self.gate_set(op):
-                return self.interpret_operation(op)
+                return super().interpret_operation(op)
 
             max_expansion = (
-                self.max_expansion + current_depth if self.max_expansion is not None else None
+                self.max_expansion - current_depth if self.max_expansion is not None else None
             )
 
             depth_tracker = {"current_depth": current_depth}
@@ -194,7 +191,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             print(f"_evaluate_jaxpr_decomposition: op={op}, current_depth={current_depth}")
 
             if self.gate_set(op):
-                return self.interpret_operation(op)
+                return super().interpret_operation(op)
 
             if self.max_expansion is not None and current_depth >= self.max_expansion:
                 return super().interpret_operation(op)

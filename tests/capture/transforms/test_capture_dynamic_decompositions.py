@@ -1077,6 +1077,79 @@ class TestDynamicDecomposeInterpreter:
         check_jaxpr_eqns(while_loop_eqns, expected_ops_while_loop)
 
     @pytest.mark.parametrize(
+        "max_expansion, gate_set, expected_ops, expected_ops_for_loop, expected_ops_while_loop",
+        [
+            (
+                1,
+                [qml.RX, qml.RY, qml.RZ, qml.CNOT],
+                # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
+                # Rot -> qml.RZ, qml.RY, qml.RZ
+                [qml.Rot, CustomOpNestedOp],
+                # CustomOpNestedOp is in the for loop of the true branch
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                # SimpleCustomOp -> Hadamard, Hadamard
+                [CustomOpNestedOp],
+                # SimpleCustomOp is in the while loop of the false branch
+                [SimpleCustomOp],
+            ),
+            (
+                2,
+                [qml.RX, qml.RY, qml.RZ, CustomOpNestedOp],
+                # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
+                # Rot -> qml.RZ, qml.RY, qml.RZ, CustomOpNestedOp is in the gate set
+                [qml.RZ, qml.RY, qml.RZ, CustomOpNestedOp],
+                # CustomOpNestedOp is in the for loop of the true branch
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                # SimpleCustomOp -> Hadamard, Hadamard
+                [CustomOpNestedOp],
+                # SimpleCustomOp is in the while loop of the false branch
+                # SimpleCustomOp -> Hadamard, Hadamard
+                # Hadamard -> RZ, RX, RZ
+                [qml.Hadamard, qml.Hadamard],
+            ),
+            (
+                3,
+                [qml.RX, qml.RY, qml.RZ, qml.Rot, SimpleCustomOp],
+                # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
+                # Rot -> qml.RZ, qml.RY, qml.RZ
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                [qml.Rot, qml.RX, SimpleCustomOp],
+                # CustomOpNestedOp is in the for loop of the true branch
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                [qml.RX, SimpleCustomOp],
+                # SimpleCustomOp is in the while loop of the false branch
+                [SimpleCustomOp],
+            ),
+        ],
+    )
+    def test_nested_decomp_control_flow_max_exp_gate_set(
+        self, max_expansion, gate_set, expected_ops, expected_ops_for_loop, expected_ops_while_loop
+    ):
+        """Test that a nested decomposition custom operation that contains control flow is correctly decomposed using a gate set and max expansion."""
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        def circuit(x, wire):
+            CustomOpNestedOpControlFlow(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
+        jaxpr_eqns = get_jaxpr_eqns(jaxpr)
+
+        ops_before_cond = len(expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns[0:ops_before_cond], expected_ops)
+
+        # The + 1 is for the operation that determines the branches of the cond primitive
+        cond_eqns = get_eqns_cond_branches(jaxpr_eqns[ops_before_cond + 1])
+        for_loop_eqns = get_eqns_for_loop(cond_eqns[0][0])
+        while_loop_eqns = get_eqns_while_loop(cond_eqns[1][0])
+
+        for_loop_eqns = [eqn for eqn in for_loop_eqns if eqn.primitive != jax.lax.sin_p]
+        while_loop_eqns = [eqn for eqn in while_loop_eqns if eqn.primitive != jax.lax.add_p]
+
+        check_jaxpr_eqns(for_loop_eqns, expected_ops_for_loop)
+        check_jaxpr_eqns(while_loop_eqns, expected_ops_while_loop)
+
+    @pytest.mark.parametrize(
         "max_expansion, expected_ops",
         [
             # No expansion is performed
@@ -1090,7 +1163,7 @@ class TestDynamicDecomposeInterpreter:
         ],
     )
     def test_nested_decomp_no_plxpr_decomp_max_exp(self, max_expansion, expected_ops):
-        """Test that a QNode with a nested decomposition custom operation that contains an operator with no plxpr decomposition is correctly decomposed."""
+        """Test that a nested decomposition custom operation that contains an operator with no plxpr decomposition is correctly decomposed."""
 
         @DecomposeInterpreter(max_expansion=max_expansion)
         def circuit(x, wire):
@@ -1118,8 +1191,40 @@ class TestDynamicDecomposeInterpreter:
         ],
     )
     def test_nested_decomp_no_plxpr_decomposition_gate_set(self, gate_set, expected_ops):
+        """Test that a nested decomposition custom operation that contains an operator with no plxpr decomposition is correctly decomposed using a custom gate set."""
 
         @DecomposeInterpreter(gate_set=gate_set)
+        def circuit(x, wire):
+            CustomOpNoPlxprDecomposition(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
+        jaxpr_eqns = get_jaxpr_eqns(jaxpr)
+
+        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+
+    @pytest.mark.parametrize(
+        "max_expansion, gate_set, expected_ops",
+        [
+            (0, [CustomOpNoPlxprDecomposition], [CustomOpNoPlxprDecomposition]),
+            (1, [CustomOpNoPlxprDecomposition], [CustomOpNoPlxprDecomposition]),
+            (2, [CustomOpNoPlxprDecomposition], [CustomOpNoPlxprDecomposition]),
+            (0, [CustomOpNestedOpControlFlow], [CustomOpNoPlxprDecomposition]),
+            (1, [CustomOpNestedOpControlFlow], [CustomOpNestedOpControlFlow]),
+            (2, [CustomOpNestedOpControlFlow], [CustomOpNestedOpControlFlow]),
+            (0, [qml.RX, qml.RY, qml.RZ, qml.S], [CustomOpNoPlxprDecomposition]),
+            (1, [qml.RX, qml.RY, qml.RZ, qml.S], [CustomOpNestedOpControlFlow]),
+            (2, [qml.RX, qml.RY, qml.RZ, qml.S], [qml.S]),
+            (2, [qml.RX, qml.RY, qml.RZ], [qml.S]),
+            (None, [qml.RX, qml.RY, qml.RZ], [qml.RZ]),
+        ],
+    )
+    def test_nested_decomp_no_plxpr_decomposition_max_exp_gate_set(
+        self, max_expansion, gate_set, expected_ops
+    ):
+        """Test that a custom operation that contains an operator with no plxpr decomposition is correctly decomposed using a custom gate set and max_expansion."""
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
         def circuit(x, wire):
             CustomOpNoPlxprDecomposition(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
