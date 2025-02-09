@@ -914,7 +914,7 @@ class TestDynamicDecomposeInterpreter:
                 [qml.RX, qml.Hadamard],
                 # CustomOpNestedOp -> RX, SimpleCustomOp
                 # SimpleCustomOp -> Hadamard, Hadamard
-                [qml.RX, qml.Hadamard],
+                [qml.RX, qml.Hadamard, qml.Hadamard],
             ),
             (
                 [qml.RX, qml.RY, qml.RZ, qml.CNOT],
@@ -937,6 +937,8 @@ class TestDynamicDecomposeInterpreter:
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
         check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+
+        assert 
 
     @pytest.mark.parametrize(
         "max_expansion, expected_ops, expected_ops_for_loop, expected_ops_while_loop",
@@ -997,8 +999,9 @@ class TestDynamicDecomposeInterpreter:
                 # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
                 # Rot -> qml.RZ, qml.RY, qml.RZ
                 [qml.RZ, qml.RY, qml.RZ, CustomOpNestedOp],
-                # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
+                # CustomOpNestedOp is in the for loop of the true branch
                 [CustomOpNestedOp],
+                # SimpleCustomOp is in the while loop of the false branch
                 [SimpleCustomOp],
             ),
             (
@@ -1007,7 +1010,10 @@ class TestDynamicDecomposeInterpreter:
                 # Rot -> qml.RZ, qml.RY, qml.RZ
                 # CustomOpNestedOp -> RX, SimpleCustomOp
                 [qml.RZ, qml.RY, qml.RZ, qml.RX, SimpleCustomOp],
+                # CustomOpNestedOp is in the for loop of the true branch
+                # CustomOpNestedOp -> RX, SimpleCustomOp
                 [qml.RX, SimpleCustomOp],
+                # SimpleCustomOp is in the while loop of the false branch
                 [SimpleCustomOp],
             ),
             (
@@ -1017,7 +1023,12 @@ class TestDynamicDecomposeInterpreter:
                 # CustomOpNestedOp -> RX, SimpleCustomOp
                 # SimpleCustomOp -> Hadamard, Hadamard
                 [qml.RZ, qml.RY, qml.RZ, qml.RX, qml.Hadamard, qml.Hadamard],
+                # CustomOpNestedOp is in the for loop of the true branch
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                # SimpleCustomOp -> Hadamard, Hadamard
                 [qml.RX, qml.Hadamard, qml.Hadamard],
+                # SimpleCustomOp is in the while loop of the false branch
+                # SimpleCustomOp -> Hadamard, Hadamard
                 [qml.Hadamard, qml.Hadamard],
             ),
             (
@@ -1028,7 +1039,14 @@ class TestDynamicDecomposeInterpreter:
                 # SimpleCustomOp -> Hadamard, Hadamard
                 # Hadamard -> RZ, RX, RZ
                 [qml.RZ, qml.RY, qml.RZ, qml.RX, qml.RZ, qml.RX, qml.RZ, qml.RZ, qml.RX, qml.RZ],
+                # CustomOpNestedOp is in the for loop of the true branch
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                # SimpleCustomOp -> Hadamard, Hadamard
+                # Hadamard -> RZ, RX, RZ                
                 [qml.RX, qml.RZ, qml.RX, qml.RZ, qml.RZ, qml.RX, qml.RZ],
+                # SimpleCustomOp is in the while loop of the false branch
+                # SimpleCustomOp -> Hadamard, Hadamard
+                # Hadamard -> RZ, RX, RZ                
                 [qml.RZ, qml.RX, qml.RZ, qml.RZ, qml.RX, qml.RZ],
             ),
         ],
@@ -1094,6 +1112,10 @@ class TestDynamicDecomposeInterpreter:
             # We expected the same decomposition of the single qml.S gate.
             # Notice that the `compute_decomposition` of CustomOpNoPlxprDecomposition is called and, as a consequence,
             # the `compute_decomposition` of CustomOpNestedOpControlFlow is called (instead of its plxpr decomposition).
+            #
+            # CustomOpNoPlxprDecomposition -> CustomOpNestedOpControlFlow -> qml.S -> qml.PhaseShift
+            ([qml.RX, qml.RY, qml.RZ, qml.PhaseShift], [qml.PhaseShift]),
+            # CustomOpNoPlxprDecomposition -> CustomOpNestedOpControlFlow -> qml.S -> ... -> qml.RZ
             ([qml.RX, qml.RY, qml.RZ, qml.CNOT], [qml.RZ]),
         ],
     )

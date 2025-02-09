@@ -19,9 +19,9 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 
 import warnings
 from collections.abc import Callable, Generator, Iterable
+from copy import copy
 from functools import lru_cache, partial
 from typing import Optional
-from copy import copy
 
 import pennylane as qml
 from pennylane.transforms.core import transform
@@ -53,6 +53,9 @@ def _operator_decomposition_gen(
     else:
         decomp = op.decomposition()
         current_depth += 1
+
+        # this tracker is used to keep track of the current depth
+        # in the dynamic decomposition evaluation with program capture enabled
         if depth_tracker is not None:
             depth_tracker["current_depth"] = current_depth
 
@@ -69,14 +72,14 @@ def _operator_decomposition_gen(
 @lru_cache
 def _get_plxpr_decompose():  # pylint: disable=missing-docstring
     try:
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel, too-many-statements
         import jax
 
         from pennylane.capture.primitives import (
+            cond_prim,
             ctrl_transform_prim,
             for_loop_prim,
             while_loop_prim,
-            cond_prim,
         )
 
     except ImportError:  # pragma: no cover
@@ -174,7 +177,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                         op,
                         self.stopping_condition,
                         max_expansion=max_expansion,
-                        depth_tracker=depth_tracker,  # Pass the tracker
+                        depth_tracker=depth_tracker,
                     )
                 )
 
@@ -218,6 +221,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 *args: the arguments to use in the evaluation
                 current_depth (int): the current depth of the decomposition
             """
+
+            # We update the 'self._env' environment because the jaxpr of the decomposition
+            # can be called while evaluating another jaxpr of the previous decomposition.
 
             for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
                 self._env[invar] = arg
@@ -297,8 +303,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
     def handle_ctrl_transform(*_, **__):
         raise NotImplementedError
 
-    # We register the primitives to propagate the current depth of the decomposition
-    # in the dynamic decomposition evaluation.
+    # We register the primitives to propagate the current depth
+    # in the dynamic decomposition evaluation with program capture enabled.
 
     @DecomposeInterpreter.register_primitive(cond_prim)
     def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, current_depth=0):
