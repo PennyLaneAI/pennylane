@@ -449,7 +449,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         )
 
         def wrapper(*inner_args):
-            return decomposer.eval_dynamic_decomposition(jaxpr, consts, *inner_args)
+            return decomposer.eval(jaxpr, consts, *inner_args)
 
         return jax.make_jaxpr(wrapper)(*args)
 
