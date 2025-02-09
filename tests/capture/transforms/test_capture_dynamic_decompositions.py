@@ -92,7 +92,11 @@ class SimpleCustomOp(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        raise NotImplementedError
+        return [qml.Hadamard(wires=wires), qml.Hadamard(wires=wires)]
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
 
     @staticmethod
     def compute_plxpr_decomposition(wires):
@@ -112,6 +116,10 @@ class SimpleCustomOpReturn(Operation):
     @staticmethod
     def compute_decomposition(wires):
         raise NotImplementedError
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
 
     @staticmethod
     def compute_plxpr_decomposition(wires):
@@ -141,6 +149,10 @@ class CustomOpConstHyperparams(Operation):
     @staticmethod
     def compute_decomposition(wires):
         raise NotImplementedError
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
 
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
@@ -175,6 +187,10 @@ class CustomOpMultiWire(Operation):
         raise NotImplementedError
 
     @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
+
+    @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
 
         phi = args[0]
@@ -203,6 +219,10 @@ class CustomOpCond(Operation):
         raise NotImplementedError
 
     @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
+
+    @staticmethod
     def compute_plxpr_decomposition(phi, wires):
 
         def true_fn(phi, wires):
@@ -228,6 +248,10 @@ class CustomOpCondNoFalseBranch(Operation):
         raise NotImplementedError
 
     @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
+
+    @staticmethod
     def compute_plxpr_decomposition(phi, wires):
 
         def true_fn(phi, wires):
@@ -248,6 +272,10 @@ class CustomOpForLoop(Operation):
     @staticmethod
     def compute_decomposition(phi, wires):
         raise NotImplementedError
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
 
     @staticmethod
     def compute_plxpr_decomposition(phi, wires):
@@ -275,6 +303,10 @@ class CustomOpWhileLoop(Operation):
         raise NotImplementedError
 
     @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
+
+    @staticmethod
     def compute_plxpr_decomposition(phi, wires):
 
         def while_f(i):
@@ -300,6 +332,10 @@ class CustomOpNestedCond(Operation):
     @staticmethod
     def compute_decomposition(phi, wires):
         raise NotImplementedError
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
 
     @staticmethod
     def compute_plxpr_decomposition(phi, wires):
@@ -346,6 +382,10 @@ class CustomOpAutograph(Operation):
         raise NotImplementedError
 
     @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
+
+    @staticmethod
     def compute_plxpr_decomposition(phi, wires):
 
         if phi > 0.5:
@@ -366,7 +406,11 @@ class CustomOpNestedOp(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        raise NotImplementedError
+        return [qml.RX(phi, wires=wires), SimpleCustomOp(wires=wires)]
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
 
     @staticmethod
     def compute_plxpr_decomposition(phi, wires):
@@ -385,7 +429,11 @@ class CustomOpNestedOpControlFlow(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        raise NotImplementedError
+        return [qml.S(wires=wires)]
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
 
     @staticmethod
     def compute_plxpr_decomposition(phi, wires):
@@ -416,6 +464,24 @@ class CustomOpNestedOpControlFlow(Operation):
             _ = loop_fn(0)
 
         qml.cond(phi > 0.5, true_fn, false_fn)(phi, wires)
+
+
+class CustomOpNoPlxprDecomposition(Operation):
+    """Custom operation that does not have a plxpr decomposition and returns an operator with a plxpr decomposition in its decomposition"""
+
+    num_wires = 1
+    num_params = 1
+
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array([[1, 0], [0, 1]])
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        return [CustomOpNestedOpControlFlow(phi, wires)]
 
 
 class TestDynamicDecomposeInterpreter:
@@ -828,10 +894,41 @@ class TestDynamicDecomposeInterpreter:
             (None, [qml.RX, qml.Hadamard, qml.Hadamard]),
         ],
     )
-    def test_qnode_nested_decomp(self, max_expansion, expected_ops):
+    def test_qnode_nested_decomp_max_exp(self, max_expansion, expected_ops):
         """Test that a QNode with a nested decomposition custom operation is correctly decomposed."""
 
         @DecomposeInterpreter(max_expansion=max_expansion)
+        def circuit(x, wire):
+            CustomOpNestedOp(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
+        jaxpr_eqns = get_jaxpr_eqns(jaxpr)
+
+        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+
+    @pytest.mark.parametrize(
+        "gate_set, expected_ops",
+        [
+            (
+                [qml.RX, qml.Hadamard],
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                # SimpleCustomOp -> Hadamard, Hadamard
+                [qml.RX, qml.Hadamard],
+            ),
+            (
+                [qml.RX, qml.RY, qml.RZ, qml.CNOT],
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                # SimpleCustomOp -> Hadamard, Hadamard
+                # Hadamard -> RZ, RX, RZ
+                [qml.RX, qml.RZ, qml.RX, qml.RZ, qml.RZ, qml.RX, qml.RZ],
+            ),
+        ],
+    )
+    def test_nested_decomp_gate_set(self, gate_set, expected_ops):
+        """Test that a QNode with a nested decomposition custom operation is correctly decomposed using a custom gate set."""
+
+        @DecomposeInterpreter(gate_set=gate_set)
         def circuit(x, wire):
             CustomOpNestedOp(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
@@ -865,10 +962,10 @@ class TestDynamicDecomposeInterpreter:
             ),
         ],
     )
-    def test_qnode_nested_decomp_control_flow(
+    def test_nested_decomp_control_flow_max_exp(
         self, max_expansion, expected_ops, expected_ops_for_loop, expected_ops_while_loop
     ):
-        """Test that a QNode with a nested decomposition custom operation that contains control flow is correctly decomposed."""
+        """Test that a nested decomposition custom operation that contains control flow is correctly decomposed."""
 
         @DecomposeInterpreter(max_expansion=max_expansion)
         def circuit(x, wire):
@@ -879,7 +976,6 @@ class TestDynamicDecomposeInterpreter:
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
         ops_before_cond = len(expected_ops)
-
         check_jaxpr_eqns(jaxpr_eqns[0:ops_before_cond], expected_ops)
 
         # The + 1 is for the operation that determines the branches of the cond primitive
@@ -892,3 +988,123 @@ class TestDynamicDecomposeInterpreter:
 
         check_jaxpr_eqns(for_loop_eqns, expected_ops_for_loop)
         check_jaxpr_eqns(while_loop_eqns, expected_ops_while_loop)
+
+    @pytest.mark.parametrize(
+        "gate_set, expected_ops, expected_ops_for_loop, expected_ops_while_loop",
+        [
+            (
+                [qml.RX, qml.RY, qml.RZ, CustomOpNestedOp, SimpleCustomOp],
+                # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
+                # Rot -> qml.RZ, qml.RY, qml.RZ
+                [qml.RZ, qml.RY, qml.RZ, CustomOpNestedOp],
+                # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
+                [CustomOpNestedOp],
+                [SimpleCustomOp],
+            ),
+            (
+                [qml.RX, qml.RY, qml.RZ, SimpleCustomOp],
+                # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
+                # Rot -> qml.RZ, qml.RY, qml.RZ
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                [qml.RZ, qml.RY, qml.RZ, qml.RX, SimpleCustomOp],
+                [qml.RX, SimpleCustomOp],
+                [SimpleCustomOp],
+            ),
+            (
+                [qml.RX, qml.RY, qml.RZ, qml.Hadamard],
+                # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
+                # Rot -> qml.RZ, qml.RY, qml.RZ
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                # SimpleCustomOp -> Hadamard, Hadamard
+                [qml.RZ, qml.RY, qml.RZ, qml.RX, qml.Hadamard, qml.Hadamard],
+                [qml.RX, qml.Hadamard, qml.Hadamard],
+                [qml.Hadamard, qml.Hadamard],
+            ),
+            (
+                [qml.RX, qml.RY, qml.RZ],
+                # CustomOpNestedOpControlFlow -> Rot, CustomOpNestedOp (before cond)
+                # Rot -> qml.RZ, qml.RY, qml.RZ
+                # CustomOpNestedOp -> RX, SimpleCustomOp
+                # SimpleCustomOp -> Hadamard, Hadamard
+                # Hadamard -> RZ, RX, RZ
+                [qml.RZ, qml.RY, qml.RZ, qml.RX, qml.RZ, qml.RX, qml.RZ, qml.RZ, qml.RX, qml.RZ],
+                [qml.RX, qml.RZ, qml.RX, qml.RZ, qml.RZ, qml.RX, qml.RZ],
+                [qml.RZ, qml.RX, qml.RZ, qml.RZ, qml.RX, qml.RZ],
+            ),
+        ],
+    )
+    def test_nested_decomp_control_flow_gate_set(
+        self, gate_set, expected_ops, expected_ops_for_loop, expected_ops_while_loop
+    ):
+        """Test that a nested decomposition custom operation that contains control flow is correctly decomposed using a custom gate set."""
+
+        @DecomposeInterpreter(gate_set=gate_set)
+        def circuit(x, wire):
+            CustomOpNestedOpControlFlow(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
+        jaxpr_eqns = get_jaxpr_eqns(jaxpr)
+
+        ops_before_cond = len(expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns[0:ops_before_cond], expected_ops)
+
+        # The + 1 is for the operation that determines the branches of the cond primitive
+        cond_eqns = get_eqns_cond_branches(jaxpr_eqns[ops_before_cond + 1])
+        for_loop_eqns = get_eqns_for_loop(cond_eqns[0][0])
+        while_loop_eqns = get_eqns_while_loop(cond_eqns[1][0])
+
+        for_loop_eqns = [eqn for eqn in for_loop_eqns if eqn.primitive != jax.lax.sin_p]
+        while_loop_eqns = [eqn for eqn in while_loop_eqns if eqn.primitive != jax.lax.add_p]
+
+        check_jaxpr_eqns(for_loop_eqns, expected_ops_for_loop)
+        check_jaxpr_eqns(while_loop_eqns, expected_ops_while_loop)
+
+    @pytest.mark.parametrize(
+        "max_expansion, expected_ops",
+        [
+            # No expansion is performed
+            (0, [CustomOpNoPlxprDecomposition]),
+            # the `compute_decomposition` of CustomOpNoPlxprDecomposition is called, because this method does not have a plxpr decomposition
+            (1, [CustomOpNestedOpControlFlow]),
+            # the `compute_decomposition` of CustomOpNestedOpControlFlow is called, because (even though this operator has a plxpr decomposition),
+            # it was called in the `compute_decomposition` of CustomOpNoPlxprDecomposition. This is a necessary limitation of the current implementation.
+            (2, [qml.S]),
+            (None, [qml.S]),
+        ],
+    )
+    def test_nested_decomp_no_plxpr_decomp_max_exp(self, max_expansion, expected_ops):
+        """Test that a QNode with a nested decomposition custom operation that contains an operator with no plxpr decomposition is correctly decomposed."""
+
+        @DecomposeInterpreter(max_expansion=max_expansion)
+        def circuit(x, wire):
+            CustomOpNoPlxprDecomposition(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
+        jaxpr_eqns = get_jaxpr_eqns(jaxpr)
+
+        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+
+    @pytest.mark.parametrize(
+        "gate_set, expected_ops",
+        [
+            ([CustomOpNoPlxprDecomposition], [CustomOpNoPlxprDecomposition]),
+            ([CustomOpNestedOpControlFlow], [CustomOpNestedOpControlFlow]),
+            # We expected the same decomposition of the single qml.S gate.
+            # Notice that the `compute_decomposition` of CustomOpNoPlxprDecomposition is called and, as a consequence,
+            # the `compute_decomposition` of CustomOpNestedOpControlFlow is called (instead of its plxpr decomposition).
+            ([qml.RX, qml.RY, qml.RZ, qml.CNOT], [qml.RZ]),
+        ],
+    )
+    def test_nested_decomp_no_plxpr_decomposition_gate_set(self, gate_set, expected_ops):
+
+        @DecomposeInterpreter(gate_set=gate_set)
+        def circuit(x, wire):
+            CustomOpNoPlxprDecomposition(x, wires=wire)
+            return qml.expval(qml.Z(wires=wire))
+
+        jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
+        jaxpr_eqns = get_jaxpr_eqns(jaxpr)
+
+        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)

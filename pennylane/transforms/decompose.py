@@ -39,6 +39,7 @@ def _operator_decomposition_gen(
     acceptance_function: Callable[[qml.operation.Operator], bool],
     max_expansion: Optional[int] = None,
     current_depth=0,
+    depth_tracker=None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
 
@@ -52,6 +53,8 @@ def _operator_decomposition_gen(
     else:
         decomp = op.decomposition()
         current_depth += 1
+        if depth_tracker is not None:
+            depth_tracker["current_depth"] = current_depth
 
         for sub_op in decomp:
             yield from _operator_decomposition_gen(
@@ -59,6 +62,7 @@ def _operator_decomposition_gen(
                 acceptance_function,
                 max_expansion=max_expansion,
                 current_depth=current_depth,
+                depth_tracker=depth_tracker,
             )
 
 
@@ -162,14 +166,20 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 self.max_expansion + current_depth if self.max_expansion is not None else None
             )
 
+            depth_tracker = {"current_depth": current_depth}
+
             with qml.capture.pause():
                 decomposition = list(
                     _operator_decomposition_gen(
                         op,
                         self.stopping_condition,
                         max_expansion=max_expansion,
+                        depth_tracker=depth_tracker,  # Pass the tracker
                     )
                 )
+
+            current_depth = depth_tracker["current_depth"]
+            print(f"Final decomposition depth: {current_depth}")
 
             return [
                 self.sub_interpret_operation(decomp_op, current_depth)
@@ -178,6 +188,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
         def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator, current_depth: int = 0):
             """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
+
+            print(f"_evaluate_jaxpr_decomposition: op={op}, current_depth={current_depth}")
 
             if self.gate_set(op):
                 return self.interpret_operation(op)
@@ -189,12 +201,10 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             jaxpr_decomp = qml.capture.make_plxpr(
                 partial(op.compute_plxpr_decomposition, **op.hyperparameters)
             )(*args)
+            current_depth += 1
 
             return self.eval_dynamic_decomposition(
-                jaxpr_decomp.jaxpr,
-                jaxpr_decomp.consts,
-                *args,
-                current_depth=current_depth + 1,
+                jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args, current_depth=current_depth
             )
 
         def eval_dynamic_decomposition(
