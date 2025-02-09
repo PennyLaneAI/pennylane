@@ -70,9 +70,9 @@ def _operator_decomposition_gen(
 
 
 @lru_cache
-def _get_plxpr_decompose():  # pylint: disable=missing-docstring
+def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-statements
     try:
-        # pylint: disable=import-outside-toplevel, too-many-statements
+        # pylint: disable=import-outside-toplevel
         import jax
 
         from pennylane.capture.primitives import (
@@ -182,7 +182,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 )
 
             current_depth = depth_tracker["current_depth"]
-            print(f"Final decomposition depth: {current_depth}")
 
             return [
                 self.sub_interpret_operation(decomp_op, current_depth)

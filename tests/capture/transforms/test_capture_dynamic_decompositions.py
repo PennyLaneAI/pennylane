@@ -938,8 +938,6 @@ class TestDynamicDecomposeInterpreter:
 
         check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
 
-        assert 
-
     @pytest.mark.parametrize(
         "max_expansion, expected_ops, expected_ops_for_loop, expected_ops_while_loop",
         [
@@ -1042,11 +1040,11 @@ class TestDynamicDecomposeInterpreter:
                 # CustomOpNestedOp is in the for loop of the true branch
                 # CustomOpNestedOp -> RX, SimpleCustomOp
                 # SimpleCustomOp -> Hadamard, Hadamard
-                # Hadamard -> RZ, RX, RZ                
+                # Hadamard -> RZ, RX, RZ
                 [qml.RX, qml.RZ, qml.RX, qml.RZ, qml.RZ, qml.RX, qml.RZ],
                 # SimpleCustomOp is in the while loop of the false branch
                 # SimpleCustomOp -> Hadamard, Hadamard
-                # Hadamard -> RZ, RX, RZ                
+                # Hadamard -> RZ, RX, RZ
                 [qml.RZ, qml.RX, qml.RZ, qml.RZ, qml.RX, qml.RZ],
             ),
         ],
