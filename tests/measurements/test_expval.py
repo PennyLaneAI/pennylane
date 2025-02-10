@@ -88,7 +88,8 @@ class TestExpval:
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         obs = coeffs * qml.PauliZ(0)
         expected = qml.expval(obs).process_samples(samples, [0, 1])
-        assert ExpectationMP(obs=obs).process_samples(samples, [0, 1]) == expected
+        result = ExpectationMP(obs=obs).process_samples(samples, [0, 1])
+        assert qml.math.allclose(result, expected)
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     def test_value(self, tol, shots, seed):
