@@ -94,6 +94,23 @@ class TestUnitaryToRotInterpreter:
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    def test_three_qubit_exampl3(self):
+        """Tests that no decomposition occurs since num_qubits > 2"""
+
+        @UnitaryToRotInterpreter()
+        def f(U):
+            qml.QubitUnitary(U, [0, 1, 2])
+            return qml.expval(qml.Z(0))
+
+        U = qml.numpy.eye(8)
+        jaxpr = jax.make_jaxpr(f)(U)
+
+        assert jaxpr.eqns[0].primitive == qml.QubitUnitary._primitive
+
+        # Measurement
+        assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
 
 class TestQNodeIntegration:
     """Test that transform works at the QNode level."""
