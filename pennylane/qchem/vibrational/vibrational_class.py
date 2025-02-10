@@ -86,7 +86,7 @@ class VibrationalPES:
         self.pes_onemode = pes_data[0] if pes_data else None
         self.pes_twomode = pes_data[1] if len(pes_data) > 1 else None
         self.pes_threemode = pes_data[2] if len(pes_data) > 2 else None
-        self.dipole_onemode = dipole_data[0] if dipole_level else None
+        self.dipole_onemode = dipole_data[0] if dipole_data else None
         self.dipole_twomode = dipole_data[1] if dipole_level >= 2 else None
         self.dipole_threemode = dipole_data[2] if dipole_level >= 3 else None
         self.localized = localized
