@@ -6,9 +6,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
-  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
-
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
@@ -150,8 +147,14 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
+* Autograph can now be used with custom operations defined outside of the pennylane namespace.
+  [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
+
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
 
 * Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
   with program capture enabled.

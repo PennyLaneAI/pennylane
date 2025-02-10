@@ -270,11 +270,12 @@ class TestDynamicDecomposeInterpreter:
     ### QNode tests
     ############################
 
-    def test_qnode_simple(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_qnode_simple(self, autograph):
         """Test that a QNode with a custom operation is correctly decomposed."""
 
         @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=autograph)
         def circuit():
             qml.RY(0.1, wires=0)
             SimpleCustomOp(wires=0)
@@ -299,12 +300,13 @@ class TestDynamicDecomposeInterpreter:
 
         assert qml.math.allclose(*result, circuit_comparison())
 
+    @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [2, 3, 1, 0]])
-    def test_multi_wire(self, wires):
+    def test_multi_wire(self, wires, autograph):
         """Test that a QNode with a multi-wire custom operation is correctly decomposed."""
 
         @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=4), autograph=False)
+        @qml.qnode(device=qml.device("default.qubit", wires=4), autograph=autograph)
         def circuit(x, wires):
             CustomOpMultiWire(x, wires=wires)
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
@@ -341,13 +343,14 @@ class TestDynamicDecomposeInterpreter:
         assert qml.math.allclose(result[2], comparison_result[2])
         assert qml.math.allclose(result[3], comparison_result[3])
 
+    @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [2, 3, 1, 0]])
     @pytest.mark.parametrize("x", [0.2, 0.8])
-    def test_qnode_const_hyperparams(self, wires, x):
+    def test_qnode_const_hyperparams(self, wires, x, autograph):
         """Test that a QNode with a constant in the custom operation is correctly decomposed."""
 
         @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=4), autograph=False)
+        @qml.qnode(device=qml.device("default.qubit", wires=4), autograph=autograph)
         def circuit(x, wires):
             CustomOpConstHyperparams(x, wires=wires)
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
@@ -382,13 +385,14 @@ class TestDynamicDecomposeInterpreter:
         assert qml.math.allclose(result[2], comparison_result[2])
         assert qml.math.allclose(result[3], comparison_result[3])
 
+    @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wire", [0, 1])
     @pytest.mark.parametrize("x", [0.2, 0.8])
-    def test_qnode_cond(self, x, wire):
+    def test_qnode_cond(self, x, wire, autograph):
         """Test that a QNode with a conditional custom operation is correctly decomposed."""
 
         @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=autograph)
         def circuit(x, wire):
             CustomOpCond(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
@@ -423,12 +427,13 @@ class TestDynamicDecomposeInterpreter:
 
         assert qml.math.allclose(*result, circuit_comparison(x, wire))
 
+    @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wire", [0, 1])
-    def test_qnode_for_loop(self, wire):
+    def test_qnode_for_loop(self, wire, autograph):
         """Test that a QNode with a for loop custom operation is correctly decomposed."""
 
         @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=autograph)
         def circuit(x, wire):
             CustomOpForLoop(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
@@ -458,12 +463,13 @@ class TestDynamicDecomposeInterpreter:
 
         assert qml.math.allclose(*result, circuit_comparison(0.5, wire))
 
+    @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wire", [0, 1])
-    def test_qnode_while_loop(self, wire):
+    def test_qnode_while_loop(self, wire, autograph):
         """Test that a QNode with a while loop custom operation is correctly decomposed."""
 
         @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=autograph)
         def circuit(x, wire):
             CustomOpWhileLoop(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
@@ -492,13 +498,14 @@ class TestDynamicDecomposeInterpreter:
 
         assert qml.math.allclose(*result, circuit_comparison(0.5, wire))
 
+    @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wire", [0, 1])
     @pytest.mark.parametrize("x", [0.2, 0.8])
-    def test_qnode_nested_cond(self, x, wire):
+    def test_qnode_nested_cond(self, x, wire, autograph):
         """Test that a QNode with a nested conditional custom operation is correctly decomposed."""
 
         @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=autograph)
         def circuit(x, wire):
             CustomOpNestedCond(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
@@ -548,12 +555,12 @@ class TestDynamicDecomposeInterpreter:
         """Test that a QNode with a nested conditional custom operation is correctly decomposed."""
 
         @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=True)
         def circuit(x, wire):
             CustomOpAutograph(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
 
-        jaxpr = qml.capture.make_plxpr(circuit)(x, wire)
+        jaxpr = jax.make_jaxpr(circuit)(x, wire)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -569,7 +576,7 @@ class TestDynamicDecomposeInterpreter:
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, wire)
 
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
+        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=True)
         def circuit_comparison(x, wire):
 
             if x > 0.5:
@@ -580,7 +587,7 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(wires=wire))
 
         # Autograph requires to capture the function first
-        jaxpr_comparison = qml.capture.make_plxpr(circuit_comparison)(x, wire)
+        jaxpr_comparison = jax.make_jaxpr(circuit_comparison)(x, wire)
         result_comparison = jax.core.eval_jaxpr(
             jaxpr_comparison.jaxpr, jaxpr_comparison.consts, x, wire
         )
