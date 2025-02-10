@@ -94,7 +94,7 @@ class TestUnitaryToRotInterpreter:
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    def test_three_qubit_exampl3(self):
+    def test_three_qubit_example(self):
         """Tests that no decomposition occurs since num_qubits > 2"""
 
         @UnitaryToRotInterpreter()
