@@ -261,6 +261,10 @@
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
+* The code example in the docstring for `qml.BasisRotation` was corrected by including `wire_order` in the 
+  call to `qml.matrix`.
+  [(#6891)](https://github.com/PennyLaneAI/pennylane/pull/6891)
+
 * The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
