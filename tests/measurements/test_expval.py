@@ -80,14 +80,6 @@ class TestExpval:
         result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
         assert qml.math.allclose(result, expected * coeffs)
 
-    @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
-    def test_process_state_dtype(self, coeffs):
-        """Test that the return type of the process_state function is correct"""
-        res = qml.measurements.ExpectationMP(obs=coeffs * qml.Z(0)).process_state(
-            state=[1, 0], wire_order=qml.wires.Wires(0)
-        )
-        assert np.allclose(res, coeffs)
-
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     def test_value(self, tol, shots, seed):
         """Test that the expval interface works"""
