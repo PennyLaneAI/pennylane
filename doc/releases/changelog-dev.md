@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
+
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
@@ -158,6 +161,12 @@
 * A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices 
   that only natively support mid-circuit measurements in the computational basis.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  
+* `null.qubit` can now execute jaxpr.
+  [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
+
+* Autograph can now be used with custom operations defined outside of the pennylane namespace.
+  [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
 
 <h3>Breaking changes 💔</h3>
 
@@ -197,7 +206,9 @@
 <h3>Deprecations 👋</h3>
 
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  A folllow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
   [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
+  [(#6926)](https://github.com/PennyLaneAI/pennylane/pull/6926)
 
 * The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
   Instead, use the `wires` argument as the second positional argument.
@@ -261,7 +272,21 @@
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
+* The code example in the docstring for `qml.BasisRotation` was corrected by including `wire_order` in the 
+  call to `qml.matrix`.
+  [(#6891)](https://github.com/PennyLaneAI/pennylane/pull/6891)
+
+* The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
+  [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
+
 <h3>Bug fixes 🐛</h3>
+
+* `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
+  [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
+
+* `qml.capture.PlxprInterpreter` now uses `Primitive.get_bind_params` to resolve primitive calling signatures before binding
+  primitives.
+  [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
 
 * The interface is now detected from the data in the circuit, not the arguments to the `QNode`. This allows
   interface data to be strictly passed as closure variables and still be detected.
