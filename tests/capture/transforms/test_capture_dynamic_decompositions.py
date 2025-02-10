@@ -337,11 +337,8 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         comparison_result = circuit_comparison(0.5, wires)
-
-        assert qml.math.allclose(result[0], comparison_result[0])
-        assert qml.math.allclose(result[1], comparison_result[1])
-        assert qml.math.allclose(result[2], comparison_result[2])
-        assert qml.math.allclose(result[3], comparison_result[3])
+        for res, comp in zip(result, comparison_result):
+            assert qml.math.allclose(res, comp)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [2, 3, 1, 0]])
@@ -379,11 +376,8 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         comparison_result = circuit_comparison(x, wires)
-
-        assert qml.math.allclose(result[0], comparison_result[0])
-        assert qml.math.allclose(result[1], comparison_result[1])
-        assert qml.math.allclose(result[2], comparison_result[2])
-        assert qml.math.allclose(result[3], comparison_result[3])
+        for res, comp in zip(result, comparison_result):
+            assert qml.math.allclose(res, comp)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wire", [0, 1])
