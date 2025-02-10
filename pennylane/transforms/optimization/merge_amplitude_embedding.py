@@ -91,18 +91,6 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 self.input_batch_size.append(op.batch_size)
                 self.visited_wires = self.visited_wires.union(set(op.wires))
 
-        def interpret_measurement(self, measurement):
-            """Purge the "seen" operations and then interpret the measurement.
-
-            Args:
-                measurement (MeasurementProcess): a measurement instance.
-
-            See also :meth:`~.interpret_measurement_eqn`.
-
-            """
-            self.purge_seen_operations()
-            return super().interpret_measurement(measurement)
-
         def purge_seen_operations(self):
             """Merge the gates and insert it at the beginning of the "seen" gates; then interpret said gates."""
             with qml.capture.pause():
@@ -134,6 +122,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 super().interpret_operation(op)
             self.cleanup()
 
+        # pylint: disable=too-many-branches
         def eval(self, jaxpr, consts, *args):
             """Evaluate a jaxpr.
 
@@ -158,13 +147,16 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 primitive = eqn.primitive
                 custom_handler = self._primitive_registrations.get(primitive, None)
 
-                if custom_handler:
+                if getattr(primitive, "prim_type", "") == "higher_order":
                     self.purge_seen_operations()
+
+                if custom_handler:
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
                 elif getattr(primitive, "prim_type", "") == "operator":
                     outvals = self.interpret_operation_eqn(eqn)
                 elif getattr(primitive, "prim_type", "") == "measurement":
+                    self.purge_seen_operations()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
                     invals = [self.read(invar) for invar in eqn.invars]
