@@ -318,9 +318,11 @@ class QNode:
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
-        autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to convert Python control flow to native PennyLane
-            control flow. For more information, refer to :doc:`Autograph </development/autograph>`. Defaults to ``True``.
-
+        static_argnums (Union[int, Sequence[int]]): *Only applicable when the experimental capture mode is enabled.*
+            An ``int`` or collection of ``int``\ s that specify which positional arguments to treat as static.
+        autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to
+            convert Python control flow to native PennyLane control flow. For more information, refer to
+            :doc:`Autograph </development/autograph>`. Defaults to ``True``.
 
     **Example**
 
@@ -530,7 +532,6 @@ class QNode:
         interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         *,
-        static_argnums: Union[int, Iterable[int]] = (),
         grad_on_execution: Literal[True, False, "best"] = "best",
         cache: Union[Cache, Literal["auto", True, False]] = "auto",
         cachesize: int = 10000,
@@ -539,6 +540,7 @@ class QNode:
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         gradient_kwargs: Optional[dict] = None,
+        static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,
         **kwargs,
     ):
