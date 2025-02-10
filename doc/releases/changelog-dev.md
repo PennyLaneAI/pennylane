@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
+  [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
+ 
 * Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
   [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
 
@@ -304,4 +307,5 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
 Mudit Pandey,
-Andrija Paurevic
+Andrija Paurevic,
+David Wierichs
