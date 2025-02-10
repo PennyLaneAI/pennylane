@@ -185,9 +185,9 @@ class ResourceTrotterProduct(
 
         first_order_expansion = [
             ResourceExp.resource_rep(
-                **re.ops.op_math.symbolic._extract_exp_params(
+                **re.ops.op_math.symbolic._extract_exp_params(  # pylint: disable=protected-access
                     op, scalar=1j, num_steps=1
-                )  # pylint: disable=protected-access
+                )
             )
             for op in base.operands
         ]
