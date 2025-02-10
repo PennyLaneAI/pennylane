@@ -28,7 +28,7 @@ from pennylane.wires import Wires
 # ToDo: should some of the info be data instead of metadata?
 class ParametricMidMeasureMP(MidMeasureMP):
     """Parametric mid-circuit measurement. The basis for the measurement is parametrized by
-    a plane ("XY", "XZ" or "YZ"), and an angle within the plane.
+    a plane ("XY", "ZX" or "ZY"), and an angle within the plane.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
     Measurements on a single qubit are assumed.
@@ -47,7 +47,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
     Keyword Args:
         angle (float): The angle in radians
-        plane (str): The plane the measurement basis lies in. Options are "XY", "XZ" and "YZ"
+        plane (str): The plane the measurement basis lies in. Options are "XY", "ZX" and "ZY"
         reset (bool): Whether to reset the wire after measurement.
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
             measurement. None by default. If postselection is requested, only the post-measurement
@@ -113,13 +113,13 @@ class ParametricMidMeasureMP(MidMeasureMP):
                 [[1, np.exp(-1j * self.angle)], [1, -np.exp(-1j * self.angle)]]
             ) / np.sqrt(2)
             return [qml.QubitUnitary(mat, wires=self.wires)]
-        if self.plane == "XZ":
+        if self.plane == "ZX":
             return [qml.RY(-self.angle, self.wires)]
-        if self.plane == "YZ":
-            return [qml.RX(-self.angle, self.wires)]
+        if self.plane == "ZY":
+            return [qml.RX(self.angle, self.wires)]
 
         raise NotImplementedError(
-            f"{self.plane} plane not implemented. Available plans are 'XY' 'XZ' and 'YZ'."
+            f"{self.plane} plane not implemented. Available plans are 'XY' 'ZX' and 'ZY'."
         )
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
@@ -235,14 +235,14 @@ def diagonalize_mcms(tape):
         if isinstance(op, ParametricMidMeasureMP):
             diag_gate = op.diagonalizing_gates()[0]
             op.angle = 0
-            op.plane = "YZ"
+            op.plane = "ZY"
             new_operations.extend([diag_gate, op])
         elif isinstance(op, qml.ops.Conditional) and isinstance(op.base, ParametricMidMeasureMP):
             diag_gate = qml.ops.Conditional(
                 expr=op.hyperparameters["meas_val"], then_op=op.diagonalizing_gates()[0]
             )
             op.base.angle = 0
-            op.base.plane = "YZ"
+            op.base.plane = "ZY"
             new_operations.extend([diag_gate, op])
         else:
             new_operations.append(op)

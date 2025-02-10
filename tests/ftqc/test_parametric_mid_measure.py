@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.devices.qubit import measure as apply_qubit_measurement
 from pennylane.ftqc import ParametricMidMeasureMP, diagonalize_mcms
 from pennylane.wires import Wires
 
@@ -38,7 +39,7 @@ class TestParametricMidMeasure:
         m2 = ParametricMidMeasureMP(Wires(1), angle=1.23, id="m1", plane="XY")
         m3 = ParametricMidMeasureMP(Wires(0), angle=2.45, id="m1", plane="XY")
         m4 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m2", plane="XY")
-        m5 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="YZ")
+        m5 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="ZY")
         m6 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="XY")
 
         assert m1.hash != m2.hash
@@ -77,15 +78,15 @@ class TestParametricMidMeasure:
         "plane, angle, wire, expected",
         [
             ("XY", 1.2, 0, "measure_xy(wires=[0], angle=1.2)"),
-            ("XZ", 1.2, 0, "measure_xz(wires=[0], angle=1.2)"),
-            ("YZ", 1.2, 0, "measure_yz(wires=[0], angle=1.2)"),
+            ("ZX", 1.2, 0, "measure_zx(wires=[0], angle=1.2)"),
+            ("ZY", 1.2, 0, "measure_zy(wires=[0], angle=1.2)"),
             ("XY", np.pi, 0, "measure_xy(wires=[0], angle=3.141592653589793)"),
             ("XY", 2.345, 1, "measure_xy(wires=[1], angle=2.345)"),
         ],
     )
     def test_repr(self, plane, angle, wire, expected):
         """Test the repr for ParametricMidMeasureMP is correct"""
-        mp = ParametricMidMeasureMP(wires=wire, angle=angle, plane=plane)
+        mp = ParametricMidMeasureMP(wires=Wires([wire]), angle=angle, plane=plane)
         assert repr(mp) == expected
 
     @pytest.mark.parametrize(
@@ -97,23 +98,25 @@ class TestParametricMidMeasure:
             ("XY", 0, True, "┤↗ˣʸ₀│  │0⟩"),
             ("XY", 1, False, "┤↗ˣʸ₁├"),
             ("XY", 1, True, "┤↗ˣʸ₁│  │0⟩"),
-            ("XZ", None, False, "┤↗ˣᶻ├"),
-            ("XZ", None, True, "┤↗ˣᶻ│  │0⟩"),
-            ("XZ", 0, False, "┤↗ˣᶻ₀├"),
-            ("XZ", 0, True, "┤↗ˣᶻ₀│  │0⟩"),
-            ("XZ", 1, False, "┤↗ˣᶻ₁├"),
-            ("XZ", 1, True, "┤↗ˣᶻ₁│  │0⟩"),
-            ("YZ", None, False, "┤↗ʸᶻ├"),
-            ("YZ", None, True, "┤↗ʸᶻ│  │0⟩"),
-            ("YZ", 0, False, "┤↗ʸᶻ₀├"),
-            ("YZ", 0, True, "┤↗ʸᶻ₀│  │0⟩"),
-            ("YZ", 1, False, "┤↗ʸᶻ₁├"),
-            ("YZ", 1, True, "┤↗ʸᶻ₁│  │0⟩"),
+            ("ZX", None, False, "┤↗ᶻˣ├"),
+            ("ZX", None, True, "┤↗ᶻˣ│  │0⟩"),
+            ("ZX", 0, False, "┤↗ᶻˣ₀├"),
+            ("ZX", 0, True, "┤↗ᶻˣ₀│  │0⟩"),
+            ("ZX", 1, False, "┤↗ᶻˣ₁├"),
+            ("ZX", 1, True, "┤↗ᶻˣ₁│  │0⟩"),
+            ("ZY", None, False, "┤↗ᶻʸ├"),
+            ("ZY", None, True, "┤↗ᶻʸ│  │0⟩"),
+            ("ZY", 0, False, "┤↗ᶻʸ₀├"),
+            ("ZY", 0, True, "┤↗ᶻʸ₀│  │0⟩"),
+            ("ZY", 1, False, "┤↗ᶻʸ₁├"),
+            ("ZY", 1, True, "┤↗ᶻʸ₁│  │0⟩"),
         ],
     )
     def test_label_no_decimals(self, plane, postselect, reset, expected):
         """Test that the label for a ParametricMidMeasureMP is correct"""
-        mp = ParametricMidMeasureMP(0, angle=1.23, postselect=postselect, reset=reset, plane=plane)
+        mp = ParametricMidMeasureMP(
+            Wires([0]), angle=1.23, postselect=postselect, reset=reset, plane=plane
+        )
 
         label = mp.label()
         assert label == expected
@@ -130,34 +133,64 @@ class TestParametricMidMeasure:
     def test_label_with_decimals(self, decimals, postselect, expected):
         """Test that the label for a ParametricMidMeasureMP is correct when
         decimals are specified in the label function"""
-        mp = ParametricMidMeasureMP(0, angle=np.pi / 4, postselect=postselect, plane="XY")
+        mp = ParametricMidMeasureMP(Wires([0]), angle=np.pi / 4, postselect=postselect, plane="XY")
 
         label = mp.label(decimals=decimals)
         assert label == expected
 
-    @pytest.mark.parametrize("angle", [1.2])
-    def test_diagonalizing_gates_xy(self, angle):
-        op = ParametricMidMeasureMP([0], angle=angle, plane="XY")
+    @pytest.mark.parametrize(
+        "plane, measurement_angle, corresponding_obs",
+        [
+            # XY measurements
+            ("XY", 0, qml.X(0)),
+            ("XY", np.pi / 4, qml.X(0) + qml.Y(0)),
+            ("XY", np.pi / 2, qml.Y(0)),
+            ("XY", 3 * np.pi / 4, qml.Y(0) - qml.X(0)),
+            ("XY", np.pi, -qml.X(0)),
+            ("XY", 5 * np.pi / 4, -qml.X(0) - qml.Y(0)),
+            ("XY", -3 * np.pi / 4, -qml.X(0) - qml.Y(0)),
+            # ZX measurements
+            ("ZX", 0, qml.Z(0)),
+            ("ZX", np.pi / 4, qml.X(0) + qml.Z(0)),
+            ("ZX", np.pi / 2, qml.X(0)),
+            ("ZX", 3 * np.pi / 4, qml.X(0) - qml.Z(0)),
+            ("ZX", np.pi, -qml.Z(0)),
+            ("ZX", 5 * np.pi / 4, -qml.X(0) - qml.Z(0)),
+            ("ZX", -3 * np.pi / 4, -qml.X(0) - qml.Z(0)),
+            # ZY measurements
+            ("ZY", 0, qml.Z(0)),
+            ("ZY", np.pi / 4, qml.Y(0) + qml.Z(0)),
+            ("ZY", np.pi / 2, qml.Y(0)),
+            ("ZY", 3 * np.pi / 4, qml.Y(0) - qml.Z(0)),
+            ("ZY", np.pi, -qml.Z(0)),
+            ("ZY", 5 * np.pi / 4, -qml.Y(0) - qml.Z(0)),
+            ("ZY", -3 * np.pi / 4, -qml.Y(0) - qml.Z(0)),
+        ],
+    )
+    def test_diagonalizing_gates(self, plane, measurement_angle, corresponding_obs):
+        """Test that diagonalizing a parametrized mid-circuit measurement and measuring
+        in the computational basis corresponds to the expected observable"""
 
-        assert op.has_diagonalizing_gates
+        dev = qml.device("default.qubit")
 
-        raise RuntimeError
+        @diagonalize_mcms
+        @qml.qnode(dev, mcm_method="tree-traversal")
+        def circ(state, angle):
+            qml.StatePrep(state, wires=0)
+            mp = ParametricMidMeasureMP([0], angle=angle, plane=plane)
+            assert mp.has_diagonalizing_gates
+            return qml.expval(qml.Z(0))
 
-    @pytest.mark.parametrize("angle", [1.2])
-    def test_diagonalizing_gates_yz(self, angle):
-        op = ParametricMidMeasureMP([0], angle=angle, plane="YZ")
+        input_state = np.random.random(2) + 1j * np.random.random(2)
+        input_state = input_state / np.linalg.norm(input_state)
 
-        assert op.has_diagonalizing_gates
+        res = circ(input_state, measurement_angle)
 
-        raise RuntimeError
+        expected_res = apply_qubit_measurement(qml.expval(corresponding_obs), input_state)
+        if isinstance(corresponding_obs, qml.ops.Sum):
+            expected_res = expected_res / np.sqrt(2)
 
-    @pytest.mark.parametrize("angle", [1.2])
-    def test_diagonalizing_gates_xz(self, angle):
-        op = ParametricMidMeasureMP([0], angle=angle, plane="XZ")
-
-        assert op.has_diagonalizing_gates
-
-        raise RuntimeError
+        assert np.allclose(res, expected_res)
 
 
 class TestDrawParametricMidMeasure:
@@ -168,7 +201,7 @@ class TestDrawParametricMidMeasure:
 
         @qml.qnode(dev)
         def circ():
-            ParametricMidMeasureMP(0, angle=np.pi / 4, plane="XY")
+            ParametricMidMeasureMP(Wires([0]), angle=np.pi / 4, plane="XY")
             return qml.expval(qml.Z(0))
 
         _, ax = qml.draw_mpl(circ)()
@@ -187,7 +220,7 @@ class TestDrawParametricMidMeasure:
 
         @qml.qnode(dev)
         def circ():
-            ParametricMidMeasureMP(0, angle=np.pi / 4, plane="XY", reset=True)
+            ParametricMidMeasureMP(Wires([0]), angle=np.pi / 4, plane="XY", reset=True)
             return qml.expval(qml.Z(0))
 
         _, ax = qml.draw_mpl(circ)()
@@ -210,14 +243,13 @@ class TestDrawParametricMidMeasure:
 
         @qml.qnode(dev, mcm_method="tree-traversal")
         def circ():
-            ParametricMidMeasureMP(0, angle=np.pi / 4, plane="XY")
+            ParametricMidMeasureMP(Wires([0]), angle=np.pi / 4, plane="XY")
             return qml.expval(qml.Z(0))
 
         assert qml.draw(circ)() == "0: ──┤↗ˣʸ(0.79)├─┤  <Z>"
 
 
 class TestDiagonalizeMCMs:
-
     def test_diagonalize_mcm_with_no_parametrized_mcms(self):
         """Test that the diagonalize_mcms transform leaves standard operations
         and MidMeasureMP on the tape untouched"""
@@ -236,7 +268,7 @@ class TestDiagonalizeMCMs:
         containing ParametricMidMeasureMPs"""
 
         tape = qml.tape.QuantumScript(
-            [qml.RY(np.pi / 4, 0), ParametricMidMeasureMP(0, angle=np.pi, plane="XY")]
+            [qml.RY(np.pi / 4, 0), ParametricMidMeasureMP(Wires([0]), angle=np.pi, plane="XY")]
         )
         diagonalizing_gate = tape.operations[1].diagonalizing_gates()[0]
 
@@ -248,7 +280,7 @@ class TestDiagonalizeMCMs:
         assert isinstance(new_tape.operations[2], ParametricMidMeasureMP)
         assert new_tape.operations[2].wires == tape.operations[1].wires
         assert new_tape.operations[2].angle == 0
-        assert new_tape.operations[2].plane == "YZ"
+        assert new_tape.operations[2].plane == "ZY"
         assert np.allclose(
             new_tape.operations[2].diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
         )
@@ -264,7 +296,7 @@ class TestDiagonalizeMCMs:
 
         original_tape = qml.tape.QuantumScript.from_queue(q)
         base_diagonalizing_gate = ParametricMidMeasureMP(
-            2, angle=1.2, plane="XY"
+            Wires([2]), angle=1.2, plane="XY"
         ).diagonalizing_gates()[0]
 
         (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
@@ -282,7 +314,7 @@ class TestDiagonalizeMCMs:
         assert measurement.wires == original_tape.operations[2].wires
         assert isinstance(measurement.base, ParametricMidMeasureMP)
         assert measurement.base.angle == 0
-        assert measurement.base.plane == "YZ"
+        assert measurement.base.plane == "ZY"
         assert np.allclose(measurement.base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix())
 
         # cond(diagonalizing gate) and cond(mcm) rely on same measurement in the same way
@@ -313,7 +345,6 @@ class TestDiagonalizeMCMs:
             (2, 3, true_diag_gate),
             (4, 5, false_diag_gate),
         ]:
-
             diagonalizing_gate = new_tape.operations[idx1]
             measurement = new_tape.operations[idx2]
 
@@ -327,7 +358,7 @@ class TestDiagonalizeMCMs:
             assert measurement.wires == original_tape.operations[2].wires
             assert isinstance(measurement.base, ParametricMidMeasureMP)
             assert measurement.base.angle == 0
-            assert measurement.base.plane == "YZ"
+            assert measurement.base.plane == "ZY"
             assert np.allclose(
                 measurement.base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
             )
@@ -352,9 +383,6 @@ class TestDiagonalizeMCMs:
 
 
 class TestWorkflows:
-
-    # parametrize over relevant combinations of single-branch-statistics (capture-only), dynamic-one-shot, tree-traversal
-
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_execution(self, mcm_method, shots):
         """Test that we can execute a QNode with a ParametricMidMeasureMP and produce
