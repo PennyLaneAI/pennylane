@@ -865,10 +865,17 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
         return _decompose_pauli_x_based_no_control_values(op)
 
     if isinstance(op.base, qml.GlobalPhase):
-        # use Lemma 5.2 from https://arxiv.org/pdf/quant-ph/9503016
+        # A singly-controlled global phase is the same as a phase shift on the control wire
+        # (Lemma 5.2 from https://arxiv.org/pdf/quant-ph/9503016)
+        # Mathematically, this is the equation (with Id_2 being the 2-dim. identity matrix)
+        # |0><0|⊗ Id_2 + |1><1|⊗ e^{i\phi} = [|0><0| + |1><1| e^{i\phi}] ⊗ Id_2
         phase_shift = qml.PhaseShift(phi=-op.data[0], wires=op.control_wires[-1])
         if len(op.control_wires) == 1:
             return [phase_shift]
+        # For N>1 control wires, we simply add N-1 control wires to the phase shift
+        # Mathematically, this is the equation (proven by inserting an identity)
+        # (Id_{2^N} - |1><1|^N)⊗ Id_2 + |1><1|^N ⊗ e^{i\phi}
+        # = (Id_{2^{N-1}} - |1><1|^{N-1}) ⊗ Id_4 + |1><1|^{N-1} ⊗ [|0><0|+|1><1|e^{i\phi}]⊗ Id_2
         return [ctrl(phase_shift, control=op.control_wires[:-1])]
 
     # TODO: will be removed in the second part of the controlled rework [sc-37951]
