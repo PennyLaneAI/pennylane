@@ -17,8 +17,6 @@ midcircuit measurements with a parameterized measurement axis."""
 
 from typing import Optional
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.measurements.mid_measure import MidMeasureMP
@@ -109,10 +107,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
         if self.plane == "XY":
-            mat = np.array(
-                [[1, np.exp(-1j * self.angle)], [1, -np.exp(-1j * self.angle)]]
-            ) / np.sqrt(2)
-            return [qml.QubitUnitary(mat, wires=self.wires)]
+            return [qml.PhaseShift(-self.angle, self.wires), qml.H(self.wires)]
         if self.plane == "ZX":
             return [qml.RY(-self.angle, self.wires)]
         if self.plane == "ZY":
@@ -233,19 +228,20 @@ def diagonalize_mcms(tape):
         # ToDo: maybe this in-place modification is a bad idea, but
         #  its also weird to diagonalize it and not update it
         if isinstance(op, ParametricMidMeasureMP):
-            diag_gate = op.diagonalizing_gates()[0]
+            diag_gates = op.diagonalizing_gates()
             op.angle = 0
             op.plane = "ZY"
-            new_operations.extend([diag_gate, op])
+            new_operations.extend(diag_gates)
         elif isinstance(op, qml.ops.Conditional) and isinstance(op.base, ParametricMidMeasureMP):
-            diag_gate = qml.ops.Conditional(
-                expr=op.hyperparameters["meas_val"], then_op=op.diagonalizing_gates()[0]
-            )
+            diag_gates = [
+                qml.ops.Conditional(expr=op.hyperparameters["meas_val"], then_op=gate)
+                for gate in op.diagonalizing_gates()
+            ]
             op.base.angle = 0
             op.base.plane = "ZY"
-            new_operations.extend([diag_gate, op])
-        else:
-            new_operations.append(op)
+            new_operations.extend(diag_gates)
+
+        new_operations.append(op)
 
     new_tape = tape.copy(operations=new_operations)
 
