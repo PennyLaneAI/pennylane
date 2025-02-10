@@ -103,7 +103,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             return super().interpret_measurement(measurement)
 
         def purge_seen_operations(self):
-            """Merge the gates and insert it at the beginning of the "seen" gates. Then interpret said gates."""
+            """Merge the gates and insert it at the beginning of the "seen" gates; then interpret said gates."""
             with qml.capture.pause():
                 if len(self.input_wires) > 0:
                     final_wires = self.input_wires[0]
