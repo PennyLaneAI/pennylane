@@ -83,15 +83,11 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(qfunc)()
-        args = ()
-        transformed_jaxpr = merge_amplitude_embedding_plxpr_to_plxpr(
-            jaxpr.jaxpr, jaxpr.consts, [], {}, *args
-        )
 
-        assert len(transformed_jaxpr.eqns) == 3
-        assert transformed_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
-        assert transformed_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_returned_op_is_not_cancelled(self):
         """Test that ops that are returned by the function being transformed are not cancelled."""
