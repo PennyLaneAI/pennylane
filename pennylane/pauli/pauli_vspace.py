@@ -27,7 +27,7 @@ from .pauli_arithmetic import PauliSentence
 
 class PauliVSpace:
     r"""
-    Class representing the linearly independent basis of a vector space.
+    Class representing the linearly independent basis of a vector space in operator space.
 
     The main purpose of this class is to store and process ``M``, which
     is a dictionary-of-keys (DOK) style sparse representation of the set of basis vectors. You can

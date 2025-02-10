@@ -139,7 +139,7 @@ class TestAdjointRepr:
         with pytest.raises(
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
-            qml.structure_constants(generators)
+            structure_constants(generators)
 
 
 dla0 = qml.lie_closure([qml.X(0) @ qml.X(1), qml.Z(0), qml.Z(1)], matrix=True)

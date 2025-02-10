@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2025Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ Advanced Lie algebra features
 Advanced Lie algebra functionality in PennyLane.
 Relevant demos to check out:
 
-* :doc:`/demos/tutorial_liealgebra`__
+* :doc:`/demos/tutorial_liealgebra`
 * :doc:`/demos/tutorial_liesim`
 * :doc:`/demos/tutorial_liesim_extension`
 * :doc:`/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition`

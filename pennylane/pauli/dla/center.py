@@ -119,7 +119,7 @@ def center(
         to our initial assumption that :math:`x\neq 0`.
     """
     warnings.warn(
-        "Calling center from ``qml.pauli.center`` is deprecated. ``center`` has moved to ``pennylane.liealg``. "
+        "Calling center via ``qml.pauli.center`` is deprecated. ``center`` has moved to ``pennylane.liealg``. "
         "Please call ``center`` from top level as ``qml.center`` or from the liealg module via ``qml.liealg.center``.",
         qml.PennyLaneDeprecationWarning,
     )
