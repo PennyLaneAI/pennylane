@@ -155,7 +155,6 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 custom_handler = self._primitive_registrations.get(primitive, None)
 
                 if custom_handler:
-                    # Need to purge "seen" operations before handling custom primitives
                     self.purge_seen_operations()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
