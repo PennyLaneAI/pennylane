@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.devices.qubit import measure as apply_qubit_measurement
 from pennylane.ftqc import ParametricMidMeasureMP, diagonalize_mcms
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
@@ -381,14 +381,32 @@ class TestDiagonalizeMCMs:
             != new_tape.operations[4].meas_val.processing_fn
         )
 
-    # ToDo: this test is just a placeholder to make sure I don't for get to
-    #  add it in the next PR
-    @pytest.mark.xfail(reason="This won't be possible until the follow-up PR")
     def test_diagonalizing_measurements_cond_input(self):
-        """Test that diagonalizing measurements works when diagonalizing a
-        measurement used as a conditional"""
+        """Test that when calling diagonalize_mcms, references to previously
+        diagonalized measurements that are stored in conditions on Conditional
+        operators are updated to track the measurement on the tape following
+        diagonalization, rather than the original object"""
 
-        raise NotImplementedError
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(1.2, 0)
+            mp = ParametricMidMeasureMP(0, angle=1.2, plane="ZY")
+            mv = MeasurementValue([mp], processing_fn=lambda v: v)
+            qml.cond(mv == 0, partial(ParametricMidMeasureMP, angle=1.2))(wires=2, plane="XY")
+
+        original_tape = qml.tape.QuantumScript.from_queue(q)
+        old_mp = original_tape.operations[1]
+        assert isinstance(old_mp, ParametricMidMeasureMP)
+
+        (new_tape,), _ = diagonalize_mcms(original_tape)
+        assert len(new_tape.operations) == 6
+        for op in new_tape.operations[3:]:
+            assert isinstance(op, qml.ops.Conditional)
+
+        new_mp = new_tape.operations[2]
+        assert not isinstance(new_mp, ParametricMidMeasureMP)
+        assert isinstance(new_mp, MidMeasureMP)
+
+        assert new_tape.operations[3].meas_val.measurements == [new_mp]
 
 
 class TestWorkflows:
