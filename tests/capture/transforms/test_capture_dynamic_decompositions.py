@@ -19,6 +19,9 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
+from functools import partial
+
+from pennylane.capture import expand_plxpr_transforms
 from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
 from pennylane.operation import Operation
 from pennylane.transforms.decompose import DecomposeInterpreter
@@ -167,8 +170,6 @@ class CustomOpWhileLoop(Operation):
             return i + 1
 
         _ = loop_fn(0)
-
-        return qml.expval(qml.Z(0))
 
 
 class CustomOpNestedCond(Operation):
@@ -585,3 +586,80 @@ class TestDynamicDecomposeInterpreter:
         )
 
         assert qml.math.allclose(*result, *result_comparison)
+
+
+class TestExpandPlxprTransformsDynamicDecompositions:
+    """Unit tests for ``expand_plxpr_transforms`` with dynamic decompositions."""
+
+    def test_expand_plxpr_transforms_simple(self):
+
+        @partial(qml.transforms.decompose)
+        def circuit():
+            SimpleCustomOp(wires=0)
+            return qml.probs(wires=[0, 1])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+
+        assert jaxpr.eqns[0].primitive == qml.transforms.decompose._primitive
+
+        transformed_f = expand_plxpr_transforms(circuit)
+        transformed_jaxpr = jax.make_jaxpr(transformed_f)()
+
+        assert transformed_jaxpr.eqns[0].primitive == qml.Hadamard._primitive
+        assert (
+            transformed_jaxpr.eqns[1].primitive == qml.measurements.ProbabilityMP._wires_primitive
+        )
+
+    def test_expand_plxpr_transforms_cond(self):
+        @partial(qml.transforms.decompose)
+        def circuit():
+            CustomOpCond(0.5, wires=0)
+            return qml.probs(wires=[0, 1])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+
+        assert jaxpr.eqns[0].primitive == qml.transforms.decompose._primitive
+
+        transformed_f = expand_plxpr_transforms(circuit)
+        transformed_jaxpr = jax.make_jaxpr(transformed_f)()
+
+        assert transformed_jaxpr.eqns[0].primitive == cond_prim
+        assert (
+            transformed_jaxpr.eqns[1].primitive == qml.measurements.ProbabilityMP._wires_primitive
+        )
+
+    def test_expand_plxpr_transforms_for_loop(self):
+        @partial(qml.transforms.decompose)
+        def circuit():
+            CustomOpForLoop(0.5, wires=0)
+            return qml.probs(wires=[0, 1])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+
+        assert jaxpr.eqns[0].primitive == qml.transforms.decompose._primitive
+
+        transformed_f = expand_plxpr_transforms(circuit)
+        transformed_jaxpr = jax.make_jaxpr(transformed_f)()
+
+        assert transformed_jaxpr.eqns[0].primitive == for_loop_prim
+        assert (
+            transformed_jaxpr.eqns[1].primitive == qml.measurements.ProbabilityMP._wires_primitive
+        )
+
+    def test_expand_plxpr_transforms_while_loop(self):
+        @partial(qml.transforms.decompose)
+        def circuit():
+            CustomOpWhileLoop(0.5, wires=0)
+            return qml.probs(wires=[0, 1])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+
+        assert jaxpr.eqns[0].primitive == qml.transforms.decompose._primitive
+
+        transformed_f = expand_plxpr_transforms(circuit)
+        transformed_jaxpr = jax.make_jaxpr(transformed_f)()
+
+        assert transformed_jaxpr.eqns[0].primitive == while_loop_prim
+        assert (
+            transformed_jaxpr.eqns[1].primitive == qml.measurements.ProbabilityMP._wires_primitive
+        )
