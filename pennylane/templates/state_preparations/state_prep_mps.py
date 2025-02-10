@@ -22,6 +22,42 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
+def _mps_to_right_canonical_representation(mps, max_bond_dim):
+    """
+    Transform a MPS into a right-canonical MPS.
+
+    Args:
+      mps: List of tensors representing the MPS.
+      max_bond_dim: Maximum allowed bond dimension (for truncation during SVD).
+
+    Returns:
+      A list of tensors representing the MPS in right-canonical form.
+    """
+
+    L = len(mps)
+    output_mps = [None] * L
+
+    # Procedure analogous to the left-canonical conversion but starting from the right and storing the Vd
+    for i in range(L - 1, 0, -1):
+        chi_left, d, chi_right = mps[i].shape
+        M = mps[i].reshape(chi_left, d * chi_right)
+        U, S, Vd = qml.math.linalg.svd(M, full_matrices=False)
+
+        # Truncate SVD components if needed
+        chi_new = min(int(max_bond_dim), len(S))
+        U = U[:, :chi_new]
+        S = S[:chi_new]
+        Vd = Vd[:chi_new, :]
+
+        output_mps[i] = Vd.reshape(chi_new, d, chi_right)
+
+        US = U @ qml.math.diag(S)
+        mps[i - 1] = qml.math.tensordot(mps[i - 1], US, axes=([2], [0]))
+
+    output_mps[0] = mps[0]
+    return output_mps
+
+
 class MPSPrep(Operation):
     r"""Prepares an initial state from a matrix product state (MPS) representation.
 
@@ -259,6 +295,8 @@ class MPSPrep(Operation):
 
         mps[0] = mps[0].reshape((1, *mps[0].shape))
         mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
+
+        mps = _mps_to_right_canonical_representation(mps, max_bond_dimension)
 
         for i, Ai in enumerate(mps):
 
