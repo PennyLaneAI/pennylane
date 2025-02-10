@@ -275,19 +275,20 @@ class TestDiagonalizeMCMs:
         tape = qml.tape.QuantumScript(
             [qml.RY(np.pi / 4, 0), ParametricMidMeasureMP(Wires([0]), angle=np.pi, plane="XY")]
         )
-        diagonalizing_gate = tape.operations[1].diagonalizing_gates()[0]
+        diagonalizing_gates = tape.operations[1].diagonalizing_gates()
 
         (new_tape,), _ = diagonalize_mcms(tape)
-        assert len(new_tape.operations) == 3
+        assert len(new_tape.operations) == 4
 
-        assert new_tape.operations[1] == diagonalizing_gate
+        assert new_tape.operations[1] == diagonalizing_gates[0]
+        assert new_tape.operations[2] == diagonalizing_gates[1]
 
-        assert isinstance(new_tape.operations[2], ParametricMidMeasureMP)
-        assert new_tape.operations[2].wires == tape.operations[1].wires
-        assert new_tape.operations[2].angle == 0
-        assert new_tape.operations[2].plane == "ZY"
+        assert isinstance(new_tape.operations[3], ParametricMidMeasureMP)
+        assert new_tape.operations[3].wires == tape.operations[1].wires
+        assert new_tape.operations[3].angle == 0
+        assert new_tape.operations[3].plane == "ZY"
         assert np.allclose(
-            new_tape.operations[2].diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
+            new_tape.operations[3].diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
         )
 
     def test_diagonalize_mcm_in_cond(self):
@@ -300,19 +301,20 @@ class TestDiagonalizeMCMs:
             qml.cond(m == 1, partial(ParametricMidMeasureMP, angle=1.2))(wires=2, plane="XY")
 
         original_tape = qml.tape.QuantumScript.from_queue(q)
-        base_diagonalizing_gate = ParametricMidMeasureMP(
+        base_diagonalizing_gates = ParametricMidMeasureMP(
             Wires([2]), angle=1.2, plane="XY"
-        ).diagonalizing_gates()[0]
+        ).diagonalizing_gates()
 
         (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
-        assert len(new_tape.operations) == 4
-        diagonalizing_gate = new_tape.operations[2]
-        measurement = new_tape.operations[3]
+        assert len(new_tape.operations) == 5
+        diagonalizing_gates = new_tape.operations[2:4]
+        measurement = new_tape.operations[4]
 
         # conditional diagonalizing gate
-        assert isinstance(diagonalizing_gate, qml.ops.Conditional)
-        assert diagonalizing_gate.base == base_diagonalizing_gate
-        assert diagonalizing_gate.wires == original_tape.operations[2].wires
+        for gate, expected_base in zip(diagonalizing_gates, base_diagonalizing_gates):
+            assert isinstance(gate, qml.ops.Conditional)
+            assert gate.base == expected_base
+            assert gate.wires == original_tape.operations[2].wires
 
         # conditional diagonalized ParametricMidMeasureMP
         assert isinstance(measurement, qml.ops.Conditional)
@@ -323,8 +325,10 @@ class TestDiagonalizeMCMs:
         assert np.allclose(measurement.base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix())
 
         # cond(diagonalizing gate) and cond(mcm) rely on same measurement in the same way
-        assert diagonalizing_gate.meas_val.measurements[0] == measurement.meas_val.measurements[0]
-        assert diagonalizing_gate.meas_val.processing_fn == measurement.meas_val.processing_fn
+        assert (
+            diagonalizing_gates[0].meas_val.measurements[0] == measurement.meas_val.measurements[0]
+        )
+        assert diagonalizing_gates[0].meas_val.processing_fn == measurement.meas_val.processing_fn
 
     def test_diagonalize_mcm_cond_two_outcomes(self):
         """Test that the diagonalize_mcm transform works as expected on a tape
@@ -338,10 +342,10 @@ class TestDiagonalizeMCMs:
                 m == 1,
                 partial(ParametricMidMeasureMP, angle=1.2),
                 partial(ParametricMidMeasureMP, angle=2.4),
-            )(wires=2, plane="XY")
+            )(wires=2, plane="ZX")
         original_tape = qml.tape.QuantumScript.from_queue(q)
-        true_diag_gate = ParametricMidMeasureMP(2, angle=1.2, plane="XY").diagonalizing_gates()[0]
-        false_diag_gate = ParametricMidMeasureMP(2, angle=2.4, plane="XY").diagonalizing_gates()[0]
+        true_diag_gate = ParametricMidMeasureMP(2, angle=1.2, plane="ZX").diagonalizing_gates()[0]
+        false_diag_gate = ParametricMidMeasureMP(2, angle=2.4, plane="ZX").diagonalizing_gates()[0]
 
         (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
         assert len(new_tape.operations) == 6
