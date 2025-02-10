@@ -270,7 +270,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.expval` now longer silently casts to a real number when observable coefficients are imaginary.
+* `qml.expval` no longer silently casts to a real number when observable coefficients are imaginary.
   [(#6939)](https://github.com/PennyLaneAI/pennylane/pull/6939)
 
 * `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
