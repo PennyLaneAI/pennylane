@@ -220,7 +220,7 @@ def diagonalize_mcms(tape):
     becomes
 
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)──U(M0)──┤↗ʸᶻ(0.0)├─┤  <Z>
+    0: ──RY(0.79)──U(M0)──┤↗ᶻʸ(0.0)├─┤  <Z>
     M0 =
     [[ 0.70710678+0.j   0.5       -0.5j]
      [ 0.70710678+0.j  -0.5       +0.5j]]
