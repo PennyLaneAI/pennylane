@@ -60,8 +60,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance.
 
-            If the operator is not an AmplitudeEmbedding operator, it is added to the new operations list.
-            If the operator is an AmplitudeEmbedding operator, the wires and parameters are stored.
+            If the operator is not an AmplitudeEmbedding operator, it is added to the new operations list
+            otherwise, the wires and parameters are stored for future usage.
 
             Args:
                 op (Operator): a pennylane operator instance
@@ -99,10 +99,10 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             See also :meth:`~.interpret_measurement_eqn`.
 
             """
-            self.purge_new_operations()
+            self.purge_seen_operations()
             return super().interpret_measurement(measurement)
 
-        def purge_new_operations(self):
+        def purge_seen_operations(self):
             """Merge the gates and insert it at the beginning of the "seen" gates. Then interpret said gates."""
             with qml.capture.pause():
                 if len(self.input_wires) > 0:
@@ -156,7 +156,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
                 if custom_handler:
                     # Need to purge "seen" operations before handling custom primitives
-                    self.purge_new_operations()
+                    self.purge_seen_operations()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
                 elif getattr(primitive, "prim_type", "") == "operator":
@@ -173,7 +173,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                     self._env[outvar] = outval
 
-            self.purge_new_operations()
+            self.purge_seen_operations()
 
             # Read the final result of the Jaxpr from the environment
             outvals = []
