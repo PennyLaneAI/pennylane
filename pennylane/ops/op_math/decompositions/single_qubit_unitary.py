@@ -16,6 +16,7 @@ operations into elementary gates.
 """
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -134,7 +135,8 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     """
 
     # Cast to batched format for more consistent code
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
+    if not sp.sparse.issparse(U):
+        U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
 
     # Convert to SU(2) format and extract global phase
     U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
