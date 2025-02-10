@@ -27,10 +27,14 @@ from pennylane.labs.resource_estimation import (
     ResourcesNotDefined,
 )
 from pennylane.templates import TrotterProduct
-from pennylane.templates.subroutines.trotter import TrotterizedQfunc, _scalar
+from pennylane.templates.subroutines.trotter import TrotterizedQfunc
+
+# pylint: disable=arguments-differ
 
 
-class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
+class ResourceTrotterProduct(
+    TrotterProduct, ResourceOperator
+):  # pylint: disable=too-many-ancestors
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
 
@@ -181,7 +185,9 @@ class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
 
         first_order_expansion = [
             ResourceExp.resource_rep(
-                **re.ops.op_math.symbolic._extract_exp_params(op, scalar=1j, num_steps=1)
+                **re.ops.op_math.symbolic._extract_exp_params(
+                    op, scalar=1j, num_steps=1
+                )  # pylint: disable=protected-access
             )
             for op in base.operands
         ]
@@ -209,6 +215,7 @@ class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
 
 
 class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
+    """An internal class which facilitates :code:`qml.resource_trotterize`."""
 
     @staticmethod
     def _resource_decomp(
@@ -242,10 +249,10 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         try:
             qfunc_compressed_reps = tuple(op.resource_rep_from_op() for op in q.queue)
 
-        except AttributeError:
+        except AttributeError as error:
             raise ResourcesNotDefined(
                 "Every operation in the TrotterizedQfunc should be a ResourceOperator"
-            )
+            ) from error
 
         return {
             "n": self.hyperparameters["n"],

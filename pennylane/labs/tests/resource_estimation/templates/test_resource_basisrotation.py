@@ -18,7 +18,6 @@ import pytest
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane import numpy as qnp
 
 # pylint: disable=no-self-use
 

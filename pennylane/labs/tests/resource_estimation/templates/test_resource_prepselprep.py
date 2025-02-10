@@ -18,7 +18,6 @@ import copy
 
 import pytest
 
-import pennylane as qml
 import pennylane.labs.resource_estimation as re
 from pennylane.ops import LinearCombination
 

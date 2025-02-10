@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,12 +26,14 @@ from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
 from pennylane.operation import Operation
 from pennylane.pauli import PauliSentence, PauliWord
 
-# pylint: disable=protected-access,no-self-use
+# pylint: disable=protected-access,no-self-use,arguments-differ
 
 
 class DummyOp(re.ResourceOperator, Operation):
+    """Dummy ResourceOperator child class which implements the
+    :code:`exp_resource_decomp` method."""
 
-    def __init__(self, a, b, wires=[0]):
+    def __init__(self, a, b, wires=(0,)):
         self.a = a
         self.b = b
         super().__init__(wires=wires)
@@ -44,7 +46,7 @@ class DummyOp(re.ResourceOperator, Operation):
         return {h: a, cnot: b}
 
     @classmethod
-    def exp_resource_decomp(cls, coeff, num_steps, a, b):
+    def exp_resource_decomp(cls, coeff, num_steps, a, b):  # pylint: disable=unused-argument
         return cls.resources(a + 1, b + 1)
 
     def resource_params(self) -> dict:

@@ -18,23 +18,20 @@ import pytest
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.ops.op_math.symbolic import (
-    _extract_exp_params,
-    _resources_from_pauli_sentence,
-)
 from pennylane.operation import Operation
 from pennylane.ops.op_math import LinearCombination, SProd
-from pennylane.pauli import PauliSentence, PauliWord
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use,arguments-differ
 
 
 def qfunc_1(time, wires):
+    """A quantum function which queues operations to be trotterized."""
     re.ResourceRX(1.23 * time, wires[0])
     re.ResourceRY(-4.5 * time, wires[0])
 
 
 def qfunc_2(time, arg1, wires):
+    """A quantum function which queues operations to be trotterized."""
     for w in wires:
         re.ResourceHadamard(w)
 
@@ -43,6 +40,7 @@ def qfunc_2(time, arg1, wires):
 
 
 def qfunc_3(time, arg1, arg2, kwarg1=False, wires=None):
+    """A quantum function which queues operations to be trotterized."""
     re.ResourceControlled(
         re.ResourceRot(arg1 * time, arg2 * time, time * (arg1 + arg2), wires=wires[1]),
         control_wires=wires[0],
@@ -71,8 +69,10 @@ trotterized_qfunc_op_data = (
 
 
 class DummyOp(re.ResourceOperator, Operation):
+    """A Dummy ResourceOperator child class which implements the
+    :code:`exp_resource_decomp` method."""
 
-    def __init__(self, a, b, wires=[0]):
+    def __init__(self, a, b, wires=(0,)):
         self.a = a
         self.b = b
         super().__init__(wires=wires)
@@ -85,7 +85,7 @@ class DummyOp(re.ResourceOperator, Operation):
         return {h: a, cnot: b}
 
     @classmethod
-    def exp_resource_decomp(cls, coeff, num_steps, a, b):
+    def exp_resource_decomp(cls, coeff, num_steps, a, b):  # pylint: disable=unused-argument
         return cls.resources(a + 1, b + 1)
 
     def resource_params(self) -> dict:
