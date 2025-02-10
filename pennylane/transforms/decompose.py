@@ -135,15 +135,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             if self.gate_set(op):
                 return self.interpret_operation(op)
 
-            qml.capture.disable()
-            try:
+            with qml.capture.pause():
                 decomposition = list(
                     _operator_decomposition_gen(
                         op, self.stopping_condition, max_expansion=self.max_expansion
                     )
                 )
-            finally:
-                qml.capture.enable()
 
             return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
 
@@ -160,7 +157,18 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
             if eqn.outvars[0].__class__.__name__ == "DropVar":
-                return self.decompose_operation(op)
+
+                if op.has_plxpr_decomposition:
+
+                    args = (*op.parameters, *op.wires)
+                    qml.capture.run_autograph(op.compute_plxpr_decomposition)(
+                        *args, **op.hyperparameters
+                    )
+
+                else:
+
+                    return self.decompose_operation(op)
+
             return op
 
     # pylint: disable=unused-variable,missing-function-docstring

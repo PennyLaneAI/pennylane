@@ -84,7 +84,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    return_type = Variance
+    _shortname = Variance  #! Note: deprecated. Change the value to "var" in v0.42
 
     @property
     def numeric_type(self):

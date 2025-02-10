@@ -97,9 +97,11 @@ def lie_closure_dense(
 
     Compute the Lie closure of the isotropic Heisenberg model with generators :math:`\{X_i X_{i+1} + Y_i Y_{i+1} + Z_i Z_{i+1}\}_{i=0}^{n-1}`.
 
+    >>> from pennylane import X, Y, Z
+    >>> from pennylane.labs.dla import lie_closure_dense
     >>> n = 5
     >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]
-    >>> g = lie_closure_mat(gens, n)
+    >>> g = lie_closure_dense(gens, n)
 
     The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~batched_pauli_decompose`.
 
