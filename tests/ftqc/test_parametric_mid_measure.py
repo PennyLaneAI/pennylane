@@ -23,10 +23,6 @@ from pennylane.devices.qubit import measure as apply_qubit_measurement
 from pennylane.ftqc import ParametricMidMeasureMP, diagonalize_mcms
 from pennylane.wires import Wires
 
-# ToDo: probably move this into the relevant functions instead of skipping the whole file
-mpl = pytest.importorskip("matplotlib")
-plt = pytest.importorskip("matplotlib.pyplot")
-
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
@@ -194,8 +190,12 @@ class TestParametricMidMeasure:
 
 
 class TestDrawParametricMidMeasure:
+
+    @pytest.mark.matplotlib
     def test_draw_mpl_label(self):
         """Test that the plane label is added to the MCM in a mpl drawing"""
+
+        from matplotlib import pyplot as plt
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -213,8 +213,11 @@ class TestDrawParametricMidMeasure:
 
         plt.close()
 
+    @pytest.mark.matplotlib
     def test_draw_mpl_reset(self):
         """Test that the reset is added after the MCM as expected in a mpl drawing"""
+
+        from matplotlib import pyplot as plt
 
         dev = qml.device("default.qubit", wires=2)
 
