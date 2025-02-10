@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -106,6 +106,7 @@ Symbolic Operators
     ~ResourceControlled
     ~ResourceExp
     ~ResourcePow
+    ~ResourceProd
 
 Templates
 ~~~~~~~~~
@@ -122,6 +123,7 @@ Templates
     ~ResourceSelect
     ~ResourceStatePrep
     ~ResourceTrotterProduct
+    ~ResourceTrotterizedQfunc
     ~resource_trotterize
     ~ResourceControlledSequence
     ~ResourceModExp
@@ -191,6 +193,7 @@ from .ops import (
     ResourcePow,
     ResourcePSWAP,
     ResourcePhaseShift,
+    ResourceProd,
     ResourceRot,
     ResourceRX,
     ResourceRY,
@@ -222,5 +225,6 @@ from .templates import (
     ResourceSelect,
     ResourceStatePrep,
     ResourceTrotterProduct,
+    ResourceTrotterizedQfunc,
     resource_trotterize,
 )

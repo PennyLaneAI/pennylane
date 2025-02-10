@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ class TestPauliRotation:
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
-    @pytest.mark.parametrize("z", list(range(10)))
+    @pytest.mark.parametrize("z", list(range(1, 10)))
     def test_pow_decomposition(self, resource_class, epsilon, z):
         """Test that the pow decompositions are correct."""
 

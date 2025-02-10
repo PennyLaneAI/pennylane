@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -201,7 +201,7 @@ class TestPauliRot:
     def test_resources_empty_pauli_string(self):
         """Test that the resources method produces the correct result for an empty pauli string."""
         expected = {re.ResourceGlobalPhase.resource_rep(): 1}
-        assert re.ResourcePauliRot._resource_decomp(pauli_string="") == expected
+        assert re.ResourcePauliRot.resources(pauli_string="") == expected
 
     @pytest.mark.parametrize("pauli_string, expected_h_count, expected_s_count", params)
     def test_resources_from_rep(self, pauli_string, expected_h_count, expected_s_count):

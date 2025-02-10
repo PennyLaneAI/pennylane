@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import pytest
 
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments
+# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments,too-many-positional-arguments
 
 
 class TestResourceCH:

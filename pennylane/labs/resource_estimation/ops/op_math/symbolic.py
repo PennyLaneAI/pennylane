@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@ from typing import Dict
 
 import pennylane.labs.resource_estimation as re
 from pennylane import math
-from pennylane.labs.resource_estimation.resource_container import _combine_dict, _scale_dict
+from pennylane.labs.resource_estimation.resource_container import _scale_dict
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.exp import Exp
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.prod import Prod
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
 
@@ -243,7 +244,9 @@ class ResourceExp(Exp, re.ResourceOperator):
         return {cls.resource_rep(base_class, base_params, base_pauli_rep, z0 * coeff, num_steps): 1}
 
     @staticmethod
-    def tracking_name(base_class, base_params, base_pauli_rep, coeff, num_steps):
+    def tracking_name(
+        base_class, base_params, base_pauli_rep, coeff, num_steps
+    ):  # pylint: disable=unused-argument
         base_name = (
             base_class.tracking_name(**base_params)
             if issubclass(base_class, re.ResourceOperator)
@@ -251,6 +254,31 @@ class ResourceExp(Exp, re.ResourceOperator):
         )
 
         return f"Exp({base_name}, {coeff}, num_steps={num_steps})".replace("Resource", "")
+
+
+class ResourceProd(Prod, re.ResourceOperator):
+    """Resource class for Exp"""
+
+    @staticmethod
+    def _resource_decomp(cmpr_factors, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        res = defaultdict(int)
+        for factor in cmpr_factors:
+            res[factor] += 1
+        return res
+
+    def resource_params(self) -> Dict:
+        try:
+            cmpr_factors = tuple(factor.resource_rep_from_op() for factor in self.operands)
+        except AttributeError as error:
+            raise ValueError(
+                "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
+            ) from error
+
+        return {"cmpr_factors": cmpr_factors}
+
+    @classmethod
+    def resource_rep(cls, cmpr_factors) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {"cmpr_factors": cmpr_factors})
 
 
 def _extract_exp_params(base_op, scalar, num_steps):

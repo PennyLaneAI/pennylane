@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -341,6 +341,10 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, params)
 
+    @classmethod
+    def tracking_name(cls, num_wires) -> str:
+        return f"StatePrep({num_wires})"
+
 
 class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     """Resource class for BasisRotations."""
@@ -359,13 +363,17 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
         return gate_types
 
     def resource_params(self) -> dict:
-        unitary_matrix = self.hyperparameters["unitary_matrix"]
+        unitary_matrix = self.parameters[0]
         return {"dim_N": qml.math.shape(unitary_matrix)[0]}
 
     @classmethod
     def resource_rep(cls, dim_N) -> CompressedResourceOp:
         params = {"dim_N": dim_N}
         return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def tracking_name(cls, dim_N) -> str:
+        return f"BasisRotation({dim_N})"
 
 
 class ResourceSelect(qml.Select, ResourceOperator):
@@ -377,8 +385,8 @@ class ResourceSelect(qml.Select, ResourceOperator):
         x = re.ResourceX.resource_rep()
 
         num_ops = len(cmpr_ops)
-        num_ctrl_wires = int(qnp.log2(num_ops))
-        num_total_ctrl_possibilities = num_ctrl_wires * (2**num_ctrl_wires)  # n * 2^n
+        num_ctrl_wires = int(qnp.ceil(qnp.log2(num_ops)))
+        num_total_ctrl_possibilities = 2**num_ctrl_wires  # 2^n
 
         num_zero_controls = num_total_ctrl_possibilities // 2
         gate_types[x] = num_zero_controls * 2  # conjugate 0 controls
@@ -410,7 +418,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         gate_types = {}
 
         num_ops = len(cmpr_ops)
-        num_wires = int(qnp.log2(num_ops))
+        num_wires = int(qnp.ceil(qnp.log2(num_ops)))
 
         prep = ResourceStatePrep.resource_rep(num_wires)
         sel = ResourceSelect.resource_rep(cmpr_ops)
@@ -431,19 +439,40 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         params = {"cmpr_ops": cmpr_ops}
         return CompressedResourceOp(cls, params)
 
+    @classmethod
+    def pow_resource_decomp(cls, z, cmpr_ops) -> Dict[CompressedResourceOp, int]:
+        gate_types = {}
+
+        num_ops = len(cmpr_ops)
+        num_wires = int(qnp.ceil(qnp.log2(num_ops)))
+
+        prep = ResourceStatePrep.resource_rep(num_wires)
+        pow_sel = re.ResourcePow.resource_rep(ResourceSelect, {"cmpr_ops": cmpr_ops}, z)
+        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
+
+        gate_types[prep] = 1
+        gate_types[pow_sel] = 1
+        gate_types[prep_dag] = 1
+        return gate_types
+
 
 class ResourceReflection(qml.Reflection, ResourceOperator):
     """Resource class for Reflection."""
 
     @staticmethod
-    def _resource_decomp(base, num_ref_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(
+        base_class, base_params, num_ref_wires, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
         gate_types = {}
+        base = base_class.resource_rep(**base_params)
 
         x = re.ResourceX.resource_rep()
         gp = re.ResourceGlobalPhase.resource_rep()
-        adj_base = re.ResourceAdjoint.resource_rep(base.op_type, base.params)
+        adj_base = re.ResourceAdjoint.resource_rep(base_class, base_params)
         ps = (
-            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, num_ref_wires - 1, 0, 0)
+            re.ResourceControlled.resource_rep(
+                re.ResourcePhaseShift, {}, num_ref_wires - 1, num_ref_wires - 1, 0
+            )
             if num_ref_wires > 1
             else re.ResourcePhaseShift.resource_rep()
         )
@@ -460,11 +489,19 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
         base_cmpr_rep = self.hyperparameters["base"].resource_rep_from_op()
         num_ref_wires = len(self.hyperparameters["reflection_wires"])
 
-        return {"base": base_cmpr_rep, "num_ref_wires": num_ref_wires}
+        return {
+            "base_class": base_cmpr_rep.op_type,
+            "base_params": base_cmpr_rep.params,
+            "num_ref_wires": num_ref_wires,
+        }
 
     @classmethod
-    def resource_rep(cls, base, num_ref_wires) -> CompressedResourceOp:
-        params = {"base": base, "num_ref_wires": num_ref_wires}
+    def resource_rep(cls, base_class, base_params, num_ref_wires) -> CompressedResourceOp:
+        params = {
+            "base_class": base_class,
+            "base_params": base_params,
+            "num_ref_wires": num_ref_wires,
+        }
         return CompressedResourceOp(cls, params)
 
 
@@ -474,7 +511,7 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
     @staticmethod
     def _resource_decomp(cmpr_ops, num_ctrl_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         gate_types = {}
-        ref = ResourceReflection.resource_rep(re.ResourceIdentity.resource_rep(), num_ctrl_wires)
+        ref = ResourceReflection.resource_rep(re.ResourceIdentity, {}, num_ctrl_wires)
         psp = ResourcePrepSelPrep.resource_rep(cmpr_ops)
 
         gate_types[ref] = 1

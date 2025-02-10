@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,10 +27,14 @@ from pennylane.labs.resource_estimation import (
     ResourcesNotDefined,
 )
 from pennylane.templates import TrotterProduct
-from pennylane.templates.subroutines.trotter import TrotterizedQfunc, _scalar
+from pennylane.templates.subroutines.trotter import TrotterizedQfunc
+
+# pylint: disable=arguments-differ
 
 
-class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
+class ResourceTrotterProduct(
+    TrotterProduct, ResourceOperator
+):  # pylint: disable=too-many-ancestors
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
 
@@ -155,17 +159,22 @@ class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
         n, order, first_order_expansion, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         k = order // 2
+        gate_types = defaultdict(int, {})
 
         if order == 1:
-            return defaultdict(int, {cp_rep: n for cp_rep in first_order_expansion})
+            for cp_rep in first_order_expansion:
+                gate_types[cp_rep] += n
+            return gate_types
 
         cp_rep_first = first_order_expansion[0]
         cp_rep_last = first_order_expansion[-1]
         cp_rep_rest = first_order_expansion[1:-1]
 
-        gate_types = defaultdict(int, {cp_rep: 2 * n * (5 ** (k - 1)) for cp_rep in cp_rep_rest})
-        gate_types[cp_rep_first] = n * (5 ** (k - 1)) + 1
-        gate_types[cp_rep_last] = n * (5 ** (k - 1))
+        for cp_rep in cp_rep_rest:
+            gate_types[cp_rep] += 2 * n * (5 ** (k - 1))
+
+        gate_types[cp_rep_first] += n * (5 ** (k - 1)) + 1
+        gate_types[cp_rep_last] += n * (5 ** (k - 1))
 
         return gate_types
 
@@ -176,7 +185,9 @@ class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
 
         first_order_expansion = [
             ResourceExp.resource_rep(
-                **re.ops.op_math.symbolic._extract_exp_params(op, scalar=1j, num_steps=1)
+                **re.ops.op_math.symbolic._extract_exp_params(  # pylint: disable=protected-access
+                    op, scalar=1j, num_steps=1
+                )
             )
             for op in base.operands
         ]
@@ -204,17 +215,23 @@ class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
 
 
 class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
+    """An internal class which facilitates :code:`qml.resource_trotterize`."""
 
     @staticmethod
     def _resource_decomp(
-        n, order, reverse, qfunc_compressed_reps, **kwargs
+        n, order, qfunc_compressed_reps, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         k = order // 2
+        gate_types = defaultdict(int, {})
+
         if order == 1:
-            return defaultdict(int, {cp_rep: n for cp_rep in qfunc_compressed_reps})
-        return defaultdict(
-            int, {cp_rep: 2 * n * (5 ** (k - 1)) for cp_rep in qfunc_compressed_reps}
-        )
+            for cp_rep in qfunc_compressed_reps:
+                gate_types[cp_rep] += n
+            return gate_types
+
+        for cp_rep in qfunc_compressed_reps:
+            gate_types[cp_rep] += 2 * n * (5 ** (k - 1))
+        return gate_types
 
     def resource_params(self) -> dict:
         with qml.QueuingManager.stop_recording():
@@ -232,26 +249,22 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         try:
             qfunc_compressed_reps = tuple(op.resource_rep_from_op() for op in q.queue)
 
-        except AttributeError:
+        except AttributeError as error:
             raise ResourcesNotDefined(
                 "Every operation in the TrotterizedQfunc should be a ResourceOperator"
-            )
+            ) from error
 
         return {
             "n": self.hyperparameters["n"],
             "order": self.hyperparameters["order"],
-            "reverse": self.hyperparameters["reverse"],
             "qfunc_compressed_reps": qfunc_compressed_reps,
         }
 
     @classmethod
-    def resource_rep(
-        cls, qfunc_compressed_reps, n, order, reverse, name=None
-    ) -> CompressedResourceOp:
+    def resource_rep(cls, n, order, qfunc_compressed_reps, name=None) -> CompressedResourceOp:
         params = {
             "n": n,
             "order": order,
-            "reverse": reverse,
             "qfunc_compressed_reps": qfunc_compressed_reps,
         }
         return CompressedResourceOp(cls, params, name=name)
@@ -358,39 +371,3 @@ def resource_trotterize(qfunc, n=1, order=2, reverse=False):
         )
 
     return wrapper
-
-
-@qml.QueuingManager.stop_recording()
-def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs):
-    """Generate a list of operations using the
-    recursive expression which defines the Trotter product.
-    Args:
-        time (float): the evolution 'time'
-        order (int): the order of the Trotter expansion
-        ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
-    Returns:
-        list: the approximation as product of exponentials of the Hamiltonian terms
-    """
-    if order == 1:
-        tape = qml.tape.make_qscript(qfunc)(time, *qfunc_args, wires=wires, **qfunc_kwargs)
-        return tape.operations[::-1] if reverse else tape.operations
-
-    if order == 2:
-        tape = qml.tape.make_qscript(qfunc)(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
-        return (
-            tape.operations[::-1] + tape.operations
-            if reverse
-            else tape.operations + tape.operations[::-1]
-        )
-
-    scalar_1 = _scalar(order)
-    scalar_2 = 1 - 4 * scalar_1
-
-    ops_lst_1 = _recursive_qfunc(
-        scalar_1 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
-    )
-    ops_lst_2 = _recursive_qfunc(
-        scalar_2 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
-    )
-
-    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
