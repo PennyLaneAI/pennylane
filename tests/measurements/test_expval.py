@@ -45,19 +45,40 @@ def test_expval_identity_nowires_LQ():
         _ = qnode()
 
 
+# pylint: disable=too-many-public-methods
 class TestExpval:
     """Tests for the expval function"""
 
-    @pytest.mark.parametrize("coeffs", [1, 0.5, 0.5j, 0.5 + 0.5j])
-    def test_expected_dtype(self, coeffs):
-        """Test that the return type of the expval function is correct"""
-
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit(coeffs):
-            return qml.expval(coeffs * qml.PauliZ(0))
-
-        res = circuit(coeffs)
+    @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
+    def test_process_counts_dtype(self, coeffs):
+        """Test that the return type of the process_counts function is correct"""
+        counts = {"000": 100, "100": 100}
+        wire_order = qml.wires.Wires((0, 1, 2))
+        res = qml.expval(coeffs * qml.Z(1)).process_counts(counts=counts, wire_order=wire_order)
         assert np.allclose(res, coeffs)
+
+    @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
+    def test_process_state_dtype(self, coeffs):
+        """Test that the return type of the process_state function is correct"""
+        res = qml.measurements.ExpectationMP(obs=coeffs * qml.Z(0)).process_state(
+            state=[1, 0], wire_order=qml.wires.Wires(0)
+        )
+        assert np.allclose(res, coeffs)
+
+    @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
+    @pytest.mark.parametrize(
+        "state,expected",
+        [
+            ([[1.0, 0.0], [0.0, 0.0]], 1.0),  # Pure |0⟩ state
+            ([[0.0, 0.0], [0.0, 1.0]], -1.0),  # Pure |1⟩ state
+            ([[0.5, 0.5], [0.5, 0.5]], 0.0),  # Mixed state
+            ([[0.75, 0.0], [0.0, 0.25]], 0.5),  # Another mixed state
+        ],
+    )
+    def test_process_density_matrix_dtype(self, coeffs, state, expected):
+        mp = ExpectationMP(obs=coeffs * qml.PauliZ(0))
+        result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
+        assert qml.math.allclose(result, expected * coeffs)
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     def test_value(self, tol, shots, seed):
