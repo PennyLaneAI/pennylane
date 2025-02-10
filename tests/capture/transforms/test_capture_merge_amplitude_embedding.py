@@ -292,6 +292,7 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_grad_prim(self):
+        """Test that the transform works correctly when applied with grad_prim."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -316,6 +317,7 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_jacobian_prim(self):
+        """Test that the transform works correctly when applied with jacobian_prim."""
 
         dev = qml.device("default.qubit", wires=2)
 
