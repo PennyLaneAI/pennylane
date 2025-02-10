@@ -83,12 +83,14 @@ class VibrationalPES:
         self.grid = grid
         self.gauss_weights = gauss_weights
         self.uloc = uloc
-        self.pes_onemode = pes_data[0]
-        self.pes_twomode = pes_data[1]
-        self.pes_threemode = pes_data[2] if len(pes_data) > 2 else None
-        self.dipole_onemode = dipole_data[0]
-        self.dipole_twomode = dipole_data[1] if dipole_level >= 2 else None
-        self.dipole_threemode = dipole_data[2] if dipole_level >= 3 else None
+        if pes_data:
+            self.pes_onemode = pes_data[0]
+            self.pes_twomode = pes_data[1]
+            self.pes_threemode = pes_data[2] if len(pes_data) > 2 else None
+        if dipole_data:
+            self.dipole_onemode = dipole_data[0]
+            self.dipole_twomode = dipole_data[1] if dipole_level >= 2 else None
+            self.dipole_threemode = dipole_data[2] if dipole_level >= 3 else None
         self.localized = localized
         self.dipole_level = dipole_level
 

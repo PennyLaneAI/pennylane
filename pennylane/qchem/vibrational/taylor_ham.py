@@ -274,9 +274,9 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 
 
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
-    r"""Compute coefficients of Taylor vibrational Hamiltonian.
+    r"""Compute the coefficients of Taylor vibrational Hamiltonian.
 
-    The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^(n)` and
+    The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^{(n)}` and
     normal coordinate operators :math:`q` following Eq. 5 of `arXiv:1703.09313
     <https://arxiv.org/abs/1703.09313>`_ as:
 
@@ -286,14 +286,12 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
         \Phi_{ijk}^{(3)}  q_i  q_j  q_k + \sum_{i\geq j\geq k\geq l} \Phi_{ijkl}^{(4)}
         q_i  q_j  q_k  q_l  + \cdots,
 
-    where :math:`H_{kinetic}` is the Kinetic component of the Hamiltonian. The coefficients
-    :math:`\Phi^n` are tensors of rank :math:`n`. These coefficients are typically computed from
-    potential energy surface data.
+    where :math:`H_{kinetic}` is the kinetic component of the Hamiltonian. The coefficients
+    :math:`\Phi^n` are computed from a multi-dimensional polynomial fit, with a polynomial specified
+    by ``min_deg`` and ``max_deg``, over potential energy surface data.
 
     Args:
-        pes (VibrationalPES): the vibrational potential energy surface data. Must be array of
-            shape ``(m, l)`` or ``(m, m, l, l)`` or ``(m, m, m, l, l, l)`` where ``m`` is the number
-            of normal modes and ``l`` is the number of energy points computed along each normal mode.
+        pes (VibrationalPES): the vibrational potential energy surface object
         max_deg (int): maximum degree of the polynomial used to compute the coefficients
         min_deg (int): minimum degree of the polynomial used to compute the coefficients
 
