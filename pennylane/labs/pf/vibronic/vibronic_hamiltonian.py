@@ -8,9 +8,10 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from pennylane.labs.pf.realspace import Node, RealspaceOperator, RealspaceSum
-from pennylane.labs.vibronic.utils import is_pow_2
 
 from .vibronic_matrix import VibronicMatrix, commutator
+
+# pylint: disable=too-many-arguments
 
 
 class VibronicHamiltonian:
@@ -24,8 +25,6 @@ class VibronicHamiltonian:
         phis: Sequence[np.ndarray],
         sparse: bool = False,
     ):
-        if not is_pow_2(states) or states == 0:
-            raise ValueError(f"States must be a positive power of 2, got {states} states.")
 
         for i, phi in enumerate(phis):
             shape = (states, states) + (modes,) * i
@@ -48,25 +47,27 @@ class VibronicHamiltonian:
     def fragment(self, index: int) -> VibronicMatrix:
         """Return the fragment at the given index"""
 
-        if index not in range(self.states + 1):
+        next_pow_2 = 2 ** (self.states - 1).bit_length()
+
+        if index not in range(next_pow_2):
             raise ValueError("Index out of range")
 
-        if index == self.states:
+        if index == next_pow_2 - 1:
             return self._p_fragment()
 
         return self._fragment(index)
 
     def v_word(self, i: int, j: int) -> RealspaceSum:
         """Get V_ij"""
-        if i > self.states or j > self.states:
-            raise ValueError(
-                f"Dimension out of bounds. Got ({i}, {j}) but V is dimension ({self.states}, {self.states})."
-            )
+        if i > self.states - 1 or j > self.states - 1:
+            return RealspaceSum.zero()
 
         realspace_ops = []
         for k, phi in enumerate(self.phis):
             op = ("Q",) * k
-            realspace_op = RealspaceOperator(op, Node.tensor_node(phi[i, j], label=(f"phis[{k}][{i}, {j}]", self.phis)))
+            realspace_op = RealspaceOperator(
+                op, Node.tensor_node(phi[i, j], label=(f"phis[{k}][{i}, {j}]", self.phis))
+            )
             realspace_ops.append(realspace_op)
 
         return RealspaceSum(realspace_ops)

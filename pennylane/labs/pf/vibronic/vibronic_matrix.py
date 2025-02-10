@@ -9,9 +9,9 @@ from typing import Dict, Tuple, Union
 import numpy as np
 import scipy as sp
 
+from pennylane.labs.pf import Fragment
 from pennylane.labs.pf.realspace import RealspaceSum
 from pennylane.labs.pf.utils import _kron, _zeros, is_pow_2, op_norm, word_to_matrix
-from pennylane.labs.pf import Fragment
 
 
 class VibronicMatrix(Fragment):
@@ -24,9 +24,6 @@ class VibronicMatrix(Fragment):
         blocks: Dict[Tuple[int, int], RealspaceSum] = None,
         sparse: bool = False,
     ) -> VibronicMatrix:
-
-        if not is_pow_2(states) or states == 0:
-            raise ValueError(f"The number of states must be a power of 2, got {states}.")
 
         if blocks is None:
             blocks = {}
@@ -45,7 +42,7 @@ class VibronicMatrix(Fragment):
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
 
-        return self._blocks.get((row, col), RealspaceSum.zero_word())
+        return self._blocks.get((row, col), RealspaceSum.zero())
 
     def set_block(self, row: int, col: int, word: RealspaceSum) -> None:
         """Set the value of the block indexed at (row, col)"""
@@ -202,7 +199,7 @@ class VibronicMatrix(Fragment):
 
         for i, j in product(range(self.states), repeat=2):
             block_products = [self.block(i, k) @ other.block(k, j) for k in range(self.states)]
-            block_sum = sum(block_products, RealspaceSum.zero_word())
+            block_sum = sum(block_products, RealspaceSum.zero())
             product_matrix.set_block(i, j, block_sum)
 
         return product_matrix

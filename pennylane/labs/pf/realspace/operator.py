@@ -11,6 +11,7 @@ import numpy as np
 
 from pennylane.labs.pf.abstract import Fragment
 from pennylane.labs.pf.utils import op_norm
+
 from .tree import Node
 
 
@@ -163,7 +164,7 @@ class RealspaceSum(Fragment):
         return self._lookup == other._lookup
 
     @classmethod
-    def zero_word(cls) -> RealspaceSum:
+    def zero(cls) -> RealspaceSum:
         """Return a RealspaceSum representing 0"""
         return RealspaceSum([RealspaceOperator.zero_term()])
 

@@ -5,6 +5,7 @@ from typing import Dict, Tuple
 
 from scipy.sparse import coo_matrix, coo_array
 
+
 class HOState:
     """Representation of a wavefunction in the Harmonic Oscillator basis"""
 
