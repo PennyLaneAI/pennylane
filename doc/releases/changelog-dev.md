@@ -6,9 +6,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
-  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
-
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
@@ -28,37 +25,6 @@
 * A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
   is greater than `0.4.28`.
   [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
-
-* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
-  `autograph=True` at the QNode level. 
-  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
-
-  ```python
-  qml.capture.enable()
-
-  dev = qml.device("default.qubit", wires=[0, 1, 2])
-
-  @qml.qnode(dev, autograph=True)
-  def circuit(num_loops: int):
-      for i in range(num_loops):
-          if i % 2 == 0:
-              qml.H(i)
-          else:
-              qml.RX(1,i)
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> print(qml.draw(circuit)(num_loops=3))
-  0: ──H────────┤  State
-  1: ──RX(1.00)─┤  State
-  2: ──H────────┤  State
-  >>> circuit(3)
-  Array([0.43879125+0.j        , 0.43879125+0.j        ,
-         0.        -0.23971277j, 0.        -0.23971277j,
-         0.43879125+0.j        , 0.43879125+0.j        ,
-         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
-  ```
 
 * Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
   Users can now construct the execution configuration from a particular `QNode` instance.
@@ -147,12 +113,51 @@
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
+* `null.qubit` can now execute jaxpr.
+  [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
 <h4>Capturing and representing hybrid programs</h4>
 
 * Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
   with program capture enabled.
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
+
+  * Autograph can now be used with custom operations defined outside of the pennylane namespace.
+  [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
+
+  * Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
+
+* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
+  `autograph=True` at the QNode level. 
+  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
+
+  ```python
+  qml.capture.enable()
+
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+  @qml.qnode(dev, autograph=True)
+  def circuit(num_loops: int):
+      for i in range(num_loops):
+          if i % 2 == 0:
+              qml.H(i)
+          else:
+              qml.RX(1,i)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(num_loops=3))
+  0: ──H────────┤  State
+  1: ──RX(1.00)─┤  State
+  2: ──H────────┤  State
+  >>> circuit(3)
+  Array([0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j,
+         0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+  ```
 
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
   [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
@@ -199,7 +204,9 @@
 <h3>Deprecations 👋</h3>
 
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  A folllow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
   [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
+  [(#6926)](https://github.com/PennyLaneAI/pennylane/pull/6926)
 
 * The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
   Instead, use the `wires` argument as the second positional argument.
@@ -262,6 +269,13 @@
 
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
+
+* The code example in the docstring for `qml.BasisRotation` was corrected by including `wire_order` in the 
+  call to `qml.matrix`.
+  [(#6891)](https://github.com/PennyLaneAI/pennylane/pull/6891)
+
+* The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
+  [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
 
