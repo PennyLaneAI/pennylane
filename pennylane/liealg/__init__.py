@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Advanced Lie algebra features
+Lie algebra features
 -----------------------------
 
-Advanced Lie algebra functionality in PennyLane.
+Lie algebra functionality in PennyLane.
 Relevant demos to check out:
 
 * :doc:`/demos/tutorial_liealgebra`
