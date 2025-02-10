@@ -116,7 +116,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
         if self.plane == "ZX":
             return [qml.RY(-self.angle, self.wires)]
         if self.plane == "ZY":
-            return [qml.RX(self.angle, self.wires)]
+            return [qml.RX(-self.angle, self.wires)]
 
         raise NotImplementedError(
             f"{self.plane} plane not implemented. Available plans are 'XY' 'ZX' and 'ZY'."

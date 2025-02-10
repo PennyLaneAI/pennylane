@@ -155,12 +155,12 @@ class TestParametricMidMeasure:
             ("ZX", -3 * np.pi / 4, -qml.X(0) - qml.Z(0)),
             # ZY measurements
             ("ZY", 0, qml.Z(0)),
-            ("ZY", np.pi / 4, qml.Y(0) + qml.Z(0)),
-            ("ZY", np.pi / 2, qml.Y(0)),
-            ("ZY", 3 * np.pi / 4, qml.Y(0) - qml.Z(0)),
+            ("ZY", np.pi / 4, -qml.Y(0) + qml.Z(0)),
+            ("ZY", np.pi / 2, -qml.Y(0)),
+            ("ZY", 3 * np.pi / 4, -qml.Y(0) - qml.Z(0)),
             ("ZY", np.pi, -qml.Z(0)),
-            ("ZY", 5 * np.pi / 4, -qml.Y(0) - qml.Z(0)),
-            ("ZY", -3 * np.pi / 4, -qml.Y(0) - qml.Z(0)),
+            ("ZY", 5 * np.pi / 4, qml.Y(0) - qml.Z(0)),
+            ("ZY", -3 * np.pi / 4, qml.Y(0) - qml.Z(0)),
         ],
     )
     def test_diagonalizing_gates(self, plane, measurement_angle, corresponding_obs):
