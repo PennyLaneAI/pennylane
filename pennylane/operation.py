@@ -1365,7 +1365,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         of another operator, in which case the decomposition is performed with :meth:`~.Operator.compute_decomposition`
         (even if this method is defined), and not with this method.
 
-        When ``compute_plxpr_decomposition` is defined for an operator, the control flow operations within the method
+        When ``compute_plxpr_decomposition`` is defined for an operator, the control flow operations within the method
         (specifying the decomposition of the operator) are recorded in the JAX representation.
 
         This method is experimental and subject to change.
