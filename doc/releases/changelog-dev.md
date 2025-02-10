@@ -13,9 +13,6 @@
 * Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
   [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
  
-* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
-  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
-
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
@@ -35,37 +32,6 @@
 * A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
   is greater than `0.4.28`.
   [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
-
-* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
-  `autograph=True` at the QNode level. 
-  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
-
-  ```python
-  qml.capture.enable()
-
-  dev = qml.device("default.qubit", wires=[0, 1, 2])
-
-  @qml.qnode(dev, autograph=True)
-  def circuit(num_loops: int):
-      for i in range(num_loops):
-          if i % 2 == 0:
-              qml.H(i)
-          else:
-              qml.RX(1,i)
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> print(qml.draw(circuit)(num_loops=3))
-  0: ──H────────┤  State
-  1: ──RX(1.00)─┤  State
-  2: ──H────────┤  State
-  >>> circuit(3)
-  Array([0.43879125+0.j        , 0.43879125+0.j        ,
-         0.        -0.23971277j, 0.        -0.23971277j,
-         0.43879125+0.j        , 0.43879125+0.j        ,
-         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
-  ```
 
 * Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
   Users can now construct the execution configuration from a particular `QNode` instance.
@@ -94,13 +60,6 @@
                   mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),
                   convert_to_numpy=True)
   ```
-
-* The higher order primitives in program capture can now accept inputs with abstract shapes.
-  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
-
-* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
-  `jnp.arange`, and `jnp.full`.
-  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
@@ -164,8 +123,55 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
-* Autograph can now be used with custom operations defined outside of the pennylane namespace.
+<h4>Capturing and representing hybrid programs</h4>
+
+* Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
+  with program capture enabled.
+  [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
+
+  * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
+
+  * Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
+
+* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
+  `autograph=True` at the QNode level. 
+  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
+
+  ```python
+  qml.capture.enable()
+
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+  @qml.qnode(dev, autograph=True)
+  def circuit(num_loops: int):
+      for i in range(num_loops):
+          if i % 2 == 0:
+              qml.H(i)
+          else:
+              qml.RX(1,i)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(num_loops=3))
+  0: ──H────────┤  State
+  1: ──RX(1.00)─┤  State
+  2: ──H────────┤  State
+  >>> circuit(3)
+  Array([0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j,
+         0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+  ```
+
+* The higher order primitives in program capture can now accept inputs with abstract shapes.
+  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
+
+* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
+  `jnp.arange`, and `jnp.full`.
+  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
 <h3>Breaking changes 💔</h3>
 
