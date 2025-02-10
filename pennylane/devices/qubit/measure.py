@@ -116,7 +116,7 @@ def csr_dot_products(
         new_ket = csr_matrix.dot(Hmat, ket)
         res = csr_matrix.dot(bra, new_ket).toarray()[0]
 
-    return math.real(math.squeeze(res))
+    return math.squeeze(res)
 
 
 def full_dot_products(

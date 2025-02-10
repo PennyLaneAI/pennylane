@@ -151,6 +151,10 @@ class TestMeasurements:
                 qml.Hermitian(-0.5 * qml.PauliY(0).matrix() + 2 * qml.PauliZ(0).matrix(), wires=0),
                 0.5 * np.sin(0.123) + 2 * np.cos(0.123),
             ),
+            (
+                qml.Hamiltonian([-0.5, 2j], [qml.PauliY(0), qml.PauliZ(0)]),
+                0.5 * np.sin(0.123) + 2j * np.cos(0.123),
+            ),
         ],
     )
     def test_hamiltonian_expval(self, obs, expected):
