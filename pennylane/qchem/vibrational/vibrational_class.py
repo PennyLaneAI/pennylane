@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains functions and classes to generate a pes object.
-This object stores all the necessary information to construct
+"""This module contains functions and classes to generate necessary information to construct a
 vibrational Hamiltonian for a given molecule."""
 
 from dataclasses import dataclass
@@ -26,21 +25,26 @@ from ..openfermion_pyscf import _import_pyscf
 
 @dataclass
 class VibrationalPES:
-    r"""Data class to store energy data computed along vibrational normal modes of a molecule.
+    r"""Data class to store information needed to construct a vibrational Hamiltonian for a molecule.
 
     Args:
-        freqs (list[float]): normal-mode frequencies in atomic units
-        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
-        gauss_weights (list[float]): the weights on the Gauss-Hermite quadrature grid
-        uloc (TensorLike[float]): localization matrix indicating the relationship between original and localized modes
-        pes_data (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode PES
-        dipole_data (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode dipole
-        localized (bool): Flag that localization of modes was used to generate PES and dipole. Default is ``True``.
-        dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
-            1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
-            value is 1.
+        freqs (array[float]): normal-mode frequencies in atomic units
+        grid (array[float]): grid points to compute a potential energy surface
+        gauss_weights (array[float]): weights associate with each point in ``grid``
+        uloc (TensorLike[float]): normal mode localization matrix
+        pes_data (list[TensorLike[float]]): potential energy surface data
+        dipole_data (list[TensorLike[float]]): dipole moment data computed along the normal modes
+        localized (bool): Flag that the potential energy surface data correspond to localized normal
+            mode. Default is ``True``.
+        dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input
+            values can be ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and
+            three-mode dipole, respectively. Default value is ``1``.
 
     **Example**
+
+    This example shows how to construct the VibrationalPES object for a linear molecule with only
+    one vibrational normal mode. We assume that the potential energy surface data are obtained along
+    a 
 
     >>> freqs = np.array([0.01885397])
     >>> grid, weights = np.polynomial.hermite.hermgauss(9)
