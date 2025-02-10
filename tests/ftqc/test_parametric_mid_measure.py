@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.devices.qubit import measure as apply_qubit_measurement
 from pennylane.ftqc import ParametricMidMeasureMP, diagonalize_mcms
+from pennylane.measurements import MidMeasureMP
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
@@ -283,13 +284,9 @@ class TestDiagonalizeMCMs:
         assert new_tape.operations[1] == diagonalizing_gates[0]
         assert new_tape.operations[2] == diagonalizing_gates[1]
 
-        assert isinstance(new_tape.operations[3], ParametricMidMeasureMP)
+        assert isinstance(new_tape.operations[3], MidMeasureMP)
+        assert not isinstance(new_tape.operations[3], ParametricMidMeasureMP)
         assert new_tape.operations[3].wires == tape.operations[1].wires
-        assert new_tape.operations[3].angle == 0
-        assert new_tape.operations[3].plane == "ZY"
-        assert np.allclose(
-            new_tape.operations[3].diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
-        )
 
     def test_diagonalize_mcm_in_cond(self):
         """Test that the diagonalize_mcm transform works as expected on a tape
@@ -319,10 +316,8 @@ class TestDiagonalizeMCMs:
         # conditional diagonalized ParametricMidMeasureMP
         assert isinstance(measurement, qml.ops.Conditional)
         assert measurement.wires == original_tape.operations[2].wires
-        assert isinstance(measurement.base, ParametricMidMeasureMP)
-        assert measurement.base.angle == 0
-        assert measurement.base.plane == "ZY"
-        assert np.allclose(measurement.base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix())
+        assert isinstance(measurement.base, MidMeasureMP)
+        assert not isinstance(measurement.base, ParametricMidMeasureMP)
 
         # cond(diagonalizing gate) and cond(mcm) rely on same measurement in the same way
         assert (
@@ -365,12 +360,8 @@ class TestDiagonalizeMCMs:
             # conditional diagonalized ParametricMidMeasureMP
             assert isinstance(measurement, qml.ops.Conditional)
             assert measurement.wires == original_tape.operations[2].wires
-            assert isinstance(measurement.base, ParametricMidMeasureMP)
-            assert measurement.base.angle == 0
-            assert measurement.base.plane == "ZY"
-            assert np.allclose(
-                measurement.base.diagonalizing_gates()[0].matrix(), qml.I(0).matrix()
-            )
+            assert isinstance(measurement.base, MidMeasureMP)
+            assert not isinstance(measurement.base, ParametricMidMeasureMP)
 
         # all 4 conditionals rely on the same measurement value
         for gate in new_tape.operations[3:]:
@@ -389,6 +380,15 @@ class TestDiagonalizeMCMs:
             new_tape.operations[2].meas_val.processing_fn
             != new_tape.operations[4].meas_val.processing_fn
         )
+
+    # ToDo: this test is just a placeholder to make sure I don't for get to
+    #  add it in the next PR
+    @pytest.mark.xfail(reason="This won't be possible until the follow-up PR")
+    def test_diagonalizing_measurements_cond_input(self):
+        """Test that diagonalizing measurements works when diagonalizing a
+        measurement used as a conditional"""
+
+        raise NotImplementedError
 
 
 class TestWorkflows:

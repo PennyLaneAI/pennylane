@@ -19,7 +19,7 @@ from typing import Optional
 
 import pennylane as qml
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
-from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
 
@@ -209,39 +209,56 @@ def diagonalize_mcms(tape):
     Applying the transform inserts the relevant gates before the measurement to allow
     measurements to be in the Z basis, so the original circuit
 
-    >>> print(qml.draw(circuit, level=0)([np.pi/4, np.pi/4]))
+    >>> print(qml.draw(circuit, level=0)([np.pi/4, np.pi]))
     0: ──RY(0.79)──┤↗ˣʸ(3.14)├─┤  <Z>
 
     becomes
 
-    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)──U(M0)──┤↗ᶻʸ(0.0)├─┤  <Z>
-    M0 =
-    [[ 0.70710678+0.j   0.5       -0.5j]
-     [ 0.70710678+0.j  -0.5       +0.5j]]
-
+    >>> print(qml.draw(circuit)([np.pi/4, np.pi]))
+    ──RY(0.79)──Rϕ(-3.14)──H──┤↗├─┤  <Z>
     """
 
     new_operations = []
+    mps_mapping = {}
 
     for op in tape.operations:
-        # ToDo: maybe this in-place modification is a bad idea, but
-        #  its also weird to diagonalize it and not update it
         if isinstance(op, ParametricMidMeasureMP):
+
+            # add diagonalizing gates to tape
             diag_gates = op.diagonalizing_gates()
-            op.angle = 0
-            op.plane = "ZY"
-            new_operations.extend(diag_gates)
-        elif isinstance(op, qml.ops.Conditional) and isinstance(op.base, ParametricMidMeasureMP):
-            diag_gates = [
-                qml.ops.Conditional(expr=op.hyperparameters["meas_val"], then_op=gate)
-                for gate in op.diagonalizing_gates()
-            ]
-            op.base.angle = 0
-            op.base.plane = "ZY"
             new_operations.extend(diag_gates)
 
-        new_operations.append(op)
+            # add comuptational basis MCM to tape
+            new_mp = MidMeasureMP(op.wires, reset=op.reset, postselect=op.postselect, id=op.id)
+            new_operations.append(new_mp)
+
+            # track mapping from original to computational basis MCMs
+            mps_mapping[op] = new_mp
+
+        elif isinstance(op, qml.ops.Conditional) and isinstance(op.base, ParametricMidMeasureMP):
+
+            # from MCM mapping, map any MCMs in the condition if needed
+            processing_fn = op.meas_val.processing_fn
+            mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
+            expr = MeasurementValue(mps, processing_fn=processing_fn)
+
+            # add conditional diagonalizing gates to the tape
+            diag_gates = [
+                qml.ops.Conditional(expr=expr, then_op=gate) for gate in op.diagonalizing_gates()
+            ]
+            new_operations.extend(diag_gates)
+
+            # add corresponding conditional with computational basis MCM to tape
+            new_mp = MidMeasureMP(
+                op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
+            )
+            new_operations.append(qml.ops.Conditional(expr=expr, then_op=new_mp))
+
+            # track mapping from original to computational basis MCMs
+            mps_mapping[op.base] = new_mp
+
+        else:
+            new_operations.append(op)
 
     new_tape = tape.copy(operations=new_operations)
 
