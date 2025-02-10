@@ -31,6 +31,8 @@ def structure_constants(
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
 
+    .. warning:: ``lie_closure`` has moved to the :doc:`liealg` module and can be called from there via ``qml.liealg.lie_closure`` or from the top level via ``qml.lie_closure``.
+
     Given a DLA :math:`\{iG_1, iG_2, .. iG_d \}` of dimension :math:`d`,
     the structure constants yield the decomposition of all commutators in terms of DLA elements,
 
