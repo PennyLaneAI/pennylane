@@ -14,10 +14,6 @@
 r"""This module contains resource operators for PennyLane templates."""
 
 from .subroutines import (
-    ResourceControlledSequence,
-    ResourceMultiplier,
-    ResourceModExp,
-    ResourcePhaseAdder,
     ResourceQFT,
     ResourceQuantumPhaseEstimation,
     ResourceStatePrep,
