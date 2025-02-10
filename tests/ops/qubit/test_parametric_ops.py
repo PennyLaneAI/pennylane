@@ -144,8 +144,6 @@ class TestSparseOperators:
     @pytest.mark.parametrize("op", SPARSE_OPERATIONS)
     def test_validity(self, op):
         """Test that the operations are valid."""
-        if isinstance(op, qml.GlobalPhase):
-            pytest.skip("GlobalPhase has bugs related with sparse matrices")
         assert np.allclose(
             op.sparse_matrix().toarray(), qml.math.asarray(op.matrix(), like="numpy")
         )
