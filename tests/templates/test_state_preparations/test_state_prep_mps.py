@@ -550,8 +550,11 @@ class TestMPSPrep:
             assert op.wires == qml.wires.Wires([2 + ind] + [0, 1])
             assert op.name == "QubitUnitary"
 
-    @pytest.mark.parametrize(("work_wires"), [None, 1])
-    def test_wires_decomposition(self, work_wires):
+    @pytest.mark.parametrize(
+        ("work_wires", "msg"),
+        [(None, "The qml.MPSPrep decomposition requires"), (1, "The bond dimension cannot exceed")],
+    )
+    def test_wires_decomposition(self, work_wires, msg):
         """Checks that error is shown if no `work_wires` are given in decomposition"""
 
         mps = [
@@ -574,7 +577,7 @@ class TestMPSPrep:
         ]
 
         op = qml.MPSPrep(mps, wires=range(2, 5), work_wires=work_wires)
-        with pytest.raises(ValueError, match="The qml.MPSPrep decomposition requires"):
+        with pytest.raises(ValueError, match=msg):
             op.decomposition()
 
     def test_right_canonical(self):

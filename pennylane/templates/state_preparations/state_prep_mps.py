@@ -27,8 +27,8 @@ def _mps_to_right_canonical_representation(mps, max_bond_dim):
     Transform a MPS into a right-canonical MPS.
 
     Args:
-      mps: List of tensors representing the MPS.
-      max_bond_dim: Maximum allowed bond dimension (for truncation during SVD).
+      mps (list[Array]): List of tensors representing the MPS.
+      max_bond_dim (int): Maximum allowed bond dimension (for truncation during SVD).
 
     Returns:
       A list of tensors representing the MPS in right-canonical form.
@@ -68,7 +68,7 @@ class MPSPrep(Operation):
 
 
     Args:
-        mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
+        mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
             product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
@@ -265,7 +265,7 @@ class MPSPrep(Operation):
         The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
 
         Args:
-            mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
+            mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
                 product of site matrices.
 
             wires (Sequence[int]): wires that the template acts on
@@ -284,11 +284,11 @@ class MPSPrep(Operation):
 
         max_bond_dimension = max(bond_dimensions)
 
-        if work_wires is None or 2 ** len(work_wires) < max_bond_dimension:
-            raise ValueError(
-                "The qml.MPSPrep decomposition requires `work_wires` to be specified, "
-                "and the bond dimension cannot exceed `2**len(work_wires)`."
-            )
+        if work_wires is None:
+            raise ValueError("The qml.MPSPrep decomposition requires `work_wires` to be specified.")
+
+        if 2 ** len(work_wires) < max_bond_dimension:
+            raise ValueError("The bond dimension cannot exceed `2**len(work_wires)`.")
 
         ops = []
         n_wires = len(work_wires) + 1
@@ -296,6 +296,7 @@ class MPSPrep(Operation):
         mps[0] = mps[0].reshape((1, *mps[0].shape))
         mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
+        # We transform the mps to ensure that the generated matrix is unitary
         mps = _mps_to_right_canonical_representation(mps, max_bond_dimension)
 
         for i, Ai in enumerate(mps):
