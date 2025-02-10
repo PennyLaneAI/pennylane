@@ -91,7 +91,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 self.visited_wires = self.visited_wires.union(set(op.wires))
 
         def interpret_measurement(self, measurement):
-            """Purge the new operations list to merge the AmplitudeEmbedding gates and interpret seen gates. Then interpret the measurement.
+            """Purge the "seen" operations and then interpret the measurement.
 
             Args:
                 measurement (MeasurementProcess): a measurement instance.
