@@ -36,13 +36,15 @@ class TestParametricMidMeasure:
         m3 = ParametricMidMeasureMP(Wires(0), angle=2.45, id="m1", plane="XY")
         m4 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m2", plane="XY")
         m5 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="ZY")
-        m6 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="XY")
+        m6 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="ZX")
+        m7 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="XY")
 
         assert m1.hash != m2.hash
         assert m1.hash != m3.hash
         assert m1.hash != m4.hash
         assert m1.hash != m5.hash
-        assert m1.hash == m6.hash
+        assert m1.hash != m6.hash
+        assert m1.hash == m7.hash
 
     def test_flatten_unflatten(self):
         """Test that we can flatten and unflatten the ParametricMidMeasureMP"""
