@@ -300,26 +300,12 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
     **Example**
 
-    >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
-    >>> pes_twomode = np.zeros((1, 1, 9, 9))
-    >>> dipole_onemode = np.zeros((1, 9, 3))
-    >>> gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-    ...                           4.33e-01, 7.20e-01, 4.33e-01,
-    ...                           8.85e-02, 4.94e-03, 3.96e-05])
-    >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
-    >>> pes_object = qml.qchem.VibrationalPES(
-    ...     freqs=np.array([0.025]),
-    ...     grid=grid,
-    ...     uloc=np.array([[1.0]]),
-    ...     gauss_weights=gauss_weights,
-    ...     pes_data=[pes_onemode, pes_twomode],
-    ...     dipole_data=[dipole_onemode],
-    ...     localized=True,
-    ...     dipole_level=1,
-    ... )
-    >>> one, two = qml.qchem.taylor_coeffs(pes_object, 4, 2)
-    >>> print(one)
-    [[-0.00088528 -0.00361425  0.00068143]]
+    >>> freqs = np.array([0.0249722])
+    >>> pes_onemode = np.array([[0.08477, 0.01437, 0.00000, 0.00937, 0.03414]])
+    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode])
+    >>> coeffs = qml.qchem.taylor_coeffs(pes_object, 4, 2)
+    >>> print(coeffs)
+    [array([[-4.73959071e-05, -3.06785775e-03,  5.21798831e-04]])]
     """
 
     # pes_shape = pes.shape
