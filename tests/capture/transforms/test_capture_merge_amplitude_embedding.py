@@ -46,6 +46,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc():
             qml.CNOT(wires=[0.0, 1.0])
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
 
         with pytest.raises(qml.DeviceError, match="applied in the same qubit"):
@@ -353,3 +354,52 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[-3].primitive == qml.AmplitudeEmbedding._primitive
         assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+class TestExpandPlxprTransformIntegration:
+    """Test that the transform works with expand_plxpr_transform"""
+
+    def test_example(self):
+        """Test that the transform works with expand_plxpr_transform"""
+
+        @qml.transforms.optimization.merge_amplitude_embedding
+        def qfunc():
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+            qml.Hadamard(wires=0)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert (
+            jaxpr.eqns[0].primitive
+            == qml.transforms.optimization.merge_amplitude_embedding._primitive
+        )
+
+        transformed_qfunc = qml.capture.expand_plxpr_transforms(qfunc)
+        transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()
+        assert len(transformed_jaxpr.eqns) == 4
+        assert transformed_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(transformed_jaxpr.eqns[0].params["n_wires"], 2)
+        assert transformed_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert transformed_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
+        assert transformed_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    def test_decorator(self):
+        """Test that the transform works with the decorator"""
+
+        @qml.capture.expand_plxpr_transforms
+        @qml.transforms.optimization.merge_amplitude_embedding
+        def qfunc():
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+            qml.Hadamard(wires=0)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+        assert len(jaxpr.eqns) == 4
+        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
+        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[2].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
