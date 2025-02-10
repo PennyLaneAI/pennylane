@@ -328,10 +328,25 @@ mlir.register_lowering(qnode_prim, mlir.lower_fun(qnode_prim.impl, multiple_resu
 
 
 def flatten_args(args, static_argnums):
+    """Flatten the arguments of a qfunc.
+
+    This function flattens the arguments of a ``QNode``. Additionally, it flattens the
+    ``static_argnums`` of the ``QNode`` such that the returned flat ``static_argnums``
+    are consistent with the flattened arguments.
+
+    Args:
+        args (tuple): positional arguments to the ``QNode``
+        static_argnums (tuple[int]): ``static_argnums`` of the ``QNode``
+
+    Returns:
+        tuple, jax.tree_util.PyTreeDef, tuple: the flattened arguments, the ``PyTreeDef``
+        of the arguments, and the flattened ``static_argnums``
+    """
     if len(static_argnums) == 0:
-        return jax.tree_util.tree_leaves(args), ()
+        return *jax.tree_util.tree_flatten(args), ()
 
     flat_args = []
+    tree_structs = []
     flat_static_argnums = []
     flat_argnum = 0
     static_iter = iter(static_argnums)
@@ -339,8 +354,9 @@ def flatten_args(args, static_argnums):
     i = 0  # Just adding this to suppress pylint undefined-loop-variable error
 
     for i, arg in enumerate(args):
-        flat_arg = jax.tree_util.tree_leaves(arg)
+        flat_arg, struct = jax.tree_util.tree_flatten(arg)
         flat_args.extend(flat_arg)
+        tree_structs.append(struct)
 
         if i == static_argnum:
             flat_static_argnums.extend(range(flat_argnum, flat_argnum + len(flat_arg)))
@@ -352,7 +368,7 @@ def flatten_args(args, static_argnums):
     if i < len(args) - 1:
         flat_args.extend(jax.tree_util.tree_leaves(args[i + 1 :]))
 
-    return flat_args, flat_static_argnums
+    return flat_args, jax.tree_util.treedef_tuple(tree_structs), flat_static_argnums
 
 
 def get_jaxpr_cache_key(args, kwargs, abstracted_axes, static_argnums):
@@ -360,25 +376,36 @@ def get_jaxpr_cache_key(args, kwargs, abstracted_axes, static_argnums):
 
     The hash is dependent on the abstract evaluation of ``args``. For any indices
     in ``static_argnums``, the concrete value of the argument will be used to create
-    the hash. For keyword arguments, the keys and concrete evaluation of the values
-    will be used for the hash.
+    the hash. If any arguments have dynamic shapes, their abstract axes will be replaced
+    by the respective letter provided in ``abstracted_axes``.
+
+    For keyword arguments, the string representation of the keyword argument
+    dictionary will be used to create the hash.
+
+    Args:
+        args (tuple): positional arguments of the cached qfunc
+        kwargs (dict): keyword arguments of the cached qfunc
+        abstract_axes (Union[tuple[dict[int, str]], None]): corresponding abstract axes
+            of positional arguments
+        static_argnums (tuple[int]): indices of static positional arguments
+
+    Returns:
+        int: hash to be used as the jaxpr cache's key
     """
-    args, static_argnums = flatten_args(args, static_argnums)
-    if not abstracted_axes:
-        abstracted_axes = [{}] * len(args)
-    abstracted_axes = jax.tree_util.tree_leaves(
-        abstracted_axes, is_leaf=lambda x: isinstance(x, dict)
-    )
     serialized = "args="
 
-    for i, (arg, abs_axes) in enumerate(zip(args, abstracted_axes, strict=True)):
+    for i, arg in enumerate(args):
         if i in static_argnums:
             serialized += str(arg)
             continue
 
-        abstract_shape = tuple(abs_axes.get(i, s) for i, s in enumerate(qml.math.shape(arg)))
-        cur_serialized = f"{abstract_shape},{qml.math.get_dtype_name(arg)}"
-        serialized += f"{cur_serialized};"
+        if abstracted_axes:
+            serialized_shape = tuple(
+                abstracted_axes[i].get(j, s) for j, s in enumerate(qml.math.shape(arg))
+            )
+        else:
+            serialized_shape = qml.math.shape(arg)
+        serialized += f"{serialized_shape},{qml.math.get_dtype_name(arg)};"
 
     serialized += f";;{kwargs=}"
     return hash(serialized)
@@ -461,14 +488,12 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
-    flat_args, args_struct = jax.tree_util.tree_flatten(args)
-    flat_abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
-    abstracted_axes = (
-        jax.tree_util.tree_unflatten(args_struct, flat_abstracted_axes)
-        if flat_abstracted_axes is not None
-        else flat_abstracted_axes
-    )
-    cache_key = get_jaxpr_cache_key(flat_args, kwargs, flat_abstracted_axes, qnode.static_argnums)
+    # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
+    # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which
+    # we don't want to correctly compute the ``cache_key``.
+    flat_args, args_struct, flat_static_argnums = flatten_args(args, qnode.static_argnums)
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
+    cache_key = get_jaxpr_cache_key(flat_args, kwargs, abstracted_axes, flat_static_argnums)
     using_cached_plxpr = False
 
     # pylint: disable=protected-access
@@ -484,6 +509,10 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         flat_fn = FlatFn(qfunc)
 
         try:
+            if abstracted_axes:
+                # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
+                # as the original positional arguments
+                abstracted_axes = jax.tree_util.tree_unflatten(args_struct, abstracted_axes)
             qfunc_jaxpr = jax.make_jaxpr(
                 flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
             )(*args)
