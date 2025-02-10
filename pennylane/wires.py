@@ -93,6 +93,9 @@ def _process(wires):
     if len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
+    # Tuple of wires are flattened by iterating through each wire label and
+    # checking if it is a Wires object. If so, flatten the Wires object into a tuple of wire labels.
+    # The nested tuple of wires are then stitched together using itertools.chain.
     return tuple(itertools.chain(*(_flatten_wires_object(x) for x in tuple_of_wires)))
 
 
