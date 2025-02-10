@@ -21,7 +21,6 @@ from .transformer import (
     run_autograph,
 )
 
-
 __all__ = (
     "autograph_source",
     "run_autograph",
