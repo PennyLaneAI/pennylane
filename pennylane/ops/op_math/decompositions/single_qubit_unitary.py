@@ -117,7 +117,6 @@ def _zyz_get_rotation_angles_sparse(U):
     u00 = U[0, 0]
     u01 = U[0, 1]
     u10 = U[1, 0]
-    u11 = U[1, 1]
 
     # For batched U or single U with non-zero off-diagonal, compute the
     # normal decomposition instead
