@@ -1218,3 +1218,73 @@ class TestQNodeAutographIntegration:
             return qml.state()
 
         assert qml.math.allclose(circuit(), [0, 0, 0, 1])
+
+
+def test_qnode_static_argnums():
+    """Test that a QNode's static argnums are used to capture the QNode's quantum function."""
+
+    dev = qml.device("default.qubit", wires=2)
+    args = (1.5, 2.5, 3.5)
+    static_argnums = (0, 1)
+
+    @qml.qnode(dev, static_argnums=static_argnums)
+    def circuit(a, b, c):
+        qml.RX(a, 0)
+        qml.RY(b + c, 1)
+
+        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+    jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+    assert isinstance(qfunc_jaxpr.eqns[0].invars[0], jax.core.Literal)
+    assert qml.math.allclose(qfunc_jaxpr.eqns[0].invars[0].val, args[0])
+
+    assert isinstance(qfunc_jaxpr.eqns[1].invars[0], jax.core.Literal)
+    assert qml.math.allclose(qfunc_jaxpr.eqns[1].invars[0].val, args[1])
+
+    # Empty capture_cache so we don't use cached jaxpr
+    circuit.capture_cache.clear()
+
+    res = circuit(*args)
+    with qml.capture.pause():
+        assert res == circuit(*args)
+
+
+def test_qnode_static_argnums_pytree():
+    """Test that using static argnums with pytree inputs works correctly."""
+
+
+class TestQNodeCaptureCaching:
+    """Unit tests for caching QNode executions with program capture."""
+
+    def test_caching(self):
+        """Test that caching works correctly."""
+
+    def test_caching_kwargs(self):
+        """Test that caching works correctly when the QNode has kwargs."""
+
+    def test_caching_pytree(self):
+        """Test that caching works correctly for pytree inputs."""
+
+    def test_caching_static_argnums(self):
+        """Test that caching works correctly when a QNode has static arguments."""
+
+    def test_caching_static_argnums_pytree(self):
+        """Test that caching works correctly when a QNode has static arguments
+        with pytree inputs."""
+
+    def test_caching_dynamic_shapes(self):
+        """Test that caching works correctly when a QNode has arguments with
+        dynamic shapes."""
+
+    def test_caching_dynamic_shapes_pytree(self):
+        """Test that caching works correctly when a QNode has pytree arguments
+        with dynamic shapes."""
+
+    def test_caching_dynamic_shapes_and_static_argnums(self):
+        """Test that caching works correctly when a QNode has arguments with
+        dynamic shapes as well as static arguments."""
+
+    def test_caching_dynamic_shapes_and_static_argnums_pytree(self):
+        """Test that caching works correctly when a QNode has pytree arguments
+        with dynamic shapes as well as static arguments."""

@@ -327,7 +327,7 @@ batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
 mlir.register_lowering(qnode_prim, mlir.lower_fun(qnode_prim.impl, multiple_results=True))
 
 
-def flatten_args(args, static_argnums):
+def _flatten_args(args, static_argnums):
     """Flatten the arguments of a qfunc.
 
     This function flattens the arguments of a ``QNode``. Additionally, it flattens the
@@ -371,7 +371,7 @@ def flatten_args(args, static_argnums):
     return flat_args, jax.tree_util.treedef_tuple(tree_structs), flat_static_argnums
 
 
-def get_jaxpr_cache_key(args, kwargs, abstracted_axes, static_argnums):
+def _get_jaxpr_cache_key(args, kwargs, abstracted_axes, static_argnums):
     """Create a hash using the arguments and keyword arguments of a QNode.
 
     The hash is dependent on the abstract evaluation of ``args``. For any indices
@@ -491,15 +491,15 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
     # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which
     # we don't want to correctly compute the ``cache_key``.
-    flat_args, args_struct, flat_static_argnums = flatten_args(args, qnode.static_argnums)
+    flat_args, args_struct, flat_static_argnums = _flatten_args(args, qnode.static_argnums)
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
-    cache_key = get_jaxpr_cache_key(flat_args, kwargs, abstracted_axes, flat_static_argnums)
+    cache_key = _get_jaxpr_cache_key(flat_args, kwargs, abstracted_axes, flat_static_argnums)
     using_cached_plxpr = False
 
     # pylint: disable=protected-access
-    if cache_key in qnode._capture_cache:
+    if cache_key in qnode.capture_cache:
         print("HIT :)")
-        qfunc_jaxpr, out_tree = qnode._capture_cache[cache_key]
+        qfunc_jaxpr, out_tree = qnode.capture_cache[cache_key]
         using_cached_plxpr = True
     else:
         print("MISS :(")
@@ -534,10 +534,12 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         "gradient_kwargs": qnode.gradient_kwargs,
     }
 
+    # We need to remove static arguments because they will no longer be present in the qfunc_jaxpr
+    flat_dynamic_args = (arg for i, arg in enumerate(flat_args) if i not in flat_static_argnums)
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
         *abstract_shapes,
-        *flat_args,
+        *flat_dynamic_args,
         shots=shots,
         qnode=qnode,
         device=qnode.device,
@@ -549,6 +551,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not using_cached_plxpr:
         assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
         out_tree = flat_fn.out_tree
-        qnode._capture_cache[cache_key] = (qfunc_jaxpr, out_tree)
+        qnode.capture_cache[cache_key] = (qfunc_jaxpr, out_tree)
 
     return jax.tree_util.tree_unflatten(out_tree, res)

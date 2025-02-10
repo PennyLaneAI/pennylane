@@ -607,7 +607,7 @@ class QNode:
         _validate_diff_method(self.device, self.diff_method)
         cache = (max_diff > 1) if cache == "auto" else cache
 
-        self._capture_cache = LRUCache(maxsize=1000)
+        self.capture_cache = LRUCache(maxsize=1000)
         if isinstance(static_argnums, int):
             static_argnums = (static_argnums,)
         self.static_argnums = static_argnums
