@@ -867,19 +867,9 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
     if isinstance(op.base, qml.GlobalPhase):
         # use Lemma 5.2 from https://arxiv.org/pdf/quant-ph/9503016
         phase_shift = qml.PhaseShift(phi=-op.data[0], wires=op.control_wires[-1])
-        if len(op.control_wires) > 1:
-            phase_shift = ctrl(phase_shift, control=op.control_wires[:-1])
-        return [phase_shift]
-
-    # A multi-wire controlled PhaseShift should be decomposed first using the decomposition
-    # of ControlledPhaseShift. This is because the decomposition of PhaseShift contains a
-    # GlobalPhase that we do not have a handling for.
-    # TODO: remove this special case when we support ControlledGlobalPhase [sc-44933]
-    if isinstance(op.base, qml.PhaseShift):
-        base_decomp = qml.ControlledPhaseShift.compute_decomposition(*op.data, op.wires[-2:])
-        return [
-            ctrl(new_op, op.control_wires[:-1], work_wires=op.work_wires) for new_op in base_decomp
-        ]
+        if len(op.control_wires) == 1:
+            return [phase_shift]
+        return [ctrl(phase_shift, control=op.control_wires[:-1])]
 
     # TODO: will be removed in the second part of the controlled rework [sc-37951]
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):

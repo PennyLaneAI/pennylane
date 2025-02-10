@@ -2021,11 +2021,8 @@ class TestTapeExpansionWithControlled:
         ]
 
         assert tape.expand(depth=2).circuit == [
-            qml.ControlledPhaseShift(np.pi / 4, wires=[3, 7]),
-            qml.Toffoli(wires=[3, 7, 0]),
-            qml.ControlledPhaseShift(-np.pi / 4, wires=[3, 0]),
-            qml.Toffoli(wires=[3, 7, 0]),
-            qml.ControlledPhaseShift(np.pi / 4, wires=[3, 0]),
+            Controlled(qml.RZ(np.pi / 2, wires=[0]), control_wires=[3, 7]),
+            Controlled(qml.GlobalPhase(-np.pi / 4, wires=[]), control_wires=[3, 7]),
         ]
 
     def test_adjoint_of_ctrl(self):
@@ -2173,7 +2170,7 @@ class TestTapeExpansionWithControlled:
     @pytest.mark.parametrize(
         "op, params, depth, expected",
         [
-            (qml.templates.QFT, [], 2, 14),
+            (qml.templates.QFT, [], 2, 11),
             (qml.templates.BasicEntanglerLayers, [pnp.ones([3, 2])], 1, 9),
         ],
     )
