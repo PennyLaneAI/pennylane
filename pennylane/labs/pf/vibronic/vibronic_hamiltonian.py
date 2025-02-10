@@ -49,10 +49,10 @@ class VibronicHamiltonian:
 
         next_pow_2 = 2 ** (self.states - 1).bit_length()
 
-        if index not in range(next_pow_2):
+        if index not in range(next_pow_2 + 1):
             raise ValueError("Index out of range")
 
-        if index == next_pow_2 - 1:
+        if index == next_pow_2:
             return self._p_fragment()
 
         return self._fragment(index)
@@ -104,10 +104,12 @@ class VibronicHamiltonian:
         scalar = -(delta**2) / 24
         epsilon = VibronicMatrix(self.states, self.modes, sparse=self.sparse)
 
-        for i in range(self.states):
-            for j in range(i + 1, self.states + 1):
+        next_pow_2 = 2 ** (self.states - 1).bit_length()
+
+        for i in range(next_pow_2):
+            for j in range(i + 1, next_pow_2 + 1):
                 epsilon += self._commute_fragments(i, i, j)
-                for k in range(i + 1, self.states + 1):
+                for k in range(i + 1, next_pow_2 + 1):
                     epsilon += 2 * self._commute_fragments(k, i, j)
 
         epsilon *= scalar
