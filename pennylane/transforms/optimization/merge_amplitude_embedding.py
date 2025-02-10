@@ -85,6 +85,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                     raise qml.DeviceError(
                         f"Operation {op.name} cannot be used after other Operation applied in the same qubit "
                     )
+
                 self.input_wires.append(op.wires)
                 self.input_vectors.append(op.parameters[0])
                 self.input_batch_size.append(op.batch_size)
@@ -111,7 +112,10 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                     final_batch_size = self.input_batch_size[0]
 
                     for w, v, b in zip(
-                        self.input_wires[1:], self.input_vectors[1:], self.input_batch_size[1:], strict=True
+                        self.input_wires[1:],
+                        self.input_vectors[1:],
+                        self.input_batch_size[1:],
+                        strict=True,
                     ):
                         final_vector = final_vector[..., :, None] * v[..., None, :]
                         final_batch_size = final_batch_size or b
