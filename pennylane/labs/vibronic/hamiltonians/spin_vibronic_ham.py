@@ -254,4 +254,4 @@ def get_coeffs():
         for k in range(j):
             alphas[j][k] = alphas[k][j]
 
-    return alphas, betas, lambdas, omegas
+    return omegas, [lambdas, alphas, betas]
