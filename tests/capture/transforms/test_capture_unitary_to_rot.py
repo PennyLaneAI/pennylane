@@ -450,3 +450,57 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[-3].primitive == qml.RZ._primitive
         assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+class TestExpandPlxprTransformIntegration:
+    """Test that the transform works with expand_plxpr_transform"""
+
+    def test_example(self):
+        """Test that the transform works with expand_plxpr_transform"""
+
+        @qml.transforms.unitary_to_rot
+        def f(U):
+            qml.QubitUnitary(U, 0)
+            return qml.expval(qml.Z(0))
+
+        U = qml.Rot(1.0, 2.0, 3.0, wires=0)
+        jaxpr = jax.make_jaxpr(f)(U.matrix())
+
+        assert jaxpr.eqns[0].primitive == qml.transforms.unitary_to_rot._primitive
+
+        transformed_f = qml.capture.expand_plxpr_transforms(f)
+        transformed_jaxpr = jax.make_jaxpr(transformed_f)(U.matrix())
+
+        # Qubit Unitary decomposition
+        with qml.capture.pause():
+            QU = qml.QubitUnitary(U.matrix(), 0)
+            decomp = jax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
+        for i, eqn in enumerate(transformed_jaxpr.eqns[-len(decomp) : -2]):
+            assert eqn.primitive == decomp[i]._primitive
+
+        # Measurement
+        assert transformed_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert transformed_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    def test_decorator(self):
+        """Test that the transform works with the decorator"""
+
+        @qml.capture.expand_plxpr_transforms
+        @qml.transforms.unitary_to_rot
+        def f(U):
+            qml.QubitUnitary(U, 0)
+            return qml.expval(qml.Z(0))
+
+        U = qml.Rot(1.0, 2.0, 3.0, wires=0)
+        jaxpr = jax.make_jaxpr(f)(U.matrix())
+
+        # Qubit Unitary decomposition
+        with qml.capture.pause():
+            QU = qml.QubitUnitary(U.matrix(), 0)
+            decomp = jax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
+        for i, eqn in enumerate(jaxpr.eqns[-len(decomp) : -2]):
+            assert eqn.primitive == decomp[i]._primitive
+
+        # Measurement
+        assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
