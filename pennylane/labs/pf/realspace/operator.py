@@ -11,6 +11,7 @@ import numpy as np
 
 from pennylane.labs.pf.abstract import Fragment
 from pennylane.labs.pf.utils import op_norm
+
 from .tree import Node
 
 

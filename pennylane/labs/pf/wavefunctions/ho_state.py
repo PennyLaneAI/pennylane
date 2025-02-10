@@ -2,6 +2,7 @@
 
 from typing import Dict, Tuple
 
+
 class HOState:
     """Representation of a wavefunction in the Harmonic Oscillator basis"""
 
@@ -18,6 +19,7 @@ class HOState:
 
     def creation(self, mode) -> None:
         """Apply creation operator on specified mode"""
+
 
 def _validate_indices(modes, indices) -> None:
     for index in indices:
