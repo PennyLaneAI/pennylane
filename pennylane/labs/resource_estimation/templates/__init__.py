@@ -24,4 +24,4 @@ from .subroutines import (
     ResourceReflection,
     ResourceSelect,
 )
-from .trotter import ResourceTrotterProduct, resource_trotterize
+from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize

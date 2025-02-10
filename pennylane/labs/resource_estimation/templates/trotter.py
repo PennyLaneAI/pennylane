@@ -155,17 +155,22 @@ class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
         n, order, first_order_expansion, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         k = order // 2
+        gate_types = defaultdict(int, {})
 
         if order == 1:
-            return defaultdict(int, {cp_rep: n for cp_rep in first_order_expansion})
+            for cp_rep in first_order_expansion:
+                gate_types[cp_rep] += n
+            return gate_types
 
         cp_rep_first = first_order_expansion[0]
         cp_rep_last = first_order_expansion[-1]
         cp_rep_rest = first_order_expansion[1:-1]
 
-        gate_types = defaultdict(int, {cp_rep: 2 * n * (5 ** (k - 1)) for cp_rep in cp_rep_rest})
-        gate_types[cp_rep_first] = n * (5 ** (k - 1)) + 1
-        gate_types[cp_rep_last] = n * (5 ** (k - 1))
+        for cp_rep in cp_rep_rest:
+            gate_types[cp_rep] += 2 * n * (5 ** (k - 1))
+
+        gate_types[cp_rep_first] += n * (5 ** (k - 1)) + 1
+        gate_types[cp_rep_last] += n * (5 ** (k - 1))
 
         return gate_types
 
@@ -210,11 +215,16 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         n, order, qfunc_compressed_reps, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         k = order // 2
+        gate_types = defaultdict(int, {})
+
         if order == 1:
-            return defaultdict(int, {cp_rep: n for cp_rep in qfunc_compressed_reps})
-        return defaultdict(
-            int, {cp_rep: 2 * n * (5 ** (k - 1)) for cp_rep in qfunc_compressed_reps}
-        )
+            for cp_rep in qfunc_compressed_reps:
+                gate_types[cp_rep] += n
+            return gate_types
+
+        for cp_rep in qfunc_compressed_reps:
+            gate_types[cp_rep] += 2 * n * (5 ** (k - 1))
+        return gate_types
 
     def resource_params(self) -> dict:
         with qml.QueuingManager.stop_recording():

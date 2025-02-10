@@ -123,6 +123,8 @@ Templates
     ~ResourceSelect
     ~ResourceStatePrep
     ~ResourceTrotterProduct
+    ~ResourceTrotterizedQfunc
+    ~resource_trotterize
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -215,5 +217,6 @@ from .templates import (
     ResourceSelect,
     ResourceStatePrep,
     ResourceTrotterProduct,
+    ResourceTrotterizedQfunc,
     resource_trotterize,
 )
