@@ -35,7 +35,7 @@ from .primitives import (
     while_loop_prim,
 )
 
-FlattenedHigherOrderPrimitives: dict["jax.core.Primitive", Callable] = {}
+FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
 """
 A dictionary containing flattened style cond, while, and for loop higher order primitives.
 .. code-block::
@@ -217,7 +217,7 @@ class PlxprInterpreter:
     """
 
     _env: dict
-    _primitive_registrations: dict["jax.core.Primitive", Callable] = {}
+    _primitive_registrations: dict["jax.extend.core.Primitive", Callable] = {}
 
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
@@ -226,11 +226,13 @@ class PlxprInterpreter:
         self._env = {}
 
     @classmethod
-    def register_primitive(cls, primitive: "jax.core.Primitive") -> Callable[[Callable], Callable]:
+    def register_primitive(
+        cls, primitive: "jax.extend.core.Primitive"
+    ) -> Callable[[Callable], Callable]:
         """Registers a custom method for handling a primitive
 
         Args:
-            primitive (jax.core.Primitive): the primitive we want custom behavior for
+            primitive (jax.extend.core.Primitive): the primitive we want custom behavior for
 
         Returns:
             Callable: a decorator for adding a function to the custom registrations map
@@ -241,7 +243,7 @@ class PlxprInterpreter:
 
         .. code-block:: python
 
-            my_primitive = jax.core.Primitive("my_primitve")
+            my_primitive = jax.extend.core.Primitive("my_primitve")
 
             @Interpreter_Type.register(my_primitive)
             def handle_my_primitive(self: Interpreter_Type, *invals, **params)
@@ -257,7 +259,7 @@ class PlxprInterpreter:
 
     def read(self, var):
         """Extract the value corresponding to a variable."""
-        return var.val if isinstance(var, jax.core.Literal) else self._env[var]
+        return var.val if isinstance(var, jax.extend.core.Literal) else self._env[var]
 
     def setup(self) -> None:
         """Initialize the instance before interpreting equations.
@@ -407,7 +409,7 @@ class PlxprInterpreter:
 
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
-def _(self, x, *dyn_shape, shape, broadcast_dimensions):
+def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     """Handle the broadcast_in_dim primitive created by jnp.ones, jnp.zeros, jnp.full
 
     >>> import jax
@@ -427,12 +429,14 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions):
     # needs custom primitive as jax.core.eval_jaxpr will error out with this
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
 
-    return jax.lax.broadcast_in_dim(x, new_shape, broadcast_dimensions=broadcast_dimensions)
+    return jax.lax.broadcast_in_dim(
+        x, new_shape, broadcast_dimensions=broadcast_dimensions, sharding=sharding
+    )
 
 
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
-def _(self, *dyn_shape, dimension, dtype, shape):
+def _(self, *dyn_shape, dimension, dtype, shape, sharding):
     """Handle the iota primitive created by jnp.arange
 
     >>> import jax
@@ -447,7 +451,7 @@ def _(self, *dyn_shape, dimension, dtype, shape):
     """
     # iota is primitive created by jnp.arange
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
-    return jax.lax.broadcasted_iota(dtype, new_shape, dimension)
+    return jax.lax.broadcasted_iota(dtype, new_shape, dimension, sharding=sharding)
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
