@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """This module contains the classes and functions for creating and diagonalizing
-midcircuit measurements with a parameterized measurement axis."""
+mid-circuit measurements with a parameterized measurement axis."""
 
 from typing import Optional
 
@@ -101,7 +101,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
     @property
     def has_diagonalizing_gates(self):
-        """Whether there are gates that need to be applied for to diagonalize the measurement"""
+        """Whether there are gates that need to be applied to diagonalize the measurement"""
         return True
 
     def diagonalizing_gates(self):
