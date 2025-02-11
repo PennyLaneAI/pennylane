@@ -19,8 +19,10 @@ from importlib import import_module
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as np
+import scipy as sp
 from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
+from scipy.sparse.linalg import splu
 
 from .interface_utils import get_deep_interface
 from .utils import is_abstract
@@ -67,6 +69,64 @@ ar.register_function("scipy", "conj", np.conj)
 ar.register_function("scipy", "transpose", np.transpose)
 ar.register_function("scipy", "ndim", np.ndim)
 
+
+# -------------------------------- SciPy Sparse --------------------------------- #
+# the following is required to ensure that general SciPy sparse matrices are
+# not automatically 'unwrapped' to dense NumPy arrays. Note that we assume
+# that whenever the backend is 'scipy', the input is a SciPy sparse matrix.
+
+
+def _det_sparse(x):
+    """Compute determinant of 2x2 sparse matrix without densification"""
+    if not sp.sparse.issparse(x):
+        raise TypeError(f"Expected SciPy sparse, got {type(x)}")
+
+    x = sp.sparse.csr_matrix(x)
+    if x.shape != (2, 2):
+        return _sparse_det(x)
+
+    # Direct array access
+    indptr, indices, data = x.indptr, x.indices, x.data
+    values = {(i, j): 0.0 for i in range(2) for j in range(2)}
+    for i in range(2):
+        for j_idx in range(indptr[i], indptr[i + 1]):
+            j = indices[j_idx]
+            values[(i, j)] = data[j_idx]
+
+    return values[(0, 0)] * values[(1, 1)] - values[(0, 1)] * values[(1, 0)]
+
+
+def _sparse_det(A):
+    assert hasattr(A, "tocsc"), "Input matrix must be a SciPy.sparse.spmatrix"
+    A_csc = A.tocsc()
+    lu = splu(A_csc)
+    U_diag = lu.U.diagonal()
+    det_A = np.prod(U_diag)
+    parity = _permutation_parity(lu.perm_r)
+    return det_A * parity
+
+
+def _permutation_parity(perm):
+    """input: lu.perm_r; output: permutation parity"""
+    parity = 1
+    visited = [False] * len(perm)
+    for i in range(len(perm)):
+        if not visited[i]:
+            cycle_length = 0
+            j = i
+            while not visited[j]:
+                visited[j] = True
+                j = perm[j]
+                cycle_length += 1
+
+            if cycle_length > 0:
+                parity *= (-1) ** (cycle_length - 1)
+    return parity
+
+
+ar.register_function("scipy", "linalg.det", _det_sparse)
+ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
+ar.register_function("scipy", "trace", lambda x: x.trace())
 
 # -------------------------------- NumPy --------------------------------- #
 
