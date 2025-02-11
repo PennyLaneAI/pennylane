@@ -22,13 +22,12 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
-def _mps_to_right_canonical_representation(mps, max_bond_dim):
+def right_canonicalize_mps(mps):
     """
-    Transform a MPS into a right-canonical MPS.
+    Transform an MPS into a right-canonical MPS.
 
     Args:
       mps (list[Array]): List of tensors representing the MPS.
-      max_bond_dim (int): Maximum allowed bond dimension (for truncation during SVD).
 
     Returns:
       A list of tensors representing the MPS in right-canonical form.
@@ -36,6 +35,24 @@ def _mps_to_right_canonical_representation(mps, max_bond_dim):
 
     L = len(mps)
     output_mps = [None] * L
+
+    is_right_canonical = True
+    for i in range(1, L - 1):
+        tensor = mps[i]
+        # Right-canonical definition
+        M = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+        if not np.allclose(M, np.eye(tensor.shape[0])):
+            is_right_canonical = False
+            break
+
+    if is_right_canonical:
+        return mps
+
+    max_bond_dim = 0
+    for tensor in mps[1:-1]:
+        D_left = tensor.shape[0]
+        D_right = tensor.shape[2]
+        max_bond_dim = max(max_bond_dim, D_left, D_right)
 
     # Procedure analogous to the left-canonical conversion but starting from the right and storing the Vd
     for i in range(L - 1, 0, -1):
@@ -63,13 +80,15 @@ class MPSPrep(Operation):
 
     .. note::
 
-        This operator is natively supported on the ``lightning.tensor`` device, designed to run MPS structures efficiently. For other devices, implementing this operation uses a gate-based decomposition which requires auxiliary qubits (via ``work_wires``) to prepare the state vector represented by the MPS in a quantum circuit.
+        This operator is natively supported on the ``lightning.tensor`` device, designed to run MPS structures
+        efficiently. For other devices, implementing this operation uses a gate-based decomposition which requires
+        auxiliary qubits (via ``work_wires``) to prepare the state vector represented by the MPS in a quantum circuit.
 
 
 
     Args:
-        mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
-            product of site matrices. See the usage details section for more information.
+        mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing a right-canonized MPS state
+            as a product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
         work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
@@ -77,6 +96,8 @@ class MPSPrep(Operation):
 
 
     The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
+
+    .. seealso:: :func:`~.right_canonicalize_mps`.
 
     **Example**
 
@@ -131,6 +152,13 @@ class MPSPrep(Operation):
         Additionally, the physical dimension of the site should always be fixed at :math:`2`
         (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
 
+        A right-canonized MPS is a matrix product state where each tensor :math:`A^{(j)}` satisfies
+        the following orthonormality condition:
+
+        .. math::
+
+            \sum_{\alpha_j} A^{(j)}_{\alpha_{j-1}, s, \alpha_j} \left( A^{(j)}_{\alpha'_{j-1}, s, \alpha_j} \right)^* = \delta_{\alpha_{j-1}, \alpha'_{j-1}}
+
         The following example shows a valid MPS input containing four tensors with
         dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
 
@@ -156,7 +184,7 @@ class MPSPrep(Operation):
             ]
     """
 
-    def __init__(self, mps, wires, work_wires=None, id=None):
+    def __init__(self, mps, wires, work_wires=None, right_canonicalize=False, id=None):
 
         # Validate the shape and dimensions of the first tensor
         assert qml.math.isclose(
@@ -206,6 +234,7 @@ class MPSPrep(Operation):
         ), "Dimension mismatch: the last tensor's first dimension does not match the previous third dimension."
 
         self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
+        self.hyperparameters["right_canonicalize"] = right_canonicalize
 
         if work_wires:
             self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
@@ -225,6 +254,7 @@ class MPSPrep(Operation):
         hyperparameters = (
             ("wires", self.hyperparameters["input_wires"]),
             ("work_wires", self.hyperparameters["work_wires"]),
+            ("right_canonicalize", self.hyperparameters["right_canonicalize"]),
         )
         return self.mps, hyperparameters
 
@@ -241,7 +271,9 @@ class MPSPrep(Operation):
             [wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]]
         )
 
-        return MPSPrep(self.mps, new_wires, new_work_wires)
+        return MPSPrep(
+            self.mps, new_wires, new_work_wires, self.hyperparameters["right_canonicalize"]
+        )
 
     @classmethod
     def _primitive_bind_call(cls, mps, wires, id=None):
@@ -260,7 +292,9 @@ class MPSPrep(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(mps, wires, work_wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        mps, wires, work_wires, right_canonicalize=False
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
 
@@ -297,7 +331,8 @@ class MPSPrep(Operation):
         mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
         # We transform the mps to ensure that the generated matrix is unitary
-        mps = _mps_to_right_canonical_representation(mps, max_bond_dimension)
+        if right_canonicalize:
+            mps = right_canonicalize_mps(mps)
 
         for i, Ai in enumerate(mps):
 

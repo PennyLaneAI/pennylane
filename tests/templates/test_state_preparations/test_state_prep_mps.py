@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.templates.state_preparations.state_prep_mps import (
-    _mps_to_right_canonical_representation,
+    right_canonicalize_mps,
 )
 
 
@@ -515,7 +515,9 @@ class TestMPSPrep:
         dev = qml.device("default.qubit")
 
         qs = qml.tape.QuantumScript(
-            qml.MPSPrep.compute_decomposition(mps, wires=wires["state"], work_wires=wires["work"]),
+            qml.MPSPrep.compute_decomposition(
+                mps, wires=wires["state"], work_wires=wires["work"], right_canonicalize=True
+            ),
             [qml.state()],
         )
         output = dev.execute(qs)[: 2**num_wires]
@@ -589,7 +591,7 @@ class TestMPSPrep:
             + [np.ones((4, 2, 4)) for _ in range(1, L - 1)]
             + [np.ones((4, 2, 1))]
         )
-        mps_rc = _mps_to_right_canonical_representation(mps, 4)
+        mps_rc = right_canonicalize_mps(mps)
 
         for i in range(1, L - 1):
             tensor = mps_rc[i]
