@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
+  following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
+  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
+
 <h3>Improvements 🛠</h3>
 
 * Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
