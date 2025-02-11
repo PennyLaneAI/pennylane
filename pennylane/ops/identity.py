@@ -455,8 +455,9 @@ class GlobalPhase(Operation):
         n_wires = len(wire_order) if wire_order else len(self.wires)
         return self.compute_matrix(self.data[0], n_wires=n_wires)
 
-    def sparse_matrix(self, wire_order=None):
-        n_wires = len(wire_order) if wire_order else len(self.wires)
+    def sparse_matrix(self, wire_order: Sequence=None):
+        # maybe some logic here to check / handle non sequence types
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
         return self.compute_sparse_matrix(self.data[0], n_wires=n_wires)
 
     def adjoint(self):
