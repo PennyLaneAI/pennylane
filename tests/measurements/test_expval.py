@@ -405,7 +405,7 @@ class TestExpval:
 
 @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
 def test_qnode_expval_dtype(coeffs):
-    """System level test to ensure dtype is correctly returned."""
+    """System level test to ensure dtype is correctly preserved."""
 
     @qml.qnode(qml.device("default.qubit"))
     def circuit(coeffs):
