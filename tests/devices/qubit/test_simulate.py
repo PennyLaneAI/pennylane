@@ -71,6 +71,31 @@ def test_custom_operation():
     assert qml.math.allclose(result, -1.0)
 
 
+class TestSparsePipeline:
+    """System tests for the sparse pipelines."""
+
+    cat_state = np.array([1, 0, 0, 0, 0, 0, 0, 1]) / np.sqrt(2)
+
+    @pytest.mark.parametrize(
+        "state",
+        [
+            cat_state,
+            sp.sparse.csr_matrix(cat_state),
+        ],
+    )
+    def test_sparse_op(self, state):
+        """Test that a sparse QubitUnitary operation works on default.qubit with expval measurement."""
+        mat = sp.sparse.csr_matrix([[0, 1], [1, 0]])
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(state, mat):
+            qml.StatePrep(state, wires=range(8), pad_with=0)
+            qml.QubitUnitary(mat, wires=[0])
+            return qml.expval(qml.Z(0))
+
+        assert qml.math.allclose(circuit(state, mat), -1)
+
+
 # pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
