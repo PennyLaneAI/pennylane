@@ -594,8 +594,9 @@ def defer_measurements(
 
         * Arbitrary classical processing of mid-circuit measurement values is now possible. With
           program capture disabled, only limited classical processing, as detailed in the
-          documentation for :func:`~pennylane.measure`. With program capture enabled, any ``jax.numpy``
-          functions that can be applied to scalars can be used with mid-circuit measurements.
+          documentation for :func:`~pennylane.measure`. With program capture enabled, any unary
+          or binary ``jax.numpy`` functions that can be applied to scalars can be used with mid-circuit
+          measurements.
 
         * Using mid-circuit measurements as gate parameters is now possible. This feature currently
           has the following restrictions:
