@@ -30,10 +30,12 @@ from dataclasses import dataclass
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
-from pennylane.operation import DecompositionUndefinedError, Operator
-
 from .decomposition_rule import DecompositionRule
 from .resources import CompressedResourceOp, Resources
+
+
+class DecompositionError(Exception):
+    """Base class for decomposition errors."""
 
 
 @dataclass(frozen=True)
@@ -57,7 +59,7 @@ class DecompositionGraph:
 
     """
 
-    def __init__(self, operations: list[Operator], target_gate_set: set[str]):
+    def __init__(self, operations, target_gate_set: set[str]):
         self._original_ops = operations
         self._target_gate_set = target_gate_set
         self._original_ops_indices: set[int] = set()
@@ -138,11 +140,11 @@ class DecompositionGraph:
         if self._visitor.unsolved_op_indices:
             unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
             op_names = set(op.op_type.__name__ for op in unsolved_ops)
-            raise DecompositionUndefinedError(
+            raise DecompositionError(
                 f"Decomposition not found for {op_names} to the gate set {self._target_gate_set}"
             )
 
-    def resource_estimates(self, op: Operator) -> Resources:
+    def resource_estimates(self, op) -> Resources:
         """Returns the resource estimates for a given operator.
 
         Args:
@@ -156,7 +158,7 @@ class DecompositionGraph:
         op_node_idx = self._op_node_indices[op_node]
         return self._visitor.d[op_node_idx]
 
-    def decomposition(self, op: Operator) -> DecompositionRule:
+    def decomposition(self, op) -> DecompositionRule:
         """Returns the optimal decomposition rule for a given operator.
 
         Args:
