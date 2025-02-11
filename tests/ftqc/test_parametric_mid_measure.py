@@ -36,7 +36,7 @@ class TestParametricMidMeasure:
         m2 = ParametricMidMeasureMP(Wires(1), angle=1.23, id="m1", plane="XY")
         m3 = ParametricMidMeasureMP(Wires(0), angle=2.45, id="m1", plane="XY")
         m4 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m2", plane="XY")
-        m5 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="ZY")
+        m5 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="YZ")
         m6 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="ZX")
         m7 = ParametricMidMeasureMP(Wires(0), angle=1.23, id="m1", plane="XY")
 
@@ -78,7 +78,7 @@ class TestParametricMidMeasure:
         [
             ("XY", 1.2, 0, "measure_xy(wires=[0], angle=1.2)"),
             ("ZX", 1.2, 0, "measure_zx(wires=[0], angle=1.2)"),
-            ("ZY", 1.2, 0, "measure_zy(wires=[0], angle=1.2)"),
+            ("YZ", 1.2, 0, "measure_yz(wires=[0], angle=1.2)"),
             ("XY", np.pi, 0, "measure_xy(wires=[0], angle=3.141592653589793)"),
             ("XY", 2.345, 1, "measure_xy(wires=[1], angle=2.345)"),
         ],
@@ -103,12 +103,12 @@ class TestParametricMidMeasure:
             ("ZX", 0, True, "┤↗ᶻˣ₀│  │0⟩"),
             ("ZX", 1, False, "┤↗ᶻˣ₁├"),
             ("ZX", 1, True, "┤↗ᶻˣ₁│  │0⟩"),
-            ("ZY", None, False, "┤↗ᶻʸ├"),
-            ("ZY", None, True, "┤↗ᶻʸ│  │0⟩"),
-            ("ZY", 0, False, "┤↗ᶻʸ₀├"),
-            ("ZY", 0, True, "┤↗ᶻʸ₀│  │0⟩"),
-            ("ZY", 1, False, "┤↗ᶻʸ₁├"),
-            ("ZY", 1, True, "┤↗ᶻʸ₁│  │0⟩"),
+            ("YZ", None, False, "┤↗ʸᶻ├"),
+            ("YZ", None, True, "┤↗ʸᶻ│  │0⟩"),
+            ("YZ", 0, False, "┤↗ʸᶻ₀├"),
+            ("YZ", 0, True, "┤↗ʸᶻ₀│  │0⟩"),
+            ("YZ", 1, False, "┤↗ʸᶻ₁├"),
+            ("YZ", 1, True, "┤↗ʸᶻ₁│  │0⟩"),
         ],
     )
     def test_label_no_decimals(self, plane, postselect, reset, expected):
@@ -156,14 +156,14 @@ class TestParametricMidMeasure:
             ("ZX", np.pi, -qml.Z(0)),
             ("ZX", 5 * np.pi / 4, -qml.X(0) - qml.Z(0)),
             ("ZX", -3 * np.pi / 4, -qml.X(0) - qml.Z(0)),
-            # ZY measurements
-            ("ZY", 0, qml.Z(0)),
-            ("ZY", np.pi / 4, -qml.Y(0) + qml.Z(0)),
-            ("ZY", np.pi / 2, -qml.Y(0)),
-            ("ZY", 3 * np.pi / 4, -qml.Y(0) - qml.Z(0)),
-            ("ZY", np.pi, -qml.Z(0)),
-            ("ZY", 5 * np.pi / 4, qml.Y(0) - qml.Z(0)),
-            ("ZY", -3 * np.pi / 4, qml.Y(0) - qml.Z(0)),
+            # YZ measurements
+            ("YZ", 0, qml.Z(0)),
+            ("YZ", np.pi / 4, -qml.Y(0) + qml.Z(0)),
+            ("YZ", np.pi / 2, -qml.Y(0)),
+            ("YZ", 3 * np.pi / 4, -qml.Y(0) - qml.Z(0)),
+            ("YZ", np.pi, -qml.Z(0)),
+            ("YZ", 5 * np.pi / 4, qml.Y(0) - qml.Z(0)),
+            ("YZ", -3 * np.pi / 4, qml.Y(0) - qml.Z(0)),
         ],
     )
     def test_diagonalizing_gates(self, plane, measurement_angle, corresponding_obs):
@@ -190,6 +190,15 @@ class TestParametricMidMeasure:
             expected_res = expected_res / np.sqrt(2)
 
         assert np.allclose(res, expected_res)
+
+    def test_invalid_plane_raises_error(self):
+        """Test that an error is raised at diagonalization if a plane other than
+        XY, YZ, or ZX are passed."""
+
+        mp = ParametricMidMeasureMP([0], angle=1.23, plane="AB")
+
+        with pytest.raises(NotImplementedError, match="plane not implemented"):
+            mp.diagonalizing_gates()
 
 
 class TestDrawParametricMidMeasure:
@@ -241,9 +250,6 @@ class TestDrawParametricMidMeasure:
 
     def test_text_drawer(self):
         """Test that the text drawer works as expected"""
-        # ToDo: is this redundant because we already tested the label works above,
-        #  and elsewhere in the test suite we (presumably) test that the object
-        #  label is used in the drawer?
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -389,7 +395,7 @@ class TestDiagonalizeMCMs:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)
-            mp = ParametricMidMeasureMP(0, angle=1.2, plane="ZY")
+            mp = ParametricMidMeasureMP(0, angle=1.2, plane="YZ")
             mv = MeasurementValue([mp], processing_fn=lambda v: v)
             qml.cond(mv == 0, partial(ParametricMidMeasureMP, angle=1.2))(wires=2, plane="XY")
 

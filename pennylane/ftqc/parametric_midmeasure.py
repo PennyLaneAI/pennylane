@@ -23,10 +23,9 @@ from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
 
-# ToDo: should some of the info be data instead of metadata?
 class ParametricMidMeasureMP(MidMeasureMP):
     """Parametric mid-circuit measurement. The basis for the measurement is parametrized by
-    a plane ("XY", "ZX" or "ZY"), and an angle within the plane.
+    a plane ("XY", "YZ" or "ZX"), and an angle within the plane.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
     Measurements on a single qubit are assumed.
@@ -45,7 +44,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
     Keyword Args:
         angle (float): The angle in radians
-        plane (str): The plane the measurement basis lies in. Options are "XY", "ZX" and "ZY"
+        plane (str): The plane the measurement basis lies in. Options are "XY", "ZX" and "YZ"
         reset (bool): Whether to reset the wire after measurement.
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
             measurement. None by default. If postselection is requested, only the post-measurement
@@ -110,11 +109,11 @@ class ParametricMidMeasureMP(MidMeasureMP):
             return [qml.PhaseShift(-self.angle, self.wires), qml.H(self.wires)]
         if self.plane == "ZX":
             return [qml.RY(-self.angle, self.wires)]
-        if self.plane == "ZY":
+        if self.plane == "YZ":
             return [qml.RX(-self.angle, self.wires)]
 
         raise NotImplementedError(
-            f"{self.plane} plane not implemented. Available plans are 'XY' 'ZX' and 'ZY'."
+            f"{self.plane} plane not implemented. Available plans are 'XY' 'ZX' and 'YZ'."
         )
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
