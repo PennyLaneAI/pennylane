@@ -127,6 +127,7 @@ def _permutation_parity(perm):
 ar.register_function("scipy", "linalg.det", _det_sparse)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
 ar.register_function("scipy", "trace", lambda x: x.trace())
+ar.register_function("scipy", "reshape", lambda x, new_shape: x.reshape( new_shape))
 
 # -------------------------------- NumPy --------------------------------- #
 
