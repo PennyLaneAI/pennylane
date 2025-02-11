@@ -19,6 +19,7 @@ from typing import Optional, Union
 
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
+from pennylane.workflow.executors import get_executor
 
 
 @dataclass
@@ -101,6 +102,13 @@ class ExecutionConfig:
 
     If ``False`` and using the jax-jit, no pure callback will occur and the device
     execution itself will be jitted.
+    """
+
+    executor_backend = get_executor()
+    """
+    Defines the class for the executor backend. 
+
+    Default values instantiate a multiprocessing Pool.
     """
 
     def __post_init__(self):

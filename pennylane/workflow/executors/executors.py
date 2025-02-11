@@ -35,6 +35,13 @@ class ExecBackends(Enum):
     MPI_CommEx = MPICommExec
 
 
+def get_executor(backend: ExecBackends = ExecBackends.MP_Pool):
+    """
+    Return the associated class type from the provided enumerated backends.
+    """
+    return backend.value
+
+
 def create_executor(backend: ExecBackends = ExecBackends.MP_Pool, **kwargs):
     """
     Create an instance of the specified executor backend with forwarded keyword arguments

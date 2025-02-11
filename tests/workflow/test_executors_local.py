@@ -57,6 +57,24 @@ class TestLocalExecutor:
     @pytest.mark.parametrize(
         "fn,data,result",
         [
+            (custom_func1, (np.pi / 2,), custom_func1(np.pi / 2)),
+            (custom_func2, (np.pi,), custom_func2(np.pi)),
+            (custom_func3, (np.pi, 1.2), custom_func3(np.pi, 1.2)),
+            (custom_func4, (np.pi / 3, 2.4, 5.6), custom_func4(np.pi / 3, 2.4, 5.6)),
+            (sum, range(16), sum(range(16))),
+        ],
+    )
+    def test_submit(self, fn, data, result, backend):
+        """
+        Test valid and invalid data mapping through the executor
+        """
+
+        executor = create_executor(backend[0])
+        assert np.allclose(result, list(executor.submit(fn, *data)))
+
+    @pytest.mark.parametrize(
+        "fn,data,result",
+        [
             (custom_func1, range(7), [custom_func1(i) for i in range(7)]),
             (custom_func2, range(3), list(map(lambda x: x**2, range(3)))),
             (sum, range(16), None),
@@ -109,7 +127,7 @@ class TestLocalExecutor:
             with pytest.raises(Exception) as e:
                 executor.starmap(fn, data)
         else:
-            assert np.allclose(result, executor.starmap(fn, data))
+            assert np.allclose(result, list(executor.starmap(fn, data)))
 
     @pytest.mark.parametrize(
         "workers",

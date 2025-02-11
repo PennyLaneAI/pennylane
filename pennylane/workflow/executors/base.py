@@ -52,18 +52,34 @@ class RemoteExecABC(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def map(self, fn: Callable, data: Sequence):
+    def submit(self, fn: Callable, *args, **kwargs):
         """
-        Single iterable map for batching execution of fn over data entries.
+        Single function submission for remote execution with provided args.
         """
         ...
 
-    def starmap(self, fn: Callable, data: Sequence):
+    def map(self, fn: Callable, *args, **kwargs):
+        """
+        Single iterable map for batching execution of fn over data entries.
+        Length of every entry in *args must be consistent.
+        kwargs are assumed as broadcastable to each function call.
+        """
+        for a in zip(*args):
+            yield self.submit(fn, *a, **kwargs)
+
+    def starmap(self, fn: Callable, args: Sequence):
         """
         Single iterable map for batching execution of fn over data entries, with each entry being a tuple of arguments to fn.
         """
+        for a in args:
+            yield fn(*a)
+
+    @abc.abstractmethod
+    def shutdown(self):
+        """
+        Disconnect from executor backend and release acquired resources.
+        """
         ...
-        return list(starmap(fn, data))
 
 
 class IntExecABC(RemoteExecABC, abc.ABC):
