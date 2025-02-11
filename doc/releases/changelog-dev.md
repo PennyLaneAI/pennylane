@@ -155,7 +155,7 @@
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
 * A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
-  measurement basis in the XY, ZX or ZY plane. 
+  measurement basis in the XY, YZ or ZX plane. 
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
 
 * A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices 
