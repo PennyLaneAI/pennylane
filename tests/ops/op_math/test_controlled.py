@@ -924,6 +924,22 @@ special_par_op_decomps = [
             qml.PhaseShift(0.123 / 2, wires=1),
         ],
     ),
+    (
+        qml.GlobalPhase,
+        [0.123],
+        [1],
+        [0],
+        (lambda x, wires: qml.ctrl(qml.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        [qml.PhaseShift(-0.123, wires=0)],
+    ),
+    (
+        qml.GlobalPhase,
+        [0.123],
+        [3],
+        [0, 1, 2],
+        (lambda x, wires: qml.ctrl(qml.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        [qml.ctrl(qml.PhaseShift(-0.123, wires=2), control=[0, 1])],
+    ),
 ]
 
 custom_ctrl_op_decomps = special_non_par_op_decomps + special_par_op_decomps
@@ -1043,6 +1059,7 @@ class TestDecomposition:
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
 
+    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
         custom_ctrl_op_decomps,
@@ -1067,7 +1084,10 @@ class TestDecomposition:
         assert ctrl_op.decomposition() == expected
         assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
         assert custom_ctrl_op.decomposition() == expected
-        assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
+        # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
+        # to test, just the controlled decompositions logic.
+        if base_cls != qml.GlobalPhase:
+            assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
         mat = qml.matrix(ctrl_op.decomposition, wire_order=active_wires)()
         assert np.allclose(mat, custom_ctrl_op.matrix(), atol=tol, rtol=0)
@@ -1129,14 +1149,6 @@ class TestDecomposition:
         op = Controlled(TempOperator(0), (1, 2))
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
-
-    def test_global_phase_decomp_raises_warning(self):
-        """Test that ctrl(GlobalPhase).decomposition() raises a warning with more than one control."""
-        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0, 1])
-        with pytest.warns(
-            UserWarning, match="Controlled-GlobalPhase currently decomposes to nothing"
-        ):
-            assert op.decomposition() == []
 
     def test_control_on_zero(self):
         """Test decomposition applies PauliX gates to flip any control-on-zero wires."""
@@ -1671,6 +1683,13 @@ custom_ctrl_ops = [
 class TestCtrl:
     """Tests for the ctrl transform."""
 
+    def test_no_redundant_queue(self):
+        """Test that the ctrl transform does not add redundant operations to the queue. https://github.com/PennyLaneAI/pennylane/pull/6926"""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.ctrl(qml.QubitUnitary(np.eye(2), 0), 1)
+
+        assert len(q.queue) == 1
+
     def test_invalid_input_error(self):
         """Test that a ValueError is raised upon invalid inputs."""
         with pytest.raises(ValueError, match=r"<class 'int'> is not an Operator or callable."):
@@ -1704,6 +1723,7 @@ class TestCtrl:
     @pytest.mark.parametrize("op, ctrl_wires, _", custom_ctrl_ops)
     def test_custom_controlled_ops_wrong_wires(self, op, ctrl_wires, _):
         """Tests custom controlled ops with wrong number of wires are handled correctly."""
+        # pylint: disable=possibly-used-before-assignment
 
         ctrl_wires = ctrl_wires + ["a", "b", "c"]
 
@@ -2001,11 +2021,8 @@ class TestTapeExpansionWithControlled:
         ]
 
         assert tape.expand(depth=2).circuit == [
-            qml.ControlledPhaseShift(np.pi / 4, wires=[3, 7]),
-            qml.Toffoli(wires=[3, 7, 0]),
-            qml.ControlledPhaseShift(-np.pi / 4, wires=[3, 0]),
-            qml.Toffoli(wires=[3, 7, 0]),
-            qml.ControlledPhaseShift(np.pi / 4, wires=[3, 0]),
+            Controlled(qml.RZ(np.pi / 2, wires=[0]), control_wires=[3, 7]),
+            Controlled(qml.GlobalPhase(-np.pi / 4, wires=[]), control_wires=[3, 7]),
         ]
 
     def test_adjoint_of_ctrl(self):
@@ -2153,7 +2170,7 @@ class TestTapeExpansionWithControlled:
     @pytest.mark.parametrize(
         "op, params, depth, expected",
         [
-            (qml.templates.QFT, [], 2, 14),
+            (qml.templates.QFT, [], 2, 11),
             (qml.templates.BasicEntanglerLayers, [pnp.ones([3, 2])], 1, 9),
         ],
     )

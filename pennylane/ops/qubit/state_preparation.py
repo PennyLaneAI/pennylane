@@ -326,7 +326,8 @@ class StatePrep(StatePrepBase):
         validate_norm: bool = True,
     ):
         self.is_sparse = False
-        if isinstance(state, csr_matrix):
+        if sp.sparse.issparse(state):
+            state = state.tocsr()
             state = self._preprocess_csr(state, wires, None, normalize, validate_norm)
             self.is_sparse = True
         else:

@@ -140,6 +140,10 @@ class QubitUnitary(Operation):
                 f"to act on {len(wires)} wires. Got shape {U_shape} instead."
             )
 
+        # Sparse matrics: if the matrix is sparse, we need to convert it to a csr_matrix specifically
+        if sp.sparse.issparse(U):
+            U = U.tocsr()
+
         # Check for unitarity; due to variable precision across the different ML frameworks,
         # here we issue a warning to check the operation, instead of raising an error outright.
         if unitary_check and not self._unitary_check(U, dim):
@@ -188,6 +192,26 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
+    def compute_sparse_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a sparse matrix (static method).
+
+        Args:
+            U (tensor_like): unitary matrix
+
+        Returns:
+            csr_matrix: sparse matrix representation
+
+        **Example**
+
+        >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        >>> qml.QubitUnitary.compute_sparse_matrix(U)
+        <2x2 sparse matrix of type '<class 'numpy.complex128'>'
+            with 2 stored elements in Compressed Sparse Row format>
+        """
+        U = qml.math.asarray(U, like="numpy")
+        return sp.sparse.csr_matrix(U)
+
+    @staticmethod
     def compute_decomposition(U: TensorLike, wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -223,8 +247,6 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            if isinstance(U, csr_matrix):
-                return qml.ops.one_qubit_decomposition(U.toarray(), Wires(wires)[0])
             return qml.ops.one_qubit_decomposition(U, Wires(wires)[0])
 
         if shape_without_batch_dim == (4, 4):
@@ -233,8 +255,6 @@ class QubitUnitary(Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
                 )
-            if isinstance(U, csr_matrix):
-                return qml.ops.two_qubit_decomposition(U.toarray(), Wires(wires))
 
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 

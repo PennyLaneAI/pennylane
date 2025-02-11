@@ -29,6 +29,7 @@ quantum-classical programs.
     ~disable
     ~enable
     ~enabled
+    ~pause
     ~create_operator_primitive
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
@@ -161,7 +162,7 @@ If needed, developers can also override the implementation method of the primiti
 """
 from typing import Callable
 
-from .switches import disable, enable, enabled
+from .switches import disable, enable, enabled, pause
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .capture_operators import create_operator_primitive
 from .capture_measurements import (
