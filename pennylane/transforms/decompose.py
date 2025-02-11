@@ -157,7 +157,18 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
             if eqn.outvars[0].__class__.__name__ == "DropVar":
-                return self.decompose_operation(op)
+
+                if op.has_plxpr_decomposition:
+
+                    args = (*op.parameters, *op.wires)
+                    qml.capture.run_autograph(op.compute_plxpr_decomposition)(
+                        *args, **op.hyperparameters
+                    )
+
+                else:
+
+                    return self.decompose_operation(op)
+
             return op
 
     # pylint: disable=unused-variable,missing-function-docstring
