@@ -96,7 +96,7 @@ class FromBloq(Operation):
         ops = []
         bloq = self._hyperparameters["bloq"]
 
-        if isinstance(bloq, Bloq):
+        if isinstance(bloq, Bloq) and not isinstance(bloq, CompositeBloq):
             try:
                 bloq = bloq.decompose_bloq().flatten()
             except:
