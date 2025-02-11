@@ -18,7 +18,7 @@ from functools import singledispatch
 from string import ascii_letters as alphabet
 
 import numpy as np
-from scipy.sparse import csr_matrix
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -229,7 +229,7 @@ def apply_operation(
         [1., 0.]], requires_grad=True)
 
     """
-    if isinstance(op.matrix(), csr_matrix):
+    if sp.sparse.issparse(op.matrix()):
         return apply_operation_csr_matrix(op, state, is_state_batched)
     return _apply_operation_default(op, state, is_state_batched, debugger)
 
@@ -237,7 +237,7 @@ def apply_operation(
 def apply_operation_csr_matrix(op, state, is_state_batched: bool = False):
     """The csr_matrix specialized version apply operation."""
     # Calculate the num wires by state shape
-    if isinstance(state, csr_matrix):  # Then the first is batch and the second is state dim
+    if sp.sparse.issparse(state):  # Then the first is batch and the second is state dim
         len_state = state.shape[1]
         num_wires = int(np.log2(len_state))
         return state @ op.matrix(wire_order=range(num_wires)).T

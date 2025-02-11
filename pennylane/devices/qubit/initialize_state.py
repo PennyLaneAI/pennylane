@@ -51,6 +51,6 @@ def create_initial_state(
     dtype = "complex64" if floating_single else "complex128"
     dtype = "complex128" if like == "tensorflow" else dtype
     # sparse matrix VIP tunnel
-    if isinstance(state_vector, sp.sparse.csr_matrix):
+    if sp.sparse.issparse(state_vector):
         return state_vector.astype(dtype)
     return qml.math.cast(qml.math.asarray(state_vector, like=like), dtype)
