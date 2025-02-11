@@ -27,10 +27,10 @@ def right_canonicalize_mps(mps):
     Transform an MPS into a right-canonical MPS.
 
     Args:
-      mps (list[Array]): List of tensors representing the MPS.
+        mps (list[Array]): List of tensors representing the MPS.
 
     Returns:
-      A list of tensors representing the MPS in right-canonical form.
+        A list of tensors representing the MPS in right-canonical form.
     """
 
     L = len(mps)
@@ -310,6 +310,9 @@ class MPSPrep(Operation):
             list[.Operator]: Decomposition of the operator
         """
 
+        if work_wires is None:
+            raise ValueError("The qml.MPSPrep decomposition requires `work_wires` to be specified.")
+
         bond_dimensions = []
 
         for i in range(len(mps) - 1):
@@ -317,9 +320,6 @@ class MPSPrep(Operation):
             bond_dimensions.append(bond_dim)
 
         max_bond_dimension = max(bond_dimensions)
-
-        if work_wires is None:
-            raise ValueError("The qml.MPSPrep decomposition requires `work_wires` to be specified.")
 
         if 2 ** len(work_wires) < max_bond_dimension:
             raise ValueError("The bond dimension cannot exceed `2**len(work_wires)`.")
