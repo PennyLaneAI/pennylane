@@ -16,4 +16,4 @@
 
 from .resources import Resources, CompressedResourceOp
 from .decomposition import DecompositionGraph
-from .decomposition_rule import decomposition, DecompositionRule
+from .decomposition_rule import decomposition, DecompositionRule, ControlledDecompositionRule

@@ -30,7 +30,9 @@ from dataclasses import dataclass
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
-from .decomposition_rule import DecompositionRule
+import pennylane as qml
+
+from .decomposition_rule import ControlledDecompositionRule, DecompositionRule
 from .resources import CompressedResourceOp, Resources
 
 
@@ -89,17 +91,29 @@ class DecompositionGraph:
 
         op_node_idx = self._graph.add_node(op_node)
         self._op_node_indices[op_node] = op_node_idx
+
         if op_node.op_type.__name__ in self._target_gate_set:
             self._target_gate_indices.add(op_node_idx)
             return op_node_idx
 
-        for decomposition in getattr(op_node.op_type, "decompositions", []):
-            d_node_idx = self._recursively_add_decomposition_node(decomposition, op_node.params)
+        if issubclass(op_node.op_type, qml.ops.Controlled):
+            base_class = op_node.params["base_class"]
+            for base_decomposition in base_class.decompositions:
+                rule = ControlledDecompositionRule(base_decomposition)
+                resource_decomp = rule.compute_resources(**op_node.params)
+                d_node_idx = self._recursively_add_decomposition_node(rule, resource_decomp)
+                self._graph.add_edge(d_node_idx, op_node_idx, 0)
+
+        for decomposition in op_node.op_type.decompositions:
+            resource_decomp = decomposition.compute_resources(**op_node.params)
+            d_node_idx = self._recursively_add_decomposition_node(decomposition, resource_decomp)
             self._graph.add_edge(d_node_idx, op_node_idx, 0)
 
         return op_node_idx
 
-    def _recursively_add_decomposition_node(self, rule: DecompositionRule, params: dict) -> int:
+    def _recursively_add_decomposition_node(
+        self, rule: DecompositionRule, resource_decomp: Resources
+    ) -> int:
         """Recursively adds a decomposition node to the graph.
 
         A decomposition node is defined by a decomposition rule and a first-order resource estimate
@@ -107,11 +121,9 @@ class DecompositionGraph:
 
         """
 
-        resource_decomp = rule.compute_resources(**params)
         d_node = _DecompositionNode(rule, resource_decomp)
         d_node_idx = self._graph.add_node(d_node)
-        all_ops = [op for op, count in resource_decomp.gate_counts.items() if count > 0]
-        for op in all_ops:
+        for op in resource_decomp.gate_counts:
             op_node_idx = self._recursively_add_op_node(op)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
         return d_node_idx

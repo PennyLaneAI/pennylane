@@ -633,6 +633,18 @@ class Controlled(SymbolicOp):
             work_wires=new_work_wires,
         )
 
+    # Properties for resource estimation ###############
+
+    @property
+    def resource_params(self):
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params,
+            "num_control_wires": len(self.control_wires),
+            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_work_wires": len(self.work_wires),
+        }
+
     # Methods ##########################################
 
     def __repr__(self):
