@@ -401,3 +401,15 @@ class TestExpval:
         res = qml.expval(qml.Z(wire)).process_counts(counts=counts, wire_order=wire_order)
 
         assert np.allclose(res, expected)
+
+
+@pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
+def test_qnode_expval_dtype(coeffs):
+    """System level test to ensure dtype is correctly returned."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit(coeffs):
+        return qml.expval(coeffs * qml.PauliZ(0))
+
+    res = circuit(coeffs)
+    assert np.allclose(res, coeffs)
