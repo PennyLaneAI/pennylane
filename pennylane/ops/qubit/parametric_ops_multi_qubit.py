@@ -24,6 +24,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import decomposition, CompressedResourceOp
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.typing import TensorLike
@@ -163,6 +164,10 @@ class MultiRZ(Operation):
 
         return qml.math.exp(qml.math.outer(-0.5j * theta, eigs))
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": self.hyperparameters["num_wires"]}
+
     @staticmethod
     def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
         theta: TensorLike, wires: WiresLike, **kwargs
@@ -206,6 +211,23 @@ class MultiRZ(Operation):
             return qml.Identity(wires=self.wires[0])
 
         return MultiRZ(theta, wires=self.wires)
+
+
+@decomposition
+def _multi_rz_decomposition(theta, wires, **__):
+    for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
+        qml.CNOT(wires=(w0, w1))
+    qml.RZ(theta, wires=wires[0])
+    for w0, w1 in zip(wires[1:], wires[:-1]):
+        qml.CNOT(wires=(w0, w1))
+
+
+@_multi_rz_decomposition.resources
+def _multi_rz_resources(num_wires):
+    return {CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 2 * (num_wires - 1)}
+
+
+MultiRZ.add_decomposition(_multi_rz_decomposition)
 
 
 class PauliRot(Operation):
@@ -336,6 +358,10 @@ class PauliRot(Operation):
             op_label += param_string
 
         return op_label
+
+    @property
+    def resource_params(self) -> dict:
+        return {"pauli_word": self.hyperparameters["pauli_word"]}
 
     @staticmethod
     def _check_pauli_word(pauli_word) -> bool:
@@ -520,6 +546,41 @@ class PauliRot(Operation):
 
     def pow(self, z):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
+
+
+@decomposition
+def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
+    if set(pauli_word) == {"I"}:
+        qml.GlobalPhase(theta / 2)
+    active_wires, active_gates = zip(
+        *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+    )
+    for wire, gate in zip(active_wires, active_gates):
+        if gate == "X":
+            qml.Hadamard(wires=[wire])
+        elif gate == "Y":
+            qml.RX(np.pi / 2, wires=[wire])
+    qml.MultiRZ(theta, wires=list(active_wires))
+    for wire, gate in zip(active_wires, active_gates):
+        if gate == "X":
+            qml.Hadamard(wires=[wire])
+        elif gate == "Y":
+            qml.RX(-np.pi / 2, wires=[wire])
+
+
+@_pauli_rot_decomposition.resources
+def _pauli_rot_resources(pauli_word):
+    if set(pauli_word) == {"I"}:
+        return {CompressedResourceOp(qml.GlobalPhase): 1}
+    num_active_wires = len(pauli_word.replace("I", ""))
+    return {
+        CompressedResourceOp(Hadamard): 2 * pauli_word.count("X"),
+        CompressedResourceOp(RX): 2 * pauli_word.count("Y"),
+        CompressedResourceOp(MultiRZ, {"num_wires": num_active_wires}): 1,
+    }
+
+
+PauliRot.add_decomposition(_pauli_rot_decomposition)
 
 
 class PCPhase(Operation):
