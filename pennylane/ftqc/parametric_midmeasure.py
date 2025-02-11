@@ -15,12 +15,207 @@
 """This module contains the classes and functions for creating and diagonalizing
 mid-circuit measurements with a parameterized measurement axis."""
 
-from typing import Optional
+import uuid
+from typing import Hashable, Optional, Union
+
+import numpy as np
 
 import pennylane as qml
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
+
+
+def arbitrary_basis_measure(
+    wires: Union[Hashable, Wires],
+    angle: float,
+    plane: str,
+    reset: bool = False,
+    postselect: Optional[int] = None,
+):
+    r"""Perform a mid-circuit measurement in the basis defined by the plane and angle on the
+    supplied qubit.
+
+    The measurements are performed using the 0, 1 convention rather than the ±1 convention.
+
+    If a device doesn't support mid-circuit measurements natively, then the desired ``mcm_method`` for
+    executing mid-circuit measurement should be passed to the QNode.
+
+    .. warning::
+        Measurements should be diagonalized before execution for any device that only natively supports
+        mid-circuit measurements in the computational basis. To diagonalize, the :func:`diagonalize_mcms <pennylane.ftqc.diagonalize_mcms>`
+        transform can be applied.
+
+        Skipping diagonalization for a circuit containing parametric mid-circuit measurements may result
+        in a completed execution with incorrect results.
+
+    Args:
+        wires (Wires): The wire to measure.
+        angle (float): the angle of rotation defining the axis, specified in radians
+        plane (str): The plane the measurement basis lies in. Options are "XY", "YZ" and "ZX"
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
+        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
+            measurement. None by default. If postselection is requested, only the post-measurement
+            state that is used for postselection will be considered in the remaining circuit.
+
+    Returns:
+        MeasurementValue: the mid-circuit measurement result linked to the created MidMeasureMP
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
+
+    .. note::
+        Reset behaviour will depend on the execution method for mid-circuit measurements,
+        and may not work for all configurations.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        import pennylane as qml
+        from pennylane.ftqc import arbitrary_basis_measure
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, mcm_method="tree-traversal")
+        def func(x, y):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            m_0 = arbitrary_basis_measure(1, angle=np.pi/3, plane="XY")
+
+            qml.cond(m_0, qml.RY)(y, wires=0)
+            return qml.probs(wires=[0])
+
+    Executing this QNode:
+
+    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> func(*pars)
+    tensor([0.90165331, 0.09834669], requires_grad=True)
+
+    .. details::
+        :title: Using mid-circuit measurements
+
+        Measurement outcomes can be used to conditionally apply operations, and measurement
+        statistics can be gathered and returned by a quantum function. Measurement outcomes can
+        also be manipulated using arithmetic operators like ``+``, ``-``, ``*``, ``/``, etc. with
+        other mid-circuit measurements or scalars.
+
+        See the :func:`qml.measure <pennylane.measurements.measure>` function
+        for details on the available arithmetic operators for mid-circuit measurement results.
+
+        Mid-circuit measurement results can be processed with the usual measurement functions such as
+        :func:`~.expval`. For QNodes with finite shots, :func:`~.sample` applied to a mid-circuit measurement
+        result will return a binary sequence of samples.
+        See :ref:`here <mid_circuit_measurements_statistics>` for more details.
+    """
+
+    # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
+
+    wires = Wires(wires)
+    if len(wires) > 1:
+        raise qml.QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
+
+    # Create a UUID and a map between MP and MV to support serialization
+    measurement_id = str(uuid.uuid4())[:8]
+    mp = ParametricMidMeasureMP(
+        wires=wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=measurement_id
+    )
+    return MeasurementValue([mp], processing_fn=lambda v: v)
+
+
+def measure_x(
+    wires: Union[Hashable, Wires],
+    reset: bool = False,
+    postselect: Optional[int] = None,
+):
+    r"""Perform a mid-circuit measurement in the X basis. The measurements are performed using the 0, 1
+    convention rather than the ±1 convention.
+
+    For more details on the results of mid-circuit measurements and how to use them,
+    see :func:`qml.measure <pennylane.measurements.measure>`.
+
+    For more details on mid-circuit measurements in an arbitrary basis (besides the computational basis),
+    see :func:`arbitrary_basis_measure <pennylane.measurements.measure>`.
+
+    Args:
+        wires (Wires): The wire to measure.
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
+        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
+            measurement. None by default. If postselection is requested, only the post-measurement
+            state that is used for postselection will be considered in the remaining circuit.
+
+    Returns:
+        MeasurementValue: the mid-circuit measurement result linked to the created MidMeasureMP
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
+
+    """
+
+    # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
+
+    wires = Wires(wires)
+    if len(wires) > 1:
+        raise qml.QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
+
+    # Create a UUID and a map between MP and MV to support serialization
+    measurement_id = str(uuid.uuid4())[:8]
+    mp = ParametricMidMeasureMP(
+        wires, angle=0, plane="XY", reset=reset, postselect=postselect, id=measurement_id
+    )
+    return MeasurementValue([mp], processing_fn=lambda v: v)
+
+
+def measure_y(
+    wires: Union[Hashable, Wires],
+    reset: bool = False,
+    postselect: Optional[int] = None,
+):
+    r"""Perform a mid-circuit measurement in the Y basis. The measurements are performed using the 0, 1
+    convention rather than the ±1 convention.
+
+    For more details on the results of mid-circuit measurements and how to use them,
+    see :func:`qml.measure <pennylane.measurements.measure>`.
+
+    For more details on mid-circuit measurements in an arbitrary basis (besides the computational basis),
+    see :func:`arbitrary_basis_measure <pennylane.measurements.measure>`.
+
+    Args:
+        wires (Wires): The wire to measure.
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
+        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
+            measurement. None by default. If postselection is requested, only the post-measurement
+            state that is used for postselection will be considered in the remaining circuit.
+
+    Returns:
+        MeasurementValue: the mid-circuit measurement result linked to the created MidMeasureMP
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
+
+    """
+
+    # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
+
+    wires = Wires(wires)
+    if len(wires) > 1:
+        raise qml.QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
+
+    # Create a UUID and a map between MP and MV to support serialization
+    measurement_id = str(uuid.uuid4())[:8]
+    mp = ParametricMidMeasureMP(
+        wires, angle=np.pi / 2, plane="XY", reset=reset, postselect=postselect, id=measurement_id
+    )
+    return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
 class ParametricMidMeasureMP(MidMeasureMP):
