@@ -113,12 +113,8 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     if (wire_order is None) or (wire_order == wires):
         return mat
 
-    if not wires:
-        # global phase
-        if qml.math.shape(mat) == (qudit_dim, qudit_dim):
-            wires = wire_order[0:1]
-        elif qml.math.shape(mat) == (1, 1):
-            return complex(mat[0, 0])
+    if not wires and qml.math.shape(mat) == (1, 1):
+        return complex(mat[0, 0])
 
     wires = list(wires)
     wire_order = list(wire_order)
