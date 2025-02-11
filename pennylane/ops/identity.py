@@ -453,7 +453,7 @@ class GlobalPhase(Operation):
         return self.compute_eigvals(self.data[0], n_wires=len(self.wires))
 
     def matrix(self, wire_order: Sequence = None):
-        n_wires = len(wire_order) if wire_order is None else len(self.wires)
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
         return self.compute_matrix(self.data[0], n_wires=n_wires)
 
     def sparse_matrix(self, wire_order: Sequence = None):
