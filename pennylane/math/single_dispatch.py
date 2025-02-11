@@ -84,7 +84,7 @@ def _det_sparse(x):
 
     x = sp.sparse.csr_matrix(x)
     if x.shape != (2, 2):
-        return _sparse_det(x)
+        return _generic_sparse_det(x)
 
     # Direct array access
     indptr, indices, data = x.indptr, x.indices, x.data
@@ -97,7 +97,7 @@ def _det_sparse(x):
     return values[(0, 0)] * values[(1, 1)] - values[(0, 1)] * values[(1, 0)]
 
 
-def _sparse_det(A):
+def _generic_sparse_det(A):
     assert hasattr(A, "tocsc"), "Input matrix must be a SciPy.sparse.spmatrix"
     A_csc = A.tocsc()
     lu = splu(A_csc)
