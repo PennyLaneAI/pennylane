@@ -242,6 +242,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
+  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
+
+* The source code has been updated use black 25.1.0
 * Remove `QNode.get_gradient_fn` from source code.
   [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
   
