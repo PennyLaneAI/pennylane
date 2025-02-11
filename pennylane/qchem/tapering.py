@@ -300,7 +300,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     wires_tap = [i for i in wiremap.keys() if i not in paulix_wires]
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
 
-    obs, val = [], qml.math.ones(len(ts_ps), dtype="complex")
+    obs, val = [], qml.math.ones(len(ts_ps))
     for i, (pw, _) in enumerate(ts_ps.items()):
         for idx, w in enumerate(paulix_wires):
             if pw[w] == "X":
@@ -312,7 +312,8 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
             )
         )
 
-    coeffs = qml.math.stack(qml.math.multiply(val, list(ts_ps.values())))
+    interface = qml.math.get_deep_interface(list(ps_h.values()))
+    coeffs = qml.math.multiply(val, qml.math.array(list(ts_ps.values()), like=interface))
     tapered_ham = qml.simplify(0.0 * qml.Identity(wires=wires_tap) + qml.dot(coeffs, obs))
     # If simplified Hamiltonian is missing wires, then add wires manually for consistency
     if set(wires_tap) != tapered_ham.wires.toset():

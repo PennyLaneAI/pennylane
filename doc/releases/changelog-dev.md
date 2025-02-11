@@ -160,7 +160,7 @@
 * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
 
-* `qml.qchem.taper` now handles wire ordering for the tapered observable more robustly.
+* `qml.qchem.taper` now handles wire ordering for the tapered observables more robustly.
   [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
 
 <h3>Breaking changes 💔</h3>
