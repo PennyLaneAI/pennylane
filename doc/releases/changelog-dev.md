@@ -261,6 +261,8 @@
 
 <h3>Documentation 📝</h3>
 
+* The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
+
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`,
   `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better
   code examples.
