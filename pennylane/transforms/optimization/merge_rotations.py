@@ -14,18 +14,201 @@
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
 # pylint: disable=too-many-branches
 
+from functools import lru_cache, partial
+
 import pennylane as qml
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.transforms.decompose import decompose_plxpr_to_plxpr
 from pennylane.typing import PostprocessingFn
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
-@transform
+@lru_cache
+def _get_plxpr_merge_rotations():
+    try:
+        # pylint: disable=import-outside-toplevel
+        from jax import make_jaxpr
+        from jax.core import Jaxpr
+
+        from pennylane.capture import PlxprInterpreter
+        from pennylane.operation import Operator
+    except ImportError:
+        return None, None
+
+    # pylint: disable=redefined-outer-name, too-few-public-methods
+    class MergeRotationsInterpreter(PlxprInterpreter):
+        """Plxpr Interpreter for applying the ``merge_rotations``
+        transform when program capture is enabled."""
+
+        def __init__(self, atol=1e-8, include_gates=None):
+            super().__init__()
+            self.atol = atol
+            self.include_gates = include_gates
+
+            # dict[wire, operator]
+            self.seen_operators = {}
+
+        def interpret_operation(self, op: Operator):
+            """Interpret a PennyLane operation instance.
+
+            Args:
+                op (Operator): a pennylane operator instance
+
+            Returns:
+                Any
+
+            This method is only called when the operator's output is a dropped variable,
+            so the output will not affect later equations in the circuit.
+
+            See also: :meth:`~.interpret_operation_eqn`.
+
+            """
+            last_seen_op_on_same_wire = self.seen_operators.get(op.wires[0], None)
+            if last_seen_op_on_same_wire is None:
+                for w in op.wires:
+                    self.seen_operators[w] = op
+                return
+
+            with qml.capture.pause():
+                exact_wires_match = op.wires == last_seen_op_on_same_wire.wires
+                are_same_type = isinstance(op, type(last_seen_op_on_same_wire))
+
+                if exact_wires_match:
+                    if are_same_type:
+                        if isinstance(op, qml.Rot):
+                            cumulative_angles = fuse_rot_angles(
+                                qml.math.stack(op.parameters),
+                                qml.math.stack(last_seen_op_on_same_wire.parameters),
+                            )
+                        else:
+                            cumulative_angles = qml.math.stack(op.parameters) + qml.math.stack(
+                                last_seen_op_on_same_wire.parameters
+                            )
+
+                        # delete last seen operators
+                        for w in op.wires:
+                            self.seen_operators.pop(w)
+
+                        # replace with the newly merged one
+                        for w in op.wires:
+                            self.seen_operators[w] = op.__class__(
+                                *cumulative_angles, wires=op.wires
+                            )
+                        return
+            previous_ops_on_wires = set(self.seen_operators.get(w) for w in op.wires)
+            for o in previous_ops_on_wires:
+                if o is not None:
+                    for w in o.wires:
+                        self.seen_operators.pop(w)
+            for w in op.wires:
+                self.seen_operators[w] = op
+
+            if len(previous_ops_on_wires) != 0:
+                return [
+                    super(MergeRotationsInterpreter, self).interpret_operation(o)
+                    for o in previous_ops_on_wires
+                ]
+
+            if self.include_gates is not None and op.name not in self.include_gates:
+                return super().interpret_operation(op)
+
+            if op not in composable_rotations:
+                return super().interpret_operation(op)
+
+        def purge_seen_operators(self):
+            ops_remaining = set(self.seen_operators.values())
+            for op in ops_remaining:
+                super().interpret_operation(op)
+
+            all_wires = tuple(self.seen_operators.keys())
+            for w in all_wires:
+                self.seen_operators.pop(w)
+
+        def eval(self, jaxpr: Jaxpr, consts: list, *args) -> list:
+            """Evaluate a jaxpr.
+
+            Args:
+                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                consts (list[TensorLike]): the constant variables for the jaxpr
+                *args (tuple[TensorLike]): The arguments for the jaxpr.
+
+            Returns:
+                list[TensorLike]: the results of the execution.
+
+            """
+            self._env = {}
+            self.setup()
+
+            for arg, invar in zip(args, jaxpr.invars, strict=True):
+                self._env[invar] = arg
+            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+                self._env[constvar] = const
+
+            for eqn in jaxpr.eqns:
+                primitive = eqn.primitive
+                custom_handler = self._primitive_registrations.get(primitive, None)
+
+                if custom_handler:
+                    self.purge_seen_operators()
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    outvals = custom_handler(self, *invals, **eqn.params)
+                elif getattr(primitive, "prim_type", "") == "operator":
+                    outvals = self.interpret_operation_eqn(eqn)
+                elif getattr(primitive, "prim_type", "") == "measurement":
+                    self.purge_seen_operators()
+                    outvals = self.interpret_measurement_eqn(eqn)
+                else:
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    subfuns, params = primitive.get_bind_params(eqn.params)
+                    outvals = primitive.bind(*subfuns, *invals, **params)
+
+                if not primitive.multiple_results:
+                    outvals = [outvals]
+                for outvar, outval in zip(eqn.outvars, outvals, strict=True):
+                    self._env[outvar] = outval
+
+            self.purge_seen_operators()
+
+            # Read the final result of the Jaxpr from the environment
+            outvals = []
+            for var in jaxpr.outvars:
+                outval = self.read(var)
+                if isinstance(outval, qml.operation.Operator):
+                    outvals.append(super().interpret_operation(outval))
+                else:
+                    outvals.append(outval)
+            self.cleanup()
+            self._env = {}
+            return outvals
+
+    # pylint: disable=redefined-outer-name
+    def merge_rotations_plxpr_to_plxpr(
+        jaxpr, consts, targs, tkwargs, *args
+    ):  # pylint: disable=unused-argument
+        merge_rotations = MergeRotationsInterpreter(
+            atol=tkwargs.pop("atol", 1e-8), include_gates=tkwargs.pop("include_gates", None)
+        )
+
+        # Flattens any adjoints in the JAXPR
+        expanded_jaxpr = decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args)
+
+        def wrapper(*inner_args):
+            return merge_rotations.eval(expanded_jaxpr.jaxpr, expanded_jaxpr.consts, *inner_args)
+
+        return make_jaxpr(wrapper)(*args)
+
+    return MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr
+
+
+MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr = _get_plxpr_merge_rotations()
+
+
+@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr)
 def merge_rotations(
     tape: QuantumScript, atol=1e-8, include_gates=None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
