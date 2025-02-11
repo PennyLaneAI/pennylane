@@ -513,6 +513,9 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
                 # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
                 # as the original positional arguments
                 abstracted_axes = jax.tree_util.tree_unflatten(args_struct, abstracted_axes)
+                abstracted_axes = tuple(
+                    a for i, a in enumerate(abstracted_axes) if i not in qnode.static_argnums
+                )
             qfunc_jaxpr = jax.make_jaxpr(
                 flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
             )(*args)
