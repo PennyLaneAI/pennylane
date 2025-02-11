@@ -40,8 +40,8 @@ def right_canonicalize_mps(mps):
     for i in range(1, L - 1):
         tensor = mps[i]
         # Right-canonical definition
-        M = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
-        if not np.allclose(M, np.eye(tensor.shape[0])):
+        M = qml.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+        if not qml.math.allclose(M, qml.math.eye(tensor.shape[0])):
             is_right_canonical = False
             break
 
