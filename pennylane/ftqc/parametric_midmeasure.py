@@ -26,7 +26,7 @@ from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
 
-def arbitrary_basis_measure(
+def measure_arbitrary_basis(
     wires: Union[Hashable, Wires],
     angle: float,
     plane: str,
@@ -343,9 +343,109 @@ class ParametricMidMeasureMP(MidMeasureMP):
         return _label
 
 
+class XMidMeasureMP(ParametricMidMeasureMP):
+    """stuff goes here"""
+
+    _shortname = "measure_x"
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        wires: Optional[Wires],
+        reset: Optional[bool] = False,
+        postselect: Optional[int] = None,
+        id: Optional[str] = None,
+    ):
+        super().__init__(
+            wires=Wires(wires), angle=0, plane="XY", reset=reset, postselect=postselect, id=id
+        )
+
+    def __repr__(self):
+        """Representation of this class."""
+        return f"{self._shortname}(wires={self.wires.tolist()})"
+
+    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
+        r"""How the mid-circuit measurement is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Required to match general call signature. Not used.
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing. Required to match general call signature. Not used.
+
+        Returns:
+            str: label to use in drawings
+        """
+        _label = "┤↗ˣ"
+
+        if self.postselect is not None:
+            _label += "₁" if self.postselect == 1 else "₀"
+
+        _label += "├" if not self.reset else "│  │0⟩"
+
+        return _label
+
+
+class YMidMeasureMP(ParametricMidMeasureMP):
+    """stuff goes here"""
+
+    _shortname = "measure_y"
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        wires: Optional[Wires],
+        reset: Optional[bool] = False,
+        postselect: Optional[int] = None,
+        id: Optional[str] = None,
+    ):
+        super().__init__(
+            wires=Wires(wires),
+            angle=np.pi / 2,
+            plane="XY",
+            reset=reset,
+            postselect=postselect,
+            id=id,
+        )
+
+    def __repr__(self):
+        """Representation of this class."""
+        return f"{self._shortname}(wires={self.wires.tolist()})"
+
+    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
+        r"""How the mid-circuit measurement is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Required to match general call signature. Not used.
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing. Required to match general call signature. Not used.
+
+        Returns:
+            str: label to use in drawings
+        """
+        _label = "┤↗ʸ"
+
+        if self.postselect is not None:
+            _label += "₁" if self.postselect == 1 else "₀"
+
+        _label += "├" if not self.reset else "│  │0⟩"
+
+        return _label
+
+
 @_add_operation_to_drawer.register
 def _(op: ParametricMidMeasureMP, drawer, layer, _):
-    text = op.plane
+    if isinstance(op, XMidMeasureMP):
+        text = "X"
+    elif isinstance(op, YMidMeasureMP):
+        text = "Y"
+    else:
+        text = op.plane
     drawer.measure(layer, op.wires[0], text=text)  # assume one wire
 
     if op.reset:

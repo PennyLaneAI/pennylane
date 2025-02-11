@@ -25,10 +25,18 @@ Modules
     :toctree: api
 
 """
-from .parametric_midmeasure import ParametricMidMeasureMP, arbitrary_basis_measure, diagonalize_mcms
+from .parametric_midmeasure import (
+    ParametricMidMeasureMP,
+    measure_arbitrary_basis,
+    measure_x,
+    measure_y,
+    diagonalize_mcms,
+)
 
 __all__ = [
     "ParametricMidMeasureMP",
-    "arbitrary_basis_measure",
+    "measure_arbitrary_basis",
+    "measure_x",
+    "measure_y",
     "diagonalize_mcms",
 ]
