@@ -144,7 +144,7 @@ class TestSparseOperators:
     @pytest.mark.parametrize("op", SPARSE_OPERATIONS)
     def test_validity(self, op):
         """Test that the operations are valid."""
-        assert np.allclose(
+        assert qml.math.allclose(
             op.sparse_matrix().toarray(), qml.math.asarray(op.matrix(), like="numpy")
         )
 
