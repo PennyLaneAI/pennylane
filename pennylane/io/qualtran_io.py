@@ -105,6 +105,10 @@ class FromBloq(Operation):
                 return ops
 
         if isinstance(bloq, CompositeBloq):
+            try:
+                bloq = bloq.flatten()
+            except:
+                pass
             temp_registers = get_named_registers(bloq.signature.lefts())
             soq_to_wires = {
                 Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])
@@ -118,6 +122,11 @@ class FromBloq(Operation):
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.lefts()
                 }
+                out_quregs = {
+                    reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
+                    for reg in binst.bloq.signature.rights()
+                }
+
                 for pred in pred_cxns:
                     soq = pred.right
                     soq_to_wires[soq] = soq_to_wires[pred.left]
@@ -132,7 +141,7 @@ class FromBloq(Operation):
                     if soq.reg.side == Side.RIGHT:
                         # If in_quregs is empty, we insert key, value pair where the key is
                         # the register name, and the value is the list of wires associated with it
-                        if len(in_quregs) == 0 and soq.reg.side == Side.RIGHT:
+                        if len(in_quregs) != len(out_quregs) and soq.reg.side == Side.RIGHT:
                             total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
                             ascending_vals = np.arange(
                                 len(soq_to_wires), total_elements + len(soq_to_wires), dtype=object
