@@ -77,7 +77,8 @@ ar.register_function("scipy", "ndim", np.ndim)
 
 
 def _det_sparse(x):
-    """Compute determinant of 2x2 sparse matrix without densification"""
+    """Compute determinant of sparse matrices without densification"""
+
     if not sp.sparse.issparse(x):
         raise TypeError(f"Expected SciPy sparse, got {type(x)}")
 
