@@ -136,16 +136,10 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
         _label = f"┤↗{_plane}"
 
+        _angle = f"{self.angle:.{decimals}f}" if decimals else str(self.angle)
+
         if decimals is not None:
-
-            def _format(x):
-                try:
-                    return format(qml.math.toarray(x), f".{decimals}f")
-                except ValueError:
-                    # If the parameter can't be displayed as a float
-                    return format(x)
-
-            _label += f"({float(_format(self.angle))})"
+            _label += f"({self.angle:.{decimals}f})"
 
         if self.postselect is not None:
             _label += "₁" if self.postselect == 1 else "₀"
