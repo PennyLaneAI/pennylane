@@ -127,9 +127,6 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
-* Autograph can now be used with custom operations defined outside of the pennylane namespace.
-  [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
-
 <h4>Capturing and representing hybrid programs</h4>
 
 * Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
