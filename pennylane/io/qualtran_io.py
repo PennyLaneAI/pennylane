@@ -33,9 +33,17 @@ def get_named_registers(registers):
 
     return qml.registers(temp_register_dict)
 
-# TODO: Make the input of this function more consistent. It should take list of wires not dict
 def bloq_to_op(bloq, wires):
-    
+    """
+    Converts a `Bloq` to an `Operator` using a map.
+
+    Args:
+        bloq: the bloq to convert
+        wires: the wires to act on
+
+    Returns:
+        Operator: The Operator equivalent to the input Qualtran `Bloq` object.
+    """    
     # TODO: We need to map more bloqs to ops
     # Alternative: create as_pl_op() function in Qualtran
     BLOQ_TO_OP_MAP = {
@@ -58,15 +66,6 @@ def bloq_to_op(bloq, wires):
         "CYGate": qml.CY,
         "CHadamard": qml.CH,
     }
-
-    # TODO: Delete this eventually
-    if isinstance(wires, dict):
-        total_wires = []
-        for ws in wires.values():
-            for w in list(ws.flatten()):
-                total_wires.append(w)
-
-        wires = Wires(total_wires)
 
     if type(bloq).__name__ in BLOQ_TO_OP_MAP:
         pl_op = BLOQ_TO_OP_MAP[type(bloq).__name__]
@@ -97,6 +96,14 @@ class FromBloq(Operation):
         ops = []
         bloq = self._hyperparameters["bloq"]
 
+        if isinstance(bloq, Bloq):
+            try:
+                bloq = bloq.decompose_bloq().flatten()
+            except:
+                op = bloq_to_op(bloq, wires)
+                ops.append(op)
+                return ops
+
         if isinstance(bloq, CompositeBloq):
             temp_registers = get_named_registers(bloq.signature.lefts())
             soq_to_wires = {
@@ -106,7 +113,6 @@ class FromBloq(Operation):
             }
 
             for binst, pred_cxns, succ_cxns in bloq.iter_bloqnections():
-
                 # TODO: Rename this variable to something more intuitive
                 in_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
@@ -116,7 +122,9 @@ class FromBloq(Operation):
                     soq = pred.right
                     soq_to_wires[soq] = soq_to_wires[pred.left]
                     in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
-                op = bloq_to_op(binst.bloq, in_quregs)
+                
+                total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
+                op = bloq_to_op(binst.bloq, total_wires)
                 if op:
                     ops.append(op)
                 for succ in succ_cxns:
@@ -133,8 +141,5 @@ class FromBloq(Operation):
                                 (*soq.reg.shape, soq.reg.bitsize)
                             )
                         soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
-        else:
-            op = bloq_to_op(bloq, wires)
-            ops.append(op)
 
         return ops
