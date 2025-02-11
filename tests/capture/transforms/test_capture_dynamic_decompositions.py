@@ -14,7 +14,7 @@
 """Unit tests for the ``DecomposeInterpreter`` class with dynamic decompositions."""
 import numpy as np
 
-# pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods, wrong-import-order
+# pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods, wrong-import-order, too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -491,6 +491,7 @@ class CustomOpNoPlxprDecomposition(Operation):
         return [CustomOpNestedOpControlFlow(phi, wires)]
 
 
+# pylint: disable=too-many-public-methods
 class TestDynamicDecomposeInterpreter:
     """Tests for the DynamicDecomposeInterpreter class"""
 
@@ -603,11 +604,8 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         comparison_result = circuit_comparison(0.5, wires)
-
-        assert qml.math.allclose(result[0], comparison_result[0])
-        assert qml.math.allclose(result[1], comparison_result[1])
-        assert qml.math.allclose(result[2], comparison_result[2])
-        assert qml.math.allclose(result[3], comparison_result[3])
+        for res, comp in zip(result, comparison_result):
+            assert qml.math.allclose(res, comp)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [2, 3, 1, 0]])
@@ -641,11 +639,8 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         comparison_result = circuit_comparison(x, wires)
-
-        assert qml.math.allclose(result[0], comparison_result[0])
-        assert qml.math.allclose(result[1], comparison_result[1])
-        assert qml.math.allclose(result[2], comparison_result[2])
-        assert qml.math.allclose(result[3], comparison_result[3])
+        for res, comp in zip(result, comparison_result):
+            assert qml.math.allclose(res, comp)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("wire", [0, 1])
@@ -1430,8 +1425,9 @@ class TestExpandPlxprTransformsDynamicDecompositions:
         transformed_jaxpr = jax.make_jaxpr(transformed_f)()
 
         assert transformed_jaxpr.eqns[0].primitive == qml.Hadamard._primitive
+        assert transformed_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
         assert (
-            transformed_jaxpr.eqns[1].primitive == qml.measurements.ProbabilityMP._wires_primitive
+            transformed_jaxpr.eqns[2].primitive == qml.measurements.ProbabilityMP._wires_primitive
         )
 
     def test_expand_plxpr_transforms_cond(self):
@@ -1447,9 +1443,9 @@ class TestExpandPlxprTransformsDynamicDecompositions:
         transformed_f = expand_plxpr_transforms(circuit)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)()
 
-        assert transformed_jaxpr.eqns[0].primitive == cond_prim
+        assert transformed_jaxpr.eqns[1].primitive == cond_prim
         assert (
-            transformed_jaxpr.eqns[1].primitive == qml.measurements.ProbabilityMP._wires_primitive
+            transformed_jaxpr.eqns[2].primitive == qml.measurements.ProbabilityMP._wires_primitive
         )
 
     def test_expand_plxpr_transforms_for_loop(self):

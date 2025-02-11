@@ -188,8 +188,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator, current_depth: int = 0):
             """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
 
-            print(f"_evaluate_jaxpr_decomposition: op={op}, current_depth={current_depth}")
-
             if self.gate_set(op):
                 return super().interpret_operation(op)
 
@@ -232,10 +230,15 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 custom_handler = self._primitive_registrations.get(inner_eqn.primitive, None)
 
                 if custom_handler:
+
                     invals = [self.read(invar) for invar in inner_eqn.invars]
-                    outvals = custom_handler(
-                        self, *invals, **inner_eqn.params, current_depth=current_depth
+                    loop_handlers = {"handle_for_loop", "handle_while_loop", "handle_cond"}
+                    extra_kwargs = (
+                        {"current_depth": current_depth}
+                        if custom_handler.__name__ in loop_handlers
+                        else {}
                     )
+                    outvals = custom_handler(self, *invals, **inner_eqn.params, **extra_kwargs)
 
                 elif prim_type == "operator":
                     outvals = self.interpret_operation_eqn(inner_eqn, current_depth)
