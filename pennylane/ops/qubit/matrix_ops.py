@@ -80,6 +80,10 @@ class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix with a dimension that is a power of two.
 
+    .. warning::
+
+        The sparse matrix representation of QubitUnitary is still under development. Currently we only support a limited set of interfaces that preserve the sparsity of the matrix, including ..method::`adjoint`, ..method::`pow`, ..method::`compute_sparse_matrix` and ..method::`compute_decomposition`. Differentiability is not supported for sparse matrices.
+
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
