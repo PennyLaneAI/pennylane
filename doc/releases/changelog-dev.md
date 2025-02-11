@@ -282,6 +282,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.GlobalPhase.sparse_matrix` now correctly returns a sparse matrix of the same shape as `matrix`.
+  [(#6940)](https://github.com/PennyLaneAI/pennylane/pull/6940)
+
 * `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
   [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
 
