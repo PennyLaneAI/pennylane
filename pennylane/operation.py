@@ -232,11 +232,11 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
+from pennylane.decomposition import CompressedResourceOp, DecompositionRule
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
-from pennylane.decomposition import CompressedResourceOp, DecompositionRule
 
 from .pytrees import register_pytree
 
