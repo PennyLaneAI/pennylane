@@ -652,6 +652,8 @@ def defer_measurements(
         * If a branch of :func:`~pennylane.cond` uses mid-circuit measurements as its
           predicate, then all other branches must also use mid-circuit measurement values
           as predicates.
+        * For an ``n``-parameter gate, mid-circuit measurement values can only be used
+          for 1 of the ``n`` parameters.
         * :func:`~pennylane.measure` can only be used in the bodies of branches of
           :func:`~pennylane.cond` if none of the branches use mid-circuit measurements
           as predicates
