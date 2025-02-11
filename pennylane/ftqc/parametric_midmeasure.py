@@ -135,7 +135,6 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
         _label = f"┤↗{_plane}"
 
-        _angle = f"{self.angle:.{decimals}f}" if decimals else str(self.angle)
 
         if decimals is not None:
             _label += f"({self.angle:.{decimals}f})"
