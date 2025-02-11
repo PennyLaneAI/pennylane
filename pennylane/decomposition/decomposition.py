@@ -28,12 +28,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import rustworkx as rx
-from rustworkx.visit import DijkstraVisitor, StopSearch, PruneSearch
+from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
-from pennylane.operation import Operator, DecompositionUndefinedError
+from pennylane.operation import DecompositionUndefinedError, Operator
 
 from .decomposition_rule import DecompositionRule
-from .resources import Resources, CompressedResourceOp
+from .resources import CompressedResourceOp, Resources
 
 
 @dataclass(frozen=True)
