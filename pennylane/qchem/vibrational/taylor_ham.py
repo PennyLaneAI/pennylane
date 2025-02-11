@@ -276,19 +276,38 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
     r"""Compute the coefficients of Taylor vibrational Hamiltonian.
 
-    The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^{(n)}` and
-    normal coordinate operators :math:`q` following Eq. 5 of `arXiv:1703.09313
-    <https://arxiv.org/abs/1703.09313>`_ as:
+    The coefficients are computed from a multi-dimensional polynomial fit over potential energy
+    surface data, with a polynomial specified by ``min_deg`` and ``max_deg``.
+
+    The potential energy surface is defined as [Eq. 28 of arXiv:1609.00430]:
 
     .. math::
 
-        H = H_{kinetic} + \sum_{i\geq j} \Phi_{ij}^{(2)}  q_i  q_j + \sum_{i\geq j\geq k}
-        \Phi_{ijk}^{(3)}  q_i  q_j  q_k + \sum_{i\geq j\geq k\geq l} \Phi_{ijkl}^{(4)}
-        q_i  q_j  q_k  q_l  + \cdots,
+        \hat V(q_1,\cdots,q_M) = \hat V_0 + \sum_{i=1}^M \hat V_1^{(i)}(q_i) + \sum_{i>j}
+        \hat V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} \hat V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
 
-    where :math:`H_{kinetic}` is the kinetic component of the Hamiltonian. The coefficients
-    :math:`\Phi^n` are computed from a multi-dimensional polynomial fit, with a polynomial specified
-    by ``min_deg`` and ``max_deg``, over potential energy surface data.
+    where :math:`q` is a normal coordinate and :math:`V_n` represents the :math:`n`-mode component
+    of the potential energy surface along the normal coordinate. The :math:`V_n` terms are defined
+    as:
+
+    .. math::
+
+		\hat V_0 &\equiv \hat V(q_1=0,\cdots,q_M=0) = \hat V(\mathbf{R}^{(eq)}) \\
+		\hat V_1^{(i)}(q_i) &\equiv \hat V(0,\cdots,0,q_i,0,\cdots,0) - \hat V_0 \\
+		\hat V_2^{(i,j)}(q_i,q_j) &\equiv \hat V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+		\hat V_1^{(i)}(q_i) - \hat V_1^{(j)}(q_j) - \hat V_0  \label{eq:2_mode} \\
+		\nonumber \vdots \, .
+
+    The one-mode Taylor coefficinets, :math:`\Phi`, computed here are related to the potential
+    energy surface as:
+
+    .. math::
+
+        V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ....
+
+    Similarly, the two-mode and three-mode Taylor coeffiicents are computed if the two-mode and
+    three-mode potential energy surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and
+    :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
 
     Args:
         pes (VibrationalPES): the vibrational potential energy surface object
@@ -296,7 +315,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
         min_deg (int): minimum degree of the polynomial used to compute the coefficients
 
     Returns:
-        tuple(TensorLike[float]): the coefficients of the Taylor vibrational Hamiltonian
+        List(TensorLike[float]): the coefficients of the Taylor vibrational Hamiltonian
 
     **Example**
 
@@ -307,19 +326,6 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     >>> print(coeffs)
     [array([[-4.73959071e-05, -3.06785775e-03,  5.21798831e-04]])]
     """
-
-    # pes_shape = pes.shape
-    # if len(pes_shape) = 2:
-    #     return predicted_1D
-    # if len(pes_shape) = 4:
-    #     return predicted_2D
-    # if len(pes_shape) = 6:
-    #     return predicted_3D
-
-    # shape of output: (m, r), (m, m, s), (m, m, m, t)
-    # r = max_deg - min_deg + 1
-    # s = sum((n - 1) for n in range(min_deg, max_deg + 1))
-    # t = sum((n - 1) * (n - 2) / 2 for n in range(min_deg, max_deg + 1))
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, max_deg, min_deg=min_deg)
