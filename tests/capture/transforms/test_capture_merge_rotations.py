@@ -194,16 +194,24 @@ class TestHigherOrderPrimitiveIntegration:
         """Test that evaluating a ctrl higher order primitive works correctly"""
 
         def ctrl_fn():
-            pass
+            qml.RX(1, 0)
+            qml.RX(1, 0)
 
         @MergeRotationsInterpreter()
         def f():
+            qml.RY(0, 1)
             qml.ctrl(ctrl_fn, [])()
+            qml.RZ(0, 1)
 
         jaxpr = jax.make_jaxpr(f)()
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == ctrl_transform_prim
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.RY._primitive
+        assert jaxpr.eqns[1].primitive == ctrl_transform_prim
+        assert jaxpr.eqns[2].primitive == qml.RZ._primitive
+
         inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]
+        assert len(inner_jaxpr.eqns) == 1
+        assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
 
     @pytest.mark.parametrize("lazy", [True, False])
     def test_adjoint_higher_order_primitive(self, lazy):
@@ -212,16 +220,18 @@ class TestHigherOrderPrimitiveIntegration:
         @MergeRotationsInterpreter()
         def f():
             def g():
-                pass
+                qml.RX(1, 0)
+                qml.RX(1, 0)
 
             qml.adjoint(g, lazy=lazy)()
 
         jaxpr = jax.make_jaxpr(f)()
-
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         assert jaxpr.eqns[0].params["lazy"] == lazy
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        assert len(inner_jaxpr.eqns) == 1
+        assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
 
     def test_for_loop_higher_order_primitive(self):
         """Test that the for_loop primitive is correctly interpreted"""
@@ -230,13 +240,14 @@ class TestHigherOrderPrimitiveIntegration:
         def f(n):
             @qml.for_loop(n)
             def g(i):
-                pass
+                qml.RX(1, i)
+                qml.RX(1, i)
 
             g()
 
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jax.make_jaxpr(f)(3)
 
         # Measurement
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
@@ -245,6 +256,8 @@ class TestHigherOrderPrimitiveIntegration:
         # For loop jaxpr
         assert jaxpr.eqns[0].primitive == for_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert len(inner_jaxpr.eqns) == 1
+        assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
 
     def test_while_loop_higher_order_primitive(self):
         """Test that the while_loop primitive is correctly interpreted"""
@@ -253,12 +266,14 @@ class TestHigherOrderPrimitiveIntegration:
         def f(n):
             @qml.while_loop(lambda i: i < n)
             def g(i):
+                qml.RX(1, 0)
+                qml.RX(1, 0)
                 return i + 1
 
             g(0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jax.make_jaxpr(f)(3)
         assert jaxpr.eqns[0].primitive == while_loop_prim
         # Measurement
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
@@ -267,6 +282,7 @@ class TestHigherOrderPrimitiveIntegration:
         # While loop jaxpr
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         # Last primitive is the i+1 in the while loop
+        assert inner_jaxpr.eqns[-1].primitive == qml.RX._primitive
 
     def test_cond_higher_order_primitive(self):
         """Test that the cond primitive is correctly interpreted"""
@@ -275,37 +291,49 @@ class TestHigherOrderPrimitiveIntegration:
         def f(n):
             @qml.cond(n > 0)
             def cond_f():
+                qml.RZ(1, 0)
+                qml.RZ(1, 0)
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(n > 1)
             def _():
+                qml.RY(1, 0)
+                qml.RY(1, 0)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
             def _():
+                qml.RX(1, 0)
+                qml.RX(1, 0)
                 return qml.expval(qml.X(0))
 
             out = cond_f()
             return out
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jax.make_jaxpr(f)(3)
         # First 2 primitives are the conditions for the true and elif branches
         assert jaxpr.eqns[2].primitive == cond_prim
 
         # True branch
         branch_jaxpr = jaxpr.eqns[2].params["jaxpr_branches"][0]
+        assert len(branch_jaxpr.eqns) == 3
+        assert branch_jaxpr.eqns[-3].primitive == qml.RZ._primitive
         # Measurement
         assert branch_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
         # Elif branch
         branch_jaxpr = jaxpr.eqns[2].params["jaxpr_branches"][1]
+        assert len(branch_jaxpr.eqns) == 3
+        assert branch_jaxpr.eqns[-3].primitive == qml.RY._primitive
         # Measurement
         assert branch_jaxpr.eqns[-2].primitive == qml.PauliY._primitive
         assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
         # Else branch
         branch_jaxpr = jaxpr.eqns[2].params["jaxpr_branches"][2]
+        assert len(branch_jaxpr.eqns) == 3
+        assert branch_jaxpr.eqns[-3].primitive == qml.RX._primitive
         # Measurement
         assert branch_jaxpr.eqns[-2].primitive == qml.PauliX._primitive
         assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
@@ -315,19 +343,23 @@ class TestHigherOrderPrimitiveIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         @MergeRotationsInterpreter()
-        def f():
+        def f(a, b):
             @qml.qnode(dev)
-            def circuit():
+            def circuit(a, b):
+                qml.RX(a, 0)
+                qml.RX(b, 0)
                 return qml.expval(qml.Z(0))
 
-            return qml.grad(circuit)()
+            return qml.grad(circuit)(a, b)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jax.make_jaxpr(f)(1.0, 2.0)
 
         assert jaxpr.eqns[0].primitive == grad_prim
 
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[-4].primitive != qml.RX._primitive
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
@@ -336,19 +368,23 @@ class TestHigherOrderPrimitiveIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         @MergeRotationsInterpreter()
-        def f():
+        def f(a, b):
             @qml.qnode(dev)
-            def circuit():
+            def circuit(a, b):
+                qml.RX(a, 0)
+                qml.RX(b, 0)
                 return qml.expval(qml.Z(0))
 
-            return qml.jacobian(circuit)()
+            return qml.jacobian(circuit)(a, b)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jax.make_jaxpr(f)(1.0, 2.0)
 
         assert jaxpr.eqns[0].primitive == jacobian_prim
 
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[-4].primitive != qml.RX._primitive
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
@@ -358,15 +394,19 @@ class TestHigherOrderPrimitiveIntegration:
 
         @MergeRotationsInterpreter()
         @qml.qnode(dev)
-        def f():
+        def f(a, b):
+            qml.RX(a, 0)
+            qml.RX(b, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jax.make_jaxpr(f)(1.0, 2.0)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr.eqns[-4].primitive != qml.RX._primitive
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.RX._primitive
+        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
 class TestExpandPlxprTransformIntegration:
