@@ -4,7 +4,7 @@ qml.shadows
 Overview
 --------
 
-This module contains functionality for performing :doc:`classical shadows </demos/tutorial_diffable_shadows>` measurements.
+This module contains functionality for performing :doc:`classical shadows <demos/tutorial_diffable_shadows>` measurements.
 
 .. currentmodule:: pennylane
 
