@@ -71,17 +71,33 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                     f"cumulative_angles: {cumulative_angles}, obtained from single_qubit_rot_angles called on current op: {op}"
                 )
             except (NotImplementedError, AttributeError):
-                # If the operation does not have the single_qubit_rot_angles method, we store it
-                # because we know we can't fuse it with any other operation.
-                # We cannot interpret the operation right away, because we need the use this to separate
                 print(f"single_qubit_rot_angles not available for current_gate: {op}")
-                print("registro op in previous_ops (rischiando di sovrascrivere) e returno")
-                for w in op.wires:
-                    self.previous_ops[w] = op
-                return []
 
+                previous_ops_on_wires = set(self.previous_ops.get(w) for w in op.wires)
+
+                print(
+                    f"removing previous_ops_on_wires={previous_ops_on_wires} from previous_ops={self.previous_ops}"
+                )
+
+                for o in previous_ops_on_wires:
+                    if o is not None:
+                        for w in o.wires:
+                            self.previous_ops.pop(w)
+
+                print(
+                    f"interpreting previous_ops_on_wires (printed above) and op={op} with super().interpret_operation, then returning"
+                )
+                res = []
+                for o in previous_ops_on_wires:
+                    res.append(super().interpret_operation(o))
+
+                res.append(super().interpret_operation(op))
+                return res
+
+            # previous operation on the same wire
             prev_op = self.previous_ops.get(op.wires[0], None)
-            print(f"prev_op: {prev_op} retrieved from previous_ops")
+            print(f"prev_op: {prev_op} retrieved from previous_ops={self.previous_ops}")
+
             if prev_op is None:
                 # We cannot interpret the operation right away, because for example the first operation in the circuit
                 # has no previous ops stored but it might be able to be fused with the next operation.
@@ -90,55 +106,41 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                     self.previous_ops[w] = qml.Rot._primitive.impl(
                         *cumulative_angles, wires=op.wires
                     )
-                    # Rot(*cumulative_angles, wires=op.wires)
-                print(f"previous_ops: {self.previous_ops}, I just stored Rot")
+                print(
+                    f"Stored the current op (transformed in Rot) in previous_ops: {self.previous_ops}. Returning now"
+                )
+                return []
 
-            while prev_op is not None:
+            prev_op_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
 
-                print(f"starting while loop with prev_op: {prev_op}")
+            # We need to be careful about the order of the operations, as rotations do not commute in general.
+            cumulative_angles = fuse_rot_angles(prev_op_angles, cumulative_angles)
 
-                try:
-                    prev_op_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
-                    print(
-                        f"prev_op angles: {prev_op_angles}, obtained from single_qubit_rot_angles called on prev_op: {prev_op}"
-                    )
-                except (NotImplementedError, AttributeError):
-                    print(f"single_qubit_rot_angles not available for prev_op: {prev_op}. Break.")
-                    break
+            print(f"cumulative_angles after fuse_rot_angles: {cumulative_angles}")
 
-                cumulative_angles = fuse_rot_angles(cumulative_angles, prev_op_angles)
+            for w in op.wires:
+                self.previous_ops[w] = qml.Rot._primitive.impl(*cumulative_angles, wires=op.wires)
+                print(
+                    f"Stored the current op (transformed in Rot) in previous_ops: {self.previous_ops}. Returning now"
+                )
 
-                prev_op = self.previous_ops.get(op.wires[0], None)
-                print(f"prev_op: {prev_op}")
-
-            print(f"SEMO giunti alla fine. interpreto tutti i previous ops sullo stesso wire")
-
-            # Putting the operations in a set to avoid applying the same op multiple times
-            # Using a set causes order to no longer be guaranteed, so the new order of the
-            # operations might differ from the original order. However, this only impacts
-            # operators without any shared wires, so correctness will not be impacted.
-            previous_ops_on_wires = set(self.previous_ops.get(w) for w in op.wires)
-            for o in previous_ops_on_wires:
-                if o is not None:
-                    for w in o.wires:
-                        self.previous_ops.pop(w)
-
-            res = []
-            for o in previous_ops_on_wires:
-                res.append(super().interpret_operation(o))
-            return res
+            return []
 
         def interpret_all_previous_ops(self) -> None:
 
             print(f"\ninterpret_all_previous_ops called")
 
             ops_remaining = set(self.previous_ops.values())
-            print(f"ops_remaining: {ops_remaining}")
+            print(f"ops_remaining: {ops_remaining}, which will be interpreted now")
             for op in ops_remaining:
                 super().interpret_operation(op)
-                print(f"interpreted op: {op} with super().interpret_operation")
 
             all_wires = tuple(self.previous_ops.keys())
+
+            print(
+                f"removing operations on all_wires={all_wires} from previous_ops={self.previous_ops}"
+            )
+
             for w in all_wires:
                 self.previous_ops.pop(w)
 
@@ -512,6 +514,9 @@ def single_qubit_fusion(
                 )
             except (NotImplementedError, AttributeError):
                 break
+
+            print(f"cumulative_angles: {cumulative_angles} before fuse_rot_angles")
+
             cumulative_angles = fuse_rot_angles(cumulative_angles, next_gate_angles)
             print(
                 f"cumulative_angles: {cumulative_angles}, obtained from fuse_rot_angles applied to cumulative_angles and next_gate_angles"
