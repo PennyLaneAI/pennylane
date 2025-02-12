@@ -4,7 +4,7 @@ qml.shadows
 Overview
 --------
 
-.. currentmodule:: pennylane.shadows
+.. currentmodule:: pennylane
 
 Measurements
 ------------
