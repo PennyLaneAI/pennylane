@@ -93,7 +93,8 @@ class MPSPrep(Operation):
         wires (Sequence[int]): wires that the template acts on
         work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
             dimension of the provided MPS is defined as ``2^len(work_wires)``. Default is ``None``.
-
+        right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed to the mps.
+            Default is ``False``.
 
     The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
 
@@ -305,6 +306,8 @@ class MPSPrep(Operation):
             wires (Sequence[int]): wires that the template acts on
             work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
                 dimension of the provided MPS is defined as ``2^len(work_wires)``. Default is ``None``.
+            right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed
+                to the mps. Default is ``False``.
 
         Returns:
             list[.Operator]: Decomposition of the operator
