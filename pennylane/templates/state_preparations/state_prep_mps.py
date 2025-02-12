@@ -30,33 +30,38 @@ def right_canonicalize_mps(mps):
 
     Returns:
         A list of tensors representing the MPS in right-canonical form.
+
+    .. seealso:: :class:`~.MPSPrep`.
+
     """
 
-    L = len(mps)
-    output_mps = [None] * L
-
     is_right_canonical = True
-    for i in range(1, L - 1):
-        tensor = mps[i]
+    d_shapes = []
+    for tensor in mps[1:-1]:
         # Right-canonical definition
+        d_shapes += tensor.shape
         M = qml.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
         if not qml.math.allclose(M, qml.math.eye(tensor.shape[0])):
             is_right_canonical = False
-            break
 
     if is_right_canonical:
         return mps
 
-    max_bond_dim = 0
-    for tensor in mps[1:-1]:
-        D_left = tensor.shape[0]
-        D_right = tensor.shape[2]
-        max_bond_dim = max(max_bond_dim, D_left, D_right)
+    max_bond_dim = qml.math.max(d_shapes)
+
+    L = len(mps)
+    output_mps = [None] * L
 
     # Procedure analogous to the left-canonical conversion but starting from the right and storing the Vd
     for i in range(L - 1, 0, -1):
         chi_left, d, chi_right = mps[i].shape
         M = mps[i].reshape(chi_left, d * chi_right)
+
+        # Perform Singular Value Decomposition (SVD)
+        # M ≈ U @ diag(S) @ Vd, where:
+        # - U represents an orthogonal rotation in the space of chi_left
+        # - diag(S) scales the singular values (stretching or contracting)
+        # - Vd represents another rotation in the space of d * chi_right
         U, S, Vd = qml.math.linalg.svd(M, full_matrices=False)
 
         # Truncate SVD components if needed
@@ -65,9 +70,13 @@ def right_canonicalize_mps(mps):
         S = S[:chi_new]
         Vd = Vd[:chi_new, :]
 
+        # Store Vd reshaped as an MPS tensor in the output MPS
         output_mps[i] = Vd.reshape(chi_new, d, chi_right)
 
+        # Contract U with diag(S) to pass the information to the left
         US = U @ qml.math.diag(S)
+
+        # Merge US with the preceding MPS tensor, preserving the canonical structure
         mps[i - 1] = qml.math.tensordot(mps[i - 1], US, axes=([2], [0]))
 
     output_mps[0] = mps[0]
@@ -96,6 +105,7 @@ class MPSPrep(Operation):
             Default is ``False``.
 
     The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
+    A right canonicalization of the MPS is required for non-tensor devices.
 
     .. seealso:: :func:`~.right_canonicalize_mps`.
 
@@ -152,6 +162,8 @@ class MPSPrep(Operation):
         Additionally, the physical dimension of the site should always be fixed at :math:`2`
         (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
 
+        On the other hand, in order to be able to decompose this operator into gates, the MPS must fulfill an
+        additional property, it must be right-canonized.
         A right-canonized MPS is a matrix product state where each tensor :math:`A^{(j)}` satisfies
         the following orthonormality condition:
 
@@ -184,7 +196,9 @@ class MPSPrep(Operation):
             ]
     """
 
-    def __init__(self, mps, wires, work_wires=None, right_canonicalize=False, id=None):
+    def __init__(
+        self, mps, wires, work_wires=None, right_canonicalize=False, id=None
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         # Validate the shape and dimensions of the first tensor
         assert qml.math.isclose(
