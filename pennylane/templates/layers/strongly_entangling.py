@@ -14,6 +14,8 @@
 r"""
 Contains the StronglyEntanglingLayers template.
 """
+from jax import numpy as jnp
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -235,3 +237,40 @@ class StronglyEntanglingLayers(Operation):
         """
 
         return n_layers, n_wires, 3
+
+    @staticmethod
+    def compute_plxpr_decomposition(*args, **hyperparameters):
+        weights = args[0]
+        wires = jnp.array(args[1:])
+        imprimitive = hyperparameters["imprimitive"]
+        ranges = hyperparameters["ranges"]
+
+        n_wires = len(wires)
+        n_layers = weights.shape[0]
+
+        @qml.for_loop(n_layers)
+        def l_layers(l):
+            @qml.for_loop(n_wires)
+            def rot_loop(i):
+                qml.Rot(
+                    weights[l, i, 0],
+                    weights[l, i, 1],
+                    weights[l, i, 2],
+                    wires=wires[i],
+                )
+
+            def imprim_true():
+                @qml.for_loop(n_wires)
+                def imprimitive_loop(i):
+                    act_on = jnp.array([i, i + jnp.array(ranges)[l]]) % n_wires
+                    imprimitive(wires=wires[act_on])
+
+                imprimitive_loop()
+
+            def imprim_false():
+                pass
+
+            rot_loop()
+            qml.cond(n_wires > 1, imprim_true, imprim_false)()
+
+        l_layers()
