@@ -161,9 +161,16 @@ def lie_closure(
             print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
 
         # compute all commutators. We compute the commutators between all newly added operators
-        # and all original generators. This limits the number of commutators added in each
-        # iteration, but it gives us a correspondence between the while loop iteration and the
-        # nesting level of the commutators.
+        # and all original generators. This limits the amount of vectorization we are doing but
+        # gives us a correspondence between the while loop iteration and the nesting level of
+        # the commutators.
+        # The logic here is that all nested commutators can be brought in the form
+        # $[a, [b, [c, [d....]]]]$ with $a, b, c, d...$ all from the original set of operators,
+        # i.e., no commutators between commutators are needed, but only iterative application of
+        # $[a, \circ]$ for some $a$ from the initial set.
+        # This is true because of the [Jacobi identity](https://en.wikipedia.org/wiki/Jacobi_identity). For example (marking Jacobi with a $\star$):
+        # $[[a,b], [c,d]]=[[a,b], e] \overset{\star}{=} -[[e, a], b] - [[b, e], a] = -[[[c,d],a],b]-[[b,[c,d]],a]=-[b,[a,[c,d]]]+[a,[b,[c,d]]]$
+        # So finding all four-operators commutators will allow us to reach all elements needed to express the nested commutators on the left hand side.
         for ps1, ps2 in product(vspace.basis[old_length:], vspace.basis[:initial_length]):
             com = ps1.commutator(ps2)
             com.simplify(tol=vspace.tol)
@@ -610,6 +617,13 @@ def _lie_closure_matrix(
         # and all original generators. This limits the amount of vectorization we are doing but
         # gives us a correspondence between the while loop iteration and the nesting level of
         # the commutators.
+        # The logic here is that all nested commutators can be brought in the form
+        # $[a, [b, [c, [d....]]]]$ with $a, b, c, d...$ all from the original set of operators,
+        # i.e., no commutators between commutators are needed, but only iterative application of
+        # $[a, \circ]$ for some $a$ from the initial set.
+        # This is true because of the [Jacobi identity](https://en.wikipedia.org/wiki/Jacobi_identity). For example (marking Jacobi with a $\star$):
+        # $[[a,b], [c,d]]=[[a,b], e] \overset{\star}{=} -[[e, a], b] - [[b, e], a] = -[[[c,d],a],b]-[[b,[c,d]],a]=-[b,[a,[c,d]]]+[a,[b,[c,d]]]$
+        # So finding all four-operators commutators will allow us to reach all elements needed to express the nested commutators on the left hand side.
         # [m0, m1] = m0 m1 - m1 m0
         # Implement einsum "aij,bjk->abik" by tensordot and moveaxis
         m0m1 = qml.math.moveaxis(
