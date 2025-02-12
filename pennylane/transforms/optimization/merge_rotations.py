@@ -28,6 +28,7 @@ from pennylane.typing import PostprocessingFn
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
+# pylint: disable = too-many-statements
 @lru_cache
 def _get_plxpr_merge_rotations():
     try:
@@ -47,6 +48,7 @@ def _get_plxpr_merge_rotations():
 
         def __init__(self, atol=1e-8, include_gates=None):
             super().__init__()
+            self._env = {}
             self.atol = atol
             self.include_gates = include_gates
 
@@ -77,6 +79,9 @@ def _get_plxpr_merge_rotations():
                             self.seen_operators.pop(w)
                 for w in op.wires:
                     self.seen_operators[w] = op
+                # List comprehensions are run in a separate scope.
+                # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
+                # pylint: disable=super-with-arguments
                 return [
                     super(MergeRotationsInterpreter, self).interpret_operation(o)
                     for o in previous_ops_on_wires
@@ -90,6 +95,9 @@ def _get_plxpr_merge_rotations():
                             self.seen_operators.pop(w)
                 for w in op.wires:
                     self.seen_operators[w] = op
+                # List comprehensions are run in a separate scope.
+                # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
+                # pylint: disable=super-with-arguments
                 return [
                     super(MergeRotationsInterpreter, self).interpret_operation(o)
                     for o in previous_ops_on_wires
@@ -99,7 +107,7 @@ def _get_plxpr_merge_rotations():
             if last_seen_op_on_same_wire is None:
                 for w in op.wires:
                     self.seen_operators[w] = op
-                return
+                return []
 
             with qml.capture.pause():
                 wires_exactly_match = op.wires == last_seen_op_on_same_wire.wires
@@ -129,7 +137,7 @@ def _get_plxpr_merge_rotations():
                                 *cumulative_angles, wires=op.wires
                             )
 
-                    return
+                    return []
 
                 previous_ops_on_wires = set(self.seen_operators.get(w) for w in op.wires)
                 for o in previous_ops_on_wires:
@@ -139,12 +147,16 @@ def _get_plxpr_merge_rotations():
                 for w in op.wires:
                     self.seen_operators[w] = op
 
+            # List comprehensions are run in a separate scope.
+            # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
+            # pylint: disable=super-with-arguments
             return [
                 super(MergeRotationsInterpreter, self).interpret_operation(o)
                 for o in previous_ops_on_wires
             ]
 
         def purge_seen_operators(self):
+            """Purge the seen operators to reset."""
             ops_remaining = set(self.seen_operators.values())
             for op in ops_remaining:
                 super().interpret_operation(op)
