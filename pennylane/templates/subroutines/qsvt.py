@@ -579,35 +579,29 @@ class QSVT(Operation):
     def compute_plxpr_decomposition(*args, **hyperparameters):
         UA = hyperparameters["UA"]
         projectors = hyperparameters["projectors"]
-        UA._primitive_bind_call(wires=UA.wires)
-        UA.adjoint()
-        # qml.adjoint(UA)
-
-        # for idx, op in enumerate(projectors[:-1]):
-        #    op._primitive_bind_call(*op.data, wires=op.wires)
-        #    if idx % 2 == 0:
-        #        UA._primitive_bind_call(wires=UA.wires)
-        #    else:
-        #        pass # do adjoint?
-        #
-        # projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
-
-        @qml.for_loop(len(projectors))
+        
+        UA._primitive.impl(wires=UA.wires) #doesn't add line in jaxpr
+        UA._primitive_bind_call(wires=UA.wires) #but this does
+        UA.adjoint() # this add line to jaxpr
+        
+        # Can't do the following
+        #projectors = jnp.array(projectors)
+        
+        @qml.for_loop(len(projectors) - 1)
         def PU_loop(i):
-            projectors[i]
-            # projectors[i]._primitive_bind_call(*projectors[i].data, wires=projectors[i].wires)
+            # Can't do the following
+            #projectors[i]._primitive_bind_call(*projectors[i].data, wires=projectors[i].wires)
+            def even_fn():
+                UA._primitive_bind_call(wires=UA.wires) # no effect?
+        
+            def odd_fn():
+                UA.adjoint() # no effect?
+        
+            qml.cond(i % 2 == 0, even_fn, odd_fn)
+        PU_loop()
+        projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
+        
 
-        #
-        #    def even_fn():
-        #        UA._primitive_bind_call(wires=UA.wires)
-        #
-        #    def odd_fn():
-        #        adjoint(UA)._primitive_bind_call(wires=UA.wires)
-        #
-        #    qml.cond(i % 2 == 0, even_fn, odd_fn)
-        #
-        # projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
-        #
 
     def label(self, decimals=None, base_label=None, cache=None):
         op_label = base_label or self.__class__.__name__
