@@ -240,8 +240,8 @@ class StronglyEntanglingLayers(Operation):
 
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
-        weights = jnp.array(args[0])
-        wires = args[1:]
+        weights = args[0]
+        wires = jnp.array(args[1:])
         imprimitive = hyperparameters["imprimitive"]
         ranges = hyperparameters["ranges"]
 
@@ -256,14 +256,14 @@ class StronglyEntanglingLayers(Operation):
                     weights[l, i, 0],
                     weights[l, i, 1],
                     weights[l, i, 2],
-                    wires=jnp.array(wires)[i],
+                    wires=wires[i],
                 )
 
             def imprim_true():
                 @qml.for_loop(n_wires)
                 def imprimitive_loop(i):
                     act_on = jnp.array([i, i + jnp.array(ranges)[l]]) % n_wires
-                    imprimitive(wires=jnp.array(wires)[act_on])
+                    imprimitive(wires=wires[act_on])
 
                 imprimitive_loop()
 
