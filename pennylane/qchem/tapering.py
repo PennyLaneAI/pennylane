@@ -606,7 +606,8 @@ def _build_generator(operation, wire_order, op_gen=None):
     return op_gen
 
 
-# pylint: disable=too-many-branches, too-many-arguments, inconsistent-return-statements, no-member
+# pylint: disable=too-many-branches, too-many-arguments, too-many-positional-arguments
+# pylint: disable=inconsistent-return-statements, no-member
 def taper_operation(
     operation, generators, paulixops, paulix_sector, wire_order, op_wires=None, op_gen=None
 ):
