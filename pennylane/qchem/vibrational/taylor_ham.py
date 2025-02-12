@@ -590,7 +590,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     r"""Return Taylor bosonic vibrational Hamiltonian.
 
 
-    The Taylor vibrational Hamiltonian is defined as: in terms of kinetic :math:`T` and potential
+    The Taylor vibrational Hamiltonian is defined in terms of kinetic :math:`T` and potential
     components :math:`V` as:
 
     .. math::
@@ -603,7 +603,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
     .. math::
 
-        T = \sum_{i\geq j} K_{ij} p_i  p_j, \\
+        T = \sum_{i\geq j} K_{ij} p_i  p_j, \:\:
 
         V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
         V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
@@ -702,7 +702,7 @@ def taylor_hamiltonian(
 ):
     r"""Return Taylor vibrational Hamiltonian.
 
-    The Taylor vibrational Hamiltonian is defined as: in terms of kinetic :math:`T` and potential
+    The Taylor vibrational Hamiltonian is defined in terms of kinetic :math:`T` and potential
     components :math:`V` as:
 
     .. math::
@@ -715,7 +715,7 @@ def taylor_hamiltonian(
 
     .. math::
 
-        T = \sum_{i\geq j} K_{ij} p_i  p_j, \\
+        T = \sum_{i\geq j} K_{ij} p_i  p_j, \:\:
 
         V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
         V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
