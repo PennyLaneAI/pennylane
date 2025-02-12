@@ -78,7 +78,7 @@ def lie_closure_dense(
     .. seealso::
 
         For details on the mathematical definitions, see :func:`~lie_closure` and our
-        :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners </tutorial_liealgebra>`.
+        :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`.
 
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]): generating set for which to compute the

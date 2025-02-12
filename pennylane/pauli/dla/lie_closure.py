@@ -58,7 +58,7 @@ def lie_closure(
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
         commutators (Lie closure).
 
-    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners </tutorial_liealgebra>`
+    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`
 
     **Example**
 

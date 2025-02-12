@@ -157,7 +157,7 @@ Dynamical Lie Algebras
 ----------------------
 
 PennyLane provides support for working with dynamical Lie algebras (DLA) of Pauli operators.
-See our :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners </tutorial_liealgebra>`.
+See our :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`.
 
 .. currentmodule:: pennylane
 
