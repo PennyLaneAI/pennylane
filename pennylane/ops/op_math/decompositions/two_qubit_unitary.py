@@ -198,15 +198,15 @@ def _su2su2_to_tensor_products(U):
     # case one of the elements of A is 0.
     # We use B1 unless division by 0 would cause all elements to be inf.
     use_B2 = math.allclose(A[0, 0], 0.0, atol=1e-6)
-    if not math.is_abstract(A):
-        B = C2 / math.cast_like(A[0, 1], 1j) if use_B2 else C1 / math.cast_like(A[0, 0], 1j)
-    elif qml.math.get_interface(A) == "jax":
+    if math.is_abstract(A) and qml.math.get_interface(A) == "jax":
         B = qml.math.cond(
             use_B2,
             lambda x: C2 / math.cast_like(A[0, 1], 1j),
             lambda x: C1 / math.cast_like(A[0, 0], 1j),
             [0],  # arbitrary value for x
         )
+    else:
+        B = C2 / math.cast_like(A[0, 1], 1j) if use_B2 else C1 / math.cast_like(A[0, 0], 1j)
 
     return math.convert_like(A, U), math.convert_like(B, U)
 
