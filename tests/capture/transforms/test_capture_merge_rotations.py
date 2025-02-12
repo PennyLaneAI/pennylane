@@ -183,8 +183,26 @@ class TestMergeRotationsInterpreter:
         assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
-class TestMergeRotationsPlxprTransform:
-    """Test the merge_rotations_plxpr_to_plxpr function."""
+@pytest.mark.parametrize(("theta1, theta2"), [(0.1, 0.2), (0.1, -0.1)])
+def merge_rotations_plxpr_to_plxpr_transform(self, theta1, theta2):
+    """Test that the merge_rotations_plxpr_to_plxpr function works correctly."""
+
+    @MergeRotationsInterpreter()
+    def f(a, b):
+        qml.RX(a, wires=0)
+        qml.RX(b, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    args = (theta1, theta2)
+    jaxpr = jax.make_jaxpr(f)(*args)
+    transformed_jaxpr = merge_rotations_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {}, *args)
+
+    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+
+    assert jaxpr.eqns[-4].primitive != qml.RX._primitive
+    assert jaxpr.eqns[-3].primitive == qml.RX._primitive
+    assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+    assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
 class TestHigherOrderPrimitiveIntegration:
