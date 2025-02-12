@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
+  following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
+  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
+
 <h3>Improvements 🛠</h3>
 
 * Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
@@ -283,6 +287,9 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.GlobalPhase.sparse_matrix` now correctly returns a sparse matrix of the same shape as `matrix`.
+  [(#6940)](https://github.com/PennyLaneAI/pennylane/pull/6940)
 
 * `qml.expval` no longer silently casts to a real number when observable coefficients are imaginary.
   [(#6939)](https://github.com/PennyLaneAI/pennylane/pull/6939)
