@@ -47,7 +47,8 @@ def _convert_to_su2(U, return_global_phase=False):
     U = (
         U * math.exp(-1j * phase)
         if sp.sparse.issparse(U)
-        else math.cast_like(U, determinants) * math.exp(-1j * math.cast_like(phase, 1j))[:, None, None]
+        else math.cast_like(U, determinants)
+        * math.exp(-1j * math.cast_like(phase, 1j))[:, None, None]
     )
 
     return (U, phase) if return_global_phase else U
