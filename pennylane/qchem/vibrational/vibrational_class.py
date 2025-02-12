@@ -36,13 +36,14 @@ class VibrationalPES:
         uloc (TensorLike[float]): normal mode localization matrix with shape ``(m, m)`` where
             ``m = len(freqs)``
         pes_data (list[TensorLike[float]]): list of one-mode, two-mode and three-mode potential
-             energy surface data , with shapes ``(m, l)``, ``(m, m, l, l)`` ``(m, m, m, l, l, l)``,
-             respectively, where ``m = len(freqs)`` and ``l > 0``
-        dipole_data (list[TensorLike[float]]): one-mode, two-mode and three-mode dipole moment data
-            computed along the normal modes
+            energy surface data , with shapes ``(m, l)``, ``(m, m, l, l)`` ``(m, m, m, l, l, l)``,
+            respectively, where ``m = len(freqs)`` and ``l > 0``
+        dipole_data (list[TensorLike[float]]): list of  one-mode, two-mode and three-mode dipole
+            moment data, with shapes ``(m, l, 3)``, ``(m, m, l, l, 3)`` ``(m, m, m, l, l, l, 3)``,
+            respectively, where ``m = len(freqs)`` and ``l > 0``
         localized (bool): Flag that the potential energy surface data correspond to localized normal
             mode. Default is ``True``.
-        dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input
+        dipole_level (int): The level up to which dipole moment data are to be calculated. Input
             values can be ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and
             three-mode dipole, respectively. Default value is ``1``.
 
