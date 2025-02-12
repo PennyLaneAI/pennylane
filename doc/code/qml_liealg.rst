@@ -24,10 +24,10 @@ Relevant demos
 Lie algebra functionality in PennyLane.
 Relevant demos to check out:
 
-* :doc:`/demos/tutorial_liealgebra`
-* :doc:`/demos/tutorial_liesim`
-* :doc:`/demos/tutorial_liesim_extension`
-* :doc:`/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition`
-* :doc:`/demos/tutorial_kak_decomposition`
+* :doc:`Introducing (dynamical) Lie algebras for quantum practitioners </demos/tutorial_liealgebra>`
+* :doc:`g-sim: Lie-algebraic classical simulations for variational quantum computing </demos/tutorial_liesim>`
+* :doc:`(g + P)-sim: Extending g-sim by non-DLA observables and gates </demos/tutorial_liesim_extension>`
+* :doc:`Fixed depth Hamiltonian simulation via Cartan decomposition </demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`
+* :doc:`The KAK decomposition </demos/tutorial_kak_decomposition>`
 
 
