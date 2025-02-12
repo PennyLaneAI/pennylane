@@ -97,7 +97,10 @@ def _det_sparse(x):
 
 
 def _generic_sparse_det(A):
-    assert hasattr(A, "tocsc"), "Input matrix must be a SciPy.sparse.spmatrix"
+    """Compute the determinant of a sparse matrix using LU decomposition."""
+
+    assert hasattr(A, "tocsc"), TypeError(f"Expected SciPy sparse, got {type(A)}")
+
     A_csc = A.tocsc()
     lu = splu(A_csc)
     U_diag = lu.U.diagonal()
