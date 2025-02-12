@@ -29,7 +29,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
     that are sums of many Paulis.
 
-    .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our :ref:`demos/tutorial_liesim<Lie algebra basics>`.
+    .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our :doc:`g-sim demo <demos/tutorial_liesim>`.
 
     Args:
         g (np.array): The (dynamical) Lie algebra provided as dense matrices, as generated from :func:`~lie_closure_dense`.
