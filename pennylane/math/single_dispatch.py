@@ -121,7 +121,8 @@ def _permutation_parity(perm):
                 j = perm[j]
                 cycle_length += 1
 
-            if cycle_length > 0:
+            if cycle_length:
+
                 parity *= (-1) ** (cycle_length - 1)
     return parity
 
