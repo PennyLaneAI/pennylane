@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added class `qml.capture.transforms.MergeRotationsInterpreter` that merges rotation operators
+  following the same API as `qml.transforms.optimization.merge_rotations` when experimental program capture is enabled.
+  [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
+
 * Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
