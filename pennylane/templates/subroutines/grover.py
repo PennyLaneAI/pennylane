@@ -15,13 +15,13 @@
 Contains the Grover Operation template.
 """
 import numpy as np
+from jax import numpy as jnp
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.wires import Wires, WiresLike
 
-from jax import numpy as jnp
 
 class GroverOperator(Operation):
     r"""Performs the Grover Diffusion Operator.
@@ -185,17 +185,17 @@ class GroverOperator(Operation):
         work_wires = jnp.array(hyperparameters["work_wires"])
         ctrl_values = [0] * (len(wires) - 1)
 
-        @qml.for_loop(len(wires)-1)
+        @qml.for_loop(len(wires) - 1)
         def h_loop(i):
             Hadamard(wires[i])
 
         h_loop()
         PauliZ(wires[-1])
         MultiControlledX(
-                control_values=ctrl_values,
-                wires=wires,
-                work_wires=work_wires,
-            )
+            control_values=ctrl_values,
+            wires=wires,
+            work_wires=work_wires,
+        )
         PauliZ(wires[-1])
         h_loop()
         GlobalPhase(np.pi)

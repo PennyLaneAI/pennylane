@@ -16,16 +16,15 @@ import numpy as np
 
 # pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods, wrong-import-order, too-many-arguments
 import pytest
+from jax import numpy as jnp
 
 import pennylane as qml
-from jax import numpy as jnp
+
 jax = pytest.importorskip("jax")
 
-import numpy as np
-
-import numpy as np
-
 from functools import partial
+
+import numpy as np
 
 from pennylane.capture import expand_plxpr_transforms
 from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
@@ -1235,7 +1234,7 @@ class TestDynamicDecomposeInterpreter:
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
         check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
-        
+
     @pytest.mark.parametrize("layers", [1, 2, 3])
     @pytest.mark.parametrize("n_wires", [2, 3])
     @pytest.mark.parametrize("imprimitive", [qml.CNOT, qml.CZ])
@@ -1275,22 +1274,23 @@ class TestDynamicDecomposeInterpreter:
             return qml.state()
 
         assert qml.math.allclose(*result, circuit_comparison())
-        
-    
+
     @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
-    @pytest.mark.parametrize("gate_set", [[qml.Hadamard, qml.CNOT, qml.PauliX, qml.GlobalPhase], None])    
+    @pytest.mark.parametrize(
+        "gate_set", [[qml.Hadamard, qml.CNOT, qml.PauliX, qml.GlobalPhase], None]
+    )
     def test_grover(self, max_expansion, gate_set):
         """Test that Grover is correctly dynamically decomposed."""
 
-        @DecomposeInterpreter(max_expansion = max_expansion, gate_set = gate_set)
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
         @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
         def circuit():
             qml.GroverOperator(wires=[0, 1, 2], work_wires=[3, 4])
             return qml.state()
-        
+
         jaxpr = jax.make_jaxpr(circuit)()
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        
+
         @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
         def circuit_comparison():
             qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
@@ -1298,13 +1298,12 @@ class TestDynamicDecomposeInterpreter:
 
         assert qml.math.allclose(*result, circuit_comparison())
 
-    
     @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
-    @pytest.mark.parametrize("gate_set", [[qml.Hadamard, qml.CNOT, qml.PhaseShift], None])   
+    @pytest.mark.parametrize("gate_set", [[qml.Hadamard, qml.CNOT, qml.PhaseShift], None])
     def test_qft(self, max_expansion, gate_set):
         """Test that QFT is correctly dynamically decomposed."""
 
-        @DecomposeInterpreter(max_expansion = max_expansion, gate_set = gate_set)
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
         @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
         def circuit():
             qml.QFT(wires=(0, 1, 2, 3, 4))
@@ -1313,7 +1312,7 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)()
         print(jaxpr)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        
+
         @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
         def circuit_comparison():
             qml.QFT(wires=(0, 1, 2, 3, 4))
@@ -1322,12 +1321,12 @@ class TestDynamicDecomposeInterpreter:
         assert qml.math.allclose(*result, circuit_comparison())
 
         # add test
-        
+
     def test_qsvt(self):
         """Test that the QSVT is correctly dynamically decomposed."""
         n_wires = 6
         block_encoding = qml.Hadamard(wires=0)
-        phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)] 
+        phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]
 
         @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
@@ -1338,8 +1337,6 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)()
         print(jaxpr)
         # still need to fix
-        
-    
 
     test_data_decomposition = [
         (
@@ -1355,6 +1352,7 @@ class TestDynamicDecomposeInterpreter:
             ],
         ),
     ]
+
     @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
     def test_uccsd(self, s_wires, d_wires, weights, n_repeats, _):
         """Test that uccsd is correctly dynamically decomposed."""
@@ -1371,35 +1369,34 @@ class TestDynamicDecomposeInterpreter:
         wires = range(N)
 
         ref_state = jnp.array([1, 1, 0, 0, 0, 0])
+
         @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
         def circuit():
             qml.UCCSD(
-            weights,
-            wires,
-            s_wires=s_wires,
-            d_wires=d_wires,
-            init_state=ref_state,
-            n_repeats=n_repeats,
-        )
-        
+                weights,
+                wires,
+                s_wires=s_wires,
+                d_wires=d_wires,
+                init_state=ref_state,
+                n_repeats=n_repeats,
+            )
+
         jaxpr = jax.make_jaxpr(circuit)()
         print(jaxpr)
-        
+
     def test_arbitrary_state_prep(self):
         """Test that arbitrary state prep is correctly dynamically decomposed."""
-        
-        
+
         weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
+
         @DecomposeInterpreter()
         @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
         def circuit():
             qml.ArbitraryStatePreparation(weights, wires=[0, 1])
+
         jaxpr = jax.make_jaxpr(circuit)()
         print(jaxpr)
-
-
-
 
 
 class TestExpandPlxprTransformsDynamicDecompositions:

@@ -16,7 +16,7 @@ Contains the ArbitraryStatePreparation template.
 """
 # pylint: disable=trailing-comma-tuple
 import functools
-from jax import numpy as jnp
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
@@ -130,21 +130,6 @@ class ArbitraryStatePreparation(Operation):
             op_list.append(qml.PauliRot(weights[i], pauli_word, wires=wires))
 
         return op_list
-
-    @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters):
-        weights = args[0]
-        wires = jnp.array(args[1:])
-        
-        e = jnp.array(_state_preparation_pauli_words(len(wires)))
-        @qml.for_loop(len(e))
-        def loop(i):
-            qml.PauliRot(weights[i], e[i], wires=wires)
-        
-        loop()
-        # to fix Pauli string are not valid JAX array type
-        
-        
 
     @staticmethod
     def shape(n_wires):

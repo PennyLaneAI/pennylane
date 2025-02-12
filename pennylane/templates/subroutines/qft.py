@@ -19,8 +19,8 @@ This submodule contains the template for QFT.
 import functools
 
 import numpy as np
-
 from jax import numpy as jnp
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires, WiresLike
@@ -203,29 +203,28 @@ class QFT(Operation):
 
         return decomp_ops
 
-
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
         wires = jnp.array(args[0:])
         n_wires = len(wires)
-        
+
         shifts = jnp.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)])
         shift_len = len(shifts)
-        
+
         @qml.for_loop(n_wires)
         def loop_0(i):
             qml.Hadamard(wires[i])
+
             @qml.for_loop(shift_len - i)
             def loop_1(j):
-                qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j +1], wires[i]])
-            
+                qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
+
             loop_1()
-                
+
         loop_0()
-        
-    
+
         @qml.for_loop(n_wires // 2)
         def loop_2(i):
             qml.SWAP(wires=[wires[i], wires[n_wires - i - 1]])
-                     
+
         loop_2()

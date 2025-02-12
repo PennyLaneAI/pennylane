@@ -18,7 +18,7 @@ Contains the UCCSD template.
 import copy
 
 import numpy as np
-from jax import numpy as jnp
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BasisState
@@ -284,35 +284,3 @@ class UCCSD(Operation):
                 op_list.append(qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
         return op_list
-
-
-    @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters):
-        weights = jnp.array(args[0])
-        wires = jnp.array(args[1:])
-        s_wires = jnp.array(hyperparameters["s_wires"])
-        d_wires = jnp.array(hyperparameters["d_wires"])
-        init_state = jnp.array(hyperparameters["init_state"])
-        n_repeats = hyperparameters["n_repeats"]
-        
-        BasisState(init_state, wires=wires)
-               
-        s_wires_len = len(s_wires)
-        d_wires_len = len(d_wires)
-        # Need to fix case for no d_wires of n_repeats==1 etc.
-        @qml.for_loop(n_repeats)
-        def layer_loop(layer):
-            @qml.for_loop(d_wires_len)
-            def double_excitation_loop(i):
-                qml.FermionicDoubleExcitation(
-                    weights[layer][s_wires_len + i], wires1=d_wires[i][0], wires2=d_wires[i][1]
-                )
-            
-            @qml.for_loop(s_wires_len)
-            def single_excitation_loop(j):
-                qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires[j])
-                
-            double_excitation_loop()
-            single_excitation_loop()
-        
-        layer_loop()
