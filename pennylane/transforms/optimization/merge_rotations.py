@@ -68,6 +68,33 @@ def _get_plxpr_merge_rotations():
             See also: :meth:`~.interpret_operation_eqn`.
 
             """
+
+            if self.include_gates is not None and op.name not in self.include_gates:
+                previous_ops_on_wires = set(self.seen_operators.get(w) for w in op.wires)
+                for o in previous_ops_on_wires:
+                    if o is not None:
+                        for w in o.wires:
+                            self.seen_operators.pop(w)
+                for w in op.wires:
+                    self.seen_operators[w] = op
+                return [
+                    super(MergeRotationsInterpreter, self).interpret_operation(o)
+                    for o in previous_ops_on_wires
+                ]
+
+            if op not in composable_rotations:
+                previous_ops_on_wires = set(self.seen_operators.get(w) for w in op.wires)
+                for o in previous_ops_on_wires:
+                    if o is not None:
+                        for w in o.wires:
+                            self.seen_operators.pop(w)
+                for w in op.wires:
+                    self.seen_operators[w] = op
+                return [
+                    super(MergeRotationsInterpreter, self).interpret_operation(o)
+                    for o in previous_ops_on_wires
+                ]
+
             last_seen_op_on_same_wire = self.seen_operators.get(op.wires[0], None)
             if last_seen_op_on_same_wire is None:
                 for w in op.wires:
@@ -75,50 +102,47 @@ def _get_plxpr_merge_rotations():
                 return
 
             with qml.capture.pause():
-                exact_wires_match = op.wires == last_seen_op_on_same_wire.wires
+                wires_exactly_match = op.wires == last_seen_op_on_same_wire.wires
                 are_same_type = isinstance(op, type(last_seen_op_on_same_wire))
 
-                if exact_wires_match:
-                    if are_same_type:
-                        if isinstance(op, qml.Rot):
-                            cumulative_angles = fuse_rot_angles(
-                                qml.math.stack(op.parameters),
-                                qml.math.stack(last_seen_op_on_same_wire.parameters),
-                            )
-                        else:
-                            cumulative_angles = qml.math.stack(op.parameters) + qml.math.stack(
-                                last_seen_op_on_same_wire.parameters
-                            )
+                if wires_exactly_match and are_same_type:
+                    if isinstance(op, qml.Rot):
+                        cumulative_angles = fuse_rot_angles(
+                            qml.math.stack(op.parameters),
+                            qml.math.stack(last_seen_op_on_same_wire.parameters),
+                        )
+                    else:
+                        cumulative_angles = qml.math.stack(op.parameters) + qml.math.stack(
+                            last_seen_op_on_same_wire.parameters
+                        )
 
-                        # delete last seen operators
-                        for w in op.wires:
-                            self.seen_operators.pop(w)
+                    # delete recorded operators on those wires
+                    for w in op.wires:
+                        self.seen_operators.pop(w)
 
-                        # replace with the newly merged one
+                    # replace with the newly merged one
+                    if qml.math.requires_grad(cumulative_angles) or not qml.math.allclose(
+                        cumulative_angles, 0.0, atol=self.atol, rtol=0
+                    ):
                         for w in op.wires:
                             self.seen_operators[w] = op.__class__(
                                 *cumulative_angles, wires=op.wires
                             )
-                        return
-            previous_ops_on_wires = set(self.seen_operators.get(w) for w in op.wires)
-            for o in previous_ops_on_wires:
-                if o is not None:
-                    for w in o.wires:
-                        self.seen_operators.pop(w)
-            for w in op.wires:
-                self.seen_operators[w] = op
 
-            if len(previous_ops_on_wires) != 0:
-                return [
-                    super(MergeRotationsInterpreter, self).interpret_operation(o)
-                    for o in previous_ops_on_wires
-                ]
+                    return
 
-            if self.include_gates is not None and op.name not in self.include_gates:
-                return super().interpret_operation(op)
+                previous_ops_on_wires = set(self.seen_operators.get(w) for w in op.wires)
+                for o in previous_ops_on_wires:
+                    if o is not None:
+                        for w in o.wires:
+                            self.seen_operators.pop(w)
+                for w in op.wires:
+                    self.seen_operators[w] = op
 
-            if op not in composable_rotations:
-                return super().interpret_operation(op)
+            return [
+                super(MergeRotationsInterpreter, self).interpret_operation(o)
+                for o in previous_ops_on_wires
+            ]
 
         def purge_seen_operators(self):
             ops_remaining = set(self.seen_operators.values())
