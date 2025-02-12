@@ -35,8 +35,9 @@ class VibrationalPES:
             expected to be the weights of Gauss-Hermite quadrature.
         uloc (TensorLike[float]): normal mode localization matrix with shape ``(m, m)`` where
             ``m = len(freqs)``
-        pes_data (list[TensorLike[float]]): one-mode, two-mode and three-mode potential energy
-            surface data computed along the normal modes
+        pes_data (list[TensorLike[float]]): list of one-mode, two-mode and three-mode potential
+             energy surface data , with shapes ``(m, l)``, ``(m, m, l, l)`` ``(m, m, m, l, l, l)``,
+             respectively, where ``m = len(freqs)`` and ``l > 0``
         dipole_data (list[TensorLike[float]]): one-mode, two-mode and three-mode dipole moment data
             computed along the normal modes
         localized (bool): Flag that the potential energy surface data correspond to localized normal
