@@ -29,11 +29,16 @@ class VibrationalPES:
 
     Args:
         freqs (array[float]): normal-mode frequencies in atomic units
-        grid (array[float]): grid points to compute a potential energy surface
-        gauss_weights (array[float]): weights associate with each point in ``grid``
-        uloc (TensorLike[float]): normal mode localization matrix
-        pes_data (list[TensorLike[float]]): potential energy surface data
-        dipole_data (list[TensorLike[float]]): dipole moment data computed along the normal modes
+        grid (array[float]): grid points to compute potential energy surface data. Currently,
+            expected to be the sample points os Gauss-Hermite quadrature.
+        gauss_weights (array[float]): weights associate with each point in ``grid``. Currently,
+            expected to be the weights of Gauss-Hermite quadrature.
+        uloc (TensorLike[float]): normal mode localization matrix with shape ``(m, m)`` where
+            ``m = len(freqs)``
+        pes_data (list[TensorLike[float]]): one-mode, two-mode and three-mode potential energy
+            surface data computed along the normal modes
+        dipole_data (list[TensorLike[float]]): one-mode, two-mode and three-mode dipole moment data
+            computed along the normal modes
         localized (bool): Flag that the potential energy surface data correspond to localized normal
             mode. Default is ``True``.
         dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input
@@ -42,30 +47,19 @@ class VibrationalPES:
 
     **Example**
 
-    This example shows how to construct the VibrationalPES object for a linear molecule with only
-    one vibrational normal mode. We assume that the potential energy surface data are obtained along
-    a 
+    This example shows how to construct the ~qchem.vibrational.VibrationalPES object for a linear
+    molecule with only one vibrational normal mode. The one-mode potential energy surface data are
+    obtained by sampling ``9`` points along the normal mode, with grid points and weights that
+    correspond to a Gauss-Hermite quadrature.
 
     >>> freqs = np.array([0.01885397])
     >>> grid, weights = np.polynomial.hermite.hermgauss(9)
     >>> pes_onebody = [[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
     ...                 0.00584504, 0.02881817, 0.08483433, 0.22025702]]
-    >>> pes_twobody = None
-    >>> dipole_onebody = [[[-1.92201700e-16,  1.45397041e-16, -1.40451549e-01],
-    ...                    [-1.51005108e-16,  9.53185441e-17, -1.03377032e-01],
-    ...                    [-1.22793018e-16,  7.22781963e-17, -6.92825934e-02],
-    ...                    [-1.96537436e-16, -5.86686504e-19, -3.52245369e-02],
-    ...                    [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
-    ...                    [ 5.24758835e-17, -1.40650833e-16,  3.69955543e-02],
-    ...                    [-4.52407941e-17,  1.38406311e-16,  7.60888733e-02],
-    ...                    [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
-    ...                    [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]]
-    >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
-    ...                          uloc=None, pes_data=[pes_onebody, pes_twobody],
-    ...                          dipole_data=[dipole_onebody], localized=False)
-    >>> vib_obj.freqs
+    >>> vib_pes = qml.qchem.VibrationalPES(freqs=freqs, grid=grid,
+    ...           gauss_weights=weights, pes_data=[pes_onebody])
+    >>> vib_pes.freqs
     array([0.01885397])
-
     """
 
     def __init__(

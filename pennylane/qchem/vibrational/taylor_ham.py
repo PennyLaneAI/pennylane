@@ -652,8 +652,8 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
         three_mode (array(float)): three_mode coefficients of the Taylor Hamiltonian with shape
             ``(m, m, m, l)`` where ``m = len(freqs)`` and ``l > 0``
         is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
-        uloc (array(array(float))): localization matrix, with shape ``(m, m)`` where
-            ``m = len(freqs)``, indicating the relationship between original and localized modes
+        uloc (array(array(float))): normal mode localization matrix with shape ``(m, m)`` where
+            ``m = len(freqs)``
 
     Returns:
         pennylane.bose.BoseSentence: Taylor bosonic hamiltonian
