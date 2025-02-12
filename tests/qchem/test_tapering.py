@@ -989,3 +989,44 @@ def test_split_pauli_sentence(ps_size, max_size):
         split_sentence = {**split_sentence, **ps}
 
     assert sentence == qml.pauli.PauliSentence(split_sentence)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
+            0,
+        ),
+        (
+            ["He", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
+                requires_grad=True,
+            ),
+            1,
+        ),
+    ],
+)
+def test_taper_jax_jit(symbols, geometry, charge):
+    r"""Test that an observable can be tapred within a jax-jit workflow."""
+
+    import jax
+
+    molecule = qml.qchem.Molecule(symbols, jax.numpy.array(geometry), charge)
+    hamiltonian, num_wires = qml.qchem.molecular_hamiltonian(molecule)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, num_wires)
+    paulix_sector = tuple(optimal_sector(hamiltonian, generators, molecule.n_electrons))
+
+    tapered_ham1 = qml.simplify(qml.taper(hamiltonian, generators, paulixops, paulix_sector))
+    tapered_ham2 = qml.simplify(
+        jax.jit(qml.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
+    )
+
+    assert qml.math.get_deep_interface(tapered_ham1.terms()[0]) == "jax"
+    assert qml.math.get_deep_interface(tapered_ham2.terms()[0]) == "jax"
+    qml.assert_equal(tapered_ham1, tapered_ham2)
