@@ -1353,52 +1353,6 @@ class TestDynamicDecomposeInterpreter:
         ),
     ]
 
-    @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
-    def test_uccsd(self, s_wires, d_wires, weights, n_repeats, _):
-        """Test that uccsd is correctly dynamically decomposed."""
-        cnots = 0
-        for s_wires_ in s_wires:
-            cnots += 4 * (len(s_wires_) - 1)
-
-        for d_wires_ in d_wires:
-            cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
-
-        cnots *= n_repeats
-
-        N = 6
-        wires = range(N)
-
-        ref_state = jnp.array([1, 1, 0, 0, 0, 0])
-
-        @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
-        def circuit():
-            qml.UCCSD(
-                weights,
-                wires,
-                s_wires=s_wires,
-                d_wires=d_wires,
-                init_state=ref_state,
-                n_repeats=n_repeats,
-            )
-
-        jaxpr = jax.make_jaxpr(circuit)()
-        print(jaxpr)
-
-    def test_arbitrary_state_prep(self):
-        """Test that arbitrary state prep is correctly dynamically decomposed."""
-
-        weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
-
-        @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=2), autograph=False)
-        def circuit():
-            qml.ArbitraryStatePreparation(weights, wires=[0, 1])
-
-        jaxpr = jax.make_jaxpr(circuit)()
-        print(jaxpr)
-
-
 class TestExpandPlxprTransformsDynamicDecompositions:
     """Unit tests for ``expand_plxpr_transforms`` with dynamic decompositions."""
 
