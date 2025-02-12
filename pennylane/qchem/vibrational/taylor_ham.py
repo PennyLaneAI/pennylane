@@ -749,29 +749,12 @@ def taylor_hamiltonian(
 
     **Example**
 
-    >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
-    >>> pes_twomode = np.zeros((1, 1, 9, 9))
-    >>> dipole_onemode = np.zeros((1, 9, 3))
-    >>> gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-    ...                           4.33e-01, 7.20e-01, 4.33e-01,
-    ...                           8.85e-02, 4.94e-03, 3.96e-05])
-    >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
-    >>> pes_object = qml.qchem.VibrationalPES(
-    ...     freqs=np.array([0.025]),
-    ...     grid=grid,
-    ...     uloc=np.array([[1.0]]),
-    ...     gauss_weights=gauss_weights,
-    ...     pes_data=[pes_onemode, pes_twomode],
-    ...     dipole_data=[dipole_onemode],
-    ...     localized=True,
-    ...     dipole_level=1,
-    ... )
-    >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
-    (
-        -0.003833496032473659 * X(0)
-        + (0.0256479442871582+0j) * I(0)
-        + (-0.013079509779221888+0j) * Z(0)
-    )
+    >>> freqs = np.array([0.0249722])
+    >>> pes_onemode = np.array([[0.08477, 0.01437, 0.00000, 0.00937, 0.03414]])
+    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode], localized=False)
+    >>> ham = qml.qchem.taylor_hamiltonian(pes_object)
+    >>> print(ham)
+    0.026123120450329353 * I(0) + -0.01325338030021957 * Z(0) + -0.0032539545260859464 * X(0)
     """
     mapping.lower().strip()
     if mapping not in ["binary", "unary"]:
