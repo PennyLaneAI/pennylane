@@ -4,10 +4,12 @@ qml.shadows
 Overview
 --------
 
+This module contains functionality for performing :doc:`classical shadows </demos/tutorial_diffable_shadows>` measurements.
+
 .. currentmodule:: pennylane
 
 Measurements
-------------
+^^^^^^^^^^^^
 
 .. autosummary::
     :toctree: api
@@ -16,7 +18,7 @@ Measurements
     ~shadow_expval
 
 Shadow class for classical post-processing
-------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
     :toctree: api
@@ -24,7 +26,7 @@ Shadow class for classical post-processing
     ~ClassicalShadow
 
 QNode transforms
-----------------
+^^^^^^^^^^^^^^^^
 
 .. autosummary::
     :toctree: api
