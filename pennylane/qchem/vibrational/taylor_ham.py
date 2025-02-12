@@ -615,9 +615,9 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
         one_mode (array(float)): first-order coefficients of the Taylor Hamiltonian with shape
             ``(m, l)`` where ``m = len(freqs)`` and ``l > 0``
         two_mode (array(float)): second-order coefficients of the Taylor Hamiltonian with shape
-            ``(m, m, l, l))`` where ``m = len(freqs)`` and ``l > 0``
+            ``(m, m, l))`` where ``m = len(freqs)`` and ``l > 0``
         three_mode (array(float)): third-order coefficients of the Taylor Hamiltonian with shape
-            ``(m, m, l, l, l, l)`` where ``m = len(freqs)`` and ``l > 0``
+            ``(m, m, m, l)`` where ``m = len(freqs)`` and ``l > 0``
         is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (array(array(float))): localization matrix indicating the relationship between original
             and localized modes
@@ -670,18 +670,50 @@ def taylor_hamiltonian(
 ):
     r"""Return Taylor vibrational Hamiltonian.
 
-    The Taylor vibrational Hamiltonian is defined in terms of coefficients :math:`\Phi^(n)`,
-    normal coordinate operators :math:`q` and momentum operators :math:`p` following Eq. 5 of
-    `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ as:
+    The Taylor vibrational Hamiltonian is defined as: in terms of kinetic :math:`T` and potential
+    components :math:`V` as:
 
     .. math::
 
-        H = \sum_{i\geq j} K_{ij} p_i  p_j + \sum_{i\geq j} \Phi_{ij}^{(2)}  q_i  q_j +
-        \sum_{i\geq j\geq k} \Phi_{ijk}^{(3)}  q_i  q_j  q_k + \sum_{i\geq j\geq k\geq l}
-        \Phi_{ijkl}^{(4)} q_i  q_j  q_k  q_l  + \cdots.
+        H = T + V,
 
-    This Hamiltonian can be represented in the bosonic basis by using equations defined in
-    Eqs. 6, 7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_:
+    where :math:`T` and :math:`V` are the kinetic and potential components, respectively. These
+    components are defined in terms of momentum :math:`p` and normal coordinate operators :math:`q`
+    following Eq. 5 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ as:
+
+    .. math::
+
+        T = \sum_{i\geq j} K_{ij} p_i  p_j, \\
+
+        V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
+        V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
+
+    where :math:`V_n` represents the :math:`n`-mode component of the potential energy surface
+    computed along the normal coordinate. The :math:`V_n` terms are defined as:
+
+    .. math::
+
+		\hat V_0 &\equiv \hat V(q_1=0,\cdots,q_M=0) = \hat V(\mathbf{R}^{(eq)}) \\
+		\hat V_1^{(i)}(q_i) &\equiv \hat V(0,\cdots,0,q_i,0,\cdots,0) - \hat V_0 \\
+		\hat V_2^{(i,j)}(q_i,q_j) &\equiv \hat V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+		\hat V_1^{(i)}(q_i) - \hat V_1^{(j)}(q_j) - \hat V_0  \label{eq:2_mode} \\
+		\nonumber \vdots \, .
+
+    These terms are then used in a multi-dimensional polynomial fit with a polynomial specified by
+    ``min_deg`` and ``max_deg`` to get :math:`n`-mode Taylor coefficients. For instance, the
+    one-mode Taylor coefficient :math:`\Phi` is related to the one-mode potential energy surface
+    data as:
+
+    .. math::
+
+        V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ...
+
+    Similarly, the two-mode and three-mode Taylor coeffiicents are computed if the two-mode and
+    three-mode potential energy surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and
+    :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
+
+    This real space form of the vibrational Hamiltonian can be represented in the bosonic basis by
+    using equations defined in Eqs. 6, 7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_:
 
     .. math::
 
@@ -702,15 +734,15 @@ def taylor_hamiltonian(
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
-        max_deg (int): maximum degree of Taylor form polynomial
-        min_deg (int): minimum degree of Taylor form polynomial
+        max_deg (int): maximum degree of the polynomial used to compute the coefficients
+        min_deg (int): minimum degree of the polynomial used to compute the coefficients
         mapping (str): Method used to map to qubit basis. Input values can be ``"binary"``
             or ``"unary"``. Default is ``"binary"``.
         n_states(int): maximum number of allowed bosonic states
         wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
             wires. If ``None``, integers used to label the bosonic states will be used as wire labels.
             Defaults to ``None``.
-        tol (float): tolerance for discarding the imaginary part of the coefficients
+        tol (float): tolerance for discarding the imaginary part of the coefficients during mapping
 
     Returns:
         Operator: the Taylor Hamiltonian
@@ -741,10 +773,6 @@ def taylor_hamiltonian(
         + (-0.013079509779221888+0j) * Z(0)
     )
     """
-    # taylor_hamiltonian(pes_one, pes_two, pes_three,
-    # max_deg=4, min_deg=3, mapping="binary", n_states=2, wire_map=None, tol=1e-12
-    # ):
-
     mapping.lower().strip()
     if mapping not in ["binary", "unary"]:
         raise ValueError(
