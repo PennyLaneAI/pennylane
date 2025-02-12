@@ -583,7 +583,7 @@ class TestMPSPrep:
             op.decomposition()
 
     def test_right_canonical(self):
-        """Checks that the function `_mps_to_right_canonical_representation` generates mps in the correct format"""
+        """Checks that the function `right_canonicalize_mps` generates mps in the correct format"""
 
         L = 4
         mps = (
