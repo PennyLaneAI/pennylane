@@ -110,7 +110,8 @@ def _generic_sparse_det(A):
 
 
 def _permutation_parity(perm):
-    """input: lu.perm_r; output: permutation parity"""
+    """Compute the parity of a permutation."""
+
     parity = 1
     visited = [False] * len(perm)
     for i in range(len(perm)):
