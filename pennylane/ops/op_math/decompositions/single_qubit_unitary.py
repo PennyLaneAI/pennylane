@@ -124,8 +124,7 @@ def _zyz_get_rotation_angles_sparse(U):
     thetas = 2 * math.arcsin(off_diagonal_elements)
 
     # Compute phi and omega from the angles of the top row; use atan2 to keep
-    # the angle within -np.pi and np.pi, and add very small value to the real
-    # part to avoid division by zero.
+    # the angle within -np.pi and np.pi
     angles_U00 = math.arctan2(math.imag(u00), math.real(u00))
     angles_U10 = math.arctan2(math.imag(u10), math.real(u10))
 
