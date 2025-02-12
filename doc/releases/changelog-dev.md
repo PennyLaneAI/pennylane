@@ -117,7 +117,6 @@
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
 
-
 * The template `MPSPrep` now has a gate decomposition. This enables its use with any device.
   [(#6896)](https://github.com/PennyLaneAI/pennylane/pull/6896)
 

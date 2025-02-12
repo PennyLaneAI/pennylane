@@ -23,8 +23,7 @@ from pennylane.wires import Wires
 
 
 def right_canonicalize_mps(mps):
-    """
-    Transform an MPS into a right-canonical MPS.
+    """Transform an MPS into a right-canonical MPS.
 
     Args:
         mps (list[Array]): List of tensors representing the MPS.
@@ -87,7 +86,7 @@ class MPSPrep(Operation):
 
 
     Args:
-        mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing a right-canonized MPS state
+        mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing a right-canonized MPS state
             as a product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
