@@ -45,9 +45,9 @@ def _convert_to_su2(U, return_global_phase=False):
         determinants = math.linalg.det(U)
     phase = math.angle(determinants) / 2
     U = (
-        math.cast_like(U, determinants) * math.exp(-1j * math.cast_like(phase, 1j))[:, None, None]
-        if not sp.sparse.issparse(U)
-        else U * math.exp(-1j * phase)
+        U * math.exp(-1j * phase)
+        if sp.sparse.issparse(U)
+        else math.cast_like(U, determinants) * math.exp(-1j * math.cast_like(phase, 1j))[:, None, None]
     )
 
     return (U, phase) if return_global_phase else U
