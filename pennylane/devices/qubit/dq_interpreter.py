@@ -14,6 +14,7 @@
 """
 This module contains a class for executing plxpr using default qubit tools.
 """
+from typing import Literal
 
 import jax
 import numpy as np
@@ -71,7 +72,11 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     """
 
     def __init__(
-        self, num_wires: int, shots: int | None = None, key: None | jax.numpy.ndarray = None
+        self,
+        num_wires: int,
+        shots: int | None = None,
+        key: None | jax.numpy.ndarray = None,
+        postselect_mode: Literal["fill-shots", "hw-like", "pad-invalid-samples"] = None,
     ):
         self.num_wires = num_wires
         self.shots = Shots(shots)
@@ -84,6 +89,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
 
         self.initial_key = key
         self.stateref = None
+        self.postselect_mode = postselect_mode
         super().__init__()
 
     def __getattr__(self, key):
