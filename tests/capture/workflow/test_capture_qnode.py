@@ -1278,6 +1278,35 @@ def test_qnode_static_argnums_pytree():
         assert res == circuit(*args)
 
 
+def test_qnode_static_argnums_jit():
+    """Test that static_argnums work correctly with jax.jit"""
+
+    dev = qml.device("default.qubit", wires=2)
+    args = (1.5, 2.5, 3.5)
+    static_argnums = (0, 1)
+
+    @qml.qnode(dev, static_argnums=static_argnums)
+    def circuit(a, b, c):
+        qml.RX(a, 0)
+        qml.RY(b + c, 1)
+
+        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+    jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+    assert len(qfunc_jaxpr.invars) == 1
+
+    assert qml.math.allclose(qfunc_jaxpr.eqns[0].invars[0].val, args[0])
+    assert qml.math.allclose(qfunc_jaxpr.eqns[1].invars[0].val, args[1])
+
+    # Empty capture_cache so we don't use cached jaxpr
+    circuit.capture_cache.clear()
+
+    res = jax.jit(circuit, static_argnums=static_argnums)(*args)
+    with qml.capture.pause():
+        assert res == circuit(*args)
+
+
 class TestQNodeCaptureCaching:
     """Unit tests for caching QNode executions with program capture."""
 
@@ -1578,3 +1607,47 @@ class TestQNodeCaptureCaching:
             {"0": jnp.arange(5), "1": jnp.arange(21, dtype=jnp.complex128)}, (8.1, 4.6)
         )
         assert spy.call_count > 1
+
+    def test_caching_jit(self):
+        """Test that caching does not impact jitting."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        jitted_circuit = jax.jit(circuit)
+        args = [jnp.array(1.5), jnp.array(2.5)]
+        res1 = jitted_circuit(args[0])
+        res2 = jitted_circuit(args[1])
+
+        with qml.capture.pause():
+            assert qml.math.allclose(res1, circuit(args[0]))
+            assert qml.math.allclose(res2, circuit(args[1]))
+
+    def test_caching_jit_static_argnums(self):
+        """Test that caching does not impact jitting with static_argnums."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev, static_argnums=1)
+        def circuit(x, y):
+            qml.RX(x, 0)
+            qml.RY(y, 1)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        jitted_circuit = jax.jit(circuit, static_argnums=1)
+        args = [
+            (jnp.array(1.5), 2.5),
+            (jnp.array(2.5), 2.5),
+            (jnp.array(1.5), 3.5),
+            (jnp.array(2.5), 3.5),
+        ]
+
+        for a in args:
+            res = jitted_circuit(*a)
+
+            with qml.capture.pause():
+                assert qml.math.allclose(res, circuit(*a))

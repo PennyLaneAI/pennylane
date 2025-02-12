@@ -610,7 +610,7 @@ class QNode:
         self.capture_cache = LRUCache(maxsize=1000)
         if isinstance(static_argnums, int):
             static_argnums = (static_argnums,)
-        self.static_argnums = static_argnums
+        self.static_argnums = sorted(static_argnums)
 
         # execution keyword arguments
         _validate_mcm_config(postselect_mode, mcm_method)
