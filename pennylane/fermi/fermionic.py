@@ -721,7 +721,7 @@ def _to_string(fermi_op, of=False):
     pl_to_of_map = {"+": "^", "-": ""}
 
     if len(fermi_op) == 0:
-        return "I"
+        return "I" if not of else ""
 
     op_list = ["" for _ in range(len(fermi_op))]
     for loc, wire in fermi_op:

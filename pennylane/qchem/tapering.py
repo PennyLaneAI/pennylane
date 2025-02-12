@@ -298,7 +298,8 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     paulix_wires = [x.wires[0] for x in paulixops]
 
     wires_tap = [i for i in wiremap.keys() if i not in paulix_wires]
-    wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
+    wires_ord = list(range(len(wires_tap)))
+    wiremap_tap = dict(zip(wires_tap, wires_ord))
 
     obs, val = [], qml.math.ones(len(ts_ps))
     for i, (pw, _) in enumerate(ts_ps.items()):
@@ -308,16 +309,23 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
 
         obs.append(
             qml.pauli.PauliWord({wiremap_tap[wire]: pw[wire] for wire in wires_tap}).operation(
-                wire_order=wires_tap
+                wire_order=wires_ord
             )
         )
 
     interface = qml.math.get_deep_interface(list(ps_h.values()))
     coeffs = qml.math.multiply(val, qml.math.array(list(ts_ps.values()), like=interface))
-    tapered_ham = qml.simplify(0.0 * qml.Identity(wires=wires_tap) + qml.dot(coeffs, obs))
+
+    if interface == "jax" and qml.math.is_abstract(coeffs):
+        tapered_ham = qml.sum(*(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, obs)))
+    else:
+        if qml.math.all(qml.math.abs(qml.math.imag(coeffs)) <= 1e-8):
+            coeffs = qml.math.real(coeffs)
+        tapered_ham = qml.simplify(0.0 * qml.Identity(wires=wires_ord) + qml.dot(coeffs, obs))
+
     # If simplified Hamiltonian is missing wires, then add wires manually for consistency
-    if set(wires_tap) != tapered_ham.wires.toset():
-        return 0.0 * qml.Identity(wires=wires_tap) + tapered_ham
+    if set(wires_ord) != tapered_ham.wires.toset():
+        return 0.0 * qml.Identity(wires=wires_ord) + tapered_ham
 
     return tapered_ham
 
