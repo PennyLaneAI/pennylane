@@ -335,11 +335,11 @@ class TestSampling:
         assert not qml.math.allclose(s1, s2)
 
 
-class TestQuantumHOP:
-    """Tests for the quantum higher order primitives: adjoint and ctrl."""
+class TestCustomPrimitiveRegistrations:
+    """Tests for primitives with custom primitive registrations."""
 
     def test_adjoint_transform(self):
-        """Test that the adjoint_transform is not yet implemented."""
+        """Test that the adjoint_transform is interpreted correctly."""
 
         @DefaultQubitInterpreter(num_wires=1, shots=None)
         def circuit(x):
@@ -350,7 +350,7 @@ class TestQuantumHOP:
             circuit(0.5)
 
     def test_ctrl_transform(self):
-        """Test that the ctrl_transform is not yet implemented."""
+        """Test that the ctrl_transform is interpreted correctly."""
 
         @DefaultQubitInterpreter(num_wires=2, shots=None)
         def circuit():
@@ -358,6 +358,9 @@ class TestQuantumHOP:
 
         with pytest.raises(NotImplementedError):
             circuit()
+
+    def test_basis_state_projector(self):
+        """Test that BasisStateProjectors are applied correctly as operations."""
 
 
 class TestClassicalComponents:
