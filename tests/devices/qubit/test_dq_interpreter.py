@@ -17,7 +17,7 @@ This module tests the default qubit interpreter.
 import pytest
 
 jax = pytest.importorskip("jax")
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 from jax import numpy as jnp  # pylint: disable=wrong-import-position
 
@@ -26,13 +26,6 @@ import pennylane as qml  # pylint: disable=wrong-import-position
 # must be below the importorskip
 # pylint: disable=wrong-import-position
 from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 def test_initialization():
