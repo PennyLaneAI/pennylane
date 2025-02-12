@@ -197,7 +197,7 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def compute_sparse_matrix(U: TensorLike):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a sparse matrix (static method).
+        r"""Representation of the operator as a sparse matrix.
 
         Args:
             U (tensor_like): unitary matrix
