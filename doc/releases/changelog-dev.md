@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
+  following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
+  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
+
 <h3>Improvements 🛠</h3>
 
 * Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
@@ -281,6 +285,16 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.GlobalPhase.sparse_matrix` now correctly returns a sparse matrix of the same shape as `matrix`.
+  [(#6940)](https://github.com/PennyLaneAI/pennylane/pull/6940)
+
+* `qml.expval` no longer silently casts to a real number when observable coefficients are imaginary.
+  [(#6939)](https://github.com/PennyLaneAI/pennylane/pull/6939)
+
+* Fixed `qml.wires.Wires` initialization to disallow `Wires` objects as wires labels.
+  Now, `Wires` is idempotent, e.g. `Wires([Wires([0]), Wires([1])])==Wires([0, 1])`.
+  [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933)
 
 * `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
   [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
