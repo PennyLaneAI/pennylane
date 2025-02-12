@@ -541,7 +541,7 @@ class PauliSentence(dict):
 
     >>> ps = PauliSentence({
     ...     PauliWord({0:'X', 1:'Y'}): 1.23,
-    ...     PauliWord({2:'Z', 0:'Y'}): -0.45j,
+    ...     PauliWord({2:'Z', 0:'Y'}): -0.45j
     ... })
     >>> ps
     1.23 * X(0) @ Y(1)
