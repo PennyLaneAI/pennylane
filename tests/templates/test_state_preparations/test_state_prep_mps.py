@@ -19,9 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.templates.state_preparations.state_prep_mps import (
-    right_canonicalize_mps,
-)
+from pennylane.templates.state_preparations.state_prep_mps import right_canonicalize_mps
 
 
 class TestMPSPrep:

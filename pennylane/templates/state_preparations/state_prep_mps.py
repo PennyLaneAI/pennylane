@@ -26,7 +26,7 @@ def right_canonicalize_mps(mps):
     """Transform an MPS into a right-canonical MPS.
 
     Args:
-        mps (list[Array]): List of tensors representing the MPS.
+        mps (list[TensorLike]): List of tensors representing the MPS.
 
     Returns:
         A list of tensors representing the MPS in right-canonical form.
@@ -105,6 +105,7 @@ class MPSPrep(Operation):
             Default is ``False``.
 
     The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
+
     A right canonicalization of the MPS is required for non-tensor devices.
 
     .. seealso:: :func:`~.right_canonicalize_mps`.
@@ -169,7 +170,7 @@ class MPSPrep(Operation):
 
         .. math::
 
-            \sum_{\alpha_j} A^{(j)}_{\alpha_{j-1}, s, \alpha_j} \left( A^{(j)}_{\alpha'_{j-1}, s, \alpha_j} \right)^* = \delta_{\alpha_{j-1}, \alpha'_{j-1}}
+            \sum_{d_{j,0}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}}
 
         The following example shows a valid MPS input containing four tensors with
         dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
