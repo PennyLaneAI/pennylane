@@ -3,54 +3,120 @@
 from __future__ import annotations
 
 from itertools import product
-from math import sqrt
 from typing import TYPE_CHECKING, Tuple, Union
 
 import numpy as np
 import scipy as sp
 
 if TYPE_CHECKING:
-    from pennylane.labs.vibronic.vibronic import VibronicTerm, VibronicWord
+    from pennylane.labs.pf.realspace import RealspaceOperator, RealspaceSum
 
 
 def position_operator(
-    gridpoints: int, power: int, sparse: bool = False
-) -> Union[np.ndarray, sp.sparse.csr_matrix]:
+    gridpoints: int, sparse: bool = False, basis: str = "realspace"
+) -> Union[np.ndarray, sp.sparse.csr_array]:
     """Returns a discretization of the position operator"""
 
-    values = ((np.arange(gridpoints) - gridpoints / 2) * (np.sqrt(2 * np.pi / gridpoints))) ** power
+    if basis == "realspace":
+        matrix = _realspace_position(gridpoints)
+        return sp.sparse.csr_array(matrix) if sparse else matrix
 
-    if sparse:
-        return sp.sparse.diags(values, 0, format="csr")
+    if basis == "harmonic":
+        matrix = _harmonic_position(gridpoints)
+        return sp.sparse.csr_array(matrix) if sparse else matrix
 
+    raise ValueError(f'"{basis}" is not a valid basis')
+
+
+def _realspace_position(gridpoints: int) -> np.ndarray:
+    values = (np.arange(gridpoints) - gridpoints / 2) * (np.sqrt(2 * np.pi / gridpoints))
     return np.diag(values)
 
 
-def momentum_operator(
-    gridpoints: int, power: int, sparse: bool = False
-) -> Union[np.ndarray, sp.sparse.csr_matrix]:
-    """Returns a discretization of the momentum operator"""
+def _harmonic_position(gridpoints: int) -> np.ndarray:
+    rows = np.array(list(range(1, gridpoints)) + list(range(0, gridpoints - 1)))
+    cols = np.array(list(range(0, gridpoints - 1)) + list(range(1, gridpoints)))
+    vals = np.array([np.sqrt(i) for i in range(1, gridpoints)] * 2)
 
-    values = np.arange(gridpoints)
-    values[gridpoints // 2 :] -= gridpoints
-    values = (values * (np.sqrt(2 * np.pi / gridpoints))) ** power
-    dft = sp.linalg.dft(gridpoints, scale="sqrtn")
-    matrix = dft @ np.diag(values) @ dft.conj().T
-
-    if sparse:
-        return sp.sparse.csr_matrix(matrix)
+    matrix = np.zeros(shape=(gridpoints, gridpoints))
+    matrix[rows, cols] = vals
 
     return matrix
 
 
-def op_to_matrix(
-    op: str, gridpoints: int, sparse: bool = False
+def momentum_operator(
+    gridpoints: int, sparse: bool = False, basis: str = "realspace"
+) -> Union[np.ndarray, sp.sparse.csr_array]:
+    """Returns a discretization of the momentum operator"""
+
+    if basis == "realspace":
+        matrix = _realspace_momentum(gridpoints)
+        return sp.sparse.csr_array(matrix) if sparse else matrix
+
+    if basis == "harmonic":
+        matrix = _harmonic_momentum(gridpoints)
+        return sp.sparse.csr_array(matrix) if sparse else matrix
+
+    raise ValueError(f'"{basis}" is not a valid basis')
+
+
+def _realspace_momentum(gridpoints: int) -> np.ndarray:
+    values = np.arange(gridpoints)
+    values[gridpoints // 2 :] -= gridpoints
+    values = values * (np.sqrt(2 * np.pi / gridpoints))
+    dft = sp.linalg.dft(gridpoints, scale="sqrtn")
+    matrix = dft @ np.diag(values) @ dft.conj().T
+
+    return matrix
+
+
+def _harmonic_momentum(gridpoints: int) -> np.ndarray:
+    rows = np.array(list(range(1, gridpoints)) + list(range(0, gridpoints - 1)))
+    cols = np.array(list(range(0, gridpoints - 1)) + list(range(1, gridpoints)))
+    vals = np.array(
+        [np.sqrt(i) for i in range(1, gridpoints)] + [-np.sqrt(i) for i in range(1, gridpoints)]
+    )
+
+    matrix = np.zeros(shape=(gridpoints, gridpoints))
+    matrix[rows, cols] = vals
+
+    return matrix
+
+
+def creation_operator(gridpoints: int, sparse: bool = False) -> Union[np.ndarray, sp.sparse.array]:
+    """Return a matrix representation of the creation operator"""
+    rows = np.array(range(0, gridpoints - 1))
+    cols = np.array(range(1, gridpoints))
+    vals = np.array([np.sqrt(i) for i in range(1, gridpoints)])
+
+    matrix = np.zeros(shape=(gridpoints, gridpoints))
+    matrix[rows, cols] = vals
+
+    return sp.sparse.csr_array(matrix) if sparse else matrix
+
+
+def annihilation_operator(
+    gridpoints: int, sparse: bool = False
+) -> Union[np.ndarray, sp.sparse.array]:
+    """Return a matrix representation of the annihilation operator"""
+    rows = np.array(range(1, gridpoints))
+    cols = np.array(range(0, gridpoints - 1))
+    vals = np.array([np.sqrt(i) for i in range(1, gridpoints)])
+
+    matrix = np.zeros(shape=(gridpoints, gridpoints))
+    matrix[rows, cols] = vals
+
+    return sp.sparse.csr_array(matrix) if sparse else matrix
+
+
+def string_to_matrix(
+    op: str, gridpoints: int, sparse: bool = False, basis: str = "realspace"
 ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
     """Return a csr matrix representation of a Vibronic op"""
 
     matrix = _identity(gridpoints, sparse=sparse)
-    p = momentum_operator(gridpoints, 1, sparse=sparse)
-    q = position_operator(gridpoints, 1, sparse=sparse)
+    p = momentum_operator(gridpoints, basis=basis, sparse=sparse)
+    q = position_operator(gridpoints, basis=basis, sparse=sparse)
 
     for char in op:
         if char == "P":
@@ -66,29 +132,14 @@ def op_to_matrix(
     return matrix
 
 
-def term_to_matrix(
-    term: VibronicTerm, modes: int, gridpoints: int, sparse: bool = False
-) -> Union[np.ndarray, sp.sparse.csr_matrix]:
-    """Return a matrix representation of a VibronicTerm"""
-
-    matrices = [op_to_matrix(op, gridpoints, sparse=sparse) for op in term.ops]
-
-    final_matrix = _zeros((gridpoints**modes, gridpoints**modes), sparse=sparse)
-    for index in product(range(modes), repeat=len(term.ops)):
-        matrix = _single_term_matrix(modes, gridpoints, index, matrices, sparse=sparse)
-        matrix *= term.coeffs.compute(index)
-        final_matrix += matrix
-
-    return final_matrix
-
-
-def _single_term_matrix(
+def tensor_with_identity(
     modes: int,
     gridpoints: int,
     index: Tuple[int],
-    ops: Tuple[Union[np.ndarray, sp.sparse.csr_matrix]],
+    ops: Tuple[Union[np.ndarray, sp.sparse.csr_array]],
     sparse: bool = False,
-) -> Union[np.ndarray, sp.sparse.csr_matrix]:
+) -> Union[np.ndarray, sp.sparse.csr_array]:
+    """Tensor the input matrices with the identity"""
     lookup = {}
 
     for mode in range(modes):
@@ -105,18 +156,6 @@ def _single_term_matrix(
             matrix = sp.linalg.block_diag(*[matrix] * gridpoints)
 
     return matrix
-
-
-def word_to_matrix(
-    word: VibronicWord, modes: int, gridpoints: int, sparse: bool = False
-) -> sp.sparse.csr_matrix:
-    """Return a csr matrix representation of a VibronicWord"""
-
-    final_matrix = _zeros((gridpoints**modes, gridpoints**modes), sparse=sparse)
-    for op in word.ops:
-        final_matrix += term_to_matrix(op, modes, gridpoints, sparse=sparse)
-
-    return final_matrix
 
 
 def _identity(dim: int, sparse: bool) -> Union[np.ndarray, sp.sparse.csr_matrix]:
@@ -145,4 +184,4 @@ def _zeros(shape: Tuple[int], sparse: bool = False):
 
 def op_norm(gridpoints: int) -> float:
     """The norm of P and Q"""
-    return sqrt(gridpoints * np.pi / 2)
+    return np.sqrt(gridpoints * np.pi / 2)

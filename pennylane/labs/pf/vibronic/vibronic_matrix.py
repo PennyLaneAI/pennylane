@@ -11,7 +11,7 @@ import scipy as sp
 
 from pennylane.labs.pf import Fragment
 from pennylane.labs.pf.realspace import RealspaceSum
-from pennylane.labs.pf.utils import _kron, _zeros, is_pow_2, op_norm, word_to_matrix
+from pennylane.labs.pf.utils import _kron, _zeros, is_pow_2, op_norm
 
 
 class VibronicMatrix(Fragment):
@@ -67,7 +67,7 @@ class VibronicMatrix(Fragment):
         dim = self.states * gridpoints**self.modes
         matrix = _zeros((dim, dim), sparse=sparse)
 
-        for index, word in self._blocks.items():
+        for index, rs_sum in self._blocks.items():
             if sparse:
                 data = np.array([1])
                 indices = (np.array([index[0]]), np.array([index[1]]))
@@ -77,7 +77,7 @@ class VibronicMatrix(Fragment):
                 indicator = np.zeros(shape=(self.states, self.states))
                 indicator[index] = 1
 
-            block = word_to_matrix(word, self.modes, gridpoints, sparse=sparse)
+            block = rs_sum.matrix(gridpoints, self.modes, basis="realspace", sparse=sparse)
             matrix += _kron(indicator, block)
 
         return matrix
@@ -239,7 +239,7 @@ class VibronicMatrix(Fragment):
 
         return top_left, top_right, bottom_left, bottom_right
 
-    def mul_state(self, state):
+    def apply(self, state):
         raise NotImplementedError
 
 

@@ -7,7 +7,8 @@ from .matrix_ops import (
     momentum_operator,
     position_operator,
     op_norm,
-    word_to_matrix,
+    string_to_matrix,
+    tensor_with_identity,
 )
 
 from .utils import coeffs, is_pow_2

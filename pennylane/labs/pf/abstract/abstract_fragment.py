@@ -37,6 +37,6 @@ class Fragment(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def mul_state(self, state):
+    def apply(self, state):
         """Apply to a state on the right"""
         raise NotImplementedError

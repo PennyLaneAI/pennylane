@@ -113,16 +113,14 @@ class TestMatrix:
         assert np.allclose((scalar * vham).matrix(gridpoints), scalar * vham.matrix(gridpoints))
 
     single_term_params = [
-        ((3, 4, (0,), [position_operator(4, 1)]), np.kron(position_operator(4, 1), np.eye(4**2))),
+        ((3, 4, (0,), [position_operator(4)]), np.kron(position_operator(4), np.eye(4**2))),
         (
-            (4, 4, (0, 1), [position_operator(4, 1), momentum_operator(4, 1)]),
-            np.kron(position_operator(4, 1), np.kron(momentum_operator(4, 1), np.eye(4**2))),
+            (4, 4, (0, 1), [position_operator(4), momentum_operator(4)]),
+            np.kron(position_operator(4), np.kron(momentum_operator(4), np.eye(4**2))),
         ),
         (
-            (4, 4, (1, 1), [position_operator(4, 1), momentum_operator(4, 1)]),
-            np.kron(
-                np.eye(4), np.kron(position_operator(4, 1) @ momentum_operator(4, 1), np.eye(4**2))
-            ),
+            (4, 4, (1, 1), [position_operator(4), momentum_operator(4)]),
+            np.kron(np.eye(4), np.kron(position_operator(4) @ momentum_operator(4), np.eye(4**2))),
         ),
     ]
 

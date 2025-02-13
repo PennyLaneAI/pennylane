@@ -5,12 +5,14 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from itertools import product
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Union
 
 import numpy as np
+import scipy as sp
 
 from pennylane.labs.pf.abstract import Fragment
-from pennylane.labs.pf.utils import op_norm
+from pennylane.labs.pf.utils import _zeros, op_norm, string_to_matrix, tensor_with_identity
+from pennylane.labs.pf.wavefunctions import HOState
 
 from .tree import Node
 
@@ -21,6 +23,26 @@ class RealspaceOperator:
     def __init__(self, ops: Tuple[str], coeffs: Node) -> RealspaceOperator:
         self.ops = ops
         self.coeffs = coeffs
+
+    def matrix(
+        self, gridpoints: int, modes: int, basis: str = "realspace", sparse: bool = False
+    ) -> Union[np.ndarray, sp.sparse.csr_array]:
+        """Return a matrix representation of the operator"""
+
+        matrices = [string_to_matrix(op, gridpoints, basis=basis, sparse=sparse) for op in self.ops]
+        final_matrix = _zeros(shape=(gridpoints**modes, gridpoints**modes), sparse=sparse)
+
+        if sparse:
+            indices = self.coeffs.nonzero()
+        else:
+            indices = product(range(modes), repeat=len(self.ops))
+
+        for index in indices:
+            matrix = tensor_with_identity(modes, gridpoints, index, matrices, sparse=sparse)
+            matrix *= self.coeffs.compute(index)
+            final_matrix += matrix
+
+        return final_matrix
 
     def __add__(self, other: RealspaceOperator) -> RealspaceOperator:
         if self.is_zero:
@@ -93,12 +115,13 @@ class RealspaceSum(Fragment):
     """The RealspaceSum class"""
 
     def __init__(self, ops: Sequence[RealspaceOperator]) -> RealspaceSum:
+        # pylint: disable=unnecessary-lambda
+
         ops = tuple(filter(lambda op: not op.is_zero, ops))
         self.is_zero = len(ops) == 0
 
-        self._lookup = defaultdict(
-            lambda: RealspaceOperator.zero_term()
-        )  # pylint: disable=unnecessary-lambda
+        self._lookup = defaultdict(lambda: RealspaceOperator.zero_term())
+
         for op in ops:
             self._lookup[op.ops] += op
 
@@ -168,6 +191,15 @@ class RealspaceSum(Fragment):
         """Return a RealspaceSum representing 0"""
         return RealspaceSum([RealspaceOperator.zero_term()])
 
+    def matrix(self, gridpoints: int, modes: int, basis: str = "realspace", sparse: bool = False):
+        """Return a matrix representation of the RealspaceSum"""
+
+        final_matrix = _zeros(shape=(gridpoints**modes, gridpoints**modes), sparse=sparse)
+        for op in self.ops:
+            final_matrix += op.matrix(gridpoints, modes, basis=basis, sparse=sparse)
+
+        return final_matrix
+
     def norm(self, gridpoints: int, modes: int, sparse: bool = False) -> float:
         # pylint: disable=eval-used
 
@@ -196,5 +228,14 @@ class RealspaceSum(Fragment):
 
         return norm
 
-    def mul_state(self, state):
-        pass
+    def apply(self, state: HOState) -> HOState:
+        if not isinstance(state, HOState):
+            raise TypeError
+
+        mat = self.matrix(state.gridpoints, state.modes)
+
+        return HOState.from_scipy(
+            state.modes,
+            state.gridpoints,
+            mat @ state.vector,
+        )
