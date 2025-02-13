@@ -19,7 +19,6 @@ from collections.abc import Sequence
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as onp
-import scipy as sp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
@@ -371,7 +370,8 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
-    if sp.sparse.issparse(x):
+    import scipy # pylint: disable=import-outside-toplevel
+    if scipy.sparse.issparse(x):
         return x.dot(y)
 
     return np.dot(x, y, like=like)
