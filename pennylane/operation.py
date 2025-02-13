@@ -1381,7 +1381,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @classproperty
     def decompositions(self) -> list[DecompositionRule]:
         """A list of decomposition rules for the operator type."""
-        return self._decompositions
+        return type(self)._decompositions
 
     @classmethod
     def add_decomposition(cls, decomposition: DecompositionRule):
