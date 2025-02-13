@@ -223,6 +223,7 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 import abc
 import copy
 import warnings
+from abc import abstractmethod
 from collections.abc import Hashable, Iterable
 from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
@@ -1393,13 +1394,30 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @property
     def resource_params(self) -> dict:
         """A dictionary containing the minimal information needed to compute a
-        resource estimate of the operator's decomposition."""
-        return {}
+        resource estimate of the operator's decomposition.
+
+        For most operators, this should just be an empty dictionary, but a default implementation
+        is intentionally not provided so that each operator type is forced to explicitly define its
+        resource params.
+
+        """
+        raise NotImplementedError
 
     @property
     def resource_rep(self) -> CompressedResourceOp:
         """The compressed resource representation of this operator."""
-        return CompressedResourceOp(type(self), self.resource_params)
+        return self.__class__.make_resource_rep(**self.resource_params)
+
+    @classmethod
+    def make_resource_rep(cls, **resource_params) -> CompressedResourceOp:
+        """Create a compressed resource representation of the operator.
+
+        Typically, this method should simply return ``CompressedResourceOp(cls, resource_params)``,
+        but a default implementation is intentionally not provided to force each operator type
+        to define how its resource representation is constructed more verbosely.
+
+        """
+        raise NotImplementedError
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
