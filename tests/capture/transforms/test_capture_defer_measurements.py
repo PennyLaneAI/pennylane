@@ -140,6 +140,21 @@ class TestDeferMeasurementsInterpreter:
         ]
         assert ops == expected_ops
 
+    def test_multiple_mcms_as_gate_parameters_error(self):
+        """Test that multiple MCM parameters for a single operator raises an error."""
+
+        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        def f(x):
+            m1 = qml.measure(0)
+            m2 = qml.measure(0)
+            qml.Rot(x, m1, m2, 0)
+
+        with pytest.raises(
+            qml.capture.CaptureError,
+            match="Cannot create operations with multiple parameters based on",
+        ):
+            _ = jax.make_jaxpr(f)(1.5)
+
     def test_mcms_as_nested_gate_parameters(self):
         """Test that MCMs can be used as gate parameters."""
 

@@ -119,7 +119,7 @@ def _get_plxpr_defer_measurements():
         # pylint: disable=import-outside-toplevel
         import jax
 
-        from pennylane.capture import PlxprInterpreter
+        from pennylane.capture import CaptureError, PlxprInterpreter
         from pennylane.capture.primitives import cond_prim, ctrl_transform_prim, measure_prim
     except ImportError:  # pragma: no cover
         return None, None
@@ -148,7 +148,7 @@ def _get_plxpr_defer_measurements():
             """
             self.state = {"cur_idx": 0}
 
-        def interpret_dynamic_operation(self, data, struct, idx):
+        def interpret_dynamic_operation(self, data, struct, inds):
             """Interpret an operation that uses mid-circuit measurement outcomes as parameters.
 
             * This will not work if mid-circuit measurement values are used to specify
@@ -158,18 +158,25 @@ def _get_plxpr_defer_measurements():
             Args:
                 data (TensorLike): Flattened data of the operator
                 struct (PyTreeDef): Pytree structure of the operator
-                idx (int): Index of mid-circuit measurement value in ``data``
+                inds (Sequence[int]): Indices of mid-circuit measurement values in ``data``
 
             Returns:
                 None
             """
+            if len(inds) > 1:
+                raise CaptureError(
+                    "Cannot create operations with multiple parameters based on "
+                    "mid-circuit measurements."
+                )
+
+            idx = inds[0]
             mv = data[idx]
             for branch, value in mv.items():
                 data[idx] = value
                 op = jax.tree_util.tree_unflatten(struct, data)
                 qml.ctrl(op, mv.wires, control_values=branch)
 
-        def interpret_operation(self, op: "pennylane.operation.Operator"):
+        def interpret_operation(self, op: "qml.operation.Operator"):
             """Interpret a PennyLane operation instance.
 
             Args:
@@ -186,9 +193,13 @@ def _get_plxpr_defer_measurements():
             """
             data, struct = jax.tree_util.tree_flatten(op)
 
+            mcm_data_inds = []
             for i, d in enumerate(data):
                 if isinstance(d, MeasurementValue):
-                    return self.interpret_dynamic_operation(data, struct, i)
+                    mcm_data_inds.append(i)
+
+            if mcm_data_inds:
+                return self.interpret_dynamic_operation(data, struct, mcm_data_inds)
 
             return jax.tree_util.tree_unflatten(struct, data)
 
