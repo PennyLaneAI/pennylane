@@ -934,12 +934,13 @@ class TestBlockEncode:
             ([[1, 0], [0, 1]], [0, 1], {"norm": 1.0, "subspace": (2, 2, 4)}),
             (pnp.array([[1, 0], [0, 1]]), range(2), {"norm": 1.0, "subspace": (2, 2, 4)}),
             (pnp.identity(3), ["a", "b", "c"], {"norm": 1.0, "subspace": (3, 3, 8)}),
+            (csr_matrix(pnp.identity(3)), ["a", "b", "c"], {"norm": 1.0, "subspace": (3, 3, 8)}),
         ],
     )
     def test_accepts_various_types(self, input_matrix, wires, expected_hyperparameters):
         """Test that BlockEncode outputs expected attributes for various input matrix types."""
         op = qml.BlockEncode(input_matrix, wires)
-        assert np.allclose(op.parameters, input_matrix)
+        assert qml.math.allclose(op.parameters[0], input_matrix)
         assert op.hyperparameters["norm"] == expected_hyperparameters["norm"]
         assert op.hyperparameters["subspace"] == expected_hyperparameters["subspace"]
 
