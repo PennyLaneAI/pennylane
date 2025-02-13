@@ -179,3 +179,61 @@ class QubitGraph:
         for node in self._graph_qubits.nodes:
             # TODO: Having the QubitGraph stored in a dictionary under the key 'qubit' feels clunky
             self._graph_qubits.nodes[node]["qubits"] = QubitGraph()
+
+    def init_graph_surface_code_17(self):
+        r"""Initialize the QubitGraph's underlying qubits as the 17-qubit surface code graph from
+
+            Tomita & Svore, 2014, Low-distance Surface Codes under Realistic Quantum Noise.
+                https://arxiv.org/abs/1404.3747.
+
+        This graph structure is commonly referred to as the "ninja star" surface code given its
+        shape.
+
+        The nodes are indexed as follows, where 'd' refers to data qubits and 'a' to ancilla qubits:
+
+                          a9
+                         /   \
+                d0     d1     d2
+               /  \   /  \   /
+            a10    a11    a12
+               \  /   \  /   \
+                d3     d4     d5
+                  \   /  \   /  \
+                   a13    a14    a15
+                  /   \  /   \  /
+                d6     d7     d9
+                  \   /
+                   a16
+        """
+        if self.is_initialized:
+            self._warn_reinitialization()
+            return
+
+        data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
+        anci_qubits = [
+            ("anci", i) for i in range(9, 17)
+        ]  # 8 ancilla qubits, indexed 9, 10, ..., 16
+
+        self._graph_qubits = nx.Graph()
+        self._graph_qubits.add_nodes_from(data_qubits)
+        self._graph_qubits.add_nodes_from(anci_qubits)
+
+        # Adjacency list showing the connectivity of each ancilla qubit to its neighbouring data qubits
+        anci_adjacency_list = {
+            9: [1, 2],
+            10: [0, 3],
+            11: [0, 1, 3, 4],
+            12: [1, 2, 4, 5],
+            13: [3, 4, 6, 7],
+            14: [4, 5, 7, 8],
+            15: [5, 8],
+            16: [6, 7],
+        }
+
+        for anci_node, data_nodes in anci_adjacency_list.items():
+            for data_node in data_nodes:
+                self._graph_qubits.add_edge(("anci", anci_node), ("data", data_node))
+
+        for node in self._graph_qubits.nodes:
+            # TODO: Having the QubitGraph stored in a dictionary under the key 'qubit' feels clunky
+            self._graph_qubits.nodes[node]["qubits"] = QubitGraph()

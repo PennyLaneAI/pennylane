@@ -14,8 +14,8 @@
 
 """Unit tests for the qubit_graph module"""
 
-import pytest
 import networkx as nx
+import pytest
 
 from pennylane.ftqc.qubit_graph import QubitGraph
 
@@ -103,6 +103,20 @@ class TestQubitGraphsInitialization:
 
         for node in qubit.nodes:
             assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
+
+    def init_graph_surface_code_17(self):
+        """Test that we can initialize a QubitGraph with the underlying qubits following the
+        structure of the 17-qubit surface code.
+        """
+        qubit = QubitGraph()
+        qubit.init_graph_surface_code_17()
+
+        assert len(qubit.nodes) == 17
+        assert len(qubit.edges) == 24
+
+        for node in qubit.nodes:
+            assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
+
 
 class TestQubitGraphsWarnings:
     """Tests for QubitGraph warning messages"""
