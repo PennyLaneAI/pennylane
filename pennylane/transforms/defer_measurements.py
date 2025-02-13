@@ -649,7 +649,7 @@ def defer_measurements(
         * mid-circuit measurement values cannot be used in the condition for a
           :func:`~pennylane.while_loop`.
         * :func:`~pennylane.measure` cannot be used inside the body of loop primitives
-          primitives (:func:`~pennylane.while_loop`, :func:`~pennylane.for_loop`).
+          (:func:`~pennylane.while_loop`, :func:`~pennylane.for_loop`).
         * If a branch of :func:`~pennylane.cond` uses mid-circuit measurements as its
           predicate, then all other branches must also use mid-circuit measurement values
           as predicates.
