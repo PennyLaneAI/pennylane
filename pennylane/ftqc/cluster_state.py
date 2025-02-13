@@ -53,13 +53,8 @@ class ClusterState:
     def set_graph(self, graph: nx.Graph):
         self._graph = graph
 
-    def set_graph(self, dims: list):
-        assert len(dims) > 0 and len(dims) < 4, f"{len(dims)}-dimension lattice is not supported."
-        self._num_vertex = math.prod(dims)
-        self._graph = nx.grid_graph(dims)
-        self._graph.add_node_from(list(range(self._num_vertex)))
-
     def set_grid_graph(self, dims: list):
+        assert len(dims) > 0 and len(dims) < 4, f"{len(dims)}-dimension lattice is not supported."
         self._graph = nx.grid_graph(dims)
         # map n-dimension index labels to 1d index
         mapping = {}
@@ -74,7 +69,6 @@ class ClusterState:
             neighbors = nx.all_neighbors(self._graph, node)
             stabilizer = ["X" + str(node)]
             for neighbor in neighbors:
-                print(neighbor)
                 stabilizer.append("Z"+str(neighbor))
             stabilizers[node] = stabilizer
     
@@ -82,7 +76,7 @@ class ClusterState:
         nx.set_node_attributes(self._graph, stabilizers, "stabilizers")
 
         # set attribute to edges
-        edge_labels = "CNOT"#*nx.number_of_edges(g)
+        edge_labels = "CNOT"
         nx.set_edge_attributes(self._graph, edge_labels, "ops")
     
     def draw(self):
