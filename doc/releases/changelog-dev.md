@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
+  Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
+  [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
 * Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
@@ -198,6 +202,12 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
+  [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
@@ -350,6 +360,7 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Korbinian Kottmann,
 Christina Lee,
 Mudit Pandey,
 Andrija Paurevic,

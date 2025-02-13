@@ -24,9 +24,8 @@ from pennylane.labs.dla import (
     check_orthonormal,
     orthonormalize,
     structure_constants_dense,
-    trace_inner_product,
 )
-from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli import PauliSentence, PauliWord, trace_inner_product
 
 ## Construct some example DLAs
 # TFIM
