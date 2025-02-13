@@ -345,6 +345,27 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    def test_qnode_prim_with_arguments(self):
+        """Test that the transform works correctly when applied with qnode_prim."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        @qml.qnode(dev)
+        def circuit(state1):
+            qml.AmplitudeEmbedding(state1, wires=0)
+            qml.Hadamard(0)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array([0.0, 1.0]))
+
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[-4].primitive == qml.AmplitudeEmbedding._primitive
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
     def test_grad_prim(self):
         """Test that the transform works correctly when applied with grad_prim."""
 
