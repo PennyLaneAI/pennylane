@@ -47,10 +47,13 @@ def flatten_state(state, num_wires):
     dim = 2**num_wires
     if issparse(state):
         batch_size = math.get_batch_size(state, (1, dim), dim)
+        if batch_size is None:
+            batch_size = 1
     else:
         batch_size = math.get_batch_size(state, (2,) * num_wires, dim)
     shape = (batch_size, dim) if batch_size is not None else (dim,)
-    return math.reshape(state, shape)
+    state_reshaped = math.reshape(state, shape)
+    return state_reshaped
 
 
 def state_diagonalizing_gates(

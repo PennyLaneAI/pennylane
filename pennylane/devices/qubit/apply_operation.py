@@ -246,7 +246,8 @@ def apply_operation_csr_matrix(op, state, is_state_batched: bool = False):
     num_wires = len(original_shape) - is_state_batched
     full_state = math.reshape(state, [-1, 2**num_wires])  # expected: [batch_size, 2**num_wires]
     state_opT = full_state @ op.matrix(wire_order=range(num_wires)).T
-    return math.reshape(state_opT, original_shape)
+    state_reshaped = math.reshape(state_opT, original_shape)
+    return sp.sparse.csr_array(state_reshaped)
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):
