@@ -52,6 +52,25 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         with pytest.raises(qml.DeviceError, match="applied in the same qubit"):
             jax.make_jaxpr(qfunc)()
 
+    def test_circuit_with_arguments(self):
+        """Test that the transform works correctly when the circuit has arguments."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def qfunc(state1, state2):
+            qml.AmplitudeEmbedding(state1, wires=0)
+            qml.Hadamard(wires=0)
+            qml.AmplitudeEmbedding(state2, wires=1)
+            return qml.expval(qml.Z(0))
+
+        states = (jax.numpy.array([0.0, 1.0]), jax.numpy.array([0.0, 1.0]))
+        jaxpr = jax.make_jaxpr(qfunc)(*states)
+
+        assert jaxpr.eqns[-4].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(jaxpr.eqns[-4].params["n_wires"], 2)
+        assert jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
     def test_circuit_with_no_merge_required(self):
         """Test that the transform works correctly for a simple example."""
 
