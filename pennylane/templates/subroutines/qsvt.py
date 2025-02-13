@@ -27,6 +27,10 @@ from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
+import scipy
+import math
+from autograd import jacobian, hessian
+
 
 # pylint: disable=too-many-branches, unused-argument
 def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
@@ -726,12 +730,10 @@ def _compute_qsp_angle(poly_coeffs):
             )
 
     return rotation_angles
-###########################################################################################################################
+
 """
 Implementation of the QSP (Quantum Signal Processing) algorithm proposed in https://arxiv.org/pdf/2002.11649 
 """
-
-import scipy
 
 def cheby_pol(x, degree):
     r"""
@@ -828,7 +830,6 @@ def qsp_iterates(phis, x):
 
     return mtx
 
-import math
 
 def grid_pts(degree):
     r"""
@@ -876,7 +877,6 @@ def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimi
         return 1 / len(grid_points) * obj_func
     opt_kwargs = {}
 
-    from autograd import jacobian, hessian
 
     opt_kwargs["jac"] = jacobian(obj_function)
     if opt_method == "Newton-CG":
@@ -911,7 +911,7 @@ def _compute_qsp_angles_iteratively(polynomial_coeffs_in_cano_basis, opt_method=
     angles, *_ = qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func, opt_method=opt_method)
     
     return angles 
-###########################################################################################################################
+
 def _gqsp_u3_gate(theta, phi, lambd):
     r"""
     Computes the U3 gate matrix for Generalized Quantum Signal Processing (GQSP) as described
