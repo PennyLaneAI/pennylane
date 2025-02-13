@@ -35,6 +35,31 @@
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
 
+* `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
+  [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
+
+  ```pycon
+  >>> import numpy as np
+  >>> import pennylane as qml
+  >>> import scipy as sp
+  >>> U_dense = np.eye(4)  # 2-wire identity
+  >>> U_sparse = sp.sparse.csr_matrix(U_dense)
+  >>> op = qml.QubitUnitary(U_sparse, wires=[0, 1])
+  >>> print(op.matrix())
+  <Compressed Sparse Row sparse matrix of dtype 'float64'
+          with 4 stored elements and shape (4, 4)>
+    Coords        Values
+    (0, 0)        1.0
+    (1, 1)        1.0
+    (2, 2)        1.0
+    (3, 3)        1.0
+  >>> op.matrix().toarray()
+  array([[1., 0., 0., 0.],
+        [0., 1., 0., 0.],
+        [0., 0., 1., 0.],
+        [0., 0., 0., 1.]])
+  ```
+
 * Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
   [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
  
@@ -111,7 +136,7 @@
   >>> print(new_circuit.diff_method)
   'parameter-shift'
   ```
-  
+
 * Devices can now configure whether or not ML framework data is sent to them
   via an `ExecutionConfig.convert_to_numpy` parameter. End-to-end jitting on
   `default.qubit` is used if the user specified a `jax.random.PRNGKey` as a seed.
