@@ -162,5 +162,4 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         Args:
             probabilities (array): the probabilities of collapsing to eigen states
         """
-        eigvals = qml.math.cast_like(self.eigvals(), 1.0)
-        return qml.math.dot(probabilities, eigvals)
+        return qml.math.dot(probabilities, self.eigvals())

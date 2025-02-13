@@ -328,7 +328,6 @@ class StatePrep(StatePrepBase):
         self.is_sparse = False
         if sp.sparse.issparse(state):
             state = state.tocsr()
-            state = sp.sparse.csr_array(state)
             state = self._preprocess_csr(state, wires, None, normalize, validate_norm)
             self.is_sparse = True
         else:
