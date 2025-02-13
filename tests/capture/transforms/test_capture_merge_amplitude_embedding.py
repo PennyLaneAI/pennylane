@@ -71,6 +71,25 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    def test_circuit_with_traced_wires(self):
+        """Test that the transform works correctly when the circuit has traced wires."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def qfunc(wires1, wires2):
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=wires1)
+            qml.Hadamard(wires=0)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=wires2)
+            return qml.expval(qml.Z(0))
+
+        states = (jax.numpy.array([0.0]), jax.numpy.array([1.0]))
+        jaxpr = jax.make_jaxpr(qfunc)(*states)
+
+        assert jaxpr.eqns[-4].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(jaxpr.eqns[-4].params["n_wires"], 2)
+        assert jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
     def test_circuit_with_no_merge_required(self):
         """Test that the transform works correctly for a simple example."""
 
