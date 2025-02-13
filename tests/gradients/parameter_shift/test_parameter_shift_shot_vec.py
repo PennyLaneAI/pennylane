@@ -1415,6 +1415,7 @@ class TestParameterShiftRule:
             assert qml.math.allclose(shot_vec_result[1], expected[1], atol=0.15)
 
         # Finite-diff
+        print(gradA, gradF)
         for shot_vec_result in gradF:
             for param_res in shot_vec_result:
                 assert isinstance(param_res, np.ndarray)
