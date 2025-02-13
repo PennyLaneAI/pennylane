@@ -17,6 +17,7 @@ The default.qubit device is PennyLane's standard qubit-based device.
 
 import concurrent.futures
 import logging
+import warnings
 from dataclasses import replace
 from functools import partial
 from numbers import Number
@@ -631,6 +632,17 @@ class DefaultQubit(Device):
         #    # need numpy to use caching, and need caching higher order derivatives
         #    or execution_config.derivative_order > 1
         # )
+
+        # If PRNGKey is present, we can't use a pure_callback, because that would cause leaked tracers
+        # we assume that if someone provides a PRNGkey, they want to jit end-to-end
+        jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
+        updated_values["convert_to_numpy"] = not (
+            self._prng_key is not None
+            and execution_config.interface in jax_interfaces
+            and execution_config.gradient_method != "adjoint"
+            # need numpy to use caching, and need caching higher order derivatives
+            and execution_config.derivative_order == 1
+        )
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")
@@ -674,6 +686,19 @@ class DefaultQubit(Device):
             else None
         )
         prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
+
+        if (
+            not execution_config.convert_to_numpy
+            and execution_config.interface == qml.math.Interface.JAX_JIT
+            and len(circuits) > 10
+        ):
+            warnings.warn(
+                (
+                    "Jitting executions with many circuits may have substantial classical overhead."
+                    " To disable end-to-end jitting, please specify a integer seed instead of a PRNGKey."
+                ),
+                UserWarning,
+            )
 
         if max_workers is None:
 
