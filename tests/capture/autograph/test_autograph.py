@@ -423,6 +423,21 @@ class TestIntegration:
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
 
+    def test_custom_operation(self):
+        """Test that autograph can be applied to circuits with custom operations."""
+
+        class MyOperation(qml.operation.Operation):
+            pass
+
+        def f(x):
+            MyOperation(x, wires=0)
+
+        ag_fn = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_fn)(0.5)
+        # pylint: disable=protected-access
+        assert jaxpr.jaxpr.eqns[0].primitive == MyOperation._primitive
+        assert len(jaxpr.jaxpr.eqns) == 1
+
 
 class TestCodePrinting:
     """Test that the transformed source code can be printed in different settings."""
