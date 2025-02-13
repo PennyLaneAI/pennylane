@@ -128,17 +128,20 @@ def _permutation_parity(perm):
 
 ar.register_function("scipy", "linalg.det", _det_sparse)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
+# ar.register_function("scipy", "linalg.eigh", sp.sparse.linalg.eigh)
 ar.register_function("scipy", "trace", lambda x: x.trace())
 ar.register_function("scipy", "reshape", lambda x, new_shape: x.reshape(new_shape))
 ar.register_function("scipy", "real", lambda x: x.real)
 ar.register_function("scipy", "imag", lambda x: x.imag)
 ar.register_function("scipy", "size", lambda x: np.prod(x.shape))
+ar.register_function("scipy", "eye", sp.sparse.eye)
 
 # Even scipy's own sum falls back to numpy. So we simply fallback entirely here
 ar.register_function(
     "scipy", "sum", lambda x, axis: sp.sparse.coo_array(x.toarray().sum(axis=axis))
 )
 ar.register_function("scipy", "hstack", sp.sparse.hstack)
+ar.register_function("scipy", "vstack", sp.sparse.vstack)
 
 # -------------------------------- NumPy --------------------------------- #
 

@@ -1004,11 +1004,23 @@ class TestBlockEncode:
                     ],
                 ],
             ),
+            (
+                csr_matrix([[0.1, 0.2], [0.3, 0.4]]),
+                range(2),
+                csr_matrix(
+                    [
+                        [0.1, 0.2, 0.97283788, -0.05988708],
+                        [0.3, 0.4, -0.05988708, 0.86395228],
+                        [0.94561648, -0.07621992, -0.1, -0.3],
+                        [-0.07621992, 0.89117368, -0.2, -0.4],
+                    ]
+                ),
+            ),
         ],
     )
     def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
         """Test that BlockEncode outputs the correct matrix."""
-        assert np.allclose(qml.matrix(qml.BlockEncode(input_matrix, wires)), output_matrix)
+        assert qml.math.allclose(qml.matrix(qml.BlockEncode(input_matrix, wires)), output_matrix)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),

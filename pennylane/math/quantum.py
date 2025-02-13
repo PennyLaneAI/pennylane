@@ -20,6 +20,7 @@ from string import ascii_letters as ABC
 
 from autoray import numpy as np
 from numpy import float64  # pylint:disable=wrong-import-order
+from scipy.sparse import issparse
 
 import pennylane as qml
 
@@ -956,6 +957,10 @@ def sqrt_matrix(density_matrix):
     Returns:
         (tensor_like): Square root of the density matrix.
     """
+    sparse_type = None
+    if issparse(density_matrix):
+        sparse_type = type(density_matrix)
+        density_matrix = density_matrix.toarray()
     evs, vecs = qml.math.linalg.eigh(density_matrix)
     evs = qml.math.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
@@ -969,7 +974,10 @@ def sqrt_matrix(density_matrix):
         sqrt_evs = qml.math.expand_dims(qml.math.sqrt(evs), 1) * i
         return vecs @ sqrt_evs @ qml.math.conj(qml.math.transpose(vecs, (0, 2, 1)))
 
-    return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
+    res = vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
+    if sparse_type:
+        return sparse_type(res)
+    return res
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
