@@ -1229,65 +1229,100 @@ class TestQNodeAutographIntegration:
         assert qml.math.allclose(circuit(), [0, 0, 0, 1])
 
 
-@pytest.mark.parametrize("sort_static_argnums", [True, False])
-def test_qnode_static_argnums(sort_static_argnums):
-    """Test that a QNode's static argnums are used to capture the QNode's quantum function."""
-    # Testing using `jax.jit` with `static_argnums` is done in the `TestCaptureCaching` class
+class TestStaticArgnums:
+    """Unit tests for `QNode.static_argnums`."""
 
-    dev = qml.device("default.qubit", wires=2)
-    args = (1.5, 2.5, 3.5)
-    static_argnums = (0, 1) if sort_static_argnums else (1, 0)
+    @pytest.mark.parametrize("sort_static_argnums", [True, False])
+    def test_qnode_static_argnums(self, sort_static_argnums):
+        """Test that a QNode's static argnums are used to capture the QNode's quantum function."""
+        # Testing using `jax.jit` with `static_argnums` is done in the `TestCaptureCaching` class
 
-    @qml.qnode(dev, static_argnums=static_argnums)
-    def circuit(a, b, c):
-        qml.RX(a, 0)
-        qml.RY(b + c, 1)
+        dev = qml.device("default.qubit", wires=2)
+        args = (1.5, 2.5, 3.5)
+        static_argnums = (0, 1) if sort_static_argnums else (1, 0)
 
-        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+        @qml.qnode(dev, static_argnums=static_argnums)
+        def circuit(a, b, c):
+            qml.RX(a, 0)
+            qml.RY(b + c, 1)
 
-    jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
-    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-    assert len(qfunc_jaxpr.invars) == 1
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
-    assert qml.math.allclose(qfunc_jaxpr.eqns[0].invars[0].val, args[0])
-    assert qml.math.allclose(qfunc_jaxpr.eqns[1].invars[0].val, args[1])
+        jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert len(qfunc_jaxpr.invars) == 1
 
-    # Empty capture_cache so we don't use cached jaxpr
-    circuit.capture_cache.clear()
+        assert qml.math.allclose(qfunc_jaxpr.eqns[0].invars[0].val, args[0])
+        assert qml.math.allclose(qfunc_jaxpr.eqns[1].invars[0].val, args[1])
 
-    res = circuit(*args)
-    with qml.capture.pause():
-        assert res == circuit(*args)
+        # Empty capture_cache so we don't use cached jaxpr
+        circuit.capture_cache.clear()
 
+        res = circuit(*args)
+        with qml.capture.pause():
+            assert qml.math.allclose(res, circuit(*args))
 
-def test_qnode_static_argnums_pytree():
-    """Test that using static argnums with pytree inputs works correctly."""
+    def test_qnode_static_argnums_pytree(self):
+        """Test that using static argnums with pytree inputs works correctly."""
 
-    dev = qml.device("default.qubit", wires=2)
-    args = ({"1": 2.5, "2": 3.5, "3": 4.5}, (1.5, 5.5))
-    static_argnums = 1
+        dev = qml.device("default.qubit", wires=2)
+        args = ({"1": 2.5, "2": 3.5, "3": 4.5}, (1.5, 5.5))
+        static_argnums = 1
 
-    @qml.qnode(dev, static_argnums=static_argnums)
-    def circuit(a, b):
-        qml.RX(a["1"], 0)
-        qml.RY(a["2"] + a["3"], 1)
-        qml.RX(b[0], 1)
-        qml.RY(b[1], 0)
+        @qml.qnode(dev, static_argnums=static_argnums)
+        def circuit(a, b):
+            qml.RX(a["1"], 0)
+            qml.RY(a["2"] + a["3"], 1)
+            qml.RX(b[0], 1)
+            qml.RY(b[1], 0)
 
-        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
-    jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
-    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-    assert len(qfunc_jaxpr.invars) == len(args[0])
-    assert qml.math.allclose(qfunc_jaxpr.eqns[3].invars[0].val, args[1][0])
-    assert qml.math.allclose(qfunc_jaxpr.eqns[4].invars[0].val, args[1][1])
+        jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert len(qfunc_jaxpr.invars) == len(args[0])
+        assert qml.math.allclose(qfunc_jaxpr.eqns[3].invars[0].val, args[1][0])
+        assert qml.math.allclose(qfunc_jaxpr.eqns[4].invars[0].val, args[1][1])
 
-    # Empty capture_cache so we don't use cached jaxpr
-    circuit.capture_cache.clear()
+        # Empty capture_cache so we don't use cached jaxpr
+        circuit.capture_cache.clear()
 
-    res = circuit(*args)
-    with qml.capture.pause():
-        assert res == circuit(*args)
+        res = circuit(*args)
+        with qml.capture.pause():
+            assert qml.math.allclose(res, circuit(*args))
+
+    def test_qnode_static_argnums_autograph(self):
+        """Test that static_argnums work as expected with autograph"""
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev, static_argnums=3, autograph=True)
+        def circuit(x, y, z, n):
+
+            if z > 5:
+                for i in range(n):
+                    qml.RX(x, i)
+            elif z > 3:
+                for i in range(n):
+                    qml.RY(y, i)
+            else:
+                for i in range(n):
+                    qml.RZ(z, i)
+
+            for i in range(n - 1):
+                qml.CNOT([i, i + 1])
+
+            i = 0
+            while i < x + y + z:
+                qml.Rot(x, y, z, i % 5)
+                i += 1
+
+            return qml.state()
+
+        args = (1.5, 2.5, 3.5, 5)
+        res = circuit(*args)
+        with qml.capture.pause():
+            assert qml.math.allclose(res, circuit(*args))
 
 
 class TestQNodeCaptureCaching:
