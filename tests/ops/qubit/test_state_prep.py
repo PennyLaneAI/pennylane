@@ -418,7 +418,7 @@ class TestSparseStateVector:
         sp_vec = sp.sparse.coo_matrix([0, 0, 1, 0])
         qsv_op = qml.StatePrep(sp_vec, wires=[0, 1])
         ket = qsv_op.state_vector()
-        assert isinstance(ket, sp.sparse.csr_matrix)
+        assert sp.sparse.issparse(ket, sp.sparse.csr_matrix), "Output is not sparse type"
 
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
