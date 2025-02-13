@@ -14,12 +14,13 @@
 
 """Unit tests for the qubit_graph module"""
 
+import pytest
 import networkx as nx
 
 from pennylane.ftqc.qubit_graph import QubitGraph
 
 
-class TestInitialization:
+class TestQubitGraphsInitialization:
     """Tests for basic initialization of QubitGraphs."""
 
     def test_initialization_trivial(self):
@@ -102,3 +103,25 @@ class TestInitialization:
 
         for node in qubit.nodes:
             assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
+
+class TestQubitGraphsWarnings:
+    """Tests for QubitGraph warning messages"""
+
+    def test_access_uninitialized_nodes_warning(self):
+        """Test that accessing the nodes property of an uninitialized graph emits a UserWarning."""
+        q = QubitGraph()
+        with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
+            _ = q.nodes
+
+    def test_access_uninitialized_edges_warning(self):
+        """Test that accessing the edges property of an uninitialized graph emits a UserWarning."""
+        q = QubitGraph()
+        with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
+            _ = q.edges
+
+    def test_reinitialization_warning(self):
+        """Test that re-initializing an already-initialized graph emits a UserWarning."""
+        q = QubitGraph()
+        q.init_graph_2d_grid(2, 2)
+        with pytest.warns(UserWarning, match="Attempting to re-initialize a QubitGraph"):
+            q.init_graph_2d_grid(2, 3)

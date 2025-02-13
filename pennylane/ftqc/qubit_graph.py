@@ -33,7 +33,7 @@ class QubitGraph:
     This is a WIP! Still to do:
 
         * How to represent operations on qubits?
-        * Should be able to broadcast operations to underlying qubits
+            * Should be able to broadcast operations to underlying qubits
         * Tensor-like indexing and slicing.
     """
 
@@ -44,22 +44,34 @@ class QubitGraph:
     def nodes(self):
         """Gets the set of nodes in the underlying qubit graph.
 
+        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
+
         Returns:
             networkx.NodeView: The set of nodes, with native support for operations such as
                 `len(g.nodes)`, `n in g.nodes`, `g.nodes & h.nodes`, etc. See the networkx
                 documentation for more information.
         """
+        if self._graph_qubits is None:
+            self._warn_uninitialized()
+            return None
+
         return self._graph_qubits.nodes
 
     @property
     def edges(self):
         """Gets the set of edges in the underlying qubit graph.
 
+        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
+
         Returns:
             networkx.EdgeView: The set of edges, with native support for operations such as
                 `len(g.edges)`, `e in g.edges`, `g.edges & h.edges`, etc. See the networkx
                 documentation for more information.
         """
+        if self._graph_qubits is None:
+            self._warn_uninitialized()
+            return None
+
         return self._graph_qubits.edges
 
     @property
@@ -74,6 +86,10 @@ class QubitGraph:
     def clear(self):
         """Clears the graph of underlying qubits."""
         self._graph_qubits = None
+
+    def _warn_uninitialized(self):
+        """Emit a UserWarning when attempting to access an uninitialized graph."""
+        warnings.warn("Attempting to access an uninitialized QubitGraph.", UserWarning)
 
     def _warn_reinitialization(self):
         """Emit a UserWarning when attempting to initialize an already-initialized graph."""
