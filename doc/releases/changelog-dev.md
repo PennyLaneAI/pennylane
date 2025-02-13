@@ -150,6 +150,15 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
+  be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
+  same shapes and data types will be able to use this cached plxpr instead of capturing the program again.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
+
+* `qml.QNode` now accepts a `static_argnums` argument. This argument can be used to indicate any arguments that
+  should be considered static when capturing the quantum program.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
+
 * Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
   with program capture enabled.
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
