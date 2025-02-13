@@ -46,9 +46,9 @@ class ResourceOperator(ABC):
                 def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
                     gate_types = {}
 
-                    hadamard = ResourceHadamard.resource_rep()
-                    swap = ResourceSWAP.resource_rep()
-                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
+                    hadamard = ResourceHadamard.resource_rep
+                    swap = ResourceSWAP.resource_rep
+                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep
 
                     gate_types[hadamard] = num_wires
                     gate_types[swap] = num_wires // 2
@@ -61,7 +61,7 @@ class ResourceOperator(ABC):
                     return {"num_wires": num_wires}
 
                 @classmethod
-                def resource_rep(cls, num_wires) -> CompressedResourceOp:
+                def make_resource_rep(cls, num_wires) -> CompressedResourceOp:
                     params = {"num_wires": num_wires}
                     return CompressedResourceOp(cls, params)
 
@@ -100,13 +100,14 @@ class ResourceOperator(ABC):
 
     @classmethod
     @abstractmethod
-    def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
+    def make_resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-    def resource_rep_from_op(self) -> CompressedResourceOp:
+    @property
+    def resource_rep(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
-        return self.__class__.resource_rep(**self.resource_params)
+        return self.__class__.make_resource_rep(**self.resource_params)
 
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:

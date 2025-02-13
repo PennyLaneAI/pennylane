@@ -39,9 +39,9 @@ class ResourceQFT(qml.QFT, ResourceOperator):
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         gate_types = {}
 
-        hadamard = ResourceHadamard.resource_rep()
-        swap = ResourceSWAP.resource_rep()
-        ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
+        hadamard = ResourceHadamard.make_resource_rep()
+        swap = ResourceSWAP.make_resource_rep()
+        ctrl_phase_shift = ResourceControlledPhaseShift.make_resource_rep()
 
         gate_types[hadamard] = num_wires
         gate_types[swap] = num_wires // 2
@@ -54,6 +54,6 @@ class ResourceQFT(qml.QFT, ResourceOperator):
         return {"num_wires": len(self.wires)}
 
     @classmethod
-    def resource_rep(cls, num_wires) -> CompressedResourceOp:
+    def make_resource_rep(cls, num_wires) -> CompressedResourceOp:
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, params)

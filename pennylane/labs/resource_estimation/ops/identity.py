@@ -32,22 +32,22 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
+    def make_resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @classmethod
     def controlled_resource_decomp(
         cls, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
 
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
@@ -62,13 +62,13 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
+    def make_resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
     @staticmethod
     def adjoint_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         """The adjoint of a global phase is itself another global phase"""
-        return {re.ResourceGlobalPhase.resource_rep(): 1}
+        return {re.ResourceGlobalPhase.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -84,15 +84,15 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             case, we sandwich the phase shift operation with two multi-controlled X gates.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourcePhaseShift.resource_rep(): 1}
+            gate_types = {re.ResourcePhaseShift.make_resource_rep(): 1}
 
             if num_ctrl_values:
-                gate_types[re.ResourceX.resource_rep()] = 2
+                gate_types[re.ResourceX.make_resource_rep()] = 2
 
             return gate_types
 
-        ps = re.ResourcePhaseShift.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
+        ps = re.ResourcePhaseShift.make_resource_rep()
+        mcx = re.ResourceMultiControlledX.make_resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
@@ -103,4 +103,4 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     @staticmethod
     def pow_resource_decomp(z) -> Dict[re.CompressedResourceOp, int]:
         """Taking arbitrary powers of a global phase produces another global phase"""
-        return {re.ResourceGlobalPhase.resource_rep(): 1}
+        return {re.ResourceGlobalPhase.make_resource_rep(): 1}

@@ -105,19 +105,19 @@ class TestGetResources:
 
     compressed_rep_counts = (
         (
-            re.ResourceHadamard(wires=0).resource_rep_from_op(),
+            re.ResourceHadamard(wires=0).resource_rep(),
             defaultdict(int, {re.CompressedResourceOp(re.ResourceHadamard, {}): 1}),
         ),
         (
-            re.ResourceRX(1.23, wires=0).resource_rep_from_op(),
+            re.ResourceRX(1.23, wires=0).resource_rep(),
             defaultdict(int, {re.CompressedResourceOp(re.ResourceT, {}): 17}),
         ),
         (
-            re.ResourceIdentity(wires=[1, 2, 3]).resource_rep_from_op(),
+            re.ResourceIdentity(wires=[1, 2, 3]).resource_rep(),
             defaultdict(int, {}),  # Identity has no resources
         ),
         (
-            re.ResourceControlledPhaseShift(1.23, wires=[0, 1]).resource_rep_from_op(),
+            re.ResourceControlledPhaseShift(1.23, wires=[0, 1]).resource_rep(),
             defaultdict(
                 int,
                 {
@@ -127,7 +127,7 @@ class TestGetResources:
             ),
         ),
         (
-            re.ResourceQFT(wires=[1, 2, 3, 4]).resource_rep_from_op(),
+            re.ResourceQFT(wires=[1, 2, 3, 4]).resource_rep(),
             defaultdict(
                 int,
                 {
@@ -202,17 +202,17 @@ class TestGetResources:
     def test_counts_from_compressed_res_custom_config(self, custom_config, num_T_gates):
         """Test that the function works with custom configs and a non-empty gate_counts_dict"""
         base_gate_counts = defaultdict(
-            int, {re.ResourceT.resource_rep(): 3, re.ResourceS.resource_rep(): 5}
+            int, {re.ResourceT.make_resource_rep(): 3, re.ResourceS.make_resource_rep(): 5}
         )
 
         _counts_from_compressed_res_op(
-            re.ResourceRZ.resource_rep(),
+            re.ResourceRZ.make_resource_rep(),
             base_gate_counts,
             gate_set=DefaultGateSet,
             config=custom_config,
         )
         expected_counts = defaultdict(
-            int, {re.ResourceT.resource_rep(): 3 + num_T_gates, re.ResourceS.resource_rep(): 5}
+            int, {re.ResourceT.make_resource_rep(): 3 + num_T_gates, re.ResourceS.make_resource_rep(): 5}
         )
 
         assert base_gate_counts == expected_counts
@@ -223,10 +223,10 @@ class TestGetResources:
         gate_counts = defaultdict(
             int,
             {
-                re.ResourceQFT.resource_rep(5): 1,
-                re.ResourceHadamard.resource_rep(): 3,
-                re.ResourceCNOT.resource_rep(): 1,
-                re.ResourceQFT.resource_rep(3): 4,
+                re.ResourceQFT.make_resource_rep(5): 1,
+                re.ResourceHadamard.make_resource_rep(): 3,
+                re.ResourceCNOT.make_resource_rep(): 1,
+                re.ResourceQFT.make_resource_rep(3): 4,
             },
         )
 
