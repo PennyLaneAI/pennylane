@@ -80,14 +80,52 @@ class TestSingleQubitFusionInterpreter:
 
         transformed_circuit = SingleQubitFusionInterpreter()(circuit)
 
+        # This circuit should be transformed to a single Rot(-4.37,1.98,-0.96) gate
+
         jaxpr = jax.make_jaxpr(transformed_circuit)()
-        cleaned_jaxpr = extract_abstract_operator_eqns(jaxpr)
+        assert len(jaxpr.eqns) == 1
 
         expected_primitive = {qml.Rot._primitive}
-        actual_primitives = {cleaned_jaxpr[0].primitive}
+        actual_primitives = {jaxpr.eqns[0].primitive}
         assert expected_primitive == actual_primitives
 
-        with qml.capture.pause():
-            transformed_circuit_comparison = qml.transforms.single_qubit_fusion(circuit)
+        assert qml.math.allclose(jaxpr.eqns[0].invars[0].val, -4.369330)
+        assert qml.math.allclose(jaxpr.eqns[0].invars[1].val, 1.983815)
+        assert qml.math.allclose(jaxpr.eqns[0].invars[2].val, -0.959211)
+        assert qml.math.allclose(jaxpr.eqns[0].invars[3].val, 0)
 
-        # TODO: find a way to compare the two transformed circuits
+    def test_single_qubit_partial_fusion_qnode(self):
+        """Test that a sequence of single-qubit gates partially fuse."""
+
+        @qml.qnode(device=qml.device("default.qubit", wires=1))
+        def circuit():
+            qml.RZ(0.3, wires=0)
+            qml.Hadamard(wires=0)
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+            qml.RX(0.1, wires=0)
+            qml.SX(wires=0)
+            qml.T(wires=0)
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+
+        # This circuit should be transformed to a single Rot(-4.37,1.98,-0.96) gate
+
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        expected_primitive = {qml.Rot._primitive}
+        actual_primitives = {qfunc_jaxpr.eqns[0].primitive}
+        assert expected_primitive == actual_primitives
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.literals)
+
+        @qml.qnode(device=qml.device("default.qubit", wires=1))
+        def expected_circuit():
+            qml.Rot(-4.369330, 1.983815, -0.959211, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        expected_result = expected_circuit()
+
+        assert qml.math.allclose(result, expected_result)
