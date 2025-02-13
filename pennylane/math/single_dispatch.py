@@ -77,27 +77,28 @@ ar.register_function("scipy", "ndim", np.ndim)
 
 
 def _det_sparse(x):
-    """Compute determinant of 2x2 sparse matrix without densification"""
-    if not sp.sparse.issparse(x):
-        raise TypeError(f"Expected SciPy sparse, got {type(x)}")
+    """Compute determinant of sparse matrices without densification"""
+
+    assert sp.sparse.issparse(x), TypeError(f"Expected SciPy sparse, got {type(x)}")
 
     x = sp.sparse.csr_matrix(x)
-    if x.shape != (2, 2):
-        return _sparse_det(x)
-
-    # Direct array access
-    indptr, indices, data = x.indptr, x.indices, x.data
-    values = {(i, j): 0.0 for i in range(2) for j in range(2)}
-    for i in range(2):
-        for j_idx in range(indptr[i], indptr[i + 1]):
-            j = indices[j_idx]
-            values[(i, j)] = data[j_idx]
-
-    return values[(0, 0)] * values[(1, 1)] - values[(0, 1)] * values[(1, 0)]
+    if x.shape == (2, 2):
+        # Direct array access
+        indptr, indices, data = x.indptr, x.indices, x.data
+        values = {(i, j): 0.0 for i in range(2) for j in range(2)}
+        for i in range(2):
+            for j_idx in range(indptr[i], indptr[i + 1]):
+                j = indices[j_idx]
+                values[(i, j)] = data[j_idx]
+        return values[(0, 0)] * values[(1, 1)] - values[(0, 1)] * values[(1, 0)]
+    return _generic_sparse_det(x)
 
 
-def _sparse_det(A):
-    assert hasattr(A, "tocsc"), "Input matrix must be a SciPy.sparse.spmatrix"
+def _generic_sparse_det(A):
+    """Compute the determinant of a sparse matrix using LU decomposition."""
+
+    assert hasattr(A, "tocsc"), TypeError(f"Expected SciPy sparse, got {type(A)}")
+
     A_csc = A.tocsc()
     lu = splu(A_csc)
     U_diag = lu.U.diagonal()
@@ -107,7 +108,8 @@ def _sparse_det(A):
 
 
 def _permutation_parity(perm):
-    """input: lu.perm_r; output: permutation parity"""
+    """Compute the parity of a permutation."""
+
     parity = 1
     visited = [False] * len(perm)
     for i in range(len(perm)):
@@ -119,7 +121,7 @@ def _permutation_parity(perm):
                 j = perm[j]
                 cycle_length += 1
 
-            if cycle_length > 0:
+            if cycle_length:
                 parity *= (-1) ** (cycle_length - 1)
     return parity
 
