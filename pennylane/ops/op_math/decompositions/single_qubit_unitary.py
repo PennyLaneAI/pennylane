@@ -74,16 +74,14 @@ def _zyz_get_rotation_angles(U):
     thetas = 2 * math.arcsin(off_diagonal_elements)
 
     # Compute phi and omega from the angles of the top row; use atan2 to keep
-    # the angle within -np.pi and np.pi, and add very small value to the real
-    # part to avoid division by zero.
-    epsilon = 1e-64
+    # the angle within -np.pi and np.pi
     angles_U00 = math.arctan2(
         math.imag(U[:, 0, 0]),
-        math.real(U[:, 0, 0]) + epsilon,
+        math.real(U[:, 0, 0]),
     )
     angles_U10 = math.arctan2(
         math.imag(U[:, 1, 0]),
-        math.real(U[:, 1, 0]) + epsilon,
+        math.real(U[:, 1, 0]),
     )
 
     phis = -angles_U10 - angles_U00
