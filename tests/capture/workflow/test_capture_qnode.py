@@ -15,6 +15,7 @@
 Tests for capturing a qnode into jaxpr.
 """
 from functools import partial
+from itertools import product
 
 # pylint: disable=protected-access
 import pytest
@@ -1094,7 +1095,10 @@ class TestQNodeAutographIntegration:
         else:
             with pytest.raises(
                 CaptureError,
-                match=r"Autograph must be used when Python control flow is dependent on a dynamic variable \(a function input\)",
+                match=(
+                    "Autograph must be used when Python control flow is dependent on a "
+                    r"dynamic variable \(a function input\)"
+                ),
             ):
                 circuit(3)
 
@@ -1117,7 +1121,10 @@ class TestQNodeAutographIntegration:
         else:
             with pytest.raises(
                 CaptureError,
-                match=r"Autograph must be used when Python control flow is dependent on a dynamic variable \(a function input\)",
+                match=(
+                    "Autograph must be used when Python control flow is dependent on a "
+                    r"dynamic variable \(a function input\)"
+                ),
             ):
                 circuit(3)
 
@@ -1140,7 +1147,10 @@ class TestQNodeAutographIntegration:
         else:
             with pytest.raises(
                 CaptureError,
-                match=r"Autograph must be used when Python control flow is dependent on a dynamic variable \(a function input\)",
+                match=(
+                    "Autograph must be used when Python control flow is dependent on a "
+                    r"dynamic variable \(a function input\)"
+                ),
             ):
                 circuit(0)
 
@@ -1219,12 +1229,14 @@ class TestQNodeAutographIntegration:
         assert qml.math.allclose(circuit(), [0, 0, 0, 1])
 
 
-def test_qnode_static_argnums():
+@pytest.mark.parametrize("sort_static_argnums", [True, False])
+def test_qnode_static_argnums(sort_static_argnums):
     """Test that a QNode's static argnums are used to capture the QNode's quantum function."""
+    # Testing using `jax.jit` with `static_argnums` is done in the `TestCaptureCaching` class
 
     dev = qml.device("default.qubit", wires=2)
     args = (1.5, 2.5, 3.5)
-    static_argnums = (0, 1)
+    static_argnums = (0, 1) if sort_static_argnums else (1, 0)
 
     @qml.qnode(dev, static_argnums=static_argnums)
     def circuit(a, b, c):
@@ -1274,35 +1286,6 @@ def test_qnode_static_argnums_pytree():
     circuit.capture_cache.clear()
 
     res = circuit(*args)
-    with qml.capture.pause():
-        assert res == circuit(*args)
-
-
-def test_qnode_static_argnums_jit():
-    """Test that static_argnums work correctly with jax.jit"""
-
-    dev = qml.device("default.qubit", wires=2)
-    args = (1.5, 2.5, 3.5)
-    static_argnums = (0, 1)
-
-    @qml.qnode(dev, static_argnums=static_argnums)
-    def circuit(a, b, c):
-        qml.RX(a, 0)
-        qml.RY(b + c, 1)
-
-        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-    jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
-    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-    assert len(qfunc_jaxpr.invars) == 1
-
-    assert qml.math.allclose(qfunc_jaxpr.eqns[0].invars[0].val, args[0])
-    assert qml.math.allclose(qfunc_jaxpr.eqns[1].invars[0].val, args[1])
-
-    # Empty capture_cache so we don't use cached jaxpr
-    circuit.capture_cache.clear()
-
-    res = jax.jit(circuit, static_argnums=static_argnums)(*args)
     with qml.capture.pause():
         assert res == circuit(*args)
 
@@ -1429,6 +1412,11 @@ class TestQNodeCaptureCaching:
         spy.reset_mock()
         self.check_execution_results(circuit, 1.1, 2.1)
         spy.assert_called()
+
+        # Cache hit because same arg shape/type and same static arg
+        spy.reset_mock()
+        self.check_execution_results(circuit, 1.0, 2.1)
+        spy.assert_not_called()
 
     def test_caching_static_argnums_pytree(self, mocker):
         """Test that caching works correctly when a QNode has static arguments
@@ -1651,3 +1639,41 @@ class TestQNodeCaptureCaching:
 
             with qml.capture.pause():
                 assert qml.math.allclose(res, circuit(*a))
+
+    def test_caching_with_autograph(self):
+        """Test that using autograph works as expected when caching is active."""
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev, autograph=True)
+        def circuit(x, y, z, n):
+
+            if z > 5:
+                for i in range(n):
+                    qml.RX(x, i)
+            elif z > 3:
+                for i in range(n):
+                    qml.RY(y, i)
+            else:
+                for i in range(n):
+                    qml.RZ(z, i)
+
+            for i in range(n - 1):
+                qml.CNOT([i, i + 1])
+
+            i = 0
+            while i < x + y + z:
+                qml.Rot(x, y, z, i % 5)
+                i += 1
+
+            return qml.state()
+
+        # Specifying parameters here instead of using @pytest.mark.parametrize
+        # to force usage of cache
+        xs = [1.5, 2.5, 4, 5]
+        ys = [-2, 1.5, 3.5, 2]
+        zs = [1.5, 3.5, 5.5, 2, 4, 6]
+        ns = list(range(5))
+
+        for x, y, z, n in product(xs, ys, zs, ns):
+            self.check_execution_results(circuit, x, y, z, n)
