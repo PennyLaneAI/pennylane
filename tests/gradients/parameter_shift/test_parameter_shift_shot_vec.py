@@ -1420,7 +1420,7 @@ class TestParameterShiftRule:
                 assert isinstance(param_res, np.ndarray)
                 assert param_res.shape == ()
             # Tolerance came from multi_param test below
-            assert qml.math.allclose(shot_vec_result[0], expected[0], atol=0.5)
+            assert qml.math.allclose(shot_vec_result[0], expected[0], atol=0.1)
             assert qml.math.allclose(shot_vec_result[1], expected[1], atol=1.5)
 
     def test_involutory_and_noninvolutory_variance_multi_param(self, broadcast, seed):
