@@ -39,7 +39,7 @@ def array(*args, like=None, **kwargs):
     Returns:
         tensor_like: the tensor_like object of the framework
     """
-    if issparse(args[0]): # Don't alter sparse matrices
+    if issparse(args[0]):  # Don't alter sparse matrices
         return args[0]
     res = np.array(*args, like=like, **kwargs)
     if like is not None and get_interface(like) == "torch":
