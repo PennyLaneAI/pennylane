@@ -14,6 +14,8 @@
 
 """Unit tests for the qubit_graph module"""
 
+import networkx as nx
+
 from pennylane.ftqc.qubit_graph import QubitGraph
 
 
@@ -25,8 +27,17 @@ class TestInitialization:
         qubit = QubitGraph()
         assert qubit
 
+    def test_init_graph_user_defined(self):
+        """Test that we can initialize a QubitGraph with a user-defined graph of underlying qubits."""
+        g = nx.hexagonal_lattice_graph(3, 2)
+        qubit = QubitGraph()
+        qubit.init_graph(g)
+
+        for node in qubit.nodes:
+            assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
+
     def test_init_graph_2d_grid(self):
-        """Test that we can initialize a QubitGraph with a 2D grid of underlying qubits.
+        """Test that we can initialize a QubitGraph with a 2D Cartesian grid of underlying qubits.
 
         For example, for a 2 x 3 grid, we expect a graph with the following structure:
 
@@ -80,3 +91,14 @@ class TestInitialization:
             qubit1 = qubit0.nodes[node]["qubits"]
             assert len(qubit1.nodes) == m1 * n1
             assert len(qubit1.edges) == m1 * (n1 - 1) + n1 * (m1 - 1)
+
+    def test_init_graph_3d_grid(self):
+        """Test that we can initialize a QubitGraph with a 3D Cartesian grid of underlying qubits."""
+        qubit = QubitGraph()
+        n0, n1, n2 = 2, 3, 4
+        qubit.init_graph_nd_grid((n0, n1, n2))
+
+        assert len(qubit.nodes) == n0 * n1 * n2
+
+        for node in qubit.nodes:
+            assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
