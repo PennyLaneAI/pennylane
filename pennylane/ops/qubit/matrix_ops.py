@@ -80,6 +80,10 @@ class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix with a dimension that is a power of two.
 
+    .. warning::
+
+        The sparse matrix representation of QubitUnitary is still under development. Currently we only support a limited set of interfaces that preserve the sparsity of the matrix, including ..method::`adjoint`, ..method::`pow`, ..method::`compute_sparse_matrix` and ..method::`compute_decomposition`. Differentiability is not supported for sparse matrices.
+
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
@@ -140,7 +144,7 @@ class QubitUnitary(Operation):
                 f"to act on {len(wires)} wires. Got shape {U_shape} instead."
             )
 
-        # Sparse matrics: if the matrix is sparse, we need to convert it to a csr_matrix specifically
+        # If the matrix is sparse, we need to convert it to a csr_matrix
         if sp.sparse.issparse(U):
             U = U.tocsr()
 
@@ -193,7 +197,7 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def compute_sparse_matrix(U: TensorLike):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a sparse matrix (static method).
+        r"""Representation of the operator as a sparse matrix.
 
         Args:
             U (tensor_like): unitary matrix
