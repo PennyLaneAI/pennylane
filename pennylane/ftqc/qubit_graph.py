@@ -39,10 +39,24 @@ class QubitGraph:
 
     @property
     def nodes(self):
+        """Gets the set of nodes in the underlying qubit graph.
+
+        Returns:
+            networkx.NodeView: The set of nodes, with native support for operations such as
+                `len(g.nodes)`, `n in g.nodes`, `g.nodes & h.nodes`, etc. See the networkx
+                documentation for more information.
+        """
         return self._graph_qubits.nodes
 
     @property
     def edges(self):
+        """Gets the set of edges in the underlying qubit graph.
+
+        Returns:
+            networkx.EdgeView: The set of edges, with native support for operations such as
+                `len(g.edges)`, `e in g.edges`, `g.edges & h.edges`, etc. See the networkx
+                documentation for more information.
+        """
         return self._graph_qubits.edges
 
     def init_graph_2d_grid(self, m: int, n: int):
