@@ -65,6 +65,7 @@ ar.register_function("builtins", "shape", _builtins_shape)
 ar.register_function("scipy", "to_numpy", lambda x: x)
 
 ar.register_function("scipy", "shape", np.shape)
+ar.register_function("scipy", "len", lambda x:x.shape[0])
 ar.register_function("scipy", "conj", np.conj)
 ar.register_function("scipy", "transpose", np.transpose)
 ar.register_function("scipy", "ndim", np.ndim)
@@ -135,6 +136,7 @@ ar.register_function("scipy", "real", lambda x: x.real)
 ar.register_function("scipy", "imag", lambda x: x.imag)
 ar.register_function("scipy", "size", lambda x: np.prod(x.shape))
 ar.register_function("scipy", "eye", sp.sparse.eye)
+ar.register_function("scipy", "zeros", sp.sparse.csr_matrix)
 
 # Even scipy's own sum falls back to numpy. So we simply fallback entirely here
 ar.register_function(

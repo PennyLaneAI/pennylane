@@ -1236,6 +1236,7 @@ class TestBlockEncode:
                 range(2),
             ),
             ([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]], range(3)),
+            (csr_matrix([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]]), range(3)),
         ],
     )
     def test_adjoint(self, input_matrix, wires):
@@ -1243,8 +1244,8 @@ class TestBlockEncode:
         mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
         adj = qml.matrix(qml.adjoint(qml.BlockEncode(input_matrix, wires)))
         other_adj = qml.matrix(qml.BlockEncode(input_matrix, wires).adjoint())
-        assert np.allclose(np.eye(len(mat)), mat @ adj)
-        assert np.allclose(np.eye(len(mat)), mat @ other_adj)
+        assert qml.math.allclose(np.eye(mat.shape[0]), mat @ adj)
+        assert qml.math.allclose(np.eye(mat.shape[0]), mat @ other_adj)
 
     def test_label(self):
         """Test the label method for BlockEncode op"""
