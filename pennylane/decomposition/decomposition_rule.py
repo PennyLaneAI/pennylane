@@ -63,7 +63,6 @@ class DecompositionRule:
 
     Attributes:
         impl (Callable): the quantum function implementing the decomposition rule
-
     """
 
     def __init__(self, func: Callable):
