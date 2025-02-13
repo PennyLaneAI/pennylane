@@ -219,8 +219,9 @@ def diagonalize_mcms(tape):
             diag_gates = op.diagonalizing_gates()
             new_operations.extend(diag_gates)
 
-            # add comuptational basis MCM to tape
-            new_mp = MidMeasureMP(op.wires, reset=op.reset, postselect=op.postselect, id=op.id)
+            # add computational basis MCM to tape
+            with qml.QueuingManager.stop_recording():
+                new_mp = MidMeasureMP(op.wires, reset=op.reset, postselect=op.postselect, id=op.id)
             new_operations.append(new_mp)
 
             # track mapping from original to computational basis MCMs
