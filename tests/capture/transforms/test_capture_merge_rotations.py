@@ -42,6 +42,23 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 class TestMergeRotationsInterpreter:
     """Test the MergeRotationsInterpreter class."""
 
+    def test_traced_arguments(self):
+        """Test that traced arguments work fine."""
+
+        @MergeRotationsInterpreter()
+        def f(a, b, wires):
+            qml.RX(a, wires=wires)
+            qml.RY(a, wires=2)
+            qml.RX(b, wires=wires)
+            return qml.expval(qml.PauliZ(0))
+
+        args = (0.1, 0.2, 0)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[-4].primitive == qml.RY._primitive
+        assert jaxpr.eqns[-3].primitive == qml.RX._primitive
+        assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
     @pytest.mark.parametrize(("theta1, theta2"), [(0.1, 0.2), (0.1, -0.1)])
     def test_one_qubit_merge(self, theta1, theta2):
         """Test that a single qubit rotation is correctly merged."""
