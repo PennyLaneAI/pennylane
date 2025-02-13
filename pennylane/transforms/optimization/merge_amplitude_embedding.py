@@ -60,7 +60,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance.
 
-            If the operator is not an AmplitudeEmbedding operator, it is added to the new operations list;
+            If the operator is not an ``AmplitudeEmbedding`` operator, it is added to the new operations list;
             otherwise, the wires and parameters are stored for future usage.
 
             Args:
