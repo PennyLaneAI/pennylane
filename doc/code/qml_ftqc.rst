@@ -1,4 +1,4 @@
-qml.pytrees
+qml.ftqc
 ===========
 
 .. currentmodule:: pennylane.ftqc
