@@ -65,7 +65,7 @@ ar.register_function("builtins", "shape", _builtins_shape)
 ar.register_function("scipy", "to_numpy", lambda x: x)
 
 ar.register_function("scipy", "shape", np.shape)
-ar.register_function("scipy", "len", lambda x:x.shape[0])
+ar.register_function("scipy", "len", lambda x: x.shape[0])
 ar.register_function("scipy", "conj", np.conj)
 ar.register_function("scipy", "transpose", np.transpose)
 ar.register_function("scipy", "ndim", np.ndim)
