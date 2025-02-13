@@ -344,7 +344,9 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
 
 class XMidMeasureMP(ParametricMidMeasureMP):
-    """stuff goes here"""
+    """A subclass of ParametricMidMeasureMP that uses the X measurement basis
+    (angle=0, plane="XY"). For labels and visualizations, this will be represented
+    as a X measurement. It is otherwise identical to the parent class."""
 
     _shortname = "measure_x"
 
@@ -387,9 +389,15 @@ class XMidMeasureMP(ParametricMidMeasureMP):
 
         return _label
 
+    def diagonalizing_gates(self):
+        """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
+        return [qml.H(self.wires)]
+
 
 class YMidMeasureMP(ParametricMidMeasureMP):
-    """stuff goes here"""
+    """A subclass of ParametricMidMeasureMP that uses the Y measurement basis
+    (angle=pi/2, plane="XY"). For labels and visualizations, this will be represented
+    as a Y measurement. It is otherwise identical to the parent class."""
 
     _shortname = "measure_y"
 
