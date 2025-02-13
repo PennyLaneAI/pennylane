@@ -11,14 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the classes and functions for creating and diagonalizing
-midcircuit measurements with a parameterized measurement axis."""
+"""This module contains the classes and functions for creating a cluster state."""
 
 
-import networkx as nx
 import math
 import matplotlib.pyplot as plt
-from networkx import Graph
+import networkx as nx
+import numpy as np
 
 
 class ClusterState:
@@ -46,78 +45,52 @@ class ClusterState:
     """
     _short_name = "cluster_state"
 
-    def __init__(self, dims: list = None, graph: Graph = None):
-        assert len(dims) <= 3, f"{len(dims)}-dimensional cluster state is not supported."
-        self._graph = len(dims)
-        
-    
-    def _create_1d_chain(dims):
-        labels = list(range(dims[0]))
-        G = nx.Graph()
-        for label in labels:
-            G.add_node(label)
-    
-        for label in labels[1:]:
-            G.add_edge(label - 1, label, label='CNOT')
-    
-        return G
+    def __init__(self):
+        self._graph = None
+        self._graph_type = None
+        self._num_vertex = None
 
-    def _create_2d_rectangle(dims):
-        assert len(dims) == 2, f"Rectangle lattice requires a 2 dims input, but {len(dims)} dim is provided"
-        num_labels = math.prod(dims)
-        labels = list(range(num_labels))
-        G = nx.Graph()
-        # Add nodes to the graph
-        for label in labels:
-            G.add_node(label)
+    def set_graph(self, graph: nx.Graph):
+        self._graph = graph
+
+    def set_graph(self, dims: list):
+        assert len(dims) > 0 and len(dims) < 4, f"{len(dims)}-dimension lattice is not supported."
+        self._num_vertex = math.prod(dims)
+        self._graph = nx.grid_graph(dims)
+        self._graph.add_node_from(list(range(self._num_vertex)))
+
+    def set_grid_graph(self, dims: list):
+        self._graph = nx.grid_graph(dims)
+        # map n-dimension index labels to 1d index
+        mapping = {}
+        for node in self._graph:
+            mapping[node] = np.ravel_multi_index(node, list(reversed(dims)), order='F')
+        self._graph = nx.relabel_nodes(self._graph, mapping)
+
+        # Add stabilizer attirbutes
+        stabilizers = {}
+        #Loop over all the neigbors and add it the stabilizers
+        for node in self._graph:
+            neighbors = nx.all_neighbors(self._graph, node)
+            stabilizer = ["X" + str(node)]
+            for neighbor in neighbors:
+                print(neighbor)
+                stabilizer.append("Z"+str(neighbor))
+            stabilizers[node] = stabilizer
     
-        # Add row edges to the graph
-        for j in range(dims[1]):
-            for i in range(dims[0] - 1):
-                start = j*dims[0] + i
-                end = start + 1
-                G.add_edge(start, end, lable='CNOT')
+        # Add stabilizers
+        nx.set_node_attributes(self._graph, stabilizers, "stabilizers")
+
+        # set attribute to edges
+        edge_labels = "CNOT"#*nx.number_of_edges(g)
+        nx.set_edge_attributes(self._graph, edge_labels, "ops")
     
-        for j in range(dims[1] - 1):
-            for i in range(dims[0]):
-                start = j*dims[0] + i
-                end = start + dims[0]
-                G.add_edge(start, end, label='CNOT')
-    
-        return G
-    
-    def _create_3d_cubic(dims):
-        assert len(dims) == 3, f"cubic lattice requires a 3 dims input, but {len(dims)} dim is provided"
-        num_labels = math.prod(dims)
-        labels = list(range(num_labels))
-        G = nx.Graph()
-        # Add nodes to the graph
-        for label in labels:
-            G.add_node(label)
-    
-        # Add row edges to the graph
-        for k in range(dims[2]):
-            for j in range(dims[1]):
-                for i in range(dims[0] - 1):
-                    start = k*dims[1]*dims[0]+ j*dims[0] + i
-                    end = start + 1
-                    G.add_edge(start, end, label='CNOT')
-    
-        for k in range(dims[2]):
-            for j in range(dims[1] - 1):
-                for i in range(dims[0]):
-                    start = k*dims[1]*dims[0]+ j*dims[0] + i
-                    end = start + dims[0]
-                    G.add_edge(start, end, label='CNOT')
-    
-        for k in range(dims[2]-1):
-            for j in range(dims[1]):
-                for i in range(dims[0]):
-                    start = k*dims[1]*dims[0]+ j*dims[0] + i
-                    end = start + dims[1]*dims[0]
-                    G.add_edge(start, end, label='CNOT')
-    
-        return G
+    def draw(self):
+        pos = nx.spring_layout(self._graph)
+        nx.draw(self._graph, pos, with_labels=True)
+        #nx.draw_networkx_labels(self._graph, pos, labels=nx.get_node_attributes(self._graph,'stabilizers')) # Draw edge labels
+        nx.draw_networkx_edge_labels(self._graph, pos, edge_labels=nx.get_edge_attributes(self._graph,'ops')) # Draw edge labels
+        plt.show()
 
 
 
