@@ -680,6 +680,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     Optional[jax.core.Primitive]
     """
 
+    _decompositions: list[DecompositionRule] = []
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
@@ -1381,7 +1383,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @classproperty
     def decompositions(self) -> list[DecompositionRule]:
         """A list of decomposition rules for the operator type."""
-        return type(self)._decompositions
+        return self._decompositions
 
     @classmethod
     def add_decomposition(cls, decomposition: DecompositionRule):
