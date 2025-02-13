@@ -71,6 +71,7 @@ def test_custom_operation():
     assert qml.math.allclose(result, -1.0)
 
 
+# pylint: disable=too-few-public-methods
 class TestSparsePipeline:
     """System tests for the sparse pipelines."""
 
