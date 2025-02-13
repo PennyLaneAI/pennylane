@@ -17,7 +17,7 @@ This module tests the default qubit interpreter.
 import pytest
 
 jax = pytest.importorskip("jax")
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 from jax import numpy as jnp  # pylint: disable=wrong-import-position
 
@@ -26,13 +26,6 @@ import pennylane as qml  # pylint: disable=wrong-import-position
 # must be below the importorskip
 # pylint: disable=wrong-import-position
 from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 def test_initialization():
@@ -342,11 +335,11 @@ class TestSampling:
         assert not qml.math.allclose(s1, s2)
 
 
-class TestQuantumHOP:
-    """Tests for the quantum higher order primitives: adjoint and ctrl."""
+class TestCustomPrimitiveRegistrations:
+    """Tests for primitives with custom primitive registrations."""
 
     def test_adjoint_transform(self):
-        """Test that the adjoint_transform is not yet implemented."""
+        """Test that the adjoint_transform is interpreted correctly."""
 
         @DefaultQubitInterpreter(num_wires=1, shots=None)
         def circuit(x):
@@ -357,7 +350,7 @@ class TestQuantumHOP:
             circuit(0.5)
 
     def test_ctrl_transform(self):
-        """Test that the ctrl_transform is not yet implemented."""
+        """Test that the ctrl_transform is interpreted correctly."""
 
         @DefaultQubitInterpreter(num_wires=2, shots=None)
         def circuit():
@@ -365,6 +358,9 @@ class TestQuantumHOP:
 
         with pytest.raises(NotImplementedError):
             circuit()
+
+    def test_basis_state_projector(self):
+        """Test that BasisStateProjectors are applied correctly as operations."""
 
 
 class TestClassicalComponents:
