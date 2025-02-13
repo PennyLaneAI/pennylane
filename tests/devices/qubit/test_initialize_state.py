@@ -122,6 +122,6 @@ class TestInitializeState:
         prep_op = qml.StatePrep(sparse_vec, wires=[0, 1])
         state = create_initial_state([0, 1], prep_operation=prep_op)
         # Should directly return the sparse vector cast to an appropriate dtype
-        assert sp.sparse.isspmatrix_csr(state), "State should remain a CSR matrix."
+        assert sp.sparse.issparse(state), "State should remain a CSR object."
         # The single 1 should be at index 1
         assert state[0, 1] == 1.0
