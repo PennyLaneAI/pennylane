@@ -195,8 +195,53 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
+def decomposer(operations, stopping_condition, max_expansion=None, graph_optimization=False):
+    """Decomposes a quantum circuit into a user-specified gate set.
+
+    Args:
+        opertiions (List[Operator]): The list of quantum operations to be decomposed.
+        stopping_condition (Callable): A function that returns ``True`` if the operator belongs to the target gate set.
+        max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
+        graph_optimization (bool, optional): If True, the decomposition will be performed using
+            :class:`qml.decopmosition.DecompositionGraph`. Defaults to False.
+
+    Returns:
+        List[Operator]: The decomposed circuit.
+
+    Raises:
+        RecursionError: If the decomposition enters an infinite loop.
+    """
+    if graph_optimization:
+        try:
+            from pennylane.decomposition import DecompositionGraph
+        except ImportError as e:
+            raise ImportError(
+                "DecompositionGraph is not available. Please install the latest version of PennyLane."
+            ) from e
+
+        graph = DecompositionGraph(operations, stopping_condition)
+        return graph.solve()
+
+    try:
+        return [
+            final_op
+            for op in operations
+            for final_op in _operator_decomposition_gen(
+                op,
+                stopping_condition,
+                max_expansion=max_expansion,
+            )
+        ]
+    except RecursionError as e:
+        raise RecursionError(
+            "Reached recursion limit trying to decompose operations. Operator decomposition may "
+            "have entered an infinite loop. Setting max_expansion will terminate the decomposition "
+            "at a fixed recursion depth."
+        ) from e
+
+
 @partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
-def decompose(tape, gate_set=None, max_expansion=None):
+def decompose(tape, gate_set=None, max_expansion=None, graph_optimization=False):
     """Decomposes a quantum circuit into a user-specified gate set.
 
     Args:
@@ -207,6 +252,8 @@ def decompose(tape, gate_set=None, max_expansion=None):
             case the gate set is considered to be all available :doc:`quantum operators </introduction/operations>`.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
+        graph_optimization (bool, optional): If True, the decomposition will be performed using
+            :class:`qml.decopmosition.DecompositionGraph`. Defaults to False.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -327,10 +374,6 @@ def decompose(tape, gate_set=None, max_expansion=None):
     ───H†─│────────────╰●───────────────┤
     ──────╰●────────────────────────────┤
     """
-
-    if gate_set is None:
-        gate_set = set(qml.ops.__all__)
-
     if isinstance(gate_set, (str, type)):
         gate_set = set([gate_set])
 
@@ -338,6 +381,12 @@ def decompose(tape, gate_set=None, max_expansion=None):
         gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
         gate_names = set(gate for gate in gate_set if isinstance(gate, str))
         gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
+
+    # If the gate_set is None, we don't need to iterate over
+    # all the ops to construct `gate_types` or `gate_names`
+    if gate_set is None:
+        gate_names = set(qml.ops.__all__)
+        gate_set = lambda op: op.name in gate_names
 
     def stopping_condition(op):
         if not op.has_decomposition:
@@ -354,22 +403,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
     if all(stopping_condition(op) for op in tape.operations):
         return (tape,), null_postprocessing
 
-    try:
-        new_ops = [
-            final_op
-            for op in tape.operations
-            for final_op in _operator_decomposition_gen(
-                op,
-                stopping_condition,
-                max_expansion=max_expansion,
-            )
-        ]
-    except RecursionError as e:
-        raise RecursionError(
-            "Reached recursion limit trying to decompose operations. Operator decomposition may "
-            "have entered an infinite loop. Setting max_expansion will terminate the decomposition "
-            "at a fixed recursion depth."
-        ) from e
+    new_ops = decomposer(tape.operations, stopping_condition, max_expansion, graph_optimization)
 
     tape = tape.copy(operations=new_ops)
 
