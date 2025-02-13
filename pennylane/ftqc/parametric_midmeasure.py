@@ -234,16 +234,17 @@ def diagonalize_mcms(tape):
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
             expr = MeasurementValue(mps, processing_fn=processing_fn)
 
-            # add conditional diagonalizing gates to the tape
-            diag_gates = [
-                qml.ops.Conditional(expr=expr, then_op=gate) for gate in op.diagonalizing_gates()
-            ]
-            new_operations.extend(diag_gates)
+            # add conditional diagonalizing gates + conditional MCM to the tape
+            with qml.QueuingManager.stop_recording():
+                diag_gates = [
+                    qml.ops.Conditional(expr=expr, then_op=gate)
+                    for gate in op.diagonalizing_gates()
+                ]
+                new_mp = MidMeasureMP(
+                    op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
+                )
 
-            # add corresponding conditional with computational basis MCM to tape
-            new_mp = MidMeasureMP(
-                op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
-            )
+            new_operations.extend(diag_gates)
             new_operations.append(qml.ops.Conditional(expr=expr, then_op=new_mp))
 
             # track mapping from original to computational basis MCMs
