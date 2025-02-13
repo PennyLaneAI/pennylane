@@ -374,8 +374,6 @@ class TestTwoQubitStateSpecialCases:
 
     def test_globalphase(self, method, wire, ml_framework):
         """Test the application of a GlobalPhase gate on a two qubit state."""
-        if method == apply_operation_sparse_wrapped:
-            pytest.skip("GlobalPhase not supported by sparse method")
         initial_state = np.array(
             [
                 [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
