@@ -440,7 +440,6 @@ class TestMeasureFunctions:
 
 
 class TestDrawParametricMidMeasure:
-  
     @pytest.mark.matplotlib
     @pytest.mark.parametrize(
         "mp_class, expected_label",
