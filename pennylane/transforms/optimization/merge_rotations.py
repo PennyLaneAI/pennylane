@@ -58,6 +58,7 @@ def _get_plxpr_merge_rotations():
             """Interpret the previous operations on the wires of the given operation and
             refresh the previous operations dictionary."""
 
+            # Use list(dict(...)) as opposed to a set to maintain order
             previous_ops_on_wires = list(dict.fromkeys(self.previous_ops.get(w) for w in op.wires))
             for o in previous_ops_on_wires:
                 if o is not None:
@@ -136,6 +137,7 @@ def _get_plxpr_merge_rotations():
         def interpret_and_clear_previous_ops(self) -> None:
             """Interpret all the operations stored in self.previous_ops."""
 
+            # Use list(dict(...)) as opposed to a set to maintain order
             ops_remaining = list(dict.fromkeys((self.previous_ops.values())))
             for op in ops_remaining:
                 super().interpret_operation(op)
