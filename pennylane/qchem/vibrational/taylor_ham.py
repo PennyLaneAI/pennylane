@@ -320,11 +320,17 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     **Example**
 
     >>> freqs = np.array([0.0249722])
-    >>> pes_onemode = np.array([[0.08477, 0.01437, 0.00000, 0.00937, 0.03414]])
-    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode])
-    >>> coeffs = qml.qchem.taylor_coeffs(pes_object, 4, 2)
-    >>> print(coeffs)
-    [array([[-4.73959071e-05, -3.06785775e-03,  5.21798831e-04]])]
+    >>> dipole_onemode = np.array([[[-1.24222060e-16, -6.29170686e-17, -7.04678188e-02],
+    ...                             [ 3.83941489e-16, -2.31579327e-18, -3.24444991e-02],
+    ...                             [ 1.67813138e-17, -5.63904474e-17, -5.60662627e-15],
+    ...                             [-7.37584781e-17, -5.51948189e-17,  2.96786374e-02],
+    ...                             [ 1.40526000e-16, -3.67126324e-17,  5.92006212e-02]]])
+    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, dipole_data=[dipole_onemode])
+    >>> coeffs = qml.qchem.taylor_dipole_coeffs(pes_object, 4, 2)
+    >>> coeffs
+    ([array([[ 1.94875408e-16,  1.29426501e-17, -4.82683537e-17]])],
+     [array([[ 3.83462551e-17,  1.23251446e-18, -9.00117355e-18]])],
+     [array([[-1.54126823e-03,  8.17300533e-03,  3.94178001e-05]])])
     """
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
@@ -347,12 +353,45 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
 
 def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
-    r"""Compute fitted coefficients for the Taylor dipole operator.
+    r"""Compute the coefficients of Taylor dipole operator.
+
+    The coefficients are computed from a multi-dimensional polynomial fit over dipole moment data
+    computed along normal coordinates, with a polynomial specified by ``min_deg`` and ``max_deg``.
+
+    The dipole :math:`\hat D` along each :math:`x, y, z` direction is defined as:
+
+    .. math::
+
+        D(q_1,\cdots,q_M) = D_0 + \sum_{i=1}^M D_1^{(i)}(q_i) + \sum_{i>j}
+        D_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} D_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
+
+    where :math:`q` is a normal coordinate and :math:`D_n` represents the :math:`n`-mode component
+    of the dipole computed along the normal coordinate. The :math:`D_n` terms are defined
+    as:
+
+    .. math::
+
+		D_0 &\equiv D(q_1=0,\cdots,q_M=0) \\
+		D_1^{(i)}(q_i) &\equiv D(0,\cdots,0,q_i,0,\cdots,0) - D_0 \\
+		D_2^{(i,j)}(q_i,q_j) &\equiv D(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+		D_1^{(i)}(q_i) - D_1^{(j)}(q_j) - D_0  \\
+		\nonumber \vdots \, .
+
+    The one-mode Taylor dipole coefficinets, :math:`\Phi`, computed here are related to the dipole
+    data as:
+
+    .. math::
+
+        D_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ....
+
+    Similarly, the two-mode and three-mode Taylor dipole coeffiicents are computed if the two-mode
+    and three-mode dipole data, :math:`D_2^{(j, k)}(q_j, q_k)` and
+    :math:`D_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
 
     Args:
-        pes (VibrationalPES): object containing the vibrational potential energy surface data
-        max_deg (int): maximum degree of Taylor form polynomial
-        min_deg (int): minimum degree of Taylor form polynomial
+        pes (VibrationalPES): the vibrational potential energy surface object
+        max_deg (int): maximum degree of the polynomial used to compute the coefficients
+        min_deg (int): minimum degree of the polynomial used to compute the coefficients
 
     Returns:
         tuple: a tuple containing:
