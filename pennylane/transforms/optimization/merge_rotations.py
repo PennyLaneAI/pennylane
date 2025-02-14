@@ -34,7 +34,6 @@ def _get_plxpr_merge_rotations():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
-        from jax.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.operation import Operator
@@ -53,8 +52,29 @@ def _get_plxpr_merge_rotations():
             self.include_gates = include_gates
 
             # dict[wire, operator]
-            self.seen_operators = {}
+            self.previous_ops = {}
 
+        def interpret_and_refresh_previous_ops(self, op: Operator):
+            """Interpret the previous operations on the wires of the given operation and
+            refresh the previous operations dictionary."""
+
+            previous_ops_on_wires = set(self.previous_ops.get(w) for w in op.wires)
+            for o in previous_ops_on_wires:
+                if o is not None:
+                    for w in o.wires:
+                        self.previous_ops.pop(w)
+            for w in op.wires:
+                self.previous_ops[w] = op
+
+            # List comprehensions are run in a separate scope.
+            # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
+            # pylint: disable=super-with-arguments
+            return [
+                super(MergeRotationsInterpreter, self).interpret_operation(o)
+                for o in previous_ops_on_wires
+            ]
+
+        # pylint: disable=inconsistent-return-statements
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance.
 
@@ -68,104 +88,64 @@ def _get_plxpr_merge_rotations():
             so the output will not affect later equations in the circuit.
 
             See also: :meth:`~.interpret_operation_eqn`.
-
             """
 
             if self.include_gates is not None and op.name not in self.include_gates:
-                previous_ops_on_wires = set(self.seen_operators.get(w) for w in op.wires)
-                for o in previous_ops_on_wires:
-                    if o is not None:
-                        for w in o.wires:
-                            self.seen_operators.pop(w)
-                for w in op.wires:
-                    self.seen_operators[w] = op
-                # List comprehensions are run in a separate scope.
-                # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
-                # pylint: disable=super-with-arguments
-                return [
-                    super(MergeRotationsInterpreter, self).interpret_operation(o)
-                    for o in previous_ops_on_wires
-                ]
-
-            if op not in composable_rotations:
-                previous_ops_on_wires = set(self.seen_operators.get(w) for w in op.wires)
-                for o in previous_ops_on_wires:
-                    if o is not None:
-                        for w in o.wires:
-                            self.seen_operators.pop(w)
-                for w in op.wires:
-                    self.seen_operators[w] = op
-                # List comprehensions are run in a separate scope.
-                # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
-                # pylint: disable=super-with-arguments
-                return [
-                    super(MergeRotationsInterpreter, self).interpret_operation(o)
-                    for o in previous_ops_on_wires
-                ]
-
-            last_seen_op_on_same_wire = self.seen_operators.get(op.wires[0], None)
-            if last_seen_op_on_same_wire is None:
-                for w in op.wires:
-                    self.seen_operators[w] = op
+                self.interpret_and_refresh_previous_ops(op)
                 return []
 
-            with qml.capture.pause():
-                wires_exactly_match = op.wires == last_seen_op_on_same_wire.wires
-                are_same_type = isinstance(op, type(last_seen_op_on_same_wire))
+            if op not in composable_rotations:
+                self.interpret_and_refresh_previous_ops(op)
+                return []
 
-                if wires_exactly_match and are_same_type:
-                    if isinstance(op, qml.Rot):
-                        cumulative_angles = fuse_rot_angles(
-                            qml.math.stack(op.parameters),
-                            qml.math.stack(last_seen_op_on_same_wire.parameters),
-                        )
-                    else:
-                        cumulative_angles = qml.math.stack(op.parameters) + qml.math.stack(
-                            last_seen_op_on_same_wire.parameters
-                        )
+            # Get the previous operation on the same wire
+            previous_op = self.previous_ops.get(op.wires[0])
 
-                    # delete recorded operators on those wires
-                    for w in op.wires:
-                        self.seen_operators.pop(w)
-
-                    # replace with the newly merged one
-                    if qml.math.requires_grad(cumulative_angles) or not qml.math.allclose(
-                        cumulative_angles, 0.0, atol=self.atol, rtol=0
-                    ):
-                        for w in op.wires:
-                            self.seen_operators[w] = op.__class__(
-                                *cumulative_angles, wires=op.wires
-                            )
-
-                    return []
-
-                previous_ops_on_wires = set(self.seen_operators.get(w) for w in op.wires)
-                for o in previous_ops_on_wires:
-                    if o is not None:
-                        for w in o.wires:
-                            self.seen_operators.pop(w)
+            if previous_op is None:
                 for w in op.wires:
-                    self.seen_operators[w] = op
+                    self.previous_ops[w] = op
+                return []
 
-            # List comprehensions are run in a separate scope.
-            # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
-            # pylint: disable=super-with-arguments
-            return [
-                super(MergeRotationsInterpreter, self).interpret_operation(o)
-                for o in previous_ops_on_wires
-            ]
+            # Previous operator detected, check if we can merge
+            wires_exactly_match = op.wires == previous_op.wires
+            are_same_type = isinstance(op, type(previous_op))
+            can_merge = wires_exactly_match and are_same_type
 
-        def purge_seen_operators(self):
-            """Purge the seen operators to reset."""
-            ops_remaining = set(self.seen_operators.values())
+            if can_merge:
+                if isinstance(op, qml.Rot):
+                    cumulative_angles = fuse_rot_angles(
+                        qml.math.stack(op.parameters),
+                        qml.math.stack(previous_op.parameters),
+                    )
+                else:
+                    cumulative_angles = qml.math.stack(op.parameters) + qml.math.stack(
+                        previous_op.parameters
+                    )
+
+                # Replace the previous operation with the merged one
+                # pylint: disable = protected-access
+                for w in op.wires:
+                    self.previous_ops[w] = op.__class__._primitive.impl(
+                        *cumulative_angles, wires=op.wires
+                    )
+
+                return []
+
+            self.interpret_and_refresh_previous_ops(op)
+
+        def interpret_and_clear_previous_ops(self) -> None:
+            """Interpret all the operations stored in self.previous_ops."""
+
+            ops_remaining = set(self.previous_ops.values())
             for op in ops_remaining:
                 super().interpret_operation(op)
 
-            all_wires = tuple(self.seen_operators.keys())
-            for w in all_wires:
-                self.seen_operators.pop(w)
+            all_wires = tuple(self.previous_ops.keys())
 
-        def eval(self, jaxpr: Jaxpr, consts: list, *args) -> list:
+            for w in all_wires:
+                self.previous_ops.pop(w)
+
+        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
@@ -177,6 +157,7 @@ def _get_plxpr_merge_rotations():
                 list[TensorLike]: the results of the execution.
 
             """
+            # pylint: disable=too-many-branches,attribute-defined-outside-init
             self._env = {}
             self.setup()
 
@@ -186,35 +167,37 @@ def _get_plxpr_merge_rotations():
                 self._env[constvar] = const
 
             for eqn in jaxpr.eqns:
-                primitive = eqn.primitive
-                custom_handler = self._primitive_registrations.get(primitive, None)
 
+                custom_handler = self._primitive_registrations.get(eqn.primitive, None)
                 if custom_handler:
-                    self.purge_seen_operators()
+                    self.interpret_and_clear_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
-                elif getattr(primitive, "prim_type", "") == "operator":
+                elif getattr(eqn.primitive, "prim_type", "") == "operator":
                     outvals = self.interpret_operation_eqn(eqn)
-                elif getattr(primitive, "prim_type", "") == "measurement":
-                    self.purge_seen_operators()
+                elif getattr(eqn.primitive, "prim_type", "") == "measurement":
+                    self.interpret_and_clear_previous_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
                     invals = [self.read(invar) for invar in eqn.invars]
-                    subfuns, params = primitive.get_bind_params(eqn.params)
-                    outvals = primitive.bind(*subfuns, *invals, **params)
+                    subfuns, params = eqn.primitive.get_bind_params(eqn.params)
+                    outvals = eqn.primitive.bind(*subfuns, *invals, **params)
 
-                if not primitive.multiple_results:
+                if not eqn.primitive.multiple_results:
                     outvals = [outvals]
                 for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                     self._env[outvar] = outval
 
-            self.purge_seen_operators()
+            # The following is needed because any operations inside self.previous_ops have not yet
+            # been applied. At this point, we **know** that any operations that should be cancelled
+            # have been cancelled, and operations left inside self.previous_ops should be applied
+            self.interpret_and_clear_previous_ops()
 
             # Read the final result of the Jaxpr from the environment
             outvals = []
             for var in jaxpr.outvars:
                 outval = self.read(var)
-                if isinstance(outval, qml.operation.Operator):
+                if isinstance(outval, Operator):
                     outvals.append(super().interpret_operation(outval))
                 else:
                     outvals.append(outval)
