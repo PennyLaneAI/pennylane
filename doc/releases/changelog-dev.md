@@ -145,6 +145,9 @@
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
 
+* The template `MPSPrep` now has a gate decomposition. This enables its use with any device.
+  [(#6896)](https://github.com/PennyLaneAI/pennylane/pull/6896)
+
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
@@ -363,6 +366,8 @@
 
 This release contains contributions from (in alphabetical order):
 
+
+Guillermo Alonso,
 Utkarsh Azad,
 Yushao Chen,
 Isaac De Vlugt,

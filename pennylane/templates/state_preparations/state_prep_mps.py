@@ -15,9 +15,72 @@
 Contains the MPSPrep template.
 """
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.wires import Wires
+
+
+def right_canonicalize_mps(mps):
+    """Transform an MPS into a right-canonical MPS.
+
+    Args:
+        mps (list[TensorLike]): List of tensors representing the MPS.
+
+    Returns:
+        A list of tensors representing the MPS in right-canonical form.
+
+    .. seealso:: :class:`~.MPSPrep`.
+
+    """
+
+    is_right_canonical = True
+    d_shapes = []
+    for tensor in mps[1:-1]:
+        # Right-canonical definition
+        d_shapes += tensor.shape
+        M = qml.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+        if not qml.math.allclose(M, qml.math.eye(tensor.shape[0])):
+            is_right_canonical = False
+
+    if is_right_canonical:
+        return mps
+
+    max_bond_dim = qml.math.max(d_shapes)
+
+    L = len(mps)
+    output_mps = [None] * L
+
+    # Procedure analogous to the left-canonical conversion but starting from the right and storing the Vd
+    for i in range(L - 1, 0, -1):
+        chi_left, d, chi_right = mps[i].shape
+        M = mps[i].reshape(chi_left, d * chi_right)
+
+        # Perform Singular Value Decomposition (SVD)
+        # M ≈ U @ diag(S) @ Vd, where:
+        # - U represents an orthogonal rotation in the space of chi_left
+        # - diag(S) scales the singular values (stretching or contracting)
+        # - Vd represents another rotation in the space of d * chi_right
+        U, S, Vd = qml.math.linalg.svd(M, full_matrices=False)
+
+        # Truncate SVD components if needed
+        chi_new = min(int(max_bond_dim), len(S))
+        U = U[:, :chi_new]
+        S = S[:chi_new]
+        Vd = Vd[:chi_new, :]
+
+        # Store Vd reshaped as an MPS tensor in the output MPS
+        output_mps[i] = Vd.reshape(chi_new, d, chi_right)
+
+        # Contract U with diag(S) to pass the information to the left
+        US = U @ qml.math.diag(S)
+
+        # Merge US with the preceding MPS tensor, preserving the canonical structure
+        mps[i - 1] = qml.math.tensordot(mps[i - 1], US, axes=([2], [0]))
+
+    output_mps[0] = mps[0]
+    return output_mps
 
 
 class MPSPrep(Operation):
@@ -25,14 +88,27 @@ class MPSPrep(Operation):
 
     .. note::
 
-        Currently, this operator can only be used with ``qml.device(“lightning.tensor”)``.
+        This operator is natively supported on the ``lightning.tensor`` device, designed to run MPS structures
+        efficiently. For other devices, implementing this operation uses a gate-based decomposition which requires
+        auxiliary qubits (via ``work_wires``) to prepare the state vector represented by the MPS in a quantum circuit.
+
 
 
     Args:
-        mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
-            product of site matrices. See the usage details section for more information.
+        mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing a right-canonized MPS state
+            as a product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
+        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
+            dimension of the provided MPS is defined as ``2^len(work_wires)``. Default is ``None``.
+        right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed to the mps.
+            Default is ``False``.
+
+    The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
+
+    A right canonicalization of the MPS is required for non-tensor devices.
+
+    .. seealso:: :func:`~.right_canonicalize_mps`.
 
     **Example**
 
@@ -87,6 +163,15 @@ class MPSPrep(Operation):
         Additionally, the physical dimension of the site should always be fixed at :math:`2`
         (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
 
+        On the other hand, in order to be able to decompose this operator into gates, the MPS must fulfill an
+        additional property, it must be right-canonized.
+        A right-canonized MPS is a matrix product state where each tensor :math:`A^{(j)}` satisfies
+        the following orthonormality condition:
+
+        .. math::
+
+            \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}}
+
         The following example shows a valid MPS input containing four tensors with
         dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
 
@@ -112,7 +197,9 @@ class MPSPrep(Operation):
             ]
     """
 
-    def __init__(self, mps, wires, id=None):
+    def __init__(
+        self, mps, wires, work_wires=None, right_canonicalize=False, id=None
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         # Validate the shape and dimensions of the first tensor
         assert qml.math.isclose(
@@ -160,7 +247,18 @@ class MPSPrep(Operation):
         assert qml.math.isclose(
             new_dj0, dj2
         ), "Dimension mismatch: the last tensor's first dimension does not match the previous third dimension."
-        super().__init__(*mps, wires=wires, id=id)
+
+        self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
+        self.hyperparameters["right_canonicalize"] = right_canonicalize
+
+        if work_wires:
+            self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
+            all_wires = self.hyperparameters["input_wires"] + self.hyperparameters["work_wires"]
+        else:
+            self.hyperparameters["work_wires"] = None
+            all_wires = self.hyperparameters["input_wires"]
+
+        super().__init__(*mps, wires=all_wires, id=id)
 
     @property
     def mps(self):
@@ -168,7 +266,11 @@ class MPSPrep(Operation):
         return self.data
 
     def _flatten(self):
-        hyperparameters = (("wires", self.wires),)
+        hyperparameters = (
+            ("wires", self.hyperparameters["input_wires"]),
+            ("work_wires", self.hyperparameters["work_wires"]),
+            ("right_canonicalize", self.hyperparameters["right_canonicalize"]),
+        )
         return self.mps, hyperparameters
 
     @classmethod
@@ -177,8 +279,16 @@ class MPSPrep(Operation):
         return cls(data, **hyperparams_dict)
 
     def map_wires(self, wire_map):
-        new_wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        return MPSPrep(self.mps, new_wires)
+        new_wires = Wires(
+            [wire_map.get(wire, wire) for wire in self.hyperparameters["input_wires"]]
+        )
+        new_work_wires = Wires(
+            [wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]]
+        )
+
+        return MPSPrep(
+            self.mps, new_wires, new_work_wires, self.hyperparameters["right_canonicalize"]
+        )
 
     @classmethod
     def _primitive_bind_call(cls, mps, wires, id=None):
@@ -187,6 +297,96 @@ class MPSPrep(Operation):
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, mps=mps, wires=wires, id=id)  # pragma: no cover
         return cls._primitive.bind(*mps, wires=wires, id=id)
+
+    def decomposition(self):  # pylint: disable=arguments-differ
+        filtered_hyperparameters = {
+            key: value for key, value in self.hyperparameters.items() if key != "input_wires"
+        }
+        return self.compute_decomposition(
+            self.parameters, wires=self.hyperparameters["input_wires"], **filtered_hyperparameters
+        )
+
+    @staticmethod
+    def compute_decomposition(
+        mps, wires, work_wires, right_canonicalize=False
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
+        The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
+
+        Args:
+            mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
+                product of site matrices.
+
+            wires (Sequence[int]): wires that the template acts on
+            work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
+                dimension of the provided MPS is defined as ``2^len(work_wires)``. Default is ``None``.
+            right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed
+                to the mps. Default is ``False``.
+
+        Returns:
+            list[.Operator]: Decomposition of the operator
+        """
+
+        if work_wires is None:
+            raise ValueError("The qml.MPSPrep decomposition requires `work_wires` to be specified.")
+
+        bond_dimensions = []
+
+        for i in range(len(mps) - 1):
+            bond_dim = mps[i].shape[-1]
+            bond_dimensions.append(bond_dim)
+
+        max_bond_dimension = max(bond_dimensions)
+
+        if 2 ** len(work_wires) < max_bond_dimension:
+            raise ValueError("The bond dimension cannot exceed `2**len(work_wires)`.")
+
+        ops = []
+        n_wires = len(work_wires) + 1
+
+        mps[0] = mps[0].reshape((1, *mps[0].shape))
+        mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
+
+        # We transform the mps to ensure that the generated matrix is unitary
+        if right_canonicalize:
+            mps = right_canonicalize_mps(mps)
+
+        interface, dtype = qml.math.get_interface(mps[0]), mps[0].dtype
+
+        for i, Ai in enumerate(mps):
+
+            # encodes the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
+            vectors = []
+            for column in Ai:
+
+                vector = qml.math.zeros(2**n_wires, like=interface, dtype=dtype)
+
+                if interface == "jax":
+                    vector = vector.at[: len(column[0])].set(column[0])
+                    vector = vector.at[
+                        2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])
+                    ].set(column[1])
+
+                else:
+                    vector[: len(column[0])] = column[0]
+                    vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
+
+                vectors.append(vector)
+
+            vectors = qml.math.stack(vectors).T
+            d = vectors.shape[0]
+            k = vectors.shape[1]
+
+            # The unitary is completed using QR decomposition
+            rng = np.random.default_rng(42)
+            new_columns = qml.math.array(rng.random((d, d - k)))
+
+            matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
+            matrix *= qml.math.sign(qml.math.diag(R))  # enforces uniqueness for QR decomposition
+
+            ops.append(qml.QubitUnitary(matrix, wires=[wires[i]] + work_wires))
+
+        return ops
 
 
 if MPSPrep._primitive is not None:  # pylint: disable=protected-access
