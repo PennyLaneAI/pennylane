@@ -538,21 +538,18 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 
 # !TODO: in the future investigate if there's other missing operations
 # satisfying this condition.
-SYMMETRIC_REAL_OPS = (
-    qml.CNOT,
-    qml.MultiControlledX,
-    qml.Toffoli,
-    qml.SWAP,
-    qml.CSWAP,
-    qml.CZ,
-    qml.CH,
-)
-
-
 # Register all operations at once
 @apply_operation.register
 def apply_symmetric_real_op(
-    op: Union[*SYMMETRIC_REAL_OPS],
+    op: Union[
+        qml.CNOT,
+        qml.MultiControlledX,
+        qml.Toffoli,
+        qml.SWAP,
+        qml.CSWAP,
+        qml.CZ,
+        qml.CH,
+    ],
     state,
     is_state_batched: bool = False,
     debugger=None,
