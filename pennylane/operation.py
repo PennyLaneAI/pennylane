@@ -232,6 +232,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
+from pennylane.decomposition import CompressedResourceOp, DecompositionRule
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -679,9 +680,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     Optional[jax.core.Primitive]
     """
 
+    _decompositions: list[DecompositionRule] = []
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
+        cls._decompositions = []
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -1375,6 +1379,27 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
 
         raise DecompositionUndefinedError
+
+    @classproperty
+    def decompositions(self) -> list[DecompositionRule]:
+        """A list of decomposition rules for the operator type."""
+        return self._decompositions
+
+    @classmethod
+    def add_decomposition(cls, decomposition: DecompositionRule):
+        """Register a decomposition rule with the class."""
+        cls._decompositions.append(decomposition)
+
+    @property
+    def resource_params(self) -> dict:
+        """A dictionary containing the minimal information needed to compute a
+        resource estimate of the operator's decomposition."""
+        return {}
+
+    @property
+    def resource_rep(self) -> CompressedResourceOp:
+        """The compressed resource representation of this operator."""
+        return CompressedResourceOp(type(self), self.resource_params)
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
