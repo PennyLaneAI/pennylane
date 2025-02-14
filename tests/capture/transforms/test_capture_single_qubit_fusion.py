@@ -35,6 +35,8 @@ from pennylane.transforms.optimization.single_qubit_fusion import (
     single_qubit_plxpr_to_plxpr,
 )
 
+from pennylane.transforms.optimization import single_qubit_fusion
+
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
@@ -114,18 +116,24 @@ class TestSingleQubitFusionInterpreter:
 
         jaxpr = jax.make_jaxpr(transformed_circuit)()
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert len(qfunc_jaxpr.eqns) == 3
 
-        expected_primitive = {qml.Rot._primitive}
-        actual_primitives = {qfunc_jaxpr.eqns[0].primitive}
+        expected_primitive = {
+            qml.Rot._primitive,
+            qml.PauliZ._primitive,
+            qml.measurements.ExpectationMP._obs_primitive,
+        }
+        actual_primitives = {
+            qfunc_jaxpr.eqns[0].primitive,
+            qfunc_jaxpr.eqns[1].primitive,
+            qfunc_jaxpr.eqns[2].primitive,
+        }
         assert expected_primitive == actual_primitives
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.literals)
 
-        @qml.qnode(device=qml.device("default.qubit", wires=1))
-        def expected_circuit():
-            qml.Rot(-4.369330, 1.983815, -0.959211, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        expected_result = expected_circuit()
+        with qml.capture.pause():
+            # pylint: disable=not-callable
+            expected_result = single_qubit_fusion(circuit)()
 
         assert qml.math.allclose(result, expected_result)
