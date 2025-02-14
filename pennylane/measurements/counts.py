@@ -138,7 +138,11 @@ def counts(
         return CountsMP(obs=op, all_outcomes=all_outcomes)
 
     if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+        if not all(
+            qml.math.is_abstract(o)
+            or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
+            for o in op
+        ):
             raise qml.QuantumFunctionError(
                 "Only sequences of single MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "

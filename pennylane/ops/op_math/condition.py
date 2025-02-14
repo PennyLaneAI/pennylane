@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
-from pennylane.measurements import MeasurementValue
+from pennylane.measurements import MeasurementValue, get_mcm_predicates
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
@@ -668,19 +668,6 @@ def _validate_abstract_values(
             )
 
 
-def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
-    """Helper function to update predicates with mid-circuit measurements"""
-    new_conds = [conditions[0]]
-    false_cond = ~conditions[0]
-
-    for c in conditions[1:]:
-        new_conds.append(false_cond & c)
-        false_cond = false_cond & ~c
-
-    new_conds.append(false_cond)
-    return new_conds
-
-
 @functools.lru_cache
 def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
@@ -711,7 +698,7 @@ def _get_cond_qfunc_prim():
                     "Cannot use qml.cond with a combination of mid-circuit measurements "
                     "and other classical conditions as predicates."
                 )
-            conditions = _get_mcm_predicates(mcm_conditions)
+            conditions = get_mcm_predicates(mcm_conditions)
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
             consts = all_args[const_slice]

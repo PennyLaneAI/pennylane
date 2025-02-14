@@ -24,23 +24,9 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     measure_prim,
 )
-from pennylane.measurements import MeasurementValue
+from pennylane.measurements import MeasurementValue, get_mcm_predicates
 
 from .qscript import QuantumScript
-
-
-def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
-    """Helper function to update predicates with mid-circuit measurements"""
-    # copy from ops.op_math.condition.py
-    new_conds = [conditions[0]]
-    false_cond = ~conditions[0]
-
-    for c in conditions[1:]:
-        new_conds.append(false_cond & c)
-        false_cond = false_cond & ~c
-
-    new_conds.append(false_cond)
-    return new_conds
 
 
 class CollectOpsandMeas(PlxprInterpreter):
@@ -163,7 +149,7 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
                 "Cannot use qml.cond with a combination of mid-circuit measurements "
                 "and other classical conditions as predicates."
             )
-        conditions = _get_mcm_predicates(mcm_conditions)
+        conditions = get_mcm_predicates(mcm_conditions)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = all_args[const_slice]
