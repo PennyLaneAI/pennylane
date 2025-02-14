@@ -538,57 +538,73 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 
 # !TODO: in the future investigate if there's other missing operations
 # satisfying this condition.
-# Register all operations at once
-@apply_operation.register
-def apply_symmetric_real_op(
-    op: Union[
-        qml.CNOT,
-        qml.MultiControlledX,
-        qml.Toffoli,
-        qml.SWAP,
-        qml.CSWAP,
-        qml.CZ,
-        qml.CH,
-    ],
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    **_,
-):
-    r"""Apply real, symmetric operator (e.g. X, CX and related controlled-X variants) to a density matrix state.
+SYMMETRIC_REAL_OPS = (
+    qml.CNOT,
+    qml.MultiControlledX,
+    qml.Toffoli,
+    qml.SWAP,
+    qml.CSWAP,
+    qml.CZ,
+    qml.CH,
+)
 
-    This function handles CZ, CH, CNOT, CSWAP, SWAP, Toffoli, and general MultiControlledX operations using the same underlying
-    implementation, as they share the properties of being real and symmetric. For operations with 8 or fewer wires,
-    it uses the default einsum contraction. For larger operations, it leverages a custom kernel that
-    exploits the fact that for real, symmetric operators, the adjoint operation can be implemented
-    by shifting wires by `num_wires`.
 
-    Args:
-        op (.Operation): CZ, CH, CNOT, CSWAP, SWAP, Toffoli, and general MultiControlledX operation
-        state (tensor_like): The density matrix state to apply the operation to
-        is_state_batched (bool): Whether the state has a batch dimension. Rather than checking
-            matrix dimensions, we use op.batch_size for efficiency
-        debugger (optional): A debugger instance for operation validation
+def register_symmetric_real_ops():
+    def apply_symmetric_real_op(
+        op: Union[
+            qml.CNOT,
+            qml.MultiControlledX,
+            qml.Toffoli,
+            qml.SWAP,
+            qml.CSWAP,
+            qml.CZ,
+            qml.CH,
+        ],
+        state,
+        is_state_batched: bool = False,
+        debugger=None,
+        **_,
+    ):
+        r"""Apply real, symmetric operator (e.g. X, CX and related controlled-X variants) to a density matrix state.
 
-    Returns:
-        tensor_like: The transformed density matrix state
+        This function handles CZ, CH, CNOT, CSWAP, SWAP, Toffoli, and general MultiControlledX operations using the same underlying
+        implementation, as they share the properties of being real and symmetric. For operations with 8 or fewer wires,
+        it uses the default einsum contraction. For larger operations, it leverages a custom kernel that
+        exploits the fact that for real, symmetric operators, the adjoint operation can be implemented
+        by shifting wires by `num_wires`.
 
-    Note:
-        This is not a final version. Two possible improvements are:
-        1. More existing real, symmetric ops to include in this dispatch
-        2. A more general approach to handle other types of ops but following
-        similar logic as in this function.
-    """
+        Args:
+            op (.Operation): CZ, CH, CNOT, CSWAP, SWAP, Toffoli, and general MultiControlledX operation
+            state (tensor_like): The density matrix state to apply the operation to
+            is_state_batched (bool): Whether the state has a batch dimension. Rather than checking
+                matrix dimensions, we use op.batch_size for efficiency
+            debugger (optional): A debugger instance for operation validation
 
-    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
-    if len(op.wires) < TENSORDOT_STATE_NDIM_PERF_THRESHOLD:
-        return _apply_operation_default(op, state, is_state_batched, debugger)
+        Returns:
+            tensor_like: The transformed density matrix state
 
-    state = qml.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
+        Note:
+            This is not a final version. Two possible improvements are:
+            1. More existing real, symmetric ops to include in this dispatch
+            2. A more general approach to handle other types of ops but following
+            similar logic as in this function.
+        """
 
-    op_dagger = _get_dagger_symmetric_real_op(op, num_wires)
-    state = qml.devices.qubit.apply_operation(op_dagger, state, is_state_batched, debugger)
-    return state
+        num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+        if len(op.wires) < TENSORDOT_STATE_NDIM_PERF_THRESHOLD:
+            return _apply_operation_default(op, state, is_state_batched, debugger)
+
+        state = qml.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
+
+        op_dagger = _get_dagger_symmetric_real_op(op, num_wires)
+        state = qml.devices.qubit.apply_operation(op_dagger, state, is_state_batched, debugger)
+        return state
+
+    for op in SYMMETRIC_REAL_OPS:
+        apply_operation.register(op)(apply_symmetric_real_op)
+
+
+register_symmetric_real_ops()
 
 
 @apply_operation.register
