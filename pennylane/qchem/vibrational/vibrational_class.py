@@ -49,19 +49,50 @@ class VibrationalPES:
 
     **Example**
 
-    This example shows how to construct the ~qchem.vibrational.VibrationalPES object for a linear
-    molecule with only one vibrational normal mode. The one-mode potential energy surface data are
-    obtained by sampling ``9`` points along the normal mode, with grid points and weights that
-    correspond to a Gauss-Hermite quadrature.
+    This example shows how to construct the :class:`~.qchem.vibrational.VibrationalPES` object for a
+    linear diatomic molecule, e.g., H:math:`_2`, with only one vibrational normal mode. The one-mode
+    potential energy surface data are obtained by sampling ``9`` points along the normal mode, with
+    grid points and weights that correspond to a Gauss-Hermite quadrature.
 
     >>> freqs = np.array([0.01885397])
     >>> grid, weights = np.polynomial.hermite.hermgauss(9)
-    >>> pes_onebody = [[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
+    >>> pes_onemode = [[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
     ...                 0.00584504, 0.02881817, 0.08483433, 0.22025702]]
     >>> vib_pes = qml.qchem.VibrationalPES(freqs=freqs, grid=grid,
-    ...           gauss_weights=weights, pes_data=[pes_onebody])
+    ...           gauss_weights=weights, pes_data=[pes_onemode])
     >>> vib_pes.freqs
     array([0.01885397])
+
+    The following example shows how to construct the :class:`~.qchem.vibrational.VibrationalPES`
+    object for a nonlinear triatomic molecule, e.g., H:math:`_3^+`, with three one vibrational
+    normal modes. We assume that the potential energy surface and dipole data are obtained by
+    sampling ``5`` points along the normal mode, with grid points and weights that correspond to a
+    Gauss-Hermite quadrature.
+
+    >>> freqs = np.array([0.00978463, 0.00978489, 0.01663723])
+    >>> grid, weights = np.polynomial.hermite.hermgauss(9)
+    >>>
+    >>> uloc = np.array([[-0.99098585,  0.13396657,  0.],
+    ...                  [-0.13396657, -0.99098585,  0.],
+    ...                  [ 0.        ,  0.        ,  1.]])
+    >>>
+    >>> pes_onemode = np.random.rand(3, 5)
+    >>> pes_twomode = np.random.rand(3, 3, 5, 5)
+    >>> pes_threemode = np.random.rand(3, 3, 3, 5, 5, 5)
+    >>>
+    >>> dipole_onemode = np.random.rand(3, 5, 3)
+    >>> dipole_twomode = np.random.rand(3, 3, 5, 5, 3)
+    >>> dipole_threemode = np.random.rand(3, 3, 3, 5, 5, 5, 3)
+    >>>
+    >>> localized = True
+    >>> dipole_level = 3
+    >>>
+    >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
+    ...           uloc=uloc, pes_data=[pes_onemode, pes_twomode, pes_threemode],
+    ...           dipole_data=[dipole_onemode, dipole_twomode, dipole_threemode],
+    ...           localized=True, dipole_level=3)
+    >>> print(vib_obj.dipole_threemode.shape)
+    (3, 3, 3, 5, 5, 5, 3)
     """
 
     def __init__(
