@@ -25,6 +25,7 @@ Modules
     :toctree: api
 
 """
+
 from .parametric_midmeasure import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
