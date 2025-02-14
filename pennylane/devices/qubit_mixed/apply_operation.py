@@ -14,7 +14,7 @@
 """Functions to apply operations to a qubit mixed state."""
 # pylint: disable=unused-argument
 
-from functools import singledispatch
+from functools import singledispatch, update_wrapper
 from string import ascii_letters as alphabet
 
 import numpy as np
@@ -292,6 +292,19 @@ def apply_operation_tensordot(
     return result
 
 
+def _register_for_operations(dispatch_func):
+    """Extends singledispatch to register multiple operations at once"""
+    def register_for_operations(ops):
+        def decorator(func):
+            for op in ops:
+                dispatch_func.register(op)(func)
+            return func
+        return decorator
+    dispatch_func.register_for_operations = register_for_operations
+    return dispatch_func
+
+# Update the apply_operation definition
+@_register_for_operations
 @singledispatch
 def apply_operation(
     op: qml.operation.Operator,
