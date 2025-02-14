@@ -125,6 +125,10 @@ Templates
     ~ResourceTrotterProduct
     ~ResourceTrotterizedQfunc
     ~resource_trotterize
+    ~ResourceControlledSequence
+    ~ResourceModExp
+    ~ResourceMultiplier
+    ~ResourcePhaseAdder
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -207,6 +211,10 @@ from .ops import (
 )
 
 from .templates import (
+    ResourceControlledSequence,
+    ResourceModExp,
+    ResourceMultiplier,
+    ResourcePhaseAdder,
     ResourceBasisRotation,
     ResourcePrepSelPrep,
     ResourceQFT,

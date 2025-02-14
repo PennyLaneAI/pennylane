@@ -23,5 +23,10 @@ from .subroutines import (
     ResourceQubitization,
     ResourceReflection,
     ResourceSelect,
+    ResourceControlledSequence,
+    ResourceModExp,
+    ResourceMultiplier,
+    ResourcePhaseAdder,
 )
+
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
