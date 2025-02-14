@@ -1273,14 +1273,14 @@ class SWAP(Operation):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.SWAP.matrix`
+        .. seealso:: :meth:`~.SWAP.sparse_matrix`
 
         Returns:
-            ndarray: matrix
+            csr_matrix: matrix
 
         **Example**
 
-        >>> print(qml.SWAP.compute_matrix())
+        >>> print(qml.SWAP.compute_sparse_matrix())
         <Compressed Sparse Row sparse matrix of dtype 'int64'
                 with 4 stored elements and shape (4, 4)>
           Coords        Values
