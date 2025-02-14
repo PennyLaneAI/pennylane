@@ -49,7 +49,7 @@ class TestMPSPrep:
         qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def test_access_to_param(self):
-        """tests that the parameter is accessible."""
+        """Tests that the parameter is accessible."""
         mps = [
             np.array([[0.0, 0.107], [0.994, 0.0]]),
             np.array(
