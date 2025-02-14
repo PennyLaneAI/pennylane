@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Integrate PennyLane's graph-based decomposition solver with decompose.
+  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+
 * Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)

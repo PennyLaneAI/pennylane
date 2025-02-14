@@ -59,7 +59,7 @@ class DecompositionGraph:
 
     """
 
-    def __init__(self, operations: list[Operator], target_gate_set: set[str]):
+    def __init__(self, operations, target_gate_set: set[str]):
         self._original_ops = operations
         self._target_gate_set = target_gate_set
         self._original_ops_indices: set[int] = set()
