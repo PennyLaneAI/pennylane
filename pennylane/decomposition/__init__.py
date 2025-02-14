@@ -15,5 +15,5 @@
 """The decomposition module."""
 
 from .resources import Resources, CompressedResourceOp
-from .decomposition import DecompositionGraph
+from .decomposition import DecompositionGraph, DecompositionError
 from .decomposition_rule import decomposition, DecompositionRule

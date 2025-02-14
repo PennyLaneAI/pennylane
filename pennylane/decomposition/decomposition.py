@@ -144,7 +144,7 @@ class DecompositionGraph:
                 f"Decomposition not found for {op_names} to the gate set {self._target_gate_set}"
             )
 
-    def resource_estimates(self, op) -> Resources:
+    def resource_estimates(self, op: Operator) -> Resources:
         """Returns the resource estimates for a given operator.
 
         Args:
@@ -158,7 +158,7 @@ class DecompositionGraph:
         op_node_idx = self._op_node_indices[op_node]
         return self._visitor.d[op_node_idx]
 
-    def decomposition(self, op) -> DecompositionRule:
+    def decomposition(self, op: Operator) -> DecompositionRule:
         """Returns the optimal decomposition rule for a given operator.
 
         Args:
@@ -172,6 +172,18 @@ class DecompositionGraph:
         op_node_idx = self._op_node_indices[op_node]
         d_node_idx = self._visitor.p[op_node_idx]
         return self._graph[d_node_idx].rule
+
+    def check_decomposition(self, op) -> bool:
+        """Checks if an operation exists in the graph.
+
+        Args:
+            op (Operator): The operator to check for.
+
+        Returns:
+            bool: True if the operator exists in the graph, False otherwise.
+        """
+        op_node = CompressedResourceOp(type(op), op.resource_params)
+        return op_node in self._op_node_indices
 
 
 class _DecompositionSearchVisitor(DijkstraVisitor):

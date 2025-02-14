@@ -552,6 +552,9 @@ def _create_transform_primitive(name):
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
+        # consts = all_args[consts_slice]
+        # args = all_args[args_slice]
+        # return jax.core.eval_jaxpr(inner_jaxpr, consts, *args)
         raise NotImplementedError
 
     @transform_prim.def_abstract_eval

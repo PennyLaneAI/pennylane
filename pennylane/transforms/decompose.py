@@ -38,6 +38,7 @@ def _operator_decomposition_gen(
     acceptance_function: Callable[[qml.operation.Operator], bool],
     max_expansion: Optional[int] = None,
     current_depth=0,
+    graph=None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
 
@@ -48,6 +49,12 @@ def _operator_decomposition_gen(
 
     if acceptance_function(op) or max_depth_reached:
         yield op
+    elif graph is not None and graph.check_decomposition(op):
+        op_rule = graph.decomposition(op)
+        with qml.queuing.AnnotatedQueue() as decomposed_ops:
+            op_rule.impl(*op.parameters, wires=op.wires, **op.hyperparameters)
+        decomp = decomposed_ops.queue
+        current_depth += 1
     else:
         decomp = op.decomposition()
         current_depth += 1
@@ -58,6 +65,7 @@ def _operator_decomposition_gen(
                 acceptance_function,
                 max_expansion=max_expansion,
                 current_depth=current_depth,
+                graph=graph,
             )
 
 
@@ -80,6 +88,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
         def __init__(self, gate_set=None, max_expansion=None):
             self.max_expansion = max_expansion
+            self.graph = None
 
             if gate_set is None:
                 gate_set = set(qml.ops.__all__)
@@ -88,9 +97,11 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 gate_set = set([gate_set])
 
             if isinstance(gate_set, Iterable):
-                gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-                gate_names = set(gate for gate in gate_set if isinstance(gate, str))
-                self.gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
+                target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+                target_gate_names = set(gate for gate in gate_set if isinstance(gate, str))
+                self.gate_set = lambda op: (op.name in target_gate_names) or isinstance(
+                    op, target_gate_types
+                )
             else:
                 self.gate_set = gate_set
 
@@ -196,7 +207,7 @@ DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
 @partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
-def decompose(tape, gate_set=None, max_expansion=None):
+def decompose(tape, gate_set=None, max_expansion=None, graph_optimization=False):
     """Decomposes a quantum circuit into a user-specified gate set.
 
     Args:
@@ -207,6 +218,8 @@ def decompose(tape, gate_set=None, max_expansion=None):
             case the gate set is considered to be all available :doc:`quantum operators </introduction/operations>`.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
+        graph_optimization (bool, optional): If True, the decomposition will be performed using
+            :class:`qml.decomposition.DecompositionGraph`. Defaults to False.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -328,16 +341,20 @@ def decompose(tape, gate_set=None, max_expansion=None):
     ──────╰●────────────────────────────┤
     """
 
-    if gate_set is None:
-        gate_set = set(qml.ops.__all__)
-
     if isinstance(gate_set, (str, type)):
         gate_set = set([gate_set])
 
     if isinstance(gate_set, Iterable):
-        gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-        gate_names = set(gate for gate in gate_set if isinstance(gate, str))
-        gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
+        target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+        target_gate_names = set(gate for gate in gate_set if isinstance(gate, str))
+        gate_set = lambda op: (op.name in target_gate_names) or isinstance(op, target_gate_types)
+
+    # If the gate_set is None, we don't need to iterate over
+    # all the ops to construct `target_gate_types` or `target_gate_names`
+    if gate_set is None:
+        target_gate_types = None
+        target_gate_names = set(qml.ops.__all__)
+        gate_set = lambda op: op.name in target_gate_names
 
     def stopping_condition(op):
         if not op.has_decomposition:
@@ -354,14 +371,30 @@ def decompose(tape, gate_set=None, max_expansion=None):
     if all(stopping_condition(op) for op in tape.operations):
         return (tape,), null_postprocessing
 
+    graph_opt = None
+
+    if graph_optimization:
+        try:
+            # pylint: disable=import-outside-toplevel
+            from pennylane.decomposition import DecompositionGraph
+
+            target_gate_names = target_gate_names | set([gate.name for gate in target_gate_types])
+            graph_opt = DecompositionGraph(tape.operations, target_gate_names)
+            graph_opt.solve()
+
+        except qml.decomposition.DecompositionError as e:
+            print(e)
+            warnings.warn(
+                "Decomposition graph optimization failed. Falling back to default decomposition.",
+                UserWarning,
+            )
+            graph_opt = None
     try:
         new_ops = [
             final_op
             for op in tape.operations
             for final_op in _operator_decomposition_gen(
-                op,
-                stopping_condition,
-                max_expansion=max_expansion,
+                op, stopping_condition, max_expansion=max_expansion, graph=graph_opt
             )
         ]
     except RecursionError as e:
