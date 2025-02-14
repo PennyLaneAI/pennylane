@@ -6,8 +6,12 @@
 
 <h3>Improvements 🛠</h3>
 
-* Integrate the new API of `default.mixed` into PennyLane ecosystem.
+* The `default.mixed` device now adheres to the newer device API introduced in 
+  [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
   [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
+  
+  This means that `default.mixed` now supports not having to specify the number of wires,
+  more predictable behaviour with interfaces, support for `qml.Snapshot`, and more.
 
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
