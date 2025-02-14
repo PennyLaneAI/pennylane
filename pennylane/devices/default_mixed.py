@@ -14,9 +14,8 @@
 r"""
 The default.mixed device is PennyLane's standard qubit simulator for mixed-state computations.
 
-It implements the necessary :class:`~pennylane.devices.LegacyDevice` methods as well as some built-in
-qubit :doc:`operations </introduction/operations>`, providing a simple mixed-state simulation of
-qubit-based quantum circuits.
+It implements some built-in qubit :doc:`operations </introduction/operations>`, 
+providing a simple mixed-state simulation ofqubit-based quantum circuits.
 """
 # isort: skip_file
 # pylint: disable=wrong-import-order, ungrouped-imports
