@@ -549,7 +549,7 @@ SYMMETRIC_REAL_OPS = (
 )
 
 
-def register_symmetric_real_ops():
+def register_symmetric_real_ops(): # pylint: missing-function-docstring
     def apply_symmetric_real_op(
         op: Union[
             qml.CNOT,
