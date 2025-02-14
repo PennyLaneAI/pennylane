@@ -440,6 +440,7 @@ class TestMeasureFunctions:
 
 
 class TestDrawParametricMidMeasure:
+  
     @pytest.mark.matplotlib
     @pytest.mark.parametrize(
         "mp_class, expected_label",
@@ -679,7 +680,8 @@ class TestDiagonalizeMCMs:
         """Test that when calling diagonalize_mcms, references to previously
         diagonalized measurements that are stored in conditions on Conditional
         operators are updated to track the measurement on the tape following
-        diagonalization, rather than the original object"""
+        diagonalization, rather than the original object (for conditional
+        with MCM condition and MCM applied op)"""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)
@@ -706,7 +708,8 @@ class TestDiagonalizeMCMs:
         """Test that when calling diagonalize_mcms, references to previously
         diagonalized measurements that are stored in conditions on Conditional
         operators are updated to track the measurement on the tape following
-        diagonalization, rather than the original object"""
+        diagonalization, rather than the original object (for conditional
+        with MCM condition and non-MCM op)"""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)

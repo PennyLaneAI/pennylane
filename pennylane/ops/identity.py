@@ -16,6 +16,7 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
+from typing import Sequence
 
 from scipy import sparse
 
@@ -451,9 +452,13 @@ class GlobalPhase(Operation):
     def eigvals(self):
         return self.compute_eigvals(self.data[0], n_wires=len(self.wires))
 
-    def matrix(self, wire_order=None):
-        n_wires = len(wire_order) if wire_order else len(self.wires)
+    def matrix(self, wire_order: Sequence = None):
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
         return self.compute_matrix(self.data[0], n_wires=n_wires)
+
+    def sparse_matrix(self, wire_order: Sequence = None):
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
+        return self.compute_sparse_matrix(self.data[0], n_wires=n_wires)
 
     def adjoint(self):
         return GlobalPhase(-1 * self.data[0], self.wires)
