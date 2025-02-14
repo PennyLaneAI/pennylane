@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -121,6 +121,13 @@ class ResourceOperator(ABC):
     @classmethod
     def pow_resource_decomp(cls, z, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
         """Returns a compressed representation of the operator raised to a power"""
+        raise ResourcesNotDefined
+
+    @classmethod
+    def exp_resource_decomp(
+        cls, scalar, num_steps, *args, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation for the resources of the exponentiated operator"""
         raise ResourcesNotDefined
 
     @classmethod
