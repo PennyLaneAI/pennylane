@@ -41,6 +41,11 @@ class QubitGraph:
         self._graph_qubits = None  # The qubits underlying (nested within) the current qubit
 
     @property
+    def graph(self):
+        """Gets the underlying qubit graph."""
+        return self._graph_qubits
+
+    @property
     def nodes(self):
         """Gets the set of nodes in the underlying qubit graph.
 
