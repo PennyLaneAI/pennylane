@@ -146,8 +146,8 @@ class TestMergeRotationsInterpreter:
         assert len(jaxpr.eqns) == 7
         assert jaxpr.eqns[-7].primitive == qml.RY._primitive
         assert jaxpr.eqns[-6].primitive == qml.RX._primitive
-        assert jaxpr.eqns[-5].primitive == qml.RY._primitive
-        assert jaxpr.eqns[-4].primitive == qml.CRX._primitive
+        assert jaxpr.eqns[-5].primitive == qml.CRX._primitive
+        assert jaxpr.eqns[-4].primitive == qml.RY._primitive
         assert jaxpr.eqns[-3].primitive == qml.RZ._primitive
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
@@ -466,9 +466,9 @@ class TestExpandPlxprTransformIntegration:
         transformed_qfunc = qml.capture.expand_plxpr_transforms(qfunc)
         transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()
         assert len(transformed_jaxpr.eqns) == 6
-        assert transformed_jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert transformed_jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert transformed_jaxpr.eqns[2].primitive == qml.CNOT._primitive
+        assert transformed_jaxpr.eqns[0].primitive == qml.RY._primitive
+        assert transformed_jaxpr.eqns[1].primitive == qml.CNOT._primitive
+        assert transformed_jaxpr.eqns[2].primitive == qml.RX._primitive
         assert transformed_jaxpr.eqns[3].primitive == qml.RY._primitive
         assert transformed_jaxpr.eqns[4].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[5].primitive == qml.measurements.ExpectationMP._obs_primitive
@@ -488,9 +488,9 @@ class TestExpandPlxprTransformIntegration:
 
         jaxpr = jax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 6
-        assert jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert jaxpr.eqns[2].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[0].primitive == qml.RY._primitive
+        assert jaxpr.eqns[1].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[2].primitive == qml.RX._primitive
         assert jaxpr.eqns[3].primitive == qml.RY._primitive
         assert jaxpr.eqns[4].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[5].primitive == qml.measurements.ExpectationMP._obs_primitive
