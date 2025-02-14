@@ -283,8 +283,8 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
     .. math::
 
-        \hat V(q_1,\cdots,q_M) = \hat V_0 + \sum_{i=1}^M \hat V_1^{(i)}(q_i) + \sum_{i>j}
-        \hat V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} \hat V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
+        V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
+        V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
 
     where :math:`q` is a normal coordinate and :math:`V_n` represents the :math:`n`-mode component
     of the potential energy surface along the normal coordinate. The :math:`V_n` terms are defined
@@ -292,10 +292,10 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
     .. math::
 
-		\hat V_0 &\equiv \hat V(q_1=0,\cdots,q_M=0) = \hat V(\mathbf{R}^{(eq)}) \\
-		\hat V_1^{(i)}(q_i) &\equiv \hat V(0,\cdots,0,q_i,0,\cdots,0) - \hat V_0 \\
-		\hat V_2^{(i,j)}(q_i,q_j) &\equiv \hat V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
-		\hat V_1^{(i)}(q_i) - \hat V_1^{(j)}(q_j) - \hat V_0  \label{eq:2_mode} \\
+		V_0 &\equiv  V(q_1=0,\cdots,q_M=0) \\
+		V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
+		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
 		\nonumber \vdots \, .
 
     The one-mode Taylor coefficinets, :math:`\Phi`, computed here are related to the potential
@@ -320,17 +320,11 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     **Example**
 
     >>> freqs = np.array([0.0249722])
-    >>> dipole_onemode = np.array([[[-1.24222060e-16, -6.29170686e-17, -7.04678188e-02],
-    ...                             [ 3.83941489e-16, -2.31579327e-18, -3.24444991e-02],
-    ...                             [ 1.67813138e-17, -5.63904474e-17, -5.60662627e-15],
-    ...                             [-7.37584781e-17, -5.51948189e-17,  2.96786374e-02],
-    ...                             [ 1.40526000e-16, -3.67126324e-17,  5.92006212e-02]]])
-    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, dipole_data=[dipole_onemode])
-    >>> coeffs = qml.qchem.taylor_dipole_coeffs(pes_object, 4, 2)
-    >>> coeffs
-    ([array([[ 1.94875408e-16,  1.29426501e-17, -4.82683537e-17]])],
-     [array([[ 3.83462551e-17,  1.23251446e-18, -9.00117355e-18]])],
-     [array([[-1.54126823e-03,  8.17300533e-03,  3.94178001e-05]])])
+    >>> pes_onemode = np.array([[0.08477, 0.01437, 0.00000, 0.00937, 0.03414]])
+    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode])
+    >>> coeffs = qml.qchem.taylor_coeffs(pes_object, 4, 2)
+    >>> print(coeffs)
+    [array([[-4.73959071e-05, -3.06785775e-03,  5.21798831e-04]])]
     """
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
@@ -358,7 +352,7 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
     The coefficients are computed from a multi-dimensional polynomial fit over dipole moment data
     computed along normal coordinates, with a polynomial specified by ``min_deg`` and ``max_deg``.
 
-    The dipole :math:`\hat D` along each :math:`x, y, z` direction is defined as:
+    The dipole :math:`D` along each :math:`x, y, z` direction is defined as:
 
     .. math::
 
@@ -401,32 +395,16 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
 
     **Example**
 
-    >>> freqs = np.array([0.01885397])
-    >>> grid, weights = np.polynomial.hermite.hermgauss(9)
-    >>> pes_onebody = np.array([[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
-    ...                          0.00584504, 0.02881817, 0.08483433, 0.22025702]])
-    >>> pes_twobody = None
-    >>> dipole_onebody = np.array([[[-1.92201700e-16,  1.45397041e-16, -1.40451549e-01],
-    ...                             [-1.51005108e-16,  9.53185441e-17, -1.03377032e-01],
-    ...                             [-1.22793018e-16,  7.22781963e-17, -6.92825934e-02],
-    ...                             [-1.96537436e-16, -5.86686504e-19, -3.52245369e-02],
-    ...                             [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
-    ...                             [ 5.24758835e-17, -1.40650833e-16,  3.69955543e-02],
-    ...                             [-4.52407941e-17,  1.38406311e-16,  7.60888733e-02],
-    ...                             [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
-    ...                             [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]])
-    >>> vib_obj = qml.qchem.VibrationalPES(
-    ...     freqs=freqs,
-    ...     grid=grid,
-    ...     gauss_weights=weights,
-    ...     uloc=None,
-    ...     pes_data=[pes_onebody, pes_twobody],
-    ...     dipole_data=[dipole_onebody],
-    ...     localized=False
-    ... )
-    >>> x, y, z = qml.qchem.taylor_dipole_coeffs(vib_obj, 4, 2)
-    >>> print(z)
-    [array([[ 1.64124324e-03,  5.39120159e-03, -4.80053702e-05]])]
+    >>> freqs = np.array([0.0249722])
+    >>> dipole_onemode = np.array([[[-1.24222060e-16, -6.29170686e-17, -7.04678188e-02],
+    ...                             [ 3.83941489e-16, -2.31579327e-18, -3.24444991e-02],
+    ...                             [ 1.67813138e-17, -5.63904474e-17, -5.60662627e-15],
+    ...                             [-7.37584781e-17, -5.51948189e-17,  2.96786374e-02],
+    ...                             [ 1.40526000e-16, -3.67126324e-17,  5.92006212e-02]]])
+    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, dipole_data=[dipole_onemode])
+    >>> coeffs_x, coeffs_y, coeffs_z = qml.qchem.taylor_dipole_coeffs(pes_object, 4, 2)
+    >>> print(coeffs_z)
+    [array([[-1.54126823e-03,  8.17300533e-03,  3.94178001e-05]])]
     """
     coeffs_x_1D, predicted_x_1D = _fit_onebody(
         pes.dipole_onemode[:, :, 0], max_deg, min_deg=min_deg
@@ -662,10 +640,10 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
     .. math::
 
-		\hat V_0 &\equiv \hat V(q_1=0,\cdots,q_M=0) = \hat V(\mathbf{R}^{(eq)}) \\
-		\hat V_1^{(i)}(q_i) &\equiv \hat V(0,\cdots,0,q_i,0,\cdots,0) - \hat V_0 \\
-		\hat V_2^{(i,j)}(q_i,q_j) &\equiv \hat V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
-		\hat V_1^{(i)}(q_i) - \hat V_1^{(j)}(q_j) - \hat V_0  \label{eq:2_mode} \\
+		V_0 &\equiv  V(q_1=0,\cdots,q_M=0) \\
+		V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
+		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
 		\nonumber \vdots \, .
 
     These terms are then used in a multi-dimensional polynomial fit with a polynomial specified by
@@ -784,10 +762,10 @@ def taylor_hamiltonian(
 
     .. math::
 
-		\hat V_0 &\equiv \hat V(q_1=0,\cdots,q_M=0) = \hat V(\mathbf{R}^{(eq)}) \\
-		\hat V_1^{(i)}(q_i) &\equiv \hat V(0,\cdots,0,q_i,0,\cdots,0) - \hat V_0 \\
-		\hat V_2^{(i,j)}(q_i,q_j) &\equiv \hat V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
-		\hat V_1^{(i)}(q_i) - \hat V_1^{(j)}(q_j) - \hat V_0  \label{eq:2_mode} \\
+		V_0 &\equiv  V(q_1=0,\cdots,q_M=0) \\
+		V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
+		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
 		\nonumber \vdots \, .
 
     These terms are then used in a multi-dimensional polynomial fit with a polynomial specified by
