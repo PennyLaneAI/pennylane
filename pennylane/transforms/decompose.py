@@ -88,6 +88,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
         def __init__(self, gate_set=None, max_expansion=None):
             self.max_expansion = max_expansion
+            self.graph = None
 
             if gate_set is None:
                 gate_set = set(qml.ops.__all__)
@@ -218,7 +219,7 @@ def decompose(tape, gate_set=None, max_expansion=None, graph_optimization=False)
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
         graph_optimization (bool, optional): If True, the decomposition will be performed using
-            :class:`qml.decopmosition.DecompositionGraph`. Defaults to False.
+            :class:`qml.decomposition.DecompositionGraph`. Defaults to False.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -340,8 +341,6 @@ def decompose(tape, gate_set=None, max_expansion=None, graph_optimization=False)
     ──────╰●────────────────────────────┤
     """
 
-    # print("Decompose")
-
     if isinstance(gate_set, (str, type)):
         gate_set = set([gate_set])
 
@@ -378,15 +377,18 @@ def decompose(tape, gate_set=None, max_expansion=None, graph_optimization=False)
         try:
             # pylint: disable=import-outside-toplevel
             from pennylane.decomposition import DecompositionGraph
-        except ImportError as e:
-            raise ImportError(
-                "DecompositionGraph is not available. Please install the latest version of PennyLane."
-            ) from e
 
-        target_gate_names = target_gate_names | set([gate.name for gate in target_gate_types])
-        graph_opt = DecompositionGraph(tape.operations, target_gate_names)
-        graph_opt.solve()
+            target_gate_names = target_gate_names | set([gate.name for gate in target_gate_types])
+            graph_opt = DecompositionGraph(tape.operations, target_gate_names)
+            graph_opt.solve()
 
+        except qml.decomposition.DecompositionError as e:
+            print(e)
+            warnings.warn(
+                "Decomposition graph optimization failed. Falling back to default decomposition.",
+                UserWarning,
+            )
+            graph_opt = None
     try:
         new_ops = [
             final_op

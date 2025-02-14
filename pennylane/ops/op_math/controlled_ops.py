@@ -902,7 +902,7 @@ class CNOT(ControlledOp):
 
     @property
     def has_decomposition(self):
-        return False
+        return True
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):  # -> List["Operator"]:

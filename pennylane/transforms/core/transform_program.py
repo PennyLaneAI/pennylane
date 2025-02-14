@@ -550,7 +550,38 @@ class TransformProgram:
             return [qml.math.get_trainable_indices(param) for param in params]
         return None
 
+    @overload
     def __call__(
+        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.core.ClosedJaxpr": ...
+
+    @overload
+    def __call__(
+        self, tapes: QuantumScriptBatch
+    ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
+    def __call__(self, *args, **kwargs):
+        if isinstance(args[0], Sequence):
+            return self.__call_tapes(args[0])
+        return self.__call_jaxpr(*args, **kwargs)
+
+    def __call_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.core.ClosedJaxpr":
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        if not self:
+            f = partial(qml.capture.PlxprInterpreter().eval, jaxpr, consts)
+            return jax.make_jaxpr(f)(*args)
+        for container in self:
+            _, targs, tkwargs, _, plxpr_transform, _, _ = container
+            cur_jaxpr = plxpr_transform(jaxpr, consts, targs, tkwargs, *args)
+            jaxpr = cur_jaxpr.jaxpr
+            consts = cur_jaxpr.consts
+
+        return cur_jaxpr
+
+    def __call_tapes(
         self, tapes: QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]:
         if not self:
