@@ -11,80 +11,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the classes and functions for creating a cluster state."""
+"""
+This file contains the classes and functions to create lattice structure object. 
+This object stores all the topological information of a lattice.
+"""
 
-
-import math
-import matplotlib.pyplot as plt
 import networkx as nx
-import numpy as np
+from pennylane import numpy as np
 
+class ClusterStateLattice:
+    """Class of cluster states lattice creation for measurement base quantum computing (MBQC). 
 
-class ClusterState:
-    """Class of stabilizer-formalism cluster state for measurement-based quantum computing(MBQC).
-
-    Cluster states is a specific instance of a graph state as illustated in [Entanglement in Graph States and its Applications, arXiv:quant-ph/0602096].
-    With cluster states, univeral computation can be realized without the need of making use of any controlled two-system quantum gates. 
-
-    Vertex connectivity:
-    A cluster state can be defined in 1,2 and 3 dimensions, correponding to 1-D chain lattice, 2-D rectangular lattice and 3-D cubic lattices. 
-    
-    Stabilizer:
-    Each vertex is a cluster state represents a qubit and there is one stabilizer generator S_j per graph vertex j of the form
-    S_j = X_{j} \prod_{k\in N(j)} Z_k
-    where the neighborhood N(j) is the set of vertices which share an edge with j [Cluster-state code, https://errorcorrectionzoo.org/c/cluster_state].
-
-    #TODO: do we need 
-
-    
+    Cluster states are usually generated in lattices of qubits and used as resources for MBQC [Entanglement in Graph States and its Applications, arXiv:quant-ph/0602096].
+    Cluster state lattices can be in 1D, 2D or 3D.
 
     Args:
-
-    graph: nx.Graph
-
+        dims: dimensions
+        graph:
     """
-    _short_name = "cluster_state"
+    _short_name = "cluster_state_lattice"
 
-    def __init__(self):
-        self._graph = None
-        self._graph_type = None
-        self._num_vertex = None
-
-    def set_graph(self, graph: nx.Graph):
+    def __init__(self, dims: list = None, graph: nx.Graph = None):
+        if dims is None and graph is None:
+            raise ValueError("Please provide either lattice dimensions or a networkx graph object to create a lattice structure.")
+        if dims is not None and graph is not None:
+            raise ValueError("Please provide either lattice dimensions or a networkx graph object to create a lattice structure.")
         self._graph = graph
+        if self._graph is not None:
+            self._set_grid_graph(dims)
 
-    def set_grid_graph(self, dims: list):
+    def _set_grid_graph(self, dims: list):
         assert len(dims) > 0 and len(dims) < 4, f"{len(dims)}-dimension lattice is not supported."
         self._graph = nx.grid_graph(dims)
-        # map n-dimension index labels to 1d index
-        mapping = {}
-        for node in self._graph:
-            mapping[node] = np.ravel_multi_index(node, list(reversed(dims)), order='F')
-        self._graph = nx.relabel_nodes(self._graph, mapping)
-
-        # Add stabilizer attirbutes
-        stabilizers = {}
-        #Loop over all the neigbors and add it the stabilizers
-        for node in self._graph:
-            neighbors = nx.all_neighbors(self._graph, node)
-            stabilizer = ["X" + str(node)]
-            for neighbor in neighbors:
-                stabilizer.append("Z"+str(neighbor))
-            stabilizers[node] = stabilizer
     
-        # Add stabilizers
-        nx.set_node_attributes(self._graph, stabilizers, "stabilizers")
-
-        # set attribute to edges
-        edge_labels = "CNOT"
-        nx.set_edge_attributes(self._graph, edge_labels, "ops")
+    def get_nodes(self):
+        return self._graph.nodes
     
-    def draw(self):
-        pos = nx.spring_layout(self._graph)
-        nx.draw(self._graph, pos, with_labels=True)
-        #nx.draw_networkx_labels(self._graph, pos, labels=nx.get_node_attributes(self._graph,'stabilizers')) # Draw edge labels
-        nx.draw_networkx_edge_labels(self._graph, pos, edge_labels=nx.get_edge_attributes(self._graph,'ops')) # Draw edge labels
-        plt.show()
 
+    def get_graph(self):
+        return self._graph
 
 
