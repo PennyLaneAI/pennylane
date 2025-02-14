@@ -157,8 +157,41 @@ class TestQubitGraphsInitialization:
             assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
 
 
+class TestQubitGraphOperations:
+    """Tests for operations on a QubitGraph."""
+
+    def test_clear(self):
+        """Test basic usage of the ``QubitGraph.clear`` method."""
+        q = QubitGraph()
+        assert q.graph is None
+
+        q.init_graph(nx.grid_2d_graph(2, 1))
+        assert q.graph is not None
+
+        q.clear()
+        assert q.graph is None
+
+    def test_connected_qubits(self):
+        """Test basic usage of the ``QubitGraph.connected_qubits`` method."""
+        q = QubitGraph()
+        q.init_graph(nx.grid_2d_graph(2, 2))
+
+        assert set(q.connected_qubits((0, 0))) == set(
+            [q.nodes[(0, 1)]["qubits"], q.nodes[(1, 0)]["qubits"]]
+        )
+        assert set(q.connected_qubits((0, 1))) == set(
+            [q.nodes[(0, 0)]["qubits"], q.nodes[(1, 1)]["qubits"]]
+        )
+        assert set(q.connected_qubits((1, 0))) == set(
+            [q.nodes[(0, 0)]["qubits"], q.nodes[(1, 1)]["qubits"]]
+        )
+        assert set(q.connected_qubits((1, 1))) == set(
+            [q.nodes[(0, 1)]["qubits"], q.nodes[(1, 0)]["qubits"]]
+        )
+
+
 class TestQubitGraphsWarnings:
-    """Tests for QubitGraph warning messages"""
+    """Tests for QubitGraph warning messages."""
 
     def test_access_uninitialized_nodes_warning(self):
         """Test that accessing the nodes property of an uninitialized graph emits a UserWarning."""

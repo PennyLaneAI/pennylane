@@ -92,6 +92,23 @@ class QubitGraph:
         """Clears the graph of underlying qubits."""
         self._graph_qubits = None
 
+    def connected_qubits(self, node):
+        """Returns an iterator over all of the qubits connected to the qubit with label ``node``.
+
+        Args:
+            node (node like): The label of a node in the qubit graph.
+
+        Returns:
+            iterator: An iterator over all QubitGraph objects connected to the qubit with label
+                ``node``.
+        """
+        if not self.is_initialized:
+            self._warn_reinitialization()
+            return
+
+        for neighbor in self._graph_qubits.neighbors(node):
+            yield self._graph_qubits.nodes[neighbor]["qubits"]
+
     def _warn_uninitialized(self):
         """Emit a UserWarning when attempting to access an uninitialized graph."""
         warnings.warn("Attempting to access an uninitialized QubitGraph.", UserWarning)
