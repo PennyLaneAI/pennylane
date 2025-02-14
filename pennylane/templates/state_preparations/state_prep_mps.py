@@ -351,13 +351,12 @@ class MPSPrep(Operation):
         if right_canonicalize:
             mps = right_canonicalize_mps(mps)
 
+        interface, dtype = qml.math.get_interface(mps[0]), mps[0].dtype
+
         for i, Ai in enumerate(mps):
 
             # encodes the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
-
             vectors = []
-            interface, dtype = qml.math.get_interface(mps[0]), mps[0].dtype
-
             for column in Ai:
 
                 vector = qml.math.zeros(2**n_wires, like=interface, dtype=dtype)
