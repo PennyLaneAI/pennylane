@@ -387,7 +387,7 @@ class TestDiagonalizeMCMs:
             != new_tape.operations[4].meas_val.processing_fn
         )
 
-    def test_diagonalizing_measurements_cond_input(self):
+    def test_diagonalizing_measurements_cond_and_op(self):
         """Test that when calling diagonalize_mcms, references to previously
         diagonalized measurements that are stored in conditions on Conditional
         operators are updated to track the measurement on the tape following
@@ -405,6 +405,33 @@ class TestDiagonalizeMCMs:
 
         (new_tape,), _ = diagonalize_mcms(original_tape)
         assert len(new_tape.operations) == 6
+        for op in new_tape.operations[3:]:
+            assert isinstance(op, qml.ops.Conditional)
+
+        new_mp = new_tape.operations[2]
+        assert not isinstance(new_mp, ParametricMidMeasureMP)
+        assert isinstance(new_mp, MidMeasureMP)
+
+        assert new_tape.operations[3].meas_val.measurements == [new_mp]
+
+    def test_diagonalizing_measurements_cond(self):
+        """Test that when calling diagonalize_mcms, references to previously
+        diagonalized measurements that are stored in conditions on Conditional
+        operators are updated to track the measurement on the tape following
+        diagonalization, rather than the original object"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(1.2, 0)
+            mp = ParametricMidMeasureMP(0, angle=1.2, plane="YZ")
+            mv = MeasurementValue([mp], processing_fn=lambda v: v)
+            qml.cond(mv == 0, partial(qml.RX, 1.2))(wires=2)
+
+        original_tape = qml.tape.QuantumScript.from_queue(q)
+        old_mp = original_tape.operations[1]
+        assert isinstance(old_mp, ParametricMidMeasureMP)
+
+        (new_tape,), _ = diagonalize_mcms(original_tape)
+        assert len(new_tape.operations) == 4
         for op in new_tape.operations[3:]:
             assert isinstance(op, qml.ops.Conditional)
 
