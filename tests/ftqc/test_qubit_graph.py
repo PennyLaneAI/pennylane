@@ -34,6 +34,9 @@ class TestQubitGraphsInitialization:
         qubit = QubitGraph()
         qubit.init_graph(g)
 
+        assert set(qubit.nodes) == set(g.nodes)
+        assert set(qubit.edges) == set(g.edges)
+
         for node in qubit.nodes:
             assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
 
@@ -51,8 +54,9 @@ class TestQubitGraphsInitialization:
         m, n = 2, 3
         qubit.init_graph_2d_grid(m, n)
 
-        assert len(qubit.nodes) == m * n
-        assert len(qubit.edges) == m * (n - 1) + n * (m - 1)
+        expected_graph = nx.grid_2d_graph(m, n)
+        assert set(qubit.nodes) == set(expected_graph.nodes)
+        assert set(qubit.edges) == set(expected_graph.edges)
 
         for node in qubit.nodes:
             assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
@@ -85,13 +89,18 @@ class TestQubitGraphsInitialization:
 
             qubit0.nodes[node]["qubits"] = qubit1
 
-        assert len(qubit0.nodes) == m0 * n0
-        assert len(qubit0.edges) == m0 * (n0 - 1) + n0 * (m0 - 1)
+        expected_graph0 = nx.grid_2d_graph(m0, n0)
+        assert set(qubit0.nodes) == set(expected_graph0.nodes)
+        assert set(qubit0.edges) == set(expected_graph0.edges)
+
+        expected_graph1 = nx.grid_2d_graph(m1, n1)
+        expected_graph1_nodes_set = set(expected_graph1.nodes)
+        expected_graph1_edges_set = set(expected_graph1.edges)
 
         for node in qubit0.nodes:
             qubit1 = qubit0.nodes[node]["qubits"]
-            assert len(qubit1.nodes) == m1 * n1
-            assert len(qubit1.edges) == m1 * (n1 - 1) + n1 * (m1 - 1)
+            assert set(qubit1.nodes) == expected_graph1_nodes_set
+            assert set(qubit1.edges) == expected_graph1_edges_set
 
     def test_init_graph_3d_grid(self):
         """Test that we can initialize a QubitGraph with a 3D Cartesian grid of underlying qubits."""
@@ -99,7 +108,9 @@ class TestQubitGraphsInitialization:
         n0, n1, n2 = 2, 3, 4
         qubit.init_graph_nd_grid((n0, n1, n2))
 
-        assert len(qubit.nodes) == n0 * n1 * n2
+        expected_graph = nx.grid_graph((n0, n1, n2))
+        assert set(qubit.nodes) == set(expected_graph.nodes)
+        assert set(qubit.edges) == set(expected_graph.edges)
 
         for node in qubit.nodes:
             assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
@@ -111,8 +122,36 @@ class TestQubitGraphsInitialization:
         qubit = QubitGraph()
         qubit.init_graph_surface_code_17()
 
-        assert len(qubit.nodes) == 17
-        assert len(qubit.edges) == 24
+        # Create the expected graph structure for Surface Code 17
+        # This is essentially duplicated from the QubitGraph implementation, but it ensures that
+        # accidental changes to the production code will result in a test failure
+        data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
+        anci_qubits = [
+            ("anci", i) for i in range(9, 17)
+        ]  # 8 ancilla qubits, indexed 9, 10, ..., 16
+
+        expected_graph = nx.Graph()
+        expected_graph.add_nodes_from(data_qubits)
+        expected_graph.add_nodes_from(anci_qubits)
+
+        # Adjacency list showing the connectivity of each ancilla qubit to its neighbouring data qubits
+        anci_adjacency_list = {
+            9: [1, 2],
+            10: [0, 3],
+            11: [0, 1, 3, 4],
+            12: [1, 2, 4, 5],
+            13: [3, 4, 6, 7],
+            14: [4, 5, 7, 8],
+            15: [5, 8],
+            16: [6, 7],
+        }
+
+        for anci_node, data_nodes in anci_adjacency_list.items():
+            for data_node in data_nodes:
+                expected_graph.add_edge(("anci", anci_node), ("data", data_node))
+
+        assert set(qubit.nodes) == set(expected_graph.nodes)
+        assert set(qubit.edges) == set(expected_graph.edges)
 
         for node in qubit.nodes:
             assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
