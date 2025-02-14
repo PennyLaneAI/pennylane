@@ -731,8 +731,16 @@ class TestDiagonalizeMCMs:
 
 
 class TestWorkflows:
+    @pytest.mark.parametrize(
+        "rot_gate, measurement_fn",
+        [
+            (partial(qml.RX, 2.345), measure_y),
+            (partial(qml.RY, -2.345), measure_x),
+            (partial(qml.RX, 2.345), partial(measure_arbitrary_basis, angle=np.pi / 2, plane="XY")),
+        ],
+    )
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
-    def test_execution(self, mcm_method, shots):
+    def test_simple_execution(self, rot_gate, measurement_fn, mcm_method, shots):
         """Test that we can execute a QNode with a ParametricMidMeasureMP and produce
         an accurate result"""
 
@@ -741,11 +749,13 @@ class TestWorkflows:
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ():
-            qml.RX(2.345, 0)
-            ParametricMidMeasureMP(0, angle=np.pi / 2, plane="XY")
+            rot_gate(0)
+            measurement_fn(0)
             return qml.expval(qml.Z(0))
 
         if shots:
+            # the result is on the order of 1 (-0.7), and an uncertainty ~1.5-2 orders of magnitude
+            # smaller than the result is sufficiently accurate for a shots-based measurement
             assert np.isclose(circ(), -np.sin(2.345), atol=0.03)
         else:
             assert np.isclose(circ(), -np.sin(2.345))
@@ -770,8 +780,19 @@ class TestWorkflows:
 
         assert np.isclose(circ(), -np.sin(2.345))
 
+    @pytest.mark.parametrize(
+        "rot_gate, measurement_fn",
+        [
+            (partial(qml.RX, np.pi / 2), measure_y),
+            (partial(qml.RY, -np.pi / 2), measure_x),
+            (
+                partial(qml.RX, np.pi / 2),
+                partial(measure_arbitrary_basis, angle=np.pi / 2, plane="XY"),
+            ),
+        ],
+    )
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
-    def test_condition_of_cond(self, mcm_method, shots):
+    def test_condition_of_cond(self, rot_gate, measurement_fn, mcm_method, shots):
         """Test that we can execute a QNode with a ParametricMidMeasureMP as the condition of a conditional,
         and produce an accurate result"""
 
@@ -780,10 +801,15 @@ class TestWorkflows:
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ():
-            qml.RX(np.pi / 2, 0)
-            m = qml.ftqc.measure_y(0)  # always 1
+            rot_gate(0)
+            m = measurement_fn(0)  # always 1
 
-            qml.cond(m == 1, qml.RX)(2.345, 1)
+            qml.cond(m, qml.RX)(2.345, 1)
             return qml.expval(qml.Z(1)), qml.expval(qml.Z(0))
 
-        assert np.allclose(circ(), [np.cos(2.345), -1], atol=0.02)
+        if shots:
+            # both results are on the order of 1 (-0.7, -1), and an uncertainty ~1.5-2 orders
+            # of magnitude smaller than the result is sufficiently accurate for a shots-based measurement
+            assert np.allclose(circ(), [np.cos(2.345), -1], atol=0.03)
+        else:
+            assert np.allclose(circ(), [np.cos(2.345), -1])
