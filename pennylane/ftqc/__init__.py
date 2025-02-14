@@ -25,10 +25,23 @@ Modules
     :toctree: api
 
 """
-from pennylane import ExperimentalWarning
-from .parametric_midmeasure import ParametricMidMeasureMP, diagonalize_mcms
+
+from .parametric_midmeasure import (
+    ParametricMidMeasureMP,
+    XMidMeasureMP,
+    YMidMeasureMP,
+    measure_arbitrary_basis,
+    measure_x,
+    measure_y,
+    diagonalize_mcms,
+)
 
 __all__ = [
     "ParametricMidMeasureMP",
+    "XMidMeasureMP",
+    "YMidMeasureMP",
+    "measure_arbitrary_basis",
+    "measure_x",
+    "measure_y",
     "diagonalize_mcms",
 ]
