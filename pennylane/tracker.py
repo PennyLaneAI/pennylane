@@ -204,20 +204,24 @@ class Tracker:
         {"a": 1, "b": 2}
 
         """
-        self.latest = kwargs
+        try:
+            self.latest = kwargs
+    
+            for key, value in kwargs.items():
+                # update history
+                if key in self.history:
+                    self.history[key].append(value)
+                else:
+                    self.history[key] = [value]
+    
+                # updating totals
+                if value is not None:
+                    # Only total numeric values
+                    if isinstance(value, Number):
+                        self.totals[key] = value + self.totals.get(key, 0)
 
-        for key, value in kwargs.items():
-            # update history
-            if key in self.history:
-                self.history[key].append(value)
-            else:
-                self.history[key] = [value]
-
-            # updating totals
-            if value is not None:
-                # Only total numeric values
-                if isinstance(value, Number):
-                    self.totals[key] = value + self.totals.get(key, 0)
+        except Exception as e:
+            print(f"Error updating tracker: {e}")
 
     def reset(self):
         """Resets stored information."""
