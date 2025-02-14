@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
+  following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
+  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
+
 <h3>Improvements 🛠</h3>
 
 * The `default.mixed` device now adheres to the newer device API introduced in 
@@ -13,6 +17,37 @@
   This means that `default.mixed` now supports not having to specify the number of wires,
   more predictable behaviour with interfaces, support for `qml.Snapshot`, and more.
 
+* `qml.SWAP` now has sparse representation.
+  [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+
+* `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
+  [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
+
+  ```pycon
+  >>> import numpy as np
+  >>> import pennylane as qml
+  >>> import scipy as sp
+  >>> U_dense = np.eye(4)  # 2-wire identity
+  >>> U_sparse = sp.sparse.csr_matrix(U_dense)
+  >>> op = qml.QubitUnitary(U_sparse, wires=[0, 1])
+  >>> print(op.matrix())
+  <Compressed Sparse Row sparse matrix of dtype 'float64'
+          with 4 stored elements and shape (4, 4)>
+    Coords        Values
+    (0, 0)        1.0
+    (1, 1)        1.0
+    (2, 2)        1.0
+    (3, 3)        1.0
+  >>> op.matrix().toarray()
+  array([[1., 0., 0., 0.],
+        [0., 1., 0., 0.],
+        [0., 0., 1., 0.],
+        [0., 0., 0., 1.]])
+  ```
+
+* Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
+  [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
+ 
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
@@ -32,37 +67,6 @@
 * A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
   is greater than `0.4.28`.
   [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
-
-* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
-  `autograph=True` at the QNode level. 
-  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
-
-  ```python
-  qml.capture.enable()
-
-  dev = qml.device("default.qubit", wires=[0, 1, 2])
-
-  @qml.qnode(dev, autograph=True)
-  def circuit(num_loops: int):
-      for i in range(num_loops):
-          if i % 2 == 0:
-              qml.H(i)
-          else:
-              qml.RX(1,i)
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> print(qml.draw(circuit)(num_loops=3))
-  0: ──H────────┤  State
-  1: ──RX(1.00)─┤  State
-  2: ──H────────┤  State
-  >>> circuit(3)
-  Array([0.43879125+0.j        , 0.43879125+0.j        ,
-         0.        -0.23971277j, 0.        -0.23971277j,
-         0.43879125+0.j        , 0.43879125+0.j        ,
-         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
-  ```
 
 * Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
   Users can now construct the execution configuration from a particular `QNode` instance.
@@ -92,13 +96,6 @@
                   convert_to_numpy=True)
   ```
 
-* The higher order primitives in program capture can now accept inputs with abstract shapes.
-  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
-
-* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
-  `jnp.arange`, and `jnp.full`.
-  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
-
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
@@ -124,7 +121,7 @@
   >>> print(new_circuit.diff_method)
   'parameter-shift'
   ```
-  
+
 * Devices can now configure whether or not ML framework data is sent to them
   via an `ExecutionConfig.convert_to_numpy` parameter. End-to-end jitting on
   `default.qubit` is used if the user specified a `jax.random.PRNGKey` as a seed.
@@ -157,6 +154,76 @@
 
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
+
+* A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
+  measurement basis in the XY, YZ or ZX plane. 
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+
+* A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices 
+  that only natively support mid-circuit measurements in the computational basis.
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  
+* `null.qubit` can now execute jaxpr.
+  [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
+
+<h4>Capturing and representing hybrid programs</h4>
+
+* `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
+  be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
+  same shapes and data types will be able to use this cached plxpr instead of capturing the program again.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
+
+* `qml.QNode` now accepts a `static_argnums` argument. This argument can be used to indicate any arguments that
+  should be considered static when capturing the quantum program.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
+
+* Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
+  with program capture enabled.
+  [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
+
+  * Autograph can now be used with custom operations defined outside of the pennylane namespace.
+  [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
+
+  * Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
+
+* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting 
+  `autograph=True` at the QNode level. 
+  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
+
+  ```python
+  qml.capture.enable()
+
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+  @qml.qnode(dev, autograph=True)
+  def circuit(num_loops: int):
+      for i in range(num_loops):
+          if i % 2 == 0:
+              qml.H(i)
+          else:
+              qml.RX(1,i)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(num_loops=3))
+  0: ──H────────┤  State
+  1: ──RX(1.00)─┤  State
+  2: ──H────────┤  State
+  >>> circuit(3)
+  Array([0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j,
+         0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+  ```
+
+* The higher order primitives in program capture can now accept inputs with abstract shapes.
+  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
+
+* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
+  `jnp.arange`, and `jnp.full`.
+  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
 <h3>Breaking changes 💔</h3>
 
@@ -196,7 +263,9 @@
 <h3>Deprecations 👋</h3>
 
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  A folllow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
   [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
+  [(#6926)](https://github.com/PennyLaneAI/pennylane/pull/6926)
 
 * The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
   Instead, use the `wires` argument as the second positional argument.
@@ -260,7 +329,31 @@
 * Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
+* The code example in the docstring for `qml.BasisRotation` was corrected by including `wire_order` in the 
+  call to `qml.matrix`.
+  [(#6891)](https://github.com/PennyLaneAI/pennylane/pull/6891)
+
+* The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
+  [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
+
 <h3>Bug fixes 🐛</h3>
+
+* `qml.GlobalPhase.sparse_matrix` now correctly returns a sparse matrix of the same shape as `matrix`.
+  [(#6940)](https://github.com/PennyLaneAI/pennylane/pull/6940)
+
+* `qml.expval` no longer silently casts to a real number when observable coefficients are imaginary.
+  [(#6939)](https://github.com/PennyLaneAI/pennylane/pull/6939)
+
+* Fixed `qml.wires.Wires` initialization to disallow `Wires` objects as wires labels.
+  Now, `Wires` is idempotent, e.g. `Wires([Wires([0]), Wires([1])])==Wires([0, 1])`.
+  [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933)
+
+* `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
+  [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
+
+* `qml.capture.PlxprInterpreter` now uses `Primitive.get_bind_params` to resolve primitive calling signatures before binding
+  primitives.
+  [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
 
 * The interface is now detected from the data in the circuit, not the arguments to the `QNode`. This allows
   interface data to be strictly passed as closure variables and still be detected.
@@ -287,4 +380,5 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Christina Lee,
 Mudit Pandey,
-Andrija Paurevic
+Andrija Paurevic,
+David Wierichs
