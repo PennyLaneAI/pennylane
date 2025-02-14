@@ -134,12 +134,11 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 
         from pennylane.devices.qubit_mixed import measure_final_state
         from pennylane.tape import QuantumScript
-        from pennylane.ops import RX, CNOT, PauliZ
 
         # Define a circuit with a PauliZ measurement
         circuit = QuantumScript(
-            ops=[RX(0.5, wires=0), CNOT(wires=[0, 1])],
-            measurements=[qml.expval(PauliZ(wires=0))]
+            ops=[qml.RX(0.5, wires=0), qml.CNOT(wires=[0, 1])],
+            measurements=[qml.expval(qml.PauliZ(wires=0))]
         )
 
         # Simulate measurement
@@ -240,15 +239,13 @@ def simulate(
 
     .. code-block:: python
 
-        from pennylane import expval, probs
         from pennylane.devices.qubit_mixed import simulate
-        from pennylane.ops import RX, PauliX
         from pennylane.tape import QuantumScript
 
         # Define a quantum script
         circuit = QuantumScript(
-            ops=[RX(1.2, wires=0)],
-            measurements=[expval(PauliX(0)), probs(wires=(0, 1))]
+            ops=[qml.RX(1.2, wires=0)],
+            measurements=[expval(qml.PauliX(0)), qml.probs(wires=(0, 1))]
         )
 
     >>> print(simulate(circuit))
