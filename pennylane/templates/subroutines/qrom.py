@@ -198,6 +198,10 @@ class QROM(Operation):
     def compute_decomposition(
         bitstrings, control_wires, target_wires, work_wires, clean
     ):  # pylint: disable=arguments-differ
+
+        if len(control_wires) == 0:
+            return  [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+
         with qml.QueuingManager.stop_recording():
 
             swap_wires = target_wires + work_wires
@@ -205,6 +209,7 @@ class QROM(Operation):
             # number of operators we store per column (power of 2)
             depth = len(swap_wires) // len(target_wires)
             depth = int(2 ** np.floor(np.log2(depth)))
+            depth = min(depth, len(bitstrings))
 
             ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
             ops_identity = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
