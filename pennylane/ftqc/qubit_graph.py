@@ -103,7 +103,7 @@ class QubitGraph:
                 ``node``.
         """
         if not self.is_initialized:
-            self._warn_reinitialization()
+            self._warn_uninitialized()
             return
 
         for neighbor in self._graph_qubits.neighbors(node):

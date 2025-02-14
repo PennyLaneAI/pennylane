@@ -205,6 +205,15 @@ class TestQubitGraphsWarnings:
         with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
             _ = q.edges
 
+    def test_access_uninitialized_connected_qubits_warning(self):
+        """Test that accessing the connected qubits of a qubit with an uninitialized graph emits a
+        UserWarning.
+        """
+        q = QubitGraph()
+        with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
+            for connected_q in q.connected_qubits(0):
+                _ = connected_q
+
     def test_reinitialization_warning(self):
         """Test that re-initializing an already-initialized graph emits a UserWarning."""
         q = QubitGraph()
