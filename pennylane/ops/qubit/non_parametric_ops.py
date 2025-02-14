@@ -1289,7 +1289,13 @@ class SWAP(Operation):
           (2, 1)        1
           (3, 3)        1
         """
-        return sparse.csr_matrix(([1,1,1,1], [0,2,1,3], [0,1,2,3,4]))
+        # The same as
+        # [[1 0 0 0]
+        #  [0 0 1 0]
+        #  [0 1 0 0]
+        #  [0 0 0 1]]
+        data, indices, indptr = [1, 1, 1, 1], [0, 2, 1, 3], [0, 1, 2, 3, 4]
+        return sparse.csr_matrix((data, indices, indptr))
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
