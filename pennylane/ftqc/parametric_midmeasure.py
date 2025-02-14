@@ -227,28 +227,34 @@ def diagonalize_mcms(tape):
             # track mapping from original to computational basis MCMs
             mps_mapping[op] = new_mp
 
-        elif isinstance(op, qml.ops.Conditional) and isinstance(op.base, ParametricMidMeasureMP):
+        elif isinstance(op, qml.ops.Conditional):
 
             # from MCM mapping, map any MCMs in the condition if needed
             processing_fn = op.meas_val.processing_fn
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
             expr = MeasurementValue(mps, processing_fn=processing_fn)
 
-            # add conditional diagonalizing gates + conditional MCM to the tape
-            with qml.QueuingManager.stop_recording():
-                diag_gates = [
-                    qml.ops.Conditional(expr=expr, then_op=gate)
-                    for gate in op.diagonalizing_gates()
-                ]
-                new_mp = MidMeasureMP(
-                    op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
-                )
+            if isinstance(op.base, ParametricMidMeasureMP):
+                # add conditional diagonalizing gates + conditional MCM to the tape
+                with qml.QueuingManager.stop_recording():
+                    diag_gates = [
+                        qml.ops.Conditional(expr=expr, then_op=gate)
+                        for gate in op.diagonalizing_gates()
+                    ]
+                    new_mp = MidMeasureMP(
+                        op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
+                    )
+                    new_cond = qml.ops.Conditional(expr=expr, then_op=new_mp)
 
-            new_operations.extend(diag_gates)
-            new_operations.append(qml.ops.Conditional(expr=expr, then_op=new_mp))
+                new_operations.extend(diag_gates)
+                new_operations.append(new_cond)
 
-            # track mapping from original to computational basis MCMs
-            mps_mapping[op.base] = new_mp
+                # track mapping from original to computational basis MCMs
+                mps_mapping[op.base] = new_mp
+            else:
+                with qml.QueuingManager.stop_recording():
+                    new_cond = qml.ops.Conditional(expr=expr, then_op=op.base)
+                new_operations.append(new_cond)
 
         else:
             new_operations.append(op)
