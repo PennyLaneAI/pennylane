@@ -193,11 +193,25 @@ def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_di
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
 
-    if batch_dims is None:
-        return device.eval_jaxpr(qfunc_jaxpr, consts, *non_const_args)
-    return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims[n_consts:])(
-        *non_const_args
+    @qml.capture.expand_plxpr_transforms
+    def user_transform_wrapper(*inner_args):
+        return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
+
+    user_jaxpr = jax.make_jaxpr(user_transform_wrapper)(*non_const_args)
+    transformed_jaxpr = qnode.transform_program(
+        user_jaxpr.jaxpr, user_jaxpr.consts, *non_const_args
     )
+
+    preprocess_program, _ = device.preprocess()
+    final_jaxpr = preprocess_program(
+        transformed_jaxpr.jaxpr, transformed_jaxpr.consts, *non_const_args
+    )
+
+    if batch_dims is None:
+        return device.eval_jaxpr(final_jaxpr.jaxpr, final_jaxpr.consts, *non_const_args)
+    return jax.vmap(
+        partial(device.eval_jaxpr, final_jaxpr.jaxpr, final_jaxpr.consts), batch_dims[n_consts:]
+    )(*non_const_args)
 
 
 # pylint: disable=unused-argument
