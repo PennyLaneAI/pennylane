@@ -174,8 +174,7 @@ def _localize_modes(freqs, vecs):
 
 
 def localize_normal_modes(freqs, vecs, bins=[2600]):
-    """
-    Compute spatially localized vibrational normal modes.
+    r"""Compute spatially localized vibrational normal modes.
 
     The normal modes are localized using a localizing unitary following the procedure described in
     `J. Chem. Phys. 141, 104105 (2014)

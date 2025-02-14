@@ -597,13 +597,23 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
         H = T + V,
 
-    where :math:`T` and :math:`V` are the kinetic and potential components, respectively. These
-    components are defined in terms of momentum :math:`p` and normal coordinate operators :math:`q`
-    following Eq. 5 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ as:
+    where :math:`T` and :math:`V` are the kinetic and potential components, respectively. The
+    kinetic term is defined in terms of momentum :math:`p` operator as
 
     .. math::
 
-        T = \sum_{i\geq j} K_{ij} p_i  p_j, \:\:
+        T = \sum_{i\geq j} K_{ij} p_i  p_j,
+
+    where :math:`K` is computed from the vibrational frequencies, :math:`\omega` and mode
+    localization unitary matrix, :math:`U` as:
+
+    .. math::
+
+        K_{ij} = \sum_{k=1}^M \frac{\omega_k}{2} U_{ki} U_{kj}.
+
+    The potential term is defined in terms of normal coordinate operator :math:`q` as:
+
+    .. math::
 
         V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
         V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
@@ -709,13 +719,23 @@ def taylor_hamiltonian(
 
         H = T + V,
 
-    where :math:`T` and :math:`V` are the kinetic and potential components, respectively. These
-    components are defined in terms of momentum :math:`p` and normal coordinate operators :math:`q`
-    following Eq. 5 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ as:
+    where :math:`T` and :math:`V` are the kinetic and potential components, respectively. The
+    kinetic term is defined in terms of momentum :math:`p` operator as
 
     .. math::
 
-        T = \sum_{i\geq j} K_{ij} p_i  p_j, \:\:
+        T = \sum_{i\geq j} K_{ij} p_i  p_j,
+
+    where :math:`K` is computed from the vibrational frequencies, :math:`\omega` and mode
+    localization unitary matrix, :math:`U` as:
+
+    .. math::
+
+        K_{ij} = \sum_{k=1}^M \frac{\omega_k}{2} U_{ki} U_{kj}.
+
+    The potential term is defined in terms of normal coordinate operator :math:`q` as:
+
+    .. math::
 
         V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
         V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
