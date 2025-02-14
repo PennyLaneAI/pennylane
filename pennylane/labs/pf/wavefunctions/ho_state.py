@@ -112,13 +112,12 @@ class HOState:
 
     def dot(self, other: HOState) -> float:
         """Return the inner product"""
-
         if self.dim != other.dim:
             raise ValueError(
                 f"Dimension mismatch. Attempting to dot product vectors of dimension {self.dim} and {other.dim}."
             )
 
-        return self.vector.dot(other.vector)
+        return ((self.vector.T).dot(other.vector))[0, 0]
 
 
 def _tensor_with_identity(op: csr_array, gridpoints: int, n_modes: int, mode: int) -> csr_array:

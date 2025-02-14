@@ -38,9 +38,10 @@ class RealspaceOperator:
             indices = product(range(modes), repeat=len(self.ops))
 
         for index in indices:
-            matrix = tensor_with_identity(modes, gridpoints, index, matrices, sparse=sparse)
-            matrix *= self.coeffs.compute(index)
-            final_matrix += matrix
+            matrix = self.coeffs.compute(index) * tensor_with_identity(
+                modes, gridpoints, index, matrices, sparse=sparse
+            )
+            final_matrix = final_matrix + matrix
 
         return final_matrix
 
@@ -196,7 +197,7 @@ class RealspaceSum(Fragment):
 
         final_matrix = _zeros(shape=(gridpoints**modes, gridpoints**modes), sparse=sparse)
         for op in self.ops:
-            final_matrix += op.matrix(gridpoints, modes, basis=basis, sparse=sparse)
+            final_matrix = final_matrix + op.matrix(gridpoints, modes, basis=basis, sparse=sparse)
 
         return final_matrix
 
@@ -232,10 +233,14 @@ class RealspaceSum(Fragment):
         if not isinstance(state, HOState):
             raise TypeError
 
-        mat = self.matrix(state.gridpoints, state.modes)
+        mat = self.matrix(state.gridpoints, state.modes, basis="harmonic", sparse=True)
 
         return HOState.from_scipy(
             state.modes,
             state.gridpoints,
             mat @ state.vector,
         )
+
+    def expectation(self, state_left: HOState, state_right: HOState) -> float:
+        """Compute expectation value"""
+        return state_left.dot(self.apply(state_right))

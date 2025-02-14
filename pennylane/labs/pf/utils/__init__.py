@@ -4,6 +4,8 @@ from .matrix_ops import (
     _identity,
     _kron,
     _zeros,
+    annihilation_operator,
+    creation_operator,
     momentum_operator,
     position_operator,
     op_norm,

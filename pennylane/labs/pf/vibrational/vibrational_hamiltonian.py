@@ -10,12 +10,9 @@ from pennylane.labs.pf.realspace import Node, RealspaceOperator, RealspaceSum
 class VibrationalHamiltonian:
     """Class representing the realspace Vibrational Hamiltonian."""
 
-    def __init__(self, modes: int, order: int, omegas: np.ndarray, phis: Sequence[np.ndarray]):
+    def __init__(self, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]):
         if not len(omegas) == modes:
             raise ValueError(f"Expected omegas to be of length {modes}, got {len(omegas)}.")
-
-        if not len(phis) == order - 2:
-            raise ValueError(f"Expected phis to be of length {order + 1}, got {len(phis)}.")
 
         for i, phi in enumerate(phis):
             shape = (modes,) * (i + 3)
@@ -24,7 +21,6 @@ class VibrationalHamiltonian:
                 raise ValueError(f"Expected order {i+3} to be of shape {shape}, got {phi.shape}.")
 
         self.modes = modes
-        self.order = order
         self.omegas = omegas
         self.phis = phis
 

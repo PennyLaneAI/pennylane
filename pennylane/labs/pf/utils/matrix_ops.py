@@ -41,7 +41,7 @@ def _harmonic_position(gridpoints: int) -> np.ndarray:
     matrix = np.zeros(shape=(gridpoints, gridpoints))
     matrix[rows, cols] = vals
 
-    return matrix
+    return 1 / np.sqrt(2) * matrix
 
 
 def momentum_operator(
@@ -80,7 +80,7 @@ def _harmonic_momentum(gridpoints: int) -> np.ndarray:
     matrix = np.zeros(shape=(gridpoints, gridpoints))
     matrix[rows, cols] = vals
 
-    return matrix
+    return (1j / np.sqrt(2)) * matrix
 
 
 def creation_operator(gridpoints: int, sparse: bool = False) -> Union[np.ndarray, sp.sparse.array]:
@@ -120,11 +120,11 @@ def string_to_matrix(
 
     for char in op:
         if char == "P":
-            matrix @= p
+            matrix = matrix @ p
             continue
 
         if char == "Q":
-            matrix @= q
+            matrix = matrix @ q
             continue
 
         raise ValueError(f"Operator terms must only contain P and Q. Got {char}.")
@@ -146,7 +146,7 @@ def tensor_with_identity(
         lookup[mode] = _identity(gridpoints, sparse=sparse)
         for count, i in enumerate(index):
             if i == mode:
-                lookup[mode] @= ops[count]
+                lookup[mode] = lookup[mode] @ ops[count]
 
     matrix = lookup[modes - 1]
     for mode in range(modes - 2, -1, -1):
@@ -162,7 +162,7 @@ def _identity(dim: int, sparse: bool) -> Union[np.ndarray, sp.sparse.csr_matrix]
     if sparse:
         return sp.sparse.identity(dim, format="csr")
 
-    return np.eye(dim, dtype=np.complex128)
+    return np.eye(dim)
 
 
 def _kron(a: Union[np.ndarray, sp.sparse.csr_matrix], b: Union[np.ndarray, sp.sparse.csr_matrix]):
@@ -179,7 +179,7 @@ def _zeros(shape: Tuple[int], sparse: bool = False):
     if sparse:
         return sp.sparse.csr_matrix(shape)
 
-    return np.zeros(shape, dtype=np.complex128)
+    return np.zeros(shape)
 
 
 def op_norm(gridpoints: int) -> float:

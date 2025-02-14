@@ -78,7 +78,7 @@ class VibronicMatrix(Fragment):
                 indicator[index] = 1
 
             block = rs_sum.matrix(gridpoints, self.modes, basis="realspace", sparse=sparse)
-            matrix += _kron(indicator, block)
+            matrix = matrix + _kron(indicator, block)
 
         return matrix
 
