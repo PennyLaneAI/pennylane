@@ -140,6 +140,14 @@ def measure_x(
     For more details on mid-circuit measurements in an arbitrary basis (besides the computational basis),
     see :func:`arbitrary_basis_measure <pennylane.measurements.measure>`.
 
+    .. warning::
+        Measurements should be diagonalized before execution for any device that only natively supports
+        mid-circuit measurements in the computational basis. To diagonalize, the :func:`diagonalize_mcms <pennylane.ftqc.diagonalize_mcms>`
+        transform can be applied.
+
+        Skipping diagonalization for a circuit containing parametric mid-circuit measurements may result
+        in a completed execution with incorrect results.
+
     Args:
         wires (Wires): The wire to measure.
         reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
@@ -166,9 +174,7 @@ def measure_x(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = ParametricMidMeasureMP(
-        wires, angle=0, plane="XY", reset=reset, postselect=postselect, id=measurement_id
-    )
+    mp = XMidMeasureMP(wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
@@ -186,6 +192,14 @@ def measure_y(
     For more details on mid-circuit measurements in an arbitrary basis (besides the computational basis),
     see :func:`arbitrary_basis_measure <pennylane.measurements.measure>`.
 
+    .. warning::
+        Measurements should be diagonalized before execution for any device that only natively supports
+        mid-circuit measurements in the computational basis. To diagonalize, the :func:`diagonalize_mcms <pennylane.ftqc.diagonalize_mcms>`
+        transform can be applied.
+
+        Skipping diagonalization for a circuit containing parametric mid-circuit measurements may result
+        in a completed execution with incorrect results.
+
     Args:
         wires (Wires): The wire to measure.
         reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
@@ -212,9 +226,7 @@ def measure_y(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = ParametricMidMeasureMP(
-        wires, angle=np.pi / 2, plane="XY", reset=reset, postselect=postselect, id=measurement_id
-    )
+    mp = YMidMeasureMP(wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
@@ -360,6 +372,14 @@ class XMidMeasureMP(ParametricMidMeasureMP):
             wires=Wires(wires), angle=0, plane="XY", reset=reset, postselect=postselect, id=id
         )
 
+    def _flatten(self):
+        metadata = (
+            ("wires", self.raw_wires),
+            ("reset", self.reset),
+            ("id", self.id),
+        )
+        return (None, None), metadata
+
     def __repr__(self):
         """Representation of this class."""
         return f"{self._shortname}(wires={self.wires.tolist()})"
@@ -415,6 +435,14 @@ class YMidMeasureMP(ParametricMidMeasureMP):
             postselect=postselect,
             id=id,
         )
+
+    def _flatten(self):
+        metadata = (
+            ("wires", self.raw_wires),
+            ("reset", self.reset),
+            ("id", self.id),
+        )
+        return (None, None), metadata
 
     def __repr__(self):
         """Representation of this class."""

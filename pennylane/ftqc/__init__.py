@@ -27,6 +27,8 @@ Modules
 """
 from .parametric_midmeasure import (
     ParametricMidMeasureMP,
+    XMidMeasureMP,
+    YMidMeasureMP,
     measure_arbitrary_basis,
     measure_x,
     measure_y,
@@ -35,6 +37,8 @@ from .parametric_midmeasure import (
 
 __all__ = [
     "ParametricMidMeasureMP",
+    "XMidMeasureMP",
+    "YMidMeasureMP",
     "measure_arbitrary_basis",
     "measure_x",
     "measure_y",
