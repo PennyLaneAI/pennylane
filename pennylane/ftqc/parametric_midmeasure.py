@@ -135,10 +135,10 @@ def measure_x(
     convention rather than the ±1 convention.
 
     For more details on the results of mid-circuit measurements and how to use them,
-    see :func:`qml.measure <pennylane.measurements.measure>`.
+    see :func:`qml.measure <pennylane.measure>`.
 
     For more details on mid-circuit measurements in an arbitrary basis (besides the computational basis),
-    see :func:`arbitrary_basis_measure <pennylane.measurements.measure>`.
+    see :func:`measure_arbitrary_basis <pennylane.ftqc.measure_arbitrary_basis>`.
 
     .. warning::
         Measurements should be diagonalized before execution for any device that only natively supports
@@ -187,10 +187,10 @@ def measure_y(
     convention rather than the ±1 convention.
 
     For more details on the results of mid-circuit measurements and how to use them,
-    see :func:`qml.measure <pennylane.measurements.measure>`.
+    see :func:`qml.measure <pennylane.measure>`.
 
     For more details on mid-circuit measurements in an arbitrary basis (besides the computational basis),
-    see :func:`arbitrary_basis_measure <pennylane.measurements.measure>`.
+    see :func:`measure_arbitrary_basis <pennylane.ftqc.measure_arbitrary_basis>`.
 
     .. warning::
         Measurements should be diagonalized before execution for any device that only natively supports
