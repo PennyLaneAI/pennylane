@@ -10,6 +10,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.SWAP` now has sparse representation.
+  [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
 
@@ -145,6 +148,14 @@
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
+* A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
+  measurement basis in the XY, YZ or ZX plane. 
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+
+* A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices 
+  that only natively support mid-circuit measurements in the computational basis.
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
