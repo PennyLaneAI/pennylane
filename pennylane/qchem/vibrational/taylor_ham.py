@@ -279,7 +279,8 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     The coefficients are computed from a multi-dimensional polynomial fit over potential energy
     surface data, with a polynomial specified by ``min_deg`` and ``max_deg``.
 
-    The potential energy surface is defined as [Eq. 28 of arXiv:1609.00430]:
+    The potential energy surface is defined as [Eq. 28 of
+    `arXiv:1609.00430 <https://arxiv.org/abs/1609.00430>`_]:
 
     .. math::
 
