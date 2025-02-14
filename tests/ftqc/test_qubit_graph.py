@@ -190,6 +190,39 @@ class TestQubitGraphOperations:
         )
 
 
+class TestQubitGraphIndexing:
+    """Tests for indexing operations on a QubitGraph."""
+
+    def test_linear_indexing(self):
+        """Test basic linear indexing."""
+        qubit = QubitGraph()
+
+        n = 3
+        qubit.init_graph_nd_grid((n,))
+
+        for i in range(n):
+            q = qubit[i]
+            assert isinstance(q, QubitGraph)
+
+    def test_linear_indexing_nested(self):
+        """Test basic linear indexing in a nested QubitGraph."""
+        qubit0 = QubitGraph()
+
+        n0, n1 = 3, 2
+        qubit0.init_graph_nd_grid((n0,))
+
+        for node in qubit0.nodes:
+            q1 = QubitGraph()
+            q1.init_graph_nd_grid((n1,))
+
+            qubit0.nodes[node]["qubits"] = q1
+
+        for i in range(n0):
+            for j in range(n1):
+                q = qubit0[i][j]
+                assert isinstance(q, QubitGraph)
+
+
 class TestQubitGraphsWarnings:
     """Tests for QubitGraph warning messages."""
 

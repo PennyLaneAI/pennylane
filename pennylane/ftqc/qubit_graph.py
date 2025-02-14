@@ -88,6 +88,19 @@ class QubitGraph:
         """
         return self._graph_qubits is not None
 
+    def __getitem__(self, key):
+        """QubitGraph subscripting operator.
+
+        Currently only basic, linear indexing is supported;.
+
+        TODO: Allow for more advanced indexing and slicing.
+        """
+        if not self.is_initialized:
+            self._warn_uninitialized()
+            return
+
+        return self._graph_qubits.nodes[key]["qubits"]
+
     def clear(self):
         """Clears the graph of underlying qubits."""
         self._graph_qubits = None
