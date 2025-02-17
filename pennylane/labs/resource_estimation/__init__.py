@@ -119,6 +119,7 @@ Templates
     ~ResourceQFT
     ~ResourceQPE
     ~ResourceQubitization
+    ~ResourceQROM
     ~ResourceReflection
     ~ResourceSelect
     ~ResourceStatePrep
@@ -221,6 +222,7 @@ from .templates import (
     ResourceQPE,
     ResourceQuantumPhaseEstimation,
     ResourceQubitization,
+    ResourceQROM,
     ResourceReflection,
     ResourceSelect,
     ResourceStatePrep,

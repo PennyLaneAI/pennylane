@@ -11,23 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains resource operators for PennyLane templates."""
+r"""Resource operators for PennyLane state preparation templates."""
+from collections import defaultdict
+from typing import Dict
 
-from .subroutines import (
-    ResourceQFT,
-    ResourceQuantumPhaseEstimation,
-    ResourceStatePrep,
-    ResourceQPE,
-    ResourceBasisRotation,
-    ResourcePrepSelPrep,
-    ResourceQubitization,
-    ResourceQROM,
-    ResourceReflection,
-    ResourceSelect,
-    ResourceControlledSequence,
-    ResourceModExp,
-    ResourceMultiplier,
-    ResourcePhaseAdder,
-)
+import pennylane as qml
+from pennylane import numpy as qnp
+from pennylane.labs import resource_estimation as re
+from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
 
-from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
+# pylint: disable=arguments-differ, protected-access
