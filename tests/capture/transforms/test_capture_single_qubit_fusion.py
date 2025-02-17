@@ -35,6 +35,8 @@ from pennylane.transforms.optimization.single_qubit_fusion import (
     single_qubit_plxpr_to_plxpr,
 )
 
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
 from pennylane.transforms.optimization import single_qubit_fusion
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
@@ -87,14 +89,19 @@ class TestSingleQubitFusionInterpreter:
         jaxpr = jax.make_jaxpr(transformed_circuit)()
         assert len(jaxpr.eqns) == 1
 
-        expected_primitive = {qml.Rot._primitive}
-        actual_primitives = {jaxpr.eqns[0].primitive}
-        assert expected_primitive == actual_primitives
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
 
-        assert qml.math.allclose(jaxpr.eqns[0].invars[0].val, -4.369330)
-        assert qml.math.allclose(jaxpr.eqns[0].invars[1].val, 1.983815)
-        assert qml.math.allclose(jaxpr.eqns[0].invars[2].val, -0.959211)
-        assert qml.math.allclose(jaxpr.eqns[0].invars[3].val, 0)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        with qml.capture.pause():
+            transformed_circuit_check = single_qubit_fusion(circuit)
+            transformed_ops_check = qml.tape.make_qscript(transformed_circuit_check)().operations
+
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
+            assert qml.equal(op1, op2)
 
     def test_single_qubit_partial_fusion_qnode(self):
         """Test that a sequence of single-qubit gates partially fuse."""
@@ -115,8 +122,8 @@ class TestSingleQubitFusionInterpreter:
         # This circuit should be transformed to a single Rot(-4.37,1.98,-0.96) gate
 
         jaxpr = jax.make_jaxpr(transformed_circuit)()
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert len(qfunc_jaxpr.eqns) == 3
+        circuit_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert len(circuit_jaxpr.eqns) == 3
 
         expected_primitive = {
             qml.Rot._primitive,
@@ -124,9 +131,9 @@ class TestSingleQubitFusionInterpreter:
             qml.measurements.ExpectationMP._obs_primitive,
         }
         actual_primitives = {
-            qfunc_jaxpr.eqns[0].primitive,
-            qfunc_jaxpr.eqns[1].primitive,
-            qfunc_jaxpr.eqns[2].primitive,
+            circuit_jaxpr.eqns[0].primitive,
+            circuit_jaxpr.eqns[1].primitive,
+            circuit_jaxpr.eqns[2].primitive,
         }
         assert expected_primitive == actual_primitives
 
@@ -137,3 +144,141 @@ class TestSingleQubitFusionInterpreter:
             expected_result = single_qubit_fusion(circuit)()
 
         assert qml.math.allclose(result, expected_result)
+
+    def test_single_qubit_CNOT_fusion(self):
+
+        def circuit():
+            # Excluded gate at the start
+            qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=0)
+            qml.RZ(0.1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=0)
+            # Excluded gate after another gate
+            qml.RZ(0.1, wires=0)
+            qml.PauliX(wires=1)
+            qml.PauliZ(wires=1)
+            # Excluded gate after multiple others
+            qml.RZ(0.2, wires=1)
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        with qml.capture.pause():
+            transformed_circuit_check = single_qubit_fusion(circuit)
+            transformed_ops_check = qml.tape.make_qscript(transformed_circuit_check)().operations
+
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
+            assert qml.equal(op1, op2)
+
+    def test_single_qubit_fusion_no_gates_after(self):
+        """Test that gates with nothing after are applied without modification."""
+
+        def circuit():
+            qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=1)
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+
+        # This circuit should remain unchanged
+
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        assert len(jaxpr.eqns) == 2
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        with qml.capture.pause():
+            transformed_circuit_check = single_qubit_fusion(circuit)
+            transformed_ops_check = qml.tape.make_qscript(transformed_circuit_check)().operations
+
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
+            assert qml.equal(op1, op2)
+
+    def test_single_qubit_cancelled_fusion(self):
+        """Test if a sequence of single-qubit gates that all cancel yields no operations."""
+
+        def circuit():
+            qml.RZ(0.1, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.RX(-0.2, wires=0)
+            qml.RZ(-0.1, wires=0)
+
+        # This circuit should be transformed to no operations as all gates cancel.
+        # With program capture enabled, this corresponds to a single rotation gate with angles 0.
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        assert len(jaxpr.eqns) == 1
+
+        expected_primitive = {qml.Rot._primitive}
+        actual_primitives = {jaxpr.eqns[0].primitive}
+        assert expected_primitive == actual_primitives
+
+        assert qml.math.allclose(jaxpr.eqns[0].invars[0].val, 0.0)
+        assert qml.math.allclose(jaxpr.eqns[0].invars[1].val, 0.0)
+        assert qml.math.allclose(jaxpr.eqns[0].invars[2].val, 0.0)
+        assert qml.math.allclose(jaxpr.eqns[0].invars[3].val, 0)
+
+    def test_single_qubit_fusion_not_implemented(self):
+        """Test that fusion is correctly skipped for single-qubit gates where the rotation angles are not specified."""
+
+        def circuit():
+            qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=0)
+            # No rotation angles specified for PauliRot since it is a gate that
+            # in principle acts on an arbitrary number of wires.
+            qml.PauliRot(0.2, "X", wires=0)
+            qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=0)
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        assert len(jaxpr.eqns) == 3
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        with qml.capture.pause():
+            transformed_circuit_check = single_qubit_fusion(circuit)
+            transformed_ops_check = qml.tape.make_qscript(transformed_circuit_check)().operations
+
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
+            assert qml.equal(op1, op2)
+
+    def test_single_qubit_fusion_multiple_qubits(self):
+        """Test that all sequences of single-qubit gates across multiple qubits fuse properly."""
+
+        def circuit():
+            qml.RZ(0.3, wires=0)
+            qml.RY(0.5, wires=0)
+            qml.Rot(0.1, 0.2, 0.3, wires=1)
+            qml.RX(0.1, wires=0)
+            qml.CNOT(wires=[1, 0])
+            qml.SX(wires=1)
+            qml.S(wires=1)
+            qml.PhaseShift(0.3, wires=1)
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        assert len(jaxpr.eqns) == 4
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        with qml.capture.pause():
+            transformed_circuit_check = single_qubit_fusion(circuit)
+            transformed_ops_check = qml.tape.make_qscript(transformed_circuit_check)().operations
+
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
+            assert qml.equal(op1, op2)
