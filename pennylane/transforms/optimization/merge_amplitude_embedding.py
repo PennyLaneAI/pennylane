@@ -82,7 +82,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
             if len(self.visited_wires.intersection(set(op.wires))) > 0:
                 raise qml.DeviceError(
-                    f"qml.AmplitudeEmbedding cannot be applied on wires already used by other operations."
+                    "qml.AmplitudeEmbedding cannot be applied on wires already used by other operations."
                 )
 
             self.input_wires.append(op.wires)
