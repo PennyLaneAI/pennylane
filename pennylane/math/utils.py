@@ -16,6 +16,7 @@
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as _np
+import scipy as sp
 
 # pylint: disable=import-outside-toplevel
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -173,6 +174,9 @@ def convert_like(tensor1, tensor2):
     if interface == "torch":
         dev = tensor2.device
         return np.asarray(tensor1, device=dev, like=interface)
+
+    if interface == "scipy":
+        return sp.sparse.csr_matrix(tensor1)
 
     return np.asarray(tensor1, like=interface)
 
