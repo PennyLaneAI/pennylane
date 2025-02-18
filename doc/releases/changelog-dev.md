@@ -148,6 +148,14 @@
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
+* A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
+  measurement basis in the XY, YZ or ZX plane. 
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+
+* A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices 
+  that only natively support mid-circuit measurements in the computational basis.
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
@@ -322,6 +330,9 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
+  [(#6975)](https://github.com/PennyLaneAI/pennylane/pull/6975)
 
 * `qml.GlobalPhase.sparse_matrix` now correctly returns a sparse matrix of the same shape as `matrix`.
   [(#6940)](https://github.com/PennyLaneAI/pennylane/pull/6940)
