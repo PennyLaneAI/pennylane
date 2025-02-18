@@ -16,7 +16,7 @@ Code relevant for performing measurements on a state.
 """
 from collections.abc import Callable
 
-from scipy.sparse import csr_matrix, issparse
+from scipy.sparse import csr_matrix
 
 from pennylane import math
 from pennylane.measurements import (
@@ -45,15 +45,9 @@ def flatten_state(state, num_wires):
         A flat state, with an extra batch dimension if necessary
     """
     dim = 2**num_wires
-    if issparse(state):
-        batch_size = math.get_batch_size(state, (1, dim), dim)
-        if batch_size is None:
-            batch_size = 1
-    else:
-        batch_size = math.get_batch_size(state, (2,) * num_wires, dim)
+    batch_size = math.get_batch_size(state, (2,) * num_wires, dim)
     shape = (batch_size, dim) if batch_size is not None else (dim,)
-    state_reshaped = math.reshape(state, shape)
-    return state_reshaped
+    return math.reshape(state, shape)
 
 
 def state_diagonalizing_gates(
@@ -72,9 +66,7 @@ def state_diagonalizing_gates(
     for op in measurementprocess.diagonalizing_gates():
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
-    total_indices = (
-        int(math.log2(state.shape[1])) if issparse(state) else len(state.shape) - is_state_batched
-    )
+    total_indices = len(state.shape) - is_state_batched
     wires = Wires(range(total_indices))
     flattened_state = flatten_state(state, total_indices)
     return measurementprocess.process_state(flattened_state, wires)
