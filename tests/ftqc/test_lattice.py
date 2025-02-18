@@ -103,6 +103,7 @@ class TestLattice:
         edges = [(0, 1), (1, 2)]
         lattice = Lattice("test", nodes=[0, 1, 2], edges=edges)
         assert set(lattice.get_edges()) == set(edges)
+
     def test_get_graph(self):
         """Test for getting graph."""
         graph = nx.Graph([(0, 1), (1, 2)])
@@ -112,6 +113,7 @@ class TestLattice:
 
 class TestGenerateLattice:
     """Test for generate_lattice method."""
+
     def test_generate_chain_lattice(self):
         """Test for generate a 1D chain lattice."""
         lattice = generate_lattice("chain", [5])
