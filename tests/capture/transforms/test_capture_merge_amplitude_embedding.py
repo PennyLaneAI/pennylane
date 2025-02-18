@@ -49,7 +49,10 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
 
-        with pytest.raises(qml.DeviceError, match="applied in the same qubit"):
+        with pytest.raises(
+            qml.DeviceError,
+            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+        ):
             jax.make_jaxpr(qfunc)()
 
     def test_circuit_with_arguments(self):
