@@ -223,7 +223,6 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 import abc
 import copy
 import warnings
-from abc import abstractmethod
 from collections.abc import Hashable, Iterable
 from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
