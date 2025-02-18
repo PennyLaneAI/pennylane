@@ -22,18 +22,18 @@ import networkx as nx
 class Lattice:
     """Constructs a Lattice object for measurement base quantum computing (MBQC).
 
-    Lattices which can be used to represent connectitivity of qubits play an important role in MBQC as well as fault-tolerant quantum computing (FTQC).
-    Cluster states are usually generated in lattices of qubits and used as resources for MBQC [Entanglement in Graph States and its Applications, arXiv:quant-ph/0602096].
-    As mentioned in [Measurement-based quantum computation with cluster states, arXiv:quant-ph/0301052], 1-qubit gate operators can be represented by a 1D chain of 5 qubits
-    entangled with each other, while 2-qubit CNOT gate can be represented by 15-qubits arranged in a 2D lattice. To support quantum error corrections (QEC), 3D lattices connectivity
-    might be required to add QEC support to MBQC [A fault-tolerant one-way quantum computer, arxiv.org:quant-ph/0510135].
+    Lattices, representing qubit connectivity, are crucial in measurement-based quantum computing (MBQC) and fault-tolerant quantum computing (FTQC).  MBQC often utilizes cluster states,
+    typically generated on qubit lattices, as a computational resource [Entanglement in Graph States and its Applications, arXiv:quant-ph/0602096].  As discussed in [Measurement-based quantum
+    computation with cluster states, arXiv:quant-ph/0301052], single-qubit gates can be implemented with a 1D chain of five entangled qubits, while two-qubit CNOT gates require 15 qubits
+    arranged in a 2D lattice.  Furthermore, 3D lattice connectivity may be necessary to incorporate quantum error correction (QEC) into MBQC [A fault-tolerant one-way quantum computer,
+    arxiv.org:quant-ph/0510135].
 
-    As a fundamental stabstrate of MBQC and FTQC, users can define the indexing strategy as well as define the distribution of data and measure qubits as well as defects and so on.
+    Serving as a fundamental substrate for MBQC and FTQC, these lattices allow users to define indexing strategies, data distribution, measurement of qubits and defects, and other relevant parameters.
 
-    This class follows the design of `~pennylane.spin.Lattice`. Lattice is built on top of the networkx to represent the one-many relationship within a lattice.
+    This Lattice class, inspired by the design of ~pennylane.spin.Lattice, leverages NetworkX to represent the relationships within the lattice structure.
 
-    Args:
-        graph: A network undirected graph object.
+        Args:
+            graph: A network undirected graph object.
     """
 
     _short_name = "ftqc_lattice"
@@ -42,15 +42,19 @@ class Lattice:
         self._graph = graph
 
     def get_neighbors(self, node):
+        r"""Returns the neighbors of a given node in the lattice."""
         return self._graph.neighbors(node)
 
     def get_nodes(self):
+        r"""Returns all nodes in the lattice."""
         return self._graph.nodes
 
     def get_edges(self):
+        r"""Returns all edges in the lattice."""
         return self._graph.edges
 
     def get_graph(self):
+        r"""Returns the underlying NetworkX graph object representing the lattice."""
         return self._graph
 
 
