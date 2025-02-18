@@ -34,9 +34,9 @@ class Lattice:
 
         Args:
             lattice_shape: Name of the lattice shape.
-            graph: A NetworkX undirected graph object. If provided, `nodes` and `edges` are ignored.
-            nodes: Nodes to construct a graph object. Ignored if `graph` is provided.
-            egdes: Edges to construct the graph. Ignored if `graph` is provided.
+            graph (nx.Graph): A NetworkX undirected graph object. If provided, `nodes` and `edges` are ignored.
+            nodes (List): Nodes to construct a graph object. Ignored if `graph` is provided.
+            egdes (List): Edges to construct the graph. Ignored if `graph` is provided.
         Raises:
             ValueError: If neither `graph` nor both `nodes` and `edges` are provided.
     """
@@ -69,7 +69,7 @@ class Lattice:
         r"""Relabel nodes of the NetworkX graph.
 
         Args:
-            mapping: A dict with the old labels as keys and new labels as values.
+            mapping (Dict): A dict with the old labels as keys and new labels as values.
         """
         # TODO: This method could be renamed later as it could be used for the node indexing only.
         nx.relabel_nodes(self._graph, mapping, copy=False)
@@ -78,8 +78,8 @@ class Lattice:
         r"""Add attributes to the nodes of the Networkx graph.
 
         Args:
-            attribute_name: Name of the node attribute to set.
-            attributes: A dict with node labels as keys and attributes as values.
+            attribute_name (str): Name of the node attribute to set.
+            attributes (Dict): A dict with node labels as keys and attributes as values.
         """
         # TODO: This method could be renamed later as it's possible that this method is only for stablizers setup.
         nx.set_node_attributes(self._graph, attributes, attribute_name)
@@ -87,7 +87,7 @@ class Lattice:
     def get_node_attributes(self, attribute_name: str):
         r"""Return node attributes.
         Args:
-            attribute_name: Name of the node attribute
+            attribute_name (str): Name of the node attribute
         """
         return nx.get_node_attributes(self._graph, attribute_name)
 
@@ -95,8 +95,8 @@ class Lattice:
         r"""Add attributes to the edges of the Network graph.
 
         Args:
-            attribute_name: Name of the edge attribute to set.
-            attributes: Edge attributes to set. It accepts a dict with node labels as keys and attributes as values or a scalar to set the new attribute of egdes with.
+            attribute_name (str): Name of the edge attribute to set.
+            attributes (Dict): Edge attributes to set. It accepts a dict with node labels as keys and attributes as values or a scalar to set the new attribute of egdes with.
         """
         # TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
         nx.set_edge_attributes(self._graph, attributes, attribute_name)
@@ -105,13 +105,17 @@ class Lattice:
         r"""Add attributes to the edges of the Network graph.
 
         Args:
-            attribute_name: Name of the edge attribute to set.
+            attribute_name (str): Name of the edge attribute to set.
         """
         # TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
         return nx.get_edge_attributes(self._graph, attribute_name)
 
     def get_neighbors(self, node):
-        r"""Returns the neighbors of a given node in the lattice."""
+        r"""Returns the neighbors of a given node in the lattice.
+
+        Args:
+            node: a target node label.
+        """
         return self._graph.neighbors(node)
 
     def get_nodes(self):
