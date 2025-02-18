@@ -15,7 +15,6 @@
 
 # pylint:disable=protected-access, wrong-import-position
 
-import jax.numpy as jnp
 import pytest
 
 import pennylane as qml
@@ -61,7 +60,7 @@ class TestMergeRotationsInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
         expected_ops = [
-            qml.RX(jnp.array(0.3), wires=[0]),
+            qml.RX(jax.numpy.array(0.3), wires=[0]),
             qml.RY(0.1, wires=[2]),
         ]
 
@@ -90,7 +89,7 @@ class TestMergeRotationsInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
         expected_ops = [
-            qml.RX(jnp.array(theta1 + theta2), wires=[0]),
+            qml.RX(jax.numpy.array(theta1 + theta2), wires=[0]),
         ]
 
         ops = collector.state["ops"]
