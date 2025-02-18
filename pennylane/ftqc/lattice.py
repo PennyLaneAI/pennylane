@@ -54,10 +54,9 @@ class Lattice:
                 raise ValueError(
                     "Neither a networkx Graph object nor nodes together with egdes are provided."
                 )
-            else:
-                self._graph = nx.Graph()
-                self._graph.add_nodes_from(nodes)
-                self._graph.add_edges_from(edges)
+            self._graph = nx.Graph()
+            self._graph.add_nodes_from(nodes)
+            self._graph.add_edges_from(edges)
         else:
             self._graph = graph
 
@@ -126,7 +125,7 @@ class Lattice:
         r"""Returns all edges in the lattice."""
         return self._graph.edges
 
-    def get_graph(self):
+    def get_graph(self) -> nx.Graph:
         r"""Returns the underlying NetworkX graph object representing the lattice."""
         return self._graph
 
