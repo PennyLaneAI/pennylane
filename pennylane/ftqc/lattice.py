@@ -47,7 +47,7 @@ class Lattice:
 
     def __init__(
         self, lattice_shape: str, graph: nx.Graph = None, nodes: List = None, edges: List = None
-    ):
+    ):  # pylint: disable=inconsistent-return-statements
         self._lattice_shape = lattice_shape
         self._graph = graph
         if self._graph is None:
