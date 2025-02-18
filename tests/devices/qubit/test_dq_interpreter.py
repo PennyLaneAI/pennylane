@@ -338,29 +338,71 @@ class TestSampling:
 class TestCustomPrimitiveRegistrations:
     """Tests for primitives with custom primitive registrations."""
 
-    def test_adjoint_transform(self):
+    @pytest.mark.parametrize("lazy", [True, False])
+    def test_adjoint_transform(self, lazy):
         """Test that the adjoint_transform is interpreted correctly."""
 
         @DefaultQubitInterpreter(num_wires=1, shots=None)
         def circuit(x):
-            qml.adjoint(qml.RX)(x, 0)
-            return 1
 
-        with pytest.raises(NotImplementedError):
-            circuit(0.5)
+            def adjoint_fn(y):
+                phi = y * jnp.pi / 2
+                qml.RZ(phi, 0)
+                qml.RX(phi - jnp.pi, 0)
+
+            qml.adjoint(adjoint_fn, lazy=lazy)(x)
+            return qml.state()
+
+        x = 1.5
+        rz_phi = -x * jnp.pi / 2
+        rx_phi = rz_phi + jnp.pi
+        expected_state = jnp.array(
+            [
+                jnp.cos(rx_phi / 2) * jnp.exp(-rz_phi * 1j / 2),
+                -1j * jnp.sin(rx_phi / 2) * jnp.exp(rz_phi * 1j / 2),
+            ]
+        )
+        assert jnp.allclose(circuit(x), expected_state)
 
     def test_ctrl_transform(self):
         """Test that the ctrl_transform is interpreted correctly."""
 
-        @DefaultQubitInterpreter(num_wires=2, shots=None)
-        def circuit():
-            qml.ctrl(qml.X, control=1)(0)
+        @DefaultQubitInterpreter(num_wires=3, shots=None)
+        def circuit(x):
+            qml.X(0)
 
-        with pytest.raises(NotImplementedError):
-            circuit()
+            def ctrl_fn(y):
+                phi = y * jnp.pi / 2
+                qml.RZ(phi, 2)
+                qml.RX(phi - jnp.pi, 2)
 
-    def test_basis_state_projector(self):
+            qml.ctrl(ctrl_fn, control=[0, 1], control_values=[1, 0])(x)
+            return qml.state()
+
+        x = 1.5
+        rz_phi = x * jnp.pi / 2
+        rx_phi = rz_phi - jnp.pi
+        expected_state = qml.math.zeros(8, dtype=complex)
+        expected_state[4] = jnp.cos(rx_phi / 2) * jnp.exp(-rz_phi * 1j / 2)
+        expected_state[5] = -1j * jnp.sin(rx_phi / 2) * jnp.exp(-rz_phi * 1j / 2)
+
+        assert jnp.allclose(circuit(x), expected_state)
+
+    @pytest.mark.parametrize("basis_state", [0, 1])
+    def test_basis_state_projector(self, basis_state):
         """Test that BasisStateProjectors are applied correctly as operations."""
+
+        @DefaultQubitInterpreter(num_wires=1, shots=None)
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.Projector(jnp.array([basis_state]), 0)
+            return qml.state()
+
+        x = 1.5
+        expected_state = qml.math.array([jnp.cos(x / 2), -1j * jnp.sin(x / 2)])
+        expected_state[int(not basis_state)] = 0
+
+        assert jnp.allclose(circuit(x), expected_state)
 
 
 class TestClassicalComponents:
