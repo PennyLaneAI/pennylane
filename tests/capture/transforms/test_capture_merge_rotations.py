@@ -18,6 +18,7 @@
 import pytest
 
 import pennylane as qml
+from pennylane.transforms.optimization.optimization_utils import fuse_rot_angles
 
 jax = pytest.importorskip("jax")
 
@@ -48,20 +49,94 @@ class TestMergeRotationsInterpreter:
         """Test that traced arguments work fine."""
 
         @MergeRotationsInterpreter()
-        def f(a, b, wires):
+        def f(a, b, c, wires):
             qml.RX(a, wires=wires)
             qml.RY(a, wires=2)
             qml.RX(b, wires=wires)
+            qml.Rot(0, 0, c, wires=1)
+            qml.Rot(0, 0, c, wires=1)
             return qml.expval(qml.PauliZ(0))
 
-        args = (0.1, 0.2, 0)
+        a, b, c = 0.1, 0.2, 0.3
+        args = (a, b, c, 0)
         jaxpr = jax.make_jaxpr(f)(*args)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
         expected_ops = [
-            qml.RX(jax.numpy.array(0.3), wires=[0]),
-            qml.RY(0.1, wires=[2]),
+            qml.RX(jax.numpy.array(a + b), wires=[0]),
+            qml.RY(a, wires=[2]),
+            # Two rotation gates merge to: RZ(c) RZ(c)
+            qml.Rot(jax.numpy.array(c), jax.numpy.array(0), jax.numpy.array(c), wires=[1]),
+        ]
+
+        ops = collector.state["ops"]
+        assert ops == expected_ops
+
+        expected_meas = [
+            qml.expval(qml.PauliZ(0)),
+        ]
+        meas = collector.state["measurements"]
+        assert meas == expected_meas
+
+    def test_rot_gate_traced_arguments(self):
+        """Test that a qml.Rot gate is correctly merged when using traced arguments"""
+
+        @MergeRotationsInterpreter()
+        def circuit(angles1, angles2):
+            qml.Rot(*angles1, wires=1)
+            qml.Rot(*angles2, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        angles1 = (1, 2, 3)
+        angles2 = (4, 5, 6)
+        jaxpr = jax.make_jaxpr(circuit)(angles1, angles2)
+        args = (angles1, angles2)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *jax.tree_util.tree_leaves(args))
+
+        expected_angles = fuse_rot_angles(angles1, angles2)
+        expected_ops = [
+            qml.Rot(
+                jax.numpy.array(expected_angles[0]),
+                jax.numpy.array(expected_angles[1]),
+                jax.numpy.array(expected_angles[2]),
+                wires=[1],
+            ),
+        ]
+
+        ops = collector.state["ops"]
+        assert ops == expected_ops
+
+        expected_meas = [
+            qml.expval(qml.PauliZ(0)),
+        ]
+        meas = collector.state["measurements"]
+        assert meas == expected_meas
+
+    def test_rot_gate(self):
+        """Test that a qml.Rot gate is correctly merged when using constant arguments."""
+
+        @MergeRotationsInterpreter()
+        def circuit():
+            qml.Rot(1, 2, 3, wires=1)
+            qml.Rot(4, 5, 6, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+
+        a, b, c = 1, 2, 3
+        d, e, f = 4, 5, 6
+        expected_angles = fuse_rot_angles((a, b, c), (d, e, f))
+        expected_ops = [
+            qml.Rot(
+                expected_angles[0],
+                expected_angles[1],
+                expected_angles[2],
+                wires=[1],
+            ),
         ]
 
         ops = collector.state["ops"]

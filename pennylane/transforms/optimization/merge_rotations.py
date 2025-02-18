@@ -37,7 +37,7 @@ def _get_plxpr_merge_rotations():
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.operation import Operator
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return None, None
 
     # pylint: disable=redefined-outer-name, too-few-public-methods
@@ -113,13 +113,14 @@ def _get_plxpr_merge_rotations():
 
             if can_merge:
                 if isinstance(op, qml.Rot):
+                    # Order matters for the Rot gate
                     cumulative_angles = fuse_rot_angles(
-                        qml.math.stack(op.parameters),
                         qml.math.stack(previous_op.parameters),
+                        qml.math.stack(op.parameters),
                     )
                 else:
-                    cumulative_angles = qml.math.stack(op.parameters) + qml.math.stack(
-                        previous_op.parameters
+                    cumulative_angles = qml.math.stack(previous_op.parameters) + qml.math.stack(
+                        op.parameters
                     )
 
                 # Overwrite operator in dict with the merged one
