@@ -374,6 +374,20 @@ class TestMergeRotationsInterpreter:
         meas = collector.state["measurements"]
         assert meas == expected_meas
 
+    def test_returned_rotation_not_merged(self):
+        """Test that a rotation is not merged if it is returned."""
+
+        @MergeRotationsInterpreter()
+        def f(a, b):
+            qml.RX(a, wires=0)
+            return qml.RX(b, wires=0)
+
+        args = (1, 2)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert len(jaxpr.eqns) == 2
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == qml.RX._primitive
+
 
 @pytest.mark.parametrize(("theta1, theta2"), [(0.1, 0.2), (0.1, -0.1)])
 def test_merge_rotations_plxpr_to_plxpr_transform(theta1, theta2):
