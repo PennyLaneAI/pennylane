@@ -204,7 +204,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         op_node_idx, d_node_idx = edge_obj
         return self.d[d_node_idx].num_gates - self.d[op_node_idx].num_gates
 
-    def discover_vertex(self, v, score):
+    def discover_vertex(self, v, _):
         """Triggered when a vertex is about to be explored during the dijkstra search."""
         self.unsolved_op_indices.discard(v)
         if not self.unsolved_op_indices and self._lazy:
@@ -212,7 +212,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
     def examine_edge(self, edge):
         """Triggered when an edge is examined during the dijkstra search."""
-        src_idx, target_idx, obj = edge
+        src_idx, target_idx, _ = edge
         src_node = self._graph[src_idx]
         target_node = self._graph[target_idx]
         if not isinstance(target_node, _DecompositionNode):
@@ -228,7 +228,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
     def edge_relaxed(self, edge):
         """Triggered when an edge is relaxed during the dijkstra search."""
-        src_idx, target_idx, obj = edge
+        src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
         if self._graph[src_idx] == "dummy":
             self.d[target_idx] = Resources(1, {target_node: 1})
