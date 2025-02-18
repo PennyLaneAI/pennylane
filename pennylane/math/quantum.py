@@ -1001,8 +1001,10 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
         Z = Znew
         # TODO: implement the tol control logic
         # basic idea: check norm_diff every 10 iter. If norm_diff < tol, break
-    Ynew = 0.5 * (Y + spla.inv(Z))
-    Znew = 0.5 * (Z + spla.inv(Y))
+        Ynew = 0.5 * (Y + spla.inv(Z))
+        Znew = 0.5 * (Z + spla.inv(Y))
+        # TODO: common error catch to be here -- failure of spla.inv
+
 
     X = spla.inv(Z)
     B = Znew
