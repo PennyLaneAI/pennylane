@@ -55,6 +55,24 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         ):
             jax.make_jaxpr(qfunc)()
 
+    def test_repeated_qubit_error_with_higher_order_prim(self):
+        """Test that an error is raised if a qubit in the AmplitudeEmbedding had operations applied to it before."""
+
+        def ctrl_fn():
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f():
+            qml.X(0)
+            qml.ctrl(ctrl_fn, [2, 3])()
+
+        with pytest.raises(
+            qml.DeviceError,
+            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+        ):
+            jax.make_jaxpr(f)()
+
     def test_circuit_with_arguments(self):
         """Test that the transform works correctly when the circuit has arguments."""
 

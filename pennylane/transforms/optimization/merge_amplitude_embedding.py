@@ -49,12 +49,12 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         def setup(self) -> None:
             """Setup the interpreter for a new evaluation."""
             self.new_operations = []
-            self.visited_wires = set()
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def cleanup(self) -> None:
             """Cleanup the interpreter after an evaluation."""
             self.new_operations = []
+            self.visited_wires = set()
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def interpret_operation(self, op: Operator):
@@ -116,7 +116,10 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
             for op in self.new_operations:
                 super().interpret_operation(op)
-            self.cleanup()
+
+            # Clear setup variables except visited wires
+            self.new_operations = []
+            self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         # pylint: disable=too-many-branches
         def eval(self, jaxpr, consts, *args):
