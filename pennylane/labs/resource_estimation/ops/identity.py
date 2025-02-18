@@ -32,7 +32,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
         return {}
 
     @classmethod
-    def make_resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
+    def make_resource_rep(cls, **_) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
@@ -62,7 +62,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
         return {}
 
     @classmethod
-    def make_resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
+    def make_resource_rep(cls, **_) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
     @staticmethod
