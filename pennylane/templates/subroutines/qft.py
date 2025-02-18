@@ -21,7 +21,7 @@ import functools
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import CompressedResourceOp, decomposition
+from pennylane.decomposition import decomposition
 from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires, WiresLike
 
