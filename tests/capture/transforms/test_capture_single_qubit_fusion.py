@@ -445,6 +445,102 @@ class TestSingleQubitFusionInterpreter:
             assert qml.math.allclose(op1.parameters, op2.parameters)
             assert op1.wires == op2.wires
 
+    def test_for_loop(self):
+        """Test that for operators inside a for loop are correctly fused."""
+
+        def circuit(x):
+
+            qml.CNOT(wires=[0, 1])
+
+            @qml.for_loop(0, 1)
+            def loop(i, x):
+                qml.RX(x, wires=0)
+                qml.RZ(x, wires=0)
+                return qml.Hadamard(wires=0)
+
+            loop(x)
+
+            qml.CNOT(wires=[0, 1])
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+        jaxpr = jax.make_jaxpr(transformed_circuit)(np.pi)
+
+        assert len(jaxpr.eqns) == 3
+
+        assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[1].primitive == for_loop_prim
+        assert jaxpr.eqns[2].primitive == qml.CNOT._primitive
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, np.pi)
+        jaxpr_ops = collector.state["ops"]
+        assert len(jaxpr_ops) == 4
+
+        expected_ops = [
+            qml.CNOT(wires=[0, 1]),
+            qml.Rot(np.pi / 2, np.pi, np.pi / 2, wires=[0]),  # RX and RZ fused
+            qml.Hadamard(wires=[0]),  # Should not be fused because is returned
+            qml.CNOT(wires=[0, 1]),
+        ]
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops):
+            # The qml.equal function does not recognize two qml.Rot operators
+            # as equivalent unless the input angles are exactly the same
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
+
+    def test_while_loop(self):
+        """Test that while operators inside a while loop are correctly fused."""
+
+        def circuit(x):
+
+            qml.CNOT(wires=[0, 1])
+
+            def while_f(i):
+                return i < 3
+
+            @qml.while_loop(while_f)
+            def loop(i):
+                qml.RX(np.pi, wires=0)
+                qml.RZ(np.pi, wires=0)
+                return i + 1
+
+            loop(0)
+
+            qml.CNOT(wires=[0, 1])
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+        jaxpr = jax.make_jaxpr(transformed_circuit)(np.pi)
+
+        assert len(jaxpr.eqns) == 3
+
+        assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[1].primitive == while_loop_prim
+        assert jaxpr.eqns[2].primitive == qml.CNOT._primitive
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, np.pi)
+        jaxpr_ops = collector.state["ops"]
+        assert len(jaxpr_ops) == 5
+
+        print(jaxpr_ops)
+
+        expected_ops = [
+            qml.CNOT(wires=[0, 1]),
+            qml.Rot(np.pi / 2, np.pi, np.pi / 2, wires=[0]),  # RX and RZ fused
+            qml.Rot(np.pi / 2, np.pi, np.pi / 2, wires=[0]),  # RX and RZ fused
+            qml.Rot(np.pi / 2, np.pi, np.pi / 2, wires=[0]),  # RX and RZ fused
+            qml.CNOT(wires=[0, 1]),
+        ]
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops):
+            # The qml.equal function does not recognize two qml.Rot operators
+            # as equivalent unless the input angles are exactly the same
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
+
     @pytest.mark.parametrize(
         "parameters, expected_ops",
         [
