@@ -29,11 +29,11 @@
       return qml.expval(qml.Z(0))
   ```
 
-<h3>Improvements 🛠</h3>
-
 * Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
+
+<h3>Improvements 🛠</h3>
 
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
