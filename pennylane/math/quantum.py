@@ -18,9 +18,11 @@ import functools
 import itertools
 from string import ascii_letters as ABC
 
+import scipy as sp
+import scipy.sparse.linalg as spla
 from autoray import numpy as np
 from numpy import float64  # pylint:disable=wrong-import-order
-from scipy.sparse import issparse
+from scipy.sparse import csc_matrix, issparse
 
 import pennylane as qml
 
@@ -983,12 +985,26 @@ def sqrt_matrix_sparse(density_matrix):
         (sparse): Square root of the density matrix. Even thought type as `csr_matrix` or `csc_matrix`, the output is not guaranteed to be sparse as well.
     """
     if not issparse(density_matrix):
-        raise TypeError("Only use this method for sparse matrices, or there will be an inevitable performance hit and divergence risk.")
-    return _denman_beavers_iterations(mat, max_iter=100, tol=1e-10)
+        raise TypeError(
+            "Only use this method for sparse matrices, or there will be an inevitable performance hit and divergence risk."
+        )
+    return _denman_beavers_iterations(density_matrix, max_iter=100, tol=1e-10)
 
 
 def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
-    pass
+    Ynew = sp.sparse.csc_matrix(mat)
+    Znew = sp.sparse.eye(mat.shape[0]).tocsc()
+    for _ in range(max_iter):
+        Y = Ynew
+        Z = Znew
+        # TODO: implement the tol control logic
+        # basic idea: check norm_diff every 10 iter. If norm_diff < tol, break
+    Ynew = 0.5 * (Y + spla.inv(Z))
+    Znew = 0.5 * (Z + spla.inv(Y))
+
+    X = spla.inv(Z)
+    B = Znew
+    return 2 * X - X @ B @ X
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
