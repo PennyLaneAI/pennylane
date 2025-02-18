@@ -72,7 +72,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             except (NotImplementedError, AttributeError):
                 print(f"single_qubit_rot_angles not available for current_gate: {op}")
 
-                # Collect previous operations in a **deterministic order** (sorted by the first wire index)
+                # Collect previous operations in a deterministic order sorted by the first wire index
                 previous_ops_on_wires = sorted(
                     {
                         self.previous_ops.get(w)
@@ -280,6 +280,12 @@ def single_qubit_fusion(
         The fused angles between two sets of rotation angles are not always defined uniquely
         because Euler angles are not unique for some rotations. ``single_qubit_fusion``
         makes a particular choice in this case.
+
+    .. note::
+
+        The order of the gates resulting from the fusion may be different depending 
+        on wether program capture is enabled or not. This only impacts the order of
+        operations that do not share any wires, so the correctness of the circuit is not affected.
 
     .. warning::
 
