@@ -30,6 +30,12 @@ class QubitGraph:
     arbitrary depth to allow easy insertion of arbitrarily many levels of abstractions between
     logical qubits and physical qubits.
 
+    Args:
+        graph (networkx.Graph, optional): The undirected graph to use as the QubitGraph's underlying
+            qubits. Inputting None (the default), leaves the underlying qubit graph in an
+            uninitialized state, in which case one of the graph-initialization methods may be used
+            to define the structure of the underlying qubit graph.
+
     This is a WIP! Still to do:
 
         * How to represent operations on qubits?
@@ -37,8 +43,13 @@ class QubitGraph:
         * Tensor-like indexing and slicing.
     """
 
-    def __init__(self):
-        self._graph_qubits = None  # The qubits underlying (nested within) the current qubit
+    def __init__(self, graph: nx.Graph = None):
+        self._graph_qubits = graph  # The qubits underlying (nested within) the current qubit
+
+        # Initialize each node in the graph to store an empty QubitGraph object
+        if self._graph_qubits is not None:
+            for node in self._graph_qubits:
+                self[node] = QubitGraph()
 
     @property
     def graph(self):
@@ -89,17 +100,48 @@ class QubitGraph:
         return self._graph_qubits is not None
 
     def __getitem__(self, key):
-        """QubitGraph subscripting operator.
+        """QubitGraph subscript operator for read access.
 
-        Currently only basic, linear indexing is supported;.
+        Currently only basic, linear indexing and slicing is supported.
 
-        TODO: Allow for more advanced indexing and slicing.
+        Args:
+            key: Node label in the underlying qubit graph.
+
+        TODO: Allow for more advanced tensor-like indexing and slicing.
         """
         if not self.is_initialized:
             self._warn_uninitialized()
             return
 
-        return self._graph_qubits.nodes[key]["qubits"]
+        if not isinstance(key, slice):
+            return self._graph_qubits.nodes[key]["qubits"]
+
+        else:
+            start, stop, step = key.indices(len(self._graph_qubits.nodes))
+            return [self._graph_qubits.nodes[node]["qubits"] for node in range(start, stop, step)]
+
+    def __setitem__(self, key, value: "QubitGraph"):
+        """QubitGraph subscript operator for assignment.
+
+        Currently only basic, linear indexing is supported. Slicing is not supported.
+
+        Args:
+            key: Node label in the underlying qubit graph.
+            value (QubitGraph): The QubitGraph object to assign to the node with the given key.
+
+        TODO: Allow for more advanced tensor-like indexing and slicing.
+        """
+        if not isinstance(value, QubitGraph):
+            raise TypeError(
+                f"'QubitGraph' item assignment type must also be a QubitGraph, but got type "
+                f"'{type(value).__name__}'"
+            )
+
+        if not self.is_initialized:
+            self._warn_uninitialized()
+            return
+
+        self._graph_qubits.nodes[key]["qubits"] = value
 
     def clear(self):
         """Clears the graph of underlying qubits."""
@@ -120,7 +162,7 @@ class QubitGraph:
             return
 
         for neighbor in self._graph_qubits.neighbors(node):
-            yield self._graph_qubits.nodes[neighbor]["qubits"]
+            yield self[neighbor]
 
     def _warn_uninitialized(self):
         """Emit a UserWarning when attempting to access an uninitialized graph."""
@@ -135,20 +177,20 @@ class QubitGraph:
             UserWarning,
         )
 
-    def init_graph(self, g: nx.Graph):
+    def init_graph(self, graph: nx.Graph):
         """Initialize the QubitGraph's underlying qubits with the given graph.
 
         Args:
-            g (nx.Graph): The graph to use as the QubitGraph's underlying qubits.
+            graph (networkx.Graph): The undirected graph to use as the QubitGraph's underlying
+                qubits.
         """
         if self.is_initialized:
             self._warn_reinitialization()
             return
 
-        self._graph_qubits = g
+        self._graph_qubits = graph
         for node in self._graph_qubits:
-            # TODO: Having the QubitGraph stored in a dictionary under the key 'qubit' feels clunky
-            self._graph_qubits.nodes[node]["qubits"] = QubitGraph()
+            self[node] = QubitGraph()
 
     def init_graph_2d_grid(self, m: int, n: int):
         """Initialize the QubitGraph's underlying qubits as a 2-dimensional Cartesian grid of other
@@ -175,8 +217,7 @@ class QubitGraph:
 
         self._graph_qubits = nx.grid_2d_graph(m, n)
         for node in self._graph_qubits.nodes:
-            # TODO: Having the QubitGraph stored in a dictionary under the key 'qubit' feels clunky
-            self._graph_qubits.nodes[node]["qubits"] = QubitGraph()
+            self[node] = QubitGraph()
 
     def init_graph_nd_grid(self, dim: Union[list[int], tuple[int]]):
         """Initialize the QubitGraph's underlying qubits as an n-dimensional Cartesian grid of other
@@ -212,8 +253,7 @@ class QubitGraph:
 
         self._graph_qubits = nx.grid_graph(dim)
         for node in self._graph_qubits.nodes:
-            # TODO: Having the QubitGraph stored in a dictionary under the key 'qubit' feels clunky
-            self._graph_qubits.nodes[node]["qubits"] = QubitGraph()
+            self[node] = QubitGraph()
 
     def init_graph_surface_code_17(self):
         r"""Initialize the QubitGraph's underlying qubits as the 17-qubit surface code graph from
@@ -269,5 +309,4 @@ class QubitGraph:
                 self._graph_qubits.add_edge(("aux", aux_node), ("data", data_node))
 
         for node in self._graph_qubits.nodes:
-            # TODO: Having the QubitGraph stored in a dictionary under the key 'qubit' feels clunky
-            self._graph_qubits.nodes[node]["qubits"] = QubitGraph()
+            self[node] = QubitGraph()

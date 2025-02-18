@@ -28,7 +28,19 @@ class TestQubitGraphsInitialization:
         qubit = QubitGraph()
         assert qubit
 
-    def test_init_graph_user_defined(self):
+    def test_initialization_constructor(self):
+        """Test that we can initialize a QubitGraph with a user-defined graph of underlying qubits
+        using the QubitGraph constructor."""
+        g = nx.hexagonal_lattice_graph(3, 2)
+        qubit = QubitGraph(g)
+
+        assert set(qubit.nodes) == set(g.nodes)
+        assert set(qubit.edges) == set(g.edges)
+
+        for node in qubit.nodes:
+            assert isinstance(qubit[node], QubitGraph)
+
+    def test_init_graph(self):
         """Test that we can initialize a QubitGraph with a user-defined graph of underlying qubits."""
         g = nx.hexagonal_lattice_graph(3, 2)
         qubit = QubitGraph()
@@ -38,7 +50,7 @@ class TestQubitGraphsInitialization:
         assert set(qubit.edges) == set(g.edges)
 
         for node in qubit.nodes:
-            assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
+            assert isinstance(qubit[node], QubitGraph)
 
     def test_init_graph_2d_grid(self):
         """Test that we can initialize a QubitGraph with a 2D Cartesian grid of underlying qubits.
@@ -59,7 +71,7 @@ class TestQubitGraphsInitialization:
         assert set(qubit.edges) == set(expected_graph.edges)
 
         for node in qubit.nodes:
-            assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
+            assert isinstance(qubit[node], QubitGraph)
 
     def test_init_graph_2d_grid_nested_two_layers(self):
         """Test that we can initialize a QubitGraph with two layers, where each layer is a 2D grid
@@ -87,7 +99,7 @@ class TestQubitGraphsInitialization:
             qubit1 = QubitGraph()
             qubit1.init_graph_2d_grid(m1, n1)
 
-            qubit0.nodes[node]["qubits"] = qubit1
+            qubit0[node] = qubit1
 
         expected_graph0 = nx.grid_2d_graph(m0, n0)
         assert set(qubit0.nodes) == set(expected_graph0.nodes)
@@ -98,7 +110,7 @@ class TestQubitGraphsInitialization:
         expected_graph1_edges_set = set(expected_graph1.edges)
 
         for node in qubit0.nodes:
-            qubit1 = qubit0.nodes[node]["qubits"]
+            qubit1 = qubit0[node]
             assert set(qubit1.nodes) == expected_graph1_nodes_set
             assert set(qubit1.edges) == expected_graph1_edges_set
 
@@ -113,9 +125,9 @@ class TestQubitGraphsInitialization:
         assert set(qubit.edges) == set(expected_graph.edges)
 
         for node in qubit.nodes:
-            assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
+            assert isinstance(qubit[node], QubitGraph)
 
-    def init_graph_surface_code_17(self):
+    def test_init_graph_surface_code_17(self):
         """Test that we can initialize a QubitGraph with the underlying qubits following the
         structure of the 17-qubit surface code.
         """
@@ -154,7 +166,7 @@ class TestQubitGraphsInitialization:
         assert set(qubit.edges) == set(expected_graph.edges)
 
         for node in qubit.nodes:
-            assert isinstance(qubit.nodes[node]["qubits"], QubitGraph)
+            assert isinstance(qubit[node], QubitGraph)
 
 
 class TestQubitGraphOperations:
@@ -176,18 +188,10 @@ class TestQubitGraphOperations:
         q = QubitGraph()
         q.init_graph(nx.grid_2d_graph(2, 2))
 
-        assert set(q.connected_qubits((0, 0))) == set(
-            [q.nodes[(0, 1)]["qubits"], q.nodes[(1, 0)]["qubits"]]
-        )
-        assert set(q.connected_qubits((0, 1))) == set(
-            [q.nodes[(0, 0)]["qubits"], q.nodes[(1, 1)]["qubits"]]
-        )
-        assert set(q.connected_qubits((1, 0))) == set(
-            [q.nodes[(0, 0)]["qubits"], q.nodes[(1, 1)]["qubits"]]
-        )
-        assert set(q.connected_qubits((1, 1))) == set(
-            [q.nodes[(0, 1)]["qubits"], q.nodes[(1, 0)]["qubits"]]
-        )
+        assert set(q.connected_qubits((0, 0))) == set([q[(0, 1)], q[(1, 0)]])
+        assert set(q.connected_qubits((0, 1))) == set([q[(0, 0)], q[(1, 1)]])
+        assert set(q.connected_qubits((1, 0))) == set([q[(0, 0)], q[(1, 1)]])
+        assert set(q.connected_qubits((1, 1))) == set([q[(0, 1)], q[(1, 0)]])
 
 
 class TestQubitGraphIndexing:
@@ -215,12 +219,72 @@ class TestQubitGraphIndexing:
             q1 = QubitGraph()
             q1.init_graph_nd_grid((n1,))
 
-            qubit0.nodes[node]["qubits"] = q1
+            qubit0[node] = q1
 
         for i in range(n0):
             for j in range(n1):
                 q = qubit0[i][j]
                 assert isinstance(q, QubitGraph)
+
+    def test_linear_indexing_slice(self):
+        """Test basic linear indexing using slices."""
+        qubit = QubitGraph()
+        qubit.init_graph_nd_grid((4,))
+
+        qubit_slice_02 = qubit[0:2]
+        assert len(qubit_slice_02) == 2
+        assert qubit_slice_02[0] is qubit[0]
+        assert qubit_slice_02[1] is qubit[1]
+
+        qubit_slice_13 = qubit[1:3]
+        assert len(qubit_slice_13) == 2
+        assert qubit_slice_13[0] is qubit[1]
+        assert qubit_slice_13[1] is qubit[2]
+
+        qubit_slice_042 = qubit[0:4:2]
+        assert len(qubit_slice_042) == 2
+        assert qubit_slice_042[0] is qubit[0]
+        assert qubit_slice_042[1] is qubit[2]
+
+        qubit_slice_20m1 = qubit[2:0:-1]
+        assert len(qubit_slice_20m1) == 2
+        assert qubit_slice_20m1[0] is qubit[2]
+        assert qubit_slice_20m1[1] is qubit[1]
+
+    def test_assignment(self):
+        """Test assignment of a new QubitGraph object at a given index."""
+        qubit = QubitGraph()
+        qubit.init_graph_nd_grid((2,))
+
+        new_qubit = QubitGraph()
+        new_qubit.init_graph_nd_grid((2, 2))
+
+        qubit[0] = new_qubit
+        assert qubit[0] is new_qubit
+        assert qubit[0].is_initialized
+        assert qubit[0].nodes is not None
+        assert not qubit[1].is_initialized
+
+    def test_invalid_index_raises_keyerror(self):
+        """Test that accessing a QubitGraph with an invalid index raises a KeyError."""
+        qubit = QubitGraph()
+        qubit.init_graph_nd_grid((2,))
+
+        invalid_index = 4
+        with pytest.raises(KeyError, match=f"{invalid_index}"):
+            _ = qubit[4]
+
+    def test_invalid_assignment_raises_typeerror(self):
+        """Test that attempting to assign a value that is not a QubitGraph to a node in the graph
+        raises a TypeError."""
+        qubit = QubitGraph()
+        qubit.init_graph_nd_grid((2,))
+
+        with pytest.raises(TypeError, match="item assignment type must also be a QubitGraph"):
+            qubit[0] = 42
+
+        with pytest.raises(TypeError, match="item assignment type must also be a QubitGraph"):
+            qubit[0] = nx.Graph()
 
 
 class TestQubitGraphsWarnings:
@@ -247,9 +311,36 @@ class TestQubitGraphsWarnings:
             for connected_q in q.connected_qubits(0):
                 _ = connected_q
 
+    def test_access_uninitialized_subscript_warning(self):
+        """Test that accessing an element of a qubit with the subscript operator with an
+        uninitialized graph emits a UserWarning.
+        """
+        q = QubitGraph()
+        with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
+            _ = q[0]
+
+    def test_assignment_uninitialized_subscript_warning(self):
+        """Test that assigning an element of a qubit with an uninitialized graph emits a
+        UserWarning.
+        """
+        q = QubitGraph()
+        with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
+            q[0] = QubitGraph()
+
     def test_reinitialization_warning(self):
         """Test that re-initializing an already-initialized graph emits a UserWarning."""
         q = QubitGraph()
         q.init_graph_2d_grid(2, 2)
+
+        with pytest.warns(UserWarning, match="Attempting to re-initialize a QubitGraph"):
+            g = nx.Graph()
+            q.init_graph(g)
+
         with pytest.warns(UserWarning, match="Attempting to re-initialize a QubitGraph"):
             q.init_graph_2d_grid(2, 3)
+
+        with pytest.warns(UserWarning, match="Attempting to re-initialize a QubitGraph"):
+            q.init_graph_nd_grid((3,))
+
+        with pytest.warns(UserWarning, match="Attempting to re-initialize a QubitGraph"):
+            q.init_graph_surface_code_17()
