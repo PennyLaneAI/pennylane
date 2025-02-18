@@ -13,6 +13,9 @@
 * Added class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
   following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
   [(#6925)](https://github.com/PennyLaneAI/pennylane/pull/6925)
+  
+* `qml.SWAP` now has sparse representation.
+  [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
 
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
@@ -149,10 +152,27 @@
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
+* A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
+  measurement basis in the XY, YZ or ZX plane. 
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+
+* A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices 
+  that only natively support mid-circuit measurements in the computational basis.
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
+  be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
+  same shapes and data types will be able to use this cached plxpr instead of capturing the program again.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
+
+* `qml.QNode` now accepts a `static_argnums` argument. This argument can be used to indicate any arguments that
+  should be considered static when capturing the quantum program.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
 
 * Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
   with program capture enabled.
@@ -314,6 +334,9 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
+  [(#6975)](https://github.com/PennyLaneAI/pennylane/pull/6975)
 
 * `qml.GlobalPhase.sparse_matrix` now correctly returns a sparse matrix of the same shape as `matrix`.
   [(#6940)](https://github.com/PennyLaneAI/pennylane/pull/6940)
