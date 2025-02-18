@@ -43,10 +43,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 # TODO: Add test for:
 
-# - test that operators returned are not transformed
-# - traced wires (plus more cases for traced params
-# - operators with no wires like Identity() are not transformed
-# - Test that the inner_jaxpr of transform primitives is not transformed
+# - test excluded gates
+# - traced wires (plus more cases for traced params)
 # - Test with control flow operations and loops
 # - Test with explicit consts captured
 # - Test with transforming plxpr
@@ -62,19 +60,19 @@ def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
     return qml.math.allclose(mat_product, qml.math.eye(matrix_expected.shape[0]), atol=atol)
 
 
-def extract_abstract_operator_eqns(jaxpr):
-    """Extracts all JAXPR equations that correspond to abstract operators."""
-    abstract_op_eqns = []
+def extract_jaxpr_eqns(jaxpr):
+    """Extracts all JAXPR equations that correspond to abstract operators or transforms."""
+    eqns = []
 
     for eqn in jaxpr.eqns:
 
         primitive = eqn.primitive
 
-        if getattr(primitive, "prim_type", "") == "operator":
+        if getattr(primitive, "prim_type", "") == "operator" or "transform":
 
-            abstract_op_eqns.append(eqn)
+            eqns.append(eqn)
 
-    return abstract_op_eqns
+    return eqns
 
 
 class TestSingleQubitFusionInterpreter:
@@ -156,6 +154,7 @@ class TestSingleQubitFusionInterpreter:
         assert qml.math.allclose(result, expected_result)
 
     def test_single_qubit_CNOT_fusion(self):
+        """Test that a sequence of single-qubit gates and a CNOT gate fuse."""
 
         def circuit():
             # Excluded gate at the start
@@ -293,6 +292,89 @@ class TestSingleQubitFusionInterpreter:
         for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
             assert qml.equal(op1, op2)
 
+    def test_returned_op_is_not_fused(self):
+        """Test that ops that are returned by the function being transformed are not fused."""
+
+        def circuit():
+            qml.H(0)
+            return qml.H(0)
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        assert len(jaxpr.eqns) == 2
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        transformed_ops_check = [qml.H(0), qml.H(0)]
+
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
+            assert qml.equal(op1, op2)
+
+    def test_no_wire_ops_not_fused(self):
+        """Test that inverse operations with no wires are not fused."""
+
+        def circuit():
+            qml.Identity()
+            qml.PauliX(wires=0)
+            qml.PauliY(wires=0)
+            qml.Identity()
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        assert len(jaxpr.eqns) == 3
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        transformed_ops_check = [
+            qml.Identity(),
+            qml.Identity(),
+            qml.Rot(-0.7853981633974485, 0.0, -2.356194490192345, wires=[0]),
+        ]
+
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
+            # The qml.equal function does not recognize two qml.Rot operators
+            # as equivalent unless the input angles are exactly the same
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
+
+    def test_transform_higher_order_primitive(self):
+        """Test that the inner_jaxpr of transform primitives is not transformed."""
+
+        @qml.transform
+        def fictitious_transform(tape):
+            """Fictitious transform"""
+            return [tape], lambda res: res[0]
+
+        def circuit():
+            @fictitious_transform
+            def g():
+                qml.S(0)
+                qml.T(0)
+
+            qml.RX(0.1, 0)
+            g()
+            qml.RY(0.2, 0)
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+
+        assert len(jaxpr.eqns) == 3
+
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == fictitious_transform._primitive
+        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+
+        inner_jaxpr = jaxpr.eqns[1].params["inner_jaxpr"]
+        assert len(inner_jaxpr.eqns) == 2
+        assert inner_jaxpr.eqns[0].primitive == qml.S._primitive
+        assert inner_jaxpr.eqns[1].primitive == qml.T._primitive
+
     @pytest.mark.parametrize(
         "parameters, expected_ops",
         [
@@ -310,6 +392,7 @@ class TestSingleQubitFusionInterpreter:
         ],
     )
     def test_single_qubit_fusion_traced_params(self, parameters, expected_ops):
+        """Test that single-qubit gates with traced parameters are fused correctly."""
 
         def circuit(theta):
             qml.Hadamard(wires=0)
@@ -329,6 +412,7 @@ class TestSingleQubitFusionInterpreter:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, parameters)
         jaxpr_ops = collector.state["ops"]
+        assert len(jaxpr_ops) == 6
 
         # The `fuse_rot_angles`, used in the `single_qubit_fusion` function, acts differently
         # when the input angles are traced. Therefore, we need to manually compute the expected

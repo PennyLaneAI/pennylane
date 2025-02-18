@@ -185,10 +185,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                     self.interpret_all_previous_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
-                    #    # Transform primitives don't have custom handlers, so we check for them here
-                    #    # to purge the stored ops in self.previous_ops
-                    #    if getattr(eqn.primitive, "prim_type", "") == "transform":
-                    #        self.interpret_all_previous_ops()
+                    if getattr(eqn.primitive, "prim_type", "") == "transform":
+                        self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     subfuns, params = eqn.primitive.get_bind_params(eqn.params)
                     outvals = eqn.primitive.bind(*subfuns, *invals, **params)
