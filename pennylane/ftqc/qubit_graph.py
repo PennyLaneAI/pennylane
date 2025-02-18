@@ -113,12 +113,11 @@ class QubitGraph:
             self._warn_uninitialized()
             return
 
-        if not isinstance(key, slice):
-            return self._graph_qubits.nodes[key]["qubits"]
-
-        else:
+        if isinstance(key, slice):
             start, stop, step = key.indices(len(self._graph_qubits.nodes))
             return [self._graph_qubits.nodes[node]["qubits"] for node in range(start, stop, step)]
+
+        return self._graph_qubits.nodes[key]["qubits"]
 
     def __setitem__(self, key, value: "QubitGraph"):
         """QubitGraph subscript operator for assignment.
