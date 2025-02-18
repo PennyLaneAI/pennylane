@@ -49,6 +49,11 @@ class HOState:
 
         return cls(modes, gridpoints, vector)
 
+    @classmethod
+    def zero_state(cls, modes: int, gridpoints: int) -> HOState:
+        """Construct an HOState whose vector is zero"""
+        return cls(modes, gridpoints, csr_array((gridpoints**modes, 1)))
+
     def apply_momentum(self, mode: int) -> HOState:
         """Apply momentum operator on specified mode"""
         rows = np.array(list(range(1, self.gridpoints)) + list(range(0, self.gridpoints - 1)))

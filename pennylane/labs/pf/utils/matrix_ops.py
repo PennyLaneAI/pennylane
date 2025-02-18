@@ -153,7 +153,8 @@ def tensor_with_identity(
         if mode in index:
             matrix = _kron(lookup[mode], matrix)
         else:
-            matrix = sp.linalg.block_diag(*[matrix] * gridpoints)
+            matrix = _kron(_identity(gridpoints, sparse=sparse), matrix)
+            # matrix = sp.linalg.block_diag(*[matrix] * gridpoints)
 
     return matrix
 

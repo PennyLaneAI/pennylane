@@ -31,10 +31,10 @@ class VibrationalHamiltonian:
     def harmonic_fragment(self) -> RealspaceSum:
         """Returns the fragment of the Hamiltonian corresponding to the harmonic part."""
         coeffs = Node.tensor_node(self.omegas / 2, label="omegas")
-        position = RealspaceOperator(("PP",), coeffs)
-        momentum = RealspaceOperator(("QQ",), coeffs)
+        momentum = RealspaceOperator(("PP",), coeffs)
+        position = RealspaceOperator(("QQ",), coeffs)
 
-        return RealspaceSum([position, momentum])
+        return RealspaceSum([momentum, position])
 
     def anharmonic_fragment(self) -> RealspaceSum:
         """Returns the fragment of the Hamiltonian corresponding to the anharmonic part."""
