@@ -212,7 +212,11 @@ class TestGetResources:
             config=custom_config,
         )
         expected_counts = defaultdict(
-            int, {re.ResourceT.make_resource_rep(): 3 + num_T_gates, re.ResourceS.make_resource_rep(): 5}
+            int,
+            {
+                re.ResourceT.make_resource_rep(): 3 + num_T_gates,
+                re.ResourceS.make_resource_rep(): 5,
+            },
         )
 
         assert base_gate_counts == expected_counts

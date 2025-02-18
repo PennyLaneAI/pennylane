@@ -54,7 +54,9 @@ class TestIdentity:
         op = re.ResourceIdentity(0)
         op2 = re.ResourceAdjoint(op)
         assert op.adjoint_resource_decomp() == {re.ResourceIdentity.make_resource_rep(): 1}
-        assert op2.resources(**op2.resource_params()) == {re.ResourceIdentity.make_resource_rep(): 1}
+        assert op2.resources(**op2.resource_params()) == {
+            re.ResourceIdentity.make_resource_rep(): 1
+        }
 
     identity_ctrl_data = (
         ([1], [1], [], {re.ResourceIdentity.make_resource_rep(): 1}),
@@ -131,7 +133,9 @@ class TestGlobalPhase:
         op = re.ResourceGlobalPhase(0.1, wires=0)
         op2 = re.ResourceAdjoint(op)
         assert op.adjoint_resource_decomp() == {re.ResourceGlobalPhase.make_resource_rep(): 1}
-        assert op2.resources(**op2.resource_params()) == {re.ResourceGlobalPhase.make_resource_rep(): 1}
+        assert op2.resources(**op2.resource_params()) == {
+            re.ResourceGlobalPhase.make_resource_rep(): 1
+        }
 
     globalphase_ctrl_data = (
         ([1], [1], [], {re.ResourcePhaseShift.make_resource_rep(): 1}),

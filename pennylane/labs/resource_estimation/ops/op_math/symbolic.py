@@ -78,12 +78,16 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         if num_ctrl_values == 0:
             decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
-                rep = cls.make_resource_rep(gate.op_type, gate.params, num_ctrl_wires, 0, num_work_wires)
+                rep = cls.make_resource_rep(
+                    gate.op_type, gate.params, num_ctrl_wires, 0, num_work_wires
+                )
                 gate_types[rep] = count
 
             return gate_types
 
-        no_control = cls.make_resource_rep(base_class, base_params, num_ctrl_wires, 0, num_work_wires)
+        no_control = cls.make_resource_rep(
+            base_class, base_params, num_ctrl_wires, 0, num_work_wires
+        )
         x = re.ResourceX.make_resource_rep()
         gate_types[no_control] = 1
         gate_types[x] = 2 * num_ctrl_values
