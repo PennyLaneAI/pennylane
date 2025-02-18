@@ -27,10 +27,12 @@ class Lattice:
     Lattices, representing qubit connectivity, are crucial in measurement-based quantum computing (MBQC) and fault-tolerant quantum computing (FTQC).  MBQC often utilizes cluster states,
     typically generated on qubit lattices, as a computational resource [Entanglement in Graph States and its Applications, arXiv:quant-ph/0602096].  As discussed in [Measurement-based quantum
     computation with cluster states, arXiv:quant-ph/0301052], single-qubit gates can be implemented with a 1D chain of five entangled qubits, while two-qubit CNOT gates require 15 qubits
-    arranged in a 2D lattice.  Furthermore, 3D lattice connectivity may be necessary to incorporate quantum error correction (QEC) into MBQC [A fault-tolerant one-way quantum computer,
+    arranged in a 2D lattice. Furthermore, 3D lattice connectivity may be necessary to incorporate quantum error correction (QEC) into MBQC [A fault-tolerant one-way quantum computer,
     arxiv.org:quant-ph/0510135].
 
     This Lattice class, inspired by the design of ~pennylane.spin.Lattice, leverages NetworkX to represent the relationships within the lattice structure.
+
+    #TODO: To support braiding operations, Lattice should support nodes/edges addition/deletion.
 
         Args:
             lattice_shape: Name of the lattice shape.
@@ -124,8 +126,7 @@ def generate_lattice(lattice, dims: list):
     r"""Generates a :class:`~pennylane.ftqc.Lattice` object for a given lattice shape and dimensions.
 
     Args:
-        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``.
+        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'cubic'``.
         dims(list[int]): Number of nodes in each direction of the lattice.
 
     Returns:
