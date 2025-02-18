@@ -209,9 +209,9 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
 @_hadamard_to_rz_rx.resources
 def _hadamard_to_rz_rx_resources(*_, **__):
     return {
-        CompressedResourceOp(qml.RZ): 2,
-        CompressedResourceOp(qml.RX): 1,
-        CompressedResourceOp(qml.GlobalPhase): 1,
+        qml.RZ.make_resource_rep(): 2,
+        qml.RX.make_resource_rep(): 1,
+        qml.GlobalPhase.make_resource_rep(): 1,
     }
 
 
@@ -228,9 +228,9 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 @_hadamard_to_rz_ry.resources
 def _hadamard_to_rz_ry_resources(*_, **__):
     return {
-        CompressedResourceOp(qml.RZ): 1,
-        CompressedResourceOp(qml.RY): 1,
-        CompressedResourceOp(qml.GlobalPhase): 1,
+        qml.RZ.make_resource_rep(): 1,
+        qml.RY.make_resource_rep(): 1,
+        qml.GlobalPhase.make_resource_rep(): 1,
     }
 
 
@@ -1305,6 +1305,38 @@ class SWAP(Operation):
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
+    @lru_cache()
+    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
+        r"""Sparse Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SWAP.sparse_matrix`
+
+        Returns:
+            csr_matrix: matrix
+
+        **Example**
+
+        >>> print(qml.SWAP.compute_sparse_matrix())
+        <Compressed Sparse Row sparse matrix of dtype 'int64'
+                with 4 stored elements and shape (4, 4)>
+          Coords        Values
+          (0, 0)        1
+          (1, 2)        1
+          (2, 1)        1
+          (3, 3)        1
+        """
+        # The same as
+        # [[1 0 0 0]
+        #  [0 0 1 0]
+        #  [0 1 0 0]
+        #  [0 0 0 1]]
+        data, indices, indptr = [1, 1, 1, 1], [0, 2, 1, 3], [0, 1, 2, 3, 4]
+        return sparse.csr_matrix((data, indices, indptr))
+
+    @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -1354,7 +1386,7 @@ def _swap_to_cnot(wires, **__):
 
 @_swap_to_cnot.resources
 def _swap_to_cnot_resources(*_, **__):
-    return {CompressedResourceOp(qml.CNOT): 3}
+    return {qml.CNOT.make_resource_rep(): 3}
 
 
 SWAP.add_decomposition(_swap_to_cnot)

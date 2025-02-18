@@ -46,9 +46,9 @@ class ResourceOperator(ABC):
                 def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
                     gate_types = {}
 
-                    hadamard = ResourceHadamard.resource_rep()
-                    swap = ResourceSWAP.resource_rep()
-                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
+                    hadamard = ResourceHadamard.resource_rep
+                    swap = ResourceSWAP.resource_rep
+                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep
 
                     gate_types[hadamard] = num_wires
                     gate_types[swap] = num_wires // 2
@@ -56,11 +56,12 @@ class ResourceOperator(ABC):
 
                     return gate_types
 
-                def resource_params(self, num_wires) -> dict:
+                @property
+                def resource_params(self) -> dict:
                     return {"num_wires": num_wires}
 
                 @classmethod
-                def resource_rep(cls, num_wires) -> CompressedResourceOp:
+                def make_resource_rep(cls, num_wires) -> CompressedResourceOp:
                     params = {"num_wires": num_wires}
                     return CompressedResourceOp(cls, params)
 
@@ -69,7 +70,7 @@ class ResourceOperator(ABC):
         .. code-block:: bash
 
             >>> op = ResourceQFT(range(3))
-            >>> op.resources(**op.resource_params())
+            >>> op.resources(**op.resource_params)
             {Hadamard(): 3, SWAP(): 1, ControlledPhaseShift(): 3}
 
     """
@@ -91,20 +92,22 @@ class ResourceOperator(ABC):
         """Set a custom resource method."""
         cls.resources = new_func
 
-    @abstractmethod
+    @property
     def resource_params(self) -> dict:
         """Returns a dictionary containing the minimal information needed to
         compute a compressed representation"""
+        raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
+    def make_resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-    def resource_rep_from_op(self) -> CompressedResourceOp:
+    @property
+    def resource_rep(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
-        return self.__class__.resource_rep(**self.resource_params())
+        return self.__class__.make_resource_rep(**self.resource_params)
 
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -130,7 +133,7 @@ class ResourceOperator(ABC):
 
     def tracking_name_from_op(self) -> str:
         """Returns the tracking name built with the operator's parameters."""
-        return self.__class__.tracking_name(**self.resource_params())
+        return self.__class__.tracking_name(**self.resource_params)
 
 
 class ResourcesNotDefined(Exception):

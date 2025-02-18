@@ -228,9 +228,9 @@ def _qft_decomposition(wires: WiresLike, **__):
 @_qft_decomposition.resources
 def _qft_decomposition_resources(num_wires):
     return {
-        CompressedResourceOp(qml.Hadamard): num_wires,
-        CompressedResourceOp(qml.SWAP): num_wires // 2,
-        CompressedResourceOp(qml.ControlledPhaseShift): num_wires * (num_wires - 1) // 2,
+        qml.Hadamard.make_resource_rep(): num_wires,
+        qml.SWAP.make_resource_rep(): num_wires // 2,
+        qml.ControlledPhaseShift.make_resource_rep(): num_wires * (num_wires - 1) // 2,
     }
 
 

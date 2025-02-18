@@ -224,7 +224,7 @@ def _multi_rz_decomposition(theta, wires, **__):
 
 @_multi_rz_decomposition.resources
 def _multi_rz_resources(num_wires):
-    return {CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 2 * (num_wires - 1)}
+    return {qml.RZ.make_resource_rep(): 1, qml.CNOT.make_resource_rep(): 2 * (num_wires - 1)}
 
 
 MultiRZ.add_decomposition(_multi_rz_decomposition)
@@ -571,12 +571,12 @@ def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
 @_pauli_rot_decomposition.resources
 def _pauli_rot_resources(pauli_word):
     if set(pauli_word) == {"I"}:
-        return {CompressedResourceOp(qml.GlobalPhase): 1}
+        return {qml.GlobalPhase.make_resource_rep(): 1}
     num_active_wires = len(pauli_word.replace("I", ""))
     return {
-        CompressedResourceOp(Hadamard): 2 * pauli_word.count("X"),
-        CompressedResourceOp(RX): 2 * pauli_word.count("Y"),
-        CompressedResourceOp(MultiRZ, {"num_wires": num_active_wires}): 1,
+        Hadamard.make_resource_rep(): 2 * pauli_word.count("X"),
+        RX.make_resource_rep(): 2 * pauli_word.count("Y"),
+        MultiRZ.make_resource_rep(num_wires=num_active_wires): 1,
     }
 
 
