@@ -331,6 +331,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
+
 * `qml.GlobalPhase.sparse_matrix` now correctly returns a sparse matrix of the same shape as `matrix`.
   [(#6940)](https://github.com/PennyLaneAI/pennylane/pull/6940)
 
