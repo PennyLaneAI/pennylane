@@ -30,4 +30,4 @@ from pennylane import ExperimentalWarning
 from .lattice import Lattice, generate_lattice
 
 
-__all__ = ["Lattice","generate_lattice"]
+__all__ = ["Lattice", "generate_lattice"]
