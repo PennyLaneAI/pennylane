@@ -33,52 +33,6 @@ def get_named_registers(registers):
 
     return qml.registers(temp_register_dict)
 
-def bloq_to_op(bloq, wires):
-    """
-    Converts a `Bloq` to an `Operator` using a map.
-
-    Args:
-        bloq: the bloq to convert
-        wires: the wires to act on
-
-    Returns:
-        Operator: The Operator equivalent to the input Qualtran `Bloq` object.
-    """    
-    # TODO: We need to map more bloqs to ops
-    # Alternative: create as_pl_op() function in Qualtran
-    BLOQ_TO_OP_MAP = {
-        "XGate": qml.PauliX,
-        "YGate": qml.PauliY,
-        "ZGate": qml.PauliZ,
-        "Hadamard": qml.Hadamard,
-        "CNOT": qml.CNOT,
-        "CZ": qml.CZ,
-        "TwoBitSwap": qml.SWAP,
-        "Rx": qml.RX,
-        "Ry": qml.RY,
-        "Rz": qml.RZ,
-        "Identity": qml.I,
-        "TwoBitCSwap": qml.CSWAP,
-        "GlobalPhase": qml.GlobalPhase,
-        "Toffoli": qml.Toffoli,
-        "SGate": qml.S,
-        "TGate": qml.T,
-        "CYGate": qml.CY,
-        "CHadamard": qml.CH,
-    }
-
-    if type(bloq).__name__ in BLOQ_TO_OP_MAP:
-        pl_op = BLOQ_TO_OP_MAP[type(bloq).__name__]
-        params = []
-
-        # TODO: Consider if there's a better way to access information inside the bloq
-        if hasattr(bloq, "angle"):
-            params.append(bloq.angle)
-
-        return pl_op(*params, wires=wires)
-    return None
-
-
 class FromBloq(Operation):
     r"""
     A shim for using bloqs as a PennyLane operation.
@@ -100,7 +54,7 @@ class FromBloq(Operation):
             try:
                 bloq = bloq.decompose_bloq().flatten()
             except:
-                op = bloq_to_op(bloq, wires)
+                op = bloq.as_pl_op(wires)
                 ops.append(op)
                 return ops
 
@@ -133,7 +87,7 @@ class FromBloq(Operation):
                     in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
                 
                 total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
-                op = bloq_to_op(binst.bloq, total_wires)
+                op = binst.bloq.as_pl_op(total_wires)
                 if op:
                     ops.append(op)
                 for succ in succ_cxns:
