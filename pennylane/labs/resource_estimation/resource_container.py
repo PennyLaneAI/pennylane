@@ -19,7 +19,7 @@ from pennylane.decomposition.resources import CompressedResourceOp as _Compresse
 from pennylane.labs.resource_estimation import ResourceOperator
 
 
-class CompressedResourceOp(_CompressedResourceOp):
+class CompressedResourceOp(_CompressedResourceOp):  # pylint: disable=too-few-public-methods
     r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
     Args:
