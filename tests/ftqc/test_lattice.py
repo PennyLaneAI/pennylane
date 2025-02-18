@@ -19,38 +19,92 @@ import pytest
 from pennylane.ftqc import Lattice, generate_lattice
 
 
-def test_lattice_creation():
-    graph = nx.grid_graph([2, 2])
-    lattice = Lattice(graph)
-    assert isinstance(lattice, Lattice)
-    assert lattice._graph == graph
+def test_lattice_creation_with_graph():
+    graph = nx.Graph([(0, 1), (1, 2)])
+    lattice = Lattice("test", graph=graph)
+    assert lattice.get_lattice_shape() == "test"
+    assert len(lattice.get_nodes()) == 3
+    assert len(lattice.get_edges()) == 2
+
+
+def test_lattice_creation_with_nodes_and_edges():
+    nodes = [0, 1, 2]
+    edges = [(0, 1), (1, 2)]
+    lattice = Lattice("test", nodes=nodes, edges=edges)
+    assert len(lattice.get_nodes()) == 3
+    assert len(lattice.get_edges()) == 2
+
+
+def test_lattice_creation_invalid():
+    with pytest.raises(ValueError):
+        Lattice("test")  # Neither graph nor nodes/edges provided
+
+
+def test_get_lattice_shape():
+    lattice = Lattice("test_shape", nx.Graph())
+    assert lattice.get_lattice_shape() == "test_shape"
+
+
+def test_relabel_nodes():
+    graph = nx.Graph()
+    graph.add_nodes_from([0, 1, 2])
+    graph.add_edges_from([(0, 1), (1, 2)])
+    lattice = Lattice("test", graph)
+    mapping = {0: "a", 1: "b", 2: "c"}
+    lattice.relabel_nodes(mapping)
+    assert list(lattice.get_nodes()) == ["a", "b", "c"]
+
+
+def test_set_node_attributes():
+    graph = nx.Graph()
+    graph.add_nodes_from([0, 1, 2])
+    graph.add_edges_from([(0, 1), (1, 2)])
+    lattice = Lattice("test", graph=graph)
+    attributes = {0: {"color": "red"}, 1: {"color": "blue"}, 2: {"color": "black"}}
+    lattice.set_node_attributes("color", attributes)
+    assert lattice.get_node_attributes("color") == attributes
+
+
+def test_set_edge_attributes_dict():
+    graph = nx.Graph([(0, 1), (1, 2)])
+    lattice = Lattice("test", graph=graph)
+    attributes = {(0, 1): {"weight": 10}, (1, 2): {"weight": 20}}
+    lattice.set_edge_attributes("weight", attributes)
+    assert lattice.get_edge_attributes("weight") == attributes
+
+
+def test_set_edge_attributes_scalar():
+    graph = nx.Graph([(0, 1), (1, 2)])
+    lattice = Lattice("test", graph=graph)
+    lattice.set_edge_attributes("weight", 10)
+    expected_attributes = {(0, 1): 10, (1, 2): 10}
+    assert nx.get_edge_attributes(lattice._graph, "weight") == expected_attributes
 
 
 def test_get_neighbors():
     graph = nx.grid_graph([3, 3])
-    lattice = Lattice(graph)
+    lattice = Lattice("rectangle", graph)
     neighbors = list(lattice.get_neighbors((1, 1)))
     assert len(neighbors) == 4
 
 
 def test_get_nodes():
-    graph = nx.grid_graph([2, 2])
-    lattice = Lattice(graph)
-    nodes = lattice.get_nodes()
-    assert len(nodes) == 4
+    nodes = [0, 1, 2]
+    edges = [(0, 1), (1, 2)]
+    lattice = Lattice("test", nodes=nodes, edges=edges)
+    assert set(lattice.get_nodes()) == set(nodes)  # Use set for unordered comparison
 
 
 def test_get_edges():
-    graph = nx.grid_graph([2, 2])
-    lattice = Lattice(graph)
-    edges = lattice.get_edges()
-    assert len(edges) == 4
+    edges = [(0, 1), (1, 2)]
+    lattice = Lattice("test", nodes=[0, 1, 2], edges=edges)
+    assert set(lattice.get_edges()) == set(edges)  # Use set for unordered comparison
 
 
 def test_get_graph():
-    graph = nx.grid_graph([2, 2])
-    lattice = Lattice(graph)
-    assert lattice.get_graph() == graph
+    graph = nx.Graph([(0, 1), (1, 2)])
+    lattice = Lattice("test", graph=graph)
+    assert lattice.get_graph() is graph  # Check if it's the same object
 
 
 def test_generate_chain_lattice():

@@ -16,11 +16,13 @@ This file contains the classes and functions to create lattice structure object.
 This object stores all the topological connectivity information of a lattice for FTQC.
 """
 
+from typing import Dict, List, Union
+
 import networkx as nx
 
 
 class Lattice:
-    """Constructs a Lattice object for measurement base quantum computing (MBQC).
+    """Represents a qubit lattice for measurement-based quantum computing (MBQC) and fault-tolerant quantum computing (FTQC).
 
     Lattices, representing qubit connectivity, are crucial in measurement-based quantum computing (MBQC) and fault-tolerant quantum computing (FTQC).  MBQC often utilizes cluster states,
     typically generated on qubit lattices, as a computational resource [Entanglement in Graph States and its Applications, arXiv:quant-ph/0602096].  As discussed in [Measurement-based quantum
@@ -28,18 +30,78 @@ class Lattice:
     arranged in a 2D lattice.  Furthermore, 3D lattice connectivity may be necessary to incorporate quantum error correction (QEC) into MBQC [A fault-tolerant one-way quantum computer,
     arxiv.org:quant-ph/0510135].
 
-    Serving as a fundamental substrate for MBQC and FTQC, these lattices allow users to define indexing strategies, data distribution, measurement of qubits and defects, and other relevant parameters.
-
     This Lattice class, inspired by the design of ~pennylane.spin.Lattice, leverages NetworkX to represent the relationships within the lattice structure.
 
         Args:
-            graph: A network undirected graph object.
+            lattice_shape: Name of the lattice shape.
+            graph: A NetworkX undirected graph object. If provided, `nodes` and `edges` are ignored.
+            nodes: Nodes to construct a graph object. Ignored if `graph` is provided.
+            egdes: Edges to construct the graph. Ignored if `graph` is provided.
+        Raises:
+            ValueError: If neither `graph` nor both `nodes` and `edges` are provided.
     """
 
     _short_name = "ftqc_lattice"
 
-    def __init__(self, graph: nx.Graph = None):
+    def __init__(
+        self, lattice_shape: str, graph: nx.Graph = None, nodes: List = None, edges: List = None
+    ):
+        self._lattice_shape = lattice_shape
         self._graph = graph
+        if self._graph is None:
+            if nodes is None and edges is None:
+                raise ValueError(
+                    "Neither a networkx Graph object nor nodes together with egdes are provided."
+                )
+            self._graph = nx.Graph()
+            self._graph.add_nodes_from(nodes)
+            self._graph.add_edges_from(edges)
+
+    def get_lattice_shape(self):
+        r"""Returns the lattice shape name."""
+        return self._lattice_shape
+
+    def relabel_nodes(self, mapping: Dict):
+        r"""Relabel nodes of the NetworkX graph.
+        #TODO: This method could be renamed later as it could be used for the node indexing only.
+
+        Args:
+            mapping: A dict with the old labels as keys and new labels as values.
+        """
+        nx.relabel_nodes(self._graph, mapping, copy=False)
+
+    def set_node_attributes(self, attribute_name: str, attributes: Dict):
+        r"""Add attributes to the nodes of the Networkx graph.
+        #TODO: This method could be renamed later as it's possible that this method is only for stablizers setup.
+        Args:
+            attribute_name: Name of the node attribute to set.
+            attributes: A dict with node labels as keys and attributes as values.
+        """
+        nx.set_node_attributes(self._graph, attributes, attribute_name)
+
+    def get_node_attributes(self, attribute_name: str):
+        r"""Return node attributes.
+        Args:
+            attribute_name: Name of the node attribute
+        """
+        return nx.get_node_attributes(self._graph, attribute_name)
+
+    def set_edge_attributes(self, attribute_name: str, attributes: Union[str, Dict]):
+        r"""Add attributes to the edges of the Network graph.
+        #TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
+        Args:
+            attribute_name: Name of the edge attribute to set.
+            attributes: Edge attributes to set. It accepts a dict with node labels as keys and attributes as values or a scalar to set the new attribute of egdes with.
+        """
+        nx.set_edge_attributes(self._graph, attributes, attribute_name)
+
+    def get_edge_attributes(self, attribute_name: str):
+        r"""Add attributes to the edges of the Network graph.
+        #TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
+        Args:
+            attribute_name: Name of the edge attribute to set.
+        """
+        return nx.get_edge_attributes(self._graph, attribute_name)
 
     def get_neighbors(self, node):
         r"""Returns the neighbors of a given node in the lattice."""
@@ -94,7 +156,7 @@ def generate_lattice(lattice, dims: list):
                 f"For a cubic lattice, the length of dims should 3 instead of {len(dims)}"
             )
 
-        lattice_obj = Lattice(nx.grid_graph(dims))
+        lattice_obj = Lattice(lattice_shape, nx.grid_graph(dims))
         return lattice_obj
 
     if lattice_shape == "triangle":
@@ -102,7 +164,7 @@ def generate_lattice(lattice, dims: list):
             raise ValueError(
                 f"For a triangle lattice, the length of dims should 2 instead of {len(dims)}"
             )
-        lattice_obj = Lattice(nx.triangular_lattice_graph(dims[0], dims[1]))
+        lattice_obj = Lattice(lattice_shape, nx.triangular_lattice_graph(dims[0], dims[1]))
         return lattice_obj
 
     if lattice_shape == "honeycomb":
@@ -110,5 +172,5 @@ def generate_lattice(lattice, dims: list):
             raise ValueError(
                 f"For a honeycomb lattice, the length of dims should 2 instead of {len(dims)}"
             )
-        lattice_obj = Lattice(nx.hexagonal_lattice_graph(dims[0], dims[1]))
+        lattice_obj = Lattice(lattice_shape, nx.hexagonal_lattice_graph(dims[0], dims[1]))
         return lattice_obj
