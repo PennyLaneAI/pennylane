@@ -27,7 +27,7 @@ def _rotation_resources(epsilon=10e-3):
     gate_types = {}
 
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
-    t = re.ResourceT.resource_rep()
+    t = re.ResourceT.make_resource_rep()
     gate_types[t] = num_gates
 
     return gate_types
@@ -48,23 +48,24 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
-        rz = re.ResourceRZ.resource_rep()
-        global_phase = re.ResourceGlobalPhase.resource_rep()
+        rz = re.ResourceRZ.make_resource_rep()
+        global_phase = re.ResourceGlobalPhase.make_resource_rep()
         gate_types[rz] = 1
         gate_types[global_phase] = 1
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
+    def make_resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -75,15 +76,15 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
         the identity defined in (lemma 7.11) from https://arxiv.org/pdf/quant-ph/9503016.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourceControlledPhaseShift.resource_rep(): 1}
+            gate_types = {re.ResourceControlledPhaseShift.make_resource_rep(): 1}
 
             if num_ctrl_values:
-                gate_types[re.ResourceX.resource_rep()] = 2
+                gate_types[re.ResourceX.make_resource_rep()] = 2
 
             return gate_types
 
-        c_ps = re.ResourceControlledPhaseShift.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
+        c_ps = re.ResourceControlledPhaseShift.make_resource_rep()
+        mcx = re.ResourceMultiControlledX.make_resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
@@ -92,7 +93,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
 
 class ResourceRX(qml.RX, re.ResourceOperator):
@@ -102,16 +103,17 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_rx"])
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
+    def make_resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -130,18 +132,18 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             of that identity.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourceCRX.resource_rep(): 1}
+            gate_types = {re.ResourceCRX.make_resource_rep(): 1}
 
             if num_ctrl_values:
-                gate_types[re.ResourceX.resource_rep()] = 2
+                gate_types[re.ResourceX.make_resource_rep()] = 2
 
             return gate_types
 
         gate_types = {}
 
-        h = re.ResourceHadamard.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
+        h = re.ResourceHadamard.make_resource_rep()
+        rz = re.ResourceRZ.make_resource_rep()
+        mcx = re.ResourceMultiControlledX.make_resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
@@ -155,7 +157,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
 
 class ResourceRY(qml.RY, re.ResourceOperator):
@@ -165,16 +167,17 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_ry"])
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
+    def make_resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -192,15 +195,15 @@ class ResourceRY(qml.RY, re.ResourceOperator):
         value of the control qubits.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourceCRY.resource_rep(): 1}
+            gate_types = {re.ResourceCRY.make_resource_rep(): 1}
 
             if num_ctrl_values:
-                gate_types[re.ResourceX.resource_rep()] = 2
+                gate_types[re.ResourceX.make_resource_rep()] = 2
 
             return gate_types
 
-        ry = re.ResourceRY.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
+        ry = re.ResourceRY.make_resource_rep()
+        mcx = re.ResourceMultiControlledX.make_resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
@@ -210,7 +213,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
 
 class ResourceRZ(qml.RZ, re.ResourceOperator):
@@ -225,16 +228,17 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_rz"])
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
+    def make_resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -251,15 +255,15 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
         of the control qubits.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourceCRZ.resource_rep(): 1}
+            gate_types = {re.ResourceCRZ.make_resource_rep(): 1}
 
             if num_ctrl_values:
-                gate_types[re.ResourceX.resource_rep()] = 2
+                gate_types[re.ResourceX.make_resource_rep()] = 2
 
             return gate_types
 
-        rz = re.ResourceRZ.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
+        rz = re.ResourceRZ.make_resource_rep()
+        mcx = re.ResourceMultiControlledX.make_resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
@@ -269,7 +273,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
 
 class ResourceRot(qml.Rot, re.ResourceOperator):
@@ -277,22 +281,23 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        ry = ResourceRY.resource_rep()
-        rz = ResourceRZ.resource_rep()
+        ry = ResourceRY.make_resource_rep()
+        rz = ResourceRZ.make_resource_rep()
 
         gate_types = {ry: 1, rz: 2}
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
+    def make_resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -322,18 +327,18 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourceCRot.resource_rep(): 1}
+            gate_types = {re.ResourceCRot.make_resource_rep(): 1}
 
             if num_ctrl_values:
-                gate_types[re.ResourceX.resource_rep()] = 2
+                gate_types[re.ResourceX.make_resource_rep()] = 2
 
             return gate_types
 
         gate_types = {}
 
-        rz = re.ResourceRZ.resource_rep()
-        ry = re.ResourceRY.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
+        rz = re.ResourceRZ.make_resource_rep()
+        ry = re.ResourceRY.make_resource_rep()
+        mcx = re.ResourceMultiControlledX.make_resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
@@ -347,4 +352,4 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}

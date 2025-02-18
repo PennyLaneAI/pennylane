@@ -31,7 +31,7 @@ def test_abstract_resource_decomp():
             return
 
         @staticmethod
-        def resource_rep():
+        def make_resource_rep():
             return
 
     with pytest.raises(
@@ -51,7 +51,7 @@ def test_abstract_resource_params():
         def _resource_decomp():
             return
 
-        def resource_rep(self):
+        def make_resource_rep(self):
             return
 
     with pytest.raises(
@@ -91,7 +91,7 @@ def test_set_resources():
             return
 
         @staticmethod
-        def resource_rep():
+        def make_resource_rep():
             return
 
         @staticmethod
@@ -117,7 +117,7 @@ def test_resource_rep_from_op():
             return {"foo": 1, "bar": 2}
 
         @classmethod
-        def resource_rep(cls, foo, bar):
+        def make_resource_rep(cls, foo, bar):
             return re.CompressedResourceOp(cls, {"foo": foo, "bar": bar})
 
         @staticmethod
@@ -125,4 +125,4 @@ def test_resource_rep_from_op():
             return f"DummyClass({foo}, {bar})"
 
     op = DummyClass(wires=[1, 2, 3])
-    assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params())
+    assert op.resource_rep() == op.__class__.make_resource_rep(**op.resource_params())

@@ -260,7 +260,7 @@ class TestResourcePow:
     @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_names))
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
-        rep = op.resource_rep_from_op()
+        rep = op.resource_rep()
         name = rep.op_type.tracking_name(**rep.params)
         assert name == expected
 
