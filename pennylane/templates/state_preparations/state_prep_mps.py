@@ -330,13 +330,10 @@ class MPSPrep(Operation):
         if work_wires is None:
             raise ValueError("The qml.MPSPrep decomposition requires `work_wires` to be specified.")
 
-        bond_dimensions = []
-
+        max_bond_dimension = 0
         for i in range(len(mps) - 1):
             bond_dim = mps[i].shape[-1]
-            bond_dimensions.append(bond_dim)
-
-        max_bond_dimension = max(bond_dimensions)
+            max_bond_dimension = max(max_bond_dimension, bond_dim)
 
         if 2 ** len(work_wires) < max_bond_dimension:
             raise ValueError("The bond dimension cannot exceed `2**len(work_wires)`.")
