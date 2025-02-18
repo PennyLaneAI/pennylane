@@ -27,11 +27,7 @@ Modules
 """
 from warnings import warn
 from pennylane import ExperimentalWarning
+from .lattice import Lattice, generate_lattice
 
-warn(
-    ExperimentalWarning(
-        "This module is currently experimental and will not maintain API stability between releases."
-    )
-)
 
-__all__ = []
+__all__ = ["Lattice","generate_lattice"]

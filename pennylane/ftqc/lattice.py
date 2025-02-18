@@ -17,8 +17,6 @@ This object stores all the topological connectivity information of a lattice for
 """
 
 import networkx as nx
-from networkx.algorithms import bipartite
-from pennylane import numpy as np
 
 class Lattice:
     """Constructs a Lattice object for measurement base quantum computing (MBQC). 
@@ -41,10 +39,6 @@ class Lattice:
     def __init__(self, graph: nx.Graph = None):
         self._graph = graph
 
-    def is_bipartite(self):
-        '''Check if the graph is a bipartite graph.'''
-        return bipartite(self._graph)
-    
     def get_neighbors(self, node):
         return self._graph.neighbors(node)
 
@@ -88,13 +82,13 @@ def generate_lattice(lattice, dims:list):
         "rectangle",
         "cubic"
     ]:
-        if lattice_shape is "chain" and len(dims) != 1:
+        if lattice_shape == "chain" and len(dims) != 1:
             raise ValueError(f"For a chain lattice, the length of dims should 1 instead of {len(dims)}")
 
-        if lattice_shape is "rectangle" and len(dims) != 2:
+        if lattice_shape == "rectangle" and len(dims) != 2:
             raise ValueError(f"For a chain rectangle, the length of dims should 2 instead of {len(dims)}")
 
-        if lattice_shape is "cubic" and len(dims) != 3:
+        if lattice_shape == "cubic" and len(dims) != 3:
             raise ValueError(f"For a cubic lattice, the length of dims should 3 instead of {len(dims)}")
 
         lattice_obj = Lattice(
@@ -102,7 +96,7 @@ def generate_lattice(lattice, dims:list):
         )
         return lattice_obj
     
-    if lattice_shape is "triangle":
+    if lattice_shape == "triangle":
         if len(dims) != 2:
             raise ValueError(f"For a triangle lattice, the length of dims should 2 instead of {len(dims)}")
         lattice_obj = Lattice(
@@ -110,14 +104,10 @@ def generate_lattice(lattice, dims:list):
         )
         return lattice_obj
     
-    if lattice_obj is "honeycomb":
+    if lattice_shape == "honeycomb":
         if len(dims) != 2:
             raise ValueError(f"For a honeycomb lattice, the length of dims should 2 instead of {len(dims)}")
         lattice_obj = Lattice(
             nx.hexagonal_lattice_graph(dims[0], dims[1])
         )
         return lattice_obj
-
-
-
-    
