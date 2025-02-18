@@ -992,7 +992,9 @@ def sqrt_matrix_sparse(density_matrix):
 
 
 def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
-    Ynew = sp.sparse.csc_matrix(mat)
+    mat = csc_matrix(mat)
+    Ynew = mat
+
     Znew = sp.sparse.eye(mat.shape[0]).tocsc()
     for _ in range(max_iter):
         Y = Ynew
