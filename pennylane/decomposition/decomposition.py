@@ -72,7 +72,7 @@ class DecompositionGraph:
     def _construct_graph(self):
         """Constructs the decomposition graph."""
         for op in self._original_ops:
-            op_node = CompressedResourceOp(type(op), op.resource_params)
+            op_node = op.resource_rep
             idx = self._recursively_add_op_node(op_node)
             self._original_ops_indices.add(idx)
 
@@ -154,7 +154,7 @@ class DecompositionGraph:
             Resources: The resource estimates.
 
         """
-        op_node = CompressedResourceOp(type(op), op.resource_params)
+        op_node = op.resource_rep
         op_node_idx = self._op_node_indices[op_node]
         return self._visitor.d[op_node_idx]
 
@@ -168,7 +168,7 @@ class DecompositionGraph:
             DecompositionRule: The optimal decomposition.
 
         """
-        op_node = CompressedResourceOp(type(op), op.resource_params)
+        op_node = op.resource_rep
         op_node_idx = self._op_node_indices[op_node]
         d_node_idx = self._visitor.p[op_node_idx]
         return self._graph[d_node_idx].rule
