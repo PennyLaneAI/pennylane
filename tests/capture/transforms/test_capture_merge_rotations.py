@@ -302,7 +302,7 @@ class TestMergeRotationsInterpreter:
 
 
 @pytest.mark.parametrize(("theta1, theta2"), [(0.1, 0.2), (0.1, -0.1)])
-def merge_rotations_plxpr_to_plxpr_transform(theta1, theta2):
+def test_merge_rotations_plxpr_to_plxpr_transform(theta1, theta2):
     """Test that the merge_rotations_plxpr_to_plxpr function works correctly."""
 
     @MergeRotationsInterpreter()

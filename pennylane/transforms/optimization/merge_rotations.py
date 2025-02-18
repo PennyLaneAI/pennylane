@@ -22,7 +22,6 @@ from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-from pennylane.transforms.decompose import decompose_plxpr_to_plxpr
 from pennylane.typing import PostprocessingFn
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
@@ -34,6 +33,7 @@ def _get_plxpr_merge_rotations():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
+        from jax.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.operation import Operator
@@ -55,8 +55,7 @@ def _get_plxpr_merge_rotations():
             self.previous_ops = {}
 
         def interpret_and_refresh_previous_ops(self, op: Operator):
-            """Interpret the previous operations on the wires of the given operation and
-            refresh the previous operations dictionary."""
+            """Interpret the previous_ops dictionary and add the operator to the previous_ops dictionary."""
 
             # Use list(dict(...)) as opposed to a set to maintain order
             previous_ops_on_wires = list(dict.fromkeys(self.previous_ops.get(w) for w in op.wires))
@@ -123,7 +122,7 @@ def _get_plxpr_merge_rotations():
                         previous_op.parameters
                     )
 
-                # Replace the previous operation with the merged one
+                # Overwrite operator in dict with the merged one
                 # pylint: disable = protected-access
                 for w in op.wires:
                     self.previous_ops[w] = op.__class__._primitive.impl(
@@ -147,7 +146,7 @@ def _get_plxpr_merge_rotations():
             for w in all_wires:
                 self.previous_ops.pop(w)
 
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: Jaxpr, consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
@@ -215,11 +214,8 @@ def _get_plxpr_merge_rotations():
             atol=tkwargs.pop("atol", 1e-8), include_gates=tkwargs.pop("include_gates", None)
         )
 
-        # Flattens any adjoints in the JAXPR
-        expanded_jaxpr = decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args)
-
         def wrapper(*inner_args):
-            return merge_rotations.eval(expanded_jaxpr.jaxpr, expanded_jaxpr.consts, *inner_args)
+            return merge_rotations.eval(jaxpr, consts, *inner_args)
 
         return make_jaxpr(wrapper)(*args)
 
