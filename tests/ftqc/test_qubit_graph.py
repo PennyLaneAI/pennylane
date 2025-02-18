@@ -126,16 +126,16 @@ class TestQubitGraphsInitialization:
         # This is essentially duplicated from the QubitGraph implementation, but it ensures that
         # accidental changes to the production code will result in a test failure
         data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
-        anci_qubits = [
-            ("anci", i) for i in range(9, 17)
-        ]  # 8 ancilla qubits, indexed 9, 10, ..., 16
+        aux_qubits = [
+            ("aux", i) for i in range(9, 17)
+        ]  # 8 auxiliary qubits, indexed 9, 10, ..., 16
 
         expected_graph = nx.Graph()
         expected_graph.add_nodes_from(data_qubits)
-        expected_graph.add_nodes_from(anci_qubits)
+        expected_graph.add_nodes_from(aux_qubits)
 
-        # Adjacency list showing the connectivity of each ancilla qubit to its neighbouring data qubits
-        anci_adjacency_list = {
+        # Adjacency list for connectivity of each auxiliary qubit to its neighbouring data qubits
+        aux_adjacency_list = {
             9: [1, 2],
             10: [0, 3],
             11: [0, 1, 3, 4],
@@ -146,9 +146,9 @@ class TestQubitGraphsInitialization:
             16: [6, 7],
         }
 
-        for anci_node, data_nodes in anci_adjacency_list.items():
+        for aux_node, data_nodes in aux_adjacency_list.items():
             for data_node in data_nodes:
-                expected_graph.add_edge(("anci", anci_node), ("data", data_node))
+                expected_graph.add_edge(("aux", aux_node), ("data", data_node))
 
         assert set(qubit.nodes) == set(expected_graph.nodes)
         assert set(qubit.edges) == set(expected_graph.edges)

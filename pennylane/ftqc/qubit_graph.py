@@ -224,7 +224,8 @@ class QubitGraph:
         This graph structure is commonly referred to as the "ninja star" surface code given its
         shape.
 
-        The nodes are indexed as follows, where 'd' refers to data qubits and 'a' to ancilla qubits:
+        The nodes are indexed as follows, where 'd' refers to data qubits and 'a' to auxiliary
+        qubits:
 
                           a9
                          /   \
@@ -236,7 +237,7 @@ class QubitGraph:
                   \   /  \   /  \
                    a13    a14    a15
                   /   \  /   \  /
-                d6     d7     d9
+                d6     d7     d8
                   \   /
                    a16
         """
@@ -245,16 +246,14 @@ class QubitGraph:
             return
 
         data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
-        anci_qubits = [
-            ("anci", i) for i in range(9, 17)
-        ]  # 8 ancilla qubits, indexed 9, 10, ..., 16
+        aux_qubits = [("aux", i) for i in range(9, 17)]  # 8 aux qubits, indexed 9, 10, ..., 16
 
         self._graph_qubits = nx.Graph()
         self._graph_qubits.add_nodes_from(data_qubits)
-        self._graph_qubits.add_nodes_from(anci_qubits)
+        self._graph_qubits.add_nodes_from(aux_qubits)
 
-        # Adjacency list showing the connectivity of each ancilla qubit to its neighbouring data qubits
-        anci_adjacency_list = {
+        # Adjacency list showing the connectivity of each auxiliary qubit to its neighbouring data qubits
+        aux_adjacency_list = {
             9: [1, 2],
             10: [0, 3],
             11: [0, 1, 3, 4],
@@ -265,9 +264,9 @@ class QubitGraph:
             16: [6, 7],
         }
 
-        for anci_node, data_nodes in anci_adjacency_list.items():
+        for aux_node, data_nodes in aux_adjacency_list.items():
             for data_node in data_nodes:
-                self._graph_qubits.add_edge(("anci", anci_node), ("data", data_node))
+                self._graph_qubits.add_edge(("aux", aux_node), ("data", data_node))
 
         for node in self._graph_qubits.nodes:
             # TODO: Having the QubitGraph stored in a dictionary under the key 'qubit' feels clunky
