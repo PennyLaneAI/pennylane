@@ -600,8 +600,8 @@ def apply_symmetric_real_op(
     return state
 
 
-for op in SYMMETRIC_REAL_OPS:
-    apply_operation.register(op)(apply_symmetric_real_op)
+for op_class in SYMMETRIC_REAL_OPS:
+    apply_operation.register(op_class)(apply_symmetric_real_op)
 
 
 @apply_operation.register
