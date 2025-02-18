@@ -15,10 +15,10 @@ class VibrationalHamiltonian:
             raise ValueError(f"Expected omegas to be of length {modes}, got {len(omegas)}.")
 
         for i, phi in enumerate(phis):
-            shape = (modes,) * (i + 3)
+            shape = (modes,) * i
 
             if not phi.shape == shape:
-                raise ValueError(f"Expected order {i+3} to be of shape {shape}, got {phi.shape}.")
+                raise ValueError(f"Expected order {i} to be of shape {shape}, got {phi.shape}.")
 
         self.modes = modes
         self.omegas = omegas
@@ -54,7 +54,7 @@ class VibrationalHamiltonian:
         """Returns the fragment of the Hamiltonian corresponding to the anharmonic part."""
         ops = []
         for i, phi in enumerate(self.phis):
-            op = ("Q",) * (i + 3)
+            op = ("Q",) * i
             coeffs = Node.tensor_node(phi, label=f"phis[{i}]")
             realspace_op = RealspaceOperator(op, coeffs)
             ops.append(realspace_op)

@@ -156,6 +156,11 @@ class VibronicHamiltonian:
                 f"Cannot add VibronicHamiltonian on {self.modes} with VibronicHamiltonian on {other.modes}."
             )
 
+        if self.order != other.order:
+            raise ValueError(
+                f"Cannot add VibronicHamiltonian of order {self.order} with VibronicHamiltonian of order {other.order}."
+            )
+
         return VibronicHamiltonian(
             self.states,
             self.modes,
