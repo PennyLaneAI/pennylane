@@ -20,6 +20,7 @@ from string import ascii_letters as ABC
 
 from autoray import numpy as np
 from numpy import float64  # pylint:disable=wrong-import-order
+from scipy.sparse import issparse
 
 import pennylane as qml
 
@@ -970,6 +971,24 @@ def sqrt_matrix(density_matrix):
         return vecs @ sqrt_evs @ qml.math.conj(qml.math.transpose(vecs, (0, 2, 1)))
 
     return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
+
+
+def sqrt_matrix_sparse(density_matrix):
+    r"""Compute the square root matrix of a sparse density matrix where :math:`\rho = \sqrt{\rho} \times \sqrt{\rho}`
+
+    Args:
+        density_matrix (sparse): 2D sparse density matrix of the quantum system.
+
+    Returns:
+        (sparse): Square root of the density matrix. Even thought type as `csr_matrix` or `csc_matrix`, the output is not guaranteed to be sparse as well.
+    """
+    if not issparse(density_matrix):
+        raise TypeError("Only use this method for sparse matrices, or there will be an inevitable performance hit and divergence risk.")
+    return _denman_beavers_iterations(mat, max_iter=100, tol=1e-10)
+
+
+def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
+    pass
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
