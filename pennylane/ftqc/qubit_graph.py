@@ -111,7 +111,7 @@ class QubitGraph:
         """
         if not self.is_initialized:
             self._warn_uninitialized()
-            return
+            return None
 
         if isinstance(key, slice):
             start, stop, step = key.indices(len(self._graph_qubits.nodes))
