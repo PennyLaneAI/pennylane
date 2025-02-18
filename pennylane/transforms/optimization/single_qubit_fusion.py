@@ -57,6 +57,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             self.previous_ops = {}
 
         def interpret_operation(self, op: Operator):
+            """Interpret a PennyLane operation instance."""
 
             print(f"\ninterpret_operation called with op: {op}")
 
@@ -130,8 +131,9 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             return []
 
         def interpret_all_previous_ops(self) -> None:
+            """Interpret all previous operations stored in the instance."""
 
-            print(f"\ninterpret_all_previous_ops called")
+            print("\ninterpret_all_previous_ops called")
 
             # Ensuring deterministic ordering of operations before interpreting them
             ops_remaining = sorted(
@@ -174,9 +176,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 
                 custom_handler = self._primitive_registrations.get(eqn.primitive, None)
                 if custom_handler:
-                    #    # Interpret any stored ops so that they are applied before the custom
-                    #    # primitive is handled
-                    #    self.interpret_all_previous_ops()
+                    self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
                 elif getattr(eqn.primitive, "prim_type", "") == "operator":
@@ -196,12 +196,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                 for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                     self._env[outvar] = outval
 
-            # The following is needed because any operations inside self.previous_ops have not yet
-            # been applied. At this point, we **know** that any operations that should be cancelled
-            # have been cancelled, and operations left inside self.previous_ops should be applied
             self.interpret_all_previous_ops()
 
-            # Read the final result of the Jaxpr from the environment
             outvals = []
             for var in jaxpr.outvars:
                 outval = self.read(var)

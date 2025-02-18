@@ -18,6 +18,8 @@ import pytest
 
 import pennylane as qml
 
+import numpy as np
+
 jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import (
@@ -226,14 +228,14 @@ class TestSingleQubitFusionInterpreter:
         jaxpr = jax.make_jaxpr(transformed_circuit)()
         assert len(jaxpr.eqns) == 1
 
-        expected_primitive = {qml.Rot._primitive}
-        actual_primitives = {jaxpr.eqns[0].primitive}
-        assert expected_primitive == actual_primitives
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
 
-        assert qml.math.allclose(jaxpr.eqns[0].invars[0].val, 0.0)
-        assert qml.math.allclose(jaxpr.eqns[0].invars[1].val, 0.0)
-        assert qml.math.allclose(jaxpr.eqns[0].invars[2].val, 0.0)
-        assert qml.math.allclose(jaxpr.eqns[0].invars[3].val, 0)
+        transformed_ops_check = [qml.Rot(0.0, 0.0, 0.0, wires=[0])]
+
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
+            assert qml.equal(op1, op2)
 
     def test_single_qubit_fusion_not_implemented(self):
         """Test that fusion is correctly skipped for single-qubit gates where the rotation angles are not specified."""
@@ -376,16 +378,91 @@ class TestSingleQubitFusionInterpreter:
         assert inner_jaxpr.eqns[1].primitive == qml.T._primitive
 
     @pytest.mark.parametrize(
+        "selector, expected_ops",
+        [
+            (
+                0.2,
+                [
+                    qml.CNOT(wires=[0, 1]),
+                    qml.Hadamard(wires=[0]),  # H is not fused because is alone in the branch
+                    qml.CNOT(wires=[0, 1]),
+                ],
+            ),
+            (
+                0.5,
+                [
+                    qml.CNOT(wires=[0, 1]),
+                    qml.Hadamard(wires=[0]),  # H is not fused because is alone in the branch
+                    qml.CNOT(wires=[0, 1]),
+                ],
+            ),
+            (
+                0.6,
+                [
+                    qml.CNOT(wires=[0, 1]),
+                    qml.Rot(np.pi / 2, 0.6, 0.0, wires=[0]),  # RX and S fused
+                    qml.CNOT(wires=[0, 1]),
+                ],
+            ),
+            (
+                0.8,
+                [
+                    qml.CNOT(wires=[0, 1]),
+                    qml.Rot(np.pi / 2, 0.8, 0.0, wires=[0]),  # RX and S fused
+                    qml.CNOT(wires=[0, 1]),
+                ],
+            ),
+        ],
+    )
+    def test_cond(self, selector, expected_ops):
+        """Test that conditional statements are correctly fused."""
+
+        def circuit(x):
+
+            qml.CNOT(wires=[0, 1])
+
+            def true_branch(x):
+                qml.RX(x, wires=0)
+                qml.S(wires=0)
+
+            def false_branch(x):
+                qml.H(0)
+
+            qml.cond(x > 0.5, true_branch, false_branch)(x)
+            qml.CNOT(wires=[0, 1])
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+        jaxpr = jax.make_jaxpr(transformed_circuit)(selector)
+
+        assert len(jaxpr.eqns) == 4
+        assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[1].primitive == jax.lax.gt_p
+        assert jaxpr.eqns[2].primitive == cond_prim
+        assert jaxpr.eqns[3].primitive == qml.CNOT._primitive
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, selector)
+        jaxpr_ops = collector.state["ops"]
+        assert len(jaxpr_ops) == 3
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops):
+            # The qml.equal function does not recognize two qml.Rot operators
+            # as equivalent unless the input angles are exactly the same
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
+
+    @pytest.mark.parametrize(
         "parameters, expected_ops",
         [
             (
                 jax.numpy.array([0.1, 0.2, 0.3, 0.4]),
                 [
-                    qml.Rot(0.0, 3.141592653589793, 0.0, wires=[1]),
+                    qml.Rot(0.0, np.pi, 0.0, wires=[1]),
                     qml.CNOT(wires=[1, 2]),
                     qml.CRY(0.3, wires=[1, 2]),
                     qml.CRY(0.4, wires=[1, 2]),
-                    qml.Rot(-3.1415927, 1.5707961, -2.8415926, wires=[0]),
+                    qml.Rot(-np.pi, np.pi / 2, -2.8415926, wires=[0]),
                     qml.Rot(0.51580256, 0.57563156, 0.30755687, wires=[1]),
                 ],
             ),
