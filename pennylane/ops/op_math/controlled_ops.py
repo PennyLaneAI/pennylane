@@ -24,7 +24,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.decomposition import CompressedResourceOp, decomposition
+from pennylane.decomposition import decomposition
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.wires import WiresLike

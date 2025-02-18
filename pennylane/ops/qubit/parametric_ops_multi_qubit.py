@@ -24,7 +24,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import CompressedResourceOp, decomposition
+from pennylane.decomposition import decomposition
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.typing import TensorLike
