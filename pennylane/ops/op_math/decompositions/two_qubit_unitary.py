@@ -631,7 +631,7 @@ def two_qubit_decomposition(U, wires):
             decomp = _decomposition_3_cnots(U, wires)
         else:
             num_cnots = _compute_num_cnots(U)
-            
+
             if num_cnots == 0:
                 decomp = _decomposition_0_cnots(U, wires)
             elif num_cnots == 1:
