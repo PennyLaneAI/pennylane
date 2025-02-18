@@ -95,7 +95,7 @@ class MPSPrep(Operation):
 
 
     Args:
-        mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing a right-canonized MPS state
+        mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
             as a product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
