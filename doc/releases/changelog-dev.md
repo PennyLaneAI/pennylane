@@ -317,6 +317,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
+  [(#6949)](https://github.com/PennyLaneAI/pennylane/pull/6949)
+
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`,
   `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better
   code examples.
@@ -337,6 +340,9 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
+  [(#6975)](https://github.com/PennyLaneAI/pennylane/pull/6975)
 
 * `qml.GlobalPhase.sparse_matrix` now correctly returns a sparse matrix of the same shape as `matrix`.
   [(#6940)](https://github.com/PennyLaneAI/pennylane/pull/6940)
