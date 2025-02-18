@@ -186,10 +186,10 @@ class GroverOperator(Operation):
         ctrl_values = [0] * (len(wires) - 1)
 
         @qml.for_loop(len(wires) - 1)
-        def h_loop(i):
+        def hadamard_loop(i):
             Hadamard(wires[i])
 
-        h_loop()
+        hadamard_loop()
         PauliZ(wires[-1])
         MultiControlledX(
             control_values=ctrl_values,
@@ -197,7 +197,7 @@ class GroverOperator(Operation):
             work_wires=work_wires,
         )
         PauliZ(wires[-1])
-        h_loop()
+        hadamard_loop()
         GlobalPhase(np.pi)
 
     @staticmethod

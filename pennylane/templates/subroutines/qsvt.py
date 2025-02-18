@@ -580,29 +580,36 @@ class QSVT(Operation):
         UA = hyperparameters["UA"]
         projectors = hyperparameters["projectors"]
         
-        UA._primitive.impl(wires=UA.wires) #doesn't add line in jaxpr
-        UA._primitive_bind_call(wires=UA.wires) #but this does
-        UA.adjoint() # this add line to jaxpr
+        # When all projectors are of the same type and have the same wires, we can optimize the decomposition by using the same operator; otherwise we have to loop over a list of projectors 
+        if all(p.__class__ == projectors[0].__class__ and p.wires == projectors[0].wires for p in projectors):
+            unique_projector = projectors[0].__class__
+            projector_data = jnp.array([projector.data for projector in projectors])
+            unique_projector_wires = jnp.array(projectors[0].wires)
+            
+            @qml.for_loop(len(projectors))
+            def loop(i):
+                unique_projector(projector_data[i], wires=unique_projector_wires)
+                
+                def even():
+                    UA._primitive_bind_call(wires=UA.wires)
+                def odd():
+                    UA.adjoint()
+                    
+                qml.cond(i % 2 == 0, even, odd)()
+            loop()
         
-        # Can't do the following
-        #projectors = jnp.array(projectors)
-        
-        @qml.for_loop(len(projectors) - 1)
-        def PU_loop(i):
-            # Can't do the following
-            #projectors[i]._primitive_bind_call(*projectors[i].data, wires=projectors[i].wires)
-            def even_fn():
-                UA._primitive_bind_call(wires=UA.wires) # no effect?
-        
-            def odd_fn():
-                UA.adjoint() # no effect?
-        
-            qml.cond(i % 2 == 0, even_fn, odd_fn)
-        PU_loop()
-        projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
-        
+        else: 
+            UA._primitive_bind_call(wires=UA.wires)
 
+            for i in range(len(projectors) - 1):
+                projectors[i]._primitive_bind_call(*projectors[i].data, wires=projectors[i].wires)
 
+                if i % 2 == 0:
+                    UA._primitive_bind_call(wires=UA.wires)
+                else:
+                    UA.adjoint()
+            projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
+        
     def label(self, decimals=None, base_label=None, cache=None):
         op_label = base_label or self.__class__.__name__
         return op_label

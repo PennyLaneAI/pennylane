@@ -212,19 +212,19 @@ class QFT(Operation):
         shift_len = len(shifts)
 
         @qml.for_loop(n_wires)
-        def loop_0(i):
+        def outer_loop(i):
             qml.Hadamard(wires[i])
 
             @qml.for_loop(shift_len - i)
-            def loop_1(j):
+            def cphaseshift_loop(j):
                 qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
 
-            loop_1()
+            cphaseshift_loop()
 
-        loop_0()
+        outer_loop()
 
         @qml.for_loop(n_wires // 2)
-        def loop_2(i):
+        def swaps(i):
             qml.SWAP(wires=[wires[i], wires[n_wires - i - 1]])
 
-        loop_2()
+        swaps()
