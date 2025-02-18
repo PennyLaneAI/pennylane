@@ -209,9 +209,9 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
 @_hadamard_to_rz_rx.resources
 def _hadamard_to_rz_rx_resources(*_, **__):
     return {
-        CompressedResourceOp(qml.RZ): 2,
-        CompressedResourceOp(qml.RX): 1,
-        CompressedResourceOp(qml.GlobalPhase): 1,
+        qml.RZ.make_resource_rep(): 2,
+        qml.RX.make_resource_rep(): 1,
+        qml.GlobalPhase.make_resource_rep(): 1,
     }
 
 
@@ -228,9 +228,9 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 @_hadamard_to_rz_ry.resources
 def _hadamard_to_rz_ry_resources(*_, **__):
     return {
-        CompressedResourceOp(qml.RZ): 1,
-        CompressedResourceOp(qml.RY): 1,
-        CompressedResourceOp(qml.GlobalPhase): 1,
+        qml.RZ.make_resource_rep(): 1,
+        qml.RY.make_resource_rep(): 1,
+        qml.GlobalPhase.make_resource_rep(): 1,
     }
 
 
@@ -1386,7 +1386,7 @@ def _swap_to_cnot(wires, **__):
 
 @_swap_to_cnot.resources
 def _swap_to_cnot_resources(*_, **__):
-    return {CompressedResourceOp(qml.CNOT): 3}
+    return {qml.CNOT.make_resource_rep(): 3}
 
 
 SWAP.add_decomposition(_swap_to_cnot)

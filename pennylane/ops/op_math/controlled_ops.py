@@ -967,8 +967,8 @@ def _cnot_to_cz_h(wires, **__):
 @_cnot_to_cz_h.resources
 def _cnot_to_cz_h_resources(*_, **__):
     return {
-        CompressedResourceOp(qml.H): 2,
-        CompressedResourceOp(qml.CZ): 1,
+        qml.H.make_resource_rep(): 2,
+        qml.CZ.make_resource_rep(): 1,
     }
 
 
@@ -2247,9 +2247,9 @@ def _cphase_to_rz_cnot(phi, wires, **__):
 @_cphase_to_rz_cnot.resources
 def _cphase_to_rz_cnot_resources(*_, **__):
     return {
-        CompressedResourceOp(qml.RZ): 3,
-        CompressedResourceOp(qml.CNOT): 2,
-        CompressedResourceOp(qml.GlobalPhase): 1,
+        qml.RZ.make_resource_rep(): 3,
+        qml.CNOT.make_resource_rep(): 2,
+        qml.GlobalPhase.make_resource_rep(): 1,
     }
 
 
