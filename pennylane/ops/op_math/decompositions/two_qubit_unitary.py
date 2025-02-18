@@ -625,20 +625,21 @@ def two_qubit_decomposition(U, wires):
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
     # the form of the decomposition.
-    if not qml.math.is_abstract(U):
-        num_cnots = _compute_num_cnots(U)
 
     with qml.QueuingManager.stop_recording():
         if qml.math.is_abstract(U):
             decomp = _decomposition_3_cnots(U, wires)
-        elif num_cnots == 0:
-            decomp = _decomposition_0_cnots(U, wires)
-        elif num_cnots == 1:
-            decomp = _decomposition_1_cnot(U, wires)
-        elif num_cnots == 2:
-            decomp = _decomposition_2_cnots(U, wires)
         else:
-            decomp = _decomposition_3_cnots(U, wires)
+            num_cnots = _compute_num_cnots(U)
+            
+            if num_cnots == 0:
+                decomp = _decomposition_0_cnots(U, wires)
+            elif num_cnots == 1:
+                decomp = _decomposition_1_cnot(U, wires)
+            elif num_cnots == 2:
+                decomp = _decomposition_2_cnots(U, wires)
+            else:
+                decomp = _decomposition_3_cnots(U, wires)
 
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.queuing.QueuingManager.active_context()
