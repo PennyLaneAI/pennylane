@@ -12,8 +12,9 @@
 # limitations under the License.
 
 """
-This file contains the classes and functions to create lattice structure object.
-This object stores all the topological connectivity information of a lattice for FTQC.
+This file defines classes and functions for creating lattice objects that store topological
+connectivity information for measurement-based quantum computing (MBQC) and fault-tolerant
+quantum computing (FTQC).
 """
 
 from typing import Dict, List, Union
@@ -40,7 +41,7 @@ class Lattice:
             ValueError: If neither `graph` nor both `nodes` and `edges` are provided.
     """
 
-    #TODOs: To support braiding operations, Lattice should support nodes/edges addition/deletion.
+    # TODOs: To support braiding operations, Lattice should support nodes/edges addition/deletion.
 
     _short_name = "ftqc_lattice"
 
@@ -70,7 +71,7 @@ class Lattice:
         Args:
             mapping: A dict with the old labels as keys and new labels as values.
         """
-        #TODO: This method could be renamed later as it could be used for the node indexing only.
+        # TODO: This method could be renamed later as it could be used for the node indexing only.
         nx.relabel_nodes(self._graph, mapping, copy=False)
 
     def set_node_attributes(self, attribute_name: str, attributes: Dict):
@@ -80,7 +81,7 @@ class Lattice:
             attribute_name: Name of the node attribute to set.
             attributes: A dict with node labels as keys and attributes as values.
         """
-        #TODO: This method could be renamed later as it's possible that this method is only for stablizers setup.
+        # TODO: This method could be renamed later as it's possible that this method is only for stablizers setup.
         nx.set_node_attributes(self._graph, attributes, attribute_name)
 
     def get_node_attributes(self, attribute_name: str):
@@ -97,7 +98,7 @@ class Lattice:
             attribute_name: Name of the edge attribute to set.
             attributes: Edge attributes to set. It accepts a dict with node labels as keys and attributes as values or a scalar to set the new attribute of egdes with.
         """
-        #TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
+        # TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
         nx.set_edge_attributes(self._graph, attributes, attribute_name)
 
     def get_edge_attributes(self, attribute_name: str):
@@ -106,7 +107,7 @@ class Lattice:
         Args:
             attribute_name: Name of the edge attribute to set.
         """
-        #TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
+        # TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
         return nx.get_edge_attributes(self._graph, attribute_name)
 
     def get_neighbors(self, node):
@@ -135,11 +136,11 @@ def generate_lattice(lattice, dims: List[int]) -> Lattice:
 
     Returns:
         a :class: `~pennylane.ftqc.Lattice` object.
-    
+
     Raises:
         ValueError: If the lattice shape is not supported or the dimensions are invalid.
     """
-    #TODOs: Add default support to CSS, Shor, Foliation code lattices.
+    # TODOs: Add default support to CSS, Shor, Foliation code lattices.
 
     lattice_shape = lattice.strip().lower()
 
