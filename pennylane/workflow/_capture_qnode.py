@@ -192,12 +192,20 @@ def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_di
 
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
+    mcm_config = {
+        "mcm_method": qnode_kwargs["mcm_method"],
+        "postselect_mode": qnode_kwargs["postselect_mode"],
+    }
+    execution_config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
 
     if batch_dims is None:
-        return device.eval_jaxpr(qfunc_jaxpr, consts, *non_const_args)
-    return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims[n_consts:])(
-        *non_const_args
-    )
+        return device.eval_jaxpr(
+            qfunc_jaxpr, consts, *non_const_args, execution_config=execution_config
+        )
+    return jax.vmap(
+        partial(device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config),
+        batch_dims[n_consts:],
+    )(*non_const_args)
 
 
 # pylint: disable=unused-argument

@@ -937,7 +937,11 @@ class DefaultQubit(Device):
 
     # pylint: disable=import-outside-toplevel
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args
+        self,
+        jaxpr: "jax.core.Jaxpr",
+        consts: list[TensorLike],
+        *args,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
@@ -953,7 +957,10 @@ class DefaultQubit(Device):
             key = jax.random.PRNGKey(self._rng.integers(100000))
 
         interpreter = DefaultQubitInterpreter(
-            num_wires=len(self.wires), shots=self.shots.total_shots, key=key
+            num_wires=len(self.wires),
+            shots=self.shots.total_shots,
+            key=key,
+            execution_config=execution_config,
         )
         return interpreter.eval(jaxpr, consts, *args)
 

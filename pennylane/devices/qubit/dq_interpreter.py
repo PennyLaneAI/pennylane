@@ -14,7 +14,6 @@
 """
 This module contains a class for executing plxpr using default qubit tools.
 """
-from typing import Literal
 
 import jax
 import numpy as np
@@ -32,6 +31,7 @@ from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
 from .simulate import _postselection_postprocess  # pylint: disable=protected-access
+from ..execution_config import ExecutionConfig
 
 
 # pylint: disable=attribute-defined-outside-init, access-member-before-definition
@@ -76,10 +76,10 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         num_wires: int,
         shots: int | None = None,
         key: None | jax.numpy.ndarray = None,
-        postselect_mode: Literal["fill-shots", "hw-like", "pad-invalid-samples"] = None,
+        execution_config: None | ExecutionConfig = None,
     ):
         self.num_wires = num_wires
-        self.shots = Shots(shots)
+        self.shots = self.original_shots = Shots(shots)
         if self.shots.has_partitioned_shots:
             raise NotImplementedError(
                 "DefaultQubitInterpreter does not yet support partitioned shots."
@@ -89,7 +89,8 @@ class DefaultQubitInterpreter(PlxprInterpreter):
 
         self.initial_key = key
         self.stateref = None
-        self.postselect_mode = postselect_mode
+        self.execution_config = execution_config
+
         super().__init__()
 
     def __getattr__(self, key):
@@ -117,8 +118,10 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         # else set by copying a parent interpreter and we need to modify same stateref
 
     def cleanup(self) -> None:
-        self.initial_key = self.key  # be cautious of leaked tracers, but we should be fine.
+        # self.initial_key = self.key  # be cautious of leaked tracers, but we should be fine.
+        self.key = self.initial_key
         self.stateref = None
+        self.shots = self.original_shots
 
     def interpret_operation(self, op):
         self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)
