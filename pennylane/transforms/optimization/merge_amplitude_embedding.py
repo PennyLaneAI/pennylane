@@ -46,11 +46,6 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self.visited_wires = set()
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
-        def setup(self) -> None:
-            """Setup the interpreter for a new evaluation."""
-            self.new_operations = []
-            self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
-
         def cleanup(self) -> None:
             """Cleanup the interpreter after an evaluation."""
             self.new_operations = []
