@@ -17,6 +17,7 @@
 import networkx as nx
 import pytest
 
+import pennylane as qml
 from pennylane.ftqc.qubit_graph import QubitGraph
 
 
@@ -366,12 +367,35 @@ class TestQubitGraphIndexing:
 
 
 class TestQubitGraphRepresentation:
-    """Test for representing a QubitGraph as a string."""
+    """Tests for representing a QubitGraph as a string."""
 
     def test_representation(self):
         """Test basic conversion of a QubitGraph to its string representation."""
         q = QubitGraph()
         assert str(q) == "QubitGraph"
+
+
+class TestQubitGraphWorkflows:
+    """Tests of QubitGraph workflows."""
+
+    def test_execution(self):
+        """Test execution of a simple circuit using QubitGraph objects as wires."""
+        q0 = QubitGraph()
+        q1 = QubitGraph()
+        q0.init_graph_nd_grid((2,))
+        q1.init_graph_nd_grid((2,))
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RZ(1.618, wires=q0)
+            qml.CNOT(wires=[q0, q1])
+            qml.RY(1.618, wires=q1)
+            return qml.expval(qml.PauliZ(q1))
+
+        circuit()
+        assert True  # Only check that we can execute the circuit without failure
 
 
 class TestQubitGraphsWarnings:
