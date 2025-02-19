@@ -21,7 +21,7 @@ import warnings
 from collections.abc import Callable, Generator, Iterable
 from copy import copy
 from functools import lru_cache, partial
-from typing import Optional
+from typing import Callable, Optional, Sequence
 
 import pennylane as qml
 from pennylane.transforms.core import transform
@@ -38,33 +38,33 @@ def _operator_decomposition_gen(
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     max_expansion: Optional[int] = None,
-    current_depth=0,
+    curr_depth=0,
     depth_tracker=None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
 
     max_depth_reached = False
 
-    if max_expansion is not None and max_expansion <= current_depth:
+    if max_expansion is not None and max_expansion <= curr_depth:
         max_depth_reached = True
 
     if acceptance_function(op) or max_depth_reached:
         yield op
     else:
         decomp = op.decomposition()
-        current_depth += 1
+        curr_depth += 1
 
         # this tracker is used to keep track of the current depth
         # in the dynamic decomposition evaluation with program capture enabled
         if depth_tracker is not None:
-            depth_tracker["current_depth"] = current_depth
+            depth_tracker["curr_depth"] = curr_depth
 
         for sub_op in decomp:
             yield from _operator_decomposition_gen(
                 sub_op,
                 acceptance_function,
                 max_expansion=max_expansion,
-                current_depth=current_depth,
+                curr_depth=curr_depth,
                 depth_tracker=depth_tracker,
             )
 
@@ -110,19 +110,19 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             super().__init__()
 
-        def sub_interpret_operation(self, op: qml.operation.Operator, current_depth: int):
+        def sub_interpret_operation(self, op: qml.operation.Operator, curr_depth: int):
             """Interpret an operation, applying a plxpr decomposition if the operation has one.
 
             Args:
                 op (qml.operation.Operator): the operation to interpret
-                current_depth (int): the current depth of the decomposition
+                curr_depth (int): the current depth of the decomposition
 
             """
 
             if not op.has_plxpr_decomposition or self.gate_set(op):
-                return super().interpret_operation(op)
+                return self.interpret_operation(op)
 
-            return self._evaluate_jaxpr_decomposition(op, current_depth)
+            return self._evaluate_jaxpr_decomposition(op, curr_depth)
 
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether or not an operator needs to be decomposed or not.
@@ -146,13 +146,13 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 return True
             return self.gate_set(op)
 
-        def decompose_operation(self, op: qml.operation.Operator, current_depth: int = 0):
+        def decompose_operation(self, op: qml.operation.Operator, curr_depth: int = 0):
             """Decompose a PennyLane operation instance if it does not satisfy the
             provided gate set.
 
             Args:
                 op (Operator): a pennylane operator instance
-                current_depth (int): the current depth of the decomposition
+                curr_depth (int): the current depth of the decomposition
 
             This method is only called when the operator's output is a dropped variable,
             so the output will not affect later equations in the circuit.
@@ -160,13 +160,13 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
             if self.gate_set(op):
-                return super().interpret_operation(op)
+                return self.interpret_operation(op)
 
             max_expansion = (
-                self.max_expansion - current_depth if self.max_expansion is not None else None
+                self.max_expansion - curr_depth if self.max_expansion is not None else None
             )
 
-            depth_tracker = {"current_depth": current_depth}
+            depth_tracker = {"curr_depth": curr_depth}
 
             with qml.capture.pause():
                 decomposition = list(
@@ -178,84 +178,83 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     )
                 )
 
-            current_depth = depth_tracker["current_depth"]
+            curr_depth = depth_tracker["curr_depth"]
 
             return [
-                self.sub_interpret_operation(decomp_op, current_depth)
-                for decomp_op in decomposition
+                self.sub_interpret_operation(decomp_op, curr_depth) for decomp_op in decomposition
             ]
 
-        def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator, current_depth: int = 0):
+        def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator, curr_depth: int = 0):
             """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
 
             if self.gate_set(op):
-                return super().interpret_operation(op)
+                return self.interpret_operation(op)
 
-            if self.max_expansion is not None and current_depth >= self.max_expansion:
-                return super().interpret_operation(op)
+            if self.max_expansion is not None and curr_depth >= self.max_expansion:
+                return self.interpret_operation(op)
 
             args = (*op.parameters, *op.wires)
             jaxpr_decomp = qml.capture.make_plxpr(
                 partial(op.compute_plxpr_decomposition, **op.hyperparameters)
             )(*args)
-            current_depth += 1
+            curr_depth += 1
 
-            return self.eval_dynamic_decomposition(
-                jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args, current_depth=current_depth
-            )
+            return self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args, curr_depth=curr_depth)
 
-        def eval_dynamic_decomposition(
-            self, jaxpr_decomp: "jax.core.Jaxpr", consts, *args, current_depth: int = 0
-        ):
+        def eval(
+            self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args, curr_depth: int = 0
+        ) -> list:
             """
-            Evaluates a dynamic decomposition of a Jaxpr.
+            Evaluates a jaxpr, which can also be generated by a dynamic decomposition.
 
             Args:
                 jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate
+                consts (list[TensorLike]): the constant variables for the jaxpr
                 *args: the arguments to use in the evaluation
-                current_depth (int): the current depth of the decomposition
+                curr_depth (int): the current depth of the decomposition
             """
 
-            # We update the 'self._env' environment because the jaxpr of the decomposition
+            # We update the 'self._env' environment directly because the jaxpr of the decomposition
             # can be called while evaluating another jaxpr of the previous decomposition.
 
-            for arg, invar in zip(args, jaxpr_decomp.invars, strict=True):
+            for arg, invar in zip(args, jaxpr.invars, strict=True):
                 self._env[invar] = arg
-            for const, constvar in zip(consts, jaxpr_decomp.constvars, strict=True):
+            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
                 self._env[constvar] = const
 
-            for inner_eqn in jaxpr_decomp.eqns:
+            for eq in jaxpr.eqns:
 
-                prim_type = getattr(inner_eqn.primitive, "prim_type", "")
-                custom_handler = self._primitive_registrations.get(inner_eqn.primitive, None)
+                prim_type = getattr(eq.primitive, "prim_type", "")
+                custom_handler = self._primitive_registrations.get(eq.primitive, None)
 
                 if custom_handler:
 
-                    invals = [self.read(invar) for invar in inner_eqn.invars]
-                    loop_handlers = {"handle_for_loop", "handle_while_loop", "handle_cond"}
+                    invals = [self.read(invar) for invar in eq.invars]
+                    control_flow_handlers = {"handle_for_loop", "handle_while_loop", "handle_cond"}
                     extra_kwargs = (
-                        {"current_depth": current_depth}
-                        if custom_handler.__name__ in loop_handlers
+                        {"curr_depth": curr_depth}
+                        if custom_handler.__name__ in control_flow_handlers
                         else {}
                     )
-                    outvals = custom_handler(self, *invals, **inner_eqn.params, **extra_kwargs)
+                    outvals = custom_handler(self, *invals, **eq.params, **extra_kwargs)
 
                 elif prim_type == "operator":
-                    outvals = self.interpret_operation_eqn(inner_eqn, current_depth)
+                    outvals = self.interpret_operation_eqn(eq, curr_depth)
                 elif prim_type == "measurement":
-                    outvals = super().interpret_measurement_eqn(inner_eqn)
+                    outvals = self.interpret_measurement_eqn(eq)
                 else:
-                    invals = [self.read(invar) for invar in inner_eqn.invars]
-                    outvals = inner_eqn.primitive.bind(*invals, **inner_eqn.params)
+                    invals = [self.read(invar) for invar in eq.invars]
+                    subfuns, params = eq.primitive.get_bind_params(eq.params)
+                    outvals = eq.primitive.bind(*subfuns, *invals, **params)
 
-                if not inner_eqn.primitive.multiple_results:
+                if not eq.primitive.multiple_results:
                     outvals = [outvals]
 
-                for outvar, outval in zip(inner_eqn.outvars, outvals, strict=True):
+                for outvar, outval in zip(eq.outvars, outvals, strict=True):
                     self._env[outvar] = outval
 
             outvals = []
-            for var in jaxpr_decomp.outvars:
+            for var in jaxpr.outvars:
                 outval = self.read(var)
                 if isinstance(outval, qml.operation.Operator):
                     outvals.append(self.interpret_operation(outval))
@@ -264,12 +263,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             return outvals
 
-        def interpret_operation_eqn(self, eqn, current_depth: int = 0):
+        def interpret_operation_eqn(self, eqn, curr_depth: int = 0):
             """Interpret an equation corresponding to an operator.
 
             Args:
                 eqn (jax.core.JaxprEqn): a jax equation for an operator.
-                current_depth (int): the current depth of the decomposition.
+                curr_depth (int): the current depth of the decomposition.
 
             See also: :meth:`~.interpret_operation`.
 
@@ -283,17 +282,15 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 return op
 
             if not op.has_plxpr_decomposition:
-                return self.decompose_operation(op, current_depth)
+                return self.decompose_operation(op, curr_depth)
 
-            return self._evaluate_jaxpr_decomposition(op, current_depth)
+            return self._evaluate_jaxpr_decomposition(op, curr_depth)
 
     def jaxpr_to_jaxpr_decomp(
-        interpreter: DecomposeInterpreter, jaxpr: "jax.core.Jaxpr", consts, *args, current_depth
+        interpreter: DecomposeInterpreter, jaxpr: "jax.core.Jaxpr", consts, *args, curr_depth
     ) -> "jax.core.Jaxpr":
 
-        f = partial(
-            interpreter.eval_dynamic_decomposition, jaxpr, consts, current_depth=current_depth
-        )
+        f = partial(interpreter.eval, jaxpr, consts, curr_depth=curr_depth)
 
         return jax.make_jaxpr(f)(*args)
 
@@ -306,7 +303,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
     # in the dynamic decomposition evaluation with program capture enabled.
 
     @DecomposeInterpreter.register_primitive(cond_prim)
-    def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, current_depth=0):
+    def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, curr_depth=0):
         """Handle a cond primitive."""
 
         args = invals[args_slice]
@@ -323,7 +320,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 new_consts_slices.append(slice(0, 0))
             else:
                 new_jaxpr = jaxpr_to_jaxpr_decomp(
-                    copy(self), jaxpr, consts, *args, current_depth=current_depth
+                    copy(self), jaxpr, consts, *args, curr_depth=curr_depth
                 )
                 new_jaxprs.append(new_jaxpr.jaxpr)
                 new_consts.extend(new_jaxpr.consts)
@@ -353,7 +350,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         consts_slice,
         args_slice,
         abstract_shapes_slice,
-        current_depth=0,
+        curr_depth=0,
     ):
         """Handle a for loop primitive."""
 
@@ -368,7 +365,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             *abstract_shapes,
             start,
             *init_state,
-            current_depth=current_depth,
+            curr_depth=curr_depth,
         )
 
         consts_slice = slice(0, len(new_jaxpr_body_fn.consts))
@@ -397,7 +394,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         cond_slice,
         args_slice,
         abstract_shapes_slice,
-        current_depth=0,
+        curr_depth=0,
     ):
         """Handle a while loop primitive."""
         consts_body = invals[body_slice]
@@ -411,7 +408,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             consts_body,
             *abstract_shapes,
             *init_state,
-            current_depth=current_depth,
+            curr_depth=curr_depth,
         )
         new_jaxpr_cond_fn = jaxpr_to_jaxpr_decomp(
             copy(self),
@@ -419,7 +416,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             consts_cond,
             *abstract_shapes,
             *init_state,
-            current_depth=current_depth,
+            curr_depth=curr_depth,
         )
 
         body_consts = slice(0, len(new_jaxpr_body_fn.consts))
