@@ -246,7 +246,7 @@ class QROM(Operation):
                     )
                     swap_ops.insert(0, qml.ctrl(new_op, control=control_swap_wires[-ind - 1]))
 
-            if not clean:
+            if not clean or depth == 1:
                 # Based on this paper (Fig 1.c): https://arxiv.org/abs/1812.00954
                 decomp_ops = select_ops + swap_ops
 

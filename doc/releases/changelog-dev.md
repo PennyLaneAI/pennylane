@@ -218,6 +218,9 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
+* The `QROM` template decomposes more efficiently when `work_wires` are not used.
+  [#6968)](https://github.com/PennyLaneAI/pennylane/pull/6968)
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
@@ -369,6 +372,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Utkarsh Azad,
 Yushao Chen,
 Isaac De Vlugt,
