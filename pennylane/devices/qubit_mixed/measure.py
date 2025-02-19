@@ -87,7 +87,8 @@ def state_diagonalizing_gates(  # pylint: disable=unused-argument
     is_StateMP = isinstance(measurementprocess, StateMP)
     is_DensityMatrixMP = isinstance(measurementprocess, DensityMatrixMP)
     if is_StateMP and not is_DensityMatrixMP:
-        measurementprocess = DensityMatrixMP(measurementprocess.raw_wires)
+        raw_wires = measurementprocess.raw_wires or wires # incase the None raw_wires case
+        measurementprocess = DensityMatrixMP(raw_wires)
     res = measurementprocess.process_density_matrix(flattened_state, wires)
 
     return res
