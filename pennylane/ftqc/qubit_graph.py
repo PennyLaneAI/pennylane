@@ -131,6 +131,14 @@ class QubitGraph:
         """
         yield self
 
+    def __repr__(self):
+        """Representation of a QubitGraph object.
+
+        TODO:
+            Improve this representation.
+        """
+        return f"QubitGraph"
+
     @property
     def graph(self):
         """Gets the underlying qubit graph."""

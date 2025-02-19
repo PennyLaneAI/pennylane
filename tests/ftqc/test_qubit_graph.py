@@ -365,6 +365,15 @@ class TestQubitGraphIndexing:
             qubit[0] = nx.Graph()
 
 
+class TestQubitGraphRepresentation:
+    """Test for representing a QubitGraph as a string."""
+
+    def test_representation(self):
+        """Test basic conversion of a QubitGraph to its string representation."""
+        q = QubitGraph()
+        assert str(q) == "QubitGraph"
+
+
 class TestQubitGraphsWarnings:
     """Tests for QubitGraph warning messages."""
 
