@@ -138,7 +138,7 @@ class QubitGraph:
         TODO:
             Improve this representation.
         """
-        return f"QubitGraph"
+        return "QubitGraph"
 
     @property
     def graph(self):
