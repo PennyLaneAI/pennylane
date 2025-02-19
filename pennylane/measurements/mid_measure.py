@@ -256,7 +256,11 @@ def _create_mid_measure_primitive():
 
     @mid_measure_p.def_abstract_eval
     def _(*_, **__):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        dtype = (
+            jax.numpy.int64
+            if jax.config.jax_enable_x64  # pylint: disable=no-member
+            else jax.numpy.int32
+        )
         return jax.core.ShapedArray((), dtype)
 
     return mid_measure_p
@@ -367,6 +371,11 @@ class MidMeasureMP(MeasurementProcess):
     def name(self):
         """The name of the measurement. Needed to match the Operator API."""
         return self.__class__.__name__
+
+    @property
+    def num_params(self):
+        """The number of parameters. Needed to match the Operator API."""
+        return 0
 
 
 class MeasurementValue(Generic[T]):
@@ -508,6 +517,12 @@ class MeasurementValue(Generic[T]):
 
     def __or__(self, other):
         return self._transform_bin_op(qml.math.logical_or, other)
+
+    def __mod__(self, other):
+        return self._transform_bin_op(qml.math.logical_mod, other)
+
+    def __xor__(self, other):
+        return self._transform_bin_op(qml.math.logical_xor, other)
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
