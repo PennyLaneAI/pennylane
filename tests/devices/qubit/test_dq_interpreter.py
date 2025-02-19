@@ -189,6 +189,24 @@ def test_parameter_broadcasting():
     assert qml.math.allclose(output, expected)
 
 
+@pytest.mark.parametrize("basis_state", [0, 1])
+def test_projector(basis_state):
+    """Test that Projectors are applied correctly as operations."""
+
+    @DefaultQubitInterpreter(num_wires=1, shots=None)
+    def circuit(x):
+        qml.RX(x, 0)
+        qml.Projector(jnp.array([basis_state]), 0)
+        return qml.state()
+
+    x = 1.5
+    expected_state = qml.math.array([jnp.cos(x / 2), -1j * jnp.sin(x / 2)])
+    expected_state[int(not basis_state)] = 0
+    expected_state = expected_state / qml.math.norm(expected_state)
+
+    assert qml.math.allclose(circuit(x), expected_state)
+
+
 class TestSampling:
     """Test cases for generating samples."""
 
@@ -385,22 +403,6 @@ class TestCustomPrimitiveRegistrations:
         expected_state = qml.math.zeros(8, dtype=complex)
         expected_state[4] = jnp.cos(rx_phi / 2) * jnp.exp(-rz_phi * 1j / 2)
         expected_state[5] = -1j * jnp.sin(rx_phi / 2) * jnp.exp(-rz_phi * 1j / 2)
-
-        assert jnp.allclose(circuit(x), expected_state)
-
-    @pytest.mark.parametrize("basis_state", [0, 1])
-    def test_basis_state_projector(self, basis_state):
-        """Test that BasisStateProjectors are applied correctly as operations."""
-
-        @DefaultQubitInterpreter(num_wires=1, shots=None)
-        def circuit(x):
-            qml.RX(x, 0)
-            qml.Projector(jnp.array([basis_state]), 0)
-            return qml.state()
-
-        x = 1.5
-        expected_state = qml.math.array([jnp.cos(x / 2), -1j * jnp.sin(x / 2)])
-        expected_state[int(not basis_state)] = 0
 
         assert jnp.allclose(circuit(x), expected_state)
 

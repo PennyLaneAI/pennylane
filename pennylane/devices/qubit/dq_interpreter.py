@@ -23,7 +23,7 @@ from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, P
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.ops import adjoint, ctrl
-from pennylane.ops.qubit import BasisStateProjector
+from pennylane.ops.qubit import Projector
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 from .apply_operation import apply_operation
@@ -118,6 +118,12 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)
         if op.batch_size:
             self.is_state_batched = True
+
+        if isinstance(op, Projector):
+            self.state, _ = _postselection_postprocess(
+                self.state, self.is_state_batched, self.shots
+            )
+
         return op
 
     def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
@@ -161,18 +167,6 @@ def _(self, *invals, reset, postselect):
         # Divide by zero to create NaNs for MCM values that differ from the postselection value
         self.state = self.state / (1 - jax.numpy.abs(mp.postselect - mcms[mp]))
     return mcms[mp]
-
-
-@DefaultQubitInterpreter.register_primitive(BasisStateProjector._primitive)
-def _(self, *invals, **kwargs):
-    # pylint: disable=protected-access
-    op = BasisStateProjector._primitive.impl(*invals, **kwargs)
-    self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)
-    if op.batch_size:
-        self.is_state_batched = True
-
-    self.state, _ = _postselection_postprocess(self.state, self.is_state_batched, self.shots)
-    return []
 
 
 # pylint: disable=unused-argument
