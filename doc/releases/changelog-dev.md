@@ -10,6 +10,34 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.SWAP` now has sparse representation.
+  [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+
+* `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
+  [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
+
+  ```pycon
+  >>> import numpy as np
+  >>> import pennylane as qml
+  >>> import scipy as sp
+  >>> U_dense = np.eye(4)  # 2-wire identity
+  >>> U_sparse = sp.sparse.csr_matrix(U_dense)
+  >>> op = qml.QubitUnitary(U_sparse, wires=[0, 1])
+  >>> print(op.matrix())
+  <Compressed Sparse Row sparse matrix of dtype 'float64'
+          with 4 stored elements and shape (4, 4)>
+    Coords        Values
+    (0, 0)        1.0
+    (1, 1)        1.0
+    (2, 2)        1.0
+    (3, 3)        1.0
+  >>> op.matrix().toarray()
+  array([[1., 0., 0., 0.],
+        [0., 1., 0., 0.],
+        [0., 0., 1., 0.],
+        [0., 0., 0., 1.]])
+  ```
+
 * Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
   [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
  
@@ -86,7 +114,7 @@
   >>> print(new_circuit.diff_method)
   'parameter-shift'
   ```
-  
+
 * Devices can now configure whether or not ML framework data is sent to them
   via an `ExecutionConfig.convert_to_numpy` parameter. End-to-end jitting on
   `default.qubit` is used if the user specified a `jax.random.PRNGKey` as a seed.
@@ -120,10 +148,27 @@
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
+* A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
+  measurement basis in the XY, YZ or ZX plane. 
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+
+* A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices 
+  that only natively support mid-circuit measurements in the computational basis.
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
+  be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
+  same shapes and data types will be able to use this cached plxpr instead of capturing the program again.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
+
+* `qml.QNode` now accepts a `static_argnums` argument. This argument can be used to indicate any arguments that
+  should be considered static when capturing the quantum program.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
 
 * Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
   with program capture enabled.
@@ -265,6 +310,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
+  [(#6949)](https://github.com/PennyLaneAI/pennylane/pull/6949)
+
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`,
   `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better
   code examples.
@@ -285,6 +333,9 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
+  [(#6975)](https://github.com/PennyLaneAI/pennylane/pull/6975)
 
 * `qml.GlobalPhase.sparse_matrix` now correctly returns a sparse matrix of the same shape as `matrix`.
   [(#6940)](https://github.com/PennyLaneAI/pennylane/pull/6940)
