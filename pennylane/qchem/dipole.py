@@ -447,8 +447,7 @@ def molecular_dipole(
     elif len(coordinates) == len(symbols):
         geometry_dhf = qml.numpy.array(coordinates)
         geometry_hf = coordinates.flatten()
-    else:  # pragma: no cover
-        # Should never be hit since qml.qchem.Molecule should ensure that the shape of the coordinates
+    else:
         raise ValueError(
             "The shape of the coordinates does not match the number of atoms in the molecule."
         )
