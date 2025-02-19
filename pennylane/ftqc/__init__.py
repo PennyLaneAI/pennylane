@@ -32,5 +32,5 @@ from .qubit_graph import QubitGraph
 __all__ = [
     "ParametricMidMeasureMP",
     "diagonalize_mcms",
-    "QubitGraph"
+    "QubitGraph",
 ]
