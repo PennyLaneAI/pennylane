@@ -401,7 +401,7 @@ class TestMeasurementValueManipulation:
         )
 
     def test_repr(self):
-        """Test that the output of the __repr__ dubder method is as expected."""
+        """Test that the output of the __repr__ dunder method is as expected."""
         m = qml.measure(0)
         assert repr(m) == "MeasurementValue(wires=[0])"
 
@@ -420,6 +420,23 @@ class TestMeasurementValueManipulation:
         assert new_meas.wires == Wires(["b"])
         assert new_meas.id == mp1.id
 
+    def test_mod(self):
+        """Test the __xor__ dunder method between two measurement values"""
+        m1 = MeasurementValue([mp1], lambda v: v)
+        mod_val = m1 % 2
+        assert mod_val[0] == 0
+        assert mod_val[1] == 1
+
+    def test_xor(self):
+        """Test the __xor__ dunder method between two measurement values"""
+        m1 = MeasurementValue([mp1], lambda v: v)
+        m2 = MeasurementValue([mp2], lambda v: v)
+        compared = m1 ^ m2
+        assert compared[0] == 0
+        assert compared[1] == 1
+        assert compared[2] == 1
+        assert compared[3] == 0
+
 
 unary_dunders = ["__invert__"]
 
@@ -431,6 +448,7 @@ measurement_value_binary_dunders = [
     "__rmul__",
     "__rsub__",
     "__sub__",
+    "__mod__",
 ]
 
 boolean_binary_dunders = [
@@ -442,6 +460,7 @@ boolean_binary_dunders = [
     "__lt__",
     "__ne__",
     "__or__",
+    "__xor__",
 ]
 
 binary_dunders = measurement_value_binary_dunders + boolean_binary_dunders
