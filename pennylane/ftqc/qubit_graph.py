@@ -290,7 +290,6 @@ class QubitGraph:
                 |  (1,1,0) -----------|- (1,1,1)
                 | /                   | /
                 (0,1,0) ------------- (0,1,1)
-
         """
         if self.is_initialized:
             self._warn_reinitialization()
