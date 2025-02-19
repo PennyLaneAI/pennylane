@@ -51,12 +51,6 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self.new_operations = []
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
-        def cleanup(self) -> None:
-            """Cleanup the interpreter after an evaluation."""
-            self.new_operations = []
-            self.visited_wires = set()
-            self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
-
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance.
 
@@ -112,7 +106,10 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                     else:
                         final_vector = flatten(final_vector)
 
-                self.new_operations.insert(0, AmplitudeEmbedding(final_vector, wires=final_wires))
+                # pylint: disable=protected-access
+                self.new_operations.insert(
+                    0, qml.AmplitudeEmbedding._primitive.impl(final_vector, wires=final_wires)
+                )
 
             for op in self.new_operations:
                 super().interpret_operation(op)
