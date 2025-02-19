@@ -113,18 +113,9 @@ def measure_arbitrary_basis(
 
     # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
 
-    wires = Wires(wires)
-    if len(wires) > 1:
-        raise qml.QuantumFunctionError(
-            "Only a single qubit can be measured in the middle of the circuit"
-        )
-
-    # Create a UUID and a map between MP and MV to support serialization
-    measurement_id = str(uuid.uuid4())
-    mp = ParametricMidMeasureMP(
-        wires=wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=measurement_id
+    return _measure_impl(
+        wires, ParametricMidMeasureMP, angle=angle, plane=plane, reset=reset, postselect=postselect
     )
-    return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
 def measure_x(
@@ -167,16 +158,7 @@ def measure_x(
 
     # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
 
-    wires = Wires(wires)
-    if len(wires) > 1:
-        raise qml.QuantumFunctionError(
-            "Only a single qubit can be measured in the middle of the circuit"
-        )
-
-    # Create a UUID and a map between MP and MV to support serialization
-    measurement_id = str(uuid.uuid4())
-    mp = XMidMeasureMP(wires, reset=reset, postselect=postselect, id=measurement_id)
-    return MeasurementValue([mp], processing_fn=lambda v: v)
+    return _measure_impl(wires, XMidMeasureMP, reset=reset, postselect=postselect)
 
 
 def measure_y(
@@ -219,6 +201,15 @@ def measure_y(
 
     # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
 
+    return _measure_impl(wires, YMidMeasureMP, reset=reset, postselect=postselect)
+
+
+def _measure_impl(
+    wires: Union[Hashable, Wires],
+    measurement_class=MidMeasureMP,
+    **kwargs,
+):
+    """Concrete implementation of qml.measure"""
     wires = Wires(wires)
     if len(wires) > 1:
         raise qml.QuantumFunctionError(
@@ -227,7 +218,7 @@ def measure_y(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
-    mp = YMidMeasureMP(wires, reset=reset, postselect=postselect, id=measurement_id)
+    mp = measurement_class(wires=wires, id=measurement_id, **kwargs)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
