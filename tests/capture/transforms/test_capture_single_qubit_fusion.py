@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,39 +37,6 @@ from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization import single_qubit_fusion
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
-
-# TODO: Add test for:
-
-# - test excluded gates
-# - traced wires (plus more cases for traced params)
-# - Test with explicit consts captured
-# - Test with transforming plxpr
-
-
-def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
-    """Takes two matrices and checks if multiplying one by the conjugate
-    transpose of the other gives the identity."""
-
-    mat_product = qml.math.dot(qml.math.conj(qml.math.T(matrix_obtained)), matrix_expected)
-    mat_product = mat_product / mat_product[0, 0]
-
-    return qml.math.allclose(mat_product, qml.math.eye(matrix_expected.shape[0]), atol=atol)
-
-
-def extract_jaxpr_eqns(jaxpr):
-    """Extracts all JAXPR equations that correspond to abstract operators or transforms."""
-    eqns = []
-
-    for eqn in jaxpr.eqns:
-
-        primitive = eqn.primitive
-
-        if getattr(primitive, "prim_type", "") == "operator" or "transform":
-
-            eqns.append(eqn)
-
-    return eqns
-
 
 class TestSingleQubitFusionInterpreter:
     """Unit tests for the SingleQubitFusionInterpreter class"""
