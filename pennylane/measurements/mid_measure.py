@@ -518,6 +518,12 @@ class MeasurementValue(Generic[T]):
     def __or__(self, other):
         return self._transform_bin_op(qml.math.logical_or, other)
 
+    def __mod__(self, other):
+        return self._transform_bin_op(qml.math.logical_mod, other)
+
+    def __xor__(self, other):
+        return self._transform_bin_op(qml.math.logical_xor, other)
+
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
