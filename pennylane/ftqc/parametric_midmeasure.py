@@ -74,7 +74,7 @@ def measure_arbitrary_basis(
     .. code-block:: python3
 
         import pennylane as qml
-        from pennylane.ftqc import arbitrary_basis_measure
+        from pennylane.ftqc import measure_arbitrary_basis
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -82,7 +82,7 @@ def measure_arbitrary_basis(
         def func(x, y):
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
-            m_0 = arbitrary_basis_measure(1, angle=np.pi/3, plane="XY")
+            m_0 = measure_arbitrary_basis(1, angle=np.pi/3, plane="XY")
 
             qml.cond(m_0, qml.RY)(y, wires=0)
             return qml.probs(wires=[0])

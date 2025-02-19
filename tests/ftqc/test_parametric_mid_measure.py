@@ -328,7 +328,8 @@ class TestMidMeasureXAndY:
             assert mp.has_diagonalizing_gates
             return qml.expval(qml.Z(0))
 
-        input_state = np.random.random(2) + 1j * np.random.random(2)
+        rng = np.random.default_rng(seed=111)
+        input_state = rng.random(2) + 1j * rng.random(2)
         input_state = input_state / np.linalg.norm(input_state)
 
         res = circ(input_state)
@@ -492,7 +493,6 @@ class TestDrawParametricMidMeasure:
             return qml.expval(qml.Z(0))
 
         _, ax = qml.draw_mpl(circ)()
-        print([text.get_text() for text in ax.texts])
         assert len(ax.texts) == 3  # one wire label, 1 box label on the MCM, one reset box
 
         assert ax.texts[0].get_text() == "0"
