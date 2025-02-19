@@ -18,7 +18,7 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=unnecessary-lambda-assignment
 
 import warnings
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Generator, Iterable
 from copy import copy
 from functools import lru_cache, partial
 from typing import Callable, Optional, Sequence
@@ -39,7 +39,6 @@ def _operator_decomposition_gen(
     acceptance_function: Callable[[qml.operation.Operator], bool],
     max_expansion: Optional[int] = None,
     curr_depth=0,
-    depth_tracker=None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
 
@@ -54,18 +53,12 @@ def _operator_decomposition_gen(
         decomp = op.decomposition()
         curr_depth += 1
 
-        # this tracker is used to keep track of the current depth
-        # in the dynamic decomposition evaluation with program capture enabled
-        if depth_tracker is not None:
-            depth_tracker["curr_depth"] = curr_depth
-
         for sub_op in decomp:
             yield from _operator_decomposition_gen(
                 sub_op,
                 acceptance_function,
                 max_expansion=max_expansion,
                 curr_depth=curr_depth,
-                depth_tracker=depth_tracker,
             )
 
 
@@ -110,20 +103,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             super().__init__()
 
-        def sub_interpret_operation(self, op: qml.operation.Operator, curr_depth: int):
-            """Interpret an operation, applying a plxpr decomposition if the operation has one.
-
-            Args:
-                op (qml.operation.Operator): the operation to interpret
-                curr_depth (int): the current depth of the decomposition
-
-            """
-
-            if not op.has_plxpr_decomposition or self.gate_set(op):
-                return self.interpret_operation(op)
-
-            return self._evaluate_jaxpr_decomposition(op, curr_depth)
-
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether or not an operator needs to be decomposed or not.
 
@@ -166,23 +145,16 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 self.max_expansion - curr_depth if self.max_expansion is not None else None
             )
 
-            depth_tracker = {"curr_depth": curr_depth}
-
             with qml.capture.pause():
                 decomposition = list(
                     _operator_decomposition_gen(
                         op,
                         self.stopping_condition,
                         max_expansion=max_expansion,
-                        depth_tracker=depth_tracker,
                     )
                 )
 
-            curr_depth = depth_tracker["curr_depth"]
-
-            return [
-                self.sub_interpret_operation(decomp_op, curr_depth) for decomp_op in decomposition
-            ]
+            return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
 
         def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator, curr_depth: int = 0):
             """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
