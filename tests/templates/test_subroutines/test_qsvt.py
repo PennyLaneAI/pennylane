@@ -690,9 +690,9 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            ([0.1, 0, 0.3, 0, -0.1]),
+            ([0.1, 0, 0.3, 0, -0.1, 0, 0]),
             ([0, 0.2, 0, 0.3]),
-            ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
+            ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1, 0]),
         ],
     )
     def test_correctness_QSP_angles_root_finding(self, poly):
@@ -792,3 +792,15 @@ class TestRootFindingSolver:
 
         with pytest.raises(AssertionError, match=msg_match):
             _ = qml.poly_to_angles(poly, routine, angle_solver)
+
+    def test_immutable_input(self):
+        """Test `poly_to_angles` does not modify the input"""
+
+        poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
+        poly_copy = poly.copy()
+        qml.poly_to_angles(poly, "QSVT")
+
+        assert len(poly) == len(poly_copy)
+
+        for p, q in zip(poly, poly_copy):
+            assert np.isclose(p, q)
