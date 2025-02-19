@@ -159,9 +159,9 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
-* A new class, `QubitGraph`, is now available for representing a qubit memory-addressing model for
-  mappings between logical and physical qubits. This representation allows for nesting of lower-
-  level qubits with arbitrary depth to allow easy insertion of arbitrarily many levels of
+* A new class, `qml.ftqc.QubitGraph`, is now available for representing a qubit memory-addressing
+  model for mappings between logical and physical qubits. This representation allows for nesting of
+  lower-level qubits with arbitrary depth to allow easy insertion of arbitrarily many levels of
   abstractions between logical qubits and physical qubits.
   [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
 
@@ -376,6 +376,7 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Joey Carter,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
