@@ -182,7 +182,7 @@ class TestQubitGraphsInitialization:
             def __init__(self):
                 self.edges = []
 
-        # Test initialize with constructor
+        # Test initialization with constructor
         with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
             invalid_graph = NotAGraph()
             _ = QubitGraph(invalid_graph)
@@ -195,7 +195,7 @@ class TestQubitGraphsInitialization:
             invalid_graph = SomethingWithOnlyEdges()
             _ = QubitGraph(invalid_graph)
 
-        # Test initialize with `init_graph` method
+        # Test initialization with `init_graph` method
         with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
             invalid_graph = NotAGraph()
             q = QubitGraph()
@@ -239,6 +239,37 @@ class TestQubitGraphOperations:
         assert set(q.connected_qubits((0, 1))) == set([q[(0, 0)], q[(1, 1)]])
         assert set(q.connected_qubits((1, 0))) == set([q[(0, 0)], q[(1, 1)]])
         assert set(q.connected_qubits((1, 1))) == set([q[(0, 1)], q[(1, 0)]])
+
+
+class TestQubitGraphIterationMethods:
+    """Tests for iteration method on a QubitGraph."""
+
+    def test_iterate_nodes(self):
+        """Test that we can iterate over the nodes of a QubitGraph."""
+        q = QubitGraph()
+        q.init_graph_nd_grid((2,))
+
+        for i, node in enumerate(q.nodes):
+            assert node == i
+
+    def test_iterate_edges(self):
+        """Test that we can iterate over the edges of a QubitGraph."""
+        q = QubitGraph()
+        q.init_graph_nd_grid((2,))
+
+        for i, edge in enumerate(q.edges):
+            assert edge == (i, i + 1)
+
+    def test_wrapping_in_container(self):
+        """Test that wrapping a QubitGraph in a sequential container does not implicitly iterate
+        over the underlying qubit graph.
+        """
+        q = QubitGraph()
+        q.init_graph_nd_grid((2,))
+
+        q_tuple = tuple(q)
+        assert len(q_tuple) == 1
+        assert q_tuple[0] is q
 
 
 class TestQubitGraphIndexing:

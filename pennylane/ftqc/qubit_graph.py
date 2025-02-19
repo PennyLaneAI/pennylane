@@ -148,6 +148,34 @@ class QubitGraph:
 
         self._graph_qubits.nodes[key]["qubits"] = value
 
+    def __iter__(self):
+        """Dummy QubitGraph iterator method that yields itself.
+
+        This method ensures that no implicit iteration takes place over the nodes in the underlying
+        qubit graph, which is possible since we have defined __getitem__().
+
+        Consider the example where we wrap a QubitGraph object in a tuple. With this dummy
+        __iter__() method defined, the resulting tuple contains the top-level QubitGraph object:
+
+            >>> q = QubitGraph()
+            >>> q.init_graph_nd_grid((2,))
+            >>> tuple(q)
+            (<QubitGraph object>,)
+
+        Without this dummy method defined, the tuple() constructor attempts to iterate over the
+        values that the __getitem__() method yield, which creates a tuple of the QubitGraph objects
+        contained in the underlying qubit graph:
+
+            >>> q = QubitGraph()
+            >>> q.init_graph_nd_grid((2,))
+            >>> tuple(q)
+            >>> (<QubitGraph object>, <QubitGraph object>)
+
+        Making QubitGraph non-iterable is especially important when using it as input to the Wires
+        class, which checks if the input is iterable by wrapping it in a tuple.
+        """
+        yield self
+
     def clear(self):
         """Clears the graph of underlying qubits."""
         self._graph_qubits = None
