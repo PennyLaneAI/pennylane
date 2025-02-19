@@ -23,13 +23,8 @@ import numpy as np
 jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import (
-    adjoint_transform_prim,
     cond_prim,
-    ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
-    jacobian_prim,
-    qnode_prim,
     while_loop_prim,
 )
 from pennylane.transforms.optimization.single_qubit_fusion import (
@@ -47,7 +42,6 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 # - test excluded gates
 # - traced wires (plus more cases for traced params)
-# - Test with loops
 # - Test with explicit consts captured
 # - Test with transforming plxpr
 
@@ -290,6 +284,14 @@ class TestSingleQubitFusionInterpreter:
         with qml.capture.pause():
             transformed_circuit_check = single_qubit_fusion(circuit)
             transformed_ops_check = qml.tape.make_qscript(transformed_circuit_check)().operations
+            # The order of the first two operations is different with program capture enabled
+            assert qml.wires.Wires.shared_wires(
+                [transformed_ops_check[0].wires, transformed_ops_check[1].wires]
+            ) == qml.wires.Wires([])
+            transformed_ops_check[0], transformed_ops_check[1] = (
+                transformed_ops_check[1],
+                transformed_ops_check[0],
+            )
 
         for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
             assert qml.equal(op1, op2)
