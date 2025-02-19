@@ -120,7 +120,7 @@ def measure_arbitrary_basis(
         )
 
     # Create a UUID and a map between MP and MV to support serialization
-    measurement_id = str(uuid.uuid4())[:8]
+    measurement_id = str(uuid.uuid4())
     mp = ParametricMidMeasureMP(
         wires=wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=measurement_id
     )
@@ -174,7 +174,7 @@ def measure_x(
         )
 
     # Create a UUID and a map between MP and MV to support serialization
-    measurement_id = str(uuid.uuid4())[:8]
+    measurement_id = str(uuid.uuid4())
     mp = XMidMeasureMP(wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
@@ -226,7 +226,7 @@ def measure_y(
         )
 
     # Create a UUID and a map between MP and MV to support serialization
-    measurement_id = str(uuid.uuid4())[:8]
+    measurement_id = str(uuid.uuid4())
     mp = YMidMeasureMP(wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
