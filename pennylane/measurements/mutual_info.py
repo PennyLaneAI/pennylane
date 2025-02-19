@@ -102,6 +102,11 @@ class MutualInfoMP(StateMeasurement):
 
     """
 
+    def __str__(self):
+        return "mutualinfo"
+
+    _shortname = MutualInfo  #! Note: deprecated. Change the value to "mutualinfo" in v0.42
+
     def _flatten(self):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
         return (None, None), metadata
@@ -138,10 +143,6 @@ class MutualInfoMP(StateMeasurement):
         )
 
         return hash(fingerprint)
-
-    @property
-    def return_type(self):
-        return MutualInfo
 
     @property
     def numeric_type(self):

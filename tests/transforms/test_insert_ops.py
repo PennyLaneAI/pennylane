@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation
 from pennylane.tape import QuantumScript
 from pennylane.transforms.insert_ops import insert
 
@@ -94,7 +93,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_all(self):
         """Test if the expected tape is returned when the all position is requested"""
@@ -125,7 +124,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_before(self):
         """Test if the expected tape is returned when the before argument is True"""
@@ -155,7 +154,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     op_lst = [qml.RX, qml.PauliZ, qml.Identity]
 
@@ -194,7 +193,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_operation_list_as_position(self):
         """Test if expected tape is returned when an operation list is passed in position"""
@@ -223,7 +222,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_end(self):
         """Test if the expected tape is returned when the end position is requested"""
@@ -250,7 +249,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_start_with_state_prep(self):
         """Test if the expected tape is returned when the start position is requested in a tape
@@ -279,7 +278,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_all_with_state_prep(self):
         """Test if the expected tape is returned when the all position is requested in a tape
@@ -312,7 +311,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_end_with_state_prep(self):
         """Test if the expected tape is returned when the end position is requested in a tape
@@ -343,7 +342,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_with_qfunc_op(self):
         """Test if the transform works as expected if the operation is a qfunc rather than single
@@ -378,7 +377,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
 
 def test_insert_qnode():
@@ -464,10 +463,10 @@ def test_insert_dev(dev_name):
     assert len(tape.measurements) == 2
     assert tape.observables[0].name == "Prod"
     assert tape.observables[0].wires.tolist() == [0, 1]
-    assert tape.measurements[0].return_type is Expectation
+    assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
     assert tape.observables[1].name == "PauliZ"
     assert tape.observables[1].wires.tolist() == [0]
-    assert tape.measurements[1].return_type is Expectation
+    assert isinstance(tape.measurements[1], qml.measurements.ExpectationMP)
 
     assert not np.allclose(res_without_noise, res_with_noise)
 

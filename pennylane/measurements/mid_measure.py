@@ -256,7 +256,11 @@ def _create_mid_measure_primitive():
 
     @mid_measure_p.def_abstract_eval
     def _(*_, **__):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        dtype = (
+            jax.numpy.int64
+            if jax.config.jax_enable_x64  # pylint: disable=no-member
+            else jax.numpy.int32
+        )
         return jax.core.ShapedArray((), dtype)
 
     return mid_measure_p
@@ -282,6 +286,8 @@ class MidMeasureMP(MeasurementProcess):
             state that is used for postselection will be considered in the remaining circuit.
         id (str): Custom label given to a measurement instance.
     """
+
+    _shortname = MidMeasure  #! Note: deprecated. Change the value to "measure" in v0.42
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
@@ -338,10 +344,6 @@ class MidMeasureMP(MeasurementProcess):
         return _label
 
     @property
-    def return_type(self):
-        return MidMeasure
-
-    @property
     def samples_computational_basis(self):
         return False
 
@@ -369,6 +371,11 @@ class MidMeasureMP(MeasurementProcess):
     def name(self):
         """The name of the measurement. Needed to match the Operator API."""
         return self.__class__.__name__
+
+    @property
+    def num_params(self):
+        """The number of parameters. Needed to match the Operator API."""
+        return 0
 
 
 class MeasurementValue(Generic[T]):
