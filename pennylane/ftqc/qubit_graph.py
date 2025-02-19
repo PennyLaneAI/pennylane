@@ -57,54 +57,6 @@ class QubitGraph:
             for node in self._graph_qubits.nodes:
                 self[node] = QubitGraph()
 
-    @property
-    def graph(self):
-        """Gets the underlying qubit graph."""
-        return self._graph_qubits
-
-    @property
-    def nodes(self):
-        """Gets the set of nodes in the underlying qubit graph.
-
-        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
-
-        Returns:
-            networkx.NodeView: The set of nodes, with native support for operations such as
-                `len(g.nodes)`, `n in g.nodes`, `g.nodes & h.nodes`, etc. See the networkx
-                documentation for more information.
-        """
-        if self._graph_qubits is None:
-            self._warn_uninitialized()
-            return None
-
-        return self._graph_qubits.nodes
-
-    @property
-    def edges(self):
-        """Gets the set of edges in the underlying qubit graph.
-
-        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
-
-        Returns:
-            networkx.EdgeView: The set of edges, with native support for operations such as
-                `len(g.edges)`, `e in g.edges`, `g.edges & h.edges`, etc. See the networkx
-                documentation for more information.
-        """
-        if self._graph_qubits is None:
-            self._warn_uninitialized()
-            return None
-
-        return self._graph_qubits.edges
-
-    @property
-    def is_initialized(self):
-        """Checks if the underlying qubits have been initialized.
-
-        Returns:
-            bool: Returns True if the underlying qubits have been initialized, False otherwise.
-        """
-        return self._graph_qubits is not None
-
     def __getitem__(self, key):
         """QubitGraph subscript operator for read access.
 
@@ -176,6 +128,54 @@ class QubitGraph:
         """
         yield self
 
+    @property
+    def graph(self):
+        """Gets the underlying qubit graph."""
+        return self._graph_qubits
+
+    @property
+    def nodes(self):
+        """Gets the set of nodes in the underlying qubit graph.
+
+        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
+
+        Returns:
+            networkx.NodeView: The set of nodes, with native support for operations such as
+                `len(g.nodes)`, `n in g.nodes`, `g.nodes & h.nodes`, etc. See the networkx
+                documentation for more information.
+        """
+        if self._graph_qubits is None:
+            self._warn_uninitialized()
+            return None
+
+        return self._graph_qubits.nodes
+
+    @property
+    def edges(self):
+        """Gets the set of edges in the underlying qubit graph.
+
+        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
+
+        Returns:
+            networkx.EdgeView: The set of edges, with native support for operations such as
+                `len(g.edges)`, `e in g.edges`, `g.edges & h.edges`, etc. See the networkx
+                documentation for more information.
+        """
+        if self._graph_qubits is None:
+            self._warn_uninitialized()
+            return None
+
+        return self._graph_qubits.edges
+
+    @property
+    def is_initialized(self):
+        """Checks if the underlying qubits have been initialized.
+
+        Returns:
+            bool: Returns True if the underlying qubits have been initialized, False otherwise.
+        """
+        return self._graph_qubits is not None
+
     def clear(self):
         """Clears the graph of underlying qubits."""
         self._graph_qubits = None
@@ -196,54 +196,6 @@ class QubitGraph:
 
         for neighbor in self._graph_qubits.neighbors(node):
             yield self[neighbor]
-
-    def _warn_uninitialized(self):
-        """Emit a UserWarning when attempting to access an uninitialized graph."""
-        warnings.warn("Attempting to access an uninitialized QubitGraph.", UserWarning)
-
-    def _warn_reinitialization(self):
-        """Emit a UserWarning when attempting to initialize an already-initialized graph."""
-        warnings.warn(
-            "Attempting to re-initialize a QubitGraph. If you wish to initialize the underlying "
-            "qubits with a new graph structure, you must first call QubitGraph.clear() and then "
-            "call the initialization method.",
-            UserWarning,
-        )
-
-    def _check_graph_type_supported_and_raise_or_warn(self, graph):
-        """Check that the input type is graph-like and raise a TypeError if not, and then check that
-        the graph type is one that is supported and emit a UserWarning if not.
-
-        The input is considered "graph-like" if it has both a 'nodes' and an 'edges' attribute.
-
-        Currently, QubitGraph only supports networkx graphs; specifically, graph objects that are
-        instances of the `networkx.Graph
-        <https://networkx.org/documentation/stable/reference/classes/graph.html>` class, or
-        subclasses thereof.
-
-        Note that other networkx graph types, including ``DiGraph``, ``MultiGraph`` and
-        ``MultiDiGraph`` are all subclasses of the ``Graph`` class and are therefore permitted,
-        although their usage is discouraged since they store additional information that is not used
-        by QubitGraph.
-
-        Args:
-            graph: The graph object used for type-checking. This object must not be None.
-        """
-        assert graph is not None, "Graph object used for type-checking must not be None"
-
-        if not hasattr(graph, "nodes") or not hasattr(graph, "edges"):
-            raise TypeError(
-                "QubitGraph requires a graph-like input, i.e. an object having both a 'nodes' and "
-                "an 'edges' attribute."
-            )
-
-        if not isinstance(graph, nx.Graph):
-            warnings.warn(
-                f"QubitGraph expects an input graph of type 'networkx.Graph', but got "
-                f"'{type(graph).__name__}'. Using a graph of another type may result in unexpected "
-                f"behaviour.",
-                UserWarning,
-            )
 
     def init_graph(self, graph: nx.Graph):
         """Initialize the QubitGraph's underlying qubits with the given graph.
@@ -382,3 +334,51 @@ class QubitGraph:
 
         for node in self._graph_qubits.nodes:
             self[node] = QubitGraph()
+
+    def _warn_uninitialized(self):
+        """Emit a UserWarning when attempting to access an uninitialized graph."""
+        warnings.warn("Attempting to access an uninitialized QubitGraph.", UserWarning)
+
+    def _warn_reinitialization(self):
+        """Emit a UserWarning when attempting to initialize an already-initialized graph."""
+        warnings.warn(
+            "Attempting to re-initialize a QubitGraph. If you wish to initialize the underlying "
+            "qubits with a new graph structure, you must first call QubitGraph.clear() and then "
+            "call the initialization method.",
+            UserWarning,
+        )
+
+    def _check_graph_type_supported_and_raise_or_warn(self, graph):
+        """Check that the input type is graph-like and raise a TypeError if not, and then check that
+        the graph type is one that is supported and emit a UserWarning if not.
+
+        The input is considered "graph-like" if it has both a 'nodes' and an 'edges' attribute.
+
+        Currently, QubitGraph only supports networkx graphs; specifically, graph objects that are
+        instances of the `networkx.Graph
+        <https://networkx.org/documentation/stable/reference/classes/graph.html>` class, or
+        subclasses thereof.
+
+        Note that other networkx graph types, including ``DiGraph``, ``MultiGraph`` and
+        ``MultiDiGraph`` are all subclasses of the ``Graph`` class and are therefore permitted,
+        although their usage is discouraged since they store additional information that is not used
+        by QubitGraph.
+
+        Args:
+            graph: The graph object used for type-checking. This object must not be None.
+        """
+        assert graph is not None, "Graph object used for type-checking must not be None"
+
+        if not hasattr(graph, "nodes") or not hasattr(graph, "edges"):
+            raise TypeError(
+                "QubitGraph requires a graph-like input, i.e. an object having both a 'nodes' and "
+                "an 'edges' attribute."
+            )
+
+        if not isinstance(graph, nx.Graph):
+            warnings.warn(
+                f"QubitGraph expects an input graph of type 'networkx.Graph', but got "
+                f"'{type(graph).__name__}'. Using a graph of another type may result in unexpected "
+                f"behaviour.",
+                UserWarning,
+            )
