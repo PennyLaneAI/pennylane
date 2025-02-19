@@ -6,6 +6,7 @@
 
 * `qml.defer_measurements` can now be used with program capture enabled.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
+  [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
 
   Using `qml.defer_measurements` with program capture enables many new features, including:
   * Significantly richer variety of classical processing on mid-circuit measurement values.
