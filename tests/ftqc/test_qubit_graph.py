@@ -18,7 +18,7 @@ import networkx as nx
 import pytest
 
 import pennylane as qml
-from pennylane.ftqc.qubit_graph import QubitGraph
+from pennylane.ftqc import QubitGraph
 
 # pylint: disable=too-few-public-methods
 

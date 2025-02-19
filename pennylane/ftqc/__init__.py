@@ -27,8 +27,10 @@ Modules
 """
 from pennylane import ExperimentalWarning
 from .parametric_midmeasure import ParametricMidMeasureMP, diagonalize_mcms
+from .qubit_graph import QubitGraph
 
 __all__ = [
     "ParametricMidMeasureMP",
     "diagonalize_mcms",
+    "QubitGraph"
 ]
