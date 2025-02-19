@@ -17,6 +17,7 @@ import copy
 
 import autograd.numpy
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -821,7 +822,7 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
 
 
 def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
-    dev = qml.device("default.mixed", wires=wires, shots=shots)
+    dev = DefaultQubitLegacy(wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit(obs, k=1):
