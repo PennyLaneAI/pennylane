@@ -13,28 +13,22 @@
 # limitations under the License.
 """Unit tests for the ``SingleQubitFusionInterpreter`` class."""
 
+import numpy as np
+
 # pylint:disable=wrong-import-position,protected-access
 import pytest
 
 import pennylane as qml
 
-import numpy as np
-
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import (
-    cond_prim,
-    for_loop_prim,
-    while_loop_prim,
-)
+from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.transforms.optimization import single_qubit_fusion
 from pennylane.transforms.optimization.single_qubit_fusion import (
     SingleQubitFusionInterpreter,
     single_qubit_plxpr_to_plxpr,
 )
-
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-from pennylane.transforms.optimization import single_qubit_fusion
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -108,23 +102,24 @@ class TestSingleQubitFusionInterpreter:
 
         assert qml.math.allclose(result, expected_result)
 
-    @pytest.mark.parametrize(
-        "exclude_gates", [None, ["qml.RZ"], ["qml.Hadamard"], ["qml.RZ", "qml.Hadamard"]]
-    )
+    # The only drawback of testing more gates for exclusion is that the order of the operations
+    # might differ compared to the non-caputred version. This way we can keep the test simple and clean.
+    # RZ is also the only 'excluded_gates' explicitly tested with the non-captured version.
+    @pytest.mark.parametrize("exclude_gates", [None, ["RZ"]])
     def test_single_qubit_fusion_exclude_gates(self, exclude_gates):
         """Test that a sequence of single-qubit gates all fuse when excluding certain gates."""
 
         def circuit():
             qml.RZ(0.1, wires=0)
+            qml.RZ(0.1, wires=1)
             qml.Hadamard(wires=0)
             qml.PauliX(wires=0)
-            qml.RZ(0.1, wires=1)
             qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=0)
+            qml.RZ(0.2, wires=1)
             qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=0)
             qml.PauliX(wires=1)
             qml.PauliZ(wires=1)
-            qml.RZ(0.2, wires=1)
 
         transformed_circuit = SingleQubitFusionInterpreter(exclude_gates=exclude_gates)(circuit)
         jaxpr = jax.make_jaxpr(transformed_circuit)()
@@ -134,7 +129,7 @@ class TestSingleQubitFusionInterpreter:
         jaxpr_ops = collector.state["ops"]
 
         with qml.capture.pause():
-            transformed_circuit_check = single_qubit_fusion(circuit)
+            transformed_circuit_check = single_qubit_fusion(circuit, exclude_gates=exclude_gates)
             transformed_ops_check = qml.tape.make_qscript(transformed_circuit_check)().operations
 
         for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
@@ -379,6 +374,7 @@ class TestSingleQubitFusionInterpreter:
                 qml.RX(x, wires=0)
                 qml.S(wires=0)
 
+            # pylint: disable=unused-argument
             def false_branch(x):
                 qml.H(0)
                 qml.H(1)
@@ -414,11 +410,13 @@ class TestSingleQubitFusionInterpreter:
             qml.CNOT(wires=[0, 1])
 
             @qml.for_loop(0, 1)
+            # pylint: disable=unused-argument
             def loop(i, x):
                 qml.RX(x, wires=0)
                 qml.RZ(x, wires=0)
                 return qml.Hadamard(wires=0)
 
+            # pylint: disable=no-value-for-parameter
             loop(x)
 
             qml.CNOT(wires=[0, 1])
@@ -454,7 +452,7 @@ class TestSingleQubitFusionInterpreter:
     def test_while_loop(self):
         """Test that while operators inside a while loop are correctly fused."""
 
-        def circuit(x):
+        def circuit():
 
             qml.CNOT(wires=[0, 1])
 
@@ -472,7 +470,7 @@ class TestSingleQubitFusionInterpreter:
             qml.CNOT(wires=[0, 1])
 
         transformed_circuit = SingleQubitFusionInterpreter()(circuit)
-        jaxpr = jax.make_jaxpr(transformed_circuit)(np.pi)
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
 
         assert len(jaxpr.eqns) == 3
 
@@ -481,7 +479,7 @@ class TestSingleQubitFusionInterpreter:
         assert jaxpr.eqns[2].primitive == qml.CNOT._primitive
 
         collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, np.pi)
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
         jaxpr_ops = collector.state["ops"]
         assert len(jaxpr_ops) == 5
 
@@ -542,8 +540,10 @@ class TestSingleQubitFusionInterpreter:
             assert qml.math.allclose(op1.parameters, op2.parameters)
             assert op1.wires == op2.wires
 
-    def test_single_qubit_fusion_traced_params(self):
-        """Test that single-qubit gates with traced parameters are fused correctly."""
+    def test_single_qubit_fusion_traced_consts_params(self):
+        """Test that single-qubit gates with traced parameters and constants are fused correctly."""
+
+        const_param = jax.numpy.array(0.3)
 
         def circuit(params):
             qml.Hadamard(wires=0)
@@ -554,8 +554,8 @@ class TestSingleQubitFusionInterpreter:
             qml.CRY(params[2], wires=[1, 2])
             qml.PauliZ(wires=0)
             qml.CRY(params[3], wires=[1, 2])
-            qml.Rot(params[0], params[1], params[2], wires=1)
-            qml.Rot(params[2], params[3], params[0], wires=1)
+            qml.Rot(params[0], params[1], const_param, wires=1)
+            qml.Rot(const_param, params[3], params[0], wires=1)
 
         params = jax.numpy.array([0.1, 0.2, 0.3, 0.4])
 
