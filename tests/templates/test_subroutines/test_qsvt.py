@@ -690,15 +690,15 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            ([0.1, 0, 0.3, 0, -0.1, 0, 0]),
+            ([0.1, 0, 0.3, 0, -0.1]),
             ([0, 0.2, 0, 0.3]),
-            ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1, 0]),
+            ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
         ],
     )
     def test_correctness_QSP_angles_root_finding(self, poly):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(np.array(poly), "QSP", angle_solver="root-finding")
+        angles = qml.poly_to_angles(poly, "QSP", angle_solver="root-finding")
         x = 0.5
 
         @qml.qnode(qml.device("default.qubit"))
@@ -804,3 +804,53 @@ class TestRootFindingSolver:
 
         for p, q in zip(poly, poly_copy):
             assert np.isclose(p, q)
+
+    def test_interface_numpy(self):
+        """Test `poly_to_angles` works with numpy"""
+
+        poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
+        angles = qml.poly_to_angles(poly, "QSVT")
+
+        poly_numpy = np.array(poly)
+        angles_numpy = qml.poly_to_angles(poly_numpy, "QSVT")
+
+        assert qml.math.allclose(angles, angles_numpy)
+
+    @pytest.mark.jax
+    def test_interface_jax(self):
+        """Test `poly_to_angles` works with jax"""
+
+        import jax
+        poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
+        angles = qml.poly_to_angles(poly, "QSVT")
+
+        poly_jax = jax.numpy.array(poly)
+        angles_jax = qml.poly_to_angles(poly_jax, "QSVT")
+
+        assert qml.math.allclose(angles, angles_jax)
+
+    @pytest.mark.torch
+    def test_interface_torch(self):
+        """Test `poly_to_angles` works with torch"""
+
+        import torch
+        poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
+        angles = qml.poly_to_angles(poly, "QSVT")
+
+        poly_torch = torch.tensor(poly)
+        angles_torch = qml.poly_to_angles(poly_torch, "QSVT")
+
+        assert qml.math.allclose(angles, angles_torch)
+
+    @pytest.mark.tf
+    def test_interface_tf(self):
+        """Test `poly_to_angles` works with tensorflow"""
+
+        import tensorflow as tf
+        poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
+        angles = qml.poly_to_angles(poly, "QSVT")
+
+        poly_tf = tf.Variable(poly)
+        angles_tf = qml.poly_to_angles(poly_tf, "QSVT")
+
+        assert qml.math.allclose(angles, angles_tf)
