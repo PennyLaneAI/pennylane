@@ -19,7 +19,6 @@ import copy
 from typing import Literal
 
 import numpy as np
-from jax import numpy as jnp
 from numpy.polynomial import Polynomial, chebyshev
 
 import pennylane as qml
@@ -574,130 +573,6 @@ class QSVT(Operation):
         op_list.append(projectors[-1])
 
         return op_list
-
-    @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters):
-        UA = hyperparameters["UA"]
-        projectors = hyperparameters["projectors"]
-        
-        # When all projectors are of the same type and have the same wires, we can optimize the decomposition by using the same operator; otherwise we have to loop over a list of projectors 
-        if all(p.__class__ == projectors[0].__class__ and p.wires == projectors[0].wires for p in projectors):
-            unique_projector = projectors[0].__class__
-            projector_data = jnp.array([projector.data for projector in projectors])
-            unique_projector_wires = jnp.array(projectors[0].wires)
-            
-            @qml.for_loop(len(projectors))
-            def loop(i):
-                unique_projector(projector_data[i], wires=unique_projector_wires)
-                
-                def even():
-                    UA._primitive_bind_call(wires=UA.wires)
-                def odd():
-                    UA.adjoint()
-                    
-                qml.cond(i % 2 == 0, even, odd)()
-            loop()
-        
-        else: 
-            UA._primitive_bind_call(wires=UA.wires)
-
-            for i in range(len(projectors) - 1):
-                projectors[i]._primitive_bind_call(*projectors[i].data, wires=projectors[i].wires)
-
-                if i % 2 == 0:
-                    UA._primitive_bind_call(wires=UA.wires)
-                else:
-                    UA.adjoint()
-            projectors[-1]._primitive_bind_call(*projectors[-1].data, wires=projectors[-1].wires)
-        
-    def label(self, decimals=None, base_label=None, cache=None):
-        op_label = base_label or self.__class__.__name__
-        return op_label
-
-    def queue(self, context=QueuingManager):
-        context.remove(self._hyperparameters["UA"])
-        for op in self._hyperparameters["projectors"]:
-            context.remove(op)
-        context.append(self)
-        return self
-
-    @staticmethod
-    def compute_matrix(*args, **kwargs):
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.Operator.matrix` and :func:`~.matrix`
-
-        Args:
-            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
-
-        Returns:
-            tensor_like: matrix representation
-        """
-        # pylint: disable=unused-argument
-        op_list = []
-        UA = kwargs["UA"]
-        projectors = kwargs["projectors"]
-
-        with (
-            QueuingManager.stop_recording()
-        ):  # incase this method is called in a queue context, this prevents
-            UA_copy = copy.copy(UA)  # us from queuing operators unnecessarily
-
-            for idx, op in enumerate(projectors[:-1]):
-                op_list.append(op)
-                if idx % 2 == 0:
-                    op_list.append(UA)
-                else:
-                    op_list.append(adjoint(UA_copy))
-
-            op_list.append(projectors[-1])
-            mat = qml.matrix(qml.prod(*tuple(op_list[::-1])))
-
-        return mat
-
-
-def _complementary_poly(poly_coeffs):
-    r"""
-    Computes the complementary polynomial Q given a polynomial P.
-
-    The polynomial Q is complementary to P if it satisfies the following equation:
-
-    .. math:
-
-        |P(e^{i\theta})|^2 + |Q(e^{i\theta})|^2 = 1, \quad \forall \quad \theta \in \left[0, 2\pi\right]
-
-    The method is based on computing an auxiliary polynomial R, finding its roots,
-    and reconstructing Q by using information extracted from the roots.
-    For more details see `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_.
-
-    Args:
-        poly_coeffs (tensor-like): coefficients of the complex polynomial P
-
-    Returns:
-        tensor-like: coefficients of the complementary polynomial Q
-    """
-    poly_degree = len(poly_coeffs) - 1
-
-    # Build the polynomial R(z) = z^degree * (1 - conj(P(1/z)) * P(z)), deduced from (eq.33) and (eq.34) of
-    # `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_.
-    # Note that conj(P(1/z)) * P(z) could be expressed as z^-degree * conj(P(z)[::-1]) * P(z)
-    R = Polynomial.basis(poly_degree) - Polynomial(poly_coeffs) * Polynomial(
-        np.conj(poly_coeffs[::-1])
-    )
-    r_roots = R.roots()
-
-    inside_circle = [root for root in r_roots if np.abs(root) <= 1]
-    outside_circle = [root for root in r_roots if np.abs(root) > 1]
-
-    scale_factor = np.sqrt(np.abs(R.coef[-1] * np.prod(outside_circle)))
-    Q_poly = scale_factor * Polynomial.fromroots(inside_circle)
-
-    return Q_poly.coef
-
 
 def _compute_qsp_angle(poly_coeffs):
     r"""

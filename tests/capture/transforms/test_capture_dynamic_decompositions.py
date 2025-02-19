@@ -1254,7 +1254,8 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
-
+        print(jaxpr)
+        assert False
         qml.capture.disable()
 
         @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
@@ -1325,31 +1326,6 @@ class TestDynamicDecomposeInterpreter:
         
         qml.capture.enable()
         assert qml.math.allclose(*result, result_comparison)
-
-    def test_qsvt(self):
-        """Test that the QSVT is correctly dynamically decomposed."""
-        n_wires = 6
-        block_encoding = qml.Hadamard(wires=0)
-        phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)]
-        @DecomposeInterpreter()
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
-        def circuit():
-            qml.QSVT(UA=block_encoding, projectors=phase_shifts)
-            return qml.state()
-
-        jaxpr = jax.make_jaxpr(circuit)()
-        print(jaxpr)
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        # still need to fix
-
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
-        def circuit_comparison():
-            qml.QSVT(UA=block_encoding, projectors=phase_shifts)
-            return qml.state()
-
-        result_comparison = circuit_comparison()
-        
-        #assert qml.math.allclose(*result, result_comparison)
 
 
 class TestExpandPlxprTransformsDynamicDecompositions:
