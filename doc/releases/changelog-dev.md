@@ -159,6 +159,12 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
+* A new class, `QubitGraph`, is now available for representing a qubit memory-addressing model for
+  mappings between logical and physical qubits. This representation allows for nesting of lower-
+  level qubits with arbitrary depth to allow easy insertion of arbitrarily many levels of
+  abstractions between logical qubits and physical qubits.
+  [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
