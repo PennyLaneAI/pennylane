@@ -31,6 +31,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.unitary_to_rot import (
     UnitaryToRotInterpreter,
     one_qubit_decomposition,
@@ -112,6 +113,35 @@ class TestUnitaryToRotInterpreter:
         # Measurement
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    def test_traced_arguments(self):
+        """Test that traced arguments are correctly decomposed."""
+
+        @UnitaryToRotInterpreter()
+        def f(U, wire):
+            qml.QubitUnitary(U, wire)
+            return qml.expval(qml.Z(0))
+
+        U = qml.Rot(1.0, 2.0, 3.0, wires=0)
+        args = (U.matrix(), 0)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+
+        expected_ops = [
+            qml.RZ(jax.numpy.array(1.0), wires=[0]),
+            qml.RY(jax.numpy.array(2.0), wires=[0]),
+            qml.RZ(jax.numpy.array(3.0), wires=[0]),
+        ]
+
+        ops = collector.state["ops"]
+        assert ops == expected_ops
+
+        expected_meas = [
+            qml.expval(qml.PauliZ(0)),
+        ]
+        meas = collector.state["measurements"]
+        assert meas == expected_meas
 
 
 class TestQNodeIntegration:
