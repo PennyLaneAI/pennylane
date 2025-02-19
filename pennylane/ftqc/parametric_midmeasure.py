@@ -16,7 +16,8 @@
 mid-circuit measurements with a parameterized measurement axis."""
 
 import uuid
-from typing import Hashable, Optional, Union
+from collections.abc import Hashable
+from typing import Optional, Union
 
 import numpy as np
 
