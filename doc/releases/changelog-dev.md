@@ -10,7 +10,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix now can be applied to the state vector in the `default.qubit` device.
+* `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
 
 * `qml.SWAP` now has sparse representation.
