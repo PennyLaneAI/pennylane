@@ -683,7 +683,7 @@ def taylor_hamiltonian(
     """
     coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
     bose_op = taylor_bosonic(coeffs_arr, pes.freqs, is_local=pes.localized, uloc=pes.uloc)
-    mapping.lower().strip()
+    mapping = mapping.lower().strip()
     if mapping == "binary":
         ham = binary_mapping(bose_operator=bose_op, n_states=n_states, wire_map=wire_map, tol=tol)
     elif mapping == "unary":
