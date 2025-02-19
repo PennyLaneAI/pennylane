@@ -753,11 +753,3 @@ def test_defer_measurements_plxpr_to_plxpr_reduce_postselected_warning():
 
     with pytest.warns(UserWarning, match="Cannot set 'reduce_postselected=True'"):
         defer_measurements_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
-
-
-# The following tests should be moved elsewhere after transforms are integrated with execution
-class TestDeferMeasurementsDefaultQubit:
-    """Tests for executing circuits that are transformed by qml.defer_measurements
-    with default.qubit."""
-
-    # Add test checking that executing qml.counts fails
