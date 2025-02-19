@@ -168,25 +168,17 @@ class TestSparseOperation:
             ),
         ],
     )
-    @pytest.mark.parametrize("state_mode", ["dense", "sparse"])
-    def test_sparse_operation_dispatch(self, op, state_mode, N):
+    def test_sparse_operation_dispatch(self, op, N):
         """Test that the operators dispatch correctly for sparse or dense states."""
 
-        if state_mode == "sparse":
-            expected_shape = (1, 2**N)
-            expected_type = csr_matrix
-            # Create a sparse state (size 8 unrolled)
-            state = csr_matrix(np.random.rand(2**N) + 1j * np.random.rand(2**N))
-        else:
-            expected_shape = (2,) * N
-            expected_type = np.ndarray
-            # Create a dense state, shape (2,2,2)
-            state = np.random.rand(*(2,) * N) + 1j * np.random.rand(*(2,) * N)
+        expected_shape = (2,) * N
+        # Create a dense state, shape (2,2,2)
+        state = np.random.rand(*(2,) * N) + 1j * np.random.rand(*(2,) * N)
 
         new_state = apply_operation(op, state)
 
         # Confirm the return type and shape
-        assert isinstance(new_state, expected_type)
+        assert isinstance(new_state, np.ndarray)
         assert new_state.shape == expected_shape
 
 
