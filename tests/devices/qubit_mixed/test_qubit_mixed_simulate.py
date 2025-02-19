@@ -67,6 +67,26 @@ class TestStatePrepBase:
         expected[6] = 1.0  # Should be |110> = |6>
         assert qml.math.allclose(probs, expected)
 
+    def test_state_mp(self):
+        """Test that the current two supported statemps are equivalent.
+        This test ensure the fix for measurementprocess.raw_wires is working."""
+        state = np.array([0, 1])
+        device = qml.device("default.mixed", wires=[0, 1])
+
+        @qml.qnode(device)
+        def circuit0():
+            qml.StatePrep(state, wires=[1])
+            return qml.density_matrix(wires=[0, 1])
+
+        @qml.qnode(device)
+        def circuit():
+            qml.StatePrep(state, wires=[1])
+            return qml.state()
+
+        dm0 = circuit0()
+        dm = circuit()
+        assert np.allclose(dm0, dm)
+
 
 @pytest.mark.parametrize("wires", [0, 1, 2])
 class TestBasicCircuit:
