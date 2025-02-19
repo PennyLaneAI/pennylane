@@ -447,7 +447,7 @@ def single_qubit_fusion(
         # Look for single_qubit_rot_angles; if not available, queue and move on.
         # If available, grab the angles and try to fuse.
         try:
-            cumulative_angles = qml.math.stack(current_gate.single_qubit_rot_angles()))
+            cumulative_angles = qml.math.stack(current_gate.single_qubit_rot_angles())
         except (NotImplementedError, AttributeError):
             new_operations.append(current_gate)
             list_copy.pop(0)
