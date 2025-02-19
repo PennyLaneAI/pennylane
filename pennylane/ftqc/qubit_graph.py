@@ -47,6 +47,7 @@ class QubitGraph:
             * Recall that a _transversal operation_ is defined as a logical operator that is formed
               by applying the individual physical operators to each qubit in a QEC code block.
         * Implement tensor-like indexing and slicing.
+        * Improve string representation of QubitGraph objects.
     """
 
     def __init__(self, graph: nx.Graph = None):
@@ -214,6 +215,11 @@ class QubitGraph:
         Args:
             graph (networkx.Graph): The undirected graph to use as the QubitGraph's underlying
                 qubits. This object must not be None.
+
+        Example:
+
+            >>> graph = networkx.hexagonal_lattice_graph(3, 2)
+            >>> q = QubitGraph(graph)
         """
         if graph is None:
             raise TypeError("QubitGraph requires a graph-like input, got NoneType.")
