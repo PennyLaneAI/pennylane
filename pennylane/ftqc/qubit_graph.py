@@ -39,11 +39,14 @@ class QubitGraph:
             graphs and graph-like types are also permitted. An object is considered "graph-like" if
             it has both a 'nodes' and an 'edges' attribute.
 
-    This is a WIP! Still to do:
+    TODO:
 
         * How to represent operations on qubits?
-            * Should be able to broadcast operations to underlying qubits
-        * Tensor-like indexing and slicing.
+            * We should be able to broadcast operations to underlying qubits, assuming operations
+              are transversal.
+            * Recall that a _transversal operation_ is defined as a logical operator that is formed
+              by applying the individual physical operators to each qubit in a QEC code block.
+        * Implement tensor-like indexing and slicing.
     """
 
     def __init__(self, graph: nx.Graph = None):
