@@ -352,11 +352,13 @@ class QubitGraph:
         for node in self._graph_qubits.nodes:
             self[node] = QubitGraph()
 
-    def _warn_uninitialized(self):
+    @staticmethod
+    def _warn_uninitialized():
         """Emit a UserWarning when attempting to access an uninitialized graph."""
         warnings.warn("Attempting to access an uninitialized QubitGraph.", UserWarning)
 
-    def _warn_reinitialization(self):
+    @staticmethod
+    def _warn_reinitialization():
         """Emit a UserWarning when attempting to initialize an already-initialized graph."""
         warnings.warn(
             "Attempting to re-initialize a QubitGraph. If you wish to initialize the underlying "
@@ -365,7 +367,8 @@ class QubitGraph:
             UserWarning,
         )
 
-    def _check_graph_type_supported_and_raise_or_warn(self, graph):
+    @staticmethod
+    def _check_graph_type_supported_and_raise_or_warn(graph):
         """Check that the input type is graph-like and raise a TypeError if not, and then check that
         the graph type is one that is supported and emit a UserWarning if not.
 
