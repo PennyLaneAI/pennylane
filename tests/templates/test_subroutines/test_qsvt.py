@@ -821,6 +821,7 @@ class TestRootFindingSolver:
         """Test `poly_to_angles` works with jax"""
 
         import jax
+
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
         angles = qml.poly_to_angles(poly, "QSVT")
 
@@ -834,6 +835,7 @@ class TestRootFindingSolver:
         """Test `poly_to_angles` works with torch"""
 
         import torch
+
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
         angles = qml.poly_to_angles(poly, "QSVT")
 
@@ -847,6 +849,7 @@ class TestRootFindingSolver:
         """Test `poly_to_angles` works with tensorflow"""
 
         import tensorflow as tf
+
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
         angles = qml.poly_to_angles(poly, "QSVT")
 
