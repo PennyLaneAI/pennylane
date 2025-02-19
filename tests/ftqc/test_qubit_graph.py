@@ -168,6 +168,53 @@ class TestQubitGraphsInitialization:
         for node in qubit.nodes:
             assert isinstance(qubit[node], QubitGraph)
 
+    def test_init_graph_with_invalid_type_raises_type_error(self):
+        """Test that attempting to initialize a graph with an invalid graph type raises a TypeError."""
+
+        class NotAGraph:
+            pass
+
+        class SomethingWithOnlyNodes:
+            def __init__(self):
+                self.nodes = []
+
+        class SomethingWithOnlyEdges:
+            def __init__(self):
+                self.edges = []
+
+        # Test initialize with constructor
+        with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
+            invalid_graph = NotAGraph()
+            _ = QubitGraph(invalid_graph)
+
+        with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
+            invalid_graph = SomethingWithOnlyNodes()
+            _ = QubitGraph(invalid_graph)
+
+        with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
+            invalid_graph = SomethingWithOnlyEdges()
+            _ = QubitGraph(invalid_graph)
+
+        # Test initialize with `init_graph` method
+        with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
+            invalid_graph = NotAGraph()
+            q = QubitGraph()
+            q.init_graph(invalid_graph)
+
+        with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
+            invalid_graph = SomethingWithOnlyNodes()
+            q = QubitGraph()
+            q.init_graph(invalid_graph)
+
+        with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
+            invalid_graph = SomethingWithOnlyEdges()
+            q = QubitGraph()
+            q.init_graph(invalid_graph)
+
+        with pytest.raises(TypeError, match="QubitGraph requires a graph-like input, got NoneType"):
+            q = QubitGraph()
+            q.init_graph(None)
+
 
 class TestQubitGraphOperations:
     """Tests for operations on a QubitGraph."""
@@ -344,3 +391,28 @@ class TestQubitGraphsWarnings:
 
         with pytest.warns(UserWarning, match="Attempting to re-initialize a QubitGraph"):
             q.init_graph_surface_code_17()
+
+    def test_unsupported_graph_type_warning(self):
+        """Test that initializing a QubitGraph with a graph-like object that is not a networkx.Graph
+        object emits a UserWarning.
+        """
+
+        class CustomGraph:
+            def __init__(self):
+                self.nodes = []
+                self.edges = []
+
+        g = CustomGraph()
+
+        # Test that constructor raises warning
+        with pytest.warns(
+            UserWarning, match="QubitGraph expects an input graph of type 'networkx.Graph'"
+        ):
+            _ = QubitGraph(g)
+
+        # Test that `init_graph` method raises warning
+        q = QubitGraph()
+        with pytest.warns(
+            UserWarning, match="QubitGraph expects an input graph of type 'networkx.Graph'"
+        ):
+            q.init_graph(g)
