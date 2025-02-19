@@ -20,6 +20,8 @@ import pytest
 import pennylane as qml
 from pennylane.ftqc.qubit_graph import QubitGraph
 
+# pylint: disable=too-few-public-methods
+
 
 class TestQubitGraphsInitialization:
     """Tests for basic initialization of QubitGraphs."""
