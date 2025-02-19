@@ -108,25 +108,25 @@ class TestSingleQubitFusionInterpreter:
 
         assert qml.math.allclose(result, expected_result)
 
-    def test_single_qubit_CNOT_fusion(self):
-        """Test that a sequence of single-qubit gates and a CNOT gate fuse."""
+    @pytest.mark.parametrize(
+        "exclude_gates", [None, ["qml.RZ"], ["qml.Hadamard"], ["qml.RZ", "qml.Hadamard"]]
+    )
+    def test_single_qubit_fusion_exclude_gates(self, exclude_gates):
+        """Test that a sequence of single-qubit gates all fuse when excluding certain gates."""
 
         def circuit():
-            # Excluded gate at the start
             qml.RZ(0.1, wires=0)
             qml.Hadamard(wires=0)
             qml.PauliX(wires=0)
             qml.RZ(0.1, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=0)
-            # Excluded gate after another gate
             qml.RZ(0.1, wires=0)
             qml.PauliX(wires=1)
             qml.PauliZ(wires=1)
-            # Excluded gate after multiple others
             qml.RZ(0.2, wires=1)
 
-        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+        transformed_circuit = SingleQubitFusionInterpreter(exclude_gates=exclude_gates)(circuit)
         jaxpr = jax.make_jaxpr(transformed_circuit)()
 
         collector = CollectOpsandMeas()
@@ -584,6 +584,7 @@ class TestSingleQubitFusionInterpreter:
             assert op1.wires == op2.wires
 
     def test_single_qubit_fusion_plxpr_to_plxpr(self):
+        """Test that the single-qubit fusion transformation works on a plxpr."""
 
         def circuit():
             qml.RZ(0.3, wires=0)

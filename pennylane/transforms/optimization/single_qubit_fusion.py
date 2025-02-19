@@ -14,7 +14,9 @@
 """Transform for fusing sequences of single-qubit gates."""
 # pylint: disable=too-many-branches
 
-from functools import lru_cache, partial
+from functools import lru_cache
+from typing import Optional
+
 import pennylane as qml
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
@@ -48,9 +50,11 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             not share any wires. This will not impact the correctness of the circuit.
         """
 
-        def __init__(self):
-            super().__init__()
+        def __init__(self, exclude_gates: Optional[list[str]] = None):
+            """Initialize the interpreter."""
+            self.exclude_gates = exclude_gates
             self.previous_ops = {}
+            super().__init__()
 
         def setup(self) -> None:
             """Initialize the instance before interpreting equations."""
@@ -66,6 +70,12 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             # For operators like Identity()
             if len(op.wires) == 0:
                 return super().interpret_operation(op)
+
+            # If the gate should be excluded, we interpret it as-is
+            # regardless of fusion potential
+            if self.exclude_gates is not None:
+                if op.name in self.exclude_gates:
+                    return super().interpret_operation(op)
 
             try:
                 # Check if the operation has the single_qubit_rot_angles method
@@ -89,6 +99,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                 for prev_op in previous_ops_on_wires:
 
                     o_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
+                    # pylint: disable=protected-access
                     o_rot = qml.Rot._primitive.impl(*o_angles, wires=prev_op.wires)
                     res.append(super().interpret_operation(o_rot))
 
@@ -113,6 +124,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             cumulative_angles = fuse_rot_angles(prev_op_angles, cumulative_angles)
 
             # Store the new fused rotation
+            # pylint: disable=protected-access
             new_rot = qml.Rot._primitive.impl(*cumulative_angles, wires=op.wires)
             for w in op.wires:
                 self.previous_ops[w] = new_rot
@@ -210,7 +222,7 @@ SingleQubitFusionInterpreter, single_qubit_plxpr_to_plxpr = _get_plxpr_single_qu
 
 @transform
 def single_qubit_fusion(
-    tape: QuantumScript, atol=1e-8, exclude_gates=None
+    tape: QuantumScript, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
@@ -260,7 +272,7 @@ def single_qubit_fusion(
 
     .. note::
 
-        The order of the gates resulting from the fusion may be different depending 
+        The order of the gates resulting from the fusion may be different depending
         on wether program capture is enabled or not. This only impacts the order of
         operations that do not share any wires, so the correctness of the circuit is not affected.
 
