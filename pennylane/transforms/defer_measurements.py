@@ -15,7 +15,7 @@
 
 from functools import lru_cache, partial
 from numbers import Number
-from typing import Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Union
 from warnings import warn
 
 import pennylane as qml
@@ -142,9 +142,10 @@ def _get_plxpr_defer_measurements():
         def cleanup(self) -> None:
             """Perform any final steps after iterating through all equations.
 
-            Blank by default, this method can clean up instance variables. Particularly,
-            this method can be used to deallocate qubits and registers when converting to
-            a Catalyst variant jaxpr.
+            This method resets the internal ``state``, specifically the ``cur_idx`` entry.
+            ``cur_idx`` tracks the index within the auxiliary wires, determining which will
+            be used for the target wire of the next mid-circuit measurement's replacement
+            :class:`~pennylane.CNOT`.
             """
             self.state = {"cur_idx": 0}
 
@@ -191,6 +192,8 @@ def _get_plxpr_defer_measurements():
             See also: :meth:`~.interpret_operation_eqn`.
 
             """
+            # We treat operators with operators based on mid-circuit measurement values
+            # separately, and otherwise default to the standard behaviour
             data, struct = jax.tree_util.tree_flatten(op)
 
             mcm_data_inds = []
@@ -222,14 +225,21 @@ def _get_plxpr_defer_measurements():
             return super().interpret_measurement(measurement)
 
         def resolve_mcm_values(
-            self, eqn: "jax.core.JaxprEqn", invals: Sequence[Union[MeasurementValue, Number]]
+            self,
+            primitive: "jax.core.Primitive",
+            subfuns: Sequence[Callable],
+            invals: Sequence[Union[MeasurementValue, Number]],
+            params: dict,
         ) -> MeasurementValue:
             """Create a ``MeasurementValue`` that captures all classical processing of the
             input ``eqn`` in its ``processing_fn``.
 
             Args:
-                eqn (jax.core.JaxprEqn): Jaxpr equation containing the primitive to apply
-                invals (Sequence[Union[MeasurementValue, Number]]): Inputs to the equation
+                primitive (jax.core.Primitive): Jax primitive
+                subfuns (Sequence[Callable]): Callable positional arguments to the primitive.
+                    These are created by pre-processing jaxpr equation parameters.
+                invals (Sequence[Union[MeasurementValue, Number]]): Inputs to the primitive
+                params (dict): Keyword arguments to the primitive
 
             Returns:
                 MeasurementValue: ``MeasurementValue`` containing classical processing information
@@ -246,7 +256,7 @@ def _get_plxpr_defer_measurements():
             # MeasurementValue._transform_bin_op is for applying a binary operation
             # to two MeasurementValues
             assert len(invals) <= 2
-            processing_fn = partial(eqn.primitive.bind, **eqn.params)
+            processing_fn = partial(primitive.bind, *subfuns, **params)
 
             # One MeasurementValue
             if len(invals) == 1:
@@ -295,10 +305,11 @@ def _get_plxpr_defer_measurements():
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
                     invals = [self.read(invar) for invar in eqn.invars]
+                    subfuns, params = primitive.get_bind_params(eqn.params)
                     if any(isinstance(inval, MeasurementValue) for inval in invals):
-                        outvals = self.resolve_mcm_values(eqn, invals)
+                        outvals = self.resolve_mcm_values(primitive, subfuns, invals, params)
                     else:
-                        outvals = primitive.bind(*invals, **eqn.params)
+                        outvals = primitive.bind(*subfuns, *invals, **params)
 
                 if not primitive.multiple_results:
                     outvals = [outvals]
@@ -325,6 +336,9 @@ def _get_plxpr_defer_measurements():
                 "measurements using qml.defer_measurements."
             )
 
+        # Using type.__call__ instead of normally constructing the class prevents
+        # the primitive corresponding to the class to get binded. We do not want the
+        # MidMeasureMP's primitive to get recorded.
         meas = type.__call__(
             MidMeasureMP,
             Wires(self._aux_wires[self.state["cur_idx"]]),
@@ -367,6 +381,9 @@ def _get_plxpr_defer_measurements():
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
             if jaxpr is None:
+                # If a false branch isn't provided, the jaxpr corresponding to the condition
+                # for the false branch will be None. That is the only scenario where we would
+                # reach here.
                 continue
 
             if isinstance(condition, MeasurementValue):

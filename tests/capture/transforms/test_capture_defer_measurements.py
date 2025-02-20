@@ -392,6 +392,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
                 qml.RX(x, i)
 
             loop_fn()
+            qml.measure(0)
 
         x = 1.5
         jaxpr = jax.make_jaxpr(f)(x)
@@ -404,9 +405,10 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             qml.RX(x, [0]),
             qml.RX(x, [1]),
             qml.RX(x, [2]),
+            qml.CNOT([0, 6]),
         ]
         if postselect is not None:
-            expected_ops.insert(0, qml.Projector(qml.math.array([postselect]), 0))
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
         assert ops == expected_ops
 
     def test_while_loop(self, postselect):
@@ -423,6 +425,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
                 return i + 1
 
             loop_fn(0)
+            qml.measure(0)
 
         x = 1.5
         jaxpr = jax.make_jaxpr(f)(x)
@@ -435,9 +438,10 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             qml.RX(x, [0]),
             qml.RX(x, [1]),
             qml.RX(x, [2]),
+            qml.CNOT([0, 6]),
         ]
         if postselect is not None:
-            expected_ops.insert(0, qml.Projector(qml.math.array([postselect]), 0))
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
         assert ops == expected_ops
 
     def test_cond_non_mcm(self, postselect):
@@ -455,25 +459,26 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             def _(phi):
                 return qml.RZ(phi, 0)
 
-            return cond_fn(x)
+            cond_fn(x)
+            qml.measure(0)
 
         x = 1.5
         jaxpr = jax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
-        expected_ops = [qml.CNOT([0, 5]), qml.RZ(x, 0)]
+        expected_ops = [qml.CNOT([0, 5]), qml.RZ(x, 0), qml.CNOT([0, 6])]
         if postselect is not None:
-            expected_ops.insert(0, qml.Projector(qml.math.array([postselect]), 0))
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
         assert ops == expected_ops
 
         x = 2.5
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
-        expected_ops = [qml.CNOT([0, 5]), qml.RX(x, 0)]
+        expected_ops = [qml.CNOT([0, 5]), qml.RX(x, 0), qml.CNOT([0, 6])]
         if postselect is not None:
-            expected_ops.insert(0, qml.Projector(qml.math.array([postselect]), 0))
+            expected_ops.insert(0, qml.Projector(np.array([postselect]), 0))
         assert ops == expected_ops
 
     def test_cond_body_mcm(self, postselect):
