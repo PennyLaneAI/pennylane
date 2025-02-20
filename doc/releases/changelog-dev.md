@@ -35,6 +35,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
+[(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
+
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
 
