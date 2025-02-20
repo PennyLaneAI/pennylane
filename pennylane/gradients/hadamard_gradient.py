@@ -171,6 +171,7 @@ def hadamard_grad(
             ... def circuit(x):
             ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x )
             ...     return qml.expval(qml.Z(0))
+            ...
             >>> print( qml.draw(qml.gradients.hadamard_grad(circuit))(qml.numpy.array(0.5)) )
             0: ─╭Exp(-0.50j 𝓗)─╭X────┤ ╭<Z@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ │
