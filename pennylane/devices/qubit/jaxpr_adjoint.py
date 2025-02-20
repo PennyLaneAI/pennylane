@@ -63,7 +63,7 @@ def _measurement_forward_pass(eqn, env, ket):
 
     mp = eqn.primitive.impl(*invals, **eqn.params)
     bra = apply_operation(mp.obs, ket)
-    result = jnp.real(jnp.sum(jnp.conj(bra) * ket))
+    result = jnp.real(jnp.vdot(bra, ket))
     env[eqn.outvars[0]] = (result, None)
     return bra
 
