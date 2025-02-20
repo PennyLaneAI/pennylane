@@ -396,7 +396,9 @@ class PlxprInterpreter:
         def wrapper(*args, **kwargs):
             with qml.QueuingManager.stop_recording():
                 jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
-            results = self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+
+            flat_args = jax.tree_util.tree_leaves(args)
+            results = self.eval(jaxpr.jaxpr, jaxpr.consts, *flat_args)
             assert flat_f.out_tree
             # slice out any dynamic shape variables
             results = results[-flat_f.out_tree.num_leaves :]
