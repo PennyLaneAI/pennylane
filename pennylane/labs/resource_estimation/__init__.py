@@ -122,7 +122,6 @@ Templates
     ~ResourceQROM
     ~ResourceReflection
     ~ResourceSelect
-    ~ResourceStatePrep
     ~ResourceTrotterProduct
     ~ResourceTrotterizedQfunc
     ~resource_trotterize
@@ -131,6 +130,16 @@ Templates
     ~ResourceMultiplier
     ~ResourcePhaseAdder
 
+State Preparation Templates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceStatePrep
+    ~ResourceSuperposition
+    ~ResourceMottonenStatePreparation
+    
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
 
@@ -229,4 +238,9 @@ from .templates import (
     ResourceTrotterProduct,
     ResourceTrotterizedQfunc,
     resource_trotterize,
+    ResourceMottonenStatePreparation,
+    ResourceSuperposition,
+    ResourceQubitUnitary,
 )
+
+from .compact_objects import CompactState

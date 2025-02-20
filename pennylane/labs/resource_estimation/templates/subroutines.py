@@ -310,42 +310,6 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
 ResourceQPE = ResourceQuantumPhaseEstimation  # Alias for ease of typing
 
 
-class ResourceStatePrep(qml.StatePrep, ResourceOperator):
-    """Resource class for StatePrep.
-
-    Resources:
-        TODO: add the resources here
-    """
-
-    @staticmethod
-    def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
-        gate_types = {}
-        rz = re.ResourceRZ.resource_rep()
-        cnot = re.ResourceCNOT.resource_rep()
-
-        r_count = 2 ** (num_wires + 2) - 5
-        cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
-
-        if r_count:
-            gate_types[rz] = r_count
-
-        if cnot_count:
-            gate_types[cnot] = cnot_count
-        return gate_types
-
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
-
-    @classmethod
-    def resource_rep(cls, num_wires) -> CompressedResourceOp:
-        params = {"num_wires": num_wires}
-        return CompressedResourceOp(cls, params)
-
-    @classmethod
-    def tracking_name(cls, num_wires) -> str:
-        return f"StatePrep({num_wires})"
-
-
 class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     """Resource class for BasisRotations."""
 
@@ -406,13 +370,13 @@ class ResourceSelect(qml.Select, ResourceOperator):
     @staticmethod
     def resources_for_ui(cmpr_ops, **kwargs):
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
-        The resources are based on the analysis in section III.A, 'Unary Iteration and Indexed
+        The resources are based on the analysis in https://arxiv.org/pdf/1805.03662 section III.A, 'Unary Iteration and Indexed
         Operations'. See Figures 4, 6, and 7.
 
         Note: This implementation assumes we have access to :math:`S + 1` additional work qubits,
-        where :math:`S = \ceil{log_{2}(N)}` and :math:`S` is the number of unitaries to select.
+        where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
+        to select.
         """
-        # https://arxiv.org/pdf/1805.03662
         gate_types = defaultdict(int)
         x = re.ResourceX.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
@@ -451,9 +415,9 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         num_ops = len(cmpr_ops)
         num_wires = int(math.ceil(math.log2(num_ops)))
 
-        prep = ResourceStatePrep.resource_rep(num_wires)
+        prep = re.ResourceStatePrep.resource_rep(num_wires)
         sel = ResourceSelect.resource_rep(cmpr_ops)
-        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
+        prep_dag = re.ResourceAdjoint.resource_rep(re.ResourceStatePrep, {"num_wires": num_wires})
 
         gate_types[prep] = 1
         gate_types[sel] = 1
@@ -477,9 +441,9 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         num_ops = len(cmpr_ops)
         num_wires = int(math.ceil(math.log2(num_ops)))
 
-        prep = ResourceStatePrep.resource_rep(num_wires)
+        prep = re.ResourceStatePrep.resource_rep(num_wires)
         pow_sel = re.ResourcePow.resource_rep(ResourceSelect, {"cmpr_ops": cmpr_ops}, z)
-        prep_dag = re.ResourceAdjoint.resource_rep(ResourceStatePrep, {"num_wires": num_wires})
+        prep_dag = re.ResourceAdjoint.resource_rep(re.ResourceStatePrep, {"num_wires": num_wires})
 
         gate_types[prep] = 1
         gate_types[pow_sel] = 1
@@ -583,17 +547,22 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         We use the one-auxillary qubit version of select, instead of the built-in select
         resources.
         """
+        gate_types = {}
+        x = re.ResourceX.resource_rep()
+
+        if num_control_wires == 0:
+            gate_types[x] = num_bit_flips
+            return gate_types
+
+        cnot = re.ResourceCNOT.resource_rep()
+        hadamard = re.ResourceHadamard.resource_rep()
+        
         num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
         num_parallel_computations = min(num_parallel_computations, num_bitstrings)
 
         num_swap_wires = math.floor(math.log2(num_parallel_computations))
         num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
         assert num_swap_wires + num_select_wires <= num_control_wires
-
-        gate_types = {}
-        x = re.ResourceX.resource_rep()
-        cnot = re.ResourceCNOT.resource_rep()
-        hadamard = re.ResourceHadamard.resource_rep()
 
         swap_clean_prefactor = 1
         select_clean_prefactor = 1
@@ -615,6 +584,68 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         gate_types[x] = select_clean_prefactor * (
             num_zero_controls * 2  # conjugate 0 controls on the multi-qubit x gates from above
         )
+        # SWAP cost:
+        ctrl_swap = re.ResourceCSWAP.resource_rep()
+        gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
+
+        return gate_types
+
+    @staticmethod
+    def resources_via_ui(
+        num_bitstrings,
+        num_bit_flips,
+        num_control_wires,
+        num_work_wires,
+        size_bitstring,
+        clean,
+        **kwargs,
+    ) -> Dict[CompressedResourceOp, int]:
+        r"""The resources for QROM are taken from the following two papers:
+        (https://arxiv.org/pdf/1812.00954, figure 1.c) and
+        (https://arxiv.org/pdf/1902.02134, figure 4).
+
+        Note: we use the unary iterator trick to implement the Select. This
+        implementation assumes we have access to :math:`S + 1` additional
+        work qubits, where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is
+        the number of batches of unitaries to select.
+        """
+        gate_types = {}
+        x = re.ResourceX.resource_rep()
+
+        if num_control_wires == 0:
+            gate_types[x] = num_bit_flips
+            return gate_types
+
+        cnot = re.ResourceCNOT.resource_rep()
+        toffoli = re.ResourceToffoli.resource_rep()
+        hadamard = re.ResourceHadamard.resource_rep()
+        
+        num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
+        num_parallel_computations = min(num_parallel_computations, num_bitstrings)
+
+        num_swap_wires = math.floor(math.log2(num_parallel_computations))
+
+        swap_clean_prefactor = 1
+        select_clean_prefactor = 1
+
+        if clean:
+            gate_types[hadamard] = 2 * size_bitstring
+            swap_clean_prefactor = 4
+            select_clean_prefactor = 2
+
+        # SELECT cost:
+        num_groups = math.ceil(num_bitstrings / (2**num_swap_wires))
+
+        gate_types[x] = (
+            select_clean_prefactor * 2 * (num_groups - 1)
+        )  # conjugate 0 controlled toffolis
+        gate_types[cnot] = select_clean_prefactor * (num_groups - 1)
+        gate_types[toffoli] = select_clean_prefactor * 2 * (num_groups - 1)
+
+        gate_types[cnot] += (
+            select_clean_prefactor * num_bit_flips
+        )  # each unitary in the select is just a CNOT
+
         # SWAP cost:
         ctrl_swap = re.ResourceCSWAP.resource_rep()
         gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
@@ -656,3 +687,51 @@ class ResourceQROM(qml.QROM, ResourceOperator):
             "clean": clean,
         }
         return CompressedResourceOp(cls, params)
+
+
+class ResourceQubitUnitary(qml.QubitUnitary, ResourceOperator):
+
+    def __init__(self, U, wires, work_wires, id = None, unitary_check: bool = False):  # pylint: disable=too-many-arguments
+        self.work_wires = work_wires
+        super().__init__(U, wires=wires, id=id)
+    
+    @staticmethod
+    def _resource_decomp(dim, num_work_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+        gate_types = {}
+        h = re.ResourceHadamard.resource_rep()
+        c_ps = re.ResourceControlledPhaseShift.resource_rep()
+        qrom = re.ResourceQROM.resource_rep(
+            num_bitstrings=dim, 
+            num_bit_flips=dim//2, 
+            num_control_wires=math.log2(dim),
+            num_work_wires=num_work_wires,
+            size_bitstring=math.log2(dim),
+            clean=False,
+        )
+        qrom_adj = re.ResourceAdjoint.resource_rep(
+            base_class=re.ResourceQROM,
+            base_params={
+            "num_bitstrings": dim, 
+            "num_bit_flips": dim//2, 
+            "num_control_wires": math.log2(dim),
+            "num_work_wires": num_work_wires,
+            "size_bitstring": math.log2(dim),
+            "clean": False
+            },
+        )
+
+        gate_types[qrom] = dim + 1
+        gate_types[qrom_adj] = dim + 1
+        gate_types[h] = 2 * (dim + 1)
+        gate_types[c_ps] = (dim + 1) * math.log2(dim)
+
+        return gate_types
+    
+    def resource_params(self) -> Dict:
+        dim = len(self.wires)
+        num_work_wires = len(self.work_wires)
+        return {"dim": dim, "num_work_wires": num_work_wires}
+    
+    @classmethod
+    def resource_rep(cls, dim, num_work_wires) -> CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {"dim": dim, "num_work_wires": num_work_wires})
