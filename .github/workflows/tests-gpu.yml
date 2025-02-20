@@ -23,10 +23,8 @@ env:
 jobs:
   gpu-tests:
     runs-on:
-      - self-hosted
-      - ubuntu-22.04
-      - gpu
-
+      - single-gpu-x64
+    
     if: >-
       ${{
         github.event_name == 'push' ||
@@ -57,13 +55,13 @@ jobs:
           echo "LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" >> $GITHUB_ENV
 
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Setup Python
         id: setup_python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 

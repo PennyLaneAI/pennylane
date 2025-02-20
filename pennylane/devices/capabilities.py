@@ -34,7 +34,7 @@ class InvalidCapabilitiesError(Exception):
 
 def load_toml_file(file_path: str) -> dict:
     """Loads a TOML file and returns the parsed dict."""
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         return toml.load(file)
 
 
