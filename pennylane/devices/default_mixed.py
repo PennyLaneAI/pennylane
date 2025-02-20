@@ -394,10 +394,10 @@ def _apply_state_vector(total_wires, state, device_wires, interface="numpy", tol
     n_state_vector = state.shape[0]
 
     if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
-        raise ValueError("State vector must be of length 2**wires.")
+        raise ValueError("State vector must be of length 2**wires.")  # pragma: no cover
 
     if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-        raise ValueError("Sum of amplitudes-squared does not equal one.")
+        raise ValueError("Sum of amplitudes-squared does not equal one.")  # pragma: no cover
 
     if len(device_wires) == num_total_wires and sorted(device_wires.labels) == list(
         device_wires.labels
