@@ -144,7 +144,7 @@ def execute_and_jvp(jaxpr: jax.core.Jaxpr, args: tuple, tangents: tuple, num_wir
             include the consts followed by the inputs.
         num_wires (int): the number of wires to use.
 
-    Note that the consts for the jaxpr should be included in the beginning of both the ``args``
+    Note that the consts for the jaxpr should be included at the beginning of both the ``args``
     and ``tangents``.
     """
     env = {
