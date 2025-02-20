@@ -106,20 +106,32 @@ class TestLegacyDefaultMixed:
     Tests that covered parts of legacy method of the DefaultMixed device.
     """
 
-    # @pytest.mark.all_interfaces
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ML_INTERFACES)
-    @pytest.mark.parametrize("device_wires", [qml.wires.Wires([0]), qml.wires.Wires([0, 1])])
-    def test_apply_state_vector(self, device_wires, interface):
+    @pytest.mark.parametrize(
+        "total_wires", [qml.wires.Wires([0]), qml.wires.Wires([0, 1]), qml.wires.Wires([0, 2, 1])]
+    )
+    def test_apply_state_vector(self, total_wires, interface):
         """Initialize the internal state in a specified pure state."""
+        if interface == "autograd":
+            pytest.skip(
+                "Autograd interface not supported for this test. No autograd scatter support."
+            )
+        num_total_wires = len(total_wires)
+
+        device_wires = qml.wires.Wires([0])
         num_wires = len(device_wires)
         tolerance = 1e-10
         state_np = np.zeros(shape=(2**num_wires,), dtype=np.complex128)
         state_np[0] = 1.0
         _state = _apply_state_vector(
-            device_wires=device_wires, state_vector=state_np, interface=interface
+            total_wires=total_wires,
+            state=state_np,
+            device_wires=device_wires,
+            interface=interface,
         )
 
-        rho_expected_numpy = np.zeros([2] * 2 * num_wires, dtype=np.complex128)
-        rho_expected_numpy[tuple([0] * 2 * num_wires)] = 1.0
+        rho_expected_numpy = np.zeros([2] * 2 * num_total_wires, dtype=np.complex128)
+        rho_expected_numpy[tuple([0] * 2 * num_total_wires)] = 1.0
         rho_expected = qml.math.asarray(rho_expected_numpy, like=interface)
         assert qml.math.allclose(_state, rho_expected, atol=tolerance)
