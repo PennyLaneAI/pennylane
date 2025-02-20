@@ -36,7 +36,7 @@
 <h3>Improvements 🛠</h3>
 
 * `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
-  [(#6876)](https://github.com/PennyLaneAI/pennylane/pull/6876)
+  [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
 
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
