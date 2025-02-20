@@ -9,6 +9,25 @@ import scipy as sp
 from pennylane.labs.pf import HOState, VibrationalHamiltonian
 
 
+class TestFragments:
+    """Test properties of the fragments"""
+
+    @pytest.mark.parametrize(
+        "n_modes, omegas, phis, gridpoints",
+        [
+            (5, np.random.random(5), [], 2),
+            (5, np.random.random(5), [np.random.random(size=(5,) * i) for i in range(4)], 2),
+        ],
+    )
+    def test_fragementation_schemes_equal(self, n_modes, omegas, phis, gridpoints):
+        ham = VibrationalHamiltonian(n_modes, omegas, phis)
+
+        frag1 = (ham.harmonic_fragment() + ham.anharmonic_fragment()).matrix(gridpoints, n_modes)
+        frag2 = (ham.kinetic_fragment() + ham.potential_fragment()).matrix(gridpoints, n_modes)
+
+        assert np.allclose(frag1, frag2)
+
+
 class Test1Mode:
     """Test the vibrational Hamiltonian on a single mode"""
 
@@ -123,8 +142,5 @@ class TestMultiMode:
         for i, state1 in enumerate(comb_states):
             for j, state2 in enumerate(comb_states):
                 actual[i, j] = state1.dot(ham.apply(state2))
-
-        print(expected)
-        print(actual)
 
         assert np.allclose(actual, expected)

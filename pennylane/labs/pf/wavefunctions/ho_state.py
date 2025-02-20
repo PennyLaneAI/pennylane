@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Dict, Sequence, Tuple
 
 import numpy as np
 from scipy.sparse import csr_array, identity, kron
@@ -106,10 +106,15 @@ class HOState:
         return HOState.from_scipy(self.modes, self.gridpoints, op @ self.vector)
 
     def __add__(self, other: HOState) -> HOState:
+        if not isinstance(other, HOState):
+            raise TypeError(f"Can only add HOState with another HOState, got {type(other)}.")
+
         return HOState.from_scipy(self.modes, self.gridpoints, self.vector + other.vector)
 
     def __mul__(self, scalar: float) -> HOState:
         return HOState.from_scipy(self.modes, self.gridpoints, scalar * self.vector)
+
+    __rmul__ = __mul__
 
     def to_dict(self) -> Dict[Tuple[int], float]:
         """Return the dictionary representation"""
@@ -123,6 +128,81 @@ class HOState:
             )
 
         return ((self.vector.T).dot(other.vector))[0, 0]
+
+
+class VibronicHO:
+    """Class representing a vibronic state"""
+
+    def __init__(self, states: int, modes: int, gridpoints: int, ho_states: Sequence[HOState]):
+
+        if len(ho_states) != states:
+            raise ValueError(
+                f"Got {len(ho_states)} harmonic oscillator states, but expected {states}."
+            )
+
+        for ho_state in ho_states:
+            if ho_state.modes != modes:
+                raise ValueError(
+                    f"Mode mismatch: given {modes} modes, but found an HOState on {ho_state.modes} modes."
+                )
+
+            if ho_state.gridpoints != gridpoints:
+                raise ValueError(
+                    f"Gridpoint mismatch: given {gridpoints} gridpoints, but found an HOState on {ho_state.gridpoints} gridpoints."
+                )
+
+        self.states = states
+        self.modes = modes
+        self.gridpoints = gridpoints
+        self.ho_states = ho_states
+
+    def __add__(self, other: VibronicHO) -> VibronicHO:
+        if self.states != other.states:
+            raise ValueError(
+                f"Cannot add VibronicHO on {self.states} states with VibronicHO on {other.states} states."
+            )
+
+        if self.modes != other.modes:
+            raise ValueError(
+                f"Cannot add VibronicHO on {self.modes} modes with VibronicHO on {other.modes} modes."
+            )
+
+        if self.gridpoints != other.gridpoints:
+            raise ValueError(
+                f"Cannot add VibronicHO on {self.gridpoints} gridpoints with VibronicHO on {other.gridpoints} gridpoints."
+            )
+
+        return VibronicHO(
+            states=self.states,
+            modes=self.modes,
+            gridpoints=self.gridpoints,
+            ho_states=[x + y for x, y in zip(self.ho_states, other.ho_states)],
+        )
+
+    def __mul__(self, scalar: float) -> VibronicHO:
+        return VibronicHO(
+            states=self.states,
+            modes=self.modes,
+            gridpoints=self.gridpoints,
+            ho_states=[scalar * ho for ho in self.ho_states],
+        )
+
+    __rmul__ = __mul__
+
+    @classmethod
+    def zero_state(cls, states: int, modes: int, gridpoints: int) -> VibronicHO:
+        """Return an all zero state"""
+        return cls(
+            states=states,
+            modes=modes,
+            gridpoints=gridpoints,
+            ho_states=[HOState.zero_state(modes, gridpoints)] * states,
+        )
+
+    def dot(self, other: VibronicHO):
+        """Return the inner product"""
+
+        return sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states))
 
 
 def _tensor_with_identity(op: csr_array, gridpoints: int, n_modes: int, mode: int) -> csr_array:
