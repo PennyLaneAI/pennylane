@@ -961,7 +961,6 @@ class TestQubitIntegration:
 class TestQubitIntegrationHigherOrder:
     """Tests that ensure various qubit circuits integrate correctly when computing higher-order derivatives"""
 
-    @pytest.mark.local_salt(1)
     def test_second_derivative(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
     ):

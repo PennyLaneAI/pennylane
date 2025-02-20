@@ -251,7 +251,6 @@ class TestTorchExecuteIntegration:
             assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
             assert torch.allclose(res, -torch.sin(a), atol=atol_for_shots(shots))
 
-    @pytest.mark.local_salt(1)
     def test_jacobian(self, execute_kwargs, shots, device_name, seed):
         """Test jacobian calculation"""
         a = torch.tensor(0.1, requires_grad=True)
