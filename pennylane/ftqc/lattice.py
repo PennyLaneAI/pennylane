@@ -16,8 +16,8 @@ This file defines classes and functions for creating lattice objects that store 
 connectivity information.
 """
 
-from typing import Dict, List, Union
 from enum import Enum
+from typing import Dict, List, Union
 
 import networkx as nx
 
@@ -133,7 +133,7 @@ class LatticeShape(Enum):
     rectangle = 2
     honeycomb = 3
     triangle = 4
-    
+
 
 def generate_lattice(lattice, dims: List[int]) -> Lattice:
     r"""Generates a :class:`~pennylane.ftqc.Lattice` object for a given lattice shape and dimensions.
