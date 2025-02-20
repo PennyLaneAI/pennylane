@@ -27,7 +27,7 @@ from qualtran import (
     DecomposeTypeError,
 )
 from pennylane.operation import Operation
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import WiresLike
 
 import numpy as np
 
