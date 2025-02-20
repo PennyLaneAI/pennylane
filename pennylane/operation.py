@@ -1349,6 +1349,33 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise DecompositionUndefinedError
 
+    @classproperty
+    def has_plxpr_decomposition(cls) -> bool:
+        """Whether or not the Operator returns a defined plxpr decomposition."""
+        return cls.compute_plxpr_decomposition != Operator.compute_plxpr_decomposition
+
+    @staticmethod
+    def compute_plxpr_decomposition(*args, **hyperparameters) -> None:
+        r"""Experimental method to compute the dynamic decomposition of the operator with program capture enabled.
+
+        When the program capture feature is enabled with ``qml.capture.enable()``, the decomposition of the operator
+        is computed with this method if it is defined. Otherwise, the :meth:`~.Operator.compute_decomposition` method is used.
+
+        If this method is defined, the control flow operations within the method are recorded in the JAX representation
+        of the operator's decomposition.
+
+        This method is experimental and subject to change.
+
+        .. seealso:: :meth:`~.Operator.compute_decomposition`.
+
+        Args:
+            *args (list): positional arguments passed to the operator, including trainable parameters and wires
+            **hyperparameters (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        """
+
+        raise DecompositionUndefinedError
+
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
     def has_diagonalizing_gates(cls) -> bool:

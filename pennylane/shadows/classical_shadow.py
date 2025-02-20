@@ -46,7 +46,7 @@ class ClassicalShadow:
 
     .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
         qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``. For more details on this topic, see our demo
-        on `estimating expectation values with classical shadows <https://pennylane.ai/qml/demos/tutorial_diffable_shadows>`_.
+        on :doc:`estimating expectation values with classical shadows <demos/tutorial_diffable_shadows>`.
 
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
@@ -55,7 +55,7 @@ class ClassicalShadow:
             they appear in the columns of ``bits`` and ``recipes``. If None, defaults
             to ``range(n)``, where ``n`` is the number of measured wires.
 
-    .. seealso:: Demo on `Estimating observables with classical shadows in the Pauli basis <https://pennylane.ai/qml/demos/tutorial_diffable_shadows>`_, :func:`~.pennylane.classical_shadow`
+    .. seealso:: Demo on :doc:`Estimating observables with classical shadows in the Pauli basis <demos/tutorial_diffable_shadows>`, :func:`~.pennylane.classical_shadow`
 
     **Example**
 
