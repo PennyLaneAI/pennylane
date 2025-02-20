@@ -35,6 +35,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `qml.measurements.NullMeasurement` measurement process is added to allow for profiling problems
+  without the overheads associated with performing measurements.
+
 * `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
   [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
 
