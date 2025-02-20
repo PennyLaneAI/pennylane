@@ -319,7 +319,7 @@
 * Globally silences `no-member` pylint issues from jax.
   [(#6987)](https://github.com/PennyLaneAI/pennylane/pull/6987)
 
-* Fix certain `pylint` errors in source code.
+* Fix `pylint=3.3.4` errors in source code.
   [(#6980)](https://github.com/PennyLaneAI/pennylane/pull/6980)
   [(#6988)](https://github.com/PennyLaneAI/pennylane/pull/6988)
 
