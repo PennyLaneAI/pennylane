@@ -14,7 +14,6 @@
 r"""
 Contains the StronglyEntanglingLayers template.
 """
-from jax import numpy as jnp
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
@@ -238,8 +237,15 @@ class StronglyEntanglingLayers(Operation):
 
         return n_layers, n_wires, 3
 
+    # pylint:disable = no-value-for-parameter
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
+        try:
+            # pylint: disable=import-outside-toplevel
+            from jax import numpy as jnp
+        except ImportError:
+            pass
+
         weights = args[0]
         wires = jnp.array(args[1:])
         imprimitive = hyperparameters["imprimitive"]

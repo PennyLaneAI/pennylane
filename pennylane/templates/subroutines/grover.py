@@ -15,7 +15,6 @@
 Contains the Grover Operation template.
 """
 import numpy as np
-from jax import numpy as jnp
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -179,8 +178,14 @@ class GroverOperator(Operation):
 
         return op_list
 
+    # pylint:disable = no-value-for-parameter
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
+        try:
+            # pylint: disable=import-outside-toplevel
+            from jax import numpy as jnp
+        except ImportError:
+            pass
         wires = jnp.array(args[0:])
         work_wires = jnp.array(hyperparameters["work_wires"])
         ctrl_values = [0] * (len(wires) - 1)

@@ -19,7 +19,6 @@ This submodule contains the template for QFT.
 import functools
 
 import numpy as np
-from jax import numpy as jnp
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -203,8 +202,14 @@ class QFT(Operation):
 
         return decomp_ops
 
+    # pylint:disable = no-value-for-parameter
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
+        try:
+            # pylint: disable=import-outside-toplevel
+            from jax import numpy as jnp
+        except ImportError:
+            pass
         wires = jnp.array(args[0:])
         n_wires = len(wires)
 
