@@ -50,8 +50,9 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             not share any wires. This will not impact the correctness of the circuit.
         """
 
-        def __init__(self, exclude_gates: Optional[list[str]] = None):
+        def __init__(self, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None):
             """Initialize the interpreter."""
+            self.atol = atol
             self.exclude_gates = exclude_gates
             self.previous_ops = {}
             super().__init__()
@@ -123,11 +124,30 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             prev_op_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
             cumulative_angles = fuse_rot_angles(prev_op_angles, cumulative_angles)
 
-            # Store the new fused rotation
-            # pylint: disable=protected-access
-            new_rot = qml.Rot._primitive.impl(*cumulative_angles, wires=op.wires)
-            for w in op.wires:
-                self.previous_ops[w] = new_rot
+            # If we are tracing/jitting or differentiating, don't perform any conditional checks and
+            # apply the rotation regardless of the angles.
+            # If not tracing or differentiating, check whether total rotation is trivial by checking
+            # if the RY angle and the sum of the RZ angles are close to 0
+            if (
+                qml.math.is_abstract(cumulative_angles)
+                or qml.math.requires_grad(cumulative_angles)
+                or not qml.math.allclose(
+                    qml.math.stack(
+                        [cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]
+                    ),
+                    0.0,
+                    atol=self.atol,
+                    rtol=0,
+                )
+            ):
+                # pylint: disable=protected-access
+                new_rot = qml.Rot._primitive.impl(*cumulative_angles, wires=op.wires)
+                for w in op.wires:
+                    self.previous_ops[w] = new_rot
+
+            else:
+                for w in op.wires:
+                    self.previous_ops.pop(w, None)
 
             return []
 
