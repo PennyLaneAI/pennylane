@@ -80,7 +80,7 @@ def _expand_transform_hadamard(
             ) from e
     else:
         batch = [new_tape]
-    if len(batch) > 1 or batch[0] is not tape:
+    if len(batch) > 1 or batch[0] is not tape: # split to single terms modified the tape
         _ = [_inplace_set_trainable_params(t) for t in batch]
     return batch, postprocessing
 
