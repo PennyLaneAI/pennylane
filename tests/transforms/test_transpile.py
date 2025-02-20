@@ -394,7 +394,9 @@ class TestTranspile:
 
         dev = qml.device("default.mixed", wires=(0, 1, 2))
 
-        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.CNOT(wires=(0, 2))], [qml.state()])
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.CNOT(wires=(0, 2))], [qml.state()]
+        )
         batch, fn = qml.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)], device=dev)
 
         assert batch[0][-1] == qml.density_matrix(wires=(0, 2, 1))
@@ -402,9 +404,17 @@ class TestTranspile:
         pre, post = dev.preprocess_transforms()((tape,))
         original_results = post(dev.execute(pre))
         transformed_results = fn(dev.execute(batch))
-        assert qml.math.allclose(
-            original_results[0][5][5], transformed_results[6][6]
-        )  # original tape has 02 interaction, which is not allowed by (01)(12). Transpile should swap 1 and 2 to do this, which end up moving 101 to 110
+
+        # original tape has 02 interaction, which is not allowed by (01)(12). Transpile should swap 1 and 2 to do this, which end up moving 101 to 110
+        original_one_pos = 5
+        transformed_one_pos = 6
+        
+        # Find the nonzero position
+        actual_original_one_pos = np.where(original_results[0] != 0)
+        actual_transformed_one_pos = np.where(transformed_results != 0)
+
+        assert qml.math.allclose(actual_original_one_pos, original_one_pos)
+        assert qml.math.allclose(actual_transformed_one_pos, transformed_one_pos)
 
     def test_transpile_probs_sample_filled_in_wires(self):
         """Test that if probs or sample are requested broadcasted over all wires, transpile fills in the device wires."""
