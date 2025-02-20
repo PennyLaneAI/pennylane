@@ -996,7 +996,7 @@ def test_split_pauli_sentence(ps_size, max_size):
     [(["Li", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 3.13]]))],
 )
 def test_taper_wire_order(symbols, geometry):
-    r"""Test that an tapering workflow result in correct order of wires."""
+    r"""Test that a tapering workflow results in correct order of wires."""
 
     molecule = qml.qchem.Molecule(symbols, geometry)
     hamiltonian, num_wires = qml.qchem.molecular_hamiltonian(molecule)
