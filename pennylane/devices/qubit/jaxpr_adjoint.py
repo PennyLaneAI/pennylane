@@ -19,7 +19,7 @@ from jax import numpy as jnp
 from jax.interpreters import ad
 
 from pennylane import adjoint, generator
-from pennylane.capture import disable, enable
+from pennylane.capture import pause
 from pennylane.capture.primitives import AbstractOperator
 
 from .apply_operation import apply_operation
@@ -117,22 +117,14 @@ def _backward_pass(jaxpr, bras, ket, results, env):
             op = env[eqn.outvars[0]][0]
 
             if eqn.invars:
-                t = _read(env, eqn.invars[0])[1]
-                if not isinstance(t, ad.Zero):
-                    disable()
-                    try:
-                        ket_temp = apply_operation(generator(op, format="observable"), ket)
-                    finally:
-                        enable()
+                tangent = _read(env, eqn.invars[0])[1]
+                if not isinstance(tangent, ad.Zero):
+                    ket_temp = apply_operation(generator(op, format="observable"), ket)
                     modified = True
                     for i, bra in enumerate(bras):
-                        out_jvps[i] += -2 * t * jnp.imag(jnp.sum(jnp.conj(bra) * ket_temp))
+                        out_jvps[i] += -2 * tangent * jnp.imag(jnp.sum(jnp.conj(bra) * ket_temp))
 
-            disable()
-            try:
-                adj_op = adjoint(op, lazy=False)
-            finally:
-                enable()
+            adj_op = adjoint(op, lazy=False)
             ket = apply_operation(adj_op, ket)
             bras = [apply_operation(adj_op, bra) for bra in bras]
 
@@ -141,6 +133,7 @@ def _backward_pass(jaxpr, bras, ket, results, env):
     return [ad.Zero(r.aval) for r in results]
 
 
+@pause()  # need to be able to temporarily create instances, but still have it jittable
 def execute_and_jvp(jaxpr: jax.core.Jaxpr, args: tuple, tangents: tuple, num_wires: int):
     """Execute and calculate the jvp for a jaxpr using the adjoint method.
 
