@@ -86,7 +86,7 @@ def state_diagonalizing_gates(  # pylint: disable=unused-argument
     flattened_state = _reshape_state_as_matrix(state, num_wires)
     is_StateMP = isinstance(measurementprocess, StateMP)
     is_DensityMatrixMP = isinstance(measurementprocess, DensityMatrixMP)
-    if is_StateMP and not is_DensityMatrixMP: # a pure qml.state()
+    if is_StateMP and not is_DensityMatrixMP:  # a pure qml.state()
         raw_wires = measurementprocess.raw_wires or wires  # incase the None raw_wires case
         measurementprocess = DensityMatrixMP(wires=raw_wires)
     res = measurementprocess.process_density_matrix(flattened_state, wires)
