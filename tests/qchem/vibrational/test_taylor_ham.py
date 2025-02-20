@@ -443,7 +443,7 @@ def test_taylor_hamiltonian(mapping):
     taylor_ham = taylor_hamiltonian(pes_object_2D, 4, 2, mapping=mapping)
     taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, uloc=uloc)
 
-    if mapping.strip().lower() == "binary":
+    if mapping == "binary":
         expected_ham = binary_mapping(bose_operator=taylor_bos)
     elif mapping.strip().lower() == "unary":
         expected_ham = unary_mapping(bose_operator=taylor_bos)
