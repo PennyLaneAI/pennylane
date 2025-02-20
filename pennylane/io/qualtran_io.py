@@ -17,7 +17,15 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 # pylint:disable=
 
 import pennylane as qml
-from qualtran import Bloq, CompositeBloq, Soquet, LeftDangle, Side, DecomposeNotImplementedError, DecomposeTypeError
+from qualtran import (
+    Bloq,
+    CompositeBloq,
+    Soquet,
+    LeftDangle,
+    Side,
+    DecomposeNotImplementedError,
+    DecomposeTypeError,
+)
 from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -32,6 +40,7 @@ def get_named_registers(registers):
         temp_register_dict[reg.name] = reg.bitsize
 
     return qml.registers(temp_register_dict)
+
 
 class FromBloq(Operation):
     r"""
@@ -49,7 +58,7 @@ class FromBloq(Operation):
     def __repr__(self):
         return f'FromBloq({self._hyperparameters["bloq"]})'
 
-    def compute_decomposition(self, wires, **kwargs):
+    def compute_decomposition(self, wires, **kwargs):  # pylint: disable=arguments-differ
         ops = []
         bloq = self._hyperparameters["bloq"]
 
@@ -77,10 +86,10 @@ class FromBloq(Operation):
                     soq = pred.right
                     soq_to_wires[soq] = soq_to_wires[pred.left]
                     in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
-                
+
                 total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
-                if len(total_wires) == 0: # if bloq decomposes to allocate + subbloqs
-                    total_wires = [-1] # dummy value
+                if len(total_wires) == 0:  # if bloq decomposes to allocate + subbloqs
+                    total_wires = [-1]  # dummy value
                 op = binst.bloq.as_pl_op(total_wires)
                 if op:
                     ops.append(op)
@@ -102,9 +111,8 @@ class FromBloq(Operation):
             pass
 
         return ops
-    
-    def compute_matrix(*params, **kwargs):
+
+    def compute_matrix(*params, **kwargs):  # pylint: disable=unused-argument
         bloq = params[0]._hyperparameters["bloq"]
 
         return bloq.tensor_contract()
-
