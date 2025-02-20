@@ -100,10 +100,12 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
         def _handle_fusible_op(self, op: Operator, cumulative_angles: TensorLike) -> list:
             """Handle an operation that can be potentially fused into a Rot gate."""
 
-            prev_op = self.previous_ops.get(op.wires[0])
+            # Only single-qubit gates are considered for fusion
+            op_wire = op.wires[0]
+
+            prev_op = self.previous_ops.get(op_wire)
             if prev_op is None:
-                for w in op.wires:
-                    self.previous_ops[w] = op
+                self.previous_ops[op_wire] = op
                 return []
 
             prev_op_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
@@ -123,11 +125,9 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             ):
                 # pylint: disable=protected-access
                 new_rot = qml.Rot._primitive.impl(*cumulative_angles, wires=op.wires)
-                for w in op.wires:
-                    self.previous_ops[w] = new_rot
+                self.previous_ops[op_wire] = new_rot
             else:
-                for w in op.wires:
-                    self.previous_ops.pop(w, None)
+                self.previous_ops.pop(op_wire, None)
 
             return []
 
@@ -184,18 +184,20 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 
             for eqn in jaxpr.eqns:
 
+                prim_type = getattr(eqn.primitive, "prim_type", "")
+
                 custom_handler = self._primitive_registrations.get(eqn.primitive, None)
                 if custom_handler:
                     self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
-                elif getattr(eqn.primitive, "prim_type", "") == "operator":
+                elif prim_type == "operator":
                     outvals = self.interpret_operation_eqn(eqn)
-                elif getattr(eqn.primitive, "prim_type", "") == "measurement":
+                elif prim_type == "measurement":
                     self.interpret_all_previous_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
-                    if getattr(eqn.primitive, "prim_type", "") == "transform":
+                    if prim_type == "transform":
                         self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     subfuns, params = eqn.primitive.get_bind_params(eqn.params)
