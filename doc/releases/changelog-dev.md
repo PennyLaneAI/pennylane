@@ -321,6 +321,7 @@
 
 * Fix certain `pylint` errors in source code.
   [(#6980)](https://github.com/PennyLaneAI/pennylane/pull/6980)
+  [(#6988)](https://github.com/PennyLaneAI/pennylane/pull/6988)
 
 * Remove `QNode.get_gradient_fn` from source code.
   [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
