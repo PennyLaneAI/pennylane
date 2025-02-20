@@ -445,7 +445,7 @@ def test_taylor_hamiltonian(mapping):
 
     if mapping == "binary":
         expected_ham = binary_mapping(bose_operator=taylor_bos)
-    elif mapping.strip().lower() == "unary":
+    elif mapping == "unary":
         expected_ham = unary_mapping(bose_operator=taylor_bos)
 
     assert len(expected_ham) == len(taylor_ham)
