@@ -146,6 +146,7 @@
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
 
 * The template `MPSPrep` now has a gate decomposition. This enables its use with any device.
+  `right_canonicalize_mps` functionality has also been added to transform an MPS into its right-canonical form.
   [(#6896)](https://github.com/PennyLaneAI/pennylane/pull/6896)
 
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.

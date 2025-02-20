@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 
 
 def right_canonicalize_mps(mps):
-    r"""Transform a matrix product state into a right-canonical form.
+    r"""Transform a matrix product state into its right-canonical form.
 
     Args:
         mps (list[TensorLike]): List of tensors representing the MPS.
