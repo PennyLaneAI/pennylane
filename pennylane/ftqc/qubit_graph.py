@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the data structures to represent the qubits using a hierarchical memory model, as well as defining the API to access and manipulate these data structures.
+"""This module contains the data structures to represent qubits using a hierarchical memory model
+and defines the API to access and manipulate these data structures.
 """
 
 import warnings
@@ -22,7 +23,7 @@ import networkx as nx
 
 
 class QubitGraph:
-    """A class to represent nested graphs of qubits in the FTQC/MBQC framework.
+    """A class to represent a hierarchical qubit memory model as nested graphs of qubits.
 
     A QubitGraph is a qubit that contains a graph of underlying qubits, where each underlying qubit
     is itself a QubitGraph. This representation allows for nesting of lower-level qubits with
