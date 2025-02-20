@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the data structures to represent the qubit memory model in the FTQC/MBQC
-framework, as well as the API to access and manipulate these data structures.
+"""This module contains the data structures to represent the qubits using a hierarchical memory model, as well as defining the API to access and manipulate these data structures.
 """
 
 import warnings
@@ -50,7 +49,7 @@ class QubitGraph:
         * Improve string representation of QubitGraph objects.
     """
 
-    def __init__(self, graph: nx.Graph = None):
+    def __init__(self, graph: Optional[nx.Graph] = None):
         if graph is not None:
             self._check_graph_type_supported_and_raise_or_warn(graph)
 
