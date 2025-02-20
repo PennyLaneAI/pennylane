@@ -208,7 +208,7 @@ class QFT(Operation):
         try:
             # pylint: disable=import-outside-toplevel
             from jax import numpy as jnp
-        except ImportError:
+        except ImportError:  # pragma: no cover
             pass
         wires = jnp.array(args[0:])
         n_wires = len(wires)
