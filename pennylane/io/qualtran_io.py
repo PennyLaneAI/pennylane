@@ -33,6 +33,7 @@ def get_named_registers(registers):
 
     return qml.registers(temp_register_dict)
 
+
 class FromBloq(Operation):
     r"""
     A shim for using bloqs as a PennyLane operation.
@@ -85,7 +86,7 @@ class FromBloq(Operation):
                     soq = pred.right
                     soq_to_wires[soq] = soq_to_wires[pred.left]
                     in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
-                
+
                 total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
                 op = binst.bloq.as_pl_op(total_wires)
                 if op:
@@ -106,3 +107,8 @@ class FromBloq(Operation):
                         soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
 
         return ops
+
+    def compute_matrix(*params, **kwargs):
+        bloq = params[0]._hyperparameters["bloq"]
+
+        return bloq.tensor_contract()
