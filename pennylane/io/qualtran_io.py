@@ -17,7 +17,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 # pylint:disable=
 
 import pennylane as qml
-from qualtran import Bloq, CompositeBloq, Soquet, LeftDangle, Side
+from qualtran import Bloq, CompositeBloq, Soquet, LeftDangle, Side, DecomposeNotImplementedError, DecomposeTypeError
 from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -33,7 +33,6 @@ def get_named_registers(registers):
 
     return qml.registers(temp_register_dict)
 
-
 class FromBloq(Operation):
     r"""
     A shim for using bloqs as a PennyLane operation.
@@ -47,31 +46,23 @@ class FromBloq(Operation):
         self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
 
+    def __repr__(self):
+        return f'FromBloq({self._hyperparameters["bloq"]})'
+
     def compute_decomposition(self, wires, **kwargs):
         ops = []
         bloq = self._hyperparameters["bloq"]
 
-        if isinstance(bloq, Bloq) and not isinstance(bloq, CompositeBloq):
-            try:
-                bloq = bloq.decompose_bloq().flatten()
-            except:
-                op = bloq.as_pl_op(wires)
-                ops.append(op)
-                return ops
-
-        if isinstance(bloq, CompositeBloq):
-            try:
-                bloq = bloq.flatten()
-            except:
-                pass
-            temp_registers = get_named_registers(bloq.signature.lefts())
+        try:
+            cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
+            temp_registers = get_named_registers(cbloq.signature.lefts())
             soq_to_wires = {
                 Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])
-                for reg in bloq.signature.lefts()
+                for reg in cbloq.signature.lefts()
                 for idx in reg.all_idxs()
             }
 
-            for binst, pred_cxns, succ_cxns in bloq.iter_bloqnections():
+            for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
                 # TODO: Rename this variable to something more intuitive
                 in_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
@@ -86,15 +77,17 @@ class FromBloq(Operation):
                     soq = pred.right
                     soq_to_wires[soq] = soq_to_wires[pred.left]
                     in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
-
+                
                 total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
+                if len(total_wires) == 0: # if bloq decomposes to allocate + subbloqs
+                    total_wires = [-1] # dummy value
                 op = binst.bloq.as_pl_op(total_wires)
                 if op:
                     ops.append(op)
                 for succ in succ_cxns:
                     soq = succ.left
                     if soq.reg.side == Side.RIGHT:
-                        # If in_quregs is empty, we insert key, value pair where the key is
+                        # If in_quregs is not equal to out_quregs, we insert key, value pair where the key is
                         # the register name, and the value is the list of wires associated with it
                         if len(in_quregs) != len(out_quregs) and soq.reg.side == Side.RIGHT:
                             total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
@@ -105,10 +98,13 @@ class FromBloq(Operation):
                                 (*soq.reg.shape, soq.reg.bitsize)
                             )
                         soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
+        except (DecomposeNotImplementedError, DecomposeTypeError):
+            pass
 
         return ops
-
+    
     def compute_matrix(*params, **kwargs):
         bloq = params[0]._hyperparameters["bloq"]
 
         return bloq.tensor_contract()
+
