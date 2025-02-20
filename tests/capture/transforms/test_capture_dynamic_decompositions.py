@@ -16,15 +16,12 @@ import numpy as np
 
 # pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods, wrong-import-order, too-many-arguments
 import pytest
-from jax import numpy as jnp
 
 import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
 from functools import partial
-
-import numpy as np
 
 from pennylane.capture import expand_plxpr_transforms
 from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
@@ -1257,7 +1254,6 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
-        print(jaxpr)
         assert False
         qml.capture.disable()
 
