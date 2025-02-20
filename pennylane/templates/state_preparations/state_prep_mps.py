@@ -92,7 +92,7 @@ class MPSPrep(Operation):
         structures efficiently. For other devices, this operation prepares the state vector represented by the
         MPS using a gate-based decomposition from Eq. (23) in `[arXiv:2310.18410]
         <https://arxiv.org/pdf/2310.18410>`_, which requires the right canonicalization of the MPS via
-        ``right_canonicalize`` and auxiliary qubits to be given via``work_wires``.
+        ``right_canonicalize`` and auxiliary qubits to be given via ``work_wires``.
 
     Args:
         mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
@@ -100,14 +100,11 @@ class MPSPrep(Operation):
 
         wires (Sequence[int]): wires that the template acts on
         work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum bond dimension
-            of the MPS is `2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
+            of the MPS is :math:`2^k`, then :math:`k` ``work_wires`` will be needed. If no ``work_wires`` are given,
             this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
 
         right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed to the MPS.
             Default is ``False``.
-
-    The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
-
 
 
     .. seealso:: :func:`~.right_canonicalize_mps`.
