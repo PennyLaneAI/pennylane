@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.devices import DefaultMixed
 from pennylane.math import Interface
 
-ML_INTERFACES = ["numpy", "autograd", "torch", "tf", "jax"]
+ML_INTERFACES = ["numpy", "autograd", "torch", "tensorflow", "jax"]
 
 
 class TestDefaultMixedInit:
@@ -101,6 +101,7 @@ class TestDefaultMixedInit:
         ), "The interface should be set to numpy for an invalid gradient method"
 
 
+# pylint: disable=protected-access, too-few-public-methods
 class TestLegacyDefaultMixed:
     """
     Tests that covered parts of legacy method of the DefaultMixed device.
@@ -114,6 +115,7 @@ class TestLegacyDefaultMixed:
         num_wires = len(device_wires)
         state_np = np.zeros(shape=(2**num_wires,), dtype=np.complex128)
         state_np[0] = 1.0
+        state = qml.math.convert_like(state_np, interface)
         state = qml.math.asarray(state_np, like=interface)
         n_state_vector = state.shape[0]
         tolerance = 1e-10
