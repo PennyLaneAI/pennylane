@@ -4,6 +4,31 @@
 
 <h3>New features since last release</h3>
 
+* `qml.defer_measurements` can now be used with program capture enabled.
+  [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
+
+  Using `qml.defer_measurements` with program capture enables many new features, including:
+  * Significantly richer variety of classical processing on mid-circuit measurement values.
+  * Using mid-circuit measurement values as gate parameters.
+
+  Functions such as the following can now be captured:
+
+  ```python
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  def f(x):
+      m0 = qml.measure(0)
+      m1 = qml.measure(0)
+      a = jnp.sin(0.5 * jnp.pi * m0)
+      phi = a - (m1 + 1) ** 4
+
+      qml.s_prod(x, qml.RZ(phi, 0))
+
+      return qml.expval(qml.Z(0))
+  ```
+
 * Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
