@@ -18,8 +18,6 @@ from functools import lru_cache, partial
 
 import pennylane as qml
 from pennylane import AmplitudeEmbedding
-from pennylane.capture.base_interpreter import jaxpr_to_jaxpr
-from pennylane.capture.primitives import cond_prim
 from pennylane.math import flatten, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -35,6 +33,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         from jax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
+        from pennylane.capture.base_interpreter import jaxpr_to_jaxpr
+        from pennylane.capture.primitives import cond_prim
         from pennylane.operation import Operator
     except ImportError:  # pragma: no cover
         return None, None
