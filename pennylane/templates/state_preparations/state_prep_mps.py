@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 
 
 def right_canonicalize_mps(mps):
-    """Transform an MPS into a right-canonical MPS.
+    """Transform a matrix product state into a right-canonical form.
 
     Args:
         mps (list[TensorLike]): List of tensors representing the MPS.
@@ -33,6 +33,13 @@ def right_canonicalize_mps(mps):
 
     .. seealso:: :class:`~.MPSPrep`.
 
+    A right-canonicalized MPS is a matrix product state where each tensor :math:`A^{(j)}` satisfies
+    the following orthonormality condition:
+
+    .. math::
+
+        \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}}
+
     """
 
     is_right_canonical = True
@@ -40,8 +47,8 @@ def right_canonicalize_mps(mps):
     for tensor in mps[1:-1]:
         # Right-canonical definition
         d_shapes += tensor.shape
-        M = qml.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
-        if not qml.math.allclose(M, qml.math.eye(tensor.shape[0])):
+        input_matrix = qml.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+        if not qml.math.allclose(input_matrix, qml.math.eye(tensor.shape[0])):
             is_right_canonical = False
 
     if is_right_canonical:
@@ -49,35 +56,29 @@ def right_canonicalize_mps(mps):
 
     max_bond_dim = qml.math.max(d_shapes)
 
-    L = len(mps)
-    output_mps = [None] * L
+    n_sites = len(mps)
+    output_mps = [None] * n_sites
 
     # Procedure analogous to the left-canonical conversion but starting from the right and storing the Vd
-    for i in range(L - 1, 0, -1):
+    for i in range(n_sites - 1, 0, -1):
         chi_left, d, chi_right = mps[i].shape
-        M = mps[i].reshape(chi_left, d * chi_right)
+        input_matrix = mps[i].reshape(chi_left, d * chi_right)
 
-        # Perform Singular Value Decomposition (SVD)
-        # M ≈ U @ diag(S) @ Vd, where:
-        # - U represents an orthogonal rotation in the space of chi_left
-        # - diag(S) scales the singular values (stretching or contracting)
-        # - Vd represents another rotation in the space of d * chi_right
-        U, S, Vd = qml.math.linalg.svd(M, full_matrices=False)
+        u_matrix, s_diag, vd_matrix = qml.math.linalg.svd(input_matrix, full_matrices=False)
 
         # Truncate SVD components if needed
-        chi_new = min(int(max_bond_dim), len(S))
-        U = U[:, :chi_new]
-        S = S[:chi_new]
-        Vd = Vd[:chi_new, :]
+        chi_new = min(int(max_bond_dim), len(s_diag))
+        u_matrix = u_matrix[:, :chi_new]
+        s_diag = s_diag[:chi_new]
+        vd_matrix = vd_matrix[:chi_new, :]
 
         # Store Vd reshaped as an MPS tensor in the output MPS
-        output_mps[i] = Vd.reshape(chi_new, d, chi_right)
+        output_mps[i] = vd_matrix.reshape(chi_new, d, chi_right)
 
-        # Contract U with diag(S) to pass the information to the left
-        US = U @ qml.math.diag(S)
-
-        # Merge US with the preceding MPS tensor, preserving the canonical structure
-        mps[i - 1] = qml.math.tensordot(mps[i - 1], US, axes=([2], [0]))
+        # Contract U with diag(S) and merge it with the preceding MPS tensor, preserving the canonical structure
+        mps[i - 1] = qml.math.tensordot(
+            mps[i - 1], u_matrix @ qml.math.diag(s_diag), axes=([2], [0])
+        )
 
     output_mps[0] = mps[0]
     return output_mps
@@ -91,7 +92,7 @@ class MPSPrep(Operation):
         This operator is natively supported on the ``lightning.tensor`` device, designed to run MPS structures
         efficiently. For other devices, implementing this operation uses a gate-based decomposition which requires
         auxiliary qubits (via ``work_wires``) to prepare the state vector represented by the MPS in a quantum circuit.
-
+        Also, in these other devices, a right canonicalization of the MPS is required.
 
 
     Args:
@@ -99,14 +100,16 @@ class MPSPrep(Operation):
             as a product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
-        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
-            dimension of the provided MPS is defined as ``2^len(work_wires)``. Default is ``None``.
-        right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed to the mps.
+        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum bond dimension
+            of the MPS is `2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
+            this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
+
+        right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed to the MPS.
             Default is ``False``.
 
     The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
 
-    A right canonicalization of the MPS is required for non-tensor devices.
+
 
     .. seealso:: :func:`~.right_canonicalize_mps`.
 
@@ -162,15 +165,6 @@ class MPSPrep(Operation):
 
         Additionally, the physical dimension of the site should always be fixed at :math:`2`
         (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
-
-        On the other hand, in order to be able to decompose this operator into gates, the MPS must fulfill an
-        additional property, it must be right-canonized.
-        A right-canonized MPS is a matrix product state where each tensor :math:`A^{(j)}` satisfies
-        the following orthonormality condition:
-
-        .. math::
-
-            \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}}
 
         The following example shows a valid MPS input containing four tensors with
         dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
@@ -318,8 +312,10 @@ class MPSPrep(Operation):
                 product of site matrices.
 
             wires (Sequence[int]): wires that the template acts on
-            work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
-                dimension of the provided MPS is defined as ``2^len(work_wires)``. Default is ``None``.
+            work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum bond dimension
+                of the MPS is `2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
+                this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
+
             right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed
                 to the mps. Default is ``False``.
 
@@ -373,8 +369,7 @@ class MPSPrep(Operation):
             k = vectors.shape[1]
 
             # The unitary is completed using QR decomposition
-            rng = np.random.default_rng(42)
-            new_columns = qml.math.array(rng.random((d, d - k)))
+            new_columns = qml.math.array(np.random.RandomState(42).random((d, d - k)))
 
             matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
             matrix *= qml.math.sign(qml.math.diag(R))  # enforces uniqueness for QR decomposition

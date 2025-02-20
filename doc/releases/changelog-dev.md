@@ -366,7 +366,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-
 Guillermo Alonso,
 Utkarsh Azad,
 Yushao Chen,
