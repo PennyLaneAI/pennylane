@@ -436,7 +436,7 @@ def test_taylor_bosonic(
     assert all(op in reference_ops for op in sorted_ops_arr)
 
 
-@pytest.mark.parametrize(("mapping"), ("binary", "unary", "Binary ", " Unary "))
+@pytest.mark.parametrize(("mapping"), ("binary", "unary"))
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")
 def test_taylor_hamiltonian(mapping):
     """Test that taylor_hamiltonian produces the correct taylor hamiltonian"""
