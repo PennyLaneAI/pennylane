@@ -379,7 +379,30 @@ class TestHigherOrderPrimitiveIntegration:
         assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
         assert inner_jaxpr.eqns[1].primitive == qml.X._primitive
 
-    def test_cond_prim(self):
+    def test_cond_prim_just_true_branch(self):
+        """Test that the transform works correctly when applied with cond_prim with just a true branch."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f(x):
+            @qml.cond(x > 2)
+            def cond_f():
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+
+            cond_f()
+
+        args = (3,)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[1].primitive == cond_prim
+
+        # True branch
+        branch = jaxpr.eqns[1].params["jaxpr_branches"][0]
+        assert len(branch.eqns) == 1
+        assert branch.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(branch.eqns[0].params["n_wires"], 2)
+
+    def test_cond_prim_all_cond_branches(self):
+        """Test that the transform works correctly when applied with cond_prim."""
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(x):
