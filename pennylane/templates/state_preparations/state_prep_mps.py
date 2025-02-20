@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 
 
 def right_canonicalize_mps(mps):
-    """Transform a matrix product state into a right-canonical form.
+    r"""Transform a matrix product state into a right-canonical form.
 
     Args:
         mps (list[TensorLike]): List of tensors representing the MPS.
@@ -39,7 +39,6 @@ def right_canonicalize_mps(mps):
     .. math::
 
         \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}}
-
     """
 
     is_right_canonical = True
