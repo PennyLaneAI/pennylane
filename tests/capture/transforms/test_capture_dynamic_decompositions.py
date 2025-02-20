@@ -1254,7 +1254,6 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
-        assert False
         qml.capture.disable()
 
         @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
