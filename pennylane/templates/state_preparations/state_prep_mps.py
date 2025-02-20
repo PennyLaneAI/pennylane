@@ -89,11 +89,11 @@ class MPSPrep(Operation):
 
     .. note::
 
-        This operator is natively supported on the ``lightning.tensor`` device, designed to run MPS structures
-        efficiently. For other devices, implementing this operation uses a gate-based decomposition which requires
-        auxiliary qubits (via ``work_wires``) to prepare the state vector represented by the MPS in a quantum circuit.
-        Also, in these other devices, a right canonicalization of the MPS is required.
-
+        This operator is natively supported on the ``lightning.tensor`` device, which is designed to run MPS
+        structures efficiently. For other devices, this operation prepares the state vector represented by the
+        MPS using a gate-based decomposition from Eq. (23) in `[arXiv:2310.18410]
+        <https://arxiv.org/pdf/2310.18410>`_, which requires the right canonicalization of the MPS via
+        ``right_canonicalize`` and auxiliary qubits to be given via``work_wires``.
 
     Args:
         mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
@@ -365,8 +365,7 @@ class MPSPrep(Operation):
                 vectors.append(vector)
 
             vectors = qml.math.stack(vectors).T
-            d = vectors.shape[0]
-            k = vectors.shape[1]
+            d, k = vectors.shape
 
             # The unitary is completed using QR decomposition
             new_columns = qml.math.array(np.random.RandomState(42).random((d, d - k)))
