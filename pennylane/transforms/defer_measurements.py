@@ -30,7 +30,7 @@ from pennylane.measurements import (
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms import transform, TransformError
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -131,13 +131,13 @@ def _get_plxpr_defer_measurements():
 
         # pylint: disable=unnecessary-lambda-assignment,attribute-defined-outside-init,no-self-use
 
-        def __init__(self, aux_wires):
+        def __init__(self, num_wires):
             super().__init__()
-            self._aux_wires = Wires(aux_wires)
+            self._num_wires = num_wires
 
             # We use a dict here instead of a normal int variable because we want the state to mutate
             # when we interpret higher-order primitives
-            self.state = {"cur_idx": 0}
+            self.state = {"cur_target": num_wires - 1, "max_used_wire": -1, "used_wires": set()}
 
         def cleanup(self) -> None:
             """Perform any final steps after iterating through all equations.
@@ -147,7 +147,27 @@ def _get_plxpr_defer_measurements():
             be used for the target wire of the next mid-circuit measurement's replacement
             :class:`~pennylane.CNOT`.
             """
-            self.state = {"cur_idx": 0}
+            self.state = {"cur_target": self._num_wires - 1, "used_wires": set()}
+
+        def _update_max_used_wire(self, obj, wires=None):
+            """Something"""
+            wires = obj.wires if wires is None else wires
+            self.state["used_wires"] |= wires.toset()
+
+            if self.state["used_wires"].intersection(
+                range(self.state["cur_target"] + 1, self._num_wires)
+            ):
+                raise TransformError("boo")
+            max_wire = self.state["max_used_wire"]
+
+            if wires and (max_cur_wire := max(obj.wires)) > self.state["max_used_wire"]:
+                self.state["max_used_wire"] = max_cur_wire
+                max_wire = max_cur_wire
+
+            if max_wire > self.state["cur_target"]:
+                raise TransformError(
+                    "Too many mid-circuit measurements for the available number of wires."
+                )
 
         def interpret_dynamic_operation(self, data, struct, inds):
             """Interpret an operation that uses mid-circuit measurement outcomes as parameters.
@@ -192,10 +212,11 @@ def _get_plxpr_defer_measurements():
             See also: :meth:`~.interpret_operation_eqn`.
 
             """
+            self._update_max_used_wire(op)
+
             # We treat operators with operators based on mid-circuit measurement values
             # separately, and otherwise default to the standard behaviour
             data, struct = jax.tree_util.tree_flatten(op)
-
             mcm_data_inds = []
             for i, d in enumerate(data):
                 if isinstance(d, MeasurementValue):
@@ -215,6 +236,8 @@ def _get_plxpr_defer_measurements():
             See also :meth:`~.interpret_measurement_eqn`.
 
             """
+            self._update_max_used_wire(measurement)
+
             if measurement.mv is not None:
                 kwargs = {"wires": measurement.wires, "eigvals": measurement.eigvals()}
                 if isinstance(measurement, CountsMP):
@@ -330,11 +353,15 @@ def _get_plxpr_defer_measurements():
 
     @DeferMeasurementsInterpreter.register_primitive(measure_prim)
     def _(self, wires, reset=False, postselect=None):
-        if self.state["cur_idx"] >= len(self._aux_wires):
-            raise ValueError(
-                "Not enough auxiliary wires provided to apply specified number of mid-circuit "
-                "measurements using qml.defer_measurements."
-            )
+        cur_target = self.state["cur_target"]
+        if cur_target < 0:
+            raise TransformError("Too many MCMs")
+
+        # if self.state["cur_target"] >= len(self._aux_wires):
+        #     raise ValueError(
+        #         "Not enough auxiliary wires provided to apply specified number of mid-circuit "
+        #         "measurements using qml.defer_measurements."
+        #     )
 
         # Using type.__call__ instead of normally constructing the class prevents
         # the primitive corresponding to the class to get binded. We do not want the
