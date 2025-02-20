@@ -17,7 +17,7 @@ and defines the API to access and manipulate these data structures.
 """
 
 import warnings
-from typing import Union, Optional
+from typing import Optional, Union
 
 import networkx as nx
 
