@@ -429,7 +429,7 @@ def molecular_dipole(
     )
     """
 
-    if method.strip().lower() not in ["dhf", "openfermion"]:
+    if method not in ["dhf", "openfermion"]:
         raise ValueError("Only 'dhf', and 'openfermion' backends are supported.")
 
     if mapping.strip().lower() not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
