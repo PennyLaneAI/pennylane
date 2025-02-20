@@ -97,8 +97,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 
             return res
 
-        def _fuse_single_qubit_rotation(self, op: Operator, cumulative_angles: TensorLike) -> list:
-            """Fuse the current operation with the previous operation if possible."""
+        def _handle_fusible_op(self, op: Operator, cumulative_angles: TensorLike) -> list:
+            """Handle an operation that can be potentially fused into a Rot gate."""
 
             prev_op = self.previous_ops.get(op.wires[0])
             if prev_op is None:
@@ -148,7 +148,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             except (NotImplementedError, AttributeError):
                 return self._handle_non_fusible_op(op)
 
-            return self._fuse_single_qubit_rotation(op, cumulative_angles)
+            return self._handle_fusible_op(op, cumulative_angles)
 
         def interpret_all_previous_ops(self) -> None:
             """Interpret all previous operations stored in the instance."""
