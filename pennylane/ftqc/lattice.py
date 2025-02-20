@@ -1,0 +1,194 @@
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# pylint: disable=protected-access, inconsistent-return-statements
+"""
+This file defines classes and functions for creating lattice objects that store topological
+connectivity information.
+"""
+
+from typing import Dict, List, Union
+from enum import Enum
+
+import networkx as nx
+
+
+class Lattice:
+    """Represents a qubit lattice structure.
+
+    This Lattice class, inspired by the design of :class: `~pennylane.spin.Lattice`, leverages `NetworkX` to represent the relationships within the lattice structure.
+
+        Args:
+            lattice_shape: Name of the lattice shape.
+            graph (nx.Graph): A NetworkX undirected graph object. If provided, `nodes` and `edges` are ignored.
+            nodes (List): Nodes to construct a graph object. Ignored if `graph` is provided.
+            egdes (List): Edges to construct the graph. Ignored if `graph` is provided.
+        Raises:
+            ValueError: If neither `graph` nor both `nodes` and `edges` are provided.
+    """
+
+    # TODOs: To support braiding operations, Lattice should support nodes/edges addition/deletion.
+
+    def __init__(
+        self, lattice_shape: str, graph: nx.Graph = None, nodes: List = None, edges: List = None
+    ):  # pylint: disable=inconsistent-return-statements
+        self._lattice_shape = lattice_shape
+        if graph is None:
+            if nodes is None and edges is None:
+                raise ValueError(
+                    "Neither a networkx Graph object nor nodes together with egdes are provided."
+                )
+            self._graph = nx.Graph()
+            self._graph.add_nodes_from(nodes)
+            self._graph.add_edges_from(edges)
+        else:
+            self._graph = graph
+
+    @property
+    def get_lattice_shape(self) -> str:
+        r"""Returns the lattice shape name."""
+        return self._lattice_shape
+
+    def relabel_nodes(self, mapping: Dict):
+        r"""Relabel nodes of the NetworkX graph.
+
+        Args:
+            mapping (Dict): A dict with the old labels as keys and new labels as values.
+        """
+        # TODO: This method could be renamed later as it could be used for the node indexing only.
+        nx.relabel_nodes(self._graph, mapping, copy=False)
+
+    def set_node_attributes(self, attribute_name: str, attributes: Dict):
+        r"""Add attributes to the nodes of the Networkx graph.
+
+        Args:
+            attribute_name (str): Name of the node attribute to set.
+            attributes (Dict): A dict with node labels as keys and attributes as values.
+        """
+        # TODO: This method could be renamed later as it's possible that this method is only for stablizers setup.
+        nx.set_node_attributes(self._graph, attributes, attribute_name)
+
+    def get_node_attributes(self, attribute_name: str):
+        r"""Return node attributes.
+        Args:
+            attribute_name (str): Name of the node attribute
+        """
+        return nx.get_node_attributes(self._graph, attribute_name)
+
+    def set_edge_attributes(self, attribute_name: str, attributes: Union[str, Dict]):
+        r"""Add attributes to the edges of the Network graph.
+
+        Args:
+            attribute_name (str): Name of the edge attribute to set.
+            attributes (Dict): Edge attributes to set. It accepts a dict with node labels as keys and attributes as values or a scalar to set the new attribute of egdes with.
+        """
+        # TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
+        nx.set_edge_attributes(self._graph, attributes, attribute_name)
+
+    def get_edge_attributes(self, attribute_name: str):
+        r"""Add attributes to the edges of the Network graph.
+
+        Args:
+            attribute_name (str): Name of the edge attribute to set.
+        """
+        # TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
+        return nx.get_edge_attributes(self._graph, attribute_name)
+
+    @property
+    def get_neighbors(self, node):
+        r"""Returns the neighbors of a given node in the lattice.
+
+        Args:
+            node: a target node label.
+        """
+        return self._graph.neighbors(node)
+
+    @property
+    def get_nodes(self):
+        r"""Returns all nodes in the lattice."""
+        return self._graph.nodes
+
+    @property
+    def get_edges(self):
+        r"""Returns all edges in the lattice."""
+        return self._graph.edges
+
+    @property
+    def get_graph(self) -> nx.Graph:
+        r"""Returns the underlying NetworkX graph object representing the lattice."""
+        return self._graph
+
+
+class LatticeShape(Enum):
+    chain = 1
+    rectangle = 2
+    honeycomb = 3
+    triangle = 4
+    
+
+def generate_lattice(lattice, dims: List[int]) -> Lattice:
+    r"""Generates a :class:`~pennylane.ftqc.Lattice` object for a given lattice shape and dimensions.
+
+    Args:
+        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'cubic'``.
+        dims(List[int]): Number of nodes in each direction of the lattice.
+
+    Returns:
+        a :class: `~pennylane.ftqc.Lattice` object.
+
+    Raises:
+        ValueError: If the lattice shape is not supported or the dimensions are invalid.
+    """
+    # TODOs: Add default support to CSS, Shor, Foliation code lattices.
+
+    lattice_shape = lattice.strip().lower()
+
+    if lattice_shape not in ["chain", "rectangle", "honeycomb", "triangle", "cubic"]:
+        raise ValueError(
+            f"Lattice shape, '{lattice}' is not supported."
+            f"Please set lattice to: 'chain', 'rectangle', 'honeycomb', 'triangle', 'cubic'."
+        )
+
+    if lattice_shape in ["chain", "rectangle", "cubic"]:
+        if lattice_shape == "chain" and len(dims) != 1:
+            raise ValueError(
+                f"For a chain lattice, the length of dims should 1 instead of {len(dims)}"
+            )
+
+        if lattice_shape == "rectangle" and len(dims) != 2:
+            raise ValueError(
+                f"For a chain rectangle, the length of dims should 2 instead of {len(dims)}"
+            )
+
+        if lattice_shape == "cubic" and len(dims) != 3:
+            raise ValueError(
+                f"For a cubic lattice, the length of dims should 3 instead of {len(dims)}"
+            )
+
+        lattice_obj = Lattice(lattice_shape, nx.grid_graph(dims))
+        return lattice_obj
+
+    if lattice_shape == "triangle":
+        if len(dims) != 2:
+            raise ValueError(
+                f"For a triangle lattice, the length of dims should 2 instead of {len(dims)}"
+            )
+        lattice_obj = Lattice(lattice_shape, nx.triangular_lattice_graph(dims[0], dims[1]))
+        return lattice_obj
+
+    if lattice_shape == "honeycomb":
+        if len(dims) != 2:
+            raise ValueError(
+                f"For a honeycomb lattice, the length of dims should 2 instead of {len(dims)}"
+            )
+        lattice_obj = Lattice(lattice_shape, nx.hexagonal_lattice_graph(dims[0], dims[1]))
+        return lattice_obj

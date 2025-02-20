@@ -27,8 +27,11 @@ Modules
 """
 from pennylane import ExperimentalWarning
 from .parametric_midmeasure import ParametricMidMeasureMP, diagonalize_mcms
+from .lattice import Lattice, generate_lattice
 
 __all__ = [
+    "Lattice",
     "ParametricMidMeasureMP",
     "diagonalize_mcms",
+    "generate_lattice",
 ]
