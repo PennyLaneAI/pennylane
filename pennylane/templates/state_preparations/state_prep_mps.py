@@ -88,9 +88,11 @@ class MPSPrep(Operation):
 
     .. note::
 
-        This operator is natively supported on the ``lightning.tensor`` device, designed to run MPS structures
-        efficiently. For other devices, implementing this operation uses a gate-based decomposition which requires
-        auxiliary qubits (via ``work_wires``) to prepare the state vector represented by the MPS in a quantum circuit.
+        This operator is natively supported on the ``lightning.tensor`` device, which is designed to run MPS 
+        structures efficiently. For other devices, this operation prepares the state vector represented by the
+        MPS using a gate-based decomposition from Eq. (23) in `[arXiv:2310.18410]
+        <https://arxiv.org/pdf/2310.18410>`_, which requires the right canonicalization of the MPS via
+        ``right_canonicalize`` and auxiliary qubits to be given via``work_wires``.
 
 
 
@@ -101,7 +103,7 @@ class MPSPrep(Operation):
         wires (Sequence[int]): wires that the template acts on
         work_wires (Sequence[int]): list of extra qubits needed in the decomposition. The maximum permissible bond
             dimension of the provided MPS is defined as ``2^len(work_wires)``. Default is ``None``.
-        right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed to the mps.
+        right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed to the MPS.
             Default is ``False``.
 
     The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
@@ -369,8 +371,7 @@ class MPSPrep(Operation):
                 vectors.append(vector)
 
             vectors = qml.math.stack(vectors).T
-            d = vectors.shape[0]
-            k = vectors.shape[1]
+            d, k = vectors.shape
 
             # The unitary is completed using QR decomposition
             rng = np.random.default_rng(42)
