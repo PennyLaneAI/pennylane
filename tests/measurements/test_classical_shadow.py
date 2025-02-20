@@ -891,7 +891,9 @@ def test_hadamard_expval_legacy(k=1, obs=obs_hadamard, expected=expected_hadamar
     superposition of qubits"""
     circuit = hadamard_circuit_legacy(3, shots=50000)
     actual = circuit(obs, k=k)
-    new_actual = circuit(obs, k=k)
+
+    tape = qml.workflow.construct_tape(circuit)(obs)
+    new_actual = tape.measurements[0].process(tape, circuit.device.target_device)
 
     assert actual.shape == (len(obs_hadamard),)
     assert actual.dtype == np.float64
