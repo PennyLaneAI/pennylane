@@ -13,22 +13,17 @@
 # pylint: disable=protected-access, inconsistent-return-statements
 """
 This file defines classes and functions for creating lattice objects that store topological
-connectivity information for measurement-based quantum computing (MBQC) and fault-tolerant
-quantum computing (FTQC).
+connectivity information.
 """
 
 from typing import Dict, List, Union
+from enum import Enum
 
 import networkx as nx
 
 
 class Lattice:
-    """Represents a qubit lattice for measurement-based quantum computing (MBQC) and fault-tolerant quantum computing (FTQC).
-
-    Lattices, representing qubit connectivity, are crucial in MBQC and FTQC. MBQC often utilizes cluster states, typically generated on qubit lattices, as a computational
-    resource [Entanglement in Graph States and its Applications, arXiv:quant-ph/0602096]. As discussed in [Measurement-based quantum computation with cluster states, arXiv:quant-ph/0301052],
-    single-qubit gates can be implemented with a 1D chain of 5 qubits, while a two-qubit CNOT gate requires 15 qubits arranged in a 2D lattice. Furthermore, 3D lattice connectivity may be
-    necessary to incorporate quantum error correction (QEC) into MBQC [A fault-tolerant one-way quantum computer, arxiv.org:quant-ph/0510135].
+    """Represents a qubit lattice structure.
 
     This Lattice class, inspired by the design of :class: `~pennylane.spin.Lattice`, leverages `NetworkX` to represent the relationships within the lattice structure.
 
@@ -42,8 +37,6 @@ class Lattice:
     """
 
     # TODOs: To support braiding operations, Lattice should support nodes/edges addition/deletion.
-
-    _short_name = "ftqc_lattice"
 
     def __init__(
         self, lattice_shape: str, graph: nx.Graph = None, nodes: List = None, edges: List = None
@@ -60,6 +53,7 @@ class Lattice:
         else:
             self._graph = graph
 
+    @property
     def get_lattice_shape(self) -> str:
         r"""Returns the lattice shape name."""
         return self._lattice_shape
@@ -109,6 +103,7 @@ class Lattice:
         # TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
         return nx.get_edge_attributes(self._graph, attribute_name)
 
+    @property
     def get_neighbors(self, node):
         r"""Returns the neighbors of a given node in the lattice.
 
@@ -117,18 +112,28 @@ class Lattice:
         """
         return self._graph.neighbors(node)
 
+    @property
     def get_nodes(self):
         r"""Returns all nodes in the lattice."""
         return self._graph.nodes
 
+    @property
     def get_edges(self):
         r"""Returns all edges in the lattice."""
         return self._graph.edges
 
+    @property
     def get_graph(self) -> nx.Graph:
         r"""Returns the underlying NetworkX graph object representing the lattice."""
         return self._graph
 
+
+class LatticeShape(Enum):
+    chain = 1
+    rectangle = 2
+    honeycomb = 3
+    triangle = 4
+    
 
 def generate_lattice(lattice, dims: List[int]) -> Lattice:
     r"""Generates a :class:`~pennylane.ftqc.Lattice` object for a given lattice shape and dimensions.
