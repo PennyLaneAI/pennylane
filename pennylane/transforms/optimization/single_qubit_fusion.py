@@ -22,7 +22,7 @@ from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn
+from pennylane.typing import PostprocessingFn, TensorLike
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
@@ -41,7 +41,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
     # pylint: disable=redefined-outer-name
 
     class SingleQubitFusionInterpreter(PlxprInterpreter):
-        """Plxpr Interpreter for applying the ``cancel_inverses`` transform to callables or jaxpr
+        """Plxpr Interpreter for applying the ``single_qubit_fusion`` transform to callables or jaxpr
         when program capture is enabled.
 
         .. note::
@@ -55,79 +55,60 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             self.atol = atol
             self.exclude_gates = exclude_gates
             self.previous_ops = {}
+            self._env = {}
             super().__init__()
 
         def setup(self) -> None:
             """Initialize the instance before interpreting equations."""
             self.previous_ops = {}
+            self._env = {}
 
         def cleanup(self) -> None:
             """Clean up the instance after interpreting equations."""
-            self.previous_ops = {}
+            self.previous_ops.clear()
+            self._env.clear()
 
-        def interpret_operation(self, op: Operator):
-            """Interpret a PennyLane operation instance."""
+        def _handle_non_fusible_op(self, op: Operator) -> list:
+            """Handle an operation that cannot be fused into a Rot gate."""
 
-            # For operators like Identity()
-            if len(op.wires) == 0:
-                return super().interpret_operation(op)
-
-            # If the gate should be excluded, we interpret it as-is
-            # regardless of fusion potential
-            if self.exclude_gates is not None:
-                if op.name in self.exclude_gates:
-                    return super().interpret_operation(op)
-
-            try:
-                # Check if the operation has the single_qubit_rot_angles method
-                cumulative_angles = qml.math.stack(op.single_qubit_rot_angles())
-            except (NotImplementedError, AttributeError):
-
-                # The order might not be deterministic if wires (the keys) are abstract.
-                # However, this only impacts operators without any shared wires,
-                # which does not affect the correctness of the result.
-                previous_ops_on_wires = list(
-                    dict.fromkeys(
-                        self.previous_ops.get(w)
-                        for w in op.wires
-                        if self.previous_ops.get(w) is not None
-                    )
+            # The order might not be deterministic if wires (the keys) are abstract.
+            # However, this only impacts operators without any shared wires,
+            # which does not affect the correctness of the result.
+            previous_ops_on_wires = list(
+                dict.fromkeys(
+                    self.previous_ops.get(w)
+                    for w in op.wires
+                    if self.previous_ops.get(w) is not None
                 )
+            )
 
-                # We convert to Rot and interpret the previous operation(s)
-                # on the same wire(s) before interpreting the current operation.
-                res = []
-                for prev_op in previous_ops_on_wires:
+            res = []
+            for prev_op in previous_ops_on_wires:
+                # pylint: disable=protected-access
+                rot = qml.Rot._primitive.impl(
+                    *qml.math.stack(prev_op.single_qubit_rot_angles()), wires=prev_op.wires
+                )
+                res.append(super().interpret_operation(rot))
 
-                    o_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
-                    # pylint: disable=protected-access
-                    o_rot = qml.Rot._primitive.impl(*o_angles, wires=prev_op.wires)
-                    res.append(super().interpret_operation(o_rot))
+            res.append(super().interpret_operation(op))
 
-                res.append(super().interpret_operation(op))
+            for w in op.wires:
+                self.previous_ops.pop(w, None)
 
-                # Finally, we remove the previous operations on the wires
-                for w in op.wires:
-                    if w in self.previous_ops:
-                        self.previous_ops.pop(w)
+            return res
 
-                return res
+        def _fuse_single_qubit_rotation(self, op: Operator, cumulative_angles: TensorLike) -> list:
+            """Fuse the current operation with the previous operation if possible."""
 
-            # Retrieve previous operation on the same wire
-            prev_op = self.previous_ops.get(op.wires[0], None)
+            prev_op = self.previous_ops.get(op.wires[0])
             if prev_op is None:
                 for w in op.wires:
                     self.previous_ops[w] = op
                 return []
 
-            # Fuse previous and current rotation angles
             prev_op_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
             cumulative_angles = fuse_rot_angles(prev_op_angles, cumulative_angles)
 
-            # If we are tracing/jitting or differentiating, don't perform any conditional checks and
-            # apply the rotation regardless of the angles.
-            # If not tracing or differentiating, check whether total rotation is trivial by checking
-            # if the RY angle and the sum of the RZ angles are close to 0
             if (
                 qml.math.is_abstract(cumulative_angles)
                 or qml.math.requires_grad(cumulative_angles)
@@ -144,12 +125,30 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                 new_rot = qml.Rot._primitive.impl(*cumulative_angles, wires=op.wires)
                 for w in op.wires:
                     self.previous_ops[w] = new_rot
-
             else:
                 for w in op.wires:
                     self.previous_ops.pop(w, None)
 
             return []
+
+        def interpret_operation(self, op: Operator):
+            """Interpret a PennyLane operation instance."""
+
+            # Operators like Identity() have no wires, so we interpret them directly
+            if len(op.wires) == 0:
+                return super().interpret_operation(op)
+
+            # We interpret directly if the gate is explicitly excluded
+            if self.exclude_gates is not None:
+                if op.name in self.exclude_gates:
+                    return super().interpret_operation(op)
+
+            try:
+                cumulative_angles = qml.math.stack(op.single_qubit_rot_angles())
+            except (NotImplementedError, AttributeError):
+                return self._handle_non_fusible_op(op)
+
+            return self._fuse_single_qubit_rotation(op, cumulative_angles)
 
         def interpret_all_previous_ops(self) -> None:
             """Interpret all previous operations stored in the instance."""
@@ -162,9 +161,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             for op in ops_remaining:
                 super().interpret_operation(op)
 
-            all_wires = tuple(self.previous_ops.keys())
-            for w in all_wires:
-                self.previous_ops.pop(w)
+            self.previous_ops.clear()
 
         def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
@@ -176,10 +173,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 
             Returns:
                 list[TensorLike]: the results of the execution.
-
             """
-            # pylint: disable=too-many-branches,attribute-defined-outside-init
-            self._env = {}
+
             self.setup()
 
             for arg, invar in zip(args, jaxpr.invars, strict=True):
@@ -220,8 +215,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                     outvals.append(super().interpret_operation(outval))
                 else:
                     outvals.append(outval)
+
             self.cleanup()
-            self._env = {}
             return outvals
 
     def single_qubit_fusion_plxpr_to_plxpr(
