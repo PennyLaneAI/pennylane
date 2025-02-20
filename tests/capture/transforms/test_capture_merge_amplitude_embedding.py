@@ -37,8 +37,8 @@ from pennylane.transforms.optimization.merge_amplitude_embedding import (
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
-class TestMergeAmplitudeEmbeddingInterpreter:
-    """Test the MergeAmplitudeEmbeddingInterpreter class works correctly."""
+class TestRepeatedQubitErrors:
+    """Test that errors are raised when the same qubit is used multiple times."""
 
     def test_repeated_qubit_error(self):
         """Test that an error is raised if a qubit in the AmplitudeEmbedding had operations applied to it before."""
@@ -90,6 +90,108 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)()
+
+    def test_collision_before_cond_prim(self):
+        """Test that an error is raised if a qubit in the AmplitudeEmbedding had operations applied to it before."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f(x):
+            @qml.cond(x > 2)
+            def cond_f():
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+                return qml.expval(qml.Z(0))
+
+            @cond_f.else_if(x > 1)
+            def _():
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+                return qml.expval(qml.Y(0))
+
+            @cond_f.otherwise
+            def _():
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+                return qml.expval(qml.X(0))
+
+            qml.X(0)  # This is to ensure that the qubit 0 is used before the AmplitudeEmbedding
+            out = cond_f()
+            return out
+
+        with pytest.raises(
+            qml.DeviceError,
+            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+        ):
+            jax.make_jaxpr(f)(3)
+
+    def test_collision_after_cond_prim(self):
+        """Test that an error is raised if a qubit in the AmplitudeEmbedding had operations applied to it before."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f(x):
+            @qml.cond(x > 2)
+            def cond_f():
+                qml.Z(0)
+                return qml.expval(qml.Z(0))
+
+            @cond_f.else_if(x > 1)
+            def _():
+                qml.Y(0)
+                return qml.expval(qml.Y(0))
+
+            @cond_f.otherwise
+            def _():
+                qml.X(0)
+                return qml.expval(qml.X(0))
+
+            out = cond_f()
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+            return out
+
+        with pytest.raises(
+            qml.DeviceError,
+            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+        ):
+            jax.make_jaxpr(f)(3)
+
+    def test_mix_higher_order_primitives(self):
+        """Tsest that an error is raised if a qubit in the AmplitudeEmbedding had operations applied to it before."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f(x):
+            @qml.for_loop(3)
+            def loop(i):
+                qml.RX(i, 0)
+
+            @qml.cond(x > 2)
+            def cond_f():
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+
+            @cond_f.else_if(x > 1)
+            def _():
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+
+            @cond_f.otherwise
+            def _():
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+
+            loop()  # This is to ensure that the qubit 0 is used before the AmplitudeEmbedding
+            cond_f()
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            qml.DeviceError,
+            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+        ):
+            args = (3,)
+            jax.make_jaxpr(f)(*args)
+
+
+class TestMergeAmplitudeEmbeddingInterpreter:
+    """Test the MergeAmplitudeEmbeddingInterpreter class works correctly."""
 
     def test_circuit_with_arguments(self):
         """Test that the transform works correctly when the circuit has arguments."""

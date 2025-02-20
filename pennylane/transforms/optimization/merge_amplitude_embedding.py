@@ -13,10 +13,13 @@
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 
+from copy import copy
 from functools import lru_cache, partial
 
 import pennylane as qml
 from pennylane import AmplitudeEmbedding
+from pennylane.capture.base_interpreter import jaxpr_to_jaxpr
+from pennylane.capture.primitives import cond_prim
 from pennylane.math import flatten, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -43,7 +46,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         def __init__(self):
             self._env = {}
             self.new_operations = []
-            self.visited_wires = set()
+            self.state = {"visited_wires": set()}
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def setup(self) -> None:
@@ -71,10 +74,10 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             """
             if not isinstance(op, AmplitudeEmbedding):
                 self.new_operations.append(op)
-                self.visited_wires = self.visited_wires.union(set(op.wires))
+                self.state["visited_wires"] = self.state["visited_wires"].union(set(op.wires))
                 return
 
-            if len(self.visited_wires.intersection(set(op.wires))) > 0:
+            if len(self.state["visited_wires"].intersection(set(op.wires))) > 0:
                 raise qml.DeviceError(
                     "qml.AmplitudeEmbedding cannot be applied on wires already used by other operations."
                 )
@@ -82,7 +85,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self.input_wires.append(op.wires)
             self.input_vectors.append(op.parameters[0])
             self.input_batch_size.append(op.batch_size)
-            self.visited_wires = self.visited_wires.union(set(op.wires))
+            self.state["visited_wires"] = self.state["visited_wires"].union(set(op.wires))
 
         def purge_seen_operations(self):
             """Merge the gates and insert it at the beginning of the "seen" gates; then interpret said gates."""
@@ -174,9 +177,57 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                     outvals.append(super().interpret_operation(outval))
                 else:
                     outvals.append(outval)
+
             self.cleanup()
             self._env = {}
             return outvals
+
+    @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
+    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
+        args = invals[args_slice]
+
+        new_jaxprs = []
+        new_consts = []
+        new_consts_slices = []
+        end_const_ind = len(jaxpr_branches)
+
+        # Store original wires before we process the branches
+        original_wires = self.state.get("visited_wires", set())
+
+        for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
+            consts = invals[const_slice]
+            if jaxpr is None:
+                new_jaxprs.append(None)
+                new_consts_slices.append(slice(0, 0))
+            else:
+                new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+
+                # Store newly seen wires
+                newly_seen_wires = self.state.get("visited_wires", set()) - original_wires
+                # Reset visited wires for next branch so we don't get false positive collisions
+                self.state["visited_wires"] = set()
+                # Remember all wires we've seen so far so collisions are detected after the cond
+                original_wires |= newly_seen_wires
+
+                new_jaxprs.append(new_jaxpr.jaxpr)
+                new_consts.extend(new_jaxpr.consts)
+                new_consts_slices.append(
+                    slice(end_const_ind, end_const_ind + len(new_jaxpr.consts))
+                )
+                end_const_ind += len(new_jaxpr.consts)
+
+        # Reset visited wires to original state
+        self.state["visited_wires"] = original_wires
+
+        new_args_slice = slice(end_const_ind, None)
+        return cond_prim.bind(
+            *invals[: len(jaxpr_branches)],
+            *new_consts,
+            *args,
+            jaxpr_branches=new_jaxprs,
+            consts_slices=new_consts_slices,
+            args_slice=new_args_slice,
+        )
 
     def merge_amplitude_embedding_plxpr_to_plxpr(jaxpr, consts, _, __, *args):
         interpreter = MergeAmplitudeEmbeddingInterpreter()
