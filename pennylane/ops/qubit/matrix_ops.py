@@ -217,7 +217,8 @@ class QubitUnitary(Operation):
         <2x2 sparse matrix of type '<class 'numpy.complex128'>'
             with 2 stored elements in Compressed Sparse Row format>
         """
-        U = qml.math.asarray(U, like="numpy")
+        if sp.sparse.issparse(U):
+            return U.tocsr()
         return sp.sparse.csr_matrix(U)
 
     @staticmethod
@@ -285,12 +286,14 @@ class QubitUnitary(Operation):
         return len(self.wires) < 3
 
     def adjoint(self) -> "QubitUnitary":
-        U = self.matrix()
-        if isinstance(U, csr_matrix):
+        if self.has_matrix:
+            U = self.matrix()
+            return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
+        else:
+            U = self.sparse_matrix()
             adjoint_sp_mat = U.conjugate().transpose()
             # Note: it is necessary to explicitly cast back to csr, or it will be come csc
             return QubitUnitary(csr_matrix(adjoint_sp_mat), wires=self.wires)
-        return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
 
     def pow(self, z: Union[int, float]):
         mat = self.matrix()
