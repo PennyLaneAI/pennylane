@@ -15,13 +15,12 @@
 Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
 # pylint: disable=protected-access
-import itertools
-
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultMixed
+from pennylane.devices.default_mixed import _apply_state_vector
 from pennylane.math import Interface
 
 ML_INTERFACES = ["numpy", "autograd", "torch", "tensorflow", "jax"]
@@ -107,49 +106,18 @@ class TestLegacyDefaultMixed:
     Tests that covered parts of legacy method of the DefaultMixed device.
     """
 
-    @pytest.mark.all_interfaces
+    # @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ML_INTERFACES)
     @pytest.mark.parametrize("device_wires", [qml.wires.Wires([0]), qml.wires.Wires([0, 1])])
     def test_apply_state_vector(self, device_wires, interface):
         """Initialize the internal state in a specified pure state."""
         num_wires = len(device_wires)
+        tolerance = 1e-10
         state_np = np.zeros(shape=(2**num_wires,), dtype=np.complex128)
         state_np[0] = 1.0
-        state = qml.math.convert_like(state_np, interface)
-        state = qml.math.asarray(state_np, like=interface)
-        n_state_vector = state.shape[0]
-        tolerance = 1e-10
-
-        if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
-            raise ValueError("State vector must be of length 2**wires.")
-
-        if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-            raise ValueError("Sum of amplitudes-squared does not equal one.")
-
-        if len(device_wires) == num_wires and sorted(device_wires.labels) == list(
-            device_wires.labels
-        ):
-            # Initialize the entire wires with the state
-            rho = qml.math.outer(state, qml.math.conj(state))
-            _state = qml.math.reshape(rho, [2] * 2 * num_wires)
-
-        else:
-            # generate basis states on subset of qubits via the cartesian product
-            basis_states = qml.math.asarray(
-                list(itertools.product([0, 1], repeat=len(device_wires))), dtype=int
-            )
-
-            # get basis states to alter on full set of qubits
-            unravelled_indices = qml.math.zeros((2 ** len(device_wires), num_wires), dtype=int)
-            unravelled_indices[:, device_wires] = basis_states
-
-            # get indices for which the state is changed to input state vector elements
-            ravelled_indices = qml.math.ravel_multi_index(unravelled_indices.T, [2] * num_wires)
-
-            state = qml.math.scatter(ravelled_indices, state, [2**num_wires])
-            rho = qml.math.outer(state, qml.math.conj(state))
-            rho = qml.math.reshape(rho, [2] * 2 * num_wires)
-            _state = qml.math.asarray(rho, like=interface)
+        _state = _apply_state_vector(
+            device_wires=device_wires, state_vector=state_np, interface=interface
+        )
 
         rho_expected_numpy = np.zeros([2] * 2 * num_wires, dtype=np.complex128)
         rho_expected_numpy[tuple([0] * 2 * num_wires)] = 1.0

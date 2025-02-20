@@ -20,6 +20,7 @@ providing a simple mixed-state simulation ofqubit-based quantum circuits.
 # isort: skip_file
 # pylint: disable=wrong-import-order, ungrouped-imports
 import logging
+import itertools
 
 import numpy as np
 
@@ -376,3 +377,46 @@ class DefaultMixed(Device):
         )
 
         return transform_program, config
+
+
+# The following part is for recording some legacy code that might be useful for future reference.
+def _apply_state_vector(state_vector, device_wires, interface):
+    """Initialize the internal state in a specified pure state."""
+    num_wires = len(device_wires)
+    state = qml.math.asarray(state_vector, like=interface)
+    n_state_vector = state.shape[0]
+    tolerance = 1e-10
+
+    if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
+        raise ValueError("State vector must be of length 2**wires.")
+
+    if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+        raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+    if len(device_wires) == num_wires and sorted(device_wires.labels) == list(device_wires.labels):
+        # Initialize the entire wires with the state
+        rho = qml.math.outer(state, qml.math.conj(state))
+        _state = qml.math.reshape(rho, [2] * 2 * num_wires)
+
+    else:
+        # generate basis states on subset of qubits via the cartesian product
+        basis_states = qml.math.asarray(
+            list(itertools.product([0, 1], repeat=len(device_wires))), dtype=int
+        )
+
+        # get basis states to alter on full set of qubits
+        unravelled_indices = qml.math.zeros((2 ** len(device_wires), num_wires), dtype=int)
+        unravelled_indices[:, device_wires] = basis_states
+
+        # get indices for which the state is changed to input state vector elements
+        ravelled_indices = qml.math.ravel_multi_index(unravelled_indices.T, [2] * num_wires)
+
+        state = qml.math.scatter(ravelled_indices, state, [2**num_wires])
+        rho = qml.math.outer(state, qml.math.conj(state))
+        rho = qml.math.reshape(rho, [2] * 2 * num_wires)
+        _state = qml.math.asarray(rho, like=interface)
+
+    # rho_expected_numpy = np.zeros([2] * 2 * num_wires, dtype=np.complex128)
+    # rho_expected_numpy[tuple([0] * 2 * num_wires)] = 1.0
+    # rho_expected = qml.math.asarray(rho_expected_numpy, like=interface)
+    return _state
