@@ -107,7 +107,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         ``measurements=None``.
 
     If an existing ``QuantumCircuit`` already contains measurements, ``from_qiskit``
-    will return those measurements, provided that they are not overriden as shown above.
+    will return those measurements, provided that they are not overridden as shown above.
     These measurements can be used, e.g., for conditioning with
     :func:`qml.cond() <~.cond>`, or simply included directly within the QNode's return:
 
@@ -134,18 +134,18 @@ def from_qiskit(quantum_circuit, measurements=None):
         operator.
 
     See below for more information regarding how to translate more complex circuits from Qiskit to
-    PennyLane, including handling parameterized Qiskit circuits, mid-circuit measurements, and
+    PennyLane, including handling parametrized Qiskit circuits, mid-circuit measurements, and
     classical control flows.
 
     .. details::
-        :title: Parameterized Quantum Circuits
+        :title: Parametrized Quantum Circuits
 
-        A Qiskit ``QuantumCircuit`` is parameterized if it contains
+        A Qiskit ``QuantumCircuit`` is parametrized if it contains
         `Parameter <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.Parameter>`__ or
         `ParameterVector <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.ParameterVector>`__
         references that need to be given defined values to evaluate the circuit. These can be passed
         to the generated quantum function as keyword or positional arguments. If we define a
-        parameterized circuit:
+        parametrized circuit:
 
         .. code-block:: python
 
@@ -182,7 +182,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         >>> qml.grad(circuit, argnum=[0, 1])(np.pi/4, np.pi/6)
         (array(-0.61237244), array(-0.35355339))
 
-        The ``QuantumCircuit`` may also be parameterized with a ``ParameterVector``. These can be
+        The ``QuantumCircuit`` may also be parametrized with a ``ParameterVector``. These can be
         similarly converted:
 
         .. code-block:: python
@@ -363,7 +363,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
     .. details::
         :title: Usage Details
 
-        You can convert a parameterized ``SparsePauliOp`` into a PennyLane operator by assigning
+        You can convert a parametrized ``SparsePauliOp`` into a PennyLane operator by assigning
         literal values to each coefficient parameter. For example, the script
 
         .. code-block:: python
@@ -403,6 +403,61 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
     try:
         plugin_converter = plugin_converters["qiskit_op"].load()
         return plugin_converter(qiskit_op, params=params, wires=wires)
+    except KeyError as e:
+        raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
+
+
+def from_qiskit_noise(noise_model, verbose=False, decimal_places=None):
+    """Converts a Qiskit `NoiseModel <https://qiskit.github.io/qiskit-aer/stubs/qiskit_aer.noise.NoiseModel.html>`__
+    into a PennyLane :class:`~.NoiseModel`.
+
+    Args:
+        noise_model (qiskit_aer.noise.NoiseModel): a Qiskit ``NoiseModel`` instance.
+        verbose (bool): when printing a ``NoiseModel``, a complete list of Kraus matrices for each ``qml.QubitChannel``
+            is displayed with ``verbose=True``. By default, ``verbose=False`` and only the number of Kraus matrices and
+            the number of qubits they act on is displayed for brevity.
+        decimal_places (int | None): number of decimal places to round the elements of Kraus matrices when they are being
+            displayed for each ``qml.QubitChannel`` when ``verbose=True``.
+
+    Returns:
+        qml.NoiseModel: The PennyLane noise model converted from the input Qiskit ``NoiseModel`` object.
+
+    Raises:
+        ValueError: When a quantum error present in the noise model cannot be converted.
+
+    .. note::
+
+        - This function depends upon the PennyLane-Qiskit plugin, which can be installed following these
+          `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__.
+          You may need to restart your kernel if you are running it in a notebook environment.
+        - Each quantum error present in the qiskit noise model is converted into an equivalent
+          :class:`~.QubitChannel` operator with the same canonical Kraus representation.
+        - Currently, PennyLane noise models do not support readout errors, so those will be skipped during
+          conversion.
+
+    **Example**
+
+    Consider the following noise model constructed in Qiskit:
+
+    >>> import qiskit_aer.noise as noise
+    >>> error_1 = noise.depolarizing_error(0.001, 1) # 1-qubit noise
+    >>> error_2 = noise.depolarizing_error(0.01, 2) # 2-qubit noise
+    >>> noise_model = noise.NoiseModel()
+    >>> noise_model.add_all_qubit_quantum_error(error_1, ['rz', 'ry'])
+    >>> noise_model.add_all_qubit_quantum_error(error_2, ['cx'])
+
+    This noise model can be converted into PennyLane using:
+
+    >>> import pennylane as qml
+    >>> qml.from_qiskit_noise(noise_model)
+    NoiseModel({
+        OpIn(['RZ', 'RY']): QubitChannel(num_kraus=4, num_wires=1)
+        OpIn(['CNOT']): QubitChannel(num_kraus=16, num_wires=2)
+    })
+    """
+    try:
+        plugin_converter = plugin_converters["qiskit_noise"].load()
+        return plugin_converter(noise_model, verbose=verbose, decimal_places=decimal_places)
     except KeyError as e:
         raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 

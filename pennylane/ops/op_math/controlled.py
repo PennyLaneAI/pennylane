@@ -14,11 +14,14 @@
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
+# pylint: disable=too-many-positional-arguments
 import functools
 import warnings
+from collections.abc import Callable, Sequence
 from copy import copy
 from functools import wraps
 from inspect import signature
+from typing import Any, Optional, overload
 
 import numpy as np
 from scipy import sparse
@@ -28,13 +31,27 @@ from pennylane import math as qmlmath
 from pennylane import operation
 from pennylane.compiler import compiler
 from pennylane.operation import Operator
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
 
-def ctrl(op, control, control_values=None, work_wires=None):
+@overload
+def ctrl(
+    op: Operator,
+    control: Any,
+    control_values: Optional[Sequence[bool]] = None,
+    work_wires: Optional[Any] = None,
+) -> Operator: ...
+@overload
+def ctrl(
+    op: Callable,
+    control: Any,
+    control_values: Optional[Sequence[bool]] = None,
+    work_wires: Optional[Any] = None,
+) -> Callable: ...
+def ctrl(op, control: Any, control_values=None, work_wires=None):
     """Create a method that applies a controlled version of the provided op.
     :func:`~.qjit` compatible.
 
@@ -86,7 +103,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     and individual :class:`~.operation.Operator`'s.
 
     >>> qml.ctrl(qml.Hadamard(0), (1,2))
-    Controlled(Hadamard(wires=[0]), control_wires=[1, 2])
+    Controlled(H(0), control_wires=[1, 2])
 
     Controlled operations work with all other forms of operator math and simplification:
 
@@ -158,7 +175,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
     # Flatten nested controlled operations to a multi-controlled operation for better
     # decomposition algorithms. This includes special cases like CRX, CRot, etc.
     if isinstance(op, Controlled):
-        work_wires = work_wires or []
+        work_wires = () if work_wires is None else work_wires
         return ctrl(
             op.base,
             control=control + op.control_wires,
@@ -177,10 +194,18 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
             "This error might occur if you apply ctrl to a list "
             "of operations instead of a function or Operator."
         )
+    if qml.capture.enabled():
+        return _capture_ctrl_transform(op, control, control_values, work_wires)
+    return _ctrl_transform(op, control, control_values, work_wires)
 
+
+def _ctrl_transform(op, control, control_values, work_wires):
     @wraps(op)
     def wrapper(*args, **kwargs):
         qscript = qml.tape.make_qscript(op)(*args, **kwargs)
+
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
 
         # flip control_values == 0 wires here, so we don't have to do it for each individual op.
         flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
@@ -202,6 +227,71 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
         return qscript.measurements
 
     return wrapper
+
+
+@functools.lru_cache  # only create the first time requested
+def _get_ctrl_qfunc_prim():
+    """See capture/explanations.md : Higher Order primitives for more information on this code."""
+    # if capture is enabled, jax should be installed
+
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    ctrl_prim = NonInterpPrimitive("ctrl_transform")
+    ctrl_prim.multiple_results = True
+    ctrl_prim.prim_type = "higher_order"
+
+    @ctrl_prim.def_impl
+    def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+        consts = args[:n_consts]
+        control_wires = args[-n_control:]
+        args = args[n_consts:-n_control]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr, consts, *args)
+        ops, _ = qml.queuing.process_queue(q)
+
+        for op in ops:
+            ctrl(op, control_wires, control_values, work_wires)
+        return []
+
+    @ctrl_prim.def_abstract_eval
+    def _(*_, **__):
+        return []
+
+    return ctrl_prim
+
+
+def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires) -> Callable:
+    """Capture compatible way of performing an ctrl transform."""
+    # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
+    import jax  # pylint: disable=import-outside-toplevel
+
+    ctrl_prim = _get_ctrl_qfunc_prim()
+
+    @wraps(qfunc)
+    def new_qfunc(*args, **kwargs):
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(
+            *args
+        )
+        flat_args = jax.tree_util.tree_leaves(args)
+        control_wires = qml.wires.Wires(control)  # make sure is iterable
+        ctrl_prim.bind(
+            *jaxpr.consts,
+            *abstract_shapes,
+            *flat_args,
+            *control_wires,
+            jaxpr=jaxpr.jaxpr,
+            n_control=len(control_wires),
+            control_values=control_values,
+            work_wires=work_wires,
+            n_consts=len(jaxpr.consts),
+        )
+
+    return new_qfunc
 
 
 @functools.lru_cache()
@@ -249,8 +339,12 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
 
     if isinstance(op, qml.QubitUnitary):
+        qml.QueuingManager.remove(op)
         return qml.ControlledQubitUnitary(
-            op, control_wires=control, control_values=control_values, work_wires=work_wires
+            op.matrix(),
+            wires=control + op.wires,
+            control_values=control_values,
+            work_wires=work_wires,
         )
 
     return None
@@ -409,9 +503,16 @@ class Controlled(SymbolicOp):
         )
 
     # pylint: disable=too-many-function-args
-    def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
+    def __init__(
+        self,
+        base,
+        control_wires: WiresLike,
+        control_values=None,
+        work_wires: WiresLike = None,
+        id=None,
+    ):
         control_wires = Wires(control_wires)
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         if control_values is None:
             control_values = [True] * len(control_wires)
@@ -763,18 +864,19 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
         # has some special case handling of its own for further decomposition
         return _decompose_pauli_x_based_no_control_values(op)
 
-    if isinstance(op.base, qml.GlobalPhase) and len(op.control_wires) == 1:
-        # use Lemma 5.2 from https://arxiv.org/pdf/quant-ph/9503016
-        return [qml.PhaseShift(phi=-op.data[0], wires=op.control_wires)]
-    # A multi-wire controlled PhaseShift should be decomposed first using the decomposition
-    # of ControlledPhaseShift. This is because the decomposition of PhaseShift contains a
-    # GlobalPhase that we do not have a handling for.
-    # TODO: remove this special case when we support ControlledGlobalPhase [sc-44933]
-    if isinstance(op.base, qml.PhaseShift):
-        base_decomp = qml.ControlledPhaseShift.compute_decomposition(*op.data, op.wires[-2:])
-        return [
-            ctrl(new_op, op.control_wires[:-1], work_wires=op.work_wires) for new_op in base_decomp
-        ]
+    if isinstance(op.base, qml.GlobalPhase):
+        # A singly-controlled global phase is the same as a phase shift on the control wire
+        # (Lemma 5.2 from https://arxiv.org/pdf/quant-ph/9503016)
+        # Mathematically, this is the equation (with Id_2 being the 2-dim. identity matrix)
+        # |0><0|⊗ Id_2 + |1><1|⊗ e^{i\phi} = [|0><0| + |1><1| e^{i\phi}] ⊗ Id_2
+        phase_shift = qml.PhaseShift(phi=-op.data[0], wires=op.control_wires[-1])
+        if len(op.control_wires) == 1:
+            return [phase_shift]
+        # For N>1 control wires, we simply add N-1 control wires to the phase shift
+        # Mathematically, this is the equation (proven by inserting an identity)
+        # (Id_{2^N} - |1><1|^N)⊗ Id_2 + |1><1|^N ⊗ e^{i\phi}
+        # = (Id_{2^{N-1}} - |1><1|^{N-1}) ⊗ Id_4 + |1><1|^{N-1} ⊗ [|0><0|+|1><1|e^{i\phi}]⊗ Id_2
+        return [ctrl(phase_shift, control=op.control_wires[:-1])]
 
     # TODO: will be removed in the second part of the controlled rework [sc-37951]
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
@@ -788,7 +890,7 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
     return None
 
 
-def _decompose_no_control_values(op: Controlled) -> list["operation.Operator"]:
+def _decompose_no_control_values(op: Controlled) -> Optional[list["operation.Operator"]]:
     """Decompose without considering control values. Returns None if no decomposition."""
 
     decomp = _decompose_custom_ops(op)
@@ -798,20 +900,12 @@ def _decompose_no_control_values(op: Controlled) -> list["operation.Operator"]:
     if _is_single_qubit_special_unitary(op.base):
         if len(op.control_wires) >= 2 and qmlmath.get_interface(*op.data) == "numpy":
             return ctrl_decomp_bisect(op.base, op.control_wires)
-        return ctrl_decomp_zyz(op.base, op.control_wires)
+        return ctrl_decomp_zyz(op.base, op.control_wires, work_wires=op.work_wires)
 
     if not op.base.has_decomposition:
         return None
 
     base_decomp = op.base.decomposition()
-    if len(base_decomp) == 0 and isinstance(op.base, qml.GlobalPhase) and len(op.control_wires) > 1:
-        warnings.warn(
-            "Multi-Controlled-GlobalPhase currently decomposes to nothing, and this will likely "
-            "produce incorrect results. Consider implementing your circuit with a different set "
-            "of operations, or use a device that natively supports GlobalPhase.",
-            UserWarning,
-        )
-
     return [ctrl(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
 

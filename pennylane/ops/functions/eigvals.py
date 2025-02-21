@@ -23,7 +23,7 @@ import scipy
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
@@ -115,16 +115,6 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
             raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
         return _eigvals_tranform(op, k=k, which=which)
 
-    if isinstance(op, qml.ops.Hamiltonian):
-
-        warnings.warn(
-            "For Hamiltonians, the eigenvalues will be computed numerically. "
-            "This may be computationally intensive for a large number of wires. "
-            "Consider using a sparse representation of the Hamiltonian with qml.SparseHamiltonian.",
-            UserWarning,
-        )
-        return qml.math.linalg.eigvalsh(qml.matrix(op))
-
     if isinstance(op, qml.SparseHamiltonian):
         sparse_matrix = op.sparse_matrix()
         if k < sparse_matrix.shape[0] - 1:
@@ -140,8 +130,8 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
 @partial(transform, is_informative=True)
 def _eigvals_tranform(
-    tape: qml.tape.QuantumTape, k=1, which="SA"
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, k=1, which="SA"
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     def processing_fn(res):
         [qs] = res
         op_wires = [op.wires for op in qs.operations]

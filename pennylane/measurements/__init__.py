@@ -289,12 +289,18 @@ from .measurements import (
     Variance,
     VnEntropy,
 )
-from .mid_measure import MeasurementValue, MidMeasureMP, measure
+from .mid_measure import (
+    MeasurementValue,
+    MidMeasureMP,
+    measure,
+    find_post_processed_mcms,
+    get_mcm_predicates,
+)
 from .mutual_info import MutualInfoMP, mutual_info
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
 from .sample import SampleMP, sample
-from .shots import ShotCopies, Shots
+from .shots import ShotCopies, Shots, add_shots
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy

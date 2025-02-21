@@ -16,8 +16,6 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
-import numpy as _np
-
 
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
@@ -37,9 +35,18 @@ import pennylane.qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
+    FermiWord,
+    FermiSentence,
     jordan_wigner,
     parity_transform,
     bravyi_kitaev,
+)
+from pennylane.bose import (
+    BoseSentence,
+    BoseWord,
+    binary_mapping,
+    unary_mapping,
+    christiansen_mapping,
 )
 from pennylane.qchem import (
     taper,
@@ -50,15 +57,11 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
-from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, vjp, jvp
-from pennylane._qubit_device import QubitDevice
-from pennylane._qutrit_device import QutritDevice
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.registers import registers
 from pennylane.io import *
@@ -79,7 +82,8 @@ from pennylane.measurements import (
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
-from pennylane.templates import broadcast, layer
+from pennylane.ops import LinearCombination as Hamiltonian
+from pennylane.templates import layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
 from pennylane.templates.tensornetworks import *
@@ -138,7 +142,7 @@ import pennylane.pulse
 import pennylane.fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
-import pennylane.qinfo
+from pennylane.drawer import draw, draw_mpl
 
 # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
@@ -153,8 +157,14 @@ from pennylane.noise import NoiseModel
 
 from pennylane.devices.device_constructor import device, refresh_devices
 
+import pennylane.spin
+
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
+
+
+class DeviceError(Exception):
+    """Exception raised when it encounters an illegal operation in the quantum circuit."""
 
 
 class QuantumFunctionError(Exception):
@@ -165,14 +175,11 @@ class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
 
 
-del globals()["Hamiltonian"]
+class ExperimentalWarning(UserWarning):
+    """Warning raised to indicate experimental/non-stable feature or support."""
 
 
 def __getattr__(name):
-    if name == "Hamiltonian":
-        if pennylane.operation.active_new_opmath():
-            return pennylane.ops.LinearCombination
-        return pennylane.ops.Hamiltonian
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices

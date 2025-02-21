@@ -443,6 +443,33 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
         assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array(np.random.random(size=(2,)))
+        weights = jnp.array(np.random.random(size=(1, 3)))
+
+        dev = qml.device("default.qubit", wires=2)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(features, weights)
+        res2 = circuit2(features, weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(features, weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(features, weights)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+
     @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""

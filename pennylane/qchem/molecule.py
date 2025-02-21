@@ -20,8 +20,9 @@ import collections
 
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import itertools
+import warnings
 
-from pennylane import numpy as pnp
+import pennylane as qml
 
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
@@ -56,14 +57,25 @@ class Molecule:
         normalize (bool): if True, the basis functions get normalized
         unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
 
+    .. note::
+        :class:`~.qchem.Molecule` is not currently compatible with :func:`~.qjit` and ``jax.jit``.
+
     **Example**
+
+    Import necessary modules:
+
+    >>> from pennylane import numpy as np
+    >>> from pennylane.qchem import Molecule
+
+    Define molecular symbols and geometry:
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, -0.694349],
-    >>>                      [0.0, 0.0,  0.694349]], requires_grad = True)
+    ...                      [0.0, 0.0,  0.694349]], requires_grad = True)
     >>> mol = Molecule(symbols, geometry)
     >>> print(mol.n_electrons)
     2
+
     """
 
     def __init__(
@@ -126,16 +138,34 @@ class Molecule:
         if l is None:
             l = [i[0] for i in self.basis_data]
 
+        use_jax = any(qml.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
+        interface_args = [{"like": "autograd", "requires_grad": False}, {"like": "jax"}][use_jax]
         if alpha is None:
-            alpha = [pnp.array(i[1], requires_grad=False) for i in self.basis_data]
+            alpha = [qml.math.array(i[1], **interface_args) for i in self.basis_data]
 
         if coeff is None:
-            coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
+            coeff = [qml.math.array(i[2], **interface_args) for i in self.basis_data]
+
             if normalize:
                 coeff = [
-                    pnp.array(c * primitive_norm(l[i], alpha[i]), requires_grad=False)
+                    qml.math.array(c * primitive_norm(l[i], alpha[i]), **interface_args)
                     for i, c in enumerate(coeff)
                 ]
+
+        if (
+            len(
+                {
+                    qml.math.get_deep_interface(x)
+                    for x in [coordinates, alpha, coeff]
+                    if qml.math.get_deep_interface(x) != "numpy"
+                }
+            )
+            > 1
+        ):
+            warnings.warn(
+                "The parameters coordinates, coeff, and alpha are not of the same interface. Please use the same interface for all 3 or there may be unintended behavior.",
+                UserWarning,
+            )
 
         r = list(
             itertools.chain(
@@ -154,6 +184,7 @@ class Molecule:
         self.n_orbitals = len(self.l)
 
         self.mo_coefficients = None
+        self.normalize = normalize
 
     def __repr__(self):
         """Returns the molecule representation in string format"""
@@ -205,8 +236,12 @@ class Molecule:
                 array[float]: value of a basis function
             """
             c = ((x - r[0]) ** lx) * ((y - r[1]) ** ly) * ((z - r[2]) ** lz)
-            e = [pnp.exp(-a * ((x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2)) for a in alpha]
-            return c * pnp.dot(coeff, e)
+            e = qml.math.exp(
+                qml.math.tensordot(
+                    -alpha, (x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2, axes=0
+                )
+            )
+            return c * qml.math.dot(coeff, e)
 
         return orbital
 

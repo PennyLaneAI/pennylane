@@ -282,16 +282,13 @@ class TestSparse:
             ),
         ],
     )
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
-    def test_sparse_hamiltonian_expval(
-        self, device_name, qubits, operations, hamiltonian, expected_output, tol
-    ):
+    def test_sparse_hamiltonian_expval(self, qubits, operations, hamiltonian, expected_output, tol):
         """Test that expectation values of sparse hamiltonians are properly calculated."""
         # pylint: disable=too-many-arguments
 
         hamiltonian = csr_matrix(hamiltonian)
 
-        dev = qml.device(device_name, wires=qubits, shots=None)
+        dev = qml.device("default.qubit", wires=qubits, shots=None)
         qs = qml.tape.QuantumScript(
             operations, [qml.expval((qml.SparseHamiltonian(hamiltonian, range(qubits))))]
         )

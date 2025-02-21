@@ -156,6 +156,8 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
+    _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
+
     def __init__(self, obs=None, wires=None, eigvals=None, id=None):
 
         if isinstance(obs, MeasurementValue):
@@ -163,7 +165,9 @@ class SampleMP(SampleMeasurement):
             return
 
         if isinstance(obs, Sequence):
-            if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs):
+            if not all(
+                isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
+            ) and not all(qml.math.is_abstract(o) for o in obs):
                 raise qml.QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "
@@ -182,8 +186,6 @@ class SampleMP(SampleMeasurement):
             wires = Wires(wires)
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
-
-    return_type = Sample
 
     @classmethod
     def _abstract_eval(
@@ -220,7 +222,7 @@ class SampleMP(SampleMeasurement):
             return int
         return float
 
-    def shape(self, device, shots):
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
         if not shots:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
@@ -228,27 +230,17 @@ class SampleMP(SampleMeasurement):
             )
         if self.obs:
             num_values_per_shot = 1  # one single eigenvalue
+        elif self.mv is not None:
+            num_values_per_shot = 1 if isinstance(self.mv, MeasurementValue) else len(self.mv)
         else:
             # one value per wire
-            num_values_per_shot = len(self.wires) if len(self.wires) > 0 else len(device.wires)
-
-        def _single_int_shape(shot_val, num_values):
-            # singleton dimensions, whether in shot val or num_wires are squeezed away
-            inner_shape = []
-            if shot_val != 1:
-                inner_shape.append(shot_val)
-            if num_values != 1:
-                inner_shape.append(num_values)
-            return tuple(inner_shape)
-
-        if not shots.has_partitioned_shots:
-            return _single_int_shape(shots.total_shots, num_values_per_shot)
+            num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires
 
         shape = []
-        for s in shots.shot_vector:
-            for _ in range(s.copies):
-                shape.append(_single_int_shape(s.shots, num_values_per_shot))
-
+        if shots != 1:
+            shape.append(shots)
+        if num_values_per_shot != 1:
+            shape.append(num_values_per_shot)
         return tuple(shape)
 
     def process_samples(
@@ -300,7 +292,10 @@ class SampleMP(SampleMeasurement):
             indices = qml.math.array(indices)  # Add np.array here for Jax support.
             # This also covers statistics for mid-circuit measurements manipulated using
             # arithmetic operators
-            samples = eigvals[indices]
+            if qml.math.is_abstract(indices):
+                samples = qml.math.take(eigvals, indices, like=indices)
+            else:
+                samples = eigvals[indices]
 
         return samples if bin_size is None else samples.reshape((bin_size, -1))
 

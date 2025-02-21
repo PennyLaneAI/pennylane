@@ -18,6 +18,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+import autograd
+
 import pennylane.queuing
 
 has_jax = True
@@ -66,7 +68,7 @@ def unflatten_tuple(data, _) -> tuple:
 
 
 def unflatten_dict(data, metadata) -> dict:
-    """Unflatten a dictinoary."""
+    """Unflatten a dictionary."""
     return dict(zip(metadata, data))
 
 
@@ -217,11 +219,18 @@ class PyTreeStructure:
 leaf = PyTreeStructure(None, (), [])
 
 
-def flatten(obj: Any) -> tuple[list[Any], PyTreeStructure]:
+def flatten(
+    obj: Any, is_leaf: Optional[Callable[[Any], bool]] = None
+) -> tuple[list[Any], PyTreeStructure]:
     """Flattens a pytree into leaves and a structure.
 
     Args:
-        obj (Any): any object
+        obj (Any): any object.
+        is_leaf (Callable[[Any], bool] | None = None): an optionally specified
+            function that will be called at each flattening step. It should return
+            a boolean, with ``True`` stopping the traversal and the whole subtree being
+            treated as a leaf, and ``False`` indicating the flattening should traverse
+            the current object.
 
     Returns:
         List[Any], Union[Structure, Leaf]: a list of leaves and a structure representing the object
@@ -239,14 +248,16 @@ def flatten(obj: Any) -> tuple[list[Any], PyTreeStructure]:
     <PyTree(AdjointOperation, (), (<PyTree(Rot, (Wires([0]), ()), (Leaf, Leaf, Leaf))>,))>
     """
     flatten_fn = flatten_registrations.get(type(obj), None)
-    if flatten_fn is None:
+    # set the flag is_leaf_node if is_leaf argument is provided and returns true
+    is_leaf_node = is_leaf(obj) if is_leaf is not None else False
+    if flatten_fn is None or is_leaf_node:
         return [obj], leaf
     leaves, metadata = flatten_fn(obj)
 
     flattened_leaves = []
     child_structures = []
     for l in leaves:
-        child_leaves, child_structure = flatten(l)
+        child_leaves, child_structure = flatten(l, is_leaf)
         flattened_leaves += child_leaves
         child_structures.append(child_structure)
 
@@ -283,3 +294,21 @@ def _unflatten(new_data, structure):
         return next(new_data)
     children = tuple(_unflatten(new_data, s) for s in structure.children)
     return unflatten_registrations[structure.type_](children, structure.metadata)
+
+
+# pylint: disable=no-member
+register_pytree(
+    autograd.builtins.list,
+    lambda obj: (list(obj), ()),
+    lambda data, _: autograd.builtins.list(data),
+)
+register_pytree(
+    autograd.builtins.tuple,
+    lambda obj: (list(obj), ()),
+    lambda data, _: autograd.builtins.tuple(data),
+)
+register_pytree(
+    autograd.builtins.SequenceBox,
+    lambda obj: (list(obj), ()),
+    lambda data, _: autograd.builtins.SequenceBox(data),
+)

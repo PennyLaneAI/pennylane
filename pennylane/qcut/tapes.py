@@ -25,17 +25,17 @@ from networkx import MultiDiGraph
 import pennylane as qml
 from pennylane import expval
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import string_to_pauli_word
 from pennylane.queuing import WrappedObj
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 from .utils import MeasureNode, PrepareNode
 
 
-def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
+def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     """
     Converts a quantum tape to a directed multigraph.
 
@@ -81,7 +81,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
-        if obs is not None and isinstance(obs, (Tensor, qml.ops.Prod)):
+        if obs is not None and isinstance(obs, qml.ops.Prod):
             if isinstance(m, SampleMP):
                 raise ValueError(
                     "Sampling from tensor products of observables "
@@ -104,7 +104,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
 
 # pylint: disable=protected-access
-def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
+def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
     """
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
@@ -204,8 +204,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
         if measurement_type is ExpectationMP:
             if len(observables) > 1:
-                prod_type = qml.prod if qml.operation.active_new_opmath() else Tensor
-                measurements_from_graph.append(qml.expval(prod_type(*observables)))
+                measurements_from_graph.append(qml.expval(qml.prod(*observables)))
             else:
                 measurements_from_graph.append(qml.expval(obs))
 
@@ -258,8 +257,8 @@ PREPARE_SETTINGS = _create_prep_list()
 
 
 def expand_fragment_tape(
-    tape: QuantumTape,
-) -> tuple[list[QuantumTape], list[PrepareNode], list[MeasureNode]]:
+    tape: QuantumScript,
+) -> tuple[list[QuantumScript], list[PrepareNode], list[MeasureNode]]:
     """
     Expands a fragment tape into a sequence of tapes for each configuration of the contained
     :class:`MeasureNode` and :class:`PrepareNode` operations.
@@ -398,7 +397,7 @@ def _get_measurements(
 
 
 def _qcut_expand_fn(
-    tape: QuantumTape,
+    tape: QuantumScript,
     max_depth: int = 1,
     auto_cutter: Union[bool, Callable] = False,
 ):

@@ -15,7 +15,9 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, Hashable, Optional, TypeVar, Union
+from collections.abc import Hashable
+from functools import lru_cache
+from typing import Generic, Optional, TypeVar, Union
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -23,9 +25,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(
-    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
-):
+def measure(wires: Union[Hashable, Wires], reset: bool = False, postselect: Optional[int] = None):
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
@@ -209,20 +209,57 @@ def measure(
               samples, leading to unexpected or incorrect results.
 
     """
-    wire = Wires(wires)
-    if len(wire) > 1:
+    if qml.capture.enabled():
+        primitive = _create_mid_measure_primitive()
+        return primitive.bind(wires, reset=reset, postselect=postselect)
+
+    return _measure_impl(wires, reset=reset, postselect=postselect)
+
+
+def _measure_impl(
+    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
+):
+    """Concrete implementation of qml.measure"""
+    wires = Wires(wires)
+    if len(wires) > 1:
         raise qml.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
-    if qml.capture.enabled():
-        raise NotImplementedError(
-            "Capture cannot currently handle classical output from mid circuit measurements."
-        )
+    mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
+
+
+@lru_cache
+def _create_mid_measure_primitive():
+    """Create a primitive corresponding to an mid-circuit measurement type.
+
+    Called when using :func:`~pennylane.measure`.
+
+    Returns:
+        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        measurement.
+
+    """
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    mid_measure_p = NonInterpPrimitive("measure")
+
+    @mid_measure_p.def_impl
+    def _(wires, reset=False, postselect=None):
+        return _measure_impl(wires, reset=reset, postselect=postselect)
+
+    @mid_measure_p.def_abstract_eval
+    def _(*_, **__):
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        return jax.core.ShapedArray((), dtype)
+
+    return mid_measure_p
 
 
 T = TypeVar("T")
@@ -246,6 +283,8 @@ class MidMeasureMP(MeasurementProcess):
         id (str): Custom label given to a measurement instance.
     """
 
+    _shortname = MidMeasure  #! Note: deprecated. Change the value to "measure" in v0.42
+
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
         return (None, None), metadata
@@ -266,7 +305,7 @@ class MidMeasureMP(MeasurementProcess):
     @classmethod
     def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
         wires = () if wires is None else wires
-        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect)
+        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect, id=id)
 
     @classmethod
     def _abstract_eval(
@@ -301,10 +340,6 @@ class MidMeasureMP(MeasurementProcess):
         return _label
 
     @property
-    def return_type(self):
-        return MidMeasure
-
-    @property
     def samples_computational_basis(self):
         return False
 
@@ -333,6 +368,11 @@ class MidMeasureMP(MeasurementProcess):
         """The name of the measurement. Needed to match the Operator API."""
         return self.__class__.__name__
 
+    @property
+    def num_params(self):
+        """The number of parameters. Needed to match the Operator API."""
+        return 0
+
 
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
@@ -350,14 +390,14 @@ class MeasurementValue(Generic[T]):
         self.measurements = measurements
         self.processing_fn = processing_fn
 
-    def _items(self):
+    def items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
         num_meas = len(self.measurements)
         for i in range(2**num_meas):
             branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             yield branch, self.processing_fn(*branch)
 
-    def _postselected_items(self):
+    def postselected_items(self):
         """A generator representing all the possible outcomes of the MeasurementValue,
         taking postselection into account."""
         # pylint: disable=stop-iteration-return
@@ -421,6 +461,11 @@ class MeasurementValue(Generic[T]):
         value."""
         return self._apply(qml.math.logical_not)
 
+    def __bool__(self) -> bool:
+        raise ValueError(
+            "The truth value of a MeasurementValue is undefined. To condition on a MeasurementValue, please use qml.cond instead."
+        )
+
     def __eq__(self, other):
         return self._transform_bin_op(lambda a, b: a == b, other)
 
@@ -469,6 +514,12 @@ class MeasurementValue(Generic[T]):
     def __or__(self, other):
         return self._transform_bin_op(qml.math.logical_or, other)
 
+    def __mod__(self, other):
+        return self._transform_bin_op(qml.math.logical_mod, other)
+
+    def __xor__(self, other):
+        return self._transform_bin_op(qml.math.logical_xor, other)
+
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
@@ -516,3 +567,48 @@ class MeasurementValue(Generic[T]):
 
     def __repr__(self):
         return f"MeasurementValue(wires={self.wires.tolist()})"
+
+
+def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
+    r"""Function to make mid-circuit measurement predicates mutually exclusive.
+
+    The ``conditions`` are predicates to the ``if`` and ``elif`` branches of ``qml.cond``.
+    This function updates all the ``MeasurementValue``\ s in ``conditions`` such that
+    reconciling the correct branch is never ambiguous.
+
+    Args:
+        conditions (Sequence[MeasurementValue]): Sequence containing predicates for ``if``
+            and all ``elif`` branches of a function decorated with :func:`~pennylane.cond`.
+
+    Returns:
+        Sequence[MeasurementValue]: Updated sequence of mutually exclusive predicates.
+    """
+    new_conds = [conditions[0]]
+    false_cond = ~conditions[0]
+
+    for c in conditions[1:]:
+        new_conds.append(false_cond & c)
+        false_cond = false_cond & ~c
+
+    new_conds.append(false_cond)
+    return new_conds
+
+
+def find_post_processed_mcms(circuit):
+    """Return the subset of mid-circuit measurements which are required for post-processing.
+
+    This includes any mid-circuit measurement that is post-selected or the object of a terminal
+    measurement.
+    """
+    post_processed_mcms = set(
+        op
+        for op in circuit.operations
+        if isinstance(op, MidMeasureMP) and op.postselect is not None
+    )
+    for m in circuit.measurements:
+        if isinstance(m.mv, list):
+            for mv in m.mv:
+                post_processed_mcms = post_processed_mcms | set(mv.measurements)
+        elif m.mv is not None:
+            post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
+    return post_processed_mcms

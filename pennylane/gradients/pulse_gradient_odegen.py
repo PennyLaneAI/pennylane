@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.ops.qubit.special_unitary import _pauli_decompose, pauli_basis_strings
 from pennylane.pulse import ParametrizedEvolution
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
@@ -48,7 +48,7 @@ except ImportError:
 
 def _one_parameter_generators(op):
     r"""Compute the effective generators :math:`\{\Omega_k\}` of one-parameter groups that
-    reproduce the partial derivatives of a parameterized evolution.
+    reproduce the partial derivatives of a parametrized evolution.
     In particular, compute :math:`U` and :math:`\partial U / \partial \theta_k`
     and recombine them into :math:`\Omega_k = U^\dagger \partial U / \partial \theta_k`
 
@@ -402,8 +402,8 @@ def _expval_pulse_odegen(tape, argnum, atol):
 
 @partial(transform, final_transform=True)
 def pulse_odegen(
-    tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, argnum=None, atol=1e-7
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
@@ -460,7 +460,7 @@ def pulse_odegen(
 
     **Example**
 
-    Consider the parameterized Hamiltonian
+    Consider the parametrized Hamiltonian
     :math:`\theta_0 Y_{0}+f(\boldsymbol{\theta_1}, t) Y_{1} + \theta_2 Z_{0}X_{1}`
     with parameters :math:`\theta_0 = \frac{1}{5}`,
     :math:`\boldsymbol{\theta_1}=\left(\frac{3}{5}, \frac{1}{5}\right)^{T}` and
@@ -504,9 +504,9 @@ def pulse_odegen(
     Alternatively, we may apply the transform to the tape of the pulse program, obtaining
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
-    >>> circuit.construct((params,), {}) # Build the tape of the circuit.
-    >>> circuit.tape.trainable_params = [0, 1, 2]
-    >>> tapes, fun = qml.gradients.pulse_odegen(circuit.tape, argnum=[0, 1, 2])
+    >>> tape = qml.workflow.construct_tape(circuit)(params) # Build the tape of the circuit.
+    >>> tape.trainable_params = [0, 1, 2]
+    >>> tapes, fun = qml.gradients.pulse_odegen(tape, argnum=[0, 1, 2])
     >>> len(tapes)
     12
 

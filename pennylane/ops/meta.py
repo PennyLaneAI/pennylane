@@ -15,13 +15,15 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
+from collections.abc import Hashable
+
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 from copy import copy
 from typing import Optional
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires  # pylint: disable=unused-import
+from pennylane.wires import Wires, WiresLike
 
 
 class Barrier(Operation):
@@ -44,7 +46,8 @@ class Barrier(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def __init__(self, wires=Wires([]), only_visual=False, id=None):
+    def __init__(self, wires: WiresLike = (), only_visual=False, id=None):
+        wires = Wires(wires)
         self.only_visual = only_visual
         self.hyperparameters["only_visual"] = only_visual
         super().__init__(wires=wires, id=id)
@@ -117,16 +120,12 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires=None, id=None):
-        if wires == []:
-            raise ValueError(
-                f"{self.__class__.__name__}: wrong number of wires. "
-                f"At least one wire has to be given."
-            )
-        super().__init__(*params, wires=wires, id=id)
+    def __init__(self, wires: WiresLike = (), id=None):
+        wires = Wires(wires)
+        super().__init__(wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=unused-argument
+    def compute_decomposition(wires: WiresLike):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
@@ -216,10 +215,9 @@ class Snapshot(Operation):
 
         if measurement is None:
             measurement = qml.state()
-
+        if isinstance(measurement, qml.measurements.MidMeasureMP):
+            raise ValueError("Mid-circuit measurements can not be used in snapshots.")
         if isinstance(measurement, qml.measurements.MeasurementProcess):
-            if isinstance(measurement, qml.measurements.MidMeasureMP):
-                raise ValueError("Mid-circuit measurements can not be used in snapshots.")
             qml.queuing.QueuingManager.remove(measurement)
         else:
             raise ValueError(
@@ -250,6 +248,10 @@ class Snapshot(Operation):
 
     def adjoint(self):
         return Snapshot(tag=self.tag, measurement=self.hyperparameters["measurement"])
+
+    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Snapshot":
+        new_measurement = self.hyperparameters["measurement"].map_wires(wire_map)
+        return Snapshot(tag=self.tag, measurement=new_measurement)
 
 
 # Since measurements are captured as variables in plxpr with the capture module,

@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
+
+import functools
 from collections.abc import Callable
+
+import pennylane as qml
+from pennylane.capture.flatfn import FlatFn
 
 from .compiler import (
     AvailableCompilers,
@@ -40,14 +45,14 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Catalyst supports compiling QNodes that use ``lightning.qubit``,
-        ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
-        devices. It does not support ``default.qubit``.
+        Catalyst only supports the JAX interface and selected devices.
+        Supported backend devices for Catalyst include
+        ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
+        but **not** ``default.qubit``.
 
-        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on
-        supported devices, operations, and measurements.
+        For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
-        CUDA Quantum supports ``softwareq.qpp``, ``nvidida.custatevec``, and ``nvidia.cutensornet``.
+        CUDA Quantum supports ``softwareq.qpp``, ``nvidia.custatevec``, and ``nvidia.cutensornet``.
 
     Args:
         fn (Callable): Hybrid (quantum-classical) function to compile
@@ -71,7 +76,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             elements of this list are named sequences of MLIR passes to be executed. A ``None``
             value (the default) results in the execution of the default pipeline. This option is
             considered to be used by advanced users for low-level debugging purposes.
-        static_argnums(int or Seqence[Int]): an index or a sequence of indices that specifies the
+        static_argnums(int or Sequence[Int]): an index or a sequence of indices that specifies the
             positions of static arguments.
         abstracted_axes (Sequence[Sequence[str]] or Dict[int, str] or Sequence[Dict[int, str]]):
             An experimental option to specify dynamic tensor shapes.
@@ -303,19 +308,12 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
 
 def while_loop(cond_fn):
-    """A :func:`~.qjit` compatible while-loop for PennyLane programs.
+    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+    used without :func:`~.qjit`, this function will fall back to a standard
+    Python for loop.
 
-    .. note::
-
-        This function only supports the Catalyst compiler. See
-        :func:`catalyst.while_loop` for more details.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
-
-    This decorator provides a functional version of the traditional while
-    loop, similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
+    This decorator provides a functional version of the traditional while loop,
+    similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
     That is, any variables that are modified across iterations need to be provided as
     inputs and outputs to the loop body function:
 
@@ -325,10 +323,9 @@ def while_loop(cond_fn):
     - Output arguments contain the value at the end of the iteration. The
       outputs are then fed back as inputs to the next iteration.
 
-    The final iteration values are also returned from the
-    transformed function.
+    The final iteration values are also returned from the transformed function.
 
-    The semantics of ``while_loop`` are given by the following Python pseudo-code:
+    The semantics of ``while_loop`` are given by the following Python pseudocode:
 
     .. code-block:: python
 
@@ -354,7 +351,6 @@ def while_loop(cond_fn):
 
         dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qjit
         @qml.qnode(dev)
         def circuit(x: float):
 
@@ -365,12 +361,19 @@ def while_loop(cond_fn):
                 return x ** 2
 
             # apply the while loop
-            final_x = loop_rx(x)
+            loop_rx(x)
 
-            return qml.expval(qml.Z(0)), final_x
+            return qml.expval(qml.Z(0))
 
     >>> circuit(1.6)
-    (array(-0.02919952), array(2.56))
+    -0.02919952
+
+    ``while_loop`` is also :func:`~.qjit` compatible; when used with the
+    :func:`~.qjit` decorator, the while loop will not be unrolled, and instead
+    will be captured as-is during compilation and executed during runtime:
+
+    >>> qml.qjit(circuit)(1.6)
+    Array(-0.02919952, dtype=float64)
     """
 
     if active_jit := active_compiler():
@@ -397,6 +400,51 @@ def while_loop(cond_fn):
     return _decorator
 
 
+@functools.lru_cache
+def _get_while_loop_qfunc_prim():
+    """Get the while_loop primitive for quantum functions."""
+
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    while_loop_prim = NonInterpPrimitive("while_loop")
+    while_loop_prim.multiple_results = True
+    while_loop_prim.prim_type = "higher_order"
+
+    # pylint: disable=too-many-arguments
+    @while_loop_prim.def_impl
+    def _(
+        *args,
+        jaxpr_body_fn,
+        jaxpr_cond_fn,
+        body_slice,
+        cond_slice,
+        args_slice,
+        abstract_shapes_slice,
+    ):
+
+        jaxpr_consts_body = args[body_slice]
+        jaxpr_consts_cond = args[cond_slice]
+        init_state = args[args_slice]
+        abstract_shapes = args[abstract_shapes_slice]
+        # If cond_fn(*init_state) is False, return the initial state
+        fn_res = init_state
+        while jax.core.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *abstract_shapes, *fn_res)[0]:
+            fn_res = jax.core.eval_jaxpr(
+                jaxpr_body_fn, jaxpr_consts_body, *abstract_shapes, *fn_res
+            )
+
+        return fn_res
+
+    @while_loop_prim.def_abstract_eval
+    def _(*args, args_slice, **__):
+        return args[args_slice]
+
+    return while_loop_prim
+
+
 class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     """Base class to represent a while loop. This class
     when called with an initial state will execute the while
@@ -411,7 +459,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         self.cond_fn = cond_fn
         self.body_fn = body_fn
 
-    def __call__(self, *init_state):
+    def _call_capture_disabled(self, *init_state):
         args = init_state
         fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
 
@@ -421,9 +469,50 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
         return fn_res
 
+    def _call_capture_enabled(self, *init_state):
 
-def for_loop(lower_bound, upper_bound, step):
-    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+        import jax  # pylint: disable=import-outside-toplevel
+
+        while_loop_prim = _get_while_loop_qfunc_prim()
+
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(init_state)
+
+        flat_body_fn = FlatFn(self.body_fn)
+        jaxpr_body_fn = jax.make_jaxpr(flat_body_fn, abstracted_axes=abstracted_axes)(*init_state)
+        jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn, abstracted_axes=abstracted_axes)(*init_state)
+
+        body_consts = slice(0, len(jaxpr_body_fn.consts))
+        cond_consts = slice(body_consts.stop, body_consts.stop + len(jaxpr_cond_fn.consts))
+        abstract_shapes_slice = slice(cond_consts.stop, cond_consts.stop + len(abstract_shapes))
+        args_slice = slice(abstract_shapes_slice.stop, None)
+
+        flat_args, _ = jax.tree_util.tree_flatten(init_state)
+        results = while_loop_prim.bind(
+            *jaxpr_body_fn.consts,
+            *jaxpr_cond_fn.consts,
+            *abstract_shapes,
+            *flat_args,
+            jaxpr_body_fn=jaxpr_body_fn.jaxpr,
+            jaxpr_cond_fn=jaxpr_cond_fn.jaxpr,
+            body_slice=body_consts,
+            cond_slice=cond_consts,
+            args_slice=args_slice,
+            abstract_shapes_slice=abstract_shapes_slice,
+        )
+        assert flat_body_fn.out_tree is not None, "Should be set when constructing the jaxpr"
+        return jax.tree_util.tree_unflatten(flat_body_fn.out_tree, results)
+
+    def __call__(self, *init_state):
+
+        if qml.capture.enabled():
+            return self._call_capture_enabled(*init_state)
+
+        return self._call_capture_disabled(*init_state)
+
+
+def for_loop(start, stop=None, step=1):
+    """for_loop([start, ]stop[, step])
+    A :func:`~.qjit` compatible for-loop for PennyLane programs. When
     used without :func:`~.qjit`, this function will fall back to a standard
     Python for loop.
 
@@ -445,18 +534,29 @@ def for_loop(lower_bound, upper_bound, step):
 
     .. code-block:: python
 
-        def for_loop(lower_bound, upper_bound, step, loop_fn, *args):
-            for i in range(lower_bound, upper_bound, step):
+        def for_loop(start, stop, step, loop_fn, *args):
+            for i in range(start, stop, step):
                 args = loop_fn(i, *args)
             return args
 
     Unlike ``jax.cond.fori_loop``, the step can be negative if it is known at tracing time
     (i.e., constant). If a non-constant negative step is used, the loop will produce no iterations.
 
+    .. note::
+
+        This function can be used in the following different ways:
+
+        1. ``for_loop(stop)``:  Values are generated within the interval ``[0, stop)``
+        2. ``for_loop(start, stop)``: Values are generated within the interval ``[start, stop)``
+        3. ``for_loop(start, stop, step)``: Values are generated within the interval ``[start, stop)``,
+           with spacing between the values given by ``step``
+
     Args:
-        lower_bound (int): starting value of the iteration index
-        upper_bound (int): (exclusive) upper bound of the iteration index
-        step (int): increment applied to the iteration index at the end of each iteration
+        start (int, optional): starting value of the iteration index.
+            The default start value is ``0``
+        stop (int): upper bound of the iteration index
+        step (int, optional): increment applied to the iteration index at the end of
+            each iteration. The default step size is ``1``
 
     Returns:
         Callable[[int, ...], ...]: A wrapper around the loop body function.
@@ -506,16 +606,18 @@ def for_loop(lower_bound, upper_bound, step):
         page for an overview of using quantum just-in-time compilation.
 
     """
+    if stop is None:
+        start, stop = 0, start
 
     if active_jit := active_compiler():
         compilers = AvailableCompilers.names_entrypoints
         ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.for_loop(lower_bound, upper_bound, step)
+        return ops_loader.for_loop(start, stop, step)
 
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpretor.
     def _decorator(body_fn):
-        """Transform that will call the input ``body_fn`` within a for loop defined by the closure variables lower_bound, upper_bound, and step.
+        """Transform that will call the input ``body_fn`` within a for loop defined by the closure variables start, stop, and step.
 
         Args:
             body_fn (Callable): The function called within the for loop. Note that the loop body
@@ -525,16 +627,53 @@ def for_loop(lower_bound, upper_bound, step):
                 returned from the function.
 
         Closure Variables:
-            lower_bound (int): starting value of the iteration index
-            upper_bound (int): (exclusive) upper bound of the iteration index
+            start (int): starting value of the iteration index
+            stop (int): (exclusive) upper bound of the iteration index
             step (int): increment applied to the iteration index at the end of each iteration
 
         Returns:
             Callable: a callable with the same signature as ``body_fn``
         """
-        return ForLoopCallable(lower_bound, upper_bound, step, body_fn)
+        return ForLoopCallable(start, stop, step, body_fn)
 
     return _decorator
+
+
+@functools.lru_cache
+def _get_for_loop_qfunc_prim():
+    """Get the loop_for primitive for quantum functions."""
+
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    for_loop_prim = NonInterpPrimitive("for_loop")
+    for_loop_prim.multiple_results = True
+    for_loop_prim.prim_type = "higher_order"
+
+    # pylint: disable=too-many-arguments
+    @for_loop_prim.def_impl
+    def _(start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice):
+
+        consts = args[consts_slice]
+        init_state = args[args_slice]
+        abstract_shapes = args[abstract_shapes_slice]
+
+        # in case start >= stop, return the initial state
+        fn_res = init_state
+
+        for i in range(start, stop, step):
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
+
+        return fn_res
+
+    # pylint: disable=unused-argument
+    @for_loop_prim.def_abstract_eval
+    def _(start, stop, step, *args, args_slice, **_):
+        return args[args_slice]
+
+    return for_loop_prim
 
 
 class ForLoopCallable:  # pylint:disable=too-few-public-methods
@@ -543,8 +682,8 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
     loop via the Python interpreter.
 
     Args:
-        lower_bound (int): starting value of the iteration index
-        upper_bound (int): (exclusive) upper bound of the iteration index
+        start (int): starting value of the iteration index
+        stop (int): (exclusive) upper bound of the iteration index
         step (int): increment applied to the iteration index at the end of each iteration
         body_fn (Callable): The function called within the for loop. Note that the loop body
             function must always have the iteration index as its first
@@ -553,18 +692,57 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
             returned from the function.
     """
 
-    def __init__(self, lower_bound, upper_bound, step, body_fn):
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
+    def __init__(self, start, stop, step, body_fn):
+        self.start = start
+        self.stop = stop
         self.step = step
         self.body_fn = body_fn
 
-    def __call__(self, *init_state):
+    def _call_capture_disabled(self, *init_state):
         args = init_state
         fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
 
-        for i in range(self.lower_bound, self.upper_bound, self.step):
+        for i in range(self.start, self.stop, self.step):
             fn_res = self.body_fn(i, *args)
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
 
         return fn_res
+
+    def _call_capture_enabled(self, *init_state):
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        for_loop_prim = _get_for_loop_qfunc_prim()
+
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes((0, *init_state))
+
+        flat_fn = FlatFn(self.body_fn)
+        jaxpr_body_fn = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(0, *init_state)
+
+        consts_slice = slice(0, len(jaxpr_body_fn.consts))
+        abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
+        args_slice = slice(abstract_shapes_slice.stop, None)
+
+        flat_args, _ = jax.tree_util.tree_flatten(init_state)
+
+        results = for_loop_prim.bind(
+            self.start,
+            self.stop,
+            self.step,
+            *jaxpr_body_fn.consts,
+            *abstract_shapes,
+            *flat_args,
+            jaxpr_body_fn=jaxpr_body_fn.jaxpr,
+            consts_slice=consts_slice,
+            args_slice=args_slice,
+            abstract_shapes_slice=abstract_shapes_slice,
+        )
+        assert flat_fn.out_tree is not None
+        return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
+
+    def __call__(self, *init_state):
+
+        if qml.capture.enabled():
+            return self._call_capture_enabled(*init_state)
+
+        return self._call_capture_disabled(*init_state)

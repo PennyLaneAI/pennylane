@@ -34,7 +34,7 @@ class TwoLocalSwapNetwork(Operation):
             stored in physical wires provided by `wires` before they are swapped apart.
             Parameters for the operation are specified using `param`, and any additional
             keyword arguments for the callable should be provided using the ``kwargs`` separately
-        weights (tensor): weight tensor for the parameterized acquaintances of length
+        weights (tensor): weight tensor for the parametrized acquaintances of length
             :math:`N \times (N - 1) / 2`, where `N` is the length of `wires`
         fermionic (bool): If ``True``, qubits are realized as fermionic modes and :class:`~.pennylane.FermionicSWAP` with :math:`\phi=\pi` is used instead of :class:`~.pennylane.SWAP`
         shift (bool): If ``True``, odd-numbered layers begins from the second qubit instead of first one
@@ -162,7 +162,7 @@ class TwoLocalSwapNetwork(Operation):
         .. seealso:: :meth:`~.TwoLocalSwapNetwork.decomposition`.
 
         Args:
-            weights (tensor): weight tensor for the parameterized acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the length of `wires`
+            weights (tensor): weight tensor for the parametrized acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the length of `wires`
             wires (Iterable or Wires): ordered sequence of wires on which the swap network acts
             acquaintances (Callable): callable `func(index, wires, param=None, **kwargs)` that returns a two-local operation, which is applied on a pair of logical wires specified by `index`. This corresponds to applying the operation on physical wires provided by `wires` before any SWAP gates occurred. Parameters for the operation are specified using `param`, and any additional keyword arguments for the callable should be provided using the ``kwargs`` separately
             fermionic (bool): If ``True``, qubits are realized as fermionic modes and :class:`~.pennylane.FermionicSWAP` with :math:`\phi=\pi` is used instead of :class:`~.pennylane.SWAP`
@@ -224,7 +224,7 @@ class TwoLocalSwapNetwork(Operation):
 
     @staticmethod
     def shape(n_wires):
-        r"""Returns the shape of the weight tensor required for using parameterized acquaintances in the template.
+        r"""Returns the shape of the weight tensor required for using parametrized acquaintances in the template.
         Args:
             n_wires (int): Number of qubits
         Returns:

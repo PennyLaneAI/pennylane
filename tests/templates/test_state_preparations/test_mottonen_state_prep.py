@@ -417,29 +417,36 @@ def test_adjoint_brings_back_to_zero(adj_base_op):
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("shots, atol", [(None, 0.005), (1000000, 0.05)])
-def test_jacobians_with_and_without_jit_match(shots, atol):
+def test_jacobians_with_and_without_jit_match(seed):
     """Test that the Jacobian of the circuit is the same with and without jit."""
     import jax
 
-    dev = qml.device("default.qubit", shots=shots, seed=7890234)
+    shots = None
+    atol = 0.005
+
+    dev = qml.device("default.qubit", shots=shots, seed=seed)
     dev_no_shots = qml.device("default.qubit", shots=None)
 
     def circuit(coeffs):
         qml.MottonenStatePreparation(coeffs, wires=[0, 1])
         return qml.probs(wires=[0, 1])
 
-    circuit_fd = qml.QNode(circuit, dev, diff_method="finite-diff", h=0.05)
+    circuit_fd = qml.QNode(circuit, dev, diff_method="finite-diff", gradient_kwargs={"h": 0.05})
+    circuit_ps = qml.QNode(circuit, dev, diff_method="parameter-shift")
     circuit_exact = qml.QNode(circuit, dev_no_shots)
 
-    params = jax.numpy.array([0.5, 0.5, 0.5, 0.5])
+    params = jax.numpy.array([0.5, 0.5, 0.5, 0.5], dtype=jax.numpy.float64)
     jac_exact_fn = jax.jacobian(circuit_exact)
-    jac_fn = jax.jacobian(circuit_fd)
-    jac_jit_fn = jax.jit(jac_fn)
+    jac_fd_fn = jax.jacobian(circuit_fd)
+    jac_fd_fn_jit = jax.jit(jac_fd_fn)
+    jac_ps_fn = jax.jacobian(circuit_ps)
+    jac_ps_fn_jit = jax.jit(jac_ps_fn)
 
     jac_exact = jac_exact_fn(params)
-    jac = jac_fn(params)
-    jac_jit = jac_jit_fn(params)
+    jac_fd = jac_fd_fn(params)
+    jac_fd_jit = jac_fd_fn_jit(params)
+    jac_ps = jac_ps_fn(params)
+    jac_ps_jit = jac_ps_fn_jit(params)
 
-    assert qml.math.allclose(jac_exact, jac_jit, atol=atol)
-    assert qml.math.allclose(jac, jac_jit, atol=atol)
+    for compare in [jac_fd, jac_fd_jit, jac_ps, jac_ps_jit]:
+        assert qml.math.allclose(jac_exact, compare, atol=atol)

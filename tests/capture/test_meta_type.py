@@ -19,20 +19,11 @@ from inspect import signature
 # pylint: disable=protected-access, undefined-variable
 import pytest
 
-import pennylane as qml
 from pennylane.capture.capture_meta import CaptureMeta
 
 jax = pytest.importorskip("jax")
 
-pytestmark = pytest.mark.jax
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    """enable and disable capture around each test."""
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 def test_custom_capture_meta():

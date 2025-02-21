@@ -3,6 +3,7 @@
 source = pennylane
 omit =
     pennylane/devices/tests*
+    pennylane/labs/*
 
 [report]
 # Regexes for lines to exclude from consideration

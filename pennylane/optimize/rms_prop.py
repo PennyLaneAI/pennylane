@@ -20,8 +20,8 @@ from .adagrad import AdagradOptimizer
 class RMSPropOptimizer(AdagradOptimizer):
     r"""Root mean squared propagation optimizer.
 
-    The root mean square progation optimizer is a modified
-    :class:`Adagrad optimizer <pennylane.optmimize.AdagradOptimizer>`,
+    The root mean square propagation optimizer is a modified
+    :class:`Adagrad optimizer <pennylane.optimize.AdagradOptimizer>`,
     with a decay of learning rate adaptation.
 
     Extensions of the Adagrad optimization method generally
@@ -36,10 +36,10 @@ class RMSPropOptimizer(AdagradOptimizer):
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
-            used in the Adagrad optmization
+            used in the Adagrad optimization
         decay (float): the learning rate decay :math:`\gamma`
         eps (float): offset :math:`\epsilon` added for numerical stability
-            (see :class:`Adagrad <pennylane.optmimize.AdagradOptimizer>`)
+            (see :class:`Adagrad <pennylane.optimize.AdagradOptimizer>`)
 
     """
 

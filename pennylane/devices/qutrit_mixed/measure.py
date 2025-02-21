@@ -27,7 +27,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.ops import Hamiltonian, Sum
+from pennylane.ops import Sum
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -221,28 +221,16 @@ def calculate_expval_sum_of_terms(
     Returns:
         TensorLike: the expectation value of the sum of Hamiltonian observable wrt the state.
     """
-    if isinstance(measurementprocess.obs, Sum):
-        # Recursively call measure on each term, so that the best measurement method can
-        # be used for each term
-        return sum(
-            measure(
-                ExpectationMP(term),
-                state,
-                is_state_batched=is_state_batched,
-                readout_errors=readout_errors,
-            )
-            for term in measurementprocess.obs
-        )
-    # else hamiltonian
+    # Recursively call measure on each term, so that the best measurement method can
+    # be used for each term
     return sum(
-        c
-        * measure(
-            ExpectationMP(t),
+        measure(
+            ExpectationMP(term),
             state,
             is_state_batched=is_state_batched,
             readout_errors=readout_errors,
         )
-        for c, t in zip(*measurementprocess.obs.terms())
+        for term in measurementprocess.obs
     )
 
 
@@ -262,7 +250,7 @@ def get_measurement_function(
     """
     if isinstance(measurementprocess, StateMeasurement):
         if isinstance(measurementprocess, ExpectationMP):
-            if isinstance(measurementprocess.obs, (Hamiltonian, Sum)):
+            if isinstance(measurementprocess.obs, Sum):
                 return calculate_expval_sum_of_terms
             if measurementprocess.obs.has_matrix:
                 return calculate_expval

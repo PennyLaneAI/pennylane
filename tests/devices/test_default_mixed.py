@@ -24,6 +24,8 @@ import pytest
 import pennylane as qml
 from pennylane import BasisState, DeviceError, StatePrep
 from pennylane.devices import DefaultMixed
+from pennylane.devices.default_mixed import DefaultMixedNewAPI
+from pennylane.math import Interface
 from pennylane.ops import (
     CNOT,
     CZ,
@@ -162,7 +164,7 @@ class TestReset:
     def test_reset_basis(self, nr_wires, tol):
         """Test the reset after creating a basis state."""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = dev._create_basis_state(1)
+        dev.target_device._state = dev._create_basis_state(1)
         dev.reset()
 
         assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
@@ -215,7 +217,7 @@ class TestAnalyticProb:
     def test_prob_basis_state(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the basis state |1...1><1...1|"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = dev._create_basis_state(2**nr_wires - 1)
+        dev.target_device._state = dev._create_basis_state(2**nr_wires - 1)
         probs = np.zeros(2**nr_wires)
         probs[-1] = 1
 
@@ -224,7 +226,7 @@ class TestAnalyticProb:
     def test_prob_hadamard(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the equal superposition state"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = hadamard_state(nr_wires)
+        dev.target_device._state = hadamard_state(nr_wires)
         probs = np.ones(2**nr_wires) / (2**nr_wires)
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
@@ -232,7 +234,7 @@ class TestAnalyticProb:
     def test_prob_mixed(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the maximally mixed state"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = max_mixed_state(nr_wires)
+        dev.target_device._state = max_mixed_state(nr_wires)
         probs = np.ones(2**nr_wires) / (2**nr_wires)
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
@@ -240,7 +242,7 @@ class TestAnalyticProb:
     def test_prob_root(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the root state"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = root_state(nr_wires)
+        dev.target_device._state = root_state(nr_wires)
         probs = np.ones(2**nr_wires) / (2**nr_wires)
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
@@ -248,7 +250,7 @@ class TestAnalyticProb:
     def test_none_state(self, nr_wires):
         """Tests that return is `None` when the state is `None`"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = None
+        dev.target_device._state = None
 
         assert dev.analytic_probability() is None
 
@@ -408,7 +410,7 @@ class TestApplyChannel:
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         max_mixed = np.reshape(max_mixed_state(nr_wires), [2] * 2 * nr_wires)
-        dev._state = max_mixed
+        dev.target_device._state = max_mixed
         kraus = dev._get_kraus(op)
         getattr(dev, apply_method)(kraus, wires=op.wires)
 
@@ -483,7 +485,7 @@ class TestApplyChannel:
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         root = np.reshape(root_state(nr_wires), [2] * 2 * nr_wires)
-        dev._state = root
+        dev.target_device._state = root
         kraus = dev._get_kraus(op)
         getattr(dev, apply_method)(kraus, wires=op.wires)
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
@@ -514,7 +516,7 @@ class TestApplyChannel:
 
         dev = qml.device("default.mixed", wires=num_dev_wires)
         init_state = random_state(num_dev_wires)
-        dev._state = qml.math.reshape(init_state, [2] * (2 * num_dev_wires))
+        dev.target_device._state = qml.math.reshape(init_state, [2] * (2 * num_dev_wires))
 
         kraus = dev._get_kraus(op)
         full_kraus = [qml.math.expand_matrix(k, op.wires, wire_order=dev.wires) for k in kraus]
@@ -596,7 +598,7 @@ class TestApplyDiagonal:
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         root = np.reshape(root_state(nr_wires), [2] * 2 * nr_wires)
-        dev._state = root
+        dev.target_device._state = root
         kraus = dev._get_kraus(op)
         if op.name == "CZ":
             dev._apply_diagonal_unitary(kraus, wires=Wires([0, 1]))
@@ -1074,7 +1076,7 @@ class TestApply:
         state = np.array([0])
         ops = [PauliX(0), BasisState(state, wires=0)]
 
-        with pytest.raises(DeviceError, match="Operation"):
+        with pytest.raises(qml.DeviceError, match="Operation"):
             dev.apply(ops)
 
     def test_raise_order_error_qubit_state(self):
@@ -1084,7 +1086,7 @@ class TestApply:
         state = np.array([1, 0])
         ops = [PauliX(0), StatePrep(state, wires=0)]
 
-        with pytest.raises(DeviceError, match="Operation"):
+        with pytest.raises(qml.DeviceError, match="Operation"):
             dev.apply(ops)
 
     def test_apply_toffoli(self, tol):
@@ -1203,13 +1205,15 @@ class TestReadoutError:
     @pytest.mark.parametrize("prob", [0, 0.5, 1])
     @pytest.mark.parametrize("nr_wires", [2, 3])
     def test_readout_vnentropy_and_mutualinfo(self, nr_wires, prob):
-        """Tests the output of qml.vn_entropy and qml.mutual_info is not affected by readout error"""
+        """Tests the output of qml.vn_entropy and qml.mutual_info
+        are not affected by readout error"""
         dev = qml.device("default.mixed", wires=nr_wires, readout_prob=prob)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.vn_entropy(wires=0, log_base=2), qml.mutual_info(
-                wires0=[0], wires1=[1], log_base=2
+            return (
+                qml.vn_entropy(wires=0, log_base=2),
+                qml.mutual_info(wires0=[0], wires1=[1], log_base=2),
             )
 
         res = circuit()
@@ -1294,3 +1298,77 @@ class TestInit:
             match=msg,
         ):
             qml.device("default.mixed", wires=1, shots=1, analytic=True)
+
+
+class TestDefaultMixedNewAPIInit:
+    """Unit tests for DefaultMixedNewAPI initialization"""
+
+    def test_name_property(self):
+        """Test the name property returns correct device name"""
+        dev = DefaultMixedNewAPI(wires=1)
+        assert dev.name == "default.mixed"
+
+    @pytest.mark.parametrize("readout_prob", [-0.1, 1.1, 2.0])
+    def test_readout_probability_validation(self, readout_prob):
+        """Test readout probability validation during initialization"""
+        with pytest.raises(ValueError, match="readout error probability should be in the range"):
+            DefaultMixedNewAPI(wires=1, readout_prob=readout_prob)
+
+    @pytest.mark.parametrize("readout_prob", ["0.5", [0.5], (0.5,)])
+    def test_readout_probability_type_validation(self, readout_prob):
+        """Test readout probability type validation"""
+        with pytest.raises(TypeError, match="readout error probability should be an integer"):
+            DefaultMixedNewAPI(wires=1, readout_prob=readout_prob)
+
+    def test_seed_global(self):
+        """Test global seed initialization"""
+        dev = DefaultMixedNewAPI(wires=1, seed="global")
+        assert dev._rng is not None
+        assert dev._prng_key is None
+
+    @pytest.mark.jax
+    def test_seed_jax(self):
+        """Test JAX PRNGKey seed initialization"""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        dev = DefaultMixedNewAPI(wires=1, seed=jax.random.PRNGKey(0))
+        assert dev._rng is not None
+        assert dev._prng_key is not None
+
+    def test_supports_derivatives(self):
+        """Test supports_derivatives method"""
+        dev = DefaultMixedNewAPI(wires=1)
+        assert dev.supports_derivatives()
+        assert not dev.supports_derivatives(
+            execution_config=qml.devices.execution_config.ExecutionConfig(
+                gradient_method="finite-diff"
+            )
+        )
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3, 10, 22])
+    def test_valid_wire_numbers(self, nr_wires):
+        """Test initialization with different valid wire numbers"""
+        dev = DefaultMixedNewAPI(wires=nr_wires)
+        assert len(dev.wires) == nr_wires
+
+    def test_wire_initialization_list(self):
+        """Test initialization with wire list"""
+        dev = DefaultMixedNewAPI(wires=["a", "b", "c"])
+        assert dev.wires == qml.wires.Wires(["a", "b", "c"])
+
+    def test_too_many_wires(self):
+        """Test error raised when too many wires requested"""
+        with pytest.raises(ValueError, match="This device does not currently support"):
+            DefaultMixedNewAPI(wires=24)
+
+    def test_execute_no_diff_method(self):
+        """Test that the execute method is defined"""
+        dev = DefaultMixedNewAPI(wires=[0, 1])
+        execution_config = qml.devices.execution_config.ExecutionConfig(
+            gradient_method="finite-diff"
+        )  # in-valid one for this device
+        processed_config = dev._setup_execution_config(execution_config)
+        assert (
+            processed_config.interface is Interface.NUMPY
+        ), "The interface should be set to numpy for an invalid gradient method"

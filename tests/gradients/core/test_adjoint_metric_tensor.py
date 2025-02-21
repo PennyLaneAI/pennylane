@@ -14,6 +14,9 @@
 """
 Unit tests for the adjoint_metric_tensor function.
 """
+
+import numpy as onp
+
 # pylint: disable=protected-access
 import pytest
 
@@ -276,14 +279,14 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit)(*params)
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.adjoint_metric_tensor(circuit.qtape)
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt, expected)
+        tape = qml.workflow.construct_tape(circuit)(*params)
+        met_tens = qml.adjoint_metric_tensor(tape)
+        expected = qml.math.reshape(expected, qml.math.shape(met_tens))
+        assert qml.math.allclose(met_tens, expected)
 
     @pytest.mark.jax
     @pytest.mark.skip("JAX does not support forward pass execution of the metric tensor.")
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_correct_output_tape_jax(self, dev_name, ansatz, params):
+    def test_correct_output_tape_jax(self, ansatz, params):
         """Test that the output is correct when using JAX and
         calling the adjoint metric tensor directly on a tape."""
 
@@ -291,7 +294,7 @@ class TestAdjointMetricTensorTape:
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
-        dev = qml.device(dev_name, wires=self.num_wires)
+        dev = qml.device("default.qubit", wires=self.num_wires)
 
         @qml.qnode(dev, interface="jax")
         def circuit(*params):
@@ -300,9 +303,10 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*j_params)
-        mt = qml.adjoint_metric_tensor(circuit.qtape)
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt, expected)
+        tape = qml.workflow.construct_tape(circuit)(*j_params)
+        met_tens = qml.adjoint_metric_tensor(tape)
+        expected = qml.math.reshape(expected, qml.math.shape(met_tens))
+        assert qml.math.allclose(met_tens, expected)
 
         mt = qml.adjoint_metric_tensor(circuit)(*j_params)
         assert qml.math.allclose(mt, expected)
@@ -311,8 +315,7 @@ class TestAdjointMetricTensorTape:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_correct_output_tape_torch(self, ansatz, params, interface, dev_name):
+    def test_correct_output_tape_torch(self, ansatz, params, interface):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor directly on a tape."""
 
@@ -320,7 +323,7 @@ class TestAdjointMetricTensorTape:
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True) for p in params)
-        dev = qml.device(dev_name, wires=self.num_wires)
+        dev = qml.device("default.qubit", wires=self.num_wires)
 
         @qml.qnode(dev, interface=interface)
         def circuit(*params):
@@ -332,16 +335,16 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit)(*t_params)
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.adjoint_metric_tensor(circuit.qtape)
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt.detach().numpy(), expected)
+        tape = qml.workflow.construct_tape(circuit)(*t_params)
+        met_tens = qml.adjoint_metric_tensor(tape)
+        expected = qml.math.reshape(expected, qml.math.shape(met_tens))
+        assert qml.math.allclose(met_tens.detach().numpy(), expected)
 
     interfaces = ["auto", "tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_correct_output_tape_tf(self, ansatz, params, interface, dev_name):
+    def test_correct_output_tape_tf(self, ansatz, params, interface):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor directly on a tape."""
 
@@ -349,7 +352,7 @@ class TestAdjointMetricTensorTape:
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(tf.Variable(p) for p in params)
-        dev = qml.device(dev_name, wires=self.num_wires)
+        dev = qml.device("default.qubit", wires=self.num_wires)
 
         @qml.qnode(dev, interface=interface)
         def circuit(*params):
@@ -359,7 +362,8 @@ class TestAdjointMetricTensorTape:
 
         with tf.GradientTape():
             circuit(*t_params)
-            mt = qml.adjoint_metric_tensor(circuit.qtape)
+            tape = qml.workflow.construct_tape(circuit)(*t_params)
+            mt = qml.adjoint_metric_tensor(tape)
 
         with tf.GradientTape():
             mt = qml.adjoint_metric_tensor(circuit)(*t_params)
@@ -431,8 +435,7 @@ class TestAdjointMetricTensorQNode:
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_correct_output_qnode_torch(self, ansatz, params, interface, dev_name):
+    def test_correct_output_qnode_torch(self, ansatz, params, interface):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
 
@@ -440,7 +443,7 @@ class TestAdjointMetricTensorQNode:
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
-        dev = qml.device(dev_name, wires=self.num_wires)
+        dev = qml.device("default.qubit", wires=self.num_wires)
 
         @qml.qnode(dev, interface=interface)
         def circuit(*params):
@@ -618,3 +621,28 @@ def test_error_finite_shots():
 
     with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
         qml.adjoint_metric_tensor(tape)
+
+
+def test_works_with_state_prep():
+    """Test that a state preparation operation is respected."""
+    dev = qml.device("default.qubit")
+
+    # Some random normalized state, no particular relevance
+    init_state = onp.array([0.16769259, 0.71277864, 0.54562903, 0.4075718])
+
+    def ansatz(angles, wires):
+        qml.StatePrep(init_state, wires=wires)
+        qml.Hadamard(wires[0])
+        qml.RX(angles[0], wires=wires[0])
+        qml.S(wires[1])
+        qml.RY(angles[1], wires=wires[1])
+
+    @qml.qnode(dev)
+    def circuit(angles):
+        ansatz(angles, wires=[0, 1])
+        return qml.expval(qml.Z(0) @ qml.X(1))
+
+    angles = np.random.uniform(size=(2,), requires_grad=True)
+    qfim = qml.adjoint_metric_tensor(circuit)(angles)
+    autodiff_qfim = autodiff_metric_tensor(ansatz, 2)(angles)
+    assert onp.allclose(qfim, autodiff_qfim)

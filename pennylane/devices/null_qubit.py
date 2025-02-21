@@ -22,14 +22,13 @@ import logging
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 
 from pennylane import math
 from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
-from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -37,10 +36,9 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementValue,
     ProbabilityMP,
-    Shots,
     StateMP,
 )
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
@@ -51,62 +49,55 @@ from .preprocess import decompose
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
-
 
 @singledispatch
 def zero_measurement(
-    mp: MeasurementProcess, obj_with_wires, shots: Shots, batch_size: int, interface: str
+    mp: MeasurementProcess, num_device_wires, shots: Optional[int], batch_size: int, interface: str
 ):
     """Create all-zero results for various measurement processes."""
-    return _zero_measurement(mp, obj_with_wires, shots, batch_size, interface)
+    return _zero_measurement(mp, num_device_wires, shots, batch_size, interface)
 
 
-def _zero_measurement(mp, obj_with_wires, shots, batch_size, interface):
-    shape = mp.shape(obj_with_wires, shots)
-    if all(isinstance(s, int) for s in shape):
-        if batch_size is not None:
-            shape = (batch_size,) + shape
-        return math.zeros(shape, like=interface, dtype=mp.numeric_type)
+def _zero_measurement(
+    mp: MeasurementProcess, num_device_wires: int, shots: Optional[int], batch_size, interface
+):
+    shape = mp.shape(shots, num_device_wires)
     if batch_size is not None:
-        shape = ((batch_size,) + s for s in shape)
-    return tuple(math.zeros(s, like=interface, dtype=mp.numeric_type) for s in shape)
+        shape = (batch_size,) + shape
+    return math.zeros(shape, like=interface, dtype=mp.numeric_type)
 
 
 @zero_measurement.register
-def _(mp: ClassicalShadowMP, obj_with_wires, shots, batch_size, interface):
-    shapes = [mp.shape(obj_with_wires, Shots(s)) for s in shots]
+def _(mp: ClassicalShadowMP, num_device_wires, shots: Optional[int], batch_size, interface):
     if batch_size is not None:
         # shapes = [(batch_size,) + shape for shape in shapes]
         raise ValueError(
             "Parameter broadcasting is not supported with null.qubit and qml.classical_shadow"
         )
-    results = tuple(math.zeros(shape, like=interface, dtype=np.int8) for shape in shapes)
-    return results if shots.has_partitioned_shots else results[0]
+    shape = mp.shape(shots, num_device_wires)
+    return math.zeros(shape, like=interface, dtype=np.int8)
 
 
 @zero_measurement.register
-def _(mp: CountsMP, obj_with_wires, shots, batch_size, interface):
+def _(mp: CountsMP, num_device_wires, shots, batch_size, interface):
     outcomes = []
     if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
-        num_wires = len(obj_with_wires.wires)
-        state = "0" * num_wires
-        results = tuple({state: math.asarray(s, like=interface)} for s in shots)
+        state = "0" * num_device_wires
+        results = {state: math.asarray(shots, like=interface)}
         if mp.all_outcomes:
-            outcomes = [f"{x:0{num_wires}b}" for x in range(1, 2**num_wires)]
+            outcomes = [f"{x:0{num_device_wires}b}" for x in range(1, 2**num_device_wires)]
     else:
         outcomes = sorted(mp.eigvals())  # always assign shots to the smallest
-        results = tuple({outcomes[0]: math.asarray(s, like=interface)} for s in shots)
+        results = {outcomes[0]: math.asarray(shots, like=interface)}
         outcomes = outcomes[1:] if mp.all_outcomes else []
 
     if outcomes:
         zero = math.asarray(0, like=interface)
-        for res in results:
-            for val in outcomes:
-                res[val] = zero
+        for val in outcomes:
+            results[val] = zero
     if batch_size is not None:
-        results = tuple([r] * batch_size for r in results)
-    return results[0] if len(results) == 1 else results
+        results = tuple(results for _ in range(batch_size))
+    return results
 
 
 zero_measurement.register(DensityMatrixMP)(_zero_measurement)
@@ -114,13 +105,22 @@ zero_measurement.register(DensityMatrixMP)(_zero_measurement)
 
 @zero_measurement.register(StateMP)
 @zero_measurement.register(ProbabilityMP)
-def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots, batch_size, interface):
-    wires = mp.wires or obj_with_wires.wires
-    state = [1.0] + [0.0] * (2 ** len(wires) - 1)
+def _(
+    mp: Union[StateMP, ProbabilityMP],
+    num_device_wires: int,
+    shots: Optional[int],
+    batch_size,
+    interface,
+):
+    num_wires = len(mp.wires) or num_device_wires
+    state = [1.0] + [0.0] * (2**num_wires - 1)
     if batch_size is not None:
         state = [state] * batch_size
-    result = math.asarray(state, like=interface)
-    return (result,) * shots.num_copies if shots.has_partitioned_shots else result
+    return math.asarray(state, like=interface)
+
+
+def _interface(config: ExecutionConfig):
+    return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
 @simulator_tracking
@@ -181,8 +181,8 @@ class NullQubit(Device):
             circuit(params)
 
     >>> tracker.history["resources"][0]
-    wires: 100
-    gates: 10000
+    num_wires: 100
+    num_gates: 10000
     depth: 502
     shots: Shots(total=None)
     gate_types:
@@ -224,26 +224,26 @@ class NullQubit(Device):
         self._debugger = None
 
     def _simulate(self, circuit, interface):
-        shots = circuit.shots
-        obj_with_wires = self if self.wires else circuit
-        results = tuple(
-            zero_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
-            for mp in circuit.measurements
-        )
-        if len(results) == 1:
-            return results[0]
-        if shots.has_partitioned_shots:
-            return tuple(zip(*results))
-        return results
+        num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
+        results = []
+        for s in circuit.shots or [None]:
+            r = tuple(
+                zero_measurement(mp, num_device_wires, s, circuit.batch_size, interface)
+                for mp in circuit.measurements
+            )
+            results.append(r[0] if len(circuit.measurements) == 1 else r)
+        if circuit.shots.has_partitioned_shots:
+            return tuple(results)
+        return results[0]
 
     def _derivatives(self, circuit, interface):
         shots = circuit.shots
-        obj_with_wires = self if self.wires else circuit
+        num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         n = len(circuit.trainable_params)
         derivatives = tuple(
             (
                 math.zeros_like(
-                    zero_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
+                    zero_measurement(mp, num_device_wires, shots, circuit.batch_size, interface)
                 ),
             )
             * n
@@ -317,7 +317,7 @@ class NullQubit(Device):
 
     def execute(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
@@ -328,10 +328,7 @@ class NullQubit(Device):
                     str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
                 ),
             )
-
-        return tuple(
-            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
+        return tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
 
     def supports_derivatives(self, execution_config=None, circuit=None):
         return execution_config is None or execution_config.gradient_method in (
@@ -356,64 +353,68 @@ class NullQubit(Device):
 
     def compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        return tuple(
-            self._derivatives(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
+        return tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        results = tuple(
-            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
-        jacs = tuple(
-            self._derivatives(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
+        results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
+        jacs = tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
         return results, jacs
 
     def compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        return tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
+        return tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        results = tuple(
-            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
-        jvps = tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
+        results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
+        jvps = tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
         return results, jvps
 
     def compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        return tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
+        return tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        results = tuple(
-            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
-        vjps = tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
+        results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
+        vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
+
+    def eval_jaxpr(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+            AbstractMeasurement,
+        )
+
+        def zeros_like(var):
+            if isinstance(var.aval, AbstractMeasurement):
+                shots = self.shots.total_shots
+                s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
+                return math.zeros(s, dtype=dtype, like="jax")
+            return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
+
+        return [zeros_like(var) for var in jaxpr.outvars]

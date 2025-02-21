@@ -38,7 +38,7 @@ def largest_first(binary_observables, adj):
 
     Args:
         binary_observables (array[int]): the set of Pauli words represented by a column matrix
-            of the Pauli words in binary vector represenation
+            of the Pauli words in binary vector representation
         adj (array[int]): the adjacency matrix of the Pauli graph
 
     Returns:
@@ -87,7 +87,7 @@ def recursive_largest_first(binary_observables, adj):  # pylint:disable=too-many
 
     Args:
         binary_observables (array[int]): the set of Pauli words represented by a column matrix of
-            the Pauli words in binary vector represenation
+            the Pauli words in binary vector representation
         adj (array[int]): the adjacency matrix of the Pauli graph
 
     Returns:

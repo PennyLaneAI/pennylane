@@ -72,6 +72,20 @@ Resource Classes
     ~Resources
     ~ResourcesOperation
 
+Resource Functions
+~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.resource
+
+.. autosummary::
+    :toctree: api
+
+    ~add_in_series
+    ~add_in_parallel
+    ~mul_in_series
+    ~mul_in_parallel
+    ~substitute
+
 Tracking Resources for Custom Operations
 ----------------------------------------
 
@@ -110,8 +124,8 @@ We can examine the resources by accessing the :code:`resources` key:
 
 >>> resources_lst = tracker.history['resources']
 >>> print(resources_lst[0])
-wires: 3
-gates: 7
+num_wires: 3
+num_gates: 7
 depth: 5
 shots: Shots(None)
 gate_types:
@@ -122,6 +136,14 @@ gate_sizes:
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
 from .first_quantization import FirstQuantization
 from .measurement import estimate_error, estimate_shots
-from .resource import Resources, ResourcesOperation
+from .resource import (
+    Resources,
+    ResourcesOperation,
+    add_in_series,
+    add_in_parallel,
+    mul_in_series,
+    mul_in_parallel,
+    substitute,
+)
 from .second_quantization import DoubleFactorization
 from .specs import specs

@@ -117,6 +117,18 @@ class TestLabelling:
 
         plt.close()
 
+    @pytest.mark.parametrize("kwargs, _", label_data)
+    def test_hide_wire_labels(self, kwargs, _):
+        """Test that wire labels are skipped with show_wire_labels=False."""
+        fig, ax = tape_mpl(tape1, show_wire_labels=False, **kwargs)
+
+        # Only PauliX gate labels should be present
+        assert len(ax.texts) == 3
+        assert all(t.get_text() == "X" for t in ax.texts)
+        assert fig.get_figwidth() == 3
+
+        plt.close()
+
 
 class TestWires:
     """Test that wire lines are produced correctly in different situations."""

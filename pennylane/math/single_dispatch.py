@@ -19,10 +19,13 @@ from importlib import import_module
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as np
+import scipy as sp
 from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
+from scipy.sparse.linalg import splu
 
-from .utils import get_deep_interface, is_abstract
+from .interface_utils import get_deep_interface
+from .utils import is_abstract
 
 
 def _i(name):
@@ -54,7 +57,8 @@ def _builtins_shape(x):
 
 ar.register_function("builtins", "ndim", _builtins_ndim)
 ar.register_function("builtins", "shape", _builtins_shape)
-
+ar.register_function("builtins", "logical_mod", lambda x, y: x % y)
+ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
@@ -66,6 +70,67 @@ ar.register_function("scipy", "conj", np.conj)
 ar.register_function("scipy", "transpose", np.transpose)
 ar.register_function("scipy", "ndim", np.ndim)
 
+
+# -------------------------------- SciPy Sparse --------------------------------- #
+# the following is required to ensure that general SciPy sparse matrices are
+# not automatically 'unwrapped' to dense NumPy arrays. Note that we assume
+# that whenever the backend is 'scipy', the input is a SciPy sparse matrix.
+
+
+def _det_sparse(x):
+    """Compute determinant of sparse matrices without densification"""
+
+    assert sp.sparse.issparse(x), TypeError(f"Expected SciPy sparse, got {type(x)}")
+
+    x = sp.sparse.csr_matrix(x)
+    if x.shape == (2, 2):
+        # Direct array access
+        indptr, indices, data = x.indptr, x.indices, x.data
+        values = {(i, j): 0.0 for i in range(2) for j in range(2)}
+        for i in range(2):
+            for j_idx in range(indptr[i], indptr[i + 1]):
+                j = indices[j_idx]
+                values[(i, j)] = data[j_idx]
+        return values[(0, 0)] * values[(1, 1)] - values[(0, 1)] * values[(1, 0)]
+    return _generic_sparse_det(x)
+
+
+def _generic_sparse_det(A):
+    """Compute the determinant of a sparse matrix using LU decomposition."""
+
+    assert hasattr(A, "tocsc"), TypeError(f"Expected SciPy sparse, got {type(A)}")
+
+    A_csc = A.tocsc()
+    lu = splu(A_csc)
+    U_diag = lu.U.diagonal()
+    det_A = np.prod(U_diag)
+    parity = _permutation_parity(lu.perm_r)
+    return det_A * parity
+
+
+def _permutation_parity(perm):
+    """Compute the parity of a permutation."""
+
+    parity = 1
+    visited = [False] * len(perm)
+    for i in range(len(perm)):
+        if not visited[i]:
+            cycle_length = 0
+            j = i
+            while not visited[j]:
+                visited[j] = True
+                j = perm[j]
+                cycle_length += 1
+
+            if cycle_length:
+
+                parity *= (-1) ** (cycle_length - 1)
+    return parity
+
+
+ar.register_function("scipy", "linalg.det", _det_sparse)
+ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
+ar.register_function("scipy", "trace", lambda x: x.trace())
 
 # -------------------------------- NumPy --------------------------------- #
 
@@ -246,6 +311,10 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experime
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "ravel"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "vstack"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "unstack"] = "tensorflow"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "gather"] = "tensorflow"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "concat"] = "tensorflow"
+
 
 tf_fft_functions = [
     "fft",
@@ -268,7 +337,14 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 
 
 def _coerce_tensorflow_diag(x, **kwargs):
-    return ar.autoray.tensorflow_diag(_tf_convert_to_tensor(x), **kwargs)
+    x = _tf_convert_to_tensor(x)
+    tf = _i("tf")
+    nd = len(x.shape)
+    if nd == 2:
+        return tf.linalg.diag_part(x, **kwargs)
+    if nd == 1:
+        return tf.linalg.diag(x, **kwargs)
+    raise ValueError("Input must be 1- or 2-d.")
 
 
 ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
@@ -289,10 +365,12 @@ ar.register_function(
 )
 
 
-def _tf_convert_to_tensor(x, **kwargs):
+def _tf_convert_to_tensor(x, requires_grad=False, **kwargs):
     if isinstance(x, _i("tf").Tensor) and "dtype" in kwargs:
-        return _i("tf").cast(x, **kwargs)
-    return _i("tf").convert_to_tensor(x, **kwargs)
+        out = _i("tf").cast(x, **kwargs)
+    else:
+        out = _i("tf").convert_to_tensor(x, **kwargs)
+    return _i("tf").Variable(out) if requires_grad else out
 
 
 ar.register_function("tensorflow", "asarray", _tf_convert_to_tensor)
@@ -529,7 +607,7 @@ def _to_numpy_torch(x):
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
 
 
-def _asarray_torch(x, dtype=None, **kwargs):
+def _asarray_torch(x, dtype=None, requires_grad=False, **kwargs):
     import torch
 
     dtype_map = {
@@ -544,9 +622,9 @@ def _asarray_torch(x, dtype=None, **kwargs):
         np.complex128: torch.complex128,
         "float64": torch.float64,
     }
-
-    if dtype in dtype_map:
-        return torch.as_tensor(x, dtype=dtype_map[dtype], **kwargs)
+    dtype = dtype_map.get(dtype, dtype)
+    if requires_grad:
+        return torch.tensor(x, dtype=dtype, **kwargs, requires_grad=True)
 
     return torch.as_tensor(x, dtype=dtype, **kwargs)
 
@@ -793,13 +871,21 @@ ar.register_function(
     "jax",
     "take",
     lambda x, indices, axis=None, **kwargs: _i("jax").numpy.take(
-        x, np.array(indices), axis=axis, **kwargs
+        x, _i("jax").numpy.asarray(indices), axis=axis, **kwargs
     ),
 )
 ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+# pylint: disable=unused-argument
+def _asarray_jax(x, dtype=None, requires_grad=False, **kwargs):
+    return _i("jax").numpy.array(x, dtype=dtype, **kwargs)
+
+
+ar.register_function("jax", "asarray", _asarray_jax)
 
 
 def _ndim_jax(x):

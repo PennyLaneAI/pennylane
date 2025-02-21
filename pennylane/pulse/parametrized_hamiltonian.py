@@ -138,7 +138,7 @@ class ParametrizedHamiltonian:
             Internally we are computing ``f1([4.6, 2.3], 0.5)`` and ``f2(1.2, 0.5)``.
 
         Parametrized coefficients can be any callable that takes ``(p, t)`` and returns a scalar. It is not a
-        requirement that both ``p`` and ``t`` be used in the callable: for example, the convenince function
+        requirement that both ``p`` and ``t`` be used in the callable: for example, the convenience function
         :func:`~pulse.constant` takes ``(p, t)`` and returns ``p``.
 
         .. warning::
@@ -342,7 +342,7 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
-        if isinstance(H, (qml.ops.Hamiltonian, qml.ops.LinearCombination, ParametrizedHamiltonian)):
+        if isinstance(H, (qml.ops.LinearCombination, ParametrizedHamiltonian)):
             # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = coeffs + list(H.coeffs.copy())
             new_ops = ops + H.ops.copy()
@@ -367,7 +367,7 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
-        if isinstance(H, (qml.ops.Hamiltonian, qml.ops.LinearCombination, ParametrizedHamiltonian)):
+        if isinstance(H, (qml.ops.LinearCombination, ParametrizedHamiltonian)):
             # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = list(H.coeffs.copy()) + coeffs
             new_ops = H.ops.copy() + ops

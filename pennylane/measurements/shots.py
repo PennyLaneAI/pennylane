@@ -14,7 +14,7 @@
 from collections.abc import Sequence
 
 # pylint:disable=inconsistent-return-statements
-from typing import NamedTuple
+from typing import NamedTuple, Union
 
 
 class ShotCopies(NamedTuple):
@@ -121,6 +121,11 @@ class Shots:
     Shots(total_shots=200, shot_vector=(ShotCopies(200 shots x 1),))
     >>> Shots([7, (100, 2)]) * 1.5
     Shots(total_shots=310, shot_vector=(ShotCopies(10 shots x 1), ShotCopies(150 shots x 2)))
+
+    Example constructing a Shots instance by adding two existing instances together:
+
+    >>> Shots(100) + Shots(((10,2),))
+    Shots(total_shots=120, shot_vector=(ShotCopies(100 shots x 1), ShotCopies(10 shots x 2)))
 
     One should also note that specifying a single tuple of length 2 is considered two different
     shot values, and *not* a tuple-pair representing shots and copies to avoid special behaviour
@@ -230,6 +235,9 @@ class Shots:
     def __bool__(self):
         return self.total_shots is not None
 
+    def __add__(self, other):
+        return add_shots(self, other)
+
     def __mul__(self, scalar):
         if not isinstance(scalar, (int, float)):
             raise TypeError("Can't multiply Shots with non-integer or float type.")
@@ -279,3 +287,35 @@ class Shots:
                 upper_bound = lower_bound + sc.shots
                 yield lower_bound, upper_bound
                 lower_bound = upper_bound
+
+
+ShotsLike = Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
+
+
+def add_shots(s1: Shots, s2: Shots) -> Shots:
+    """Add two :class:`~.Shots` objects by concatenating their shot vectors.
+
+    Args:
+        s1 (Shots): a Shots object to add
+        s2 (Shots): a Shots object to add
+
+    Returns:
+        Shots: a :class:`~.Shots` object built by concatenating the shot vectors of ``s1`` and ``s2``
+
+    Example:
+        >>> s1 = Shots((5, (10, 2)))
+        >>> s2 = Shots((3, 2, (10, 3)))
+        >>> print(qml.measurements.add_shots(s1, s2))
+        Shots(total=60, vector=[5 shots, 10 shots x 2, 3 shots, 2 shots, 10 shots x 3])
+    """
+    if s1.total_shots is None:
+        return s2
+
+    if s2.total_shots is None:
+        return s1
+
+    shot_vector = []
+    for shot in s1.shot_vector + s2.shot_vector:
+        shot_vector.append((shot.shots, shot.copies))
+
+    return Shots(shots=shot_vector)

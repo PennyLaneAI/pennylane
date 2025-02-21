@@ -17,6 +17,7 @@ The default.qubit device is PennyLane's standard qubit-based device.
 
 import concurrent.futures
 import logging
+import warnings
 from dataclasses import replace
 from functools import partial
 from numbers import Number
@@ -26,12 +27,13 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
+from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import PostprocessingFn, Result, ResultBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from . import Device
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
@@ -53,8 +55,6 @@ from .qubit.simulate import get_final_state, measure_final_state, simulate
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
-
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
@@ -67,12 +67,20 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
 
-    return op.has_matrix
+    return (
+        (isinstance(op, Conditional) and stopping_condition(op.base))
+        or isinstance(op, MidMeasureMP)
+        or op.has_matrix
+    )
 
 
 def stopping_condition_shots(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device with shots."""
-    return isinstance(op, (Conditional, MidMeasureMP)) or stopping_condition(op)
+    return (
+        (isinstance(op, Conditional) and stopping_condition_shots(op.base))
+        or isinstance(op, MidMeasureMP)
+        or stopping_condition(op)
+    )
 
 
 def observable_accepts_sampling(obs: qml.operation.Operator) -> bool:
@@ -83,12 +91,6 @@ def observable_accepts_sampling(obs: qml.operation.Operator) -> bool:
 
     if isinstance(obs, qml.ops.SymbolicOp):
         return observable_accepts_sampling(obs.base)
-
-    if isinstance(obs, qml.ops.Hamiltonian):
-        return all(observable_accepts_sampling(o) for o in obs.ops)
-
-    if isinstance(obs, qml.operation.Tensor):
-        return all(observable_accepts_sampling(o) for o in obs.obs)
 
     return obs.has_diagonalizing_gates
 
@@ -101,12 +103,6 @@ def observable_accepts_analytic(obs: qml.operation.Operator, is_expval=False) ->
 
     if isinstance(obs, qml.ops.SymbolicOp):
         return observable_accepts_analytic(obs.base, is_expval)
-
-    if isinstance(obs, qml.ops.Hamiltonian):
-        return all(observable_accepts_analytic(o, is_expval) for o in obs.ops)
-
-    if isinstance(obs, qml.operation.Tensor):
-        return all(observable_accepts_analytic(o, is_expval) for o in obs.obs)
 
     if is_expval and isinstance(obs, (qml.ops.SparseHamiltonian, qml.ops.Hermitian)):
         return True
@@ -157,9 +153,27 @@ def all_state_postprocessing(results, measurements, wire_order):
 
 
 @qml.transform
+def _conditional_broastcast_expand(tape):
+    """Apply conditional broadcast expansion to the tape if needed."""
+    # Currently, default.qubit does not support native parameter broadcasting with
+    # shadow operations. We need to expand the tape to include the broadcasted parameters.
+    if any(isinstance(mp, (ShadowExpvalMP, ClassicalShadowMP)) for mp in tape.measurements):
+        return qml.transforms.broadcast_expand(tape)
+    return (tape,), null_postprocessing
+
+
+@qml.transform
+def no_counts(tape):
+    """Throws an error on counts measurements."""
+    if any(isinstance(mp, qml.measurements.CountsMP) for mp in tape.measurements):
+        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+    return (tape,), null_postprocessing
+
+
+@qml.transform
 def adjoint_state_measurements(
-    tape: QuantumTape, device_vjp=False
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, device_vjp=False
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Perform adjoint measurement preprocessing.
 
     * Allows a tape with only expectation values through unmodified
@@ -194,7 +208,7 @@ def adjoint_state_measurements(
     complex_data = [qml.math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
     new_mp = qml.measurements.StateMP(wires=tape.wires)
-    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
+    state_tape = tape.copy(measurements=[new_mp])
     return (state_tape,), partial(
         all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
     )
@@ -202,7 +216,7 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return not isinstance(op, MidMeasureMP) and (
+    return not isinstance(op, (Conditional, MidMeasureMP)) and (
         op.num_params == 0
         or not qml.operation.is_trainable(op)
         or (op.num_params == 1 and op.has_generator)
@@ -475,7 +489,7 @@ class DefaultQubit(Device):
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -530,6 +544,8 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
+        if config.interface == qml.math.Interface.JAX_JIT:
+            transform_program.add_transform(no_counts)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config
@@ -546,6 +562,7 @@ class DefaultQubit(Device):
             sample_measurements=accepted_sample_measurement,
             name=self.name,
         )
+        transform_program.add_transform(_conditional_broastcast_expand)
         if config.mcm_config.mcm_method == "tree-traversal":
             transform_program.add_transform(qml.transforms.broadcast_expand)
         # Validate multi processing
@@ -575,6 +592,26 @@ class DefaultQubit(Device):
         """
         updated_values = {}
 
+        # uncomment once compilation overhead with jitting improved
+        # TODO: [sc-82874]
+        # jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
+        # updated_values["convert_to_numpy"] = (
+        #    execution_config.interface not in jax_interfaces
+        #    or execution_config.gradient_method == "adjoint"
+        #    # need numpy to use caching, and need caching higher order derivatives
+        #    or execution_config.derivative_order > 1
+        # )
+
+        # If PRNGKey is present, we can't use a pure_callback, because that would cause leaked tracers
+        # we assume that if someone provides a PRNGkey, they want to jit end-to-end
+        jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
+        updated_values["convert_to_numpy"] = not (
+            self._prng_key is not None
+            and execution_config.interface in jax_interfaces
+            and execution_config.gradient_method != "adjoint"
+            # need numpy to use caching, and need caching higher order derivatives
+            and execution_config.derivative_order == 1
+        )
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")
@@ -606,11 +643,10 @@ class DefaultQubit(Device):
     @debug_logger
     def execute(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         self.reset_prng_key()
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (
@@ -620,7 +656,21 @@ class DefaultQubit(Device):
         )
         prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
 
+        if (
+            not execution_config.convert_to_numpy
+            and execution_config.interface == qml.math.Interface.JAX_JIT
+            and len(circuits) > 10
+        ):
+            warnings.warn(
+                (
+                    "Jitting executions with many circuits may have substantial classical overhead."
+                    " To disable end-to-end jitting, please specify a integer seed instead of a PRNGKey."
+                ),
+                UserWarning,
+            )
+
         if max_workers is None:
+
             return tuple(
                 _simulate_wrapper(
                     c,
@@ -661,7 +711,7 @@ class DefaultQubit(Device):
     @debug_logger
     def compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
@@ -681,7 +731,7 @@ class DefaultQubit(Device):
     @debug_logger
     def execute_and_compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         self.reset_prng_key()
@@ -705,7 +755,7 @@ class DefaultQubit(Device):
     def supports_jvp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Whether or not this device defines a custom jacobian vector product.
 
@@ -724,7 +774,7 @@ class DefaultQubit(Device):
     @debug_logger
     def compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -744,7 +794,7 @@ class DefaultQubit(Device):
     @debug_logger
     def execute_and_compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -773,7 +823,7 @@ class DefaultQubit(Device):
     def supports_vjp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Whether or not this device defines a custom vector jacobian product.
 
@@ -792,7 +842,7 @@ class DefaultQubit(Device):
     @debug_logger
     def compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -860,7 +910,7 @@ class DefaultQubit(Device):
     @debug_logger
     def execute_and_compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -884,6 +934,28 @@ class DefaultQubit(Device):
                 )
 
         return tuple(zip(*results))
+
+    # pylint: disable=import-outside-toplevel
+    def eval_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args
+    ) -> list[TensorLike]:
+        from .qubit.dq_interpreter import DefaultQubitInterpreter
+
+        if self.wires is None:
+            raise qml.DeviceError("Device wires are required for jaxpr execution.")
+        if self.shots.has_partitioned_shots:
+            raise qml.DeviceError("Shot vectors are unsupported with jaxpr execution.")
+        if self._prng_key is not None:
+            key = self.get_prng_keys()[0]
+        else:
+            import jax
+
+            key = jax.random.PRNGKey(self._rng.integers(100000))
+
+        interpreter = DefaultQubitInterpreter(
+            num_wires=len(self.wires), shots=self.shots.total_shots, key=key
+        )
+        return interpreter.eval(jaxpr, consts, *args)
 
 
 def _simulate_wrapper(circuit, kwargs):

@@ -18,7 +18,7 @@ import warnings
 from functools import partial
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -56,7 +56,7 @@ class _SnapshotDebugger:
 
 
 @transform
-def snapshots(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""This transform processes :class:`~pennylane.Snapshot` instances contained in a circuit,
     depending on the compatibility of the execution device.
     For supported devices, the snapshots' measurements are computed as the execution progresses.
@@ -72,7 +72,7 @@ def snapshots(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
 
     If tape splitting is carried out, the transform will be conservative about the wires that it includes in each tape.
     So, if all operations preceding a snapshot in a 3-qubit circuit has been applied to only one wire,
-    the tape would only be looking at this wire. This can be overriden by the configuration of the execution device
+    the tape would only be looking at this wire. This can be overridden by the configuration of the execution device
     and its nature.
 
     Regardless of the transform's behaviour, the output is a dictionary where each key is either
@@ -189,19 +189,14 @@ def snapshots(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
         if isinstance(op, qml.Snapshot):
             snapshot_tags.append(op.tag or len(new_tapes))
             meas_op = op.hyperparameters["measurement"]
-
-            new_tapes.append(
-                type(tape)(ops=accumulated_ops, measurements=[meas_op], shots=tape.shots)
-            )
+            new_tapes.append(tape.copy(operations=accumulated_ops, measurements=[meas_op]))
         else:
             accumulated_ops.append(op)
 
     # Create an additional final tape if a return measurement exists
     if tape.measurements:
         snapshot_tags.append("execution_results")
-        new_tapes.append(
-            type(tape)(ops=accumulated_ops, measurements=tape.measurements, shots=tape.shots)
-        )
+        new_tapes.append(tape.copy(operations=accumulated_ops))
 
     def postprocessing_fn(results, snapshot_tags):
         return dict(zip(snapshot_tags, results))
@@ -219,8 +214,8 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
 
     def get_snapshots(*args, **kwargs):
         # Need to construct to generate the tape and be able to validate
-        qnode.construct(args, kwargs)
-        qml.devices.preprocess.validate_measurements(qnode.tape)
+        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
+        qml.devices.preprocess.validate_measurements(tape)
 
         old_interface = qnode.interface
         if old_interface == "auto":
@@ -228,16 +223,11 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
 
         with _SnapshotDebugger(qnode.device) as dbg:
             # pylint: disable=protected-access
-            if qnode._original_device:
-                qnode._original_device._debugger = qnode.device._debugger
-
             results = qnode(*args, **kwargs)
 
             # Reset interface
             if old_interface == "auto":
                 qnode.interface = "auto"
-            if qnode._original_device:
-                qnode.device._debugger = None
 
         dbg.snapshots["execution_results"] = results
         return dbg.snapshots

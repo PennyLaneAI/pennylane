@@ -14,16 +14,36 @@
 """
 Unit tests for :mod:`pennylane.wires`.
 """
+from importlib import import_module, util
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.wires import WireError, Wires
 
+if util.find_spec("jax") is not None:
+    jax = import_module("jax")
+    jax_available = True
+else:
+    jax_available = False
+    jax = None
 
-# pylint: disable=too-many-public-methods
+
+# pylint: disable=too-many-public-methods, too-many-positional-arguments
 class TestWires:
     """Tests for the ``Wires`` class."""
+
+    def test_wires_object_as_label(self):
+        """Tests that a Wires object can be used as a label for another Wires object."""
+        assert Wires([0, 1]) == Wires([Wires([0]), Wires([1])])
+        assert Wires(["a", "b", 1]) == Wires([Wires(["a", "b"]), Wires([1])])
+        assert Wires([Wires([(0, 0), (0, 1)])]) == Wires([(0, 0), (0, 1)])
+
+    def test_error_if_wires_none(self):
+        """Tests that a TypeError is raised if None is given as wires."""
+        with pytest.raises(TypeError, match="Must specify a set of wires."):
+            Wires(None)
 
     @pytest.mark.parametrize("iterable", [np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)])
     def test_creation_from_common_iterables(self, iterable):
@@ -60,7 +80,7 @@ class TestWires:
         """Tests that a Wires object can be created from a list of Wires."""
 
         wires = Wires([Wires([0]), Wires([1]), Wires([2])])
-        assert wires.labels == (Wires([0]), Wires([1]), Wires([2]))
+        assert wires.labels == (0, 1, 2)
 
     @pytest.mark.parametrize(
         "iterable", [[1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "ancilla"]]
@@ -134,7 +154,7 @@ class TestWires:
         wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
 
         assert 0 in wires
-        assert Wires([4, 5]) in wires
+        assert Wires([4, 5]) not in wires
         assert None in wires
         assert Wires([1]) not in wires
         assert Wires([0, 3]) not in wires
@@ -156,7 +176,7 @@ class TestWires:
 
         assert not wires.contains_wires(0)  # wrong type
         assert not wires.contains_wires([0, 1])  # wrong type
-        assert not wires.contains_wires(
+        assert wires.contains_wires(
             Wires([4, 5])
         )  # looks up 4 and 5 in wires, which are not present
 
@@ -195,6 +215,16 @@ class TestWires:
         assert isinstance(array, np.ndarray)
         assert array.shape == (3,)
         for w1, w2 in zip(array, np.array([4, 0, 1])):
+            assert w1 == w2
+
+    @pytest.mark.jax
+    def test_jax_array_representation(self):
+        """Tests that Wires object has a JAX array representation."""
+
+        wires = Wires([4, 0, 1])
+        array = jax.numpy.asarray(wires)
+        assert isinstance(array, jax.numpy.ndarray)
+        for w1, w2 in zip(array, [4, 0, 1]):
             assert w1 == w2
 
     def test_set_of_wires(self):
@@ -487,3 +517,81 @@ class TestWires:
 
         expected = Wires([0, 1, 2, 3, 4, 5, 6, 7])
         assert result == expected
+
+
+@pytest.mark.jax
+class TestWiresJax:
+    """Tests the support for JAX arrays in the ``Wires`` class."""
+
+    @pytest.mark.parametrize(
+        "iterable, expected",
+        (
+            [
+                (jax.numpy.array([0, 1, 2]), (0, 1, 2)),
+                (jax.numpy.array([0]), (0,)),
+                (jax.numpy.array(0), (0,)),
+                (jax.numpy.array([]), ()),
+            ]
+            if jax_available
+            else []
+        ),
+    )
+    def test_creation_from_jax_array(self, iterable, expected):
+        """Tests that a Wires object can be created from a JAX array."""
+        wires = Wires(iterable)
+        assert wires.labels == expected
+
+    @pytest.mark.parametrize(
+        "input",
+        (
+            [
+                [jax.numpy.array([0, 1, 2]), jax.numpy.array([3, 4])],
+                [jax.numpy.array([0, 1, 2]), 3],
+                jax.numpy.array([[0, 1, 2]]),
+                jax.numpy.array([[[0, 1], [2, 3]]]),
+                jax.numpy.array([[[[0]]]]),
+            ]
+            if jax_available
+            else []
+        ),
+    )
+    def test_error_for_incorrect_jax_arrays(self, input):
+        """Tests that a Wires object cannot be created from incorrect JAX arrays."""
+        with pytest.raises(WireError, match="Wires must be hashable"):
+            Wires(input)
+
+    @pytest.mark.parametrize(
+        "iterable",
+        [jax.numpy.array([4, 1, 1, 3]), jax.numpy.array([0, 0])] if jax_available else [],
+    )
+    def test_error_for_repeated_wires_jax(self, iterable):
+        """Tests that a Wires object cannot be created from a JAX array with repeated indices."""
+        with pytest.raises(WireError, match="Wires must be unique"):
+            Wires(iterable)
+
+    def test_array_representation_jax(self):
+        """Tests that Wires object has an array representation with JAX."""
+
+        wires = Wires([4, 0, 1])
+        array = jax.numpy.array(wires.labels)
+        assert isinstance(array, jax.numpy.ndarray)
+        assert array.shape == (3,)
+        for w1, w2 in zip(array, jax.numpy.array([4, 0, 1])):
+            assert w1 == w2
+
+    @pytest.mark.parametrize(
+        "source",
+        (
+            [jax.numpy.array([0, 1, 2]), jax.numpy.array([0]), jax.numpy.array(0)]
+            if jax_available
+            else []
+        ),
+    )
+    def test_jax_wires_pytree(self, source):
+        """Test that Wires class supports the PyTree flattening interface with JAX arrays."""
+
+        wires = Wires(source)
+        wires_flat, tree = jax.tree_util.tree_flatten(wires)
+        wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
+        assert isinstance(wires2, Wires), f"{wires2} is not Wires"
+        assert wires == wires2, f"{wires} != {wires2}"

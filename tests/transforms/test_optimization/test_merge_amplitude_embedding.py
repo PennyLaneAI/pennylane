@@ -14,11 +14,11 @@
 """
 Unit tests for the optimization transform ``merge_amplitude_embedding``.
 """
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane._device import DeviceError
 from pennylane.transforms.optimization import merge_amplitude_embedding
 
 
@@ -72,7 +72,7 @@ class TestMergeAmplitudeEmbedding:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(transformed_qfunc, dev)
 
-        with pytest.raises(DeviceError, match="applied in the same qubit"):
+        with pytest.raises(qml.DeviceError, match="applied in the same qubit"):
             qnode()
 
     def test_decorator(self):
@@ -102,7 +102,8 @@ class TestMergeAmplitudeEmbedding:
             return qml.state()
 
         res = qnode()
-        assert qnode.tape.batch_size == 2
+        tape = qml.workflow.construct_tape(qnode)()
+        assert tape.batch_size == 2
 
         # |001> and |100>
         expected = np.array([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]])

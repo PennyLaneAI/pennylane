@@ -81,7 +81,7 @@ def _validate_computational_basis_sampling(tape):
             pauliz_for_cb_obs = (
                 qml.Z(all_wires)
                 if len(all_wires) == 1
-                else qml.operation.Tensor(*[qml.Z(w) for w in all_wires])
+                else qml.ops.Prod(*[qml.Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:
@@ -188,7 +188,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         The ``stop_at`` callable allows the specification of terminal
         operations that should no longer be decomposed. In this example, the ``X``
-        operator is not decomposed becasue ``stop_at(qml.X(0)) == True``.
+        operator is not decomposed because ``stop_at(qml.X(0)) == True``.
 
         >>> def stop_at(obj):
         ...     return isinstance(obj, qml.X)
@@ -229,7 +229,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
         >>> expand_tape(tape, expand_measurements=True).circuit
-        [Hadamard(wires=[0]), expval(eigvals=[ 1. -1.], wires=[0])]
+        [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
 
     """
@@ -294,7 +294,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -343,13 +342,12 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
 # pylint: disable=too-many-public-methods
 class QuantumTape(QuantumScript, AnnotatedQueue):
-    """A quantum tape recorder, that records and stores variational quantum programs.
+    r"""A quantum tape recorder, that records and stores variational quantum programs.
 
     Args:
         ops (Iterable[Operator]): An iterable of the operations to be performed
@@ -363,15 +361,21 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             Note that this property is still experimental and under development.
         trainable_params (None, Sequence[int]): the indices for which parameters are trainable
 
+    .. note::
+        If performance and memory usage is a concern, and the queueing capabilities of this class are not
+        crucial to your use case, we recommend using the :class:`~.QuantumScript` class instead,
+        which is a drop-in replacement with a similar interface.
+        For more information, check :ref:`tape-vs-script`.
+
     **Example**
 
     Tapes can be constructed by directly providing operations and measurements:
 
-    >>> ops = [qml.BasisState([1,0], wires=0), qml.S(0), qml.T(1)]
+    >>> ops = [qml.BasisState([1, 0], wires=[0, 1]), qml.S(0), qml.T(1)]
     >>> measurements = [qml.state()]
     >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tape.circuit
-    [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
+    [BasisState(array([1, 0]), wires=[0, 1]), S(0), T(1), state(wires=[])]
 
     They can also be populated into a recording tape via queuing.
 
@@ -413,7 +417,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> tape.num_params
     3
 
-    The existing circuit is overriden upon exiting a recording context.
+    The existing circuit is overridden upon exiting a recording context.
 
     Iterating over the quantum circuit can be done by iterating over the tape
     object:
@@ -442,7 +446,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     device via the :func:`~.pennylane.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-    >>> qml.execute([tape], dev, gradient_fn=None)
+    >>> qml.execute([tape], dev, diff_method=None)
     [array([0.77750694])]
 
     A new tape can be created by passing new parameters along with the indices
@@ -478,11 +482,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(
-        self,
-        ops=None,
-        measurements=None,
-        shots=None,
-        trainable_params=None,
+        self, ops=None, measurements=None, shots=None, trainable_params=None
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, shots, trainable_params=trainable_params)

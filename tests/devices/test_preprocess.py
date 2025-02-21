@@ -17,7 +17,6 @@ import warnings
 import pytest
 
 import pennylane as qml
-from pennylane import DeviceError
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
@@ -123,10 +122,7 @@ class TestPrivateHelpers:
     def test_error_from_unsupported_operation(self):
         """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
         op = NoMatNoDecompOp("a")
-        with pytest.raises(
-            DeviceError,
-            match=r"not supported with abc and does",
-        ):
+        with pytest.raises(qml.DeviceError, match=r"not supported with abc and does"):
             tuple(
                 _operator_decomposition_gen(
                     op, lambda op: op.has_matrix, self.decomposer, name="abc"
@@ -194,6 +190,47 @@ class TestValidateDeviceWires:
         assert batch[0].operations == tape1.operations
         assert batch[0].shots == tape1.shots
 
+    @pytest.mark.jax
+    def test_error_abstract_wires_tape(self):
+        """Tests that an error is raised if abstract wires are present in the tape."""
+
+        import jax
+
+        def jit_wires_tape(wires):
+            tape_with_abstract_wires = QuantumScript([qml.CNOT(wires=qml.wires.Wires(wires))])
+            validate_device_wires(tape_with_abstract_wires, name="fictional_device")
+
+        with pytest.raises(
+            qml.wires.WireError,
+            match="on fictional_device as abstract wires are present in the tape",
+        ):
+            jax.jit(jit_wires_tape)([0, 1])
+
+    @pytest.mark.jax
+    def test_error_abstract_wires_dev(self):
+        """Tests that an error is raised if abstract wires are present in the device."""
+
+        import jax
+
+        def jit_wires_dev(wires):
+            validate_device_wires(QuantumScript([]), wires=wires, name="fictional_device")
+
+        with pytest.raises(
+            qml.wires.WireError,
+            match="on fictional_device as abstract wires are present in the device",
+        ):
+            jax.jit(jit_wires_dev)([0, 1])
+
+    def test_fill_in_wires_on_snapshots(self):
+        """Test that validate_device_wires also fills in the wires on snapshots."""
+
+        tape = qml.tape.QuantumScript([qml.Snapshot(), qml.Snapshot(measurement=qml.probs())])
+
+        (output,), _ = validate_device_wires(tape, wires=qml.wires.Wires((0, 1, 2)))
+        mp0 = qml.measurements.StateMP(wires=qml.wires.Wires((0, 1, 2)))
+        qml.assert_equal(output[0], qml.Snapshot(measurement=mp0))
+        qml.assert_equal(output[1], qml.Snapshot(measurement=qml.probs(wires=(0, 1, 2))))
+
 
 class TestDecomposeValidation:
     """Unit tests for helper functions in qml.devices.qubit.preprocess"""
@@ -202,7 +239,7 @@ class TestDecomposeValidation:
         """Test that expand_fn throws an error when an operation does not define a matrix or decomposition."""
 
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
-        with pytest.raises(DeviceError, match="not supported with abc"):
+        with pytest.raises(qml.DeviceError, match="not supported with abc"):
             decompose(tape, lambda op: op.has_matrix, name="abc")
 
     def test_decompose(self):
@@ -216,7 +253,7 @@ class TestDecomposeValidation:
         """Test that a device error is raised if decomposition enters an infinite loop."""
 
         qs = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
-        with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
+        with pytest.raises(qml.DeviceError, match=r"Reached recursion limit trying to decompose"):
             decompose(qs, lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
@@ -246,7 +283,7 @@ class TestValidateObservables:
         tape = QuantumScript(
             ops=[qml.PauliX(0)], measurements=[qml.expval(qml.GellMann(wires=0, index=1))]
         )
-        with pytest.raises(DeviceError, match=r"not supported on abc"):
+        with pytest.raises(qml.DeviceError, match=r"not supported on abc"):
             validate_observables(tape, lambda obs: obs.name == "PauliX", name="abc")
 
     def test_invalid_tensor_observable(self):
@@ -255,26 +292,8 @@ class TestValidateObservables:
             ops=[qml.PauliX(0), qml.PauliY(1)],
             measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
         )
-        with pytest.raises(DeviceError, match="not supported on device"):
+        with pytest.raises(qml.DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_invalid_tensor_observable_legacy(self):
-        """Test that expand_fn throws an error when a tensor includes invalid obserables"""
-        tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.PauliY(1)],
-            measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
-        )
-        with pytest.raises(DeviceError, match="not supported on device"):
-            validate_observables(tape, lambda obj: obj.name == "PauliX")
-
-    @pytest.mark.usefixtures("use_legacy_opmath")  # only required for legacy observables
-    def test_valid_tensor_observable_legacy_opmath(self):
-        """Test that a valid tensor ovservable passes without error."""
-        tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
-        assert (
-            validate_observables(tape, lambda obs: obs.name in {"PauliZ", "PauliY"})[0][0] is tape
-        )
 
 
 class TestValidateMeasurements:
@@ -324,7 +343,7 @@ class TestValidateMeasurements:
         tape = QuantumScript([], measurements, shots=None)
 
         msg = "not accepted for analytic simulation on device"
-        with pytest.raises(DeviceError, match=msg):
+        with pytest.raises(qml.DeviceError, match=msg):
             validate_measurements(tape)
 
     @pytest.mark.parametrize(
@@ -340,7 +359,7 @@ class TestValidateMeasurements:
         tape = QuantumScript([], measurements, shots=100)
 
         msg = "not accepted with finite shots on device"
-        with pytest.raises(DeviceError, match=msg):
+        with pytest.raises(qml.DeviceError, match=msg):
             validate_measurements(tape, lambda obj: True)
 
 

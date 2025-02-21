@@ -65,7 +65,7 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
     >>> qml.math.fidelity_statevector(state0, state1)
     0.9905158135644924
 
-    .. seealso:: :func:`pennylane.math.fidelity` and :func:`pennylane.qinfo.transforms.fidelity`
+    .. seealso:: :func:`pennylane.math.fidelity`
 
     """
     # Cast as a c_dtype array
@@ -136,7 +136,7 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     >>> qml.math.fidelity(state0, state1)
     0.0
 
-    .. seealso:: :func:`pennylane.math.fidelity_statevector` and :func:`pennylane.qinfo.transforms.fidelity`
+    .. seealso:: :func:`pennylane.math.fidelity_statevector`
 
     """
     # Cast as a c_dtype array

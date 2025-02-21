@@ -17,7 +17,7 @@ preprocessing in the QNode."""
 from functools import partial
 
 from pennylane import transform
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .utils import get_spectrum, join_spectra
@@ -25,8 +25,8 @@ from .utils import get_spectrum, join_spectra
 
 @partial(transform, is_informative=True)
 def circuit_spectrum(
-    tape: QuantumTape, encoding_gates=None, decimals=8
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, encoding_gates=None, decimals=8
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Compute the frequency spectrum of the Fourier representation of
     simple quantum circuits ignoring classical preprocessing.
 
@@ -122,9 +122,9 @@ def circuit_spectrum(
         res = qml.fourier.circuit_spectrum(circuit)(x, w)
 
     >>> print(qml.draw(circuit)(x, w))
-    0: ──RX(1.00)──Rot(0.53,0.70,0.90)──RX(1.00)──Rot(0.81,0.38,0.43)──RZ(1.00)─┤  <Z>
-    1: ──RX(2.00)──Rot(0.56,0.61,0.96)──RX(2.00)──Rot(0.32,0.49,0.77)───────────┤
-    2: ──RX(3.00)──Rot(0.11,0.63,0.31)──RX(3.00)──Rot(0.52,0.46,0.83)───────────┤
+    0: ──RX(1.00,"x0")──Rot(0.03,0.03,0.37)──RX(1.00,"x0")──Rot(0.35,0.89,0.29)──RZ(1.00,"x0")─┤  <Z>
+    1: ──RX(2.00,"x1")──Rot(0.70,0.12,0.60)──RX(2.00,"x1")──Rot(0.04,0.03,0.88)────────────────┤
+    2: ──RX(3.00,"x2")──Rot(0.65,0.87,0.05)──RX(3.00,"x2")──Rot(0.37,0.53,0.02)────────────────┤
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")

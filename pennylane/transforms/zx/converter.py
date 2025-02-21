@@ -21,7 +21,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import TransformError, transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -265,8 +265,8 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
 
 @partial(transform, is_informative=True)
 def _to_zx_transform(
-    tape: QuantumTape, expand_measurements=False
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, expand_measurements=False
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
     # Avoid to make PyZX a requirement for PennyLane.
     try:
@@ -428,10 +428,10 @@ def from_zx(graph, decompose_phases=True):
 
     >>> pennylane_tape.operations
     [Z(0),
-     T(wires=[0]),
+     T(0),
      RX(0.1, wires=[1]),
      Z(0),
-     Adjoint(T(wires=[0])),
+     Adjoint(T(0)),
      Z(1),
      RZ(0.3, wires=[0]),
      X(0),

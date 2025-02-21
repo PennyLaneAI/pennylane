@@ -33,7 +33,6 @@ from pennylane.ops.op_math import Evolution, Exp
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pauli_base(self, constructor):
         """Test initialization with no coeff and a simple base."""
         base = qml.PauliX("a")
@@ -421,7 +420,7 @@ class TestDecomposition:
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
-            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+            match=re.escape(f"The decomposition of the {op} operator is not defined."),
         ):
             op.decomposition()
 
@@ -429,19 +428,9 @@ class TestDecomposition:
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
-            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+            match=re.escape(f"The decomposition of the {op} operator is not defined."),
         ):
             op.decomposition()
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_nontensor_tensor_no_decomposition(self):
-        """Checks that accessing the decomposition throws an error if the base is a Tensor
-        object that is not a mathematical tensor"""
-        base_op = qml.PauliX(0) @ qml.PauliZ(0)
-        op = Exp(base_op, 1j)
-        assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
-            _ = op.decomposition()
 
     @pytest.mark.parametrize(
         "base, base_string",
@@ -459,25 +448,8 @@ class TestDecomposition:
         pr = op.decomposition()[0]
         qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
-    @pytest.mark.parametrize(
-        "base, base_string",
-        (
-            (qml.operation.Tensor(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
-            (qml.operation.Tensor(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
-        ),
-    )
-    def test_decomposition_tensor_into_pauli_rot(self, base, base_string):
-        """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
-        theta = 3.21
-        op = Exp(base, -0.5j * theta)
-
-        assert op.has_decomposition
-        pr = op.decomposition()[0]
-        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
-
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
@@ -682,7 +654,7 @@ class TestMiscMethods:
         base = qml.S(0) @ qml.PauliX(0)
         op = qml.ops.Exp(base, 3)  # pylint:disable=no-member
 
-        assert repr(op) == "Exp(3 S(wires=[0]) @ X(0))"
+        assert repr(op) == "Exp(3 S(0) @ X(0))"
 
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are the same as the base diagonalizing gates."""
@@ -796,6 +768,46 @@ class TestIntegration:
         grad = jax.grad(circ)(phi)
         assert qml.math.allclose(grad, -jnp.sin(phi))
 
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    def test_catalyst_qnode(self):
+        """Test with Catalyst interface"""
+
+        pytest.importorskip("catalyst")
+
+        phi = 0.345
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def func(params):
+            qml.exp(qml.X(0), -0.5j * params)
+            return qml.expval(qml.Z(0))
+
+        res = func(phi)
+        assert qml.math.allclose(res, np.cos(phi))
+        grad = qml.grad(func)(phi)
+        assert qml.math.allclose(grad, -np.sin(phi))
+
+    @pytest.mark.jax
+    def test_jax_jit_qnode(self):
+        """Tests with jax.jit"""
+
+        import jax
+        from jax import numpy as jnp
+
+        phi = jnp.array(0.345)
+
+        @jax.jit
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def func(params):
+            qml.exp(qml.X(0), -0.5j * params)
+            return qml.expval(qml.Z(0))
+
+        res = func(phi)
+        assert qml.math.allclose(res, jnp.cos(phi))
+        grad = jax.grad(func)(phi)
+        assert qml.math.allclose(grad, -jnp.sin(phi))
+
     @pytest.mark.tf
     def test_tensorflow_qnode(self):
         """test the execution of a tensorflow qnode."""
@@ -858,14 +870,16 @@ class TestIntegration:
         grad = qml.grad(circuit)(phi)
         assert qml.math.allclose(grad, -qml.numpy.sin(phi))
 
+    @pytest.mark.xfail  # related to #6333
     @pytest.mark.autograd
     def test_autograd_param_shift_qnode(self):
         """Test execution and gradient with pennylane numpy array."""
+
         phi = qml.numpy.array(1.2)
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+        @qml.qnode(dev, diff_method=qml.gradients.param_shift)
         def circuit(phi):
             Exp(qml.PauliX(0), -0.5j * phi)
             return qml.expval(qml.PauliZ(0))
@@ -1067,4 +1081,6 @@ class TestDifferentiation:
 
         with pytest.warns(UserWarning):
             circuit(np.array(2.0), np.array(0.5))
-        assert circuit.tape.trainable_params == [0, 1]
+
+        tape = qml.workflow.construct_tape(circuit)(np.array(2.0), np.array(0.5))
+        assert tape.trainable_params == [0, 1]

@@ -71,6 +71,7 @@ Utility functions
     :toctree: api
 
     finite_diff_coeffs
+    finite_diff_jvp
     generate_shifted_tapes
     generate_multishifted_tapes
     generate_shift_rule
@@ -318,11 +319,11 @@ can be created:
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumTapeBatch
+    from pennylane.tape import QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
     @transform
-    def my_custom_gradient(tape: qml.tape.QuantumTape, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    def my_custom_gradient(tape: qml.tape.QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         ...
         return gradient_tapes, processing_fn
 
@@ -345,7 +346,7 @@ from . import (
 )
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .classical_jacobian import classical_jacobian
-from .finite_difference import finite_diff, finite_diff_coeffs
+from .finite_difference import finite_diff, finite_diff_coeffs, finite_diff_jvp
 from .fisher import classical_fisher, quantum_fisher
 from .general_shift_rules import (
     eigvals_to_frequencies,

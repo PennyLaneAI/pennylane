@@ -183,6 +183,25 @@ class TestSingleOperation:
 
         assert np.allclose(mat, expected)
 
+    def test_empty_decomposition(self):
+        """Test the matrix of a single operation that has an empty list as decomposition."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def node():
+            qml.Snapshot("tag")
+            return qml.expval(qml.Z(0))
+
+        mats = [
+            qml.matrix(qml.Snapshot(), wire_order=[0, 1]),  # op without wires
+            qml.matrix(qml.Barrier(1), wire_order=[0, 1]),  # op with wires w/ wire_order
+            qml.matrix(qml.Barrier([0, 1])),  # op with wires w/o wire_order
+            qml.matrix((lambda *_: qml.Barrier(1) and None), wire_order=[0, 1])(),  # qfunc
+            qml.matrix(node)(),  # qnode
+        ]
+        assert all(np.allclose(mat, np.eye(4)) for mat in mats)
+
 
 class TestMultipleOperations:
     def test_multiple_operations_tape(self):
@@ -416,6 +435,11 @@ class TestCustomWireOrdering:
         op2 = qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(2)
         op = 1.5 * op1 + 0.5 * op2
         assert qml.math.allclose(qml.matrix(ps, wire_order), qml.matrix(op, wire_order))
+
+    def test_empty_tape_with_wire_order(self):
+        """Test that an empty tape's matrix can be computed if wire_order is specified."""
+        qs = qml.tape.QuantumScript()
+        assert np.allclose(qml.matrix(qs, wire_order=[0, 2]), np.eye(4))
 
 
 pw1 = PauliWord({0: "X", 1: "Z"})
@@ -840,9 +864,10 @@ class TestWireOrderErrors:
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(ps)
 
-    def test_error_tape(self):
+    @pytest.mark.parametrize("ops", [[qml.PauliX(1), qml.PauliX(0)], []])
+    def test_error_tape_multiple_wires(self, ops):
         """Test that an error is raised when calling qml.matrix without wire_order on a tape."""
-        qs = qml.tape.QuantumScript([qml.PauliX(1), qml.PauliX(0)])
+        qs = qml.tape.QuantumScript(ops)
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(qs)
 

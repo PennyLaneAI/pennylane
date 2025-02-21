@@ -22,14 +22,14 @@ import networkx as nx
 from networkx.drawing.nx_pydot import to_pydot
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
 @partial(transform, is_informative=True)
-def commutation_dag(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def commutation_dag(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Construct the pairwise-commutation DAG (directed acyclic graph) representation of a quantum circuit.
 
     In the DAG, each node represents a quantum operation, and edges represent
@@ -196,7 +196,7 @@ class CommutationDAG:
 
     """
 
-    def __init__(self, tape: QuantumTape):
+    def __init__(self, tape: QuantumScript):
         self.num_wires = len(tape.wires)
         self.node_id = -1
         self._multi_graph = nx.MultiDiGraph()

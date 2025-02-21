@@ -14,19 +14,22 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
-from functools import wraps
+from functools import lru_cache, partial, wraps
+from typing import Callable, overload
 
 import pennylane as qml
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import make_qscript
 
 from .symbolicop import SymbolicOp
 
 
-# pylint: disable=no-member
+@overload
+def adjoint(fn: Operator, lazy: bool = True) -> Operator: ...
+@overload
+def adjoint(fn: Callable, lazy: bool = True) -> Callable: ...
 def adjoint(fn, lazy=True):
     """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
     :func:`~.qjit` compatible.
@@ -162,25 +165,90 @@ def adjoint(fn, lazy=True):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.adjoint(fn, lazy=lazy)
-    if qml.math.is_abstract(fn):
-        return Adjoint(fn)
     return create_adjoint_op(fn, lazy)
 
 
 def create_adjoint_op(fn, lazy):
     """Main logic for qml.adjoint, but allows bypassing the compiler dispatch if needed."""
+    if qml.math.is_abstract(fn):
+        return Adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
-    if not callable(fn):
-        raise ValueError(
-            f"The object {fn} of type {type(fn)} is not callable. "
-            "This error might occur if you apply adjoint to a list "
-            "of operations instead of a function or template."
+    if callable(fn):
+        if qml.capture.enabled():
+            return _capture_adjoint_transform(fn, lazy=lazy)
+        return _adjoint_transform(fn, lazy=lazy)
+    raise ValueError(
+        f"The object {fn} of type {type(fn)} is not callable. "
+        "This error might occur if you apply adjoint to a list "
+        "of operations instead of a function or template."
+    )
+
+
+@lru_cache  # only create the first time requested
+def _get_adjoint_qfunc_prim():
+    """See capture/explanations.md : Higher Order primitives for more information on this code."""
+    # if capture is enabled, jax should be installed
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    adjoint_prim = NonInterpPrimitive("adjoint_transform")
+    adjoint_prim.multiple_results = True
+    adjoint_prim.prim_type = "higher_order"
+
+    @adjoint_prim.def_impl
+    def _(*args, jaxpr, lazy, n_consts):
+        consts = args[:n_consts]
+        args = args[n_consts:]
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr, consts, *args)
+        ops, _ = qml.queuing.process_queue(q)
+        for op in reversed(ops):
+            adjoint(op, lazy=lazy)
+        return []
+
+    @adjoint_prim.def_abstract_eval
+    def _(*_, **__):
+        return []
+
+    return adjoint_prim
+
+
+def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
+    """Capture compatible way of performing an adjoint transform."""
+    # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
+    import jax  # pylint: disable=import-outside-toplevel
+
+    adjoint_prim = _get_adjoint_qfunc_prim()
+
+    @wraps(qfunc)
+    def new_qfunc(*args, **kwargs):
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
+        flat_args = jax.tree_util.tree_leaves(args)
+        adjoint_prim.bind(
+            *jaxpr.consts,
+            *abstract_shapes,
+            *flat_args,
+            jaxpr=jaxpr.jaxpr,
+            lazy=lazy,
+            n_consts=len(jaxpr.consts),
         )
 
-    @wraps(fn)
+    return new_qfunc
+
+
+def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
+    # default adjoint transform when capture is not enabled.
+    @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        qscript = make_qscript(fn)(*args, **kwargs)
+        qscript = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:
@@ -191,7 +259,7 @@ def create_adjoint_op(fn, lazy):
     return wrapper
 
 
-def _single_op_eager(op, update_queue=False):
+def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
@@ -288,6 +356,11 @@ class Adjoint(SymbolicOp):
     def __init__(self, base=None, id=None):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, id=id)
+        if self.base.pauli_rep:
+            pr = {pw: qml.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
+            self._pauli_rep = qml.pauli.PauliSentence(pr)
+        else:
+            self._pauli_rep = None
 
     def __repr__(self):
         return f"Adjoint({self.base})"
@@ -305,12 +378,13 @@ class Adjoint(SymbolicOp):
         )
 
     def matrix(self, wire_order=None):
-        if isinstance(self.base, qml.ops.Hamiltonian):
-            base_matrix = qml.matrix(self.base, wire_order=wire_order)
-        else:
-            base_matrix = self.base.matrix(wire_order=wire_order)
-
+        base_matrix = self.base.matrix(wire_order=wire_order)
         return moveaxis(conj(base_matrix), -2, -1)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        return self.base.has_sparse_matrix
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -349,10 +423,10 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
-        base = self.base.simplify()
-        if self.base.has_adjoint:
-            return base.adjoint().simplify()
-        return Adjoint(base=base.simplify())
+        base = self.base if qml.capture.enabled() else self.base.simplify()
+        if base.has_adjoint:
+            return base.adjoint() if qml.capture.enabled() else base.adjoint().simplify()
+        return Adjoint(base=base)
 
 
 # pylint: disable=no-member
@@ -425,3 +499,8 @@ class AdjointOpObs(AdjointOperation, Observable):
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)
+
+
+AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointOpObs._primitive = Adjoint._primitive  # pylint: disable=protected-access

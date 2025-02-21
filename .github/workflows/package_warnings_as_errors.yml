@@ -1,0 +1,31 @@
+name: Test-suite with Python warnings as errors
+on:
+  # Scheduled trigger every Sunday at 2:35am UTC
+  schedule:
+  - cron: '35 2 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: warnings-as-errors-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test-warnings-as-errors:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    uses: ./.github/workflows/interface-unit-tests.yml
+    with:
+      branch: ${{ github.ref }}
+      python_warning_level: 'error'
+      run_lightened_ci: false
+      skip_ci_test_jobs: |
+        tf-tests
+        all-interfaces-tests
+        external-libraries-tests
+        qcut-tests
+        qchem-tests
+        gradients-tests
+        device-tests

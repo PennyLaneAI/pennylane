@@ -25,7 +25,7 @@ from networkx import MultiDiGraph
 
 import pennylane as qml
 from pennylane.measurements import SampleMP
-from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -50,14 +50,14 @@ from .utils import (
 
 
 def _cut_circuit_mc_expand(
-    tape: QuantumTape,
+    tape: QuantumScript,
     classical_processing_fn: Optional[callable] = None,
     max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     auto_cutter: Union[bool, Callable] = False,
     **kwargs,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument, too-many-arguments
@@ -70,14 +70,14 @@ def _cut_circuit_mc_expand(
 
 @partial(transform, expand_transform=_cut_circuit_mc_expand)
 def cut_circuit_mc(
-    tape: QuantumTape,
+    tape: QuantumScript,
     classical_processing_fn: Optional[callable] = None,
     auto_cutter: Union[bool, Callable] = False,
     max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     **kwargs,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
     Monte Carlo method.
@@ -355,7 +355,7 @@ def cut_circuit_mc(
         :func:`~.qcut_processing_fn_sample`, which processes the results to approximate the original full circuit
         output bitstrings.
 
-        >>> results = qml.execute(tapes, dev, gradient_fn=None)
+        >>> results = qml.execute(tapes, dev, diff_method=None)
         >>> qml.qcut.qcut_processing_fn_sample(
         ...     results,
         ...     communication_graph,
@@ -463,8 +463,9 @@ def cut_circuit_mc(
         qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
     ]
 
+    seed = kwargs.get("seed", None)
     configurations, settings = expand_fragment_tapes_mc(
-        fragment_tapes, communication_graph, shots=shots
+        fragment_tapes, communication_graph, shots=shots, seed=seed
     )
 
     tapes = tuple(tape for c in configurations for tape in c)
@@ -593,8 +594,8 @@ MC_MEASUREMENTS = [
 
 
 def expand_fragment_tapes_mc(
-    tapes: QuantumTapeBatch, communication_graph: MultiDiGraph, shots: int
-) -> tuple[QuantumTapeBatch, np.ndarray]:
+    tapes: QuantumScriptBatch, communication_graph: MultiDiGraph, shots: int, seed=None
+) -> tuple[QuantumScriptBatch, np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
     :class:`MeasureNode` and :class:`PrepareNode` operations.
@@ -617,6 +618,7 @@ def expand_fragment_tapes_mc(
         communication_graph (nx.MultiDiGraph): the communication (quotient) graph of the fragmented
             full graph
         shots (int): number of shots
+        seed (int, optional): seed for the random number generator. Defaults to None.
 
     Returns:
         Tuple[Sequence[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
@@ -683,7 +685,7 @@ def expand_fragment_tapes_mc(
 
     """
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
-    settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
+    settings = np.random.default_rng(seed).choice(range(8), size=(len(pairs), shots), replace=True)
 
     meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings)}
     prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings)}

@@ -291,7 +291,7 @@ class TestInputs:
                 [],
                 np.array([1, 1, 0, 0, 0]),
                 1,
-                "Basis states must be of length 4",
+                "State must be of length 4",
             ),
             (
                 np.array([-2.8, 1.6]),
@@ -540,6 +540,46 @@ class TestInterfaces:
         grads2 = grad_fn2(weights, n_repeats=2)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.slow
+    def test_jax_jit(self, tol):
+        """Tests the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weights = jnp.array(np.random.random(size=(2,)))
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit, static_argnames="n_repeats")
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+
+        # Test with n_repeats=2
+        weights = jnp.array(np.random.random(size=(2, 2)))
+        res = circuit(weights, n_repeats=2)
+        res2 = circuit2(weights, n_repeats=2)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights, n_repeats=2)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights, n_repeats=2)
+
+        assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

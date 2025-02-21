@@ -66,7 +66,7 @@ class ApproxTimeEvolution(Operation):
 
     .. warning::
 
-        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.LinearCombination` objects may undergo different time evolutions
         due to the order in which those observables are stored.
 
     .. note::

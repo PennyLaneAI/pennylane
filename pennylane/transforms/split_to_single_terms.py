@@ -24,6 +24,7 @@ from pennylane.transforms import transform
 from pennylane.transforms.split_non_commuting import (
     _processing_fn_no_grouping,
     _split_all_multi_term_obs_mps,
+    shot_vector_support,
 )
 
 
@@ -36,8 +37,9 @@ def null_postprocessing(results):
 
 @transform
 def split_to_single_terms(tape):
-    """Splits any expectation values of multi-term observables in a circuit into single terms.
-    For devices that don't natively support measuring expectation values of sums of observables.
+    """Splits any expectation values of multi-term observables in a circuit into single term
+    expectation values for devices that don't natively support measuring expectation values
+    of sums of observables.
 
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
@@ -53,8 +55,8 @@ def split_to_single_terms(tape):
 
     **Examples:**
 
-    This transform allows us to transform a QNode measuring multi-term observables into individual measurements,
-    each a single term.
+    This transform allows us to transform a QNode that measures multi-term observables into individual measurements,
+    each corresponding to a single term.
 
     .. code-block:: python3
 
@@ -89,15 +91,15 @@ def split_to_single_terms(tape):
     1: ──RX(0.79)─┤ ╰<X@Z>  <Y>  <X>
 
     Note that the observable ``Y(1)`` occurs twice in the original QNode, but only once in the
-    transformed circuits. When there are multiple expecatation value measurements that rely on
-    the same observable, this observable is measured only once, and the result is copied to each
+    transformed circuits. When there are multiple expectation value measurements that rely on
+    the same observable, the observable is measured only once, and the result is copied to each
     original measurement.
 
-    While internally the execution is split into single terms, the end result has the same ordering
+    While the execution is split into single terms internally, the final result has the same ordering
     as the user provides in the return statement.
 
     >>> circuit([np.pi/4, np.pi/4])
-    [0.8638999999999999, -0.7032]
+    [0.8535533905932737, -0.7071067811865475]
 
     .. details::
         :title: Usage Details
@@ -161,23 +163,13 @@ def split_to_single_terms(tape):
             _processing_fn_no_grouping,
             single_term_obs_mps=single_term_obs_mps,
             offsets=offsets,
-            shots=tape.shots,
             batch_size=tape.batch_size,
         )
 
-        if len(new_tape.measurements) == 1:
-            return process(res)
-
         # we go from ((mp1_res, mp2_res, mp3_res),) as result output
         # to (mp1_res, mp2_res, mp3_res) as expected by _processing_fn_no_grouping
-        res = res[0]
-        if tape.shots.has_partitioned_shots:
-            # swap dimension order of mps vs shot copies for _processing_fn_no_grouping
-            res = [
-                tuple(res[j][i] for j in range(tape.shots.num_copies))
-                for i in range(len(new_tape.measurements))
-            ]
+        return process(res if len(new_tape.measurements) == 1 else res[0])
 
-        return process(res)
-
+    if tape.shots.has_partitioned_shots:
+        return (new_tape,), shot_vector_support(post_processing_split_sums)
     return (new_tape,), post_processing_split_sums

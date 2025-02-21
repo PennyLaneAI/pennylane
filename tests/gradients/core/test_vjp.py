@@ -371,12 +371,10 @@ class TestVJPGradients:
     """Gradient tests for the vjp function"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, tol):
+    def test_autograd(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using autograd."""
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x, dy):
@@ -386,8 +384,7 @@ class TestVJPGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-            vjp = fn(execute_fn(tapes))
-            return vjp
+            return fn(dev.execute(tapes))
 
         dy = np.array([-1.0, 0.0, 0.0, 1.0], requires_grad=False)
         res = cost_fn(params, dy)
@@ -397,13 +394,12 @@ class TestVJPGradients:
         assert np.allclose(res, qml.jacobian(expected)(params), atol=tol, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
-    def test_torch(self, dev_name, tol):
+    def test_torch(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using Torch."""
         import torch
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         params_np = np.array([0.543, -0.654], requires_grad=True)
         params = torch.tensor(params_np, requires_grad=True, dtype=torch.float64)
@@ -427,14 +423,12 @@ class TestVJPGradients:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
-    def test_tf(self, dev_name, tol):
+    def test_tf(self, tol, seed):
         """Tests that the output of the VJP transform
         can be differentiated using TF."""
         import tensorflow as tf
 
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
         params_np = np.array([0.543, -0.654], requires_grad=True)
         params = tf.Variable(params_np, dtype=tf.float64)
@@ -447,7 +441,7 @@ class TestVJPGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-            vjp = fn(execute_fn(tapes))
+            vjp = fn(dev.execute(tapes))
 
         assert np.allclose(vjp, expected(params), atol=tol, rtol=0)
 
@@ -474,7 +468,7 @@ class TestVJPGradients:
     #             qml.RX(weights[i], wires=i)
     #         return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
-    #     vanilla_numpy.random.seed(42)
+    #     vanilla_numpy.random.seed(seed)
 
     #     ndata = 100
     #     data = [vanilla_numpy.random.randn(nwires).astype("float32") for _ in range(ndata)]
@@ -492,15 +486,13 @@ class TestVJPGradients:
 
     @pytest.mark.jax
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-    def test_jax(self, dev_name, tol):
+    def test_jax(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using JAX."""
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         params_np = np.array([0.543, -0.654], requires_grad=True)
         params = jnp.array(params_np)
 
@@ -512,8 +504,7 @@ class TestVJPGradients:
             dy = jax.numpy.array([-1.0, 0.0, 0.0, 1.0])
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-            vjp = fn(execute_fn(tapes))
-            return vjp
+            return fn(dev.execute(tapes))
 
         res = cost_fn(params)
         assert np.allclose(res, expected(params), atol=tol, rtol=0)
@@ -676,3 +667,24 @@ class TestBatchVJP:
         # list will correspond to a single input parameter of the combined
         # tapes.
         assert len(res) == sum(len(t.trainable_params) for t in tapes)
+
+    def test_batched_params_probs_jacobian(self):
+        """Test that the VJP gets calculated correctly when inputs are batched, multiple
+        trainable parameters are used and the measurement has a shape (probs)"""
+        data = np.array([1.2, 2.3, 3.4])
+        x0, x1 = 0.5, 0.8
+        ops = [qml.RX(x0, 0), qml.RX(x1, 0), qml.RY(data, 0)]
+        tape = qml.tape.QuantumScript(ops, [qml.probs(wires=0)], trainable_params=[0, 1])
+        dy = np.array([[0.6, -0.7], [0.2, -0.7], [-5.2, 0.6]])
+        v_tapes, fn = qml.gradients.batch_vjp([tape], [dy], qml.gradients.param_shift)
+
+        dev = qml.device("default.qubit")
+        vjp = fn(dev.execute(v_tapes))
+
+        # Analytically expected Jacobian and VJP
+        expected_jac = [-0.5 * np.cos(data) * np.sin(x0 + x1), 0.5 * np.cos(data) * np.sin(x0 + x1)]
+        expected_vjp = np.tensordot(expected_jac, dy, axes=[[0, 1], [1, 0]])
+        assert qml.math.shape(vjp) == (1, 2)  # num tapes, num trainable tape parameters
+        assert np.allclose(
+            vjp, expected_vjp
+        )  # Both parameters essentially feed into the same RX rotation

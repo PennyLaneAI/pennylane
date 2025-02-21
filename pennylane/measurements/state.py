@@ -138,10 +138,10 @@ class StateMP(StateMeasurement):
             where the instance has to be identified
     """
 
+    _shortname = State  #! Note: deprecated. Change the value to "state" in v0.42
+
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
-
-    return_type = State
 
     @classmethod
     def _abstract_eval(
@@ -159,12 +159,9 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, device, shots):
-        num_shot_elements = (
-            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
-        )
-        dim = 2 ** len(self.wires) if self.wires else 2 ** len(device.wires)
-        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int]:
+        num_wires = len(self.wires) if self.wires else num_device_wires
+        return (2**num_wires,)
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
@@ -177,27 +174,34 @@ class StateMP(StateMeasurement):
             floating_single = "float32" in dtype or "complex64" in dtype
             return qml.math.cast(state, "complex64" if floating_single else "complex128")
 
-        wires = self.wires
-        if not wires or wire_order == wires:
+        if not self.wires or wire_order == self.wires:
             return cast_to_complex(state)
 
-        if set(wires) != set(wire_order):
+        if not all(w in self.wires for w in wire_order):
+            bad_wires = [w for w in wire_order if w not in self.wires]
             raise WireError(
-                f"Unexpected unique wires {Wires.unique_wires([wires, wire_order])} found. "
-                f"Expected wire order {wire_order} to be a rearrangement of {wires}"
+                f"State wire order has wires {bad_wires} not present in "
+                f"measurement with wires {self.wires}. StateMP.process_state cannot trace out wires."
             )
 
-        shape = (2,) * len(wires)
-        flat_shape = (2 ** len(wires),)
-        desired_axes = [wire_order.index(w) for w in wires]
-        if qml.math.ndim(state) == 2:  # batched state
-            batch_size = qml.math.shape(state)[0]
-            shape = (batch_size,) + shape
-            flat_shape = (batch_size,) + flat_shape
-            desired_axes = [0] + [i + 1 for i in desired_axes]
-
+        shape = (2,) * len(wire_order)
+        batch_size = None if qml.math.ndim(state) == 1 else qml.math.shape(state)[0]
+        shape = (batch_size,) + shape if batch_size else shape
         state = qml.math.reshape(state, shape)
+
+        if wires_to_add := Wires(set(self.wires) - set(wire_order)):
+            for _ in wires_to_add:
+                state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
+            wire_order = wire_order + wires_to_add
+
+        desired_axes = [wire_order.index(w) for w in self.wires]
+        if batch_size:
+            desired_axes = [0] + [i + 1 for i in desired_axes]
         state = qml.math.transpose(state, desired_axes)
+
+        flat_shape = (2 ** len(self.wires),)
+        if batch_size:
+            flat_shape = (batch_size,) + flat_shape
         state = qml.math.reshape(state, flat_shape)
         return cast_to_complex(state)
 
@@ -232,17 +236,9 @@ class DensityMatrixMP(StateMP):
         shape = (2**n_wires, 2**n_wires)
         return shape, complex
 
-    def shape(self, device, shots):
-        num_shot_elements = (
-            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
-        )
-
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int]:
         dim = 2 ** len(self.wires)
-        return (
-            (dim, dim)
-            if num_shot_elements == 1
-            else tuple((dim, dim) for _ in range(num_shot_elements))
-        )
+        return (dim, dim)
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name

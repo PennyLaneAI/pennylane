@@ -42,7 +42,7 @@ class Tracker:
     manually triggered by setting ``tracker.active = True`` without the use of a context manager.
 
     Args:
-        dev (Device): A PennyLane compatible device
+        dev (.devices.Device): A PennyLane compatible device
         callback=None (callable or None): A function of the keywords ``totals``,
             ``history`` and ``latest``.  Run on each ``record`` call with current values of
             the corresponding attributes.
@@ -90,8 +90,8 @@ class Tracker:
     >>> tracker.history['results']
     [1.0, -0.3, 0.16]
     >>> print(tracker.history['resources'][0])
-    wires: 1
-    gates: 1
+    num_wires: 1
+    num_gates: 1
     depth: 1
     shots: Shots(total=100)
     gate_types:
@@ -152,8 +152,8 @@ class Tracker:
         ...
         >>> resources_lst = tracker.history['resources']
         >>> print(resources_lst[0])
-        wires: 1
-        gates: 1
+        num_wires: 1
+        num_gates: 1
         depth: 1
         shots: Shots(total=10)
         gate_types:

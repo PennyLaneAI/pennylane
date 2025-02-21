@@ -519,7 +519,7 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        weights_tuple = [((0.55, 0.72, 0.6, 0.54, 0.42, 0.65))]
+        weights_tuple = [(0.55, 0.72, 0.6, 0.54, 0.42, 0.65)]
         res = circuit(weights_tuple)
         res2 = circuit2(weights_tuple)
 
@@ -573,6 +573,32 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Test the template compiles with JAX JIT."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weights = jnp.array(np.random.random(size=(1, 6)))
+
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert qml.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

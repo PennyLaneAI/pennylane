@@ -103,10 +103,10 @@ class UCCSD(Operation):
         #. The single and double excitations can be generated with the function
            :func:`~.excitations`. See example below.
 
-        #. The vector of parameters ``weights`` is a two-dimensional array of size
+        #. The vector of parameters ``weights`` is a two-dimensional array of shape
            ``(n_repeats, len(s_wires)+len(d_wires))``.
-        #. If ``n_repeats=1``, then ``weights`` can also be a one-dimensional array of size
-           ``len(s_wires)+len(d_wires)``.
+        #. If ``n_repeats=1``, then ``weights`` can also be a one-dimensional array of shape
+           ``(len(s_wires)+len(d_wires),)``.
 
 
         An example of how to use this template is shown below:

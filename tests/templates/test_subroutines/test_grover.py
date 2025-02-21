@@ -31,6 +31,12 @@ def test_repr():
     assert repr(op) == expected
 
 
+def test_work_wire_property():
+    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
+    expected = qml.wires.Wires((3, 4))
+    assert op.work_wires == expected
+
+
 def test_standard_validity():
     """Test the standard criteria for a valid operation."""
     work_wires = qml.wires.Wires((3, 4))
@@ -252,3 +258,35 @@ def test_decomposition_matrix(n_wires):
     mat1 = op.matrix()
     mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wires)
     assert np.allclose(mat1, mat2)
+
+
+@pytest.mark.jax
+def test_jax_jit():
+    import jax
+
+    n_wires = 3
+    wires = list(range(n_wires))
+
+    def oracle():
+        qml.Hadamard(wires[-1])
+        qml.Toffoli(wires=wires)
+        qml.Hadamard(wires[-1])
+
+    dev = qml.device("default.qubit", wires=wires)
+
+    @qml.qnode(dev)
+    def circuit():
+        for wire in wires:
+            qml.Hadamard(wire)
+
+        oracle()
+        qml.GroverOperator(wires=wires)
+
+        oracle()
+        qml.GroverOperator(wires=wires)
+
+        return qml.probs(wires)
+
+    jit_circuit = jax.jit(circuit)
+
+    assert qml.math.allclose(circuit(), jit_circuit())
