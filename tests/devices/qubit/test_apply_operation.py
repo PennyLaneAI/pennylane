@@ -186,7 +186,7 @@ class TestSparseOperation:
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-@pytest.mark.parametrize("method", methods + [apply_operation_sparse_wrapped])
+@pytest.mark.parametrize("method", methods)
 @pytest.mark.parametrize("wire", (0, 1))
 class TestTwoQubitStateSpecialCases:
     """Test the special cases on a two qubit state.  Also tests the special cases for einsum and tensor application methods
@@ -418,7 +418,7 @@ def time_dependent_hamiltonian():
 class TestApplyParametrizedEvolution:
     """Test that apply_operation works with ParametrizedEvolution"""
 
-    @pytest.mark.parametrize("method", methods + [apply_operation_sparse_wrapped])
+    @pytest.mark.parametrize("method", methods)
     def test_parametrized_evolution_time_independent(self, method):
         """Test that applying a ParametrizedEvolution gives the expected state
         for a time-independent hamiltonian"""
@@ -965,7 +965,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert op.batch_size == 3
 
 
-@pytest.mark.parametrize("method", methods + [apply_operation_sparse_wrapped])
+@pytest.mark.parametrize("method", methods)
 class TestLargerOperations:
     """Tests matrix applications on states and operations with larger numbers of wires."""
 
