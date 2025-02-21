@@ -37,7 +37,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `Controlled` operators now have a full implementation of `sparse_matrix` to support `wire_order` configuration.
+* `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
   [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
 
 * `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
