@@ -66,7 +66,7 @@ class TestMergeRotationsInterpreter:
         expected_ops = [
             qml.RX(jax.numpy.array(a + b), wires=[0]),
             qml.RY(a, wires=[2]),
-            # Two rotation gates merge to: RZ(c) RZ(c)
+            # Two rotation gates merge to: RZ(c) RY(0) RZ(c)
             qml.Rot(jax.numpy.array(c), jax.numpy.array(0), jax.numpy.array(c), wires=[1]),
         ]
 
@@ -127,9 +127,7 @@ class TestMergeRotationsInterpreter:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
-        a, b, c = 1, 2, 3
-        d, e, f = 4, 5, 6
-        expected_angles = fuse_rot_angles((a, b, c), (d, e, f))
+        expected_angles = fuse_rot_angles((1, 2, 3), (4, 5, 6))
         expected_ops = [
             qml.Rot(
                 expected_angles[0],
@@ -261,42 +259,6 @@ class TestMergeRotationsInterpreter:
         meas = collector.state["measurements"]
         assert meas == expected_meas
 
-    def test_two_qubits_merge_with_gate_subset(self):
-        """Test that specifying a subset of operations to include works correctly."""
-
-        @MergeRotationsInterpreter(include_gates=["RX", "CRX"])
-        def f():
-            qml.CRX(1, wires=[0, 1])
-            qml.CRX(1, wires=[0, 1])
-            qml.RY(1, wires=[3])
-            qml.RY(1, wires=[3])
-            qml.RX(1, wires=[2])
-            qml.RX(1, wires=[2])
-            qml.RZ(1, wires=[2])
-            return qml.expval(qml.Z(0))
-
-        jaxpr = jax.make_jaxpr(f)()
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts)
-
-        # Order is slightly different, but remains correct.
-        expected_ops = [
-            qml.RY(1, wires=[3]),
-            qml.RX(2, wires=[2]),
-            qml.CRX(2, wires=[0, 1]),
-            qml.RY(1, wires=[3]),
-            qml.RZ(1, wires=[2]),
-        ]
-
-        ops = collector.state["ops"]
-        assert ops == expected_ops
-
-        expected_meas = [
-            qml.expval(qml.PauliZ(0)),
-        ]
-        meas = collector.state["measurements"]
-        assert meas == expected_meas
-
     def test_controlled_rotation_merge(self):
         """Test that a controlled rotation is correctly merged."""
 
@@ -384,9 +346,70 @@ class TestMergeRotationsInterpreter:
 
         args = (1, 2)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert jaxpr.eqns[1].primitive == qml.RX._primitive
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+
+        expected_ops = [
+            qml.RX(1, wires=[0]),
+            qml.RX(2, wires=[0]),
+        ]
+
+        ops = collector.state["ops"]
+        assert ops == expected_ops
+
+    def test_include_gates_kwarg(self):
+        """Test that specifying a subset of operations to include works correctly."""
+
+        @MergeRotationsInterpreter(include_gates=["RX", "CRX"])
+        def f():
+            qml.CRX(1, wires=[0, 1])
+            qml.RY(1, wires=[3])
+            qml.RX(1, wires=[2])
+            qml.RY(1, wires=[3])
+            qml.RX(1, wires=[2])
+            qml.CRX(1, wires=[0, 1])
+            qml.RZ(1, wires=[2])
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+
+        # Order is slightly different, but remains correct.
+        expected_ops = [
+            qml.RY(1, wires=[3]),
+            qml.RX(2, wires=[2]),
+            qml.CRX(2, wires=[0, 1]),
+            qml.RY(1, wires=[3]),
+            qml.RZ(1, wires=[2]),
+        ]
+
+        ops = collector.state["ops"]
+        assert ops == expected_ops
+
+        expected_meas = [
+            qml.expval(qml.PauliZ(0)),
+        ]
+        meas = collector.state["measurements"]
+        assert meas == expected_meas
+
+    def test_atol_kwarg(self):
+        """Test that the atol keyword argument works correctly."""
+
+        @MergeRotationsInterpreter(atol=1e-3)
+        def f():
+            qml.RX(1, wires=0)
+            qml.RX(-1.0001, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(f)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+
+        expected_ops = []
+
+        ops = collector.state["ops"]
+        assert ops == expected_ops
 
 
 @pytest.mark.parametrize(("theta1, theta2"), [(0.1, 0.2), (0.1, -0.1)])
@@ -404,11 +427,22 @@ def test_merge_rotations_plxpr_to_plxpr_transform(theta1, theta2):
     transformed_jaxpr = merge_rotations_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {}, *args)
 
     assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    collector = CollectOpsandMeas()
+    collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
-    assert jaxpr.eqns[-4].primitive != qml.RX._primitive
-    assert jaxpr.eqns[-3].primitive == qml.RX._primitive
-    assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
-    assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+    # Order is slightly different, but remains correct.
+    expected_ops = [
+        qml.RX(jax.numpy.array(theta1 + theta2), wires=[0]),
+    ]
+
+    ops = collector.state["ops"]
+    assert ops == expected_ops
+
+    expected_meas = [
+        qml.expval(qml.PauliZ(0)),
+    ]
+    meas = collector.state["measurements"]
+    assert meas == expected_meas
 
 
 class TestHigherOrderPrimitiveIntegration:

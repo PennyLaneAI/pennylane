@@ -57,12 +57,16 @@ def _get_plxpr_merge_rotations():
         def interpret_and_refresh_previous_ops(self, op: Operator):
             """Interpret the previous_ops dictionary and add the operator to the previous_ops dictionary."""
 
-            # Use list(dict(...)) as opposed to a set to maintain order
+            # Use list(dict(...)) as opposed to a set to maintain deterministic order
             previous_ops_on_wires = list(dict.fromkeys(self.previous_ops.get(w) for w in op.wires))
+
+            # Remove the previous operations from the previous_ops dictionary
             for o in previous_ops_on_wires:
                 if o is not None:
                     for w in o.wires:
                         self.previous_ops.pop(w)
+
+            # Refresh the previous_ops dictionary with the current operator
             for w in op.wires:
                 self.previous_ops[w] = op
 
@@ -100,7 +104,6 @@ def _get_plxpr_merge_rotations():
 
             # Get the previous operation on the same wire
             previous_op = self.previous_ops.get(op.wires[0])
-
             if previous_op is None:
                 for w in op.wires:
                     self.previous_ops[w] = op
@@ -113,7 +116,7 @@ def _get_plxpr_merge_rotations():
 
             if can_merge:
                 if isinstance(op, qml.Rot):
-                    # Order matters for the Rot gate
+                    # Order of arguments matter for the Rot gate!
                     cumulative_angles = fuse_rot_angles(
                         qml.math.stack(previous_op.parameters),
                         qml.math.stack(op.parameters),
@@ -123,8 +126,19 @@ def _get_plxpr_merge_rotations():
                         op.parameters
                     )
 
-                # Overwrite operator in dict with the merged one
+                # Update operator on these wires with the merged one
                 # pylint: disable = protected-access
+                skip_operation = False
+                if not qml.math.is_abstract(cumulative_angles):
+                    skip_operation = qml.math.allclose(
+                        cumulative_angles, 0.0, atol=self.atol, rtol=0
+                    )
+
+                if skip_operation:
+                    for w in op.wires:
+                        self.previous_ops.pop(w)
+                    return []
+
                 for w in op.wires:
                     self.previous_ops[w] = op.__class__._primitive.impl(
                         *cumulative_angles, wires=op.wires
@@ -132,20 +146,18 @@ def _get_plxpr_merge_rotations():
 
                 return []
 
+            # If we cannot merge, interpret the previous operations and refresh the previous_ops dictionary
             self.interpret_and_refresh_previous_ops(op)
 
         def interpret_and_clear_previous_ops(self) -> None:
-            """Interpret all the operations stored in self.previous_ops."""
+            """Interpret all the previously seen operations and then clear."""
 
-            # Use list(dict(...)) as opposed to a set to maintain order
+            # Use list(dict(...)) as opposed to a set to maintain deterministic order
             ops_remaining = list(dict.fromkeys((self.previous_ops.values())))
             for op in ops_remaining:
                 super().interpret_operation(op)
 
-            all_wires = tuple(self.previous_ops.keys())
-
-            for w in all_wires:
-                self.previous_ops.pop(w)
+            self.previous_ops.clear()
 
         def eval(self, jaxpr: Jaxpr, consts: list, *args) -> list:
             """Evaluate a jaxpr.
@@ -191,8 +203,8 @@ def _get_plxpr_merge_rotations():
                     self._env[outvar] = outval
 
             # The following is needed because any operations inside self.previous_ops have not yet
-            # been applied. At this point, we **know** that any operations that should be cancelled
-            # have been cancelled, and operations left inside self.previous_ops should be applied
+            # been applied. At this point, we **know** that any operations that should be merged
+            # have been merged, and operations left inside self.previous_ops should be applied
             self.interpret_and_clear_previous_ops()
 
             # Read the final result of the Jaxpr from the environment
