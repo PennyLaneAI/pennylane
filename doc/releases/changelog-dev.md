@@ -39,6 +39,9 @@
   following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
   [(#6925)](https://github.com/PennyLaneAI/pennylane/pull/6925)
   
+* `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
+  [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
+
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
 
@@ -320,6 +323,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Globally silences `no-member` pylint issues from jax.
+  [(#6987)](https://github.com/PennyLaneAI/pennylane/pull/6987)
+
 * Fix certain `pylint` errors in source code.
   [(#6980)](https://github.com/PennyLaneAI/pennylane/pull/6980)
 
@@ -402,6 +408,7 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Henry Chang,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
