@@ -98,5 +98,3 @@ class TestFromBloq:
             qml.SWAP(wires=[1, 4]),
             qml.SWAP(wires=[2, 5]),
         ]
-
-        print(qml.FromBloq(Swap(3), wires=range(6)).decomposition())
