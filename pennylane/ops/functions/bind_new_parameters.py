@@ -163,6 +163,7 @@ def bind_new_parameters_copy(op, params: Sequence[TensorLike]):  # pylint:disabl
 @bind_new_parameters.register(qml.CRZ)
 @bind_new_parameters.register(qml.CRot)
 @bind_new_parameters.register(qml.ControlledPhaseShift)
+@bind_new_parameters.register(qml.ControlledQubitUnitary)
 def bind_new_parameters_parametric_controlled_ops(
     op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot, qml.ControlledPhaseShift],
     params: Sequence[TensorLike],

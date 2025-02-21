@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test for default.qubits execute_and_jvp method."""
+"""Test for default.qubits adjoint execute_and_jvp method."""
 from functools import partial
 
 import pytest
@@ -21,9 +21,8 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.devices.qubit.jaxpr_adjoint import (  # pylint: disable=wrong-import-position
-    execute_and_jvp,
-)
+# pylint: disable=wrong-import-position
+from pennylane.devices.qubit.jaxpr_adjoint import execute_and_jvp
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -44,7 +43,7 @@ class TestErrors:
             execute_and_jvp(jaxpr.jaxpr, (0.5,), (1.0,), num_wires=1)
 
     def test_only_expvals(self):
-        """Test that an error is raised for other measurments."""
+        """Test that an error is raised for other measurements."""
 
         def f(x):
             qml.RX(x, 0)
@@ -122,7 +121,7 @@ class TestErrors:
 class TestCorrectResults:
 
     def test_abstract_zero_tangent(self):
-        """Test we get the the dresults will be an ad.Zero if it's independent of the input."""
+        """Test we get the derivatives will be an ad.Zero if the result is independent of the input."""
 
         def f(x):
             _ = x + 1
@@ -162,7 +161,7 @@ class TestCorrectResults:
         assert qml.math.allclose(dresults[0], tangents[0] * -jnp.sin(args[0]))
 
     def test_multiple_in(self):
-        """Test that we can differentiaite multiple inputs."""
+        """Test that we can differentiate multiple inputs."""
 
         def f(x, y):
             qml.RX(x, 0)
