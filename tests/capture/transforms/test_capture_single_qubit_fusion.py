@@ -73,40 +73,6 @@ class TestSingleQubitFusionInterpreter:
             assert qml.math.allclose(op1.parameters, op2.parameters)
             assert op1.wires == op2.wires
 
-    def test_single_qubit_full_fusion_qnode(self):
-        """Test that a sequence of single-qubit gates fuse when inside a QNode."""
-
-        @qml.qnode(device=qml.device("default.qubit", wires=1))
-        def circuit():
-            qml.RZ(0.3, wires=0)
-            qml.Hadamard(wires=0)
-            qml.Rot(0.1, 0.2, 0.3, wires=0)
-            qml.RX(0.1, wires=0)
-            qml.SX(wires=0)
-            qml.T(wires=0)
-            qml.PauliX(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        # This circuit should be transformed to a single Rot(-4.37,1.98,-0.96) gate
-
-        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
-
-        jaxpr = jax.make_jaxpr(transformed_circuit)()
-        assert len(jaxpr.eqns) == 1
-        circuit_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert len(circuit_jaxpr.eqns) == 3
-        assert circuit_jaxpr.eqns[0].primitive == qml.Rot._primitive
-        assert circuit_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
-        assert circuit_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
-
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.literals)
-
-        with qml.capture.pause():
-            # pylint: disable=not-callable
-            expected_result = circuit()
-
-        assert qml.math.allclose(result, expected_result)
-
     @pytest.mark.parametrize(
         "exclude_gates, expected_ops",
         [
@@ -335,6 +301,169 @@ class TestSingleQubitFusionInterpreter:
             assert qml.math.allclose(op1.parameters, op2.parameters)
             assert op1.wires == op2.wires
 
+    def test_single_qubit_fusion_traced_wires(self):
+        """Test that single-qubit gates with traced wires are fused correctly."""
+
+        @SingleQubitFusionInterpreter()
+        def circuit(w1, w2, w3, w4):
+
+            qml.X(wires=w1)
+            qml.Y(wires=w2)
+            qml.Z(wires=w2)
+            qml.CNOT(wires=[w1, w2])
+            qml.Z(wires=w3)
+            qml.Hadamard(wires=w4)
+            qml.CNOT(wires=[w1, w3])
+
+        wires = [0, 1, 2, 3]
+
+        jaxpr = jax.make_jaxpr(circuit)(*wires)
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires)
+        jaxpr_ops = collector.state["ops"]
+
+        assert len(jaxpr_ops) == 6
+
+        expected_ops = [
+            qml.Rot(np.pi / 2, np.pi, -np.pi / 2, wires=[0]),  # X not fused converted to Rot
+            qml.Rot(0, np.pi, np.pi, wires=[1]),  # Y and Z fused
+            qml.CNOT(wires=[0, 1]),
+            qml.Rot(np.pi, 0, 0, wires=[2]),  # Z not fused converted to Rot
+            qml.CNOT(wires=[0, 2]),
+            qml.Hadamard(wires=[3]),  # H not fused and not converted to Rot
+        ]
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops):
+            # The qml.equal function currently does not distinguish between
+            # two qml.Rot operators as equivalent unless the input angles are exactly the same
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
+
+    def test_single_qubit_fusion_traced_consts_params(self):
+        """Test that single-qubit gates with traced parameters and constants are fused correctly."""
+
+        const_param = jax.numpy.array(0.3)
+
+        @SingleQubitFusionInterpreter()
+        def circuit(params):
+            qml.Hadamard(wires=0)
+            qml.RZ(params[0], wires=0)
+            qml.PauliY(wires=1)
+            qml.RZ(params[1], wires=0)
+            qml.CNOT(wires=[1, 2])
+            qml.CRY(params[2], wires=[1, 2])
+            qml.PauliZ(wires=0)
+            qml.CRY(params[3], wires=[1, 2])
+            qml.Rot(params[0], params[1], const_param, wires=1)
+            qml.Rot(const_param, params[3], params[0], wires=1)
+
+        params = jax.numpy.array([0.1, 0.2, 0.3, 0.4])
+
+        jaxpr = jax.make_jaxpr(circuit)(params)
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, params)
+        jaxpr_ops = collector.state["ops"]
+        assert len(jaxpr_ops) == 6
+
+        expected_ops = [
+            qml.Rot(0.0, np.pi, 0.0, wires=[1]),
+            qml.CNOT(wires=[1, 2]),
+            qml.CRY(0.3, wires=[1, 2]),
+            qml.CRY(0.4, wires=[1, 2]),
+            qml.Rot(-np.pi, np.pi / 2, -2.8415926, wires=[0]),
+            qml.Rot(0.51580256, 0.57563156, 0.30755687, wires=[1]),
+        ]
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops):
+            # The qml.equal function currently does not distinguish between
+            # CRY(0.30000001192092896, wires=[1, 2]) and CRY(0.3, wires=[1, 2])
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
+
+
+class TestSingleQubitFusionHigherOrderPrimitives:
+    """Unit tests for the single-qubit fusion transformation with higher order primitives."""
+
+    def test_single_qubit_full_fusion_qnode(self):
+        """Test that a sequence of single-qubit gates fuse when inside a QNode."""
+
+        @qml.qnode(device=qml.device("default.qubit", wires=1))
+        def circuit():
+            qml.RZ(0.3, wires=0)
+            qml.Hadamard(wires=0)
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+            qml.RX(0.1, wires=0)
+            qml.SX(wires=0)
+            qml.T(wires=0)
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # This circuit should be transformed to a single Rot(-4.37,1.98,-0.96) gate
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        assert len(jaxpr.eqns) == 1
+        circuit_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert len(circuit_jaxpr.eqns) == 3
+        assert circuit_jaxpr.eqns[0].primitive == qml.Rot._primitive
+        assert circuit_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+        assert circuit_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.literals)
+
+        with qml.capture.pause():
+            # pylint: disable=not-callable
+            expected_result = circuit()
+
+        assert qml.math.allclose(result, expected_result)
+
+    @pytest.mark.parametrize("grad_fn", [qml.grad, qml.jacobian])
+    def test_grad_and_jac_higher_order_primitives(self, grad_fn):
+        """Test that grad and jacobian higher order primitives are transformed correctly."""
+
+        @SingleQubitFusionInterpreter()
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circuit(input):
+            qml.Hadamard(wires=0)
+            qml.RZ(input[0], wires=1)
+            qml.RY(input[1], wires=1)
+            qml.RX(input[2], wires=2)
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+
+        input = jax.numpy.array([np.pi, np.pi / 2, np.pi / 3])
+
+        jaxpr = jax.make_jaxpr(grad_fn(circuit))(input)
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == grad_prim if grad_fn == qml.grad else jacobian_prim
+
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        assert len(inner_jaxpr.eqns) == 1
+        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        qfunc_jaxpr = qfunc_jaxpr.replace(
+            eqns=[
+                eqn
+                for eqn in qfunc_jaxpr.eqns
+                if getattr(eqn.primitive, "prim_type", "") == "operator"
+            ]
+        )
+
+        assert qfunc_jaxpr.eqns[0].primitive == qml.Rot._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.Rot._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.CNOT._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[4].primitive == qml.PauliX._primitive
+        assert qfunc_jaxpr.eqns[5].primitive == qml.PauliX._primitive
+        assert qfunc_jaxpr.eqns[6].primitive == qml.ops.Prod._primitive
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.literals, input)[0]
+        assert qml.math.allclose(result, np.zeros((3, 3)))
+
     def test_transform_higher_order_primitive(self):
         """Test that the inner_jaxpr of transform primitives is not transformed."""
 
@@ -516,8 +645,6 @@ class TestSingleQubitFusionInterpreter:
         jaxpr_ops = collector.state["ops"]
         assert len(jaxpr_ops) == 5
 
-        print(jaxpr_ops)
-
         expected_ops = [
             qml.CNOT(wires=[0, 1]),
             qml.Rot(np.pi / 2, np.pi, np.pi / 2, wires=[0]),  # RX and RZ fused
@@ -532,131 +659,6 @@ class TestSingleQubitFusionInterpreter:
             assert op1.name == op2.name
             assert qml.math.allclose(op1.parameters, op2.parameters)
             assert op1.wires == op2.wires
-
-    def test_single_qubit_fusion_traced_wires(self):
-        """Test that single-qubit gates with traced wires are fused correctly."""
-
-        @SingleQubitFusionInterpreter()
-        def circuit(w1, w2, w3, w4):
-
-            qml.X(wires=w1)
-            qml.Y(wires=w2)
-            qml.Z(wires=w2)
-            qml.CNOT(wires=[w1, w2])
-            qml.Z(wires=w3)
-            qml.Hadamard(wires=w4)
-            qml.CNOT(wires=[w1, w3])
-
-        wires = [0, 1, 2, 3]
-
-        jaxpr = jax.make_jaxpr(circuit)(*wires)
-
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires)
-        jaxpr_ops = collector.state["ops"]
-
-        assert len(jaxpr_ops) == 6
-
-        expected_ops = [
-            qml.Rot(np.pi / 2, np.pi, -np.pi / 2, wires=[0]),  # X not fused converted to Rot
-            qml.Rot(0, np.pi, np.pi, wires=[1]),  # Y and Z fused
-            qml.CNOT(wires=[0, 1]),
-            qml.Rot(np.pi, 0, 0, wires=[2]),  # Z not fused converted to Rot
-            qml.CNOT(wires=[0, 2]),
-            qml.Hadamard(wires=[3]),  # H not fused and not converted to Rot
-        ]
-
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            # The qml.equal function currently does not distinguish between
-            # two qml.Rot operators as equivalent unless the input angles are exactly the same
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
-
-    def test_single_qubit_fusion_traced_consts_params(self):
-        """Test that single-qubit gates with traced parameters and constants are fused correctly."""
-
-        const_param = jax.numpy.array(0.3)
-
-        @SingleQubitFusionInterpreter()
-        def circuit(params):
-            qml.Hadamard(wires=0)
-            qml.RZ(params[0], wires=0)
-            qml.PauliY(wires=1)
-            qml.RZ(params[1], wires=0)
-            qml.CNOT(wires=[1, 2])
-            qml.CRY(params[2], wires=[1, 2])
-            qml.PauliZ(wires=0)
-            qml.CRY(params[3], wires=[1, 2])
-            qml.Rot(params[0], params[1], const_param, wires=1)
-            qml.Rot(const_param, params[3], params[0], wires=1)
-
-        params = jax.numpy.array([0.1, 0.2, 0.3, 0.4])
-
-        jaxpr = jax.make_jaxpr(circuit)(params)
-
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, params)
-        jaxpr_ops = collector.state["ops"]
-        assert len(jaxpr_ops) == 6
-
-        expected_ops = [
-            qml.Rot(0.0, np.pi, 0.0, wires=[1]),
-            qml.CNOT(wires=[1, 2]),
-            qml.CRY(0.3, wires=[1, 2]),
-            qml.CRY(0.4, wires=[1, 2]),
-            qml.Rot(-np.pi, np.pi / 2, -2.8415926, wires=[0]),
-            qml.Rot(0.51580256, 0.57563156, 0.30755687, wires=[1]),
-        ]
-
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            # The qml.equal function currently does not distinguish between
-            # CRY(0.30000001192092896, wires=[1, 2]) and CRY(0.3, wires=[1, 2])
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
-
-    @pytest.mark.parametrize("grad_fn", [qml.grad, qml.jacobian])
-    def test_grad_and_jac_higher_order_primitives(self, grad_fn):
-        """Test that grad and jacobian higher order primitives are transformed correctly."""
-
-        @SingleQubitFusionInterpreter()
-        @qml.qnode(qml.device("default.qubit", wires=3))
-        def circuit(input):
-            qml.Hadamard(wires=0)
-            qml.RZ(input[0], wires=1)
-            qml.RY(input[1], wires=1)
-            qml.RX(input[2], wires=2)
-            qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
-
-        input = jax.numpy.array([np.pi, np.pi / 2, np.pi / 3])
-
-        jaxpr = jax.make_jaxpr(grad_fn(circuit))(input)
-        assert len(jaxpr.eqns) == 1
-        assert jaxpr.eqns[0].primitive == grad_prim if grad_fn == qml.grad else jacobian_prim
-
-        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
-        assert len(inner_jaxpr.eqns) == 1
-        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        qfunc_jaxpr = qfunc_jaxpr.replace(
-            eqns=[
-                eqn
-                for eqn in qfunc_jaxpr.eqns
-                if getattr(eqn.primitive, "prim_type", "") == "operator"
-            ]
-        )
-
-        assert qfunc_jaxpr.eqns[0].primitive == qml.Rot._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.Rot._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.CNOT._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[4].primitive == qml.PauliX._primitive
-        assert qfunc_jaxpr.eqns[5].primitive == qml.PauliX._primitive
-        assert qfunc_jaxpr.eqns[6].primitive == qml.ops.Prod._primitive
-
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.literals, input)[0]
-        assert qml.math.allclose(result, np.zeros((3, 3)))
 
 
 class TestSingleQubitFusionPLXPR:
