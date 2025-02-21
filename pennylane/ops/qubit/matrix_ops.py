@@ -323,10 +323,12 @@ class QubitUnitary(Operation):
         return QubitUnitary(csr_matrix(adjoint_sp_mat), wires=self.wires)
 
     def pow(self, z: Union[int, float]):
-        mat = self.matrix()
-        if isinstance(mat, csr_matrix):
+        if self.has_sparse_matrix:
+            mat = self.sparse_matrix()
             pow_mat = sp.sparse.linalg.matrix_power(mat, z)
             return [QubitUnitary(pow_mat, wires=self.wires)]
+
+        mat = self.matrix()
         if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             pow_mat = qml.math.linalg.matrix_power(mat, z)
         elif self.batch_size is not None or qml.math.shape(z) != ():
