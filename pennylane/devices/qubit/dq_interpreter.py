@@ -26,15 +26,15 @@ from pennylane.ops import adjoint, ctrl
 from pennylane.ops.qubit import Projector
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
+from ..execution_config import ExecutionConfig
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
 from .simulate import _postselection_postprocess  # pylint: disable=protected-access
-from ..execution_config import ExecutionConfig
 
 
-# pylint: disable=attribute-defined-outside-init, access-member-before-definition
+# pylint: disable=attribute-defined-outside-init, access-member-before-definition,too-many-instance-attributes
 class DefaultQubitInterpreter(PlxprInterpreter):
     """Implements a class for interpreting plxpr using python simulation tools.
 
@@ -85,8 +85,8 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         execution_config: None | ExecutionConfig = None,
     ):
         self.num_wires = num_wires
-        self.shots = self.original_shots = Shots(shots)
-        if self.shots.has_partitioned_shots:
+        self.original_shots = Shots(shots)
+        if self.original_shots.has_partitioned_shots:
             raise NotImplementedError(
                 "DefaultQubitInterpreter does not yet support partitioned shots."
             )
@@ -111,6 +111,21 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     def state(self, new_val):
         try:
             self.stateref["state"] = new_val
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @property
+    def shots(self):
+        """The shots"""
+        try:
+            return self.stateref["shots"]
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @shots.setter
+    def shots(self, new_val):
+        try:
+            self.stateref["shots"] = new_val
         except TypeError as e:
             raise AttributeError("execution not yet initialized.") from e
 
@@ -148,16 +163,15 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         if self.stateref is None:
             self.stateref = {
                 "state": create_initial_state(range(self.num_wires), like="jax"),
+                "shots": self.original_shots,
                 "key": self.initial_key,
                 "is_state_batched": False,
             }
         # else set by copying a parent interpreter and we need to modify same stateref
 
     def cleanup(self) -> None:
-        # self.initial_key = self.key  # be cautious of leaked tracers, but we should be fine.
-        self.key = self.initial_key
+        self.initial_key = self.key  # be cautious of leaked tracers, but we should be fine.
         self.stateref = None
-        self.shots = self.original_shots
 
     def interpret_operation(self, op):
         self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)
@@ -165,8 +179,13 @@ class DefaultQubitInterpreter(PlxprInterpreter):
             self.is_state_batched = True
 
         if isinstance(op, Projector):
-            self.state, _ = _postselection_postprocess(
-                self.state, self.is_state_batched, self.shots
+            self.key, new_key = jax.random.split(self.key, 2)
+            self.state, self.shots = _postselection_postprocess(
+                self.state,
+                self.is_state_batched,
+                self.shots,
+                prng_key=new_key,
+                postselect_mode=self.execution_config.mcm_config.postselect_mode,
             )
 
         return op
