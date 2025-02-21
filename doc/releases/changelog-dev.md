@@ -343,6 +343,7 @@
   [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
 
 * Use `keep_intermediate=True` flag to keep Catalyst's IR when testing.
+  Also use a different way of testing to see if something was compiled.
   [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
 
 <h3>Documentation 📝</h3>
