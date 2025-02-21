@@ -27,7 +27,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
+from pennylane.math import cast, conj, expand_matrix, eye, norm, sqrt, sqrt_matrix, transpose, zeros
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -220,6 +220,34 @@ class QubitUnitary(Operation):
         if sp.sparse.issparse(U):
             return U.tocsr()
         return sp.sparse.csr_matrix(U)
+
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
+        r"""Representation of the operator as a sparse matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+
+        Returns:
+            scipy.sparse._csr.csr_matrix: sparse matrix representation
+
+        """
+        if not self.has_sparse_matrix:
+            raise qml.operation.SparseMatrixUndefinedError(
+                f"The sparse matrix representation of {self} has not been defined."
+            )
+        canonical_sparse_matrix = self.compute_sparse_matrix(
+            *self.parameters, **self.hyperparameters
+        )
+
+        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
     def compute_decomposition(U: TensorLike, wires: WiresLike):
