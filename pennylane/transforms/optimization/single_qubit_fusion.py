@@ -52,7 +52,6 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 
         def __init__(self, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None):
             """Initialize the interpreter."""
-            super().__init__()
             self.atol = atol
             self.exclude_gates = exclude_gates
             self.previous_ops = {}
