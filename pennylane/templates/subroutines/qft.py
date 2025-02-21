@@ -204,9 +204,8 @@ class QFT(Operation):
 
     # pylint:disable = no-value-for-parameter
     @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters):
-        wires = qml.math.array(args[0:], like="jax")
-        n_wires = len(wires)
+    def compute_plxpr_decomposition(*wires, n_wires):  # pylint: disable=arguments-differ
+        wires = qml.math.array(wires, like="jax")
 
         shifts = qml.math.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)], like="jax")
         shift_len = len(shifts)

@@ -180,10 +180,12 @@ class GroverOperator(Operation):
 
     # pylint:disable = no-value-for-parameter
     @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters):
-        wires = qml.math.array(args[0:], like="jax")
-        work_wires = qml.math.array(hyperparameters["work_wires"], like="jax")
-        ctrl_values = [0] * (len(wires) - 1)
+    def compute_plxpr_decomposition(
+        *wires, n_wires, work_wires
+    ):  # pylint: disable=arguments-differ
+        wires = qml.math.array(wires, like="jax")
+        work_wires = qml.math.array(work_wires, like="jax")
+        ctrl_values = [0] * (n_wires - 1)
 
         @qml.for_loop(len(wires) - 1)
         def hadamard_loop(i):
