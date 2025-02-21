@@ -15,7 +15,7 @@
 
 import numpy as np
 
-# pylint:disable=wrong-import-position,protected-access
+# pylint:disable=wrong-import-position,protected-access, too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -30,7 +30,6 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.transforms.optimization import single_qubit_fusion
 from pennylane.transforms.optimization.single_qubit_fusion import (
     SingleQubitFusionInterpreter,
     single_qubit_plxpr_to_plxpr,
