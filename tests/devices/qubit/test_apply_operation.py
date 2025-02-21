@@ -107,7 +107,7 @@ class TestSparseOperation:
         assert qml.math.allclose(new_state, expected_state)
 
     def test_sparse_operation_sparse_state(self):
-        """Test that apply_operation works with a sparse matrix operation"""
+        """Test that apply_operation does not support with a sparse state operation"""
 
         # Create a random unitary matrix
         U = unitary_group.rvs(2**3)
@@ -116,13 +116,14 @@ class TestSparseOperation:
         # Create a random state vector
         state = np.random.rand(2**3) + 1j * np.random.rand(2**3)
         state = csr_matrix(state)
+        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(3))
 
         # Apply the operation
-        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(3))
-        new_state = apply_operation_csr_matrix(U_sp, state)
-        expected_state = state.reshape((1, 8)) @ U.reshape((8, 8)).T
-
-        assert qml.math.allclose(new_state.toarray(), expected_state)
+        with pytest.raises(
+            TypeError,
+            match="State should not be sparse",
+        ):
+            apply_operation_csr_matrix(U_sp, state)
 
     @pytest.mark.parametrize("N", range(2, 20, 2))
     def test_sparse_operation_large_N(self, N):
@@ -139,16 +140,18 @@ class TestSparseOperation:
         for i in range(1, N):
             U = kron(U, Us[i], format="csr")
 
-        state = np.random.rand(2**N) + 1j * np.random.rand(2**N)
+        state_shape = (2,) * N
+        state_size = 2**N
+        state = np.random.rand(state_size) + 1j * np.random.rand(state_size)
         state = state / np.linalg.norm(state)
-        state = csr_matrix(state)
+        state = state.reshape(state_shape)
 
         U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(N))
         new_state = apply_operation_csr_matrix(U_sp, state)
 
         # Don't waste time constructing dense U to test, instead we just check that the U^Dagger @ state is correct
         final_state = apply_operation_csr_matrix(U_sp, new_state)
-        assert np.allclose(final_state.toarray(), state.toarray())
+        assert qml.math.allclose(final_state, state)
 
     @pytest.mark.parametrize("N", range(2, 20, 2))
     @pytest.mark.parametrize(
