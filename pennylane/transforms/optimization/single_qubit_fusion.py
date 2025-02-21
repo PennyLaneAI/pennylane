@@ -52,11 +52,11 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 
         def __init__(self, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None):
             """Initialize the interpreter."""
+            super().__init__()
             self.atol = atol
             self.exclude_gates = exclude_gates
             self.previous_ops = {}
             self._env = {}
-            super().__init__()
 
         def setup(self) -> None:
             """Initialize the instance before interpreting equations."""
@@ -138,10 +138,17 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             if len(op.wires) == 0:
                 return super().interpret_operation(op)
 
-            # We interpret directly if the gate is explicitly excluded
-            if self.exclude_gates is not None:
-                if op.name in self.exclude_gates:
-                    return super().interpret_operation(op)
+            # We interpret directly if the gate is explicitly excluded,
+            # after interpreting all previous operations on the same wires.
+            if self.exclude_gates and op.name in self.exclude_gates:
+                previous_ops = {
+                    w: self.previous_ops.pop(w) for w in op.wires if w in self.previous_ops
+                }
+
+                for prev_op in previous_ops.values():
+                    super().interpret_operation(prev_op)
+
+                return super().interpret_operation(op)
 
             try:
                 cumulative_angles = qml.math.stack(op.single_qubit_rot_angles())
