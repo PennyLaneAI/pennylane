@@ -19,7 +19,6 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 
 import warnings
 from collections.abc import Generator, Iterable
-from copy import copy
 from functools import lru_cache, partial
 from typing import Callable, Optional, Sequence
 
@@ -68,12 +67,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         # pylint: disable=import-outside-toplevel
         import jax
 
-        from pennylane.capture.primitives import (
-            cond_prim,
-            ctrl_transform_prim,
-            for_loop_prim,
-            while_loop_prim,
-        )
+        from pennylane.capture.primitives import ctrl_transform_prim
 
     except ImportError:  # pragma: no cover
         return None, None
