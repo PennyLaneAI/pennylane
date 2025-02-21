@@ -135,6 +135,7 @@ def test_simple_qnode():
         gradient_keyword_arguments={},
         use_device_jacobian_product=False,
         interface="jax",
+        grad_on_execution=False,
     )
     assert eqn0.params["execution_config"] == expected_config
 
