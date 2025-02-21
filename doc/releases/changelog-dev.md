@@ -251,6 +251,9 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
+* The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
+  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
