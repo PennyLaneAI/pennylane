@@ -4,8 +4,10 @@
 
 <h3>New features since last release</h3>
 
-* `qml.defer_measurements` can now be used with program capture enabled.
+* `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
+  `qml.defer_measurements` can be executed on `default.qubit`.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
+  [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
 
   Using `qml.defer_measurements` with program capture enables many new features, including:
   * Significantly richer variety of classical processing on mid-circuit measurement values.
@@ -246,6 +248,9 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
+* The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
+  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
@@ -318,6 +323,9 @@
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
+
+* Minor changes to `DQInterpreter` for speedups with program capture execution.
+  [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
 
 * Globally silences `no-member` pylint issues from jax.
   [(#6987)](https://github.com/PennyLaneAI/pennylane/pull/6987)
