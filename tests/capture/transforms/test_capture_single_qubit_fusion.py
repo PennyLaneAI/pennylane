@@ -54,15 +54,12 @@ class TestSingleQubitFusionInterpreter:
             qml.T(wires=0)
             qml.PauliX(wires=0)
 
-        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
-
         # This circuit should be transformed to a single Rot(-4.37,1.98,-0.96) gate
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
 
         jaxpr = jax.make_jaxpr(transformed_circuit)()
         assert len(jaxpr.eqns) == 1
-
-        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
-        jaxpr = jax.make_jaxpr(transformed_circuit)()
 
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
@@ -89,11 +86,12 @@ class TestSingleQubitFusionInterpreter:
             qml.PauliX(wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
-
         # This circuit should be transformed to a single Rot(-4.37,1.98,-0.96) gate
 
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
+
         jaxpr = jax.make_jaxpr(transformed_circuit)()
+        assert len(jaxpr.eqns) == 1
         circuit_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert len(circuit_jaxpr.eqns) == 3
         assert circuit_jaxpr.eqns[0].primitive == qml.Rot._primitive
@@ -109,7 +107,7 @@ class TestSingleQubitFusionInterpreter:
         assert qml.math.allclose(result, expected_result)
 
     # The only drawback of testing more gates for exclusion is that the order of the operations
-    # might differ compared to the non-caputred version. This way we can keep the test simple and clean.
+    # might differ compared to the non-captured version. This way we can keep the test simple and clean.
     # RZ is also the only 'excluded_gates' explicitly tested with the non-captured version.
     @pytest.mark.parametrize("exclude_gates", [None, ["RZ"]])
     def test_single_qubit_fusion_exclude_gates(self, exclude_gates):
@@ -128,6 +126,7 @@ class TestSingleQubitFusionInterpreter:
             qml.PauliZ(wires=1)
 
         transformed_circuit = SingleQubitFusionInterpreter(exclude_gates=exclude_gates)(circuit)
+
         jaxpr = jax.make_jaxpr(transformed_circuit)()
 
         collector = CollectOpsandMeas()
@@ -148,9 +147,9 @@ class TestSingleQubitFusionInterpreter:
             qml.RZ(0.1, wires=0)
             qml.Hadamard(wires=1)
 
-        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
-
         # This circuit should remain unchanged
+
+        transformed_circuit = SingleQubitFusionInterpreter()(circuit)
 
         jaxpr = jax.make_jaxpr(transformed_circuit)()
         assert len(jaxpr.eqns) == 2
@@ -177,6 +176,7 @@ class TestSingleQubitFusionInterpreter:
             qml.RZ(-0.1, wires=0)
 
         # This circuit should be transformed to no operations as all gates cancel.
+
         jaxpr = jax.make_jaxpr(circuit)()
         assert len(jaxpr.eqns) == 0
 
@@ -233,7 +233,8 @@ class TestSingleQubitFusionInterpreter:
         with qml.capture.pause():
             transformed_circuit_check = single_qubit_fusion(circuit)
             transformed_ops_check = qml.tape.make_qscript(transformed_circuit_check)().operations
-            # The order of the first two operations is different with program capture enabled
+            # The order of the first two operations is different with program capture enabled.
+            # This does not affect the correctness because the gates do not share any wires.
             assert qml.wires.Wires.shared_wires(
                 [transformed_ops_check[0].wires, transformed_ops_check[1].wires]
             ) == qml.wires.Wires([])
