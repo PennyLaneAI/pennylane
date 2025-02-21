@@ -16,7 +16,6 @@
 from functools import lru_cache, partial
 from numbers import Number
 from typing import Callable, Optional, Sequence, Union
-from warnings import warn
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -30,7 +29,7 @@ from pennylane.measurements import (
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform, TransformError
+from pennylane.transforms import TransformError, transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -131,13 +130,16 @@ def _get_plxpr_defer_measurements():
 
         # pylint: disable=unnecessary-lambda-assignment,attribute-defined-outside-init,no-self-use
 
-        def __init__(self, num_wires):
+        def __init__(self, num_wires, reduce_postselected=True):
             super().__init__()
             self._num_wires = num_wires
+            self._reduce_postselected = reduce_postselected
 
             # We use a dict here instead of a normal int variable because we want the state to mutate
             # when we interpret higher-order primitives
-            self.state = {"cur_target": num_wires - 1, "max_used_wire": -1, "used_wires": set()}
+            # We store all used wires rather than just the max because if the wires are tracers, then
+            # we can't do comparisons to find the max wire
+            self.state = {"cur_target": num_wires - 1, "used_wires": set()}
 
         def cleanup(self) -> None:
             """Perform any final steps after iterating through all equations.
@@ -149,24 +151,28 @@ def _get_plxpr_defer_measurements():
             """
             self.state = {"cur_target": self._num_wires - 1, "used_wires": set()}
 
-        def _update_max_used_wire(self, obj, wires=None):
-            """Something"""
-            wires = obj.wires if wires is None else wires
+        def _update_used_wires(self, wires: qml.wires.Wires):
+            """Update the state with the number of wires that have been used and validate that
+            there is no overlap between the used circuit wires and the mid-circuit measurement
+            target wires.
+
+            Args:
+                wires (pennylane.wires.Wires): wires to add to the set of used wires
+
+            Raises:
+                TransformError: if there is overlap between the used circuit wires and mid-circuit
+                measurement target wires
+            """
             self.state["used_wires"] |= wires.toset()
 
+            # Range for comparison is [cur_target + 1, num_wires) because cur_target
+            # is the _next_ wire to be used for an MCM. We want to check if the used
+            # wires overlap with the already applied MCMs.
             if self.state["used_wires"].intersection(
                 range(self.state["cur_target"] + 1, self._num_wires)
             ):
-                raise TransformError("boo")
-            max_wire = self.state["max_used_wire"]
-
-            if wires and (max_cur_wire := max(obj.wires)) > self.state["max_used_wire"]:
-                self.state["max_used_wire"] = max_cur_wire
-                max_wire = max_cur_wire
-
-            if max_wire > self.state["cur_target"]:
                 raise TransformError(
-                    "Too many mid-circuit measurements for the available number of wires."
+                    "Too many mid-circuit measurements for the specified number of wires."
                 )
 
         def interpret_dynamic_operation(self, data, struct, inds):
@@ -192,7 +198,8 @@ def _get_plxpr_defer_measurements():
 
             idx = inds[0]
             mv = data[idx]
-            for branch, value in mv.items():
+            items = mv.postselected_items() if self._reduce_postselected else mv.items()
+            for branch, value in items:
                 data[idx] = value
                 op = jax.tree_util.tree_unflatten(struct, data)
                 qml.ctrl(op, mv.wires, control_values=branch)
@@ -212,7 +219,7 @@ def _get_plxpr_defer_measurements():
             See also: :meth:`~.interpret_operation_eqn`.
 
             """
-            self._update_max_used_wire(op)
+            self._update_used_wires(op.wires)
 
             # We treat operators with operators based on mid-circuit measurement values
             # separately, and otherwise default to the standard behaviour
@@ -236,7 +243,7 @@ def _get_plxpr_defer_measurements():
             See also :meth:`~.interpret_measurement_eqn`.
 
             """
-            self._update_max_used_wire(measurement)
+            self._update_used_wires(measurement.wires)
 
             if measurement.mv is not None:
                 kwargs = {"wires": measurement.wires, "eigvals": measurement.eigvals()}
@@ -355,26 +362,20 @@ def _get_plxpr_defer_measurements():
     def _(self, wires, reset=False, postselect=None):
         cur_target = self.state["cur_target"]
         if cur_target < 0:
-            raise TransformError("Too many MCMs")
+            raise TransformError(
+                "Too many mid-circuit measurements for the specified number of wires."
+            )
 
-        # if self.state["cur_target"] >= len(self._aux_wires):
-        #     raise ValueError(
-        #         "Not enough auxiliary wires provided to apply specified number of mid-circuit "
-        #         "measurements using qml.defer_measurements."
-        #     )
+        self._update_used_wires(Wires(wires))
 
         # Using type.__call__ instead of normally constructing the class prevents
         # the primitive corresponding to the class to get binded. We do not want the
         # MidMeasureMP's primitive to get recorded.
         meas = type.__call__(
-            MidMeasureMP,
-            Wires(self._aux_wires[self.state["cur_idx"]]),
-            reset=reset,
-            postselect=postselect,
-            id=self.state["cur_idx"],
+            MidMeasureMP, Wires(cur_target), reset=reset, postselect=postselect, id=str(cur_target)
         )
 
-        cnot_wires = (wires, self._aux_wires[self.state["cur_idx"]])
+        cnot_wires = (wires, cur_target)
         if postselect is not None:
             qml.Projector(jax.numpy.array([postselect]), wires=wires)
 
@@ -385,7 +386,7 @@ def _get_plxpr_defer_measurements():
             elif postselect == 1:
                 qml.PauliX(wires=wires)
 
-        self.state["cur_idx"] += 1
+        self.state["cur_target"] -= 1
         return MeasurementValue([meas], lambda x: x)
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
@@ -416,7 +417,12 @@ def _get_plxpr_defer_measurements():
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
 
-                for branch, value in condition.items():
+                items = (
+                    condition.postselected_items()
+                    if self._reduce_postselected
+                    else condition.items()
+                )
+                for branch, value in items:
                     cur_consts = invals[consts_slices[i]]
                     qml.cond(value, ctrl_transform_prim.bind)(
                         *cur_consts,
@@ -435,19 +441,16 @@ def _get_plxpr_defer_measurements():
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
 
-        if (aux_wires := tkwargs.get("aux_wires", None)) is None:
+        if (num_wires := tkwargs.get("num_wires", None)) is None:
             raise ValueError(
-                "'aux_wires' argument for qml.defer_measurements must be provided "
+                "'num_wires' argument for qml.defer_measurements must be provided "
                 "when qml.capture.enabled() is True."
             )
-        if tkwargs.pop("reduce_postselected", False):
-            warn(
-                "Cannot set 'reduce_postselected=True' with qml.capture.enabled() "
-                "when using qml.defer_measurements. Argument will be ignored.",
-                UserWarning,
-            )
+        reduce_postselected = tkwargs.get("reduce_postselected", True)
 
-        interpreter = DeferMeasurementsInterpreter(aux_wires=aux_wires)
+        interpreter = DeferMeasurementsInterpreter(
+            num_wires=num_wires, reduce_postselected=reduce_postselected
+        )
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
@@ -466,7 +469,7 @@ def defer_measurements(
     tape: QuantumScript,
     reduce_postselected: bool = True,
     allow_postselect: bool = True,
-    aux_wires: Optional[Union[int, Sequence[int], Wires]] = None,
+    num_wires: Optional[int] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
@@ -525,7 +528,7 @@ def defer_measurements(
         allow_postselect (bool): Whether postselection is allowed. In order to perform postselection
             with ``defer_measurements``, the device must support the :class:`~.Projector` operation.
             Defaults to ``True``. This is currently ignored if program capture is enabled.
-        aux_wires (Sequence): Optional sequence of wires to use to map mid-circuit measurements. This is
+        num_wires (int): Optional argument to specify the total number of circuit wires. This is
             only used if program capture is enabled.
 
     Returns:
