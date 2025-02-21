@@ -319,6 +319,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Minor changes to `DQInterpreter` for speedups with program capture execution.
+  [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
+
 * Globally silences `no-member` pylint issues from jax.
   [(#6987)](https://github.com/PennyLaneAI/pennylane/pull/6987)
 
