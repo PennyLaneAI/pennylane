@@ -90,7 +90,12 @@ class FromBloq(Operation):
                 total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
                 if len(total_wires) == 0:  # if bloq decomposes to allocate + subbloqs
                     total_wires = [-1]  # dummy value
-                op = binst.bloq.as_pl_op(total_wires)
+
+                mapped_wires = []
+                for idx in total_wires:
+                    mapped_wires.append(wires[idx])
+                op = binst.bloq.as_pl_op(mapped_wires)
+                
                 if op:
                     ops.append(op)
                 for succ in succ_cxns:
