@@ -142,8 +142,8 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix(n_wires=1):  # pylint: disable=arguments-differ
-        return sparse.eye(int(2**n_wires), format="csr")
+    def compute_sparse_matrix(n_wires=1, format="csr"):  # pylint: disable=arguments-differ
+        return sparse.eye(int(2**n_wires), format=format)
 
     def matrix(self, wire_order=None):
         n_wires = len(wire_order) if wire_order else len(self.wires)
@@ -382,10 +382,10 @@ class GlobalPhase(Operation):
         return qml.math.tensordot(exp, eye, axes=0)
 
     @staticmethod
-    def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(phi, n_wires=1, format="csr"):  # pylint: disable=arguments-differ
         if qml.math.ndim(phi) > 0:
             raise SparseMatrixUndefinedError("Sparse matrices do not support broadcasting")
-        return qml.math.exp(-1j * phi) * sparse.eye(2**n_wires, format="csr")
+        return qml.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
     def compute_diagonalizing_gates(

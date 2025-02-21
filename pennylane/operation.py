@@ -854,7 +854,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             or cls.sparse_matrix != Operator.sparse_matrix
         )
 
-    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None, format="csr") -> csr_matrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -873,10 +873,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         """
         canonical_sparse_matrix = self.compute_sparse_matrix(
-            *self.parameters, **self.hyperparameters
+            *self.parameters, format="csr", **self.hyperparameters
         )
 
-        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
+        return expand_matrix(
+            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
+        ).asformat(format)
 
     @staticmethod
     def compute_eigvals(*params: TensorLike, **hyperparams) -> TensorLike:
