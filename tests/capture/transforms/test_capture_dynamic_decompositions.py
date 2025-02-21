@@ -1232,6 +1232,105 @@ class TestDynamicDecomposeInterpreter:
 
         check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
 
+    @pytest.mark.parametrize("autograph", [True, False])
+    @pytest.mark.parametrize("layers", [1, 2, 3])
+    @pytest.mark.parametrize("n_wires", [2, 3])
+    @pytest.mark.parametrize("imprimitive", [qml.CNOT, qml.CZ])
+    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, 5, None])
+    @pytest.mark.parametrize(
+        "gate_set", [[qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.GlobalPhase], None]
+    )
+    def test_strongly_entangling(
+        self, layers, n_wires, imprimitive, max_expansion, gate_set, autograph
+    ):
+        """Test that the StronglyEntanglingLayer is correctly dynamically decomposed."""
+
+        weight_shape = (layers, n_wires, 3)
+        weights = np.random.random(size=weight_shape)
+        wires = list(range(n_wires))
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=autograph)
+        def circuit(weights, wires):
+            qml.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
+
+        with qml.capture.pause():
+
+            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+            def circuit_comparison():
+                qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
+                return qml.state()
+
+            result_comparison = circuit_comparison()
+
+        assert qml.math.allclose(*result, result_comparison)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    @pytest.mark.parametrize(
+        "wires, work_wires", [([0, 1, 2], [3, 4]), ([0, 1, 4], [2, 3]), ([0, 2, 4], [1])]
+    )
+    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
+    @pytest.mark.parametrize(
+        "gate_set", [[qml.Hadamard, qml.CNOT, qml.PauliX, qml.GlobalPhase, qml.RZ], None]
+    )
+    def test_grover(self, max_expansion, gate_set, wires, work_wires, autograph):
+        """Test that Grover is correctly dynamically decomposed."""
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=autograph)
+        def circuit(wires, work_wires):
+            qml.GroverOperator(wires=wires, work_wires=work_wires)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(wires=wires, work_wires=work_wires)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, *work_wires)
+
+        with qml.capture.pause():
+
+            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+            def circuit_comparison():
+                qml.GroverOperator(wires=wires, work_wires=work_wires)
+                return qml.state()
+
+            result_comparison = circuit_comparison()
+
+        assert qml.math.allclose(*result, result_comparison)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    @pytest.mark.parametrize("n_wires", [4, 5])
+    @pytest.mark.parametrize("wires", [[0, 1, 2], [0, 1, 2, 3]])
+    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
+    @pytest.mark.parametrize("gate_set", [[qml.Hadamard, qml.CNOT, qml.PhaseShift], None])
+    def test_qft(self, max_expansion, gate_set, n_wires, wires, autograph):
+        """Test that QFT is correctly dynamically decomposed."""
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=autograph)
+        def circuit(wires):
+            qml.QFT(wires=wires)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(wires=wires)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
+
+        with qml.capture.pause():
+
+            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+            def circuit_comparison():
+                qml.QFT(wires=wires)
+                return qml.state()
+
+            result_comparison = circuit_comparison()
+
+        assert qml.math.allclose(*result, result_comparison)
+
 
 class TestExpandPlxprTransformsDynamicDecompositions:
     """Unit tests for ``expand_plxpr_transforms`` with dynamic decompositions."""
