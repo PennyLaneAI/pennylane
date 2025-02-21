@@ -239,7 +239,7 @@ class TestCatalyst:
         """Test user-configurable compilation options"""
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", keep_intermediate=True)
         @qml.qnode(dev)
         def circuit(x: float):
             qml.RX(x, wires=0)
@@ -249,6 +249,7 @@ class TestCatalyst:
         mlir_str = str(circuit.mlir)
         result_header = "func.func public @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
+        circuit.workspace.cleanup()
 
     def test_qjit_adjoint(self):
         """Test JIT compilation with adjoint support"""
