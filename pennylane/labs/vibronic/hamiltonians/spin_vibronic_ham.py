@@ -247,7 +247,7 @@ def get_coeffs():
 
     for i in range(n_states):
         for j in range(n_modes):
-            betas[i][i][j][j] = gammas[i][j]  # + np.array(omegas)[j] / 2
+            betas[i][i][j][j] = gammas[i][j]
 
     for j in range(n_states):
         alphas[j][j] = kappas[j]
