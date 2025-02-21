@@ -4,8 +4,10 @@
 
 <h3>New features since last release</h3>
 
-* `qml.defer_measurements` can now be used with program capture enabled.
+* `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
+  `qml.defer_measurements` can be executed on `default.qubit`.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
+  [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
 
   Using `qml.defer_measurements` with program capture enables many new features, including:
   * Significantly richer variety of classical processing on mid-circuit measurement values.

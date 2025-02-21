@@ -180,7 +180,7 @@ def get_measurement_function(
         if isinstance(measurementprocess.mv, MeasurementValue):
             return state_diagonalizing_gates
 
-        if isinstance(measurementprocess, ExpectationMP):
+        if isinstance(measurementprocess, ExpectationMP) and measurementprocess.obs is not None:
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 
