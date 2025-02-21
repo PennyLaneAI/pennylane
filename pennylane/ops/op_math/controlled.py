@@ -683,8 +683,8 @@ class Controlled(SymbolicOp):
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
-        if wire_order is not None:
-            raise NotImplementedError("wire_order argument is not yet implemented.")
+        # if wire_order is not None:
+        #     raise NotImplementedError("wire_order argument is not yet implemented.")
 
         try:
             target_mat = self.base.sparse_matrix()
@@ -704,6 +704,9 @@ class Controlled(SymbolicOp):
         m = sparse.eye(total_states, format="lil", dtype=target_mat.dtype)
 
         m[start_ind:end_ind, start_ind:end_ind] = target_mat
+
+        wire_order = wire_order or self.wires
+        m = qmlmath.expand_matrix(m, wires=self.wires, wire_order=wire_order)
 
         return m.asformat(format=format)
 

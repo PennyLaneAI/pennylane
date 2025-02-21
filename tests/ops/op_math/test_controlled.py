@@ -761,8 +761,10 @@ class TestMatrix:
         base = qml.U2(1.234, -3.2, wires=3)
         op = Controlled(base, control_wires)
 
-        with pytest.raises(NotImplementedError):
-            op.sparse_matrix(wire_order=[3, 2, 1, 0])
+        op_sparse = op.sparse_matrix(wire_order=[3, 2, 1, 0])
+        op_dense = op.matrix(wire_order=[3, 2, 1, 0])
+
+        assert qml.math.allclose(op_sparse.toarray(), op_dense)
 
     def test_no_matrix_defined_sparse_matrix_error(self):
         """Check that if the base gate defines neither a sparse matrix nor a dense matrix, a
