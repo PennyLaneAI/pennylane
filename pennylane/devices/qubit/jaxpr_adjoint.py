@@ -122,7 +122,7 @@ def _backward_pass(jaxpr, bras, ket, results, env):
                     ket_temp = apply_operation(generator(op, format="observable"), ket)
                     modified = True
                     for i, bra in enumerate(bras):
-                        out_jvps[i] += -2 * tangent * jnp.imag(jnp.sum(jnp.conj(bra) * ket_temp))
+                        out_jvps[i] += -2 * tangent * jnp.imag(jnp.vdot(bra, ket_temp))
 
             adj_op = adjoint(op, lazy=False)
             ket = apply_operation(adj_op, ket)
