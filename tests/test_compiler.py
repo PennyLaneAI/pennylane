@@ -142,9 +142,7 @@ class TestCatalyst:
             return qml.state()
 
         # Check that the compilation happens at definition
-        assert circuit.jaxpr
-        assert circuit.mlir
-        assert circuit.qir
+        assert circuit.compiled_function
 
         result = circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))
         expected = jnp.array(
