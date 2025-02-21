@@ -801,9 +801,7 @@ class TestRootFindingSolver:
         qml.poly_to_angles(poly, "QSVT")
 
         assert len(poly) == len(poly_copy)
-
-        for p, q in zip(poly, poly_copy):
-            assert np.isclose(p, q)
+        assert np.allclose(poly, poly_copy)
 
     def test_interface_numpy(self):
         """Test `poly_to_angles` works with numpy"""
