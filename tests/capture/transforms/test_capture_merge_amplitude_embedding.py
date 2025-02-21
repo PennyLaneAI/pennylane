@@ -101,21 +101,17 @@ class TestRepeatedQubitDeviceErrors:
             @qml.cond(x > 2)
             def cond_f():
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
-                return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
             def _():
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
-                return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
             def _():
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=2)
-                return qml.expval(qml.X(0))
 
             qml.X(collision_wire)
-            out = cond_f()
-            return out
+            cond_f()
 
         with pytest.raises(
             qml.DeviceError,
@@ -123,29 +119,26 @@ class TestRepeatedQubitDeviceErrors:
         ):
             jax.make_jaxpr(f)(3)
 
-    def test_collision_after_cond_prim(self):
-        """Test that cond branches are able to be checked for wire collisions."""
+    @pytest.mark.parametrize("collision_wire", [0, 1, 2])
+    def test_collision_after_cond_prim(self, collision_wire):
+        """Test that visited wires are correctly collected during cond."""
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(x):
             @qml.cond(x > 2)
             def cond_f():
                 qml.Z(0)
-                return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
             def _():
-                qml.Y(0)
-                return qml.expval(qml.Y(0))
+                qml.Y(1)
 
             @cond_f.otherwise
             def _():
-                qml.X(0)
-                return qml.expval(qml.X(0))
+                qml.X(2)
 
-            out = cond_f()
-            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
-            return out
+            cond_f()
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=collision_wire)
 
         with pytest.raises(
             qml.DeviceError,
@@ -153,7 +146,8 @@ class TestRepeatedQubitDeviceErrors:
         ):
             jax.make_jaxpr(f)(3)
 
-    def test_initial_wires_memory_before_cond(self):
+    @pytest.mark.parametrize("collision_wire", [0, 1, 2, 3])
+    def test_initial_wires_memory_before_cond(self, collision_wire):
         """Tests that the initial wires before a cond aren't forgotten."""
 
         @MergeAmplitudeEmbeddingInterpreter()
@@ -161,23 +155,19 @@ class TestRepeatedQubitDeviceErrors:
             @qml.cond(x > 2)
             def cond_f():
                 qml.Z(1)
-                return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
             def _():
                 qml.Y(2)
-                return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
             def _():
                 qml.X(3)
-                return qml.expval(qml.X(0))
 
             qml.X(0)
-            out = cond_f()
-            # visited wires before cond was 0
-            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
-            return out
+            cond_f()
+            # visited wires after cond should be 0 (before cond) and 1, 2, 3 (during cond)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=collision_wire)
 
         with pytest.raises(
             qml.DeviceError,
@@ -211,7 +201,6 @@ class TestRepeatedQubitDeviceErrors:
 
             loop()  # Contains wires 0
             cond_f()  # Also contains wires 0
-            return qml.expval(qml.Z(0))
 
         with pytest.raises(
             qml.DeviceError,
