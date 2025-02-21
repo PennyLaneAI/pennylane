@@ -14,6 +14,8 @@
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
 # pylint: disable=too-many-branches
 
+from functools import lru_cache, partial
+
 import pennylane as qml
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
@@ -25,7 +27,218 @@ from pennylane.typing import PostprocessingFn
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
-@transform
+# pylint: disable = too-many-statements
+@lru_cache
+def _get_plxpr_merge_rotations():
+    try:
+        # pylint: disable=import-outside-toplevel
+        from jax import make_jaxpr
+        from jax.core import Jaxpr
+
+        from pennylane.capture import PlxprInterpreter
+        from pennylane.operation import Operator
+    except ImportError:  # pragma: no cover
+        return None, None
+
+    # pylint: disable=redefined-outer-name, too-few-public-methods
+    class MergeRotationsInterpreter(PlxprInterpreter):
+        """Plxpr Interpreter for applying the ``merge_rotations``
+        transform when program capture is enabled."""
+
+        def __init__(self, atol=1e-8, include_gates=None):
+            super().__init__()
+            self._env = {}
+            self.atol = atol
+            self.include_gates = include_gates
+
+            # dict[wire, operator]
+            self.previous_ops = {}
+
+        def interpret_and_refresh_previous_ops(self, op: Operator):
+            """Interpret the previous_ops dictionary and add the operator to the previous_ops dictionary."""
+
+            # Use list(dict(...)) as opposed to a set to maintain deterministic order
+            previous_ops_on_wires = list(dict.fromkeys(self.previous_ops.get(w) for w in op.wires))
+
+            # Remove the previous operations from the previous_ops dictionary
+            for o in previous_ops_on_wires:
+                if o is not None:
+                    for w in o.wires:
+                        self.previous_ops.pop(w)
+
+            # Refresh the previous_ops dictionary with the current operator
+            for w in op.wires:
+                self.previous_ops[w] = op
+
+            # List comprehensions are run in a separate scope.
+            # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
+            # pylint: disable=super-with-arguments
+            return [
+                super(MergeRotationsInterpreter, self).interpret_operation(o)
+                for o in previous_ops_on_wires
+            ]
+
+        # pylint: disable=inconsistent-return-statements
+        def interpret_operation(self, op: Operator):
+            """Interpret a PennyLane operation instance.
+
+            Args:
+                op (Operator): a pennylane operator instance
+
+            Returns:
+                Any
+
+            This method is only called when the operator's output is a dropped variable,
+            so the output will not affect later equations in the circuit.
+
+            See also: :meth:`~.interpret_operation_eqn`.
+            """
+
+            if self.include_gates is not None and op.name not in self.include_gates:
+                self.interpret_and_refresh_previous_ops(op)
+                return []
+
+            if op not in composable_rotations:
+                self.interpret_and_refresh_previous_ops(op)
+                return []
+
+            # Get the previous operation on the same wire
+            previous_op = self.previous_ops.get(op.wires[0])
+            if previous_op is None:
+                for w in op.wires:
+                    self.previous_ops[w] = op
+                return []
+
+            # Previous operator detected, check if we can merge
+            wires_exactly_match = op.wires == previous_op.wires
+            are_same_type = isinstance(op, type(previous_op))
+            can_merge = wires_exactly_match and are_same_type
+
+            if can_merge:
+                if isinstance(op, qml.Rot):
+                    # Order of arguments matter for the Rot gate!
+                    cumulative_angles = fuse_rot_angles(
+                        qml.math.stack(previous_op.parameters),
+                        qml.math.stack(op.parameters),
+                    )
+                else:
+                    cumulative_angles = qml.math.stack(previous_op.parameters) + qml.math.stack(
+                        op.parameters
+                    )
+
+                # Update operator on these wires with the merged one
+                # pylint: disable = protected-access
+                skip_operation = False
+                if not qml.math.is_abstract(cumulative_angles):
+                    skip_operation = qml.math.allclose(
+                        cumulative_angles, 0.0, atol=self.atol, rtol=0
+                    )
+
+                if skip_operation:
+                    for w in op.wires:
+                        self.previous_ops.pop(w)
+                    return []
+
+                for w in op.wires:
+                    self.previous_ops[w] = op.__class__._primitive.impl(
+                        *cumulative_angles, wires=op.wires
+                    )
+
+                return []
+
+            # If we cannot merge, interpret the previous operations and refresh the previous_ops dictionary
+            self.interpret_and_refresh_previous_ops(op)
+
+        def interpret_and_clear_previous_ops(self) -> None:
+            """Interpret all the previously seen operations and then clear."""
+
+            # Use list(dict(...)) as opposed to a set to maintain deterministic order
+            ops_remaining = list(dict.fromkeys((self.previous_ops.values())))
+            for op in ops_remaining:
+                super().interpret_operation(op)
+
+            self.previous_ops.clear()
+
+        def eval(self, jaxpr: Jaxpr, consts: list, *args) -> list:
+            """Evaluate a jaxpr.
+
+            Args:
+                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                consts (list[TensorLike]): the constant variables for the jaxpr
+                *args (tuple[TensorLike]): The arguments for the jaxpr.
+
+            Returns:
+                list[TensorLike]: the results of the execution.
+
+            """
+            # pylint: disable=too-many-branches,attribute-defined-outside-init
+            self._env = {}
+            self.setup()
+
+            for arg, invar in zip(args, jaxpr.invars, strict=True):
+                self._env[invar] = arg
+            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+                self._env[constvar] = const
+
+            for eqn in jaxpr.eqns:
+
+                custom_handler = self._primitive_registrations.get(eqn.primitive, None)
+                if custom_handler:
+                    self.interpret_and_clear_previous_ops()
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    outvals = custom_handler(self, *invals, **eqn.params)
+                elif getattr(eqn.primitive, "prim_type", "") == "operator":
+                    outvals = self.interpret_operation_eqn(eqn)
+                elif getattr(eqn.primitive, "prim_type", "") == "measurement":
+                    self.interpret_and_clear_previous_ops()
+                    outvals = self.interpret_measurement_eqn(eqn)
+                else:
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    subfuns, params = eqn.primitive.get_bind_params(eqn.params)
+                    outvals = eqn.primitive.bind(*subfuns, *invals, **params)
+
+                if not eqn.primitive.multiple_results:
+                    outvals = [outvals]
+                for outvar, outval in zip(eqn.outvars, outvals, strict=True):
+                    self._env[outvar] = outval
+
+            # The following is needed because any operations inside self.previous_ops have not yet
+            # been applied. At this point, we **know** that any operations that should be merged
+            # have been merged, and operations left inside self.previous_ops should be applied
+            self.interpret_and_clear_previous_ops()
+
+            # Read the final result of the Jaxpr from the environment
+            outvals = []
+            for var in jaxpr.outvars:
+                outval = self.read(var)
+                if isinstance(outval, Operator):
+                    outvals.append(super().interpret_operation(outval))
+                else:
+                    outvals.append(outval)
+            self.cleanup()
+            self._env = {}
+            return outvals
+
+    # pylint: disable=redefined-outer-name
+    def merge_rotations_plxpr_to_plxpr(
+        jaxpr, consts, targs, tkwargs, *args
+    ):  # pylint: disable=unused-argument
+        merge_rotations = MergeRotationsInterpreter(
+            atol=tkwargs.pop("atol", 1e-8), include_gates=tkwargs.pop("include_gates", None)
+        )
+
+        def wrapper(*inner_args):
+            return merge_rotations.eval(jaxpr, consts, *inner_args)
+
+        return make_jaxpr(wrapper)(*args)
+
+    return MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr
+
+
+MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr = _get_plxpr_merge_rotations()
+
+
+@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr)
 def merge_rotations(
     tape: QuantumScript, atol=1e-8, include_gates=None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
