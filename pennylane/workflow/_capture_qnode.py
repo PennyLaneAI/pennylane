@@ -118,6 +118,8 @@ from pennylane.capture import CaptureError, FlatFn
 from pennylane.capture.custom_primitives import QmlPrimitive
 from pennylane.typing import TensorLike
 
+from .construct_execution_config import construct_execution_config
+
 
 def _is_scalar_tensor(arg) -> bool:
     """Check if an argument is a scalar tensor-like object or a numeric scalar."""
@@ -514,20 +516,9 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
                 "flow functions like for_loop, while_loop, etc."
             ) from exc
 
-    kwargs = qnode.execute_kwargs
-    mcm_config = qml.devices.MCMConfig(
-        mcm_method=kwargs["mcm_method"], postselect_mode=kwargs["postselect_mode"]
-    )
-    g_on_ex = kwargs["grad_on_execution"]
-    config = qml.devices.ExecutionConfig(
-        grad_on_execution=None if g_on_ex == "best" else g_on_ex,
-        use_device_jacobian_product=kwargs["device_vjp"],
-        derivative_order=kwargs["max_diff"],
-        gradient_method=qnode.diff_method,
-        gradient_keyword_arguments=qnode.gradient_kwargs,
-        interface=qml.math.Interface.JAX,
-        mcm_config=mcm_config,
-    )
+    config = construct_execution_config(
+        qnode, resolve=False
+    )()  # no need for args and kwargs as not resolving
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
