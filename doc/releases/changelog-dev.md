@@ -8,11 +8,41 @@
   following the same API as `qml.transforms.optimization.merge_rotations` when experimental program capture is enabled.
   [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
 
+* `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
+  `qml.defer_measurements` can be executed on `default.qubit`.
+  [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
+  [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
+
+  Using `qml.defer_measurements` with program capture enables many new features, including:
+  * Significantly richer variety of classical processing on mid-circuit measurement values.
+  * Using mid-circuit measurement values as gate parameters.
+
+  Functions such as the following can now be captured:
+
+  ```python
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  def f(x):
+      m0 = qml.measure(0)
+      m1 = qml.measure(0)
+      a = jnp.sin(0.5 * jnp.pi * m0)
+      phi = a - (m1 + 1) ** 4
+
+      qml.s_prod(x, qml.RZ(phi, 0))
+
+      return qml.expval(qml.Z(0))
+  ```
+
 * Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
 
 <h3>Improvements 🛠</h3>
+
+* `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
+  [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
 
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
@@ -295,6 +325,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Minor changes to `DQInterpreter` for speedups with program capture execution.
+  [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
+
+* Globally silences `no-member` pylint issues from jax.
+  [(#6987)](https://github.com/PennyLaneAI/pennylane/pull/6987)
+
+* Fix certain `pylint` errors in source code.
+  [(#6980)](https://github.com/PennyLaneAI/pennylane/pull/6980)
+
 * Remove `QNode.get_gradient_fn` from source code.
   [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
   
@@ -312,7 +351,14 @@
 * The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
   [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
 
+* Use `keep_intermediate=True` flag to keep Catalyst's IR when testing.
+  Also use a different way of testing to see if something was compiled.
+  [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
+
 <h3>Documentation 📝</h3>
+
+* The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
+  [(#6949)](https://github.com/PennyLaneAI/pennylane/pull/6949)
 
 * The docstrings for `qml.unary_mapping`, `qml.binary_mapping`, `qml.christiansen_mapping`,
   `qml.qchem.localize_normal_modes`, and `qml.qchem.VibrationalPES` have been updated to include better
@@ -371,6 +417,7 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Henry Chang,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
