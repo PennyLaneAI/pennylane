@@ -985,6 +985,9 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
+    def eval_jaxpr_and_jvp(self, jaxpr, args, tangents):
+        raise NotImplementedError
+
 
 def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -> str:
     """Simple strategy to find the best match for the default mcm method."""
