@@ -4,8 +4,10 @@
 
 <h3>New features since last release</h3>
 
-* `qml.defer_measurements` can now be used with program capture enabled.
+* `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
+  `qml.defer_measurements` can be executed on `default.qubit`.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
+  [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
 
   Using `qml.defer_measurements` with program capture enables many new features, including:
   * Significantly richer variety of classical processing on mid-circuit measurement values.
@@ -250,6 +252,9 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
+* The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
+  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
@@ -323,11 +328,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Minor changes to `DQInterpreter` for speedups with program capture execution.
+  [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
+
 * Globally silences `no-member` pylint issues from jax.
   [(#6987)](https://github.com/PennyLaneAI/pennylane/pull/6987)
 
-* Fix certain `pylint` errors in source code.
+* Fix `pylint=3.3.4` errors in source code.
   [(#6980)](https://github.com/PennyLaneAI/pennylane/pull/6980)
+  [(#6988)](https://github.com/PennyLaneAI/pennylane/pull/6988)
 
 * Remove `QNode.get_gradient_fn` from source code.
   [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
@@ -345,6 +354,10 @@
 
 * The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
   [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
+
+* Use `keep_intermediate=True` flag to keep Catalyst's IR when testing.
+  Also use a different way of testing to see if something was compiled.
+  [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
 
 <h3>Documentation 📝</h3>
 
