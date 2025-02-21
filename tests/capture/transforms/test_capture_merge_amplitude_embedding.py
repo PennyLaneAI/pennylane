@@ -153,6 +153,38 @@ class TestRepeatedQubitDeviceErrors:
         ):
             jax.make_jaxpr(f)(3)
 
+    def test_initial_wires_memory_before_cond(self):
+        """Tests that the initial wires before a cond aren't forgotten."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f(x):
+            @qml.cond(x > 2)
+            def cond_f():
+                qml.Z(1)
+                return qml.expval(qml.Z(0))
+
+            @cond_f.else_if(x > 1)
+            def _():
+                qml.Y(2)
+                return qml.expval(qml.Y(0))
+
+            @cond_f.otherwise
+            def _():
+                qml.X(3)
+                return qml.expval(qml.X(0))
+
+            qml.X(0)
+            out = cond_f()
+            # visited wires before cond was 0
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+            return out
+
+        with pytest.raises(
+            qml.DeviceError,
+            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+        ):
+            jax.make_jaxpr(f)(3)
+
     def test_mixed_higher_order_primitives(self):
         """Test that wire collisions through higher order primitives are detected."""
 
