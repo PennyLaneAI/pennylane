@@ -292,9 +292,6 @@ class TestIntegration:
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
-    @pytest.mark.xfail(
-        reason="adjoint_transform_prim not working with autograph. See sc-84934",
-    )
     @pytest.mark.parametrize("autograph", [True, False])
     def test_adjoint_wrapper(self, autograph):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
