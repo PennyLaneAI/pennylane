@@ -25,13 +25,10 @@ Modules
     :toctree: api
 
 """
-from warnings import warn
 from pennylane import ExperimentalWarning
+from .parametric_midmeasure import ParametricMidMeasureMP, diagonalize_mcms
 
-warn(
-    ExperimentalWarning(
-        "This module is currently experimental and will not maintain API stability between releases."
-    )
-)
-
-__all__ = []
+__all__ = [
+    "ParametricMidMeasureMP",
+    "diagonalize_mcms",
+]
