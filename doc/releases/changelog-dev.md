@@ -321,6 +321,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Minor changes to `DQInterpreter` for speedups with program capture execution.
+  [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
+
 * Globally silences `no-member` pylint issues from jax.
   [(#6987)](https://github.com/PennyLaneAI/pennylane/pull/6987)
 
@@ -343,6 +346,10 @@
 
 * The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
   [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
+
+* Use `keep_intermediate=True` flag to keep Catalyst's IR when testing.
+  Also use a different way of testing to see if something was compiled.
+  [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
 
 <h3>Documentation 📝</h3>
 

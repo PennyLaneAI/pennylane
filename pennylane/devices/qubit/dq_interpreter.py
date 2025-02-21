@@ -70,6 +70,12 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     Array(0.54030231, dtype=float64)
     """
 
+    def __copy__(self):
+        inst = DefaultQubitInterpreter.__new__(DefaultQubitInterpreter)
+        inst.stateref = self.stateref
+        inst.shots = self.shots
+        return inst
+
     def __init__(
         self, num_wires: int, shots: int | None = None, key: None | jax.numpy.ndarray = None
     ):
@@ -86,20 +92,50 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         self.stateref = None
         super().__init__()
 
-    def __getattr__(self, key):
-        if key in {"state", "key", "is_state_batched"}:
-            if self.stateref is None:
-                raise AttributeError("execution not yet initialized.")
-            return self.stateref[key]
-        raise AttributeError(f"No attribute {key}")
+    @property
+    def state(self):
+        """The statevector"""
+        try:
+            return self.stateref["state"]
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
 
-    def __setattr__(self, __name: str, __value) -> None:
-        if __name in {"state", "key", "is_state_batched"}:
-            if self.stateref is None:
-                raise AttributeError("execution not yet initialized")
-            self.stateref[__name] = __value
-        else:
-            super().__setattr__(__name, __value)
+    @state.setter
+    def state(self, new_val):
+        try:
+            self.stateref["state"] = new_val
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @property
+    def key(self):
+        """A jax PRNGKey for random number generation."""
+        try:
+            return self.stateref["key"]
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @key.setter
+    def key(self, new_val):
+        try:
+            self.stateref["key"] = new_val
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @property
+    def is_state_batched(self) -> bool:
+        """Whether or not the state vector is batched."""
+        try:
+            return self.stateref["is_state_batched"]
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @is_state_batched.setter
+    def is_state_batched(self, new_val):
+        try:
+            self.stateref["is_state_batched"] = new_val
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
 
     def setup(self) -> None:
         if self.stateref is None:

@@ -70,7 +70,8 @@ def test_setup_and_cleanup():
     assert dq.stateref is None
 
 
-def test_working_state_key_before_setup():
+@pytest.mark.parametrize("name", ("state", "key", "is_state_batched"))
+def test_working_state_key_before_setup(name):
     """Test that state and key can't be accessed before setup."""
 
     key = jax.random.PRNGKey(9876)
@@ -78,10 +79,10 @@ def test_working_state_key_before_setup():
     dq = DefaultQubitInterpreter(num_wires=1, key=key)
 
     with pytest.raises(AttributeError, match="execution not yet initialized"):
-        dq.state = [1.0, 0.0]
+        setattr(dq, name, [1.0, 0.0])
 
     with pytest.raises(AttributeError, match="execution not yet initialized"):
-        dq.key = jax.random.PRNGKey(8765)
+        getattr(dq, name)
 
 
 def test_simple_execution():
