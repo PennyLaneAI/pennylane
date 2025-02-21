@@ -293,8 +293,7 @@ class TestIntegration:
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     @pytest.mark.xfail(
-        raises=NotImplementedError,
-        reason="adjoint_transform_prim not implemented on DefaultQubitInterpreter",
+        reason="adjoint_transform_prim not working with autograph. See sc-84934",
     )
     @pytest.mark.parametrize("autograph", [True, False])
     def test_adjoint_wrapper(self, autograph):
@@ -320,8 +319,7 @@ class TestIntegration:
         assert check_cache(inner)
 
     @pytest.mark.xfail(
-        raises=NotImplementedError,
-        reason="ctrl_transform_prim not implemented on DefaultQubitInterpreter",
+        reason="ctrl_transform_prim not working with autograph. See sc-84934",
     )
     @pytest.mark.parametrize("autograph", [True, False])
     def test_ctrl_wrapper(self, autograph):
