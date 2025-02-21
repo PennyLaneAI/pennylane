@@ -40,6 +40,10 @@
 * `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
   [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
 
+* The `qml.measurements.NullMeasurement` measurement process is added to allow for profiling problems
+  without the overheads associated with performing measurements.
+  [(#6989)](https://github.com/PennyLaneAI/pennylane/pull/6989)
+
 * `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
   [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
 
