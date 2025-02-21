@@ -27,11 +27,12 @@ def test_abstract_resource_decomp():
     class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
+        @property
         def resource_params(self):
             return
 
         @staticmethod
-        def resource_rep():
+        def make_resource_rep():
             return
 
     with pytest.raises(
@@ -51,7 +52,7 @@ def test_abstract_resource_params():
         def _resource_decomp():
             return
 
-        def resource_rep(self):
+        def make_resource_rep(self):
             return
 
     with pytest.raises(
@@ -71,6 +72,7 @@ def test_abstract_resource_rep():
         def _resource_decomp():
             return
 
+        @property
         def resource_params(self):
             return
 
@@ -87,11 +89,12 @@ def test_set_resources():
     class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
+        @property
         def resource_params(self):
             return
 
         @staticmethod
-        def resource_rep():
+        def make_resource_rep():
             return
 
         @staticmethod
@@ -104,7 +107,7 @@ def test_set_resources():
 
 
 def test_resource_rep_from_op():
-    """Test that the resource_rep_from_op method is the composition of resource_params and resource_rep"""
+    """Test that the resource_rep property is the composition of resource_params and resource_rep"""
 
     class DummyClass(re.ResourceQFT, re.ResourceOperator):
         """Dummy class for testing"""
@@ -113,11 +116,12 @@ def test_resource_rep_from_op():
         def _resource_decomp():
             return
 
+        @property
         def resource_params(self):
             return {"foo": 1, "bar": 2}
 
         @classmethod
-        def resource_rep(cls, foo, bar):
+        def make_resource_rep(cls, foo, bar):
             return re.CompressedResourceOp(cls, {"foo": foo, "bar": bar})
 
         @staticmethod
@@ -125,4 +129,4 @@ def test_resource_rep_from_op():
             return f"DummyClass({foo}, {bar})"
 
     op = DummyClass(wires=[1, 2, 3])
-    assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params())
+    assert op.resource_rep == op.__class__.make_resource_rep(**op.resource_params)

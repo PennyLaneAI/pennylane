@@ -33,8 +33,8 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs):
-        cnot = re.ResourceCNOT.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
+        cnot = re.ResourceCNOT.make_resource_rep()
+        rz = re.ResourceRZ.make_resource_rep()
 
         gate_types = {}
         gate_types[cnot] = 2 * (num_wires - 1)
@@ -42,16 +42,17 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    @property
+    def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
     @classmethod
-    def resource_rep(cls, num_wires):
+    def make_resource_rep(cls, num_wires):
         return re.CompressedResourceOp(cls, {"num_wires": num_wires})
 
     @classmethod
     def adjoint_resource_decomp(cls, num_wires) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(num_wires=num_wires): 1}
+        return {cls.make_resource_rep(num_wires=num_wires): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -61,8 +62,8 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
         num_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_values == 0:
-            cnot = re.ResourceCNOT.resource_rep()
-            ctrl_rz = re.ResourceControlled.resource_rep(
+            cnot = re.ResourceCNOT.make_resource_rep()
+            ctrl_rz = re.ResourceControlled.make_resource_rep(
                 base_class=re.ResourceRZ,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
@@ -80,7 +81,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z, num_wires) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(num_wires=num_wires): 1}
+        return {cls.make_resource_rep(num_wires=num_wires): 1}
 
 
 class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
@@ -108,16 +109,16 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(pauli_word, **kwargs):
         if set(pauli_word) == {"I"}:
-            gp = re.ResourceGlobalPhase.resource_rep()
+            gp = re.ResourceGlobalPhase.make_resource_rep()
             return {gp: 1}
 
         active_wires = len(pauli_word.replace("I", ""))
 
-        h = re.ResourceHadamard.resource_rep()
-        s = re.ResourceS.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
-        s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
-        cnot = re.ResourceCNOT.resource_rep()
+        h = re.ResourceHadamard.make_resource_rep()
+        s = re.ResourceS.make_resource_rep()
+        rz = re.ResourceRZ.make_resource_rep()
+        s_dagg = re.ResourceAdjoint.make_resource_rep(re.ResourceS, {})
+        cnot = re.ResourceCNOT.make_resource_rep()
 
         h_count = 0
         s_count = 0
@@ -138,18 +139,19 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    @property
+    def resource_params(self) -> dict:
         return {
             "pauli_word": self.hyperparameters["pauli_word"],
         }
 
     @classmethod
-    def resource_rep(cls, pauli_word):
+    def make_resource_rep(cls, pauli_word):
         return re.CompressedResourceOp(cls, {"pauli_word": pauli_word})
 
     @classmethod
     def adjoint_resource_decomp(cls, pauli_word) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(pauli_word=pauli_word): 1}
+        return {cls.make_resource_rep(pauli_word=pauli_word): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -159,7 +161,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
         pauli_word,
     ) -> Dict[re.CompressedResourceOp, int]:
         if set(pauli_word) == {"I"}:
-            ctrl_gp = re.ResourceControlled.resource_rep(
+            ctrl_gp = re.ResourceControlled.make_resource_rep(
                 re.ResourceGlobalPhase,
                 {},
                 num_ctrl_wires,
@@ -170,11 +172,11 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
         active_wires = len(pauli_word.replace("I", ""))
 
-        h = re.ResourceHadamard.resource_rep()
-        s = re.ResourceS.resource_rep()
-        s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
-        cnot = re.ResourceCNOT.resource_rep()
-        ctrl_rz = re.ResourceControlled.resource_rep(
+        h = re.ResourceHadamard.make_resource_rep()
+        s = re.ResourceS.make_resource_rep()
+        s_dagg = re.ResourceAdjoint.make_resource_rep(re.ResourceS, {})
+        cnot = re.ResourceCNOT.make_resource_rep()
+        ctrl_rz = re.ResourceControlled.make_resource_rep(
             base_class=re.ResourceRZ,
             base_params={},
             num_ctrl_wires=num_ctrl_wires,
@@ -206,7 +208,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z, pauli_word) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(pauli_word=pauli_word): 1}
+        return {cls.make_resource_rep(pauli_word=pauli_word): 1}
 
 
 class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
@@ -233,8 +235,8 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        cnot = re.ResourceCNOT.resource_rep()
-        rx = re.ResourceRX.resource_rep()
+        cnot = re.ResourceCNOT.make_resource_rep()
+        rx = re.ResourceRX.make_resource_rep()
 
         gate_types = {}
         gate_types[cnot] = 2
@@ -242,16 +244,17 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    @property
+    def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls):
+    def make_resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -260,8 +263,8 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_values == 0:
-            cnot = re.ResourceCNOT.resource_rep()
-            ctrl_rx = re.ResourceControlled.resource_rep(
+            cnot = re.ResourceCNOT.make_resource_rep()
+            ctrl_rx = re.ResourceControlled.make_resource_rep(
                 base_class=re.ResourceRX,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
@@ -278,7 +281,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
 
 class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
@@ -305,8 +308,8 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        cy = re.ops.ResourceCY.resource_rep()
-        ry = re.ops.ResourceRY.resource_rep()
+        cy = re.ops.ResourceCY.make_resource_rep()
+        ry = re.ops.ResourceRY.make_resource_rep()
 
         gate_types = {}
         gate_types[cy] = 2
@@ -314,16 +317,17 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    @property
+    def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls):
+    def make_resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -332,8 +336,8 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_values == 0:
-            cy = re.ops.ResourceCY.resource_rep()
-            ctrl_ry = re.ResourceControlled.resource_rep(
+            cy = re.ops.ResourceCY.make_resource_rep()
+            ctrl_ry = re.ResourceControlled.make_resource_rep(
                 base_class=re.ResourceRY,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
@@ -350,7 +354,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
 
 class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
@@ -377,10 +381,10 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        h = re.ResourceHadamard.resource_rep()
-        cy = re.ResourceCY.resource_rep()
-        ry = re.ResourceRY.resource_rep()
-        rx = re.ResourceRX.resource_rep()
+        h = re.ResourceHadamard.make_resource_rep()
+        cy = re.ResourceCY.make_resource_rep()
+        ry = re.ResourceRY.make_resource_rep()
+        rx = re.ResourceRX.make_resource_rep()
 
         gate_types = {}
         gate_types[h] = 2
@@ -390,16 +394,17 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    @property
+    def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls):
+    def make_resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -408,16 +413,16 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_values == 0:
-            h = re.ResourceHadamard.resource_rep()
-            cy = re.ResourceCY.resource_rep()
-            ctrl_rx = re.ResourceControlled.resource_rep(
+            h = re.ResourceHadamard.make_resource_rep()
+            cy = re.ResourceCY.make_resource_rep()
+            ctrl_rx = re.ResourceControlled.make_resource_rep(
                 base_class=re.ResourceRX,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
                 num_work_wires=num_work_wires,
             )
-            ctrl_ry = re.ResourceControlled.resource_rep(
+            ctrl_ry = re.ResourceControlled.make_resource_rep(
                 base_class=re.ResourceRY,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
@@ -436,7 +441,7 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
 
 class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
@@ -463,8 +468,8 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        cnot = re.ResourceCNOT.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
+        cnot = re.ResourceCNOT.make_resource_rep()
+        rz = re.ResourceRZ.make_resource_rep()
 
         gate_types = {}
         gate_types[cnot] = 2
@@ -472,16 +477,17 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    @property
+    def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls):
+    def make_resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -490,8 +496,8 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_values == 0:
-            cnot = re.ResourceCNOT.resource_rep()
-            ctrl_rz = re.ResourceControlled.resource_rep(
+            cnot = re.ResourceCNOT.make_resource_rep()
+            ctrl_rz = re.ResourceControlled.make_resource_rep(
                 base_class=re.ResourceRZ,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
@@ -508,7 +514,7 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
 
 class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
@@ -532,9 +538,9 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        swap = re.ResourceSWAP.resource_rep()
-        cnot = re.ResourceCNOT.resource_rep()
-        phase = re.ResourcePhaseShift.resource_rep()
+        swap = re.ResourceSWAP.make_resource_rep()
+        cnot = re.ResourceCNOT.make_resource_rep()
+        phase = re.ResourcePhaseShift.make_resource_rep()
 
         gate_types = {}
         gate_types[swap] = 1
@@ -543,16 +549,17 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    @property
+    def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls):
+    def make_resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
+        return {cls.make_resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -561,15 +568,15 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_values == 0:
-            cnot = re.ResourceCNOT.resource_rep()
-            ctrl_swap = re.ResourceControlled.resource_rep(
+            cnot = re.ResourceCNOT.make_resource_rep()
+            ctrl_swap = re.ResourceControlled.make_resource_rep(
                 base_class=re.ResourceSWAP,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
                 num_work_wires=num_work_wires,
             )
-            ctrl_ps = re.ResourceControlled.resource_rep(
+            ctrl_ps = re.ResourceControlled.make_resource_rep(
                 base_class=re.ResourcePhaseShift,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
