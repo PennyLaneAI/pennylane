@@ -662,7 +662,7 @@ class QNode:
     @property
     def interface(self) -> str:
         """The interface used by the QNode"""
-        return self._interface.value
+        return "jax" if qml.capture.enabled() else self._interface.value
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):

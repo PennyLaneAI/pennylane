@@ -106,7 +106,6 @@ not even started thinking about how it might be possible to do so.
 features is non-exhaustive.
 
 """
-from copy import copy
 from functools import partial
 from numbers import Number
 from warnings import warn
@@ -118,6 +117,8 @@ import pennylane as qml
 from pennylane.capture import CaptureError, FlatFn
 from pennylane.capture.custom_primitives import QmlPrimitive
 from pennylane.typing import TensorLike
+
+from .construct_execution_config import construct_execution_config
 
 
 def _is_scalar_tensor(arg) -> bool:
@@ -184,7 +185,7 @@ qnode_prim.prim_type = "higher_order"
 
 # pylint: disable=too-many-arguments, unused-argument
 @qnode_prim.def_impl
-def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
+def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
     if shots != device.shots:
         raise NotImplementedError(
             "Overriding shots is not yet supported with the program capture execution."
@@ -193,16 +194,17 @@ def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_di
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
 
-    if batch_dims is None:
-        return device.eval_jaxpr(qfunc_jaxpr, consts, *non_const_args)
-    return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims[n_consts:])(
-        *non_const_args
+    partial_eval = partial(
+        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
     )
+    if batch_dims is None:
+        return partial_eval(*non_const_args)
+    return jax.vmap(partial_eval, batch_dims[n_consts:])(*non_const_args)
 
 
 # pylint: disable=unused-argument
 @qnode_prim.def_abstract_eval
-def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
+def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
 
     mps = qfunc_jaxpr.outvars
 
@@ -223,7 +225,7 @@ def _qnode_batching_rule(
     qnode,
     shots,
     device,
-    qnode_kwargs,
+    execution_config,
     qfunc_jaxpr,
     n_consts,
 ):
@@ -265,7 +267,7 @@ def _qnode_batching_rule(
         shots=shots,
         qnode=qnode,
         device=device,
-        qnode_kwargs=qnode_kwargs,
+        execution_config=execution_config,
         qfunc_jaxpr=qfunc_jaxpr,
         n_consts=n_consts,
         batch_dims=batch_dims,
@@ -292,29 +294,21 @@ def _backprop(args, tangents, **impl_kwargs):
 def _finite_diff(args, tangents, **impl_kwargs):
     f = partial(qnode_prim.bind, **impl_kwargs)
     return qml.gradients.finite_diff_jvp(
-        f, args, tangents, **impl_kwargs["qnode_kwargs"]["gradient_kwargs"]
+        f, args, tangents, **impl_kwargs["execution_config"].gradient_keyword_arguments
     )
 
 
 diff_method_map = {"backprop": _backprop, "finite-diff": _finite_diff}
 
 
-def _resolve_diff_method(diff_method: str, device) -> str:
-    # check if best is backprop
-    if diff_method == "best":
-        config = qml.devices.ExecutionConfig(gradient_method=diff_method, interface="jax")
-        diff_method = device.setup_execution_config(config).gradient_method
+def _qnode_jvp(args, tangents, *, execution_config, device, **impl_kwargs):
+    config = device.setup_execution_config(execution_config)
 
-    if diff_method not in diff_method_map:
-        raise NotImplementedError(f"diff_method {diff_method} not yet implemented.")
+    if config.gradient_method not in diff_method_map:
+        raise NotImplementedError(f"diff_method {config.gradient_method} not yet implemented.")
 
-    return diff_method
-
-
-def _qnode_jvp(args, tangents, *, qnode_kwargs, device, **impl_kwargs):
-    diff_method = _resolve_diff_method(qnode_kwargs["diff_method"], device)
-    return diff_method_map[diff_method](
-        args, tangents, qnode_kwargs=qnode_kwargs, device=device, **impl_kwargs
+    return diff_method_map[config.gradient_method](
+        args, tangents, execution_config=config, device=device, **impl_kwargs
     )
 
 
@@ -517,12 +511,9 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
                 "flow functions like for_loop, while_loop, etc."
             ) from exc
 
-    execute_kwargs = copy(qnode.execute_kwargs)
-    qnode_kwargs = {
-        "diff_method": qnode.diff_method,
-        **execute_kwargs,
-        "gradient_kwargs": qnode.gradient_kwargs,
-    }
+    config = construct_execution_config(
+        qnode, resolve=False
+    )()  # no need for args and kwargs as not resolving
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
@@ -531,7 +522,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         shots=shots,
         qnode=qnode,
         device=qnode.device,
-        qnode_kwargs=qnode_kwargs,
+        execution_config=config,
         qfunc_jaxpr=qfunc_jaxpr.jaxpr,
         n_consts=len(qfunc_jaxpr.consts),
     )

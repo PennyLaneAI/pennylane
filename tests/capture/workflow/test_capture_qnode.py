@@ -130,9 +130,14 @@ def test_simple_qnode():
     assert eqn0.params["device"] == dev
     assert eqn0.params["qnode"] == circuit
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
-    expected_kwargs = {"diff_method": "best", "gradient_kwargs": {}}
-    expected_kwargs.update(circuit.execute_kwargs)
-    assert eqn0.params["qnode_kwargs"] == expected_kwargs
+    expected_config = qml.devices.ExecutionConfig(
+        gradient_method="best",
+        gradient_keyword_arguments={},
+        use_device_jacobian_product=False,
+        interface="jax",
+        grad_on_execution=False,
+    )
+    assert eqn0.params["execution_config"] == expected_config
 
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
     assert len(qfunc_jaxpr.eqns) == 3
@@ -279,18 +284,15 @@ def test_capture_qnode_kwargs():
     jaxpr = jax.make_jaxpr(circuit)()
 
     assert jaxpr.eqns[0].primitive == qnode_prim
-    expected = {
-        "diff_method": "parameter-shift",
-        "grad_on_execution": False,
-        "cache": True,
-        "cachesize": 10,
-        "max_diff": 2,
-        "device_vjp": False,
-        "mcm_method": None,
-        "postselect_mode": None,
-        "gradient_kwargs": {},
-    }
-    assert jaxpr.eqns[0].params["qnode_kwargs"] == expected
+    expected_config = qml.devices.ExecutionConfig(
+        gradient_method="parameter-shift",
+        grad_on_execution=False,
+        derivative_order=2,
+        use_device_jacobian_product=False,
+        mcm_config=qml.devices.MCMConfig(mcm_method=None, postselect_mode=None),
+        interface=qml.math.Interface.JAX,
+    )
+    assert jaxpr.eqns[0].params["execution_config"] == expected_config
 
 
 def test_qnode_closure_variables():
