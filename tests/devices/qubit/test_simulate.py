@@ -75,13 +75,14 @@ def test_custom_operation():
 class TestSparsePipeline:
     """System tests for the sparse pipelines."""
 
+    ground_state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
     cat_state = np.array([1, 0, 0, 0, 0, 0, 0, 1]) / np.sqrt(2)
 
     @pytest.mark.parametrize(
         "state",
         [
+            ground_state,
             cat_state,
-            sp.sparse.csr_matrix(cat_state),
         ],
     )
     def test_sparse_op(self, state):
