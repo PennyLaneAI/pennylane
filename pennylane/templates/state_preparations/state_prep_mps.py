@@ -356,6 +356,7 @@ class MPSPrep(Operation):
         ops = []
         n_wires = len(work_wires) + 1
 
+        mps = mps.copy()
         mps[0] = mps[0].reshape((1, *mps[0].shape))
         mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
