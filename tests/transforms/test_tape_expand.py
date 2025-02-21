@@ -732,7 +732,7 @@ class TestCreateCustomDecompExpandFn:
     def test_custom_decomp_in_separate_context_legacy_opmath(self):
         """Test that the set_decomposition context manager works."""
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))
 
         @qml.qnode(dev)
         def circuit():

@@ -119,7 +119,7 @@ def _setup_transform_program(
         or resolved_execution_config.interface is Interface.NUMPY
         or resolved_execution_config.gradient_method == "backprop"
         or (
-            getattr(device, "short_name", "") == "default.mixed"
+            isinstance(device, qml.devices.DefaultMixed)
             and resolved_execution_config.gradient_method is None
         )
     )

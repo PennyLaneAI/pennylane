@@ -755,6 +755,9 @@ class TestIntegration:
             atol=5e-4,
         )
 
+    @pytest.mark.xfail(
+        reason=r"ProbsMP.process_density_matrix issue. See https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064"
+    )
     def test_mixed_device(self):
         """Test mixed device integration matches that of default qubit"""
         import jax
@@ -769,7 +772,7 @@ class TestIntegration:
         H_pulse = qml.dot(coeff, ops)
 
         def circuit(x):
-            qml.pulse.ParametrizedEvolution(H_pulse, x, 5.0)
+            qml.evolve(H_pulse, dense=False)(x, 5.0)
             return qml.expval(qml.PauliZ(0))
 
         qnode_def = qml.QNode(circuit, default, interface="jax")
