@@ -28,6 +28,7 @@ class NullMeasurement(SampleMeasurement, StateMeasurement):
     >>> @qml.qnode(qml.device('default.qubit', wires=1), diff_method="parameter-shift")
     ... def circuit():
     ...     return qml.measurements.NullMeasurement()
+    ...
     >>> circuit()
     array(nan)
 
