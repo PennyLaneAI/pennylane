@@ -92,7 +92,8 @@ class TestRepeatedQubitDeviceErrors:
         ):
             jax.make_jaxpr(f)()
 
-    def test_collision_before_cond_prim(self):
+    @pytest.mark.parametrize("collision_wire", [0, 1, 2])
+    def test_collision_before_cond_prim(self, collision_wire):
         """Test that an error is raised if a qubit in the AmplitudeEmbedding had operations applied to it before."""
 
         @MergeAmplitudeEmbeddingInterpreter()
@@ -100,22 +101,19 @@ class TestRepeatedQubitDeviceErrors:
             @qml.cond(x > 2)
             def cond_f():
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
-                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
             def _():
-                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
             def _():
-                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
-                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=2)
                 return qml.expval(qml.X(0))
 
-            qml.X(0)  # cond branches have wires 0
+            qml.X(collision_wire)
             out = cond_f()
             return out
 
