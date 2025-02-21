@@ -822,7 +822,7 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
 
 
 @pytest.mark.parametrize("wires", [1, 3])
-# @pytest.mark.all_interfaces
+@pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
 @pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
 def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recipe):
@@ -875,7 +875,7 @@ def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recip
 
 
 @pytest.mark.parametrize("wires", [1, 3])
-# @pytest.mark.all_interfaces
+@pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
 @pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
 def test_availability_legacy_arithmetic(wires, interface, circuit_basis, basis_recipe):
