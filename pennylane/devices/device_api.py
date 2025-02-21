@@ -974,7 +974,7 @@ class Device(abc.ABC):
         jaxpr: "jax.core.Jaxpr",
         consts: list[TensorLike],
         *args,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> list[TensorLike]:
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 
@@ -984,7 +984,7 @@ class Device(abc.ABC):
             *args (TensorLike): the variables to use with the jaxpr.
 
         Keyword Args:
-            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+            execution_config (Optional[ExecutionConfig]): a datastructure with additional information required for execution
 
         Returns:
             list[TensorLike]: the result of evaluating the jaxpr with the given parameters.
