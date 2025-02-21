@@ -32,6 +32,22 @@ from pennylane.wires import Wires
 class TestQubitUnitaryCSR:
     """Tests for using csr_matrix in QubitUnitary."""
 
+    def test_compute_matrix_blocked(self):
+        """Test that when csr_matrix is used, the compute_matrix method works correctly."""
+        U = csr_matrix(I)
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="U is sparse matrix",
+        ):
+            qml.QubitUnitary.compute_matrix(U)
+
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="U is sparse matrix",
+        ):
+            op = qml.QubitUnitary(U, wires=[0])
+            op.matrix()
+
     def test_compute_sparse_matrix(self):
         """Test that the compute_sparse_matrix method works correctly."""
         U = np.array([[0, 1], [1, 0]])

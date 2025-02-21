@@ -197,7 +197,9 @@ class QubitUnitary(Operation):
         [0.-0.14943813j, 0.98877108+0.j]]
         """
         if sp.sparse.issparse(U):
-            return U.toarray()
+            raise qml.operation.MatrixUndefinedError(
+                "U is sparse matrix. Use sparse_matrix method instead."
+            )
         return U
 
     @staticmethod
