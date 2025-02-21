@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 
-from copy import copy
+from copy import copy, deepcopy
 from functools import lru_cache, partial
 
 import pennylane as qml
@@ -198,7 +198,9 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         end_const_ind = len(jaxpr_branches)
 
         # Store seen wires before we begin to process the branches
-        visited_wires = initial_wires = copy(self.state["visited_wires"])
+        initial_wires = self.state["visited_wires"]
+        # Create a deep copy to avoid modifying the original visited wires set.
+        visited_wires = deepcopy(initial_wires)
 
         for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
             consts = invals[const_slice]
@@ -213,7 +215,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 visited_wires |= self.state["visited_wires"]
                 # Reset visited wires for next branch so we don't get false positive collisions
                 # between cond branches
-                self.state["visited_wires"] = copy(initial_wires)
+                self.state["visited_wires"] = initial_wires
 
                 new_jaxprs.append(new_jaxpr.jaxpr)
                 new_consts.extend(new_jaxpr.consts)
