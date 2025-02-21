@@ -33,9 +33,9 @@ class TestFromBloq:
 
         bb = BloqBuilder()  # bb is the circuit like object
 
-        w1 = bb.add_register('wire1', 1)
-        w2 = bb.add_register('wire2', 1)
-        aux = bb.add_register('aux_wires', 2)  # add wires
+        w1 = bb.add_register("wire1", 1)
+        w2 = bb.add_register("wire2", 1)
+        aux = bb.add_register("aux_wires", 2)  # add wires
 
         aux_wires = bb.split(aux)
 
@@ -52,11 +52,25 @@ class TestFromBloq:
         circuit_bloq = bb.finalize(wire1=w1, wire2=w2, aux_wires=aux_wires)
 
         decomp = qml.FromBloq(circuit_bloq, wires=list(range(4))).decomposition()
-        expected_decomp = [qml.H(0), qml.H(1), qml.CNOT([0, 2]), qml.CNOT([1, 3]), qml.Toffoli([2, 3, 0]), qml.Toffoli([2, 3, 1])]
+        expected_decomp = [
+            qml.H(0),
+            qml.H(1),
+            qml.CNOT([0, 2]),
+            qml.CNOT([1, 3]),
+            qml.Toffoli([2, 3, 0]),
+            qml.Toffoli([2, 3, 1]),
+        ]
         assert decomp == expected_decomp
-        
+
         mapped_decomp = qml.FromBloq(circuit_bloq, wires=[3, 0, 1, 2]).decomposition()
-        mapped_expected_decomp = [qml.H(3), qml.H(0), qml.CNOT([3, 1]), qml.CNOT([0, 2]), qml.Toffoli([1, 2, 3]), qml.Toffoli([1, 2, 0])]
+        mapped_expected_decomp = [
+            qml.H(3),
+            qml.H(0),
+            qml.CNOT([3, 1]),
+            qml.CNOT([0, 2]),
+            qml.Toffoli([1, 2, 3]),
+            qml.Toffoli([1, 2, 0]),
+        ]
         assert mapped_decomp == mapped_expected_decomp
 
     def test_atomic_bloqs(self):
@@ -69,6 +83,20 @@ class TestFromBloq:
 
         assert np.allclose(qml.FromBloq(Hadamard(), 0).matrix(), qml.Hadamard(0).matrix())
         assert np.allclose(qml.FromBloq(CNOT(), [0, 1]).matrix(), qml.CNOT([0, 1]).matrix())
-        assert np.allclose(qml.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qml.Toffoli([0, 1, 2]).matrix())
+        assert np.allclose(
+            qml.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qml.Toffoli([0, 1, 2]).matrix()
+        )
 
+    def test_bloqs(self):
+        """Tests that bloqs with decompositions have the correct PennyLane decompositions after
+        being wrapped with `FromBloq`"""
 
+        from qualtran.bloqs.basic_gates import Swap
+
+        assert qml.FromBloq(Swap(3), wires=range(6)).decomposition() == [
+            qml.SWAP(wires=[0, 3]),
+            qml.SWAP(wires=[1, 4]),
+            qml.SWAP(wires=[2, 5]),
+        ]
+
+        print(qml.FromBloq(Swap(3), wires=range(6)).decomposition())
