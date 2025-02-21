@@ -193,6 +193,11 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
 
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
+    mcm_config = {
+        "mcm_method": qnode_kwargs["mcm_method"],
+        "postselect_mode": qnode_kwargs["postselect_mode"],
+    }
+    execution_config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
 
     partial_eval = partial(
         device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
