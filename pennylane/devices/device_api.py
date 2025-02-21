@@ -981,7 +981,7 @@ class Device(abc.ABC):
         Args:
             jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
             consts (list[TensorLike]): the closure variables ``consts`` corresponding to the jaxpr
-            *args (TensorLike): the variables to use with the jaxpr'.
+            *args (TensorLike): the variables to use with the jaxpr.
 
         Keyword Args:
             execution_config (Optional[ExecutionConfig]): a datastructure with additional information required for execution
