@@ -205,15 +205,10 @@ class QFT(Operation):
     # pylint:disable = no-value-for-parameter
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
-        try:
-            # pylint: disable=import-outside-toplevel
-            from jax import numpy as jnp
-        except ImportError:  # pragma: no cover
-            pass
-        wires = jnp.array(args[0:])
+        wires = qml.math.array(args[0:], like="jax")
         n_wires = len(wires)
 
-        shifts = jnp.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)])
+        shifts = qml.math.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)], like="jax")
         shift_len = len(shifts)
 
         @qml.for_loop(n_wires)

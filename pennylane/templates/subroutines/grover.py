@@ -181,13 +181,8 @@ class GroverOperator(Operation):
     # pylint:disable = no-value-for-parameter
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
-        try:
-            # pylint: disable=import-outside-toplevel
-            from jax import numpy as jnp
-        except ImportError:  # pragma: no cover
-            pass
-        wires = jnp.array(args[0:])
-        work_wires = jnp.array(hyperparameters["work_wires"])
+        wires = qml.math.array(args[0:], like="jax")
+        work_wires = qml.math.array(hyperparameters["work_wires"], like="jax")
         ctrl_values = [0] * (len(wires) - 1)
 
         @qml.for_loop(len(wires) - 1)

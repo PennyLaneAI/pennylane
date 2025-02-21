@@ -240,16 +240,10 @@ class StronglyEntanglingLayers(Operation):
     # pylint:disable = no-value-for-parameter
     @staticmethod
     def compute_plxpr_decomposition(*args, **hyperparameters):
-        try:
-            # pylint: disable=import-outside-toplevel
-            from jax import numpy as jnp
-        except ImportError:  # pragma: no cover
-            pass
-
         weights = args[0]
-        wires = jnp.array(args[1:])
+        wires = qml.math.array(args[1:], like="jax")
         imprimitive = hyperparameters["imprimitive"]
-        ranges = jnp.array(hyperparameters["ranges"])
+        ranges = qml.math.array(hyperparameters["ranges"], like="jax")
 
         n_wires = len(wires)
         n_layers = weights.shape[0]
@@ -268,7 +262,7 @@ class StronglyEntanglingLayers(Operation):
             def imprim_true():
                 @qml.for_loop(n_wires)
                 def imprimitive_loop(i):
-                    act_on = jnp.array([i, i + ranges[l]]) % n_wires
+                    act_on = qml.math.array([i, i + ranges[l]], like="jax") % n_wires
                     imprimitive(wires=wires[act_on])
 
                 imprimitive_loop()
