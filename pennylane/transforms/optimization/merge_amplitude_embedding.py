@@ -198,7 +198,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         end_const_ind = len(jaxpr_branches)
 
         # Store seen wires before we begin to process the branches
-        original_wires = self.state.get("visited_wires", set())
+        visited_wires = initial_wires = copy(self.state["visited_wires"])
 
         for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
             consts = invals[const_slice]
@@ -208,14 +208,12 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             else:
                 new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
-                # Store newly visited wires
-                newly_seen_wires = self.state.get("visited_wires", set()) - original_wires
-                # Reset visited wires for next branch so we don't get false positive collisions
-                # between cond branches
-                self.state["visited_wires"] = set()
                 # Remember all wires we've seen so far so collisions continue to be detected
                 # after the cond
-                original_wires |= newly_seen_wires
+                visited_wires |= self.state["visited_wires"]
+                # Reset visited wires for next branch so we don't get false positive collisions
+                # between cond branches
+                self.state["visited_wires"] = copy(initial_wires)
 
                 new_jaxprs.append(new_jaxpr.jaxpr)
                 new_consts.extend(new_jaxpr.consts)
@@ -225,7 +223,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 end_const_ind += len(new_jaxpr.consts)
 
         # Reset visited wires to all wires encountered in the cond
-        self.state["visited_wires"] = original_wires
+        self.state["visited_wires"] = visited_wires
 
         new_args_slice = slice(end_const_ind, None)
         return cond_prim.bind(
