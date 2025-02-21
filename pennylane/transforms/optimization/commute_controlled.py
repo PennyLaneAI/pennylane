@@ -13,12 +13,189 @@
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
 
+from functools import lru_cache
+from typing import Optional
+
+import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
+
+
+@lru_cache
+def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstring,too-many-statements
+    try:
+        # pylint: disable=import-outside-toplevel
+        from jax import make_jaxpr
+
+        from pennylane.capture import PlxprInterpreter
+        from pennylane.operation import Operator
+    except ImportError:  # pragma: no cover
+        return None, None
+
+    # pylint: disable=redefined-outer-name
+
+    class CommuteControlledInterpreter(PlxprInterpreter):
+        """Plxpr Interpreter for applying the ``commute_controlled`` transform to callables or jaxpr
+        when program capture is enabled.
+
+        .. note::
+            In the process of transforming plxpr, this interpreter may reorder operations that do
+            not share any wires. This will not impact the correctness of the circuit.
+        """
+
+        def __init__(self, direction: Optional[str] = "right"):
+            """Initialize the interpreter."""
+            self.direction = direction
+            self.op_list = []
+            self._env = {}
+            self.current_location = 0
+            super().__init__()
+
+        def setup(self) -> None:
+            """Initialize the instance before interpreting equations."""
+            self.op_list = []
+            self._env = {}
+
+        def cleanup(self) -> None:
+            """Clean up the instance after interpreting equations."""
+            self.op_list.clear()
+            self._env.clear()
+
+        def interpret_operation(self, op: Operator):
+            """Interpret a PennyLane operation instance."""
+
+            if op.basis is None or len(op.wires) != 1:
+                self.current_location += 1
+                self.op_list.append(op)
+                # We cannot interpret it right away because there might be a single qubit gate that can be pushed on the left
+                return []
+
+            prev_gate_idx = find_next_gate(op.wires, self.op_list[:][::-1])
+            print(f"prev_gate_idx: {prev_gate_idx}")
+
+            new_location = self.current_location
+
+            while prev_gate_idx is not None:
+                prev_gate = self.op_list[new_location - prev_gate_idx - 1]
+                print(f"prev_gate (with overlapping wire): {prev_gate}")
+
+                if prev_gate.basis is None:
+                    print("previous gate does not have basis specified. Breaking.")
+                    break
+
+                if len(prev_gate.control_wires) == 0:
+                    print("previous gate does not have control wires. Breaking.")
+                    break
+
+                shared_controls = Wires.shared_wires([Wires(op.wires), prev_gate.control_wires])
+                print(f"shared_controls: {shared_controls}")
+
+                if len(shared_controls) > 0:
+                    if op.basis == "Z":
+                        new_location = new_location - prev_gate_idx - 1
+                        print("Pushing through Z gate (Z is the basis of the current gate).")
+                    else:
+                        print("Not pushing through Z gate. Breaking.")
+                        break
+
+                else:
+                    if op.basis == prev_gate.basis:
+                        print("Pushing through same basis gate.")
+                        new_location = new_location - prev_gate_idx - 1
+                    else:
+                        print("Not pushing through same basis gate. Breaking.")
+                        break
+
+                prev_gate_idx = find_next_gate(op.wires, self.op_list[:new_location][::-1])
+
+            # self.op_list.pop(self.current_location)
+            self.op_list.insert(new_location, op)
+            print(f"op_list after inserting: {self.op_list}")
+            self.current_location += 1
+            return []
+
+        def interpret_all_previous_ops(self) -> None:
+            """Interpret all previous operations stored in the instance."""
+
+            for op in self.op_list:
+                super().interpret_operation(op)
+
+            self.op_list.clear()
+
+        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+            """Evaluate a jaxpr.
+            Args:
+                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                consts (list[TensorLike]): the constant variables for the jaxpr
+                *args (tuple[TensorLike]): The arguments for the jaxpr.
+            Returns:
+                list[TensorLike]: the results of the execution.
+            """
+
+            self.setup()
+
+            for arg, invar in zip(args, jaxpr.invars, strict=True):
+                self._env[invar] = arg
+            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+                self._env[constvar] = const
+
+            for eqn in jaxpr.eqns:
+
+                prim_type = getattr(eqn.primitive, "prim_type", "")
+
+                custom_handler = self._primitive_registrations.get(eqn.primitive, None)
+                if custom_handler:
+                    self.interpret_all_previous_ops()
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    outvals = custom_handler(self, *invals, **eqn.params)
+                elif prim_type == "operator":
+                    outvals = self.interpret_operation_eqn(eqn)
+                elif prim_type == "measurement":
+                    self.interpret_all_previous_ops()
+                    outvals = self.interpret_measurement_eqn(eqn)
+                else:
+                    if prim_type == "transform":
+                        self.interpret_all_previous_ops()
+                    invals = [self.read(invar) for invar in eqn.invars]
+                    subfuns, params = eqn.primitive.get_bind_params(eqn.params)
+                    outvals = eqn.primitive.bind(*subfuns, *invals, **params)
+
+                if not eqn.primitive.multiple_results:
+                    outvals = [outvals]
+                for outvar, outval in zip(eqn.outvars, outvals, strict=True):
+                    self._env[outvar] = outval
+
+            self.interpret_all_previous_ops()
+
+            outvals = []
+            for var in jaxpr.outvars:
+                outval = self.read(var)
+                if isinstance(outval, Operator):
+                    outvals.append(super().interpret_operation(outval))
+                else:
+                    outvals.append(outval)
+
+            self.cleanup()
+            return outvals
+
+    def commute_controlled_plxpr_to_plxpr(
+        jaxpr, consts, targs, tkwargs, *args
+    ):  # pylint: disable=unused-argument
+        interpreter = CommuteControlledInterpreter()
+
+        def wrapper(*inner_args):
+            return interpreter.eval(jaxpr, consts, *inner_args)
+
+        return make_jaxpr(wrapper)(*args)
+
+    return CommuteControlledInterpreter, commute_controlled_plxpr_to_plxpr
+
+
+CommuteControlledInterpreter, commute_controlled_plxpr_to_plxpr = _get_plxpr_commute_controlled()
 
 
 def _commute_controlled_right(op_list):
@@ -109,44 +286,56 @@ def _commute_controlled_left(op_list):
 
     while current_location < len(op_list):
         current_gate = op_list[current_location]
+        print(f"\ncurrent_gate: {current_gate}")
 
         if current_gate.basis is None or len(current_gate.wires) != 1:
             current_location += 1
+            print("This gate is not a single-qubit gate OR its basis is None. Skipping.")
             continue
 
         # Pass a backwards copy of the list
         prev_gate_idx = find_next_gate(current_gate.wires, op_list[:current_location][::-1])
+        print(f"prev_gate_idx: {prev_gate_idx}")
 
         new_location = current_location
 
         while prev_gate_idx is not None:
             prev_gate = op_list[new_location - prev_gate_idx - 1]
+            print(f"prev_gate (with overlapping wire): {prev_gate}")
 
             if prev_gate.basis is None:
+                print("previous gate does not have basis specified. Breaking.")
                 break
 
             if len(prev_gate.control_wires) == 0:
+                print("previous gate does not have control wires. Breaking.")
                 break
             shared_controls = Wires.shared_wires(
                 [Wires(current_gate.wires), prev_gate.control_wires]
             )
+            print(f"shared_controls: {shared_controls}")
 
             if len(shared_controls) > 0:
                 if current_gate.basis == "Z":
                     new_location = new_location - prev_gate_idx - 1
+                    print("Pushing through Z gate (Z is the basis of the current gate).")
                 else:
+                    print("Not pushing through Z gate. Breaking.")
                     break
 
             else:
                 if current_gate.basis == prev_gate.basis:
+                    print("Pushing through same basis gate.")
                     new_location = new_location - prev_gate_idx - 1
                 else:
+                    print("Not pushing through same basis gate. Breaking.")
                     break
 
             prev_gate_idx = find_next_gate(current_gate.wires, op_list[:new_location][::-1])
 
         op_list.pop(current_location)
         op_list.insert(new_location, current_gate)
+        print(f"op_list after inserting: {op_list}")
         current_location += 1
 
     return op_list
