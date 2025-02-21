@@ -42,6 +42,9 @@
   This means that `default.mixed` now supports not having to specify the number of wires,
   more predictable behaviour with interfaces, support for `qml.Snapshot`, and more.
 
+* `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
+  [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
+
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
 
@@ -408,6 +411,7 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Henry Chang,
 Yushao Chen,
 Diksha Dhawan,
 Isaac De Vlugt,
