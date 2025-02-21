@@ -76,7 +76,11 @@ class TestQubitUnitaryCSR:
         sparse = csr_matrix(dense)
         op = qml.QubitUnitary(sparse, wires=[0])
         assert isinstance(op.sparse_matrix(), csr_matrix)  # Should still be sparse
-        assert qml.math.allclose(op.matrix(), dense)
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="U is sparse matrix",
+        ):
+            assert qml.math.allclose(op.matrix(), dense)
 
     def test_csr_matrix_shape_mismatch(self):
         """Test that shape mismatch with csr_matrix raises an error."""
