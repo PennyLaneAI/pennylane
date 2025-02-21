@@ -39,6 +39,31 @@ def right_canonicalize_mps(mps):
     .. math::
 
         \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}}
+
+    **Example**
+
+    .. code-block::
+
+        n_sites = 4
+
+        mps = (
+            [np.ones((1, 2, 4))]
+            + [np.ones((4, 2, 4)) for _ in range(1, n_sites - 1)]
+            + [np.ones((4, 2, 1))]
+        )
+        mps_rc = qml.right_canonicalize_mps(mps)
+
+        for i in range(1, n_sites - 1):
+            tensor = mps_rc[i]
+
+            # Right-canonical definition
+            contraction_matrix = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+            print(np.allclose(contraction_matrix, np.eye(tensor.shape[0])))
+
+    .. code-block:: pycon
+
+        True
+        True
     """
 
     is_right_canonical = True
@@ -365,7 +390,9 @@ class MPSPrep(Operation):
             d, k = vectors.shape
             new_columns = qml.math.array(np.random.RandomState(42).random((d, d - k)))
             unitary_matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
-            unitary_matrix *= qml.math.sign(qml.math.diag(R))  # enforces uniqueness for QR decomposition       
+            unitary_matrix *= qml.math.sign(
+                qml.math.diag(R)
+            )  # enforces uniqueness for QR decomposition
 
             ops.append(qml.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires))
 
