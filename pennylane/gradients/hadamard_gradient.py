@@ -61,7 +61,7 @@ def _expand_transform_hadamard(
     device_wires=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before hadamard gradient."""
-    [new_tape], postprocessing = qml.devices.preprocess.decompose(
+    batch, postprocessing = qml.devices.preprocess.decompose(
         tape,
         stopping_condition=_hadamard_stopping_condition,
         skip_initial_state_prep=False,
@@ -72,14 +72,12 @@ def _expand_transform_hadamard(
         qml.math.requires_grad(d) for mp in tape.measurements for d in getattr(mp.obs, "data", [])
     ):
         try:
-            batch, postprocessing = qml.transforms.split_to_single_terms(new_tape)
+            batch, postprocessing = qml.transforms.split_to_single_terms(batch[0])
         except RuntimeError as e:
             raise ValueError(
                 "Can only differentiate Hamiltonian "
                 f"coefficients for expectations, not {tape.measurements}."
             ) from e
-    else:
-        batch = [new_tape]
     if len(batch) > 1 or batch[0] is not tape: # split to single terms modified the tape
         _ = [_inplace_set_trainable_params(t) for t in batch]
     return batch, postprocessing
@@ -136,7 +134,7 @@ def hadamard_grad(
         0} - \bra{0} G\hat{O} \ket{0}\right) = -2 \bra{+}\bra{0} \texttt{ctrl}\left(G^{\dagger}\right) (\hat{Y} \otimes \hat{O}) \texttt{ctrl}\left(G\right)
         \ket{+}\ket{0}
 
-    Here, :math:`G` is the generator of the unitary :math:`U`. `hadamard_grad` will work on any :math:`U` so long
+    Here, :math:`G` is the generator of the unitary :math:`U`. ``hadamard_grad`` will work on any :math:`U` so long
     as it has a generator :math:`G` defined (i.e., ``op.has_generator == True``). Otherwise, it will try to decompose
     into gates where this is satisfied.
 
@@ -376,12 +374,9 @@ def processing_fn(results: qml.typing.ResultBatch, tape, coeffs, generators_per_
 
     final_res = []
     for coeff, res in zip(coeffs, results):
-        if isinstance(res, (tuple, list)):  # more than one measurement
-            new_val = [qml.math.convert_like(2 * coeff * r, r) for r in res]
-        else:
-            # add singleton dimension back in for one measurement
-            new_val = [qml.math.convert_like(2 * coeff * res, res)]
-        final_res.append(new_val)
+        if not isinstance(res, (tuple, list)):
+            res = [res] # add singleton dimension back in for one measurement
+        final_res.append([qml.math.convert_like(2 * coeff * r, r) for r in res])
 
     # Post process for probs
     measurements_probs = [

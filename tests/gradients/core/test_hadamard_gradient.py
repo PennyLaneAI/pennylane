@@ -118,7 +118,7 @@ class TestHadamardGrad:
             qml.gradients.hadamard_grad(tape)
 
     def test_error_trainable_obs_probs(self):
-        """Test that there's an error if the observable is trainble with a probs."""
+        """Test that there's an error if the observable is trainable with a probs."""
 
         H = qml.numpy.array(2.0) * (qml.X(0) + qml.Y(0))
         tape = qml.tape.QuantumScript([], [qml.probs(op=H)])
@@ -174,7 +174,6 @@ class TestHadamardGrad:
 
         assert len(tapes) == 1
 
-        # assert isinstance(res_hadamard, np.ndarray)
         assert res_hadamard.shape == ()
 
         res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
