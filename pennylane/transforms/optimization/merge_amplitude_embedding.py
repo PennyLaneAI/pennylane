@@ -63,13 +63,14 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             Args:
                 op (Operator): a pennylane operator instance
 
+            Raises:
+                DeviceError: if the AmplitudeEmbedding operator's wires have already been used by other operations
+
             Returns:
                 None: returns None
 
             This method is only called when the operator's output is a dropped variable,
             so the output will not affect later equations in the circuit.
-
-            See also: :meth:`~.interpret_operation_eqn`.
 
             """
             if not isinstance(op, AmplitudeEmbedding):
@@ -87,8 +88,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self.input_batch_size.append(op.batch_size)
             self.state["visited_wires"] = self.state["visited_wires"].union(set(op.wires))
 
-        def purge_seen_operations(self):
-            """Merge the gates and insert it at the beginning of the "seen" gates; then interpret said gates."""
+        def merge_and_purge_new_operations(self):
+            """Merge the gates and insert it at the beginning of the new operations; then interpret said gates."""
             if len(self.input_wires) > 0:
                 final_wires = self.input_wires[0]
                 final_vector = self.input_vectors[0]
@@ -147,7 +148,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 custom_handler = self._primitive_registrations.get(primitive, None)
 
                 if getattr(primitive, "prim_type", "") == "higher_order":
-                    self.purge_seen_operations()
+                    self.merge_and_purge_new_operations()
 
                 if custom_handler:
                     invals = [self.read(invar) for invar in eqn.invars]
@@ -155,7 +156,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 elif getattr(primitive, "prim_type", "") == "operator":
                     outvals = self.interpret_operation_eqn(eqn)
                 elif getattr(primitive, "prim_type", "") == "measurement":
-                    self.purge_seen_operations()
+                    self.merge_and_purge_new_operations()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
                     invals = [self.read(invar) for invar in eqn.invars]
@@ -167,7 +168,10 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                     self._env[outvar] = outval
 
-            self.purge_seen_operations()
+            # The following is needed because any operations inside self.new_operations have not yet
+            # been applied. At this point, we **know** that any operations that should be merged
+            # have been merged, and operations left inside self.new_operations should be applied
+            self.merge_and_purge_new_operations()
 
             # Read the final result of the Jaxpr from the environment
             outvals = []
@@ -182,6 +186,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self._env = {}
             return outvals
 
+    # Overwrite the cond primitive so that wire collision can be handled
+    # correctly across the different branches
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
     def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
         args = invals[args_slice]
@@ -191,7 +197,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         new_consts_slices = []
         end_const_ind = len(jaxpr_branches)
 
-        # Store original wires before we process the branches
+        # Store seen wires before we begin to process the branches
         original_wires = self.state.get("visited_wires", set())
 
         for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
@@ -202,11 +208,13 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             else:
                 new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
-                # Store newly seen wires
+                # Store newly visited wires
                 newly_seen_wires = self.state.get("visited_wires", set()) - original_wires
                 # Reset visited wires for next branch so we don't get false positive collisions
+                # between cond branches
                 self.state["visited_wires"] = set()
-                # Remember all wires we've seen so far so collisions are detected after the cond
+                # Remember all wires we've seen so far so collisions continue to be detected
+                # after the cond
                 original_wires |= newly_seen_wires
 
                 new_jaxprs.append(new_jaxpr.jaxpr)
@@ -216,7 +224,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 )
                 end_const_ind += len(new_jaxpr.consts)
 
-        # Reset visited wires to original state
+        # Reset visited wires to all wires encountered in the cond
         self.state["visited_wires"] = original_wires
 
         new_args_slice = slice(end_const_ind, None)
