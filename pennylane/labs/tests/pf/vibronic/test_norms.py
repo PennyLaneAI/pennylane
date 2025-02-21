@@ -3,10 +3,11 @@
 import numpy as np
 
 from pennylane.labs.pf import VibronicHamiltonian
-from pennylane.labs.vibronic.hamiltonians.spin_vibronic_ham import get_coeffs as ten_mode
+from pennylane.labs.pf.hamiltonians.spin_vibronic_ham import get_coeffs as ten_mode
 
 
 def test_against_10_mode():
+    """Test norm against precomputed value"""
     expected = 1.6621227513071748
 
     vham = VibronicHamiltonian(8, 10, *ten_mode(), sparse=True)

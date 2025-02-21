@@ -61,15 +61,24 @@ class VibrationalHamiltonian:
 
         return RealspaceSum(ops)
 
-    def kinetic_fragment(self) -> RealspaceSum:
+    def kinetic_fragment(self, localized=False) -> RealspaceSum:
         """Returns the fragment of the Hamiltonian corresponding to the kinetic part"""
+        if localized:
+            return self._kinetic_localized()
+
         coeffs = Node.tensor_node(self.omegas / 2, label="omegas")
         kinetic = RealspaceOperator(("PP",), coeffs)
 
         return RealspaceSum([kinetic])
 
-    def potential_fragment(self) -> RealspaceSum:
+    def _kinetic_localized(self) -> RealspaceSum:
+        raise NotImplementedError
+
+    def potential_fragment(self, localized=False) -> RealspaceSum:
         """Returns the fragment of the Hamiltonian corresponding to the potential part"""
+        if localized:
+            return self._potential_localized()
+
         ops = []
         for i, phi in enumerate(self.phis):
             op = ("Q",) * i
@@ -83,6 +92,9 @@ class VibrationalHamiltonian:
         ops.append(realspace_op)
 
         return RealspaceSum(ops)
+
+    def _potential_localized(self) -> RealspaceSum:
+        raise NotImplementedError
 
     def operator(self) -> RealspaceSum:
         """Returns a RealspaceSum representing the Hamiltonian"""

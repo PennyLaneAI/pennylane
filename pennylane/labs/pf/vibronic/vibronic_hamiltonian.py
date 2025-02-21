@@ -70,6 +70,13 @@ class VibronicHamiltonian:
             )
             realspace_ops.append(realspace_op)
 
+        if i == j:
+            op = ("Q", "Q")
+            coeffs = Node.tensor_node(
+                np.diag(self.omegas) / 2, label=("omegas", np.diag(self.omegas) / 2)
+            )
+            realspace_ops.append(RealspaceOperator(op, coeffs))
+
         return RealspaceSum(realspace_ops)
 
     def _p_fragment(self) -> VibronicMatrix:
