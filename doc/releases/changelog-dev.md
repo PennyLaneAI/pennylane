@@ -35,6 +35,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
+  [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
+
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
 
@@ -340,6 +343,10 @@
 * The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
   [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
 
+* Use `keep_intermediate=True` flag to keep Catalyst's IR when testing.
+  Also use a different way of testing to see if something was compiled.
+  [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
+
 <h3>Documentation 📝</h3>
 
 * The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
@@ -402,6 +409,7 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Henry Chang,
 Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
