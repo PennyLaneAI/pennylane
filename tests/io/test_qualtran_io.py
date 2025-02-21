@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane.io.qualtran_io` module.
 import pytest
 
 import pennylane as qml
+import numpy as np
 
 
 class TestFromBloq:
@@ -57,3 +58,17 @@ class TestFromBloq:
         mapped_decomp = qml.FromBloq(circuit_bloq, wires=[3, 0, 1, 2]).decomposition()
         mapped_expected_decomp = [qml.H(3), qml.H(0), qml.CNOT([3, 1]), qml.CNOT([0, 2]), qml.Toffoli([1, 2, 3]), qml.Toffoli([1, 2, 0])]
         assert mapped_decomp == mapped_expected_decomp
+
+    def test_atomic_bloqs(self):
+        """Tests that atomic bloqs have the correct PennyLane equivalent after wrapped with `FromBloq`"""
+        from qualtran.bloqs.basic_gates import Hadamard, CNOT, Toffoli
+
+        assert Hadamard().as_pl_op(0) == qml.Hadamard(0)
+        assert CNOT().as_pl_op([0, 1]) == qml.CNOT([0, 1])
+        assert Toffoli().as_pl_op([0, 1, 2]) == qml.Toffoli([0, 1, 2])
+
+        assert np.allclose(qml.FromBloq(Hadamard(), 0).matrix(), qml.Hadamard(0).matrix())
+        assert np.allclose(qml.FromBloq(CNOT(), [0, 1]).matrix(), qml.CNOT([0, 1]).matrix())
+        assert np.allclose(qml.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qml.Toffoli([0, 1, 2]).matrix())
+
+
