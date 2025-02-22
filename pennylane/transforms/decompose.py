@@ -104,11 +104,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
         def cleanup(self) -> None:
             """Cleanup the environment by popping the top-most environment frame."""
-
-            if len(self._env.maps) > 1:
-                self._env = self._env.parents
-            else:
-                self._env = ChainMap({})
+            self._env = self._env.parents
 
         def write(self, var, value) -> None:
             """Write a variable into the top-most environment frame."""
