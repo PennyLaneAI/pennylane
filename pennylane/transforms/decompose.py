@@ -82,7 +82,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         def __init__(self, gate_set=None, max_expansion=None):
             super().__init__()
             self.max_expansion = max_expansion
-            self.current_depth = 0
+            self._current_depth = 0
             self._env = {}
 
             if gate_set is None:
@@ -149,7 +149,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 return self.interpret_operation(op)
 
             max_expansion = (
-                self.max_expansion - self.current_depth if self.max_expansion is not None else None
+                self.max_expansion - self._current_depth if self.max_expansion is not None else None
             )
 
             with qml.capture.pause():
@@ -169,7 +169,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if self.gate_set(op):
                 return self.interpret_operation(op)
 
-            if self.max_expansion is not None and self.current_depth >= self.max_expansion:
+            if self.max_expansion is not None and self._current_depth >= self.max_expansion:
                 return self.interpret_operation(op)
 
             args = (*op.parameters, *op.wires)
@@ -178,9 +178,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 partial(op.compute_plxpr_decomposition, **op.hyperparameters)
             )(*args)
 
-            self.current_depth += 1
+            self._current_depth += 1
             out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
-            self.current_depth -= 1
+            self._current_depth -= 1
 
             return out
 
