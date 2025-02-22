@@ -247,7 +247,7 @@ class TestStateReconstruction:
         # check the results against obtaining the full global snapshots
         expected = shadow.global_snapshots()
         for i, t in enumerate(snapshots):
-            assert np.allclose(expected[t], state[i])
+            assert np.allclose(state[i], expected[t])
 
     def test_large_state_warning(self, monkeypatch):
         """Test that a warning is raised when a very large state is reconstructed"""

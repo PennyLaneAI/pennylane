@@ -267,7 +267,7 @@ class TestParameterShiftHessian:
 
         assert isinstance(hessian, np.ndarray)
         assert hessian.shape == ()
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_single_probs(self):
         """Test that the correct hessian is calculated for a tape with single RX operator
@@ -289,7 +289,7 @@ class TestParameterShiftHessian:
 
         assert isinstance(hessian, np.ndarray)
         assert hessian.shape == (4,)
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_multi_expval(self):
         """Test that the correct hessian is calculated for a tape with single RX operator
@@ -798,7 +798,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_fixed_params(self):
         """Test that the correct hessian is calculated for a QNode with single RX operator
@@ -819,7 +819,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_gate_without_impact(self):
         """Test that the correct hessian is calculated for a QNode with an operator
@@ -838,7 +838,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     @pytest.mark.filterwarnings("ignore:Output seems independent of input.")
     def test_no_gate_with_impact(self):
@@ -858,7 +858,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_single_multi_term_gate(self):
         """Test that the correct hessian is calculated for a QNode with single operation
@@ -879,7 +879,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_single_gate_custom_recipe(self):
         """Test that the correct hessian is calculated for a QNode with single operation
@@ -909,7 +909,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_single_two_term_gate_vector_output(self):
         """Test that the correct hessian is calculated for a QNode with single RY operator
@@ -928,7 +928,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_multiple_two_term_gates(self):
         """Test that the correct hessian is calculated for a QNode with two rotation operators
@@ -949,7 +949,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_multiple_two_term_gates_vector_output(self):
         """Test that the correct hessian is calculated for a QNode with two rotation operators
@@ -1108,7 +1108,7 @@ class TestParameterShiftHessianQNode:
         circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     def test_multiple_qnode_arguments_vector(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (1D->1D)"""
@@ -1194,9 +1194,11 @@ class TestParameterShiftHessianQNode:
         )
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-        assert np.allclose(expected[0], hessian[0])
-        assert np.allclose(qml.math.transpose(expected[1], (0, 2, 3, 4, 5, 1)), hessian[1])
-        assert np.allclose(qml.math.transpose(expected[2], (0, 2, 3, 1)), hessian[2])
+        assert np.allclose(hessian[0], expected[0])
+        expected_1 = qml.math.transpose(expected[1], (0, 2, 3, 4, 5, 1))
+        assert np.allclose(hessian[1], expected_1)
+        expected_2 = qml.math.transpose(expected[2], (0, 2, 3, 1))
+        assert np.allclose(hessian[2], expected_2)
 
     def test_with_channel(self):
         """Test that the Hessian is correctly computed for circuits
@@ -1613,7 +1615,7 @@ class TestParamShiftHessianWithKwargs:
 
         hessian = fn(qml.execute(tapes, dev, diff_method=qml.gradients.param_shift))
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     @pytest.mark.parametrize(
         "off_diagonal_shifts",
@@ -1664,7 +1666,7 @@ class TestParamShiftHessianWithKwargs:
             assert np.allclose(_tape.get_parameters(), x + np.array([0.0, np.pi * mult]))
 
         hessian = fn(qml.execute(tapes, dev, diff_method=qml.gradients.param_shift))
-        assert np.allclose(expected, hessian)
+        assert np.allclose(hessian, expected)
 
     @pytest.mark.parametrize("argnum", [(0,), (1,), (0, 1)])
     def test_with_1d_argnum(self, argnum):
@@ -1782,7 +1784,7 @@ class TestInterfaces:
         circuit.interface = "torch"
         hess = qml.gradients.param_shift_hessian(circuit)(x_torch)[0]
 
-        assert np.allclose(expected, hess.detach())
+        assert np.allclose(hess.detach(), expected)
 
     @pytest.mark.skip("Requires Torch integration for new return types")
     @pytest.mark.torch
@@ -1808,7 +1810,7 @@ class TestInterfaces:
         jacobian_fn = torch.autograd.functional.jacobian
         torch_deriv = jacobian_fn(qml.gradients.param_shift_hessian(circuit), x_torch)[0]
 
-        assert np.allclose(expected, torch_deriv)
+        assert np.allclose(torch_deriv, expected)
 
     @pytest.mark.jax
     @pytest.mark.slow

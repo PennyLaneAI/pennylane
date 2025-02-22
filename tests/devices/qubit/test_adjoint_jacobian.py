@@ -326,7 +326,7 @@ class TestAdjointJacobianState:
         dy = np.array([0.5, 2.0], dtype=np.complex128)
         vjp = adjoint_vjp(tape, dy)
         expected_vjp = dy[0] * expected[0] + dy[1] * expected[1]
-        assert qml.math.allclose(expected_vjp, vjp)
+        assert qml.math.allclose(vjp, expected_vjp)
 
     def test_two_wires_two_parameters(self):
         """Test a more complicated circuit with two parameters and two wires."""

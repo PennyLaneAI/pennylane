@@ -141,7 +141,7 @@ def test_positions(vectors, positions, n_cells, expected_points):
     r"""Test that the lattice points are translated according to coordinates provided in the positions."""
 
     lattice = Lattice(n_cells=n_cells, vectors=vectors, positions=positions)
-    assert np.allclose(expected_points, lattice.lattice_points)
+    assert np.allclose(lattice.lattice_points, expected_points)
 
 
 @pytest.mark.parametrize(
@@ -1126,4 +1126,4 @@ def test_lattice_points_templates(shape, n_cells, expected_points):
     r"""Test that the correct lattice points are generated for a given template."""
 
     lattice = generate_lattice(lattice=shape, n_cells=n_cells)
-    assert np.allclose(expected_points, lattice.lattice_points)
+    assert np.allclose(lattice.lattice_points, expected_points)

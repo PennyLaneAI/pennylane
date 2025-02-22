@@ -94,7 +94,7 @@ class TestCaching:
                     [jnp.sin(2 * x) * jnp.sin(2 * y), -2 * jnp.cos(x) ** 2 * jnp.cos(2 * y)],
                 ]
             )
-            assert np.allclose(expected, hess1)
+            assert np.allclose(hess1, expected)
 
         expected_runs = 1  # forward pass
 
