@@ -247,8 +247,11 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             return outvals
 
-        def interpret_operation_eqn(self, eqn):
+        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
             """Interpret an equation corresponding to an operator.
+
+            If the operator has a dynamic decomposition defined, this method will
+            create and evaluate the jaxpr of the decomposition using the :meth:`~.eval` method.
 
             Args:
                 eqn (jax.core.JaxprEqn): a jax equation for an operator.
