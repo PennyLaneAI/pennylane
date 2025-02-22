@@ -18,6 +18,7 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=unnecessary-lambda-assignment
 
 import warnings
+from collections import ChainMap
 from collections.abc import Generator, Iterable
 from functools import lru_cache, partial
 from typing import Callable, Optional, Sequence
@@ -80,10 +81,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         """
 
         def __init__(self, gate_set=None, max_expansion=None):
-            super().__init__()
             self.max_expansion = max_expansion
             self._current_depth = 0
-            self._env = {}
+            self._env = ChainMap({})
 
             if gate_set is None:
                 gate_set = set(qml.ops.__all__)
@@ -99,17 +99,20 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 self.gate_set = gate_set
 
         def setup(self) -> None:
-            """Setup the environment for the interpreter."""
-
-            if not hasattr(self, "_env_stack"):
-                # pylint: disable=attribute-defined-outside-init
-                self._env_stack = []
+            """Setup the environment for the interpreter by pushing a new environment frame."""
+            self._env = self._env.new_child()
 
         def cleanup(self) -> None:
-            """Cleanup the environment after the interpreter has finished."""
+            """Cleanup the environment by popping the top-most environment frame."""
 
-            for var in self._env_stack.pop():
-                del self._env[var]
+            if len(self._env.maps) > 1:
+                self._env = self._env.parents
+            else:
+                self._env = ChainMap({})
+
+        def write(self, var, value) -> None:
+            """Write a variable into the top-most environment frame."""
+            self._env.maps[0][var] = value
 
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether or not an operator needs to be decomposed or not.
@@ -196,18 +199,10 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             self.setup()
 
-            # new variables introduced in this jaxpr, which might be created from
-            # the dynamic decomposition of an operator
-            new_vars = set()
-
             for arg, invar in zip(args, jaxpr.invars, strict=True):
-                self._env[invar] = arg
-                new_vars.add(invar)
+                self.write(invar, arg)
             for const, constvar in zip(consts, jaxpr.constvars, strict=True):
-                self._env[constvar] = const
-                new_vars.add(constvar)
-
-            self._env_stack.append(new_vars)
+                self.write(constvar, const)
 
             for eq in jaxpr.eqns:
 
@@ -232,8 +227,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     outvals = [outvals]
 
                 for outvar, outval in zip(eq.outvars, outvals, strict=True):
-                    self._env[outvar] = outval
-                    new_vars.add(outvar)
+                    self.write(outvar, outval)
 
             outvals = []
             for var in jaxpr.outvars:
