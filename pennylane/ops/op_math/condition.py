@@ -27,6 +27,17 @@ from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
+def all_output_shapes(f):
+    def new_f(*args, **kwargs):
+        out = f(*args, **kwargs)
+        shapes = []
+        for x in out:
+            shapes.extend(x.shape)
+        return *shapes, *out
+
+    return new_f
+
+
 class ConditionalTransformError(ValueError):
     """Error for using qml.cond incorrectly"""
 
@@ -241,9 +252,10 @@ class CondCallable:  # pylint:disable=too-few-public-methods
                 jaxpr_branches.append(None)
                 consts_slices.append(slice(0, 0))
             else:
-                jaxpr = jax.make_jaxpr(
-                    functools.partial(fn, **kwargs), abstracted_axes=abstracted_axes
-                )(*args)
+                f = FlatFn(functools.partial(fn, **kwargs))
+                if jax.config.jax_dynamic_shapes:
+                    f = all_output_shapes(f)
+                jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
                 jaxpr_branches.append(jaxpr.jaxpr)
                 consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
                 consts += jaxpr.consts
@@ -260,7 +272,8 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             args_slice=slice(end_const_ind, None),
         )
         assert flat_true_fn.out_tree is not None
-        if flat_true_fn.out_tree.num_leaves != len(results):
+        results = results[-flat_true_fn.out_tree.num_leaves :]
+        if False:  # flat_true_fn.out_tree.num_leaves != len(results):
             # undefined false fn leads to empty results
             return results
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
@@ -660,26 +673,65 @@ def _validate_abstract_values(
         )
 
     for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
-        if outval != expected_outval:
+        if (
+            all(not qml.math.is_abstract(o) for o in (outval, expected_outval))
+            and outval != expected_outval
+        ):
             raise ValueError(
                 f"Mismatch in output abstract values in {branch_type} branch"
                 f"{'' if index is None else ' #' + str(index)} at position {i}: "
                 f"{outval} vs {expected_outval}"
             )
 
+            
+def _register_custom_staging_rule(cond_prim):
+    import jax
+    from jax._src.interpreters import partial_eval as pe
+
+    def _new_outvar(jaxpr_trace, outvar, env):
+        new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
+        new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
+        new_var = jaxpr_trace.makevar(out_tracer)
+
+        if not isinstance(outvar, jax.core.Literal):
+            env[outvar] = new_var
+        return out_tracer, new_var
+
+    def custom_staging_rule(jaxpr_trace, *tracers, **params):
+        if not jax.config.jax_dynamic_shapes:
+            return jaxpr_trace.default_process_primitive(cond_prim, tracers, params)
+        jaxpr = params["jaxpr_branches"][0]
+
+        env = {}
+        returned_vars, out_tracers = list(
+            zip(*(_new_outvar(jaxpr_trace, var, env) for var in jaxpr.outvars))
+        )
+
+        eqn = pe.new_jaxpr_eqn(
+            [jaxpr_trace.getvar(x) for x in tracers],
+            returned_vars,
+            cond_prim,
+            params,
+            jax.core.no_effects,
+        )
+        jaxpr_trace.frame.add_eqn(eqn)
+        return out_tracers
+
+    pe.custom_staging_rules[cond_prim] = custom_staging_rule
 
 @functools.lru_cache
 def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
-    # pylint: disable=import-outside-toplevel
-    import jax
+    import jax  # pylint: disable=import-outside-toplevel
 
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     cond_prim = NonInterpPrimitive("cond")
     cond_prim.multiple_results = True
     cond_prim.prim_type = "higher_order"
+    _register_custom_staging_rule(cond_prim)
 
     @cond_prim.def_impl
     def _(*all_args, jaxpr_branches, consts_slices, args_slice):
