@@ -100,26 +100,17 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
         def setup(self) -> None:
             """Setup the environment for the interpreter by pushing a new environment frame."""
+
+            # This is the local environment for the jaxpr evaluation, on the top of the stack,
+            # from which the interpreter reads and writes variables.
+            # ChainMap writes to the first dictionary in the chain by default.
             self._env = self._env.new_child()
 
         def cleanup(self) -> None:
             """Cleanup the environment by popping the top-most environment frame."""
+
+            # We delete the top-most environment frame after the evaluation is done.
             self._env = self._env.parents
-
-        def read(self, var):
-            """Extract the value corresponding to a variable from the top-most environment frame."""
-
-            # We override the read method just for clarity, to show that we read the value
-            # from the top-most environment frame. In wouldn't be necessary to override this
-            # method, as this is the default behavior of ChainMap.
-            return var.val if isinstance(var, jax.core.Literal) else self._env.maps[0][var]
-
-        def write(self, var, value) -> None:
-            """Write a variable into the top-most environment frame."""
-
-            # ChainMap writes the value into the top-most frame,
-            # so it would be equivalent to self._env.maps[0][var] = value
-            self._env[var] = value
 
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether or not an operator needs to be decomposed or not.
@@ -207,9 +198,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             self.setup()
 
             for arg, invar in zip(args, jaxpr.invars, strict=True):
-                self.write(invar, arg)
+                self._env[invar] = arg
             for const, constvar in zip(consts, jaxpr.constvars, strict=True):
-                self.write(constvar, const)
+                self._env[constvar] = const
 
             for eq in jaxpr.eqns:
 
@@ -234,7 +225,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     outvals = [outvals]
 
                 for outvar, outval in zip(eq.outvars, outvals, strict=True):
-                    self.write(outvar, outval)
+                    self._env[outvar] = outval
 
             outvals = []
             for var in jaxpr.outvars:
