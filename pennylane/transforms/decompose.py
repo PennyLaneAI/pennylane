@@ -80,8 +80,10 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         """
 
         def __init__(self, gate_set=None, max_expansion=None):
+            super().__init__()
             self.max_expansion = max_expansion
             self.current_depth = 0
+            self._env = {}
 
             if gate_set is None:
                 gate_set = set(qml.ops.__all__)
@@ -96,7 +98,17 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             else:
                 self.gate_set = gate_set
 
-            super().__init__()
+        def setup(self) -> None:
+            """Setup the environment for the interpreter."""
+
+            if not hasattr(self, "_env_stack"):
+                self._env_stack = []
+
+        def cleanup(self) -> None:
+            """Cleanup the environment after the interpreter has finished."""
+
+            for var in self._env_stack.pop():
+                del self._env[var]
 
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether or not an operator needs to be decomposed or not.
@@ -181,13 +193,20 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 *args: the arguments to use in the evaluation
             """
 
-            # We update the 'self._env' environment directly because the jaxpr of the decomposition
-            # can be called while evaluating another jaxpr of the previous decomposition.
+            self.setup()
+
+            # new variables introduced in this jaxpr, which might be created from
+            # the dynamic decomposition of an operator
+            new_vars = set()
 
             for arg, invar in zip(args, jaxpr.invars, strict=True):
                 self._env[invar] = arg
+                new_vars.add(invar)
             for const, constvar in zip(consts, jaxpr.constvars, strict=True):
                 self._env[constvar] = const
+                new_vars.add(constvar)
+
+            self._env_stack.append(new_vars)
 
             for eq in jaxpr.eqns:
 
@@ -213,6 +232,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
                 for outvar, outval in zip(eq.outvars, outvals, strict=True):
                     self._env[outvar] = outval
+                    new_vars.add(outvar)
 
             outvals = []
             for var in jaxpr.outvars:
@@ -221,6 +241,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     outvals.append(self.interpret_operation(outval))
                 else:
                     outvals.append(outval)
+
+            self.cleanup()
 
             return outvals
 
@@ -233,6 +255,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             See also: :meth:`~.interpret_operation`.
 
             """
+
             invals = (self.read(invar) for invar in eqn.invars)
 
             with qml.QueuingManager.stop_recording():
