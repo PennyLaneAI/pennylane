@@ -102,6 +102,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             """Setup the environment for the interpreter."""
 
             if not hasattr(self, "_env_stack"):
+                # pylint: disable=attribute-defined-outside-init
                 self._env_stack = []
 
         def cleanup(self) -> None:
