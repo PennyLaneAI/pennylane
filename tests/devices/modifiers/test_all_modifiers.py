@@ -16,9 +16,10 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 """
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring, no-member
 import pytest
+from custom_devices import CustomDeviceFactory
 
 import pennylane as qml
-from pennylane.devices import Device
+from pennylane.devices import DefaultExecutionConfig, Device
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 
 
@@ -28,9 +29,8 @@ def test_chained_modifiers():
 
     @simulator_tracking
     @single_tape_support
-    class DummyDev(qml.devices.Device):
-        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
-            return tuple(0.0 for _ in circuits)
+    class DummyDev(CustomDeviceFactory(return_for_each_circuit=True)):
+        pass
 
     assert DummyDev._applied_modifiers == [single_tape_support, simulator_tracking]
 
@@ -66,19 +66,14 @@ class TestModifierDefaultBeahviour:
         """Test that the modifier is added to the `_applied_modifiers` property."""
 
         @modifier
-        class DummyDev(qml.devices.Device):
-            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
-                return 0.0
+        class DummyDev(CustomDeviceFactory()):
+            pass
 
         assert DummyDev._applied_modifiers == [modifier]
 
         @modifier
-        class DummyDev2(qml.devices.Device):
-
+        class DummyDev2(CustomDeviceFactory()):
             _applied_modifiers = [None]  # some existing value
-
-            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
-                return 0.0
 
         assert DummyDev2._applied_modifiers == [None, modifier]
 
@@ -86,9 +81,8 @@ class TestModifierDefaultBeahviour:
         """Test that undefined methods are left the same as the Device class methods."""
 
         @modifier
-        class DummyDev(qml.devices.Device):
-            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
-                return 0.0
+        class DummyDev(CustomDeviceFactory()):
+            pass
 
         assert DummyDev.compute_derivatives == Device.compute_derivatives
         assert DummyDev.execute_and_compute_derivatives == Device.execute_and_compute_derivatives
