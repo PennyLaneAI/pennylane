@@ -83,7 +83,13 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         def __init__(self, gate_set=None, max_expansion=None):
             self.max_expansion = max_expansion
             self._current_depth = 0
-            self._env = ChainMap({})
+
+            # We use a ChainMap to store the environment frames,
+            # which allows us to push and pop environments without copying
+            # the interpreter instance when we evaluate a jaxpr of a dynamic decomposition.
+
+            # The name is different from the _env in the parent class (a dictionary) to avoid confusion.
+            self._env_map = ChainMap()
 
             if gate_set is None:
                 gate_set = set(qml.ops.__all__)
@@ -104,13 +110,17 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # This is the local environment for the jaxpr evaluation, on the top of the stack,
             # from which the interpreter reads and writes variables.
             # ChainMap writes to the first dictionary in the chain by default.
-            self._env = self._env.new_child()
+            self._env_map = self._env_map.new_child()
 
         def cleanup(self) -> None:
             """Cleanup the environment by popping the top-most environment frame."""
 
             # We delete the top-most environment frame after the evaluation is done.
-            self._env = self._env.parents
+            self._env_map = self._env_map.parents
+
+        def read(self, var):
+            """Extract the value corresponding to a variable."""
+            return var.val if isinstance(var, jax.core.Literal) else self._env_map[var]
 
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether or not an operator needs to be decomposed or not.
@@ -180,6 +190,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             )(*args)
 
             self._current_depth += 1
+            # We don't need to copy the interpreter here, as the jaxpr of the decomposition
+            # is evaluated with a new environment frame placed on top of the stack.
             out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
             self._current_depth -= 1
 
@@ -198,9 +210,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             self.setup()
 
             for arg, invar in zip(args, jaxpr.invars, strict=True):
-                self._env[invar] = arg
+                self._env_map[invar] = arg
             for const, constvar in zip(consts, jaxpr.constvars, strict=True):
-                self._env[constvar] = const
+                self._env_map[constvar] = const
 
             for eq in jaxpr.eqns:
 
@@ -225,7 +237,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     outvals = [outvals]
 
                 for outvar, outval in zip(eq.outvars, outvals, strict=True):
-                    self._env[outvar] = outval
+                    self._env_map[outvar] = outval
 
             outvals = []
             for var in jaxpr.outvars:
