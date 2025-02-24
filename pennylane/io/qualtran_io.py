@@ -31,8 +31,37 @@ from pennylane.wires import WiresLike
 
 import numpy as np
 
+def get_bloq_registers_info(bloq):
+    """Returns a `qml.registers` object associated with all named and unnamed registers and wires 
+    in the bloq.
+    
+    Args:
+        bloq: the bloq to get the registers info of
 
-def get_named_registers(registers):
+    Returns:
+        dict: A dictionary that has all the named and un-named registers with default wire
+        ordering.
+
+    **Example**
+
+    Given a qualtran bloq:
+
+    from qualtran.bloqs.basic_gates import Swap
+
+    >>> qml.get_bloq_registers_info(Swap(3))
+    {'x': Wires([0, 1, 2]), 'y': Wires([3, 4, 5])}
+    """
+
+    cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
+    
+    temp_register_dict = {}
+    for reg in cbloq.signature.rights():
+        temp_register_dict[reg.name] = reg.bitsize
+
+    return qml.registers(temp_register_dict)
+
+
+def _get_named_registers(registers):
     """Returns a `qml.registers` object associated with the named registers in the bloq"""
 
     temp_register_dict = {}
@@ -64,7 +93,7 @@ class FromBloq(Operation):
 
         try:
             cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
-            temp_registers = get_named_registers(cbloq.signature.lefts())
+            temp_registers = _get_named_registers(cbloq.signature.lefts())
             soq_to_wires = {
                 Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])
                 for reg in cbloq.signature.lefts()
