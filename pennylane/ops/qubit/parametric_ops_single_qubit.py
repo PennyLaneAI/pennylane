@@ -118,8 +118,8 @@ class RX(Operation):
     def compute_sparse_matrix(theta):
         return sp.sparse.csr_matrix(
             [
-                [np.cos(theta / 2), -1j * np.sin(theta / 2)],
-                [-1j * np.sin(theta / 2), np.cos(theta / 2)],
+                [qml.math.cos(theta / 2), -1j * qml.math.sin(theta / 2)],
+                [-1j * qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
             ]
         )
 
@@ -222,7 +222,7 @@ class RY(Operation):
     @staticmethod
     def compute_sparse_matrix(theta):
         return sp.sparse.csr_matrix(
-            [[np.cos(theta / 2), -np.sin(theta / 2)], [np.sin(theta / 2), np.cos(theta / 2)]]
+            [[qml.math.cos(theta / 2), -qml.math.sin(theta / 2)], [qml.math.sin(theta / 2), qml.math.cos(theta / 2)]]
         )
 
     def adjoint(self) -> "RY":
