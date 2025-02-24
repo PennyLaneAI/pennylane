@@ -388,6 +388,26 @@ class TestQubitGraphNesting:
         assert not qubit[0].is_leaf
         assert qubit[0][0].is_leaf
 
+    def test_is_leaf_vs_initialized(self):
+        """Test that is_leaf and is_initialized are interpreted correctly."""
+        # Case 1: Fully initialized but lowest layer is null graph
+        #  -> In this case, lowest layer is both a leaf node and initialized
+        qubit1 = QubitGraph(self._generate_single_node_graph())
+        qubit1[0] = QubitGraph(nx.null_graph())
+
+        assert not qubit1.is_leaf
+        assert qubit1[0].is_leaf
+        assert qubit1[0].is_initialized
+
+        # Case 2: Lowest layer is not initialized
+        #  -> In this case, lowest layer is a leaf node but NOT initialized
+        qubit1 = QubitGraph(self._generate_single_node_graph())
+        qubit1[0] = QubitGraph()
+
+        assert not qubit1.is_leaf
+        assert qubit1[0].is_leaf
+        assert not qubit1[0].is_initialized
+
 
 class TestQubitGraphRepresentation:
     """Tests for representing a QubitGraph as a string."""
