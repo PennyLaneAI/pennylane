@@ -161,6 +161,8 @@ class TestMergeRotationsInterpreter:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
+        # Since arguments are traced, operator will still show up
+        # even if the angle is 0.0.
         expected_ops = [
             qml.RX(jax.numpy.array(theta1 + theta2), wires=[0]),
         ]
@@ -399,7 +401,7 @@ class TestMergeRotationsInterpreter:
         @MergeRotationsInterpreter(atol=1e-3)
         def f():
             qml.RX(1, wires=0)
-            qml.RX(-1.0001, wires=0)
+            qml.RX(-(1 + 1e-4), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         jaxpr = jax.make_jaxpr(f)()
