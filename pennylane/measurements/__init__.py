@@ -297,6 +297,7 @@ from .mid_measure import (
     get_mcm_predicates,
 )
 from .mutual_info import MutualInfoMP, mutual_info
+from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
 from .sample import SampleMP, sample

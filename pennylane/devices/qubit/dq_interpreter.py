@@ -22,11 +22,15 @@ from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.ops import adjoint, ctrl
+from pennylane.ops.qubit import Projector
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
+from .simulate import _postselection_postprocess  # pylint: disable=protected-access
 
 
 # pylint: disable=attribute-defined-outside-init, access-member-before-definition
@@ -66,6 +70,12 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     Array(0.54030231, dtype=float64)
     """
 
+    def __copy__(self):
+        inst = DefaultQubitInterpreter.__new__(DefaultQubitInterpreter)
+        inst.stateref = self.stateref
+        inst.shots = self.shots
+        return inst
+
     def __init__(
         self, num_wires: int, shots: int | None = None, key: None | jax.numpy.ndarray = None
     ):
@@ -82,20 +92,50 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         self.stateref = None
         super().__init__()
 
-    def __getattr__(self, key):
-        if key in {"state", "key", "is_state_batched"}:
-            if self.stateref is None:
-                raise AttributeError("execution not yet initialized.")
-            return self.stateref[key]
-        raise AttributeError(f"No attribute {key}")
+    @property
+    def state(self):
+        """The statevector"""
+        try:
+            return self.stateref["state"]
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
 
-    def __setattr__(self, __name: str, __value) -> None:
-        if __name in {"state", "key", "is_state_batched"}:
-            if self.stateref is None:
-                raise AttributeError("execution not yet initialized")
-            self.stateref[__name] = __value
-        else:
-            super().__setattr__(__name, __value)
+    @state.setter
+    def state(self, new_val):
+        try:
+            self.stateref["state"] = new_val
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @property
+    def key(self):
+        """A jax PRNGKey for random number generation."""
+        try:
+            return self.stateref["key"]
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @key.setter
+    def key(self, new_val):
+        try:
+            self.stateref["key"] = new_val
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @property
+    def is_state_batched(self) -> bool:
+        """Whether or not the state vector is batched."""
+        try:
+            return self.stateref["is_state_batched"]
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @is_state_batched.setter
+    def is_state_batched(self, new_val):
+        try:
+            self.stateref["is_state_batched"] = new_val
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
 
     def setup(self) -> None:
         if self.stateref is None:
@@ -114,6 +154,12 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)
         if op.batch_size:
             self.is_state_batched = True
+
+        if isinstance(op, Projector):
+            self.state, _ = _postselection_postprocess(
+                self.state, self.is_state_batched, self.shots
+            )
+
         return op
 
     def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
@@ -163,11 +209,42 @@ def _(self, *invals, reset, postselect):
 @DefaultQubitInterpreter.register_primitive(adjoint_transform_prim)
 def _(self, *invals, jaxpr, n_consts, lazy=True):
     # TODO: requires jaxpr -> list of ops first
-    raise NotImplementedError
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+    recorder = CollectOpsandMeas()
+    recorder.eval(jaxpr, consts, *args)
+
+    ops = recorder.state["ops"]
+    with pause():
+        for op in ops[::-1]:
+            self.state = apply_operation(
+                adjoint(op, lazy=lazy), self.state, is_state_batched=self.is_state_batched
+            )
+            if op.batch_size:
+                self.is_state_batched = True
+
+    return []
 
 
 # pylint: disable=too-many-arguments
 @DefaultQubitInterpreter.register_primitive(ctrl_transform_prim)
 def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     # TODO: requires jaxpr -> list of ops first
-    raise NotImplementedError
+    consts = invals[:n_consts]
+    control_wires = invals[-n_control:]
+    args = invals[n_consts:-n_control]
+    recorder = CollectOpsandMeas()
+    recorder.eval(jaxpr, consts, *args)
+
+    ops = recorder.state["ops"]
+    with pause():
+        for op in ops:
+            self.state = apply_operation(
+                ctrl(op, control_wires, control_values=control_values, work_wires=work_wires),
+                self.state,
+                is_state_batched=self.is_state_batched,
+            )
+            if op.batch_size:
+                self.is_state_batched = True
+
+    return []
