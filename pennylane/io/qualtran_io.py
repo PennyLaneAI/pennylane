@@ -106,7 +106,7 @@ class FromBloq(Operation):
                         if len(in_quregs) != len(out_quregs) and soq.reg.side == Side.RIGHT:
                             total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
                             ascending_vals = np.arange(
-                                len(soq_to_wires), total_elements + len(soq_to_wires), dtype=object
+                                list(soq_to_wires.values())[-1][-1]+1, total_elements + list(soq_to_wires.values())[-1][-1]+1, dtype=object
                             )
                             in_quregs[soq.reg.name] = ascending_vals.reshape(
                                 (*soq.reg.shape, soq.reg.bitsize)
