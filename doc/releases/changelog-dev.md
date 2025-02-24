@@ -41,6 +41,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
+  [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
+
+* The `qml.measurements.NullMeasurement` measurement process is added to allow for profiling problems
+  without the overheads associated with performing measurements.
+  [(#6989)](https://github.com/PennyLaneAI/pennylane/pull/6989)
+
 * `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
   [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
 
@@ -252,6 +259,9 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
+* The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
+  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
@@ -331,8 +341,9 @@
 * Globally silences `no-member` pylint issues from jax.
   [(#6987)](https://github.com/PennyLaneAI/pennylane/pull/6987)
 
-* Fix certain `pylint` errors in source code.
+* Fix `pylint=3.3.4` errors in source code.
   [(#6980)](https://github.com/PennyLaneAI/pennylane/pull/6980)
+  [(#6988)](https://github.com/PennyLaneAI/pennylane/pull/6988)
 
 * Remove `QNode.get_gradient_fn` from source code.
   [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
