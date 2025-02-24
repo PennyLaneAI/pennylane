@@ -129,6 +129,7 @@ NON_PARAMETRIZED_OPERATIONS = [
 ]
 
 ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
+SPARSE_OPERATIONS = [op for op in ALL_OPERATIONS if op.has_sparse_matrix]
 
 
 def dot_broadcasted(a, b):
@@ -137,6 +138,15 @@ def dot_broadcasted(a, b):
 
 def multi_dot_broadcasted(matrices):
     return reduce(dot_broadcasted, matrices)
+
+
+class TestSparseOperators:
+    @pytest.mark.parametrize("op", SPARSE_OPERATIONS)
+    def test_validity(self, op):
+        """Test that the operations are valid."""
+        assert qml.math.allclose(
+            op.sparse_matrix().toarray(), qml.math.asarray(op.matrix(), like="numpy")
+        )
 
 
 class TestOperations:
