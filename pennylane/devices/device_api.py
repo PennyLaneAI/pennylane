@@ -992,6 +992,16 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
+    def jaxpr_jvp(
+        self,
+        jaxpr: "jax.core.Jaxpr",
+        args,
+        tangents,
+        execution_config: Optional[ExecutionConfig] = None,
+    ):
+        """An **experimental** method for computing the results and jvp for PLXPR. See the ``capture`` module for more details."""
+        raise NotImplementedError
+
 
 def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -> str:
     """Simple strategy to find the best match for the default mcm method."""

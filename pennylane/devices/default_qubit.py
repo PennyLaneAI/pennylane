@@ -21,7 +21,7 @@ import warnings
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -937,7 +937,7 @@ class DefaultQubit(Device):
 
     # pylint: disable=import-outside-toplevel, unused-argument
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
+        self, jaxpr: "jax.core.Jaxpr", consts: Sequence[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
@@ -956,6 +956,34 @@ class DefaultQubit(Device):
             num_wires=len(self.wires), shots=self.shots.total_shots, key=key
         )
         return interpreter.eval(jaxpr, consts, *args)
+
+    # pylint :disable=import-outside-toplevel, unused-argument
+    def jaxpr_jvp(
+        self, jaxpr, args: tuple[TensorLike], tangents: tuple[TensorLike], execution_config=None
+    ) -> tuple[list[TensorLike], list[TensorLike]]:
+        if getattr(execution_config, "gradient_method", "backprop") == "adjoint":
+            from .qubit.jaxpr_adjoint import execute_and_jvp
+
+            return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
+
+        import jax
+
+        def _make_zero(tan, arg):
+            return (
+                jax.lax.zeros_like_array(arg) if isinstance(tan, jax.interpreters.ad.Zero) else tan
+            )
+
+        tangents = tuple(map(_make_zero, tangents, args))
+
+        def backprop_eval(*inner_args):
+            n_consts = len(jaxpr.constvars)
+            consts = inner_args[:n_consts]
+            non_const_args = inner_args[n_consts:]
+            return self.eval_jaxpr(
+                jaxpr, consts, *non_const_args, execution_config=execution_config
+            )
+
+        return jax.jvp(backprop_eval, args, tangents)
 
 
 def _simulate_wrapper(circuit, kwargs):
