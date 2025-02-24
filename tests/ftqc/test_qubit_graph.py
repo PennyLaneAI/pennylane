@@ -27,9 +27,10 @@ class TestQubitGraphsInitialization:
     """Tests for basic initialization of QubitGraphs."""
 
     def test_initialization_trivial(self):
-        """Trivial case: test that we can initialize a QubitGraph."""
+        """Trivial case: test that we can initialize a QubitGraph object. Also test that the
+        underlying qubit graph is uninitialized."""
         qubit = QubitGraph()
-        assert qubit
+        assert not qubit.is_initialized
 
     def test_initialization_constructor(self):
         """Test that we can initialize a QubitGraph with a user-defined graph of underlying qubits
