@@ -221,7 +221,7 @@ class QubitUnitary(Operation):
         """
         if sp.sparse.issparse(U):
             return U.tocsr()
-        return sp.sparse.csr_matrix(U)
+        raise SparseMatrixUndefinedError("U is a dense matrix. Use matrix method instead")
 
     def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
