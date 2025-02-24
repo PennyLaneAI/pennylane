@@ -15,6 +15,7 @@
 
 from copy import copy
 from functools import lru_cache, partial
+from typing import Sequence
 
 import pennylane as qml
 from pennylane import AmplitudeEmbedding
