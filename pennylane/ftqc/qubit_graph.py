@@ -391,10 +391,9 @@ class QubitGraph:
         QubitGraph objects. This functions also sets the _parent attribute appropriately.
         """
         assert self._graph_qubits is not None, "Underlying qubit graph object must not be None"
-        assert (
-            hasattr(self._graph_qubits, "nodes"),
-            "Underlying qubit graph object must have 'nodes' attribute",
-        )
+        assert hasattr(
+            self._graph_qubits, "nodes"
+        ), "Underlying qubit graph object must have 'nodes' attribute"
 
         for node in self._graph_qubits.nodes:
             q = QubitGraph()
