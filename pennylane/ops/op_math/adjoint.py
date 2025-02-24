@@ -356,6 +356,11 @@ class Adjoint(SymbolicOp):
     def __init__(self, base=None, id=None):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, id=id)
+        if self.base.pauli_rep:
+            pr = {pw: qml.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
+            self._pauli_rep = qml.pauli.PauliSentence(pr)
+        else:
+            self._pauli_rep = None
 
     def __repr__(self):
         return f"Adjoint({self.base})"
