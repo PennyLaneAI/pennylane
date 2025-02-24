@@ -196,7 +196,10 @@ class CondCallable:  # pylint:disable=too-few-public-methods
 
     @property
     def false_fn(self):
-        """callable: the function to apply if all ``self.preds`` evaluate to ``False``"""
+        """callable: the function to apply if all ``self.preds`` evaluate to ``False``.
+
+        Alias for ``otherwise_fn``.
+        """
         return self.otherwise_fn
 
     @property
@@ -223,7 +226,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         return self.false_fn(*args, **kwargs)  # pylint: disable=not-callable
 
     def __call_capture_enabled(self, *args, **kwargs):
-
+        print(args, kwargs)
         import jax  # pylint: disable=import-outside-toplevel
 
         cond_prim = _get_cond_qfunc_prim()
@@ -261,7 +264,9 @@ class CondCallable:  # pylint:disable=too-few-public-methods
                 consts += jaxpr.consts
                 end_const_ind += len(jaxpr.consts)
 
+        _validate_jaxpr_returns(jaxpr_branches)
         flat_args, _ = jax.tree_util.tree_flatten(args)
+        print("about to bind")
         results = cond_prim.bind(
             *conditions,
             *consts,
@@ -273,9 +278,6 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         )
         assert flat_true_fn.out_tree is not None
         results = results[-flat_true_fn.out_tree.num_leaves :]
-        if False:  # flat_true_fn.out_tree.num_leaves != len(results):
-            # undefined false fn leads to empty results
-            return results
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
@@ -661,7 +663,7 @@ def cond(
 
 
 def _validate_abstract_values(
-    outvals: list, expected_outvals: list, branch_type: str, index: int = None
+    outvals: list, expected_outvals: list, branch_type: str, index: Optional[int] = None
 ) -> None:
     """Ensure the collected abstract values match the expected ones."""
 
@@ -683,7 +685,7 @@ def _validate_abstract_values(
                 f"{outval} vs {expected_outval}"
             )
 
-            
+
 def _register_custom_staging_rule(cond_prim):
     import jax
     from jax._src.interpreters import partial_eval as pe
@@ -701,6 +703,7 @@ def _register_custom_staging_rule(cond_prim):
     def custom_staging_rule(jaxpr_trace, *tracers, **params):
         if not jax.config.jax_dynamic_shapes:
             return jaxpr_trace.default_process_primitive(cond_prim, tracers, params)
+        print("in custom staging rule")
         jaxpr = params["jaxpr_branches"][0]
 
         env = {}
@@ -708,17 +711,42 @@ def _register_custom_staging_rule(cond_prim):
             zip(*(_new_outvar(jaxpr_trace, var, env) for var in jaxpr.outvars))
         )
 
+        print("making invars")
+        invars = [jaxpr_trace.getvar(x) for x in tracers]
+        print("made invars ", invars)
         eqn = pe.new_jaxpr_eqn(
-            [jaxpr_trace.getvar(x) for x in tracers],
+            invars,
             returned_vars,
             cond_prim,
             params,
             jax.core.no_effects,
         )
+        print("new eqn: ", eqn)
         jaxpr_trace.frame.add_eqn(eqn)
         return out_tracers
 
     pe.custom_staging_rules[cond_prim] = custom_staging_rule
+
+
+def _validate_jaxpr_returns(jaxpr_branches):
+    outvals_true = [out.aval for out in jaxpr_branches[0].outvars]
+    for idx, jaxpr_branch in enumerate(jaxpr_branches):
+
+        if idx == 0:
+            continue
+
+        if jaxpr_branch is None:
+            if outvals_true:
+                raise ValueError(
+                    "The false branch must be provided if the true branch returns any variables"
+                )
+            # this is tested, but coverage does not pick it up
+            continue  # pragma: no cover
+
+        outvals_branch = [out.aval for out in jaxpr_branch.outvars]
+        branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
+        _validate_abstract_values(outvals_branch, outvals_true, branch_type, idx - 1)
+
 
 @functools.lru_cache
 def _get_cond_qfunc_prim():
@@ -774,27 +802,6 @@ def _get_cond_qfunc_prim():
 
     @cond_prim.def_abstract_eval
     def _(*_, jaxpr_branches, **__):
-
-        outvals_true = [out.aval for out in jaxpr_branches[0].outvars]
-
-        for idx, jaxpr_branch in enumerate(jaxpr_branches):
-            if idx == 0:
-                continue
-
-            if jaxpr_branch is None:
-                if outvals_true:
-                    raise ValueError(
-                        "The false branch must be provided if the true branch returns any variables"
-                    )
-                # this is tested, but coverage does not pick it up
-                continue  # pragma: no cover
-
-            outvals_branch = [out.aval for out in jaxpr_branch.outvars]
-            branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
-            _validate_abstract_values(outvals_branch, outvals_true, branch_type, idx - 1)
-
-        # We return the abstract values of the true branch since the abstract values
-        # of the other branches (if they exist) should be the same
-        return outvals_true
+        return [out.aval for out in jaxpr_branches[0].outvars]
 
     return cond_prim

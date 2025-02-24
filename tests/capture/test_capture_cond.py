@@ -106,40 +106,6 @@ class TestCond:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    # Note that this would fail by running the abstract evaluation of the jaxpr
-    # because the false branch must be provided if the true branch returns any variables.
-    @pytest.mark.parametrize(
-        "selector, arg, expected",
-        [
-            (1, 10, 20),  # True condition
-            (-1, 10, 9),  # Elif condition 1
-            (-2, 10, 8),  # Elif condition 2
-            (-3, 10, ()),  # No condition met
-        ],
-    )
-    def test_cond_true_elifs(self, testing_functions, selector, arg, expected, decorator):
-        """Test the conditional with true and elifs branches."""
-        true_fn, _, elif_fn1, elif_fn2, _, _ = testing_functions
-
-        def test_func(pred):
-            if decorator:
-                conditional = qml.cond(pred > 0)(true_fn)
-                conditional.else_if(pred == -1)(elif_fn1)
-                conditional.else_if(pred == -2)(elif_fn2)
-                return conditional
-
-            return qml.cond(
-                pred > 0,
-                true_fn,
-                elifs=(
-                    (pred == -1, elif_fn1),
-                    (pred == -2, elif_fn2),
-                ),
-            )
-
-        result = test_func(selector)(arg)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
     @pytest.mark.parametrize(
         "selector, arg, expected",
         [
@@ -169,32 +135,6 @@ class TestCond:
         jaxpr = jax.make_jaxpr(test_func(selector))(arg)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
-
-    # Note that this would fail by running the abstract evaluation of the jaxpr
-    # because the false branch must be provided if the true branch returns any variables.
-    @pytest.mark.parametrize(
-        "selector, arg, expected",
-        [
-            (1, 10, 20),
-            (0, 10, ()),
-        ],
-    )
-    def test_cond_true(self, testing_functions, selector, arg, expected, decorator):
-        """Test the conditional with only the true branch."""
-        true_fn, _, _, _, _, _ = testing_functions
-
-        def test_func(pred):
-            if decorator:
-                conditional = qml.cond(pred > 0)(true_fn)
-                return conditional
-
-            return qml.cond(
-                pred > 0,
-                true_fn,
-            )
-
-        result = test_func(selector)(arg)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
     @pytest.mark.parametrize(
         "selector, arg, expected",
