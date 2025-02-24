@@ -593,6 +593,7 @@ class TrotterizedQfunc(Operation):
 
     """
 
+    # pylint: disable = too-many-arguments
     def __init__(
         self,
         time,
