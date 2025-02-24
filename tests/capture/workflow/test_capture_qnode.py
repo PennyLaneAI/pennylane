@@ -396,7 +396,7 @@ class TestDifferentiation:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        with pytest.raises(NotImplementedError, match=r"diff_method adjoint not yet implemented"):
+        with pytest.raises(NotImplementedError, match=r"does not yet support PLXPR jvps."):
             jax.grad(circuit)(0.5)
 
 
