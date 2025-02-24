@@ -115,7 +115,7 @@ class TestUnitaryToRotInterpreter:
         assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_traced_arguments(self):
-        """Test that traced arguments are correctly decomposed."""
+        """Test that traced arguments are correctly handled."""
 
         @UnitaryToRotInterpreter()
         def f(U, wire):
