@@ -193,11 +193,19 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
 
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
-    mcm_config = {
-        "mcm_method": qnode_kwargs["mcm_method"],
-        "postselect_mode": qnode_kwargs["postselect_mode"],
-    }
-    execution_config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
+
+    mcm_method = execution_config.mcm_config.mcm_method
+    if mcm_method in (None, "deferred"):
+        targs = ()
+        tkwargs = {"num_wires": len(device.wires)}
+        qfunc_jaxpr = qml.defer_measurements.plxpr_transform(
+            qfunc_jaxpr, consts, targs, tkwargs, *non_const_args
+        )
+        consts = qfunc_jaxpr.consts
+        qfunc_jaxpr = qfunc_jaxpr.jaxpr
+
+    elif mcm_method in ("tree-traversal", "one-shot"):
+        raise ValueError(f"Cannot use mcm-method '{mcm_method}' with program capture enabled.")
 
     partial_eval = partial(
         device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
