@@ -196,6 +196,9 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
+* `compute_decomposition` of qml.X and qml.Y now uses GlobalPhase instead of a rotation and two PhaseShifts.
+  [(#6993)](https://github.com/PennyLaneAI/pennylane/pull/6993)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
