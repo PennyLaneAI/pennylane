@@ -170,7 +170,9 @@ class TestControlledQubitUnitary:
         assert op_1.control_wires == Wires([0, 1])
 
         control_wires_2, target_wires_2 = [0, 1, 2], ()
-        op_2 = qml.ControlledQubitUnitary(base_op, wires=Wires(control_wires_2) + Wires(target_wires_2))
+        op_2 = qml.ControlledQubitUnitary(
+            base_op, wires=Wires(control_wires_2) + Wires(target_wires_2)
+        )
 
         assert op_2.base.wires == Wires(2)
         assert op_2.control_wires == Wires([0, 1])

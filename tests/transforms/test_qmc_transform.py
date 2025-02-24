@@ -161,12 +161,18 @@ class TestApplyControlledQ:
             qml.QubitUnitary(r_mat, wires=target_wires)
 
         circ = apply_controlled_Q(
-            fn, wires=target_wires, target_wire=target_wire, control_wire=control_wire, work_wires=None
+            fn,
+            wires=target_wires,
+            target_wire=target_wire,
+            control_wire=control_wire,
+            work_wires=None,
         )
 
         u = get_unitary(circ, n_all_wires)
 
-        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=Wires(control_wire) + Wires(target_wires))
+        circ = lambda: qml.ControlledQubitUnitary(
+            q_mat, wires=Wires(control_wire) + Wires(target_wires)
+        )
         u_ideal = get_unitary(circ, n_all_wires)
 
         assert np.allclose(u_ideal, u)
