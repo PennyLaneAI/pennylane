@@ -229,7 +229,7 @@ def apply_operation(
         [1., 0.]], requires_grad=True)
 
     """
-    if op.has_sparse_matrix:
+    if op.has_sparse_matrix and not op.has_matrix:
         return apply_operation_csr_matrix(op, state, is_state_batched)
     return _apply_operation_default(op, state, is_state_batched, debugger)
 
