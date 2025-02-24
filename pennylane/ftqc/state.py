@@ -53,10 +53,15 @@ class ClusterState(State):
     This class represents cluster state used in the MBQC formalism.
 
     Args:
-        ops: Gate operations or gate names? #TODO: determine the interface that cluster state accept.
+        ops: Gate operations
     """
     def __init__(ops: Operations):
-        #determine the 
+        if len(ops.wires) == 1:
+            self._init_1d_cluster_state()
+        elif ops.name == 'CNOT':
+            self._init_2d_cluster_state()
+        else:
+            raise(f"The {ops.name} gate is not supported.")
     
     def _init_1d_cluster_state(self):
         # for 1 qubit gate

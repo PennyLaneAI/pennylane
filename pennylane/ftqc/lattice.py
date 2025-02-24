@@ -31,7 +31,7 @@ class Lattice:
             lattice_shape: Name of the lattice shape.
             graph (nx.Graph): A NetworkX undirected graph object. If provided, `nodes` and `edges` are ignored.
             nodes (List): Nodes to construct a graph object. Ignored if `graph` is provided.
-            egdes (List): Edges to construct the graph. Ignored if `graph` is provided.
+            edges (List): Edges to construct the graph. Ignored if `graph` is provided.
         Raises:
             ValueError: If neither `graph` nor both `nodes` and `edges` are provided.
     """
@@ -45,7 +45,7 @@ class Lattice:
         if graph is None:
             if nodes is None and edges is None:
                 raise ValueError(
-                    "Neither a networkx Graph object nor nodes together with egdes are provided."
+                    "Neither a networkx Graph object nor nodes together with edges are provided."
                 )
             self._graph = nx.Graph()
             self._graph.add_nodes_from(nodes)
@@ -74,7 +74,7 @@ class Lattice:
             attribute_name (str): Name of the node attribute to set.
             attributes (Dict): A dict with node labels as keys and attributes as values.
         """
-        # TODO: This method could be renamed later as it's possible that this method is only for stablizers setup.
+        # TODO: This method could be renamed later as it's possible that this method is only for stabilizers setup.
         nx.set_node_attributes(self._graph, attributes, attribute_name)
 
     def get_node_attributes(self, attribute_name: str):
@@ -89,7 +89,7 @@ class Lattice:
 
         Args:
             attribute_name (str): Name of the edge attribute to set.
-            attributes (Dict): Edge attributes to set. It accepts a dict with node labels as keys and attributes as values or a scalar to set the new attribute of egdes with.
+            attributes (Dict): Edge attributes to set. It accepts a dict with node labels as keys and attributes as values or a scalar to set the new attribute of edges with.
         """
         # TODO: This method could be renamed later as it's possible that this method is only for the entanglement setup.
         nx.set_edge_attributes(self._graph, attributes, attribute_name)
