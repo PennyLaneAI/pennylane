@@ -24,11 +24,10 @@ jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
 from pennylane.transforms.optimization.commute_controlled import (
     CommuteControlledInterpreter,
-    commute_controlled_plxpr_to_plxpr,
     commute_controlled,
+    commute_controlled_plxpr_to_plxpr,
 )
 
 

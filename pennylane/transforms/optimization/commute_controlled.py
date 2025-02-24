@@ -43,8 +43,16 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
         when program capture is enabled.
 
         .. note::
-            In the process of transforming plxpr, this interpreter may reorder operations that do
-            not share any wires. This will not impact the correctness of the circuit.
+            If the direction is set to ``"right"``, this class interprets the operations by scanning them
+            backward after the jaxpr has been traversed (pushing the gates to the right of controlled gates).
+            This is because we can only traverse the jaxpr in a forward direction with the current implementation when
+            program capture is enabled.
+
+            This is less efficient than setting the direction to ``"left"``, which allows the interpreter
+            to push the gates to the left of controlled gates as it interprets the jaxpr.
+
+            Despite this, the default direction is ``"right"`` to maintain compatibility with the
+            current default value of the transform.
         """
 
         def __init__(self, direction: Optional[str] = "right"):
@@ -57,28 +65,26 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             self.op_list = []
             self._env = {}
             self.current_location = 0
-            super().__init__()
 
         def setup(self) -> None:
             """Initialize the instance before interpreting equations."""
-            self.op_list = []
-            self._env = {}
+            self.op_list.clear()
 
         def cleanup(self) -> None:
             """Clean up the instance after interpreting equations."""
             self.op_list.clear()
-            self._env.clear()
 
-        def _interpret_operation_left(self, op: Operator):
+        def _interpret_operation_left(self, op: Operator) -> list:
+            """Interpret a PennyLane operation instance and push it through controlled operations as far left as possible."""
+
+            # This function follows the same logic used in the `_commute_controlled_left` function.
 
             if op.basis is None or len(op.wires) != 1:
                 self.current_location += 1
                 self.op_list.append(op)
-                # We cannot interpret it right away because there might be a single qubit gate that can be pushed on the left
                 return []
 
             prev_gate_idx = find_next_gate(op.wires, self.op_list[:][::-1])
-
             new_location = self.current_location
 
             while prev_gate_idx is not None:
@@ -106,60 +112,48 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 
                 prev_gate_idx = find_next_gate(op.wires, self.op_list[:new_location][::-1])
 
-            # self.op_list.pop(self.current_location)
             self.op_list.insert(new_location, op)
             self.current_location += 1
             return []
 
-        def _interpret_operation_right(self):
+        def _interpret_all_operations_right(self) -> None:
+            """Push all single-qubit gates as far right as possible through controlled operations."""
 
-            # We will go through the list backwards; whenever we find a single-qubit
-            # gate, we will extract it and push it through 2-qubit gates as far as
-            # possible to the right.
+            # This function follows the same logic used in the `_commute_controlled_right` function.
+
             current_location = len(self.op_list) - 1
 
             while current_location >= 0:
                 current_gate = self.op_list[current_location]
 
-                # We are looking only at the gates that can be pushed through
-                # controls/targets; these are single-qubit gates with the basis
-                # property specified.
                 if getattr(current_gate, "basis", None) is None or len(current_gate.wires) != 1:
                     current_location -= 1
                     continue
 
-                # Find the next gate that contains an overlapping wire
                 next_gate_idx = find_next_gate(
                     current_gate.wires, self.op_list[current_location + 1 :]
                 )
 
                 new_location = current_location
 
-                # Loop as long as a valid next gate exists
                 while next_gate_idx is not None:
                     next_gate = self.op_list[new_location + next_gate_idx + 1]
 
-                    # Only go ahead if information is available
                     if getattr(next_gate, "basis", None) is None:
                         break
 
-                    # If the next gate does not have control_wires defined, it is not
-                    # controlled so we can't push through.
                     if len(next_gate.control_wires) == 0:
                         break
                     shared_controls = Wires.shared_wires(
                         [Wires(current_gate.wires), next_gate.control_wires]
                     )
 
-                    # Case 1: overlap is on the control wires. Only Z-type gates go through
                     if len(shared_controls) > 0:
                         if current_gate.basis == "Z":
                             new_location += next_gate_idx + 1
                         else:
                             break
 
-                    # Case 2: since we know the gates overlap somewhere, and it's a
-                    # single-qubit gate, if it wasn't on a control it's the target.
                     else:
                         if current_gate.basis == next_gate.basis:
                             new_location += next_gate_idx + 1
@@ -170,7 +164,6 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                         current_gate.wires, self.op_list[new_location + 1 :]
                     )
 
-                # After we have gone as far as possible, move the gate to new location
                 self.op_list.insert(new_location + 1, current_gate)
                 self.op_list.pop(current_location)
                 current_location -= 1
@@ -180,28 +173,28 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 
             if self.direction == "left":
                 return self._interpret_operation_left(op)
-            else:
-                self.op_list.append(op)
-                return []
+
+            # If the direction is right, we simply append the operation
+            # to the list while we scan through the operations forwards.
+            self.op_list.append(op)
+            return []
 
         def interpret_all_previous_ops(self) -> None:
             """Interpret all previous operations stored in the instance."""
 
             if self.direction == "left":
-
                 for op in self.op_list:
                     super().interpret_operation(op)
-
                 self.op_list.clear()
 
-            else:
+            # If the direction is right, push the gates in each sub-list
+            # created at this stage by traversing the list backwards.
+            self._interpret_all_operations_right()
 
-                self._interpret_operation_right()
+            for op in self.op_list:
+                super().interpret_operation(op)
 
-                for op in self.op_list:
-                    super().interpret_operation(op)
-
-                self.op_list.clear()
+            self.op_list.clear()
 
         def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
@@ -214,6 +207,8 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             """
 
             self.setup()
+
+            self._env = {}
 
             for arg, invar in zip(args, jaxpr.invars, strict=True):
                 self._env[invar] = arg
@@ -256,6 +251,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 else:
                     outvals.append(outval)
 
+            self._env = {}
             self.cleanup()
             return outvals
 
