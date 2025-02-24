@@ -31,7 +31,6 @@ def right_canonicalize_mps(mps):
     Returns:
         A list of tensors representing the MPS in right-canonical form.
 
-    .. seealso:: :class:`~.MPSPrep`.
 
     A right-canonicalized MPS is a matrix product state where each tensor :math:`A^{(j)}` satisfies
     the following orthonormality condition:
@@ -39,6 +38,11 @@ def right_canonicalize_mps(mps):
     .. math::
 
         \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}}
+
+    where :math:`d_{i,j}` denotes the :math:`j` dimension of the :math:`i` tensor And :math:`\delta` is a
+    function that takes the value :math:`1` if the two inputs are the same and :math:`0` otherwise.
+
+    .. seealso:: :class:`~.MPSPrep`.
 
     **Example**
 
