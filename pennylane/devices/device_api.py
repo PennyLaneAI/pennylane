@@ -984,7 +984,7 @@ class Device(abc.ABC):
             *args (TensorLike): the variables to use with the jaxpr.
 
         Keyword Args:
-            execution_config (Optional[ExecutionConfig]): a datastructure with additional information required for execution
+            execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
 
         Returns:
             list[TensorLike]: the result of evaluating the jaxpr with the given parameters.
