@@ -277,7 +277,7 @@ def test_wrong_wires_error(bitstrings, control_wires, target_wires, msg_match):
 def test_none_work_wires_case():
     """Test that clean version is not applied if work wires are not used"""
 
-    gates = qml.QROM.compute_decomposition(["1", "0", "0", "1"], [0, 1], [2], [], clean=True)
-
-    for gate in gates:
-        assert gate.name != "Hadamard"
+    gates_clean = qml.QROM.compute_decomposition(["1", "0", "0", "1"], [0, 1], [2], [], clean=True)
+    expected_gates = qml.QROM.compute_decomposition(["1", "0", "0", "1"], [0, 1], [2], [], clean=False)
+    
+    assert gates_clean == expected_gates
