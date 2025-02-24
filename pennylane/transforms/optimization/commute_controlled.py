@@ -13,10 +13,10 @@
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
 
+from collections import deque
 from functools import lru_cache
 from typing import Optional
 
-import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -62,33 +62,37 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 raise ValueError("Direction for commute_controlled must be 'left' or 'right'")
 
             self.direction = direction
-            self.op_list = []
+            self.op_deque = deque()
             self._env = {}
             self.current_location = 0
 
         def setup(self) -> None:
             """Initialize the instance before interpreting equations."""
-            self.op_list.clear()
+            self.op_deque.clear()
 
         def cleanup(self) -> None:
             """Clean up the instance after interpreting equations."""
-            self.op_list.clear()
+            self.op_deque.clear()
+
+        def _find_previous_gate(self, wires: Wires, search_list) -> Optional[int]:
+            """Finds the previous gate index that shares wires."""
+            return find_next_gate(wires, list(reversed(search_list)))
 
         def _interpret_operation_left(self, op: Operator) -> list:
-            """Interpret a PennyLane operation instance and push it through controlled operations as far left as possible."""
+            """Interpret a PennyLane operation and push it through controlled operations as far left as possible."""
 
             # This function follows the same logic used in the `_commute_controlled_left` function.
 
             if op.basis is None or len(op.wires) != 1:
                 self.current_location += 1
-                self.op_list.append(op)
+                self.op_deque.append(op)
                 return []
 
-            prev_gate_idx = find_next_gate(op.wires, self.op_list[:][::-1])
+            prev_gate_idx = self._find_previous_gate(op.wires, self.op_deque)
             new_location = self.current_location
 
             while prev_gate_idx is not None:
-                prev_gate = self.op_list[new_location - prev_gate_idx - 1]
+                prev_gate = self.op_deque[new_location - prev_gate_idx - 1]
 
                 if prev_gate.basis is None:
                     break
@@ -110,9 +114,11 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                     else:
                         break
 
-                prev_gate_idx = find_next_gate(op.wires, self.op_list[:new_location][::-1])
+                prev_gate_idx = self._find_previous_gate(
+                    op.wires, list(self.op_deque)[:new_location]
+                )
 
-            self.op_list.insert(new_location, op)
+            self.op_deque.insert(new_location, op)
             self.current_location += 1
             return []
 
@@ -121,23 +127,23 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 
             # This function follows the same logic used in the `_commute_controlled_right` function.
 
-            current_location = len(self.op_list) - 1
+            current_location = len(self.op_deque) - 1
 
             while current_location >= 0:
-                current_gate = self.op_list[current_location]
+                current_gate = self.op_deque[current_location]
 
                 if getattr(current_gate, "basis", None) is None or len(current_gate.wires) != 1:
                     current_location -= 1
                     continue
 
                 next_gate_idx = find_next_gate(
-                    current_gate.wires, self.op_list[current_location + 1 :]
+                    current_gate.wires, list(self.op_deque)[current_location + 1 :]
                 )
 
                 new_location = current_location
 
                 while next_gate_idx is not None:
-                    next_gate = self.op_list[new_location + next_gate_idx + 1]
+                    next_gate = self.op_deque[new_location + next_gate_idx + 1]
 
                     if getattr(next_gate, "basis", None) is None:
                         break
@@ -161,11 +167,11 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                             break
 
                     next_gate_idx = find_next_gate(
-                        current_gate.wires, self.op_list[new_location + 1 :]
+                        current_gate.wires, list(self.op_deque)[new_location + 1 :]
                     )
 
-                self.op_list.insert(new_location + 1, current_gate)
-                self.op_list.pop(current_location)
+                self.op_deque.insert(new_location + 1, current_gate)
+                del self.op_deque[current_location]
                 current_location -= 1
 
         def interpret_operation(self, op: Operator):
@@ -176,25 +182,25 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 
             # If the direction is right, we simply append the operation
             # to the list while we scan through the operations forwards.
-            self.op_list.append(op)
+            self.op_deque.append(op)
             return []
 
         def interpret_all_previous_ops(self) -> None:
             """Interpret all previous operations stored in the instance."""
 
             if self.direction == "left":
-                for op in self.op_list:
+                for op in self.op_deque:
                     super().interpret_operation(op)
-                self.op_list.clear()
+                self.op_deque.clear()
 
             # If the direction is right, push the gates in each sub-list
             # created at this stage by traversing the list backwards.
             self._interpret_all_operations_right()
 
-            for op in self.op_list:
+            for op in self.op_deque:
                 super().interpret_operation(op)
 
-            self.op_list.clear()
+            self.op_deque.clear()
 
         def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for the ``CommuteControlledInterpreter`` class"""
 
-# pylint:disable=wrong-import-position, unused-argument
+# pylint:disable=wrong-import-position, unused-argument, protected-access
 import numpy as np
 import pytest
 
@@ -23,6 +23,7 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
+from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.commute_controlled import (
     CommuteControlledInterpreter,
@@ -32,8 +33,7 @@ from pennylane.transforms.optimization.commute_controlled import (
 
 
 class TestCommuteControlledInterpreter:
-    """Unit tests for the CommuteControlledInterpreter for canceling adjacent inverse
-    operations in plxpr."""
+    """Unit tests for the CommuteControlledInterpreter for commuting controlled gates."""
 
     def test_invalid_direction(self):
         """Test that any direction other than 'left' or 'right' raises an error."""
@@ -460,3 +460,199 @@ class TestCommuteControlledInterpreter:
             assert op1.name == op2.name
             assert op1.wires == op2.wires
             assert qml.math.allclose(op1.parameters, op2.parameters)
+
+
+class TestCommuteControlledHigherOrderPrimitives:
+    """Unit tests for the CommuteControlledInterpreter for higher order primitives."""
+
+    @pytest.mark.parametrize("direction", ["left", "right"])
+    def test_qnode(self, direction):
+        """Test that the CommuteControlledInterpreter can be used with a QNode."""
+
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.PauliX(wires=1)
+            qml.S(wires=0)
+            qml.CZ(wires=[0, 1])
+            qml.CNOT(wires=[1, 0])
+            qml.PauliY(wires=1)
+            qml.CRY(0.5, wires=[1, 0])
+            qml.PhaseShift(0.2, wires=0)
+            qml.PauliY(wires=1)
+            qml.T(wires=0)
+            qml.CRZ(-0.3, wires=[0, 1])
+            qml.RZ(0.2, wires=0)
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=1)
+            qml.CRY(0.2, wires=[1, 0])
+            return qml.expval(qml.PauliZ(0))
+
+        transformed_circuit = CommuteControlledInterpreter(direction=direction)(circuit)
+
+        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        assert len(jaxpr.eqns) == 1
+        circuit_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert len(circuit_jaxpr.eqns) == 16
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        with qml.capture.pause():
+            # pylint: disable=not-callable
+            expected_result = circuit()
+
+        assert qml.math.allclose(result, expected_result)
+
+    def test_transform_higher_order_primitive(self):
+        """Test that the inner_jaxpr of transform primitives is not transformed."""
+
+        @qml.transform
+        def fictitious_transform(tape):
+            """Fictitious transform"""
+            return [tape], lambda res: res[0]
+
+        @CommuteControlledInterpreter()
+        def circuit():
+            @fictitious_transform
+            def g():
+                qml.RX(0.1, wires=2)
+                qml.CNOT(wires=[0, 2])
+                qml.Toffoli(wires=[0, 1, 2])
+
+            qml.RX(0.1, 0)
+            g()
+            qml.RY(0.2, 0)
+
+        jaxpr = jax.make_jaxpr(circuit)()
+
+        assert len(jaxpr.eqns) == 3
+
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == fictitious_transform._primitive
+        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+
+        inner_jaxpr = jaxpr.eqns[1].params["inner_jaxpr"]
+        assert len(inner_jaxpr.eqns) == 3
+        assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[1].primitive == qml.CNOT._primitive
+        assert inner_jaxpr.eqns[2].primitive == qml.Toffoli._primitive
+
+    @pytest.mark.parametrize(
+        "selector, expected_ops",
+        [
+            (
+                0.2,
+                [
+                    qml.CNOT(wires=[0, 1]),
+                    qml.CNOT(wires=[0, 2]),
+                    qml.Toffoli(wires=[0, 1, 2]),
+                    qml.RX(np.pi, wires=2),
+                    qml.CNOT(wires=[0, 1]),
+                ],
+            ),
+            (
+                0.4,
+                [
+                    qml.CNOT(wires=[0, 1]),
+                    qml.CNOT(wires=[0, 2]),
+                    qml.Toffoli(wires=[0, 1, 2]),
+                    qml.RX(np.pi, wires=2),
+                    qml.CNOT(wires=[0, 1]),
+                ],
+            ),
+            (
+                0.8,
+                [
+                    qml.CNOT(wires=[0, 1]),
+                    qml.RY(np.pi, wires=2),
+                    qml.CNOT(wires=[0, 2]),
+                    qml.Toffoli(wires=[0, 1, 2]),
+                    qml.CNOT(wires=[0, 1]),
+                ],
+            ),
+        ],
+    )
+    def test_cond(self, selector, expected_ops):
+        """Test that operations inside a conditional block are correctly pushed."""
+
+        @CommuteControlledInterpreter()
+        def circuit(selector, x):
+
+            qml.CNOT(wires=[0, 1])
+
+            def true_branch(x):
+                qml.RY(x, wires=2)
+                qml.CNOT(wires=[0, 2])
+                qml.Toffoli(wires=[0, 1, 2])
+
+            # pylint: disable=unused-argument
+            def false_branch(x):
+                qml.RX(x, wires=2)
+                qml.CNOT(wires=[0, 2])
+                qml.Toffoli(wires=[0, 1, 2])
+
+            qml.cond(selector > 0.5, true_branch, false_branch)(x)
+            qml.CNOT(wires=[0, 1])
+
+        jaxpr = jax.make_jaxpr(circuit)(selector, np.pi)
+
+        assert len(jaxpr.eqns) == 4
+        assert jaxpr.eqns[0].primitive == jax.lax.gt_p
+        assert jaxpr.eqns[1].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[2].primitive == cond_prim
+        assert jaxpr.eqns[3].primitive == qml.CNOT._primitive
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, selector, np.pi)
+        jaxpr_ops = collector.state["ops"]
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops):
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
+
+    def test_for_loop(self):
+        """Test that for operators inside a for loop are correctly pushed."""
+
+        @CommuteControlledInterpreter()
+        def circuit(x):
+
+            qml.CNOT(wires=[0, 1])
+
+            @qml.for_loop(0, 1)
+            # pylint: disable=unused-argument
+            def loop(i, x):
+                qml.RX(x, wires=2)
+                qml.CNOT(wires=[0, 2])
+                qml.Toffoli(wires=[0, 1, 2])
+                return qml.Hadamard(wires=0)
+
+            # pylint: disable=no-value-for-parameter
+            loop(x)
+
+            qml.CNOT(wires=[0, 1])
+
+        jaxpr = jax.make_jaxpr(circuit)(np.pi)
+        assert len(jaxpr.eqns) == 3
+
+        assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[1].primitive == for_loop_prim
+        assert jaxpr.eqns[2].primitive == qml.CNOT._primitive
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, np.pi)
+        jaxpr_ops = collector.state["ops"]
+        assert len(jaxpr_ops) == 6
+
+        expected_ops = [
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=[0, 2]),
+            qml.Toffoli(wires=[0, 1, 2]),
+            qml.RX(np.pi, wires=[2]),
+            qml.H(0),
+            qml.CNOT(wires=[0, 1]),
+        ]
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops):
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
