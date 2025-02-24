@@ -656,3 +656,46 @@ class TestCommuteControlledHigherOrderPrimitives:
             assert op1.name == op2.name
             assert qml.math.allclose(op1.parameters, op2.parameters)
             assert op1.wires == op2.wires
+
+
+class TestCommuteControlledPLXPR:
+    """Unit tests for the commute-controlled transformation on PLXPRs."""
+
+    def test_single_qubit_fusion_plxpr_to_plxpr(self):
+        """Test that the single-qubit fusion transformation works on a plxpr."""
+
+        def circuit():
+            qml.PauliX(wires=1)
+            qml.S(wires=0)
+            qml.CZ(wires=[0, 1])
+            qml.CNOT(wires=[1, 0])
+            qml.PauliY(wires=1)
+            qml.CRY(0.5, wires=[1, 0])
+            qml.PhaseShift(0.2, wires=0)
+            qml.PauliY(wires=1)
+            qml.T(wires=0)
+            qml.CRZ(-0.3, wires=[0, 1])
+            qml.RZ(0.2, wires=0)
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=1)
+            qml.CRY(0.2, wires=[1, 0])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        transformed_jaxpr = commute_controlled_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
+        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert len(transformed_jaxpr.eqns) == 14
+
+        assert transformed_jaxpr.eqns[0].primitive == qml.X._primitive
+        assert transformed_jaxpr.eqns[1].primitive == qml.CZ._primitive
+        assert transformed_jaxpr.eqns[2].primitive == qml.S._primitive
+        assert transformed_jaxpr.eqns[3].primitive == qml.CNOT._primitive
+        assert transformed_jaxpr.eqns[4].primitive == qml.Y._primitive
+        assert transformed_jaxpr.eqns[5].primitive == qml.CRY._primitive
+        assert transformed_jaxpr.eqns[6].primitive == qml.Y._primitive
+        assert transformed_jaxpr.eqns[7].primitive == qml.CRZ._primitive
+        assert transformed_jaxpr.eqns[8].primitive == qml.PhaseShift._primitive
+        assert transformed_jaxpr.eqns[9].primitive == qml.T._primitive
+        assert transformed_jaxpr.eqns[10].primitive == qml.RZ._primitive
+        assert transformed_jaxpr.eqns[11].primitive == qml.Z._primitive
+        assert transformed_jaxpr.eqns[12].primitive == qml.X._primitive
+        assert transformed_jaxpr.eqns[13].primitive == qml.CRY._primitive
