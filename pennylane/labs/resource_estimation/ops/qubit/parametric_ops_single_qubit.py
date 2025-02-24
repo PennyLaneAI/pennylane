@@ -92,6 +92,8 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        if z == 0:
+            return {}
         return {cls.resource_rep(): 1}
 
 
@@ -160,6 +162,8 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        if z == 0:
+            return {}
         return {cls.resource_rep(): 1}
 
 
@@ -220,6 +224,8 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        if z == 0:
+            return {}
         return {cls.resource_rep(): 1}
 
 
@@ -279,6 +285,8 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        if z == 0:
+            return {}
         return {cls.resource_rep(): 1}
 
 
@@ -357,4 +365,6 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        if z == 0:
+            return {}
         return {cls.resource_rep(): 1}
