@@ -120,10 +120,15 @@ ResourceQPE = ResourceQuantumPhaseEstimation  # Alias for ease of typing
 
 
 class ResourceStatePrep(qml.StatePrep, ResourceOperator):
-    """Resource class for StatePrep.
+    r"""Resource class for StatePrep.
 
     Resources:
-        TODO: add the resources here
+        The resources are obtained using the method described in
+        `Transformation of quantum states using uniformly controlled rotations
+        <https://arxiv.org/pdf/quant-ph/0407010>`_.
+
+        Specifically, the resource cost of this subroutine is given as :math:`2^{n + 2} - 4n + 4`
+        CNOT gates and :math:`2^{n+2} - 5` single qubit rotation gates.
     """
 
     @staticmethod
