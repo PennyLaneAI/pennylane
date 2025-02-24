@@ -225,7 +225,7 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
 
-    This function computes the structure constants of a Lie algebra provided by their matrix matrix representation,
+    This function computes the structure constants of a Lie algebra provided by their matrix representation,
     obtained from, e.g., :func:`~lie_closure`.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
     :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
