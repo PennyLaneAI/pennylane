@@ -143,7 +143,6 @@ def test_default_operator_handling():
 @pytest.mark.parametrize(
     "op_class, args, kwargs",
     [
-        # (qml.ControlledQubitUnitary, (jnp.eye(2), [0, 1]), {}),
         (qml.CH, ([0, 1],), {}),
         (qml.CY, ([0, 1],), {}),
         (qml.CZ, ([0, 1],), {}),
