@@ -148,7 +148,7 @@ class TestApplyControlledQ:
         a_mat and r_mat."""
         n_all_wires = n_wires + 1
 
-        target_wires = range(n_wires)
+        wires = range(n_wires)
         target_wire = n_wires - 1
         control_wire = n_wires
 
@@ -157,22 +157,16 @@ class TestApplyControlledQ:
         q_mat = make_Q(a_mat, r_mat)
 
         def fn():
-            qml.QubitUnitary(a_mat, wires=target_wires[:-1])
-            qml.QubitUnitary(r_mat, wires=target_wires)
+            qml.QubitUnitary(a_mat, wires=wires[:-1])
+            qml.QubitUnitary(r_mat, wires=wires)
 
         circ = apply_controlled_Q(
-            fn,
-            wires=target_wires,
-            target_wire=target_wire,
-            control_wire=control_wire,
-            work_wires=None,
+            fn, wires=wires, target_wire=target_wire, control_wire=control_wire, work_wires=None
         )
 
         u = get_unitary(circ, n_all_wires)
 
-        circ = lambda: qml.ControlledQubitUnitary(
-            q_mat, wires=Wires(control_wire) + Wires(target_wires)
-        )
+        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=Wires(control_wire) + Wires(wires))
         u_ideal = get_unitary(circ, n_all_wires)
 
         assert np.allclose(u_ideal, u)
