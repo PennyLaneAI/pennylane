@@ -399,8 +399,8 @@
   passed to the `QNode`, instead of assuming the method is always `deferred`.
   [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
 
-* The `poly_to_angles` functionality now correctly works with different tensor interfaces. 
-  Also, now it does not modify the input.
+* The `poly_to_angles` function is improved to correctly work with different tensor interfaces ans also
+  to not change the input angles array internally.
   [(#6979)](https://github.com/PennyLaneAI/pennylane/pull/6979)
 
 
