@@ -27,7 +27,7 @@ class TestLattice:
         """Test for Lattice object created by a nx.Graph object."""
         graph = nx.Graph([(0, 1), (1, 2)])
         lattice = Lattice("test", graph=graph)
-        assert lattice.get_lattice_shape() == "test"
+        assert lattice.get_lattice_shape == "test"
         assert len(lattice.get_nodes()) == 3
         assert len(lattice.get_edges()) == 2
 
@@ -47,8 +47,7 @@ class TestLattice:
     def test_get_lattice_shape(self):
         """Test for get_lattice_shape()."""
         lattice = Lattice("test_shape", nx.Graph())
-        assert lattice.get_lattice_shape() == "test_shape"
-
+        assert lattice.get_lattice_shape == "test_shape"
 
     def test_get_neighbors(self):
         """Test for getting the neighbors of a node."""
@@ -73,7 +72,7 @@ class TestLattice:
         """Test for getting graph."""
         graph = nx.Graph([(0, 1), (1, 2)])
         lattice = Lattice("test", graph=graph)
-        assert lattice.get_graph() is graph
+        assert lattice.get_graph is graph
 
 
 class TestGenerateLattice:
@@ -81,48 +80,48 @@ class TestGenerateLattice:
 
     def test_generate_chain_lattice(self):
         """Test to generate a 1D chain lattice."""
-        lattice = generate_lattice("chain", [5])
+        lattice = generate_lattice([5], "chain")
         assert isinstance(lattice, Lattice)
         assert len(lattice.get_nodes()) == 5
 
     def test_generate_rectangle_lattice(self):
         """Test to generate a 2D rectangle lattice."""
-        lattice = generate_lattice("rectangle", [3, 4])
+        lattice = generate_lattice([3, 4], "rectangle")
         assert isinstance(lattice, Lattice)
         assert len(lattice.get_nodes()) == 12
 
     def test_generate_cubic_lattice(self):
         """Test to generate a 3D cubic lattice."""
-        lattice = generate_lattice("cubic", [2, 2, 2])
+        lattice = generate_lattice([2, 2, 2], "cubic")
         assert isinstance(lattice, Lattice)
         assert len(lattice.get_nodes()) == 8
 
     def test_generate_triangle_lattice(self):
         """Test to generate a 2D triangle lattice."""
-        lattice = generate_lattice("triangle", [3, 4])
+        lattice = generate_lattice([3, 4], "triangle")
         assert isinstance(lattice, Lattice)
         assert len(lattice.get_nodes()) > 0
 
     def test_generate_honeycomb_lattice(self):
         """Test to generate a 3D honeycomb lattice."""
-        lattice = generate_lattice("honeycomb", [3, 4])
+        lattice = generate_lattice([3, 4], "honeycomb")
         assert isinstance(lattice, Lattice)
         assert len(lattice.get_nodes()) > 0
 
     def test_generate_invalid_lattice_shape(self):
         """Test for an unsupported lattice shape."""
         with pytest.raises(ValueError):
-            generate_lattice("invalid_shape", [2, 2])
+            generate_lattice([2, 2], "invalid_shape")
 
     def test_generate_invalid_dimensions(self):
         """Test for an incorrect dims input."""
         with pytest.raises(ValueError):
-            generate_lattice("chain", [2, 2])
+            generate_lattice([2, 2], "chain")
         with pytest.raises(ValueError):
-            generate_lattice("rectangle", [2])
+            generate_lattice([2], "rectangle")
         with pytest.raises(ValueError):
-            generate_lattice("cubic", [2, 2])
+            generate_lattice([2, 2], "cubic")
         with pytest.raises(ValueError):
-            generate_lattice("triangle", [2, 2, 2])
+            generate_lattice([2, 2, 2], "triangle")
         with pytest.raises(ValueError):
-            generate_lattice("honeycomb", [2, 2, 2])
+            generate_lattice([2, 2, 2], "honeycomb")
