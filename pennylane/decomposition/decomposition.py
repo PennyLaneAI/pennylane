@@ -32,7 +32,8 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
 
-from .decomposition_rule import ControlledDecompositionRule, DecompositionRule
+from .controlled_decomposition import ControlledDecompositionRule
+from .decomposition_rule import DecompositionRule
 from .resources import CompressedResourceOp, Resources
 
 

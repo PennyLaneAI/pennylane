@@ -35,6 +35,7 @@ from pennylane.wires import Wires, WiresLike
 
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
+from ...decomposition import CompressedResourceOp
 
 
 @overload
@@ -644,6 +645,38 @@ class Controlled(SymbolicOp):
             "num_zero_control_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
         }
+
+    @classmethod
+    def make_resource_rep(
+        cls, base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
+    ) -> CompressedResourceOp:
+        """Create a resource representation for a controlled operator.
+
+        Contains special handling for nested operators. This ensures that
+        ``Controlled(Controlled(..., control=0), control=1)`` has the same resource rep
+        as ``Controlled(..., control=[0, 1])``
+
+        """
+
+        # Flatten nested controlled structures
+        if issubclass(base_class, Controlled):
+            base_resource_rep = base_class.make_resource_rep(**base_params)
+            base_class = base_resource_rep.params["base_class"]
+            base_params = base_resource_rep.params["base_params"]
+            num_control_wires += base_resource_rep.params["num_control_wires"]
+            num_zero_control_values += base_resource_rep.params["num_zero_control_values"]
+            num_work_wires += base_resource_rep.params["num_work_wires"]
+
+        return CompressedResourceOp(
+            cls,
+            {
+                "base_class": base_class,
+                "base_params": base_params,
+                "num_control_wires": num_control_wires,
+                "num_zero_control_values": num_zero_control_values,
+                "num_work_wires": num_work_wires,
+            },
+        )
 
     # Methods ##########################################
 

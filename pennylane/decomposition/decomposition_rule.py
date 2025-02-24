@@ -18,9 +18,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-import pennylane as qml
-
-from .resources import CompressedResourceOp, Resources
+from .resources import Resources
 
 
 def decomposition(qfunc: Callable) -> DecompositionRule:
@@ -52,48 +50,3 @@ class DecompositionRule:
             self._compute_resources = resource_func
 
         return _compute_resources_decorator
-
-
-class ControlledDecompositionRule(DecompositionRule):
-    """A decomposition rule for a controlled operation with a decomposition."""
-
-    def __init__(self, base_decomposition: DecompositionRule):
-        self._base_decomposition = base_decomposition
-        super().__init__(self._impl)
-
-    def compute_resources(
-        self, base_params, num_control_wires, num_zero_control_values, num_work_wires
-    ) -> Resources:
-        base_resource_decomp = self._base_decomposition.compute_resources(**base_params)
-        controlled_resources = {
-            CompressedResourceOp(
-                qml.ops.Controlled,
-                {
-                    "base_class": base_op_compressed.op_type,
-                    "base_params": base_op_compressed.params,
-                    "num_control_wires": num_control_wires,
-                    "num_zero_control_values": num_zero_control_values,
-                    "num_work_wires": num_work_wires,
-                },
-            ): count
-            for base_op_compressed, count in base_resource_decomp.gate_counts.items()
-            if count > 0
-        }
-        gate_count = sum(controlled_resources.values())
-        return Resources(gate_count, controlled_resources)
-
-    def _impl(self, base, control_wires, control_values, work_wires, **__):
-        """The default implementation of a controlled decomposition."""
-
-        for w, val in zip(control_wires, control_values):
-            if not val:
-                qml.PauliX(w)
-        qml.ctrl(
-            self._base_decomposition.impl,
-            control=control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-        )(*base.params, wires=base.wires, **base.hyperparameters)
-        for w, val in zip(control_wires, control_values):
-            if not val:
-                qml.PauliX(w)

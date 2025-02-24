@@ -16,6 +16,54 @@
 
 import functools
 import pennylane as qml
+from .decomposition_rule import DecompositionRule
+from .resources import Resources, CompressedResourceOp
+
+
+class ControlledDecompositionRule(DecompositionRule):
+    """A decomposition rule for a controlled operation with a decomposition."""
+
+    def __init__(self, base_decomposition: DecompositionRule):
+        self._base_decomposition = base_decomposition
+        super().__init__(self._impl)
+
+    def compute_resources(
+        self, base_params, num_control_wires, num_zero_control_values, num_work_wires
+    ) -> Resources:
+        base_resource_decomp = self._base_decomposition.compute_resources(**base_params)
+        controlled_resources = {
+            CompressedResourceOp(
+                qml.ops.Controlled,
+                {
+                    "base_class": base_op_compressed.op_type,
+                    "base_params": base_op_compressed.params,
+                    "num_control_wires": num_control_wires,
+                    "num_zero_control_values": 0,
+                    "num_work_wires": num_work_wires,
+                },
+            ): count
+            for base_op_compressed, count in base_resource_decomp.gate_counts.items()
+            if count > 0
+        }
+        controlled_resources[CompressedResourceOp(qml.X)] = num_zero_control_values * 2
+        gate_count = sum(controlled_resources.values())
+        return Resources(gate_count, controlled_resources)
+
+    def _impl(self, base, control_wires, control_values, work_wires, **__):
+        """The default implementation of a controlled decomposition."""
+
+        for w, val in zip(control_wires, control_values):
+            if not val:
+                qml.PauliX(w)
+        qml.ctrl(
+            self._base_decomposition.impl,
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+        )(*base.params, wires=base.wires, **base.hyperparameters)
+        for w, val in zip(control_wires, control_values):
+            if not val:
+                qml.PauliX(w)
 
 
 @functools.lru_cache()
