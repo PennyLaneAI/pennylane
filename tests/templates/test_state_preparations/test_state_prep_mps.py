@@ -19,7 +19,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.templates.state_preparations.state_prep_mps import right_canonicalize_mps
+from pennylane.templates.state_preparations.state_prep_mps import (
+    right_canonicalize_mps,
+    _validate_mps_shape,
+)
 
 
 class TestMPSPrep:
@@ -221,10 +224,10 @@ class TestMPSPrep:
             ),
         ],
     )
-    def test_MPSPrep_error(self, mps, msg_match):
-        """Test that proper errors are raised for MPSPrep"""
+    def test_mps_validate_function(self, mps, msg_match):
+        """Test that proper errors are raised in mps_validate_shape"""
         with pytest.raises(AssertionError, match=msg_match):
-            qml.MPSPrep(mps, wires=[0, 1, 2])
+            _validate_mps_shape(mps)
 
     @pytest.mark.jax
     def test_jax_jit_mps(self):
@@ -553,7 +556,7 @@ class TestMPSPrep:
 
     @pytest.mark.parametrize(
         ("work_wires", "msg"),
-        [(None, "The qml.MPSPrep decomposition requires"), (1, "The bond dimension cannot exceed")],
+        [(None, "The qml.MPSPrep decomposition requires"), (1, "Incorrect number of `work_wires`")],
     )
     def test_wires_decomposition(self, work_wires, msg):
         """Checks that error is shown if no `work_wires` are given in decomposition"""
@@ -586,9 +589,9 @@ class TestMPSPrep:
 
         n_sites = 4
         mps = (
-            [np.ones((1, 2, 4))]
+            [np.ones((2, 4))]
             + [np.ones((4, 2, 4)) for _ in range(1, n_sites - 1)]
-            + [np.ones((4, 2, 1))]
+            + [np.ones((4, 2))]
         )
         mps_rc = right_canonicalize_mps(mps)
 

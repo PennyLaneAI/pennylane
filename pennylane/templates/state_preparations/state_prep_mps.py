@@ -22,6 +22,59 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
+def _validate_mps_shape(mps):
+    r"""Validate that the MPS dimensions are correct.
+
+    Args:
+        mps (list[TensorLike]): List of tensors representing the MPS.
+    """
+
+    # Validate the shape and dimensions of the first tensor
+    assert qml.math.isclose(
+        len(qml.math.shape(mps[0])), 2
+    ), "The first tensor must have exactly 2 dimensions."
+    dj0, dj2 = qml.math.shape(mps[0])
+    assert qml.math.isclose(dj0, 2), "The first dimension of the first tensor must be exactly 2."
+    assert qml.math.log2(
+        dj2
+    ).is_integer(), "The second dimension of the first tensor must be a power of 2."
+
+    # Validate the shapes of the intermediate tensors
+    for i, array in enumerate(mps[1:-1], start=1):
+        shape = qml.math.shape(array)
+        assert qml.math.isclose(len(shape), 3), f"Tensor {i} must have exactly 3 dimensions."
+        new_dj0, new_dj1, new_dj2 = shape
+        assert qml.math.isclose(
+            new_dj1, 2
+        ), f"The second dimension of tensor {i} must be exactly 2."
+        assert qml.math.log2(
+            new_dj0
+        ).is_integer(), f"The first dimension of tensor {i} must be a power of 2."
+        assert qml.math.isclose(
+            new_dj1, 2
+        ), f"The second dimension of tensor {i} must be exactly 2."
+        assert qml.math.log2(
+            new_dj2
+        ).is_integer(), f"The third dimension of tensor {i} must be a power of 2."
+        assert qml.math.isclose(
+            new_dj0, dj2
+        ), f"Dimension mismatch: tensor {i}'s first dimension does not match the previous third dimension."
+        dj2 = new_dj2
+
+    # Validate the shape and dimensions of the last tensor
+    assert qml.math.isclose(
+        len(qml.math.shape(mps[-1])), 2
+    ), "The last tensor must have exactly 2 dimensions."
+    new_dj0, new_dj1 = qml.math.shape(mps[-1])
+    assert new_dj1 == 2, "The second dimension of the last tensor must be exactly 2."
+    assert qml.math.log2(
+        new_dj0
+    ).is_integer(), "The first dimension of the last tensor must be a power of 2."
+    assert qml.math.isclose(
+        new_dj0, dj2
+    ), "Dimension mismatch: the last tensor's first dimension does not match the previous third dimension."
+
+
 def right_canonicalize_mps(mps):
     r"""Transform a matrix product state (MPS) into its right-canonical form.
 
@@ -41,6 +94,7 @@ def right_canonicalize_mps(mps):
 
     where :math:`d_{i,j}` denotes the :math:`j` dimension of the :math:`i` tensor And :math:`\delta` is a
     function that takes the value :math:`1` if the two inputs are the same and :math:`0` otherwise.
+    The definition can be found in Eq. (21) of `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
     .. seealso:: :class:`~.MPSPrep`.
 
@@ -50,44 +104,43 @@ def right_canonicalize_mps(mps):
 
         n_sites = 4
 
-        mps = (
-            [np.ones((1, 2, 4))]
-            + [np.ones((4, 2, 4)) for _ in range(1, n_sites - 1)]
-            + [np.ones((4, 2, 1))]
-        )
+        mps = ([np.ones((2, 4))] +
+               [np.ones((4, 2, 4)) for _ in range(1, n_sites - 1)] +
+               [np.ones((4, 2))])
+
         mps_rc = qml.right_canonicalize_mps(mps)
-
-        for i in range(1, n_sites - 1):
-            tensor = mps_rc[i]
-
-            # Right-canonical definition
-            contraction_matrix = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
-            print(np.allclose(contraction_matrix, np.eye(tensor.shape[0])))
-
-    .. code-block:: pycon
-
-        True
-        True
     """
 
+    _validate_mps_shape(mps)
+
+    mps.copy()
+    mps[0] = mps[0].reshape((1, *mps[0].shape))
+    mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
+
     is_right_canonical = True
-    d_shapes = []
     for tensor in mps[1:-1]:
         # Right-canonical definition
-        d_shapes += tensor.shape
         input_matrix = qml.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
         if not qml.math.allclose(input_matrix, qml.math.eye(tensor.shape[0])):
             is_right_canonical = False
+            break
 
     if is_right_canonical:
+        mps[0] = mps[0][0]
+        mps[-1] = mps[-1][:, :, 0]
         return mps
+
+    d_shapes = []
+    for tensor in mps[1:-1]:
+        d_shapes += tensor.shape
 
     max_bond_dim = qml.math.max(d_shapes)
 
     n_sites = len(mps)
     output_mps = [None] * n_sites
 
-    # Procedure analogous to the left-canonical conversion but starting from the right and storing the Vd
+    # Procedure analogous to the left-canonical conversion but starting from the right and storing the Vd,
+    # where Vd is the right matrix in the Singular Value Decomposition (SVD)
     for i in range(n_sites - 1, 0, -1):
         chi_left, d, chi_right = mps[i].shape
         input_matrix = mps[i].reshape(chi_left, d * chi_right)
@@ -108,7 +161,9 @@ def right_canonicalize_mps(mps):
             mps[i - 1], u_matrix @ qml.math.diag(s_diag), axes=([2], [0])
         )
 
-    output_mps[0] = mps[0]
+    output_mps[0] = mps[0][0]
+    output_mps[-1] = output_mps[-1][:, :, 0]
+
     return output_mps
 
 
@@ -220,52 +275,7 @@ class MPSPrep(Operation):
         self, mps, wires, work_wires=None, right_canonicalize=False, id=None
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
-        # Validate the shape and dimensions of the first tensor
-        assert qml.math.isclose(
-            len(qml.math.shape(mps[0])), 2
-        ), "The first tensor must have exactly 2 dimensions."
-        dj0, dj2 = qml.math.shape(mps[0])
-        assert qml.math.isclose(
-            dj0, 2
-        ), "The first dimension of the first tensor must be exactly 2."
-        assert qml.math.log2(
-            dj2
-        ).is_integer(), "The second dimension of the first tensor must be a power of 2."
-
-        # Validate the shapes of the intermediate tensors
-        for i, array in enumerate(mps[1:-1], start=1):
-            shape = qml.math.shape(array)
-            assert qml.math.isclose(len(shape), 3), f"Tensor {i} must have exactly 3 dimensions."
-            new_dj0, new_dj1, new_dj2 = shape
-            assert qml.math.isclose(
-                new_dj1, 2
-            ), f"The second dimension of tensor {i} must be exactly 2."
-            assert qml.math.log2(
-                new_dj0
-            ).is_integer(), f"The first dimension of tensor {i} must be a power of 2."
-            assert qml.math.isclose(
-                new_dj1, 2
-            ), f"The second dimension of tensor {i} must be exactly 2."
-            assert qml.math.log2(
-                new_dj2
-            ).is_integer(), f"The third dimension of tensor {i} must be a power of 2."
-            assert qml.math.isclose(
-                new_dj0, dj2
-            ), f"Dimension mismatch: tensor {i}'s first dimension does not match the previous third dimension."
-            dj2 = new_dj2
-
-        # Validate the shape and dimensions of the last tensor
-        assert qml.math.isclose(
-            len(qml.math.shape(mps[-1])), 2
-        ), "The last tensor must have exactly 2 dimensions."
-        new_dj0, new_dj1 = qml.math.shape(mps[-1])
-        assert new_dj1 == 2, "The second dimension of the last tensor must be exactly 2."
-        assert qml.math.log2(
-            new_dj0
-        ).is_integer(), "The first dimension of the last tensor must be a power of 2."
-        assert qml.math.isclose(
-            new_dj0, dj2
-        ), "Dimension mismatch: the last tensor's first dimension does not match the previous third dimension."
+        _validate_mps_shape(mps)
 
         self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
         self.hyperparameters["right_canonicalize"] = right_canonicalize
@@ -351,22 +361,27 @@ class MPSPrep(Operation):
         if work_wires is None:
             raise ValueError("The qml.MPSPrep decomposition requires `work_wires` to be specified.")
 
-        max_bond_dimension = 2 ** len(work_wires)
+        max_bond_dimension = 0
         for i in range(len(mps) - 1):
             bond_dim = mps[i].shape[-1]
-            if bond_dim > max_bond_dimension:
-                raise ValueError("The bond dimension cannot exceed `2**len(work_wires)`.")
+            max_bond_dimension = max(max_bond_dimension, bond_dim)
+
+        if max_bond_dimension > 2 ** len(work_wires):
+            raise ValueError(
+                f"Incorrect number of `work_wires`. At least {int(np.ceil(np.log2(max_bond_dimension)))} `work_wires` must be provided."
+            )
 
         ops = []
         n_wires = len(work_wires) + 1
 
         mps = mps.copy()
-        mps[0] = mps[0].reshape((1, *mps[0].shape))
-        mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
         # Transform the MPS to ensure that the generated matrix is unitary
         if right_canonicalize:
             mps = right_canonicalize_mps(mps)
+
+        mps[0] = mps[0].reshape((1, *mps[0].shape))
+        mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
         interface, dtype = qml.math.get_interface(mps[0]), mps[0].dtype
 
