@@ -25,7 +25,7 @@ import networkx as nx
 class Lattice:
     """Represents a qubit lattice structure.
 
-    This Lattice class, inspired by the design of :class: `~pennylane.spin.Lattice`, leverages `NetworkX` to represent the relationships within the lattice structure.
+    This Lattice class, inspired by the design of :class:`~pennylane.spin.Lattice`, leverages `NetworkX` to represent the relationships within the lattice structure.
 
         Args:
             lattice_shape: Name of the lattice shape.
@@ -45,7 +45,7 @@ class Lattice:
         if graph is None:
             if nodes is None and edges is None:
                 raise ValueError(
-                    "Neither a networkx Graph object nor nodes together with egdes are provided."
+                    "Neither a networkx Graph object nor nodes together with edges are provided."
                 )
             self._graph = nx.Graph()
             self._graph.add_nodes_from(nodes)
