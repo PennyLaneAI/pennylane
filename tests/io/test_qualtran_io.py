@@ -23,8 +23,12 @@ import numpy as np
 class TestFromBloq:
     """Test that FromBloq accurately wraps around Bloqs."""
 
-    def test_attributes(self):
-        pass
+    def test_repr(self):
+        """Tests that FromBloq has the correct __repr__"""
+
+        from qualtran.bloqs.basic_gates import XGate
+
+        assert qml.FromBloq(XGate(), 1).__repr__() == "FromBloq(XGate, wires=Wires([1]))"
 
     def test_composite_bloq(self):
         """Tests that a simple composite bloq has the correct decomposition after wrapped with `FromBloq`"""
