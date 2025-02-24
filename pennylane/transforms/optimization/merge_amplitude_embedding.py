@@ -123,7 +123,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         # pylint: disable=too-many-branches
-        def eval(self, jaxpr, consts, *args):
+        def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
