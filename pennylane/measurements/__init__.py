@@ -289,8 +289,15 @@ from .measurements import (
     Variance,
     VnEntropy,
 )
-from .mid_measure import MeasurementValue, MidMeasureMP, measure, find_post_processed_mcms
+from .mid_measure import (
+    MeasurementValue,
+    MidMeasureMP,
+    measure,
+    find_post_processed_mcms,
+    get_mcm_predicates,
+)
 from .mutual_info import MutualInfoMP, mutual_info
+from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
 from .sample import SampleMP, sample
