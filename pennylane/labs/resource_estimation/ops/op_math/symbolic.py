@@ -24,6 +24,9 @@ from pennylane.ops.op_math.exp import Exp
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.prod import Prod
 
+from pennylane.operation import Operation
+from pennylane.pauli import PauliSentence
+
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
 
 
@@ -153,7 +156,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         cls, base_class, base_params, z, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
         if z == 0:
-            return {re.ResourceIdentity.resource_rep(): 1}
+            return {}
 
         try:
             return base_class.pow_resource_decomp(z, **base_params)
@@ -202,8 +205,7 @@ class ResourceExp(Exp, re.ResourceOperator):
     """Resource class for Exp"""
 
     @staticmethod
-    def _resource_decomp(base_class, base_params, base_pauli_rep, coeff, num_steps, **kwargs):
-
+    def _resource_decomp(base_class: Operation, base_params: Dict, base_pauli_rep: PauliSentence, coeff: complex, num_steps: int, **kwargs):
         # Custom exponential operator resources:
         if issubclass(base_class, re.ResourceOperator):
             try:
@@ -245,7 +247,7 @@ class ResourceExp(Exp, re.ResourceOperator):
 
     @staticmethod
     def tracking_name(
-        base_class, base_params, base_pauli_rep, coeff, num_steps
+        base_class: Operation, base_params: Dict, base_pauli_rep: PauliSentence, coeff: complex, num_steps: int,
     ):  # pylint: disable=unused-argument
         base_name = (
             base_class.tracking_name(**base_params)
@@ -257,7 +259,7 @@ class ResourceExp(Exp, re.ResourceOperator):
 
 
 class ResourceProd(Prod, re.ResourceOperator):
-    """Resource class for Exp"""
+    """Resource class for Prod"""
 
     @staticmethod
     def _resource_decomp(cmpr_factors, **kwargs) -> Dict[re.CompressedResourceOp, int]:
