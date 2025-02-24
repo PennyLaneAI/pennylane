@@ -34,17 +34,11 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 class TestDeferMeasurementsInterpreter:
     """Unit tests for DeferMeasurementsInterpreter."""
 
-    @pytest.mark.parametrize("aux_wires", [1, (), [1, 2, 3], Wires([1, 2, 3])])
-    def test_init(self, aux_wires):
-        """Test that the interpreter is initialized correctly."""
-        interpreter = DeferMeasurementsInterpreter(aux_wires)
-        assert interpreter._aux_wires == Wires(aux_wires)
-
     @pytest.mark.parametrize("reset", [True, False])
     def test_single_mcm(self, reset):
         """Test that a function with a single MCM is transformed correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f():
             qml.measure(0, reset=reset)
 
@@ -53,18 +47,18 @@ class TestDeferMeasurementsInterpreter:
         assert len(jaxpr.eqns) == expected_len
         assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
         invals = [invar.val for invar in jaxpr.eqns[0].invars]
-        assert invals == [0, 5]
+        assert invals == [0, 9]
         if reset:
             assert jaxpr.eqns[1].primitive == qml.CNOT._primitive
             invals = [invar.val for invar in jaxpr.eqns[1].invars]
-            assert invals == [5, 0]
+            assert invals == [9, 0]
 
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [0, 1])
     def test_single_mcm_postselect(self, reset, postselect):
         """Test that a function with a single MCM with postselection is transformed correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f():
             qml.measure(0, reset=reset, postselect=postselect)
 
@@ -80,7 +74,7 @@ class TestDeferMeasurementsInterpreter:
         # CNOT for measure
         assert jaxpr.eqns[1].primitive == qml.CNOT._primitive
         invals = [invar.val for invar in jaxpr.eqns[1].invars]
-        assert invals == [0, 5]
+        assert invals == [0, 9]
 
         if reset:
             if postselect == 1:
@@ -91,7 +85,7 @@ class TestDeferMeasurementsInterpreter:
     def test_multiple_mcms(self):
         """Test that applying multiple MCMs is transformed correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(w):
             qml.measure(w)
             qml.measure(w + 1)
@@ -99,27 +93,59 @@ class TestDeferMeasurementsInterpreter:
 
         jaxpr = jax.make_jaxpr(f)(0)  # wires will be 0, 1, 2
         assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
-        assert jaxpr.eqns[0].invars[1].val == 5
+        assert jaxpr.eqns[0].invars[1].val == 9
         assert jaxpr.eqns[2].primitive == qml.CNOT._primitive
-        assert jaxpr.eqns[2].invars[1].val == 6
+        assert jaxpr.eqns[2].invars[1].val == 8
         assert jaxpr.eqns[4].primitive == qml.CNOT._primitive
         assert jaxpr.eqns[4].invars[1].val == 7
 
-    def test_too_many_mcms(self):
+    def test_mcm_operator_overlap(self):
         """Test that an error is raised if more MCMs are present than the number of aux_wires."""
 
-        @DeferMeasurementsInterpreter(aux_wires=[5])
+        @DeferMeasurementsInterpreter(num_wires=2)
+        def f(w):
+            qml.X(0)
+            qml.measure(w)
+            qml.X(1)
+
+        with pytest.raises(
+            qml.transforms.TransformError,
+            match="Too many mid-circuit measurements for the specified number of wires.",
+        ):
+            f(0)
+
+    def test_mcm_measurement_overlap(self):
+        """Test that an error is raised if more MCMs are present than the number of aux_wires."""
+
+        @DeferMeasurementsInterpreter(num_wires=2)
+        def f(w):
+            qml.measure(w)
+            return qml.expval(qml.Z(1))
+
+        with pytest.raises(
+            qml.transforms.TransformError,
+            match="Too many mid-circuit measurements for the specified number of wires.",
+        ):
+            f(0)
+
+    def test_mcm_mcm_overlap(self):
+        """Test that an error is raised if more MCMs are present than the number of aux_wires."""
+
+        @DeferMeasurementsInterpreter(num_wires=2)
         def f(w):
             qml.measure(w)
             qml.measure(w)
 
-        with pytest.raises(ValueError, match="Not enough auxiliary wires"):
+        with pytest.raises(
+            qml.transforms.TransformError,
+            match="Too many mid-circuit measurements for the specified number of wires.",
+        ):
             f(0)
 
     def test_mcms_as_gate_parameters(self):
         """Test that MCMs can be used as gate parameters."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             m = qml.measure(0)
             qml.RX(x * m, 0)
@@ -131,16 +157,16 @@ class TestDeferMeasurementsInterpreter:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
-            qml.ops.Controlled(qml.RX(jnp.array(0), 0), 5, control_values=[0]),
-            qml.ops.Controlled(qml.RX(jnp.array(x), 0), 5, control_values=[1]),
+            qml.CNOT([0, 9]),
+            qml.ops.Controlled(qml.RX(jnp.array(0), 0), 9, control_values=[0]),
+            qml.ops.Controlled(qml.RX(jnp.array(x), 0), 9, control_values=[1]),
         ]
         assert ops == expected_ops
 
     def test_multiple_mcms_as_gate_parameters_error(self):
         """Test that multiple MCM parameters for a single operator raises an error."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             m1 = qml.measure(0)
             m2 = qml.measure(0)
@@ -155,7 +181,7 @@ class TestDeferMeasurementsInterpreter:
     def test_mcms_as_nested_gate_parameters(self):
         """Test that MCMs can be used as gate parameters."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x, y):
             m = qml.measure(0)
             qml.s_prod(y, qml.RX(x * m, 0))
@@ -167,10 +193,10 @@ class TestDeferMeasurementsInterpreter:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
-            qml.ops.Controlled(qml.s_prod(args[1], qml.RX(jnp.array(0), 0)), 5, control_values=[0]),
+            qml.CNOT([0, 9]),
+            qml.ops.Controlled(qml.s_prod(args[1], qml.RX(jnp.array(0), 0)), 9, control_values=[0]),
             qml.ops.Controlled(
-                qml.s_prod(args[1], qml.RX(jnp.array(args[0]), 0)), 5, control_values=[1]
+                qml.s_prod(args[1], qml.RX(jnp.array(args[0]), 0)), 9, control_values=[1]
             ),
         ]
         assert ops == expected_ops
@@ -178,7 +204,7 @@ class TestDeferMeasurementsInterpreter:
     def test_simple_cond(self):
         """Test that a qml.cond using a single MCM predicate is transformed correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             m = qml.measure(0)
 
@@ -194,13 +220,13 @@ class TestDeferMeasurementsInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
 
         ops = collector.state["ops"]
-        expected_ops = [qml.CNOT([0, 5]), qml.CRX(x, [5, 0])]
+        expected_ops = [qml.CNOT([0, 9]), qml.CRX(x, [9, 0])]
         assert ops == expected_ops
 
     def test_non_trivial_cond_predicate(self):
         """Test that a qml.cond using processed MCMs as a predicate is transformed correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             m0 = qml.measure(0)
             m1 = qml.measure(0)
@@ -218,18 +244,18 @@ class TestDeferMeasurementsInterpreter:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
-            qml.CNOT([0, 6]),
-            qml.ctrl(qml.RX(x, 0), [5, 6], [0, 1]),
-            qml.ctrl(qml.RX(x, 0), [5, 6], [1, 0]),
-            qml.ctrl(qml.RX(x, 0), [5, 6]),
+            qml.CNOT([0, 9]),
+            qml.CNOT([0, 8]),
+            qml.ctrl(qml.RX(x, 0), [8, 9], [0, 1]),
+            qml.ctrl(qml.RX(x, 0), [8, 9], [1, 0]),
+            qml.ctrl(qml.RX(x, 0), [8, 9]),
         ]
         assert ops == expected_ops
 
     def test_cond_elif_false_fn(self):
         """Test that a qml.cond with elif and false branches is transformed correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             m0 = qml.measure(0)
             m1 = qml.measure(0)
@@ -255,11 +281,11 @@ class TestDeferMeasurementsInterpreter:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
-            qml.CNOT([0, 6]),
-            qml.CRX(x, [5, 0]),
-            qml.ctrl(qml.RY(x, 0), [5, 6], [0, 1]),
-            qml.ctrl(qml.RZ(x, 0), [5, 6], [0, 0]),
+            qml.CNOT([0, 9]),
+            qml.CNOT([0, 8]),
+            qml.CRX(x, [9, 0]),
+            qml.ctrl(qml.RY(x, 0), [8, 9], [1, 0]),
+            qml.ctrl(qml.RZ(x, 0), [8, 9], [0, 0]),
         ]
         assert ops == expected_ops
 
@@ -276,7 +302,7 @@ class TestDeferMeasurementsInterpreter:
     def test_mcm_statistics(self, mp_fn, mp_class):
         """Test that collecting statistics on MCMs is handled correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f():
             m0 = qml.measure(0)
             m1 = qml.measure(0)
@@ -295,21 +321,21 @@ class TestDeferMeasurementsInterpreter:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         ops = collector.state["ops"]
-        expected_ops = [qml.CNOT([0, 5]), qml.CNOT([0, 6]), qml.CNOT([0, 7])]
+        expected_ops = [qml.CNOT([0, 9]), qml.CNOT([0, 8]), qml.CNOT([0, 7])]
         assert ops == expected_ops
 
         measurements = collector.state["measurements"]
         expected_measurements = [
-            mp_class(wires=Wires([5]), eigvals=jnp.arange(0, 2)),
-            mp_class(wires=Wires([6, 7]), eigvals=jnp.array([0.0, -1.0, 2.5, 1.5])),
+            mp_class(wires=Wires([9]), eigvals=jnp.arange(0, 2)),
+            mp_class(wires=Wires([7, 8]), eigvals=jnp.array([0.0, 2.5, -1.0, 1.5])),
         ]
         if mp_fn not in (qml.expval, qml.var):
             expected_measurements.append(
-                mp_class(wires=Wires([5, 6, 7]), eigvals=qml.math.arange(0, 2**3))
+                mp_class(wires=Wires([9, 8, 7]), eigvals=qml.math.arange(0, 2**3))
             )
         if mp_fn == qml.counts:
             expected_measurements.append(
-                mp_class(wires=Wires([5]), eigvals=jnp.arange(0, 2), all_outcomes=True)
+                mp_class(wires=Wires([9]), eigvals=jnp.arange(0, 2), all_outcomes=True)
             )
         assert measurements == expected_measurements
 
@@ -322,7 +348,7 @@ class TestDeferMeasurementsInterpreter:
             c = jnp.sinh(b) ** (-ms[2] + 2)
             return ms[0] * ms[1] * c
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f():
             m0 = qml.measure(0)
             m1 = qml.measure(0)
@@ -336,14 +362,14 @@ class TestDeferMeasurementsInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         mp = collector.state["measurements"][0]
         assert isinstance(mp, qml.measurements.ExpectationMP)
-        assert mp.wires == Wires([5, 6, 7])
+        assert mp.wires == Wires([7, 8, 9])
 
         expected_eigvals = []
         n_mcms = 3
         # Iterate through all 3-bit binary numbers
         for i in range(2**n_mcms):
             branch = tuple(int(b) for b in f"{i:0{n_mcms}b}")
-            expected_eigvals.append(processing_fn(*branch))
+            expected_eigvals.append(processing_fn(*branch[::-1]))
 
         expected_eigvals = jnp.array(expected_eigvals)
         assert qml.math.allclose(mp.eigvals(), expected_eigvals)
@@ -353,7 +379,7 @@ class TestDeferMeasurementsInterpreter:
 
         x = jnp.array(1.5)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f():
             qml.RX(x, 0)
             qml.measure(0)
@@ -364,7 +390,7 @@ class TestDeferMeasurementsInterpreter:
     def test_dynamic_wires(self):
         """Test that dynamic wires work correctly with defer_measurements."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             qml.measure(x)
 
@@ -372,7 +398,7 @@ class TestDeferMeasurementsInterpreter:
         assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
         assert len(jaxpr.eqns[0].invars) == 2
         assert jaxpr.eqns[0].invars[0] == jaxpr.jaxpr.invars[0]
-        assert jaxpr.eqns[0].invars[1].val == 5
+        assert jaxpr.eqns[0].invars[1].val == 9
 
 
 @pytest.mark.parametrize("postselect", [None, 0, 1])
@@ -383,7 +409,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         """Test that a for_loop primitive is transformed correctly."""
         n = jnp.array(3, dtype=int)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             qml.measure(0, postselect=postselect)
 
@@ -401,11 +427,11 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
+            qml.CNOT([0, 9]),
             qml.RX(x, [0]),
             qml.RX(x, [1]),
             qml.RX(x, [2]),
-            qml.CNOT([0, 6]),
+            qml.CNOT([0, 8]),
         ]
         if postselect is not None:
             expected_ops.insert(0, qml.Projector(qml.math.array([postselect]), 0))
@@ -415,7 +441,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         """Test that a while_loop primitive is transformed correctly."""
         n = jnp.array(3, dtype=int)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             qml.measure(0, postselect=postselect)
 
@@ -434,11 +460,11 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
+            qml.CNOT([0, 9]),
             qml.RX(x, [0]),
             qml.RX(x, [1]),
             qml.RX(x, [2]),
-            qml.CNOT([0, 6]),
+            qml.CNOT([0, 8]),
         ]
         if postselect is not None:
             expected_ops.insert(0, qml.Projector(qml.math.array([postselect]), 0))
@@ -447,7 +473,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
     def test_cond_non_mcm(self, postselect):
         """Test that a qml.cond that does not use MCM predicates is transformed correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             qml.measure(0, postselect=postselect)
 
@@ -467,7 +493,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
-        expected_ops = [qml.CNOT([0, 5]), qml.RZ(x, 0), qml.CNOT([0, 6])]
+        expected_ops = [qml.CNOT([0, 9]), qml.RZ(x, 0), qml.CNOT([0, 8])]
         if postselect is not None:
             expected_ops.insert(0, qml.Projector(qml.math.array([postselect]), 0))
         assert ops == expected_ops
@@ -476,7 +502,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
-        expected_ops = [qml.CNOT([0, 5]), qml.RX(x, 0), qml.CNOT([0, 6])]
+        expected_ops = [qml.CNOT([0, 9]), qml.RX(x, 0), qml.CNOT([0, 8])]
         if postselect is not None:
             expected_ops.insert(0, qml.Projector(qml.math.array([postselect]), 0))
         assert ops == expected_ops
@@ -484,7 +510,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
     def test_cond_body_mcm(self, postselect):
         """Test that a qml.cond containing MCMs in its body is transformed correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 15)))
+        @DeferMeasurementsInterpreter(num_wires=15)
         def f(x):
             qml.measure(0)
 
@@ -515,11 +541,11 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
-            qml.CNOT([1, 6]),
+            qml.CNOT([0, 14]),
+            qml.CNOT([1, 13]),
             qml.RX(x, 0),
-            qml.CNOT([1, 7]),
-            qml.CNOT([4, 12]),
+            qml.CNOT([1, 12]),
+            qml.CNOT([4, 7]),
         ]
         if postselect is not None:
             expected_ops.insert(1, qml.Projector(qml.math.array([postselect]), 1))
@@ -530,11 +556,11 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
-            qml.CNOT([2, 8]),
+            qml.CNOT([0, 14]),
+            qml.CNOT([2, 11]),
             qml.RY(x, 0),
-            qml.CNOT([2, 9]),
-            qml.CNOT([4, 12]),
+            qml.CNOT([2, 10]),
+            qml.CNOT([4, 7]),
         ]
         if postselect is not None:
             expected_ops.insert(1, qml.Projector(qml.math.array([postselect]), 2))
@@ -545,11 +571,11 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
-            qml.CNOT([3, 10]),
+            qml.CNOT([0, 14]),
+            qml.CNOT([3, 9]),
             qml.RZ(x, 0),
-            qml.CNOT([3, 11]),
-            qml.CNOT([4, 12]),
+            qml.CNOT([3, 8]),
+            qml.CNOT([4, 7]),
         ]
         if postselect is not None:
             expected_ops.insert(1, qml.Projector(qml.math.array([postselect]), 3))
@@ -559,7 +585,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
     def test_adjoint(self, lazy, postselect):
         """Test that the adjoint_transform primitive is transformed correctly."""
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             qml.measure(0, postselect=postselect)
 
@@ -576,7 +602,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
+            qml.CNOT([0, 9]),
             qml.ops.Adjoint(qml.RY(x, 0)) if lazy else qml.RY(-x, 0),
             qml.ops.Adjoint(qml.RX(x, 0)) if lazy else qml.RX(-x, 0),
         ]
@@ -589,7 +615,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         ctrl_wires = [1, 2]
         ctrl_vals = [True, False]
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         def f(x):
             qml.measure(0, postselect=postselect)
 
@@ -606,7 +632,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
+            qml.CNOT([0, 9]),
             qml.ops.Controlled(qml.RX(x, 0), ctrl_wires, control_values=ctrl_vals),
             qml.ops.Controlled(qml.RY(x, 0), ctrl_wires, control_values=ctrl_vals),
         ]
@@ -618,7 +644,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         """Test that a qnode primitive is transformed correctly."""
         dev = qml.device("default.qubit", wires=10, shots=10)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))
+        @DeferMeasurementsInterpreter(num_wires=10)
         @qml.qnode(dev, diff_method="parameter-shift")
         def f(x):
             m0 = qml.measure(0, postselect=postselect)
@@ -651,11 +677,11 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.CNOT([0, 5]),
-            qml.CNOT([0, 6]),
-            qml.ctrl(qml.RX(x, 0), [5, 6], [0, 1]),
-            qml.ctrl(qml.RX(x, 0), [5, 6], [1, 0]),
-            qml.ctrl(qml.RX(x, 0), [5, 6]),
+            qml.CNOT([0, 9]),
+            qml.CNOT([0, 8]),
+            qml.ctrl(qml.RX(x, 0), [8, 9], [0, 1]),
+            qml.ctrl(qml.RX(x, 0), [8, 9], [1, 0]),
+            qml.ctrl(qml.RX(x, 0), [8, 9]),
         ]
         if postselect is not None:
             expected_ops.insert(0, qml.Projector(qml.math.array([postselect]), 0))
@@ -666,8 +692,8 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         expected_measurements = [
             qml.expval(qml.Z(0)),
             qml.probs(wires=[0, 1, 2]),
-            qml.measurements.SampleMP(wires=[5, 6], eigvals=jnp.arange(0, 2**2)),
-            qml.measurements.SampleMP(wires=[5, 6], eigvals=qml.math.array([0.0, -4.0, 1.0, -3.0])),
+            qml.measurements.SampleMP(wires=[9, 8], eigvals=jnp.arange(0, 2**2)),
+            qml.measurements.SampleMP(wires=[8, 9], eigvals=qml.math.array([0.0, 1.0, -4.0, -3.0])),
         ]
         assert measurements == expected_measurements
 
@@ -691,9 +717,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             return qml.expval(qml.PauliZ(0))
 
         x = 1.5
-        transformed_fn = DeferMeasurementsInterpreter(aux_wires=list(range(5, 10)))(
-            diff_fn(circuit)
-        )
+        transformed_fn = DeferMeasurementsInterpreter(num_wires=10)(diff_fn(circuit))
         jaxpr = jax.make_jaxpr(transformed_fn)(x)
         assert jaxpr.eqns[0].primitive == diff_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
@@ -704,7 +728,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         collector.eval(qfunc_jaxpr, jaxpr.consts, x)
 
         ops = collector.state["ops"]
-        expected_ops = [qml.RX(x, 0), qml.CNOT([0, 5]), qml.CRX(x, [5, 0])]
+        expected_ops = [qml.RX(x, 0), qml.CNOT([0, 9]), qml.CRX(x, [9, 0])]
         if postselect is not None:
             expected_ops.insert(1, qml.Projector(qml.math.array([postselect]), 0))
         assert ops == expected_ops
@@ -728,7 +752,7 @@ def test_defer_measurements_plxpr_to_plxpr():
 
     args = (1.5,)
     targs = ()
-    tkwargs = {"aux_wires": list(range(5, 10))}
+    tkwargs = {"num_wires": 10}
     jaxpr = jax.make_jaxpr(f)(*args)
     transformed_jaxpr = defer_measurements_plxpr_to_plxpr(
         jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args
@@ -737,7 +761,7 @@ def test_defer_measurements_plxpr_to_plxpr():
     collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, *args)
 
     ops = collector.state["ops"]
-    expected_ops = [qml.CNOT([0, 5]), qml.CRX(args[0], [5, 0])]
+    expected_ops = [qml.CNOT([0, 9]), qml.CRX(args[0], [9, 0])]
     assert ops == expected_ops
 
 
@@ -758,42 +782,23 @@ def test_defer_measurements_plxpr_to_plxpr_no_aux_wires_error():
     tkwargs = {}
     jaxpr = jax.make_jaxpr(f)(*args)
 
-    with pytest.raises(ValueError, match="'aux_wires' argument for qml.defer_measurements must be"):
-        defer_measurements_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
-
-
-def test_defer_measurements_plxpr_to_plxpr_reduce_postselected_warning():
-    """Test that a warning is raised if ``reduce_postselected=True``."""
-
-    def f(x):
-        m = qml.measure(0)
-
-        @qml.cond(m)
-        def true_fn(phi):
-            qml.RX(phi, 0)
-
-        true_fn(x)
-
-    args = (1.5,)
-    targs = ()
-    tkwargs = {"aux_wires": list(range(5, 10)), "reduce_postselected": True}
-    jaxpr = jax.make_jaxpr(f)(*args)
-
-    with pytest.warns(UserWarning, match="Cannot set 'reduce_postselected=True'"):
+    with pytest.raises(ValueError, match="'num_wires' argument for qml.defer_measurements must be"):
         defer_measurements_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
 
 
 # The following tests should be moved elsewhere after transforms are integrated with execution
-class TestDeferMeasurementsDefaultQubit:
+class TestDeferMeasurementsExecution:
     """Tests for executing circuits that are transformed by qml.defer_measurements
     with default.qubit."""
+
+    # def test_mcm_method_integration
 
     def test_single_mcm(self):
         """Test that applying a single MCM works."""
 
         dev = qml.device("default.qubit", wires=5)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(2, 5)))
+        @DeferMeasurementsInterpreter(num_wires=5)
         def f():
             qml.Hadamard(0)
             qml.measure(0)
@@ -809,7 +814,7 @@ class TestDeferMeasurementsDefaultQubit:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(2, 5)))
+        @DeferMeasurementsInterpreter(num_wires=5)
         def f():
             qml.PauliX(0)
             qml.measure(0, reset=True)
@@ -826,7 +831,7 @@ class TestDeferMeasurementsDefaultQubit:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(2, 5)))
+        @DeferMeasurementsInterpreter(num_wires=5)
         def f():
             qml.Hadamard(0)
             qml.CNOT([0, 1])
@@ -847,7 +852,7 @@ class TestDeferMeasurementsDefaultQubit:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(2, 5)))
+        @DeferMeasurementsInterpreter(num_wires=5)
         def f():
             qml.Hadamard(0)
             m = qml.measure(0)
@@ -865,7 +870,7 @@ class TestDeferMeasurementsDefaultQubit:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(2, 5)))
+        @DeferMeasurementsInterpreter(num_wires=5)
         def f(x):
             qml.Hadamard(0)
             qml.Hadamard(1)
@@ -899,7 +904,7 @@ class TestDeferMeasurementsDefaultQubit:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @DeferMeasurementsInterpreter(aux_wires=list(range(2, 5)))
+        @DeferMeasurementsInterpreter(num_wires=5)
         def f(x):
             qml.Hadamard(0)
             m0 = qml.measure(0)
@@ -942,11 +947,7 @@ class TestDeferMeasurementsDefaultQubit:
 
     @pytest.mark.parametrize(
         "mp_fn",
-        [
-            qml.expval,
-            qml.var,
-            qml.probs,
-        ],
+        [qml.expval, qml.var, qml.probs],
     )
     def test_mcm_statistics(self, mp_fn):
         """Test that collecting statistics on MCMs is handled correctly."""
@@ -972,13 +973,13 @@ class TestDeferMeasurementsDefaultQubit:
 
             return outs
 
-        transformed_f = DeferMeasurementsInterpreter(aux_wires=list(range(2, 5)))(f)
-        qnode_f = qml.QNode(f, dev, mcm_method="deferred")
+        transformed_f = DeferMeasurementsInterpreter(num_wires=5)(f)
 
         jaxpr = jax.make_jaxpr(transformed_f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         with qml.capture.pause():
+            qnode_f = qml.QNode(f, dev, mcm_method="deferred")
             expected = qnode_f()
 
         for r, e in zip(res, expected, strict=True):

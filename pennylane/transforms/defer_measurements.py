@@ -16,6 +16,7 @@
 from functools import lru_cache, partial
 from numbers import Number
 from typing import Callable, Optional, Sequence, Union
+from warnings import warn
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -130,10 +131,9 @@ def _get_plxpr_defer_measurements():
 
         # pylint: disable=unnecessary-lambda-assignment,attribute-defined-outside-init,no-self-use
 
-        def __init__(self, num_wires, reduce_postselected=True):
+        def __init__(self, num_wires):
             super().__init__()
             self._num_wires = num_wires
-            self._reduce_postselected = reduce_postselected
 
             # We use a dict here instead of a normal int variable because we want the state to mutate
             # when we interpret higher-order primitives
@@ -151,26 +151,21 @@ def _get_plxpr_defer_measurements():
             """
             self.state = {"cur_target": self._num_wires - 1, "used_wires": set()}
 
-        def _update_used_wires(self, wires: qml.wires.Wires):
+        def _update_used_wires(self, wires: qml.wires.Wires, cur_target: int):
             """Update the state with the number of wires that have been used and validate that
             there is no overlap between the used circuit wires and the mid-circuit measurement
             target wires.
 
             Args:
                 wires (pennylane.wires.Wires): wires to add to the set of used wires
+                cur_target (int): target wire to be used for a mid-circuit measurement
 
             Raises:
                 TransformError: if there is overlap between the used circuit wires and mid-circuit
                 measurement target wires
             """
             self.state["used_wires"] |= wires.toset()
-
-            # Range for comparison is [cur_target + 1, num_wires) because cur_target
-            # is the _next_ wire to be used for an MCM. We want to check if the used
-            # wires overlap with the already applied MCMs.
-            if self.state["used_wires"].intersection(
-                range(self.state["cur_target"] + 1, self._num_wires)
-            ):
+            if self.state["used_wires"].intersection(range(cur_target, self._num_wires)):
                 raise TransformError(
                     "Too many mid-circuit measurements for the specified number of wires."
                 )
@@ -198,8 +193,7 @@ def _get_plxpr_defer_measurements():
 
             idx = inds[0]
             mv = data[idx]
-            items = mv.postselected_items() if self._reduce_postselected else mv.items()
-            for branch, value in items:
+            for branch, value in mv.items():
                 data[idx] = value
                 op = jax.tree_util.tree_unflatten(struct, data)
                 qml.ctrl(op, mv.wires, control_values=branch)
@@ -219,7 +213,10 @@ def _get_plxpr_defer_measurements():
             See also: :meth:`~.interpret_operation_eqn`.
 
             """
-            self._update_used_wires(op.wires)
+            # Range for comparison is [cur_target + 1, num_wires) because cur_target
+            # is the _next_ wire to be used for an MCM. We want to check if the used
+            # wires overlap with the already applied MCMs.
+            self._update_used_wires(op.wires, self.state["cur_target"] + 1)
 
             # We treat operators with operators based on mid-circuit measurement values
             # separately, and otherwise default to the standard behaviour
@@ -243,14 +240,17 @@ def _get_plxpr_defer_measurements():
             See also :meth:`~.interpret_measurement_eqn`.
 
             """
-            self._update_used_wires(measurement.wires)
-
             if measurement.mv is not None:
                 kwargs = {"wires": measurement.wires, "eigvals": measurement.eigvals()}
                 if isinstance(measurement, CountsMP):
                     kwargs["all_outcomes"] = measurement.all_outcomes
-
                 measurement = type(measurement)(**kwargs)
+
+            else:
+                # Range for comparison is [cur_target + 1, num_wires) because cur_target
+                # is the _next_ wire to be used for an MCM. We want to check if the used
+                # wires overlap with the already applied MCMs.
+                self._update_used_wires(measurement.wires, self.state["cur_target"] + 1)
 
             return super().interpret_measurement(measurement)
 
@@ -361,12 +361,9 @@ def _get_plxpr_defer_measurements():
     @DeferMeasurementsInterpreter.register_primitive(measure_prim)
     def _(self, wires, reset=False, postselect=None):
         cur_target = self.state["cur_target"]
-        if cur_target < 0:
-            raise TransformError(
-                "Too many mid-circuit measurements for the specified number of wires."
-            )
-
-        self._update_used_wires(Wires(wires))
+        # Range for comparison is [cur_target, num_wires) because cur_target
+        # is the _current_ wire to be used for an MCM.
+        self._update_used_wires(Wires(wires), cur_target)
 
         # Using type.__call__ instead of normally constructing the class prevents
         # the primitive corresponding to the class to get binded. We do not want the
@@ -417,12 +414,8 @@ def _get_plxpr_defer_measurements():
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
 
-                items = (
-                    condition.postselected_items()
-                    if self._reduce_postselected
-                    else condition.items()
-                )
-                for branch, value in items:
+                for branch, value in condition.items():
+                    # When reduce_postselected is True, some branches can be ()
                     cur_consts = invals[consts_slices[i]]
                     qml.cond(value, ctrl_transform_prim.bind)(
                         *cur_consts,
@@ -446,11 +439,14 @@ def _get_plxpr_defer_measurements():
                 "'num_wires' argument for qml.defer_measurements must be provided "
                 "when qml.capture.enabled() is True."
             )
-        reduce_postselected = tkwargs.get("reduce_postselected", True)
+        if tkwargs.pop("reduce_postselected", False):
+            warn(
+                "Cannot set 'reduce_postselected=True' with qml.capture.enabled() "
+                "when using qml.defer_measurements. Argument will be ignored.",
+                UserWarning,
+            )
 
-        interpreter = DeferMeasurementsInterpreter(
-            num_wires=num_wires, reduce_postselected=reduce_postselected
-        )
+        interpreter = DeferMeasurementsInterpreter(num_wires=num_wires)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
