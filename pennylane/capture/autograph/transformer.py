@@ -60,7 +60,16 @@ class PennyLaneTransformer(PyToPy):
         else:
             raise AutoGraphError(f"Unsupported object for transformation: {type(fn)}")
 
-        new_fn, module, source_map = self.transform_function(fn, user_context)
+        # Check if the function has already been converted.
+
+        if hasattr(fn, "ag_unconverted"):
+            new_fn, module, source_map = (
+                fn,
+                getattr(fn, "ag_module", None),
+                getattr(fn, "ag_source_map", None),
+            )
+        else:
+            new_fn, module, source_map = self.transform_function(fn, user_context)
         new_obj = new_fn
 
         if isinstance(obj, qml.QNode):

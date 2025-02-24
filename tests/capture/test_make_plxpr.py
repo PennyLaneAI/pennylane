@@ -35,8 +35,6 @@ from pennylane.capture import make_plxpr  # pylint: disable=wrong-import-positio
 @pytest.mark.parametrize("autograph", [True, False])
 def test_error_is_raised_with_capture_disabled(autograph):
     """Test that an error is raised."""
-    if autograph:
-        pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
     dev = qml.device("default.qubit", wires=1)
 
@@ -58,8 +56,6 @@ class TestMakePLxPR:
     def test_make_plxpr(self, mocker, autograph):
         """Test that make_plxpr uses make_jaxpr, and returns a callable that will
         create a jaxpr representation of the qnode"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -81,8 +77,7 @@ class TestMakePLxPR:
     @pytest.mark.parametrize("static_argnums", [[0], [1], [0, 1], []])
     def test_static_argnums(self, static_argnums, autograph, mocker):
         """Test that passing static_argnums works as expected"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
+
         dev = qml.device("default.qubit", wires=1)
 
         spy = mocker.spy(jax, "make_jaxpr")
@@ -111,8 +106,7 @@ class TestMakePLxPR:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_kwargs(self, mocker, autograph):
         """Test additional kwargs are passed through to make_jaxpr"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
+
         dev = qml.device("default.qubit", wires=1)
 
         spy = mocker.spy(jax, "make_jaxpr")
@@ -145,8 +139,6 @@ class TestAutoGraphIntegration:
     def test_if_stmt(self, autograph):
         """Test that an if statement is converted to a jaxpr with a ``cond`` function, and
         that in the case of a QNode, the resulting plxpr can be evaluated as expected"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         def func(x):
             if x > 1.967:
@@ -175,8 +167,6 @@ class TestAutoGraphIntegration:
     def test_while_loop(self, autograph):
         """Test that a while loop is converted to a jaxpr with a ``while_loop`` function, and
         that in the case of a QNode, the resulting plxpr can be evaluated as expected"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         def func(counter):
             while counter < 10:
@@ -205,8 +195,6 @@ class TestAutoGraphIntegration:
     def test_for_loop(self, autograph):
         """Test that a for loop is converted to a jaxpr with a ``for_loop`` function, and
         that in the case of a QNode, the resulting plxpr can be evaluated as expected"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         def func(angles):
             for i, x in enumerate(angles):
