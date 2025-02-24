@@ -216,7 +216,11 @@ class TestSingleQubitFusionInterpreter:
         ]
 
         for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
-            assert qml.equal(op1, op2)
+            # The qml.equal function does not recognize two qml.Rot operators
+            # as equivalent unless the input angles are exactly the same
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
 
     def test_single_qubit_fusion_multiple_qubits(self):
         """Test that all sequences of single-qubit gates across multiple qubits fuse properly."""
@@ -248,7 +252,11 @@ class TestSingleQubitFusionInterpreter:
         ]
 
         for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
-            assert qml.equal(op1, op2)
+            # The qml.equal function does not recognize two qml.Rot operators
+            # as equivalent unless the input angles are exactly the same
+            assert op1.name == op2.name
+            assert qml.math.allclose(op1.parameters, op2.parameters)
+            assert op1.wires == op2.wires
 
     def test_returned_op_is_not_fused(self):
         """Test that ops that are returned by the function being transformed are not fused."""
@@ -663,7 +671,11 @@ class TestSingleQubitFusionHigherOrderPrimitives:
 class TestSingleQubitFusionPLXPR:
     """Unit tests for the single-qubit fusion transformation on PLXPRs."""
 
-    def test_single_qubit_fusion_plxpr_to_plxpr(self):
+    @pytest.mark.parametrize(
+        "atol, exclude_gates",
+        [(1e-5, None), (0.0, ["RY"])],
+    )
+    def test_single_qubit_fusion_plxpr_to_plxpr(self, atol, exclude_gates):
         """Test that the single-qubit fusion transformation works on a plxpr."""
 
         def circuit():
@@ -677,7 +689,9 @@ class TestSingleQubitFusionPLXPR:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)()
-        transformed_jaxpr = single_qubit_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
+        transformed_jaxpr = single_qubit_plxpr_to_plxpr(
+            jaxpr.jaxpr, jaxpr.consts, [], {"atol": atol, "exclude_gates": exclude_gates}
+        )
         assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
         assert len(transformed_jaxpr.eqns) == 3
         assert transformed_jaxpr.eqns[0].primitive == qml.Rot._primitive
