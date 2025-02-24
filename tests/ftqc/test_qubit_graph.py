@@ -43,6 +43,7 @@ class TestQubitGraphsInitialization:
 
         for node in qubit.nodes:
             assert isinstance(qubit[node], QubitGraph)
+            assert qubit[node].parent is qubit
 
     def test_init_graph(self):
         """Test that we can initialize a QubitGraph with a user-defined graph of underlying qubits."""
@@ -55,6 +56,7 @@ class TestQubitGraphsInitialization:
 
         for node in qubit.nodes:
             assert isinstance(qubit[node], QubitGraph)
+            assert qubit[node].parent is qubit
 
     def test_init_graph_2d_grid(self):
         """Test that we can initialize a QubitGraph with a 2D Cartesian grid of underlying qubits.
@@ -76,6 +78,7 @@ class TestQubitGraphsInitialization:
 
         for node in qubit.nodes:
             assert isinstance(qubit[node], QubitGraph)
+            assert qubit[node].parent is qubit
 
     def test_init_graph_2d_grid_nested_two_layers(self):
         """Test that we can initialize a QubitGraph with two layers, where each layer is a 2D grid
@@ -117,6 +120,7 @@ class TestQubitGraphsInitialization:
             qubit1 = qubit0[node]
             assert set(qubit1.nodes) == expected_graph1_nodes_set
             assert set(qubit1.edges) == expected_graph1_edges_set
+            assert qubit1.parent is qubit0
 
     def test_init_graph_3d_grid(self):
         """Test that we can initialize a QubitGraph with a 3D Cartesian grid of underlying qubits."""
@@ -130,6 +134,7 @@ class TestQubitGraphsInitialization:
 
         for node in qubit.nodes:
             assert isinstance(qubit[node], QubitGraph)
+            assert qubit[node].parent is qubit
 
     def test_init_graph_surface_code_17(self):
         """Test that we can initialize a QubitGraph with the underlying qubits following the
@@ -171,6 +176,7 @@ class TestQubitGraphsInitialization:
 
         for node in qubit.nodes:
             assert isinstance(qubit[node], QubitGraph)
+            assert qubit[node].parent is qubit
 
     def test_init_graph_with_invalid_type_raises_type_error(self):
         """Test that attempting to initialize a graph with an invalid graph type raises a TypeError."""
@@ -407,6 +413,27 @@ class TestQubitGraphNesting:
         assert not qubit1.is_leaf
         assert qubit1[0].is_leaf
         assert not qubit1[0].is_initialized
+
+    def test_is_root(self):
+        """Test the is_leaf() method on each layer in a nested QubitGraph."""
+        qubit = QubitGraph(self._generate_single_node_graph())
+        qubit[0] = QubitGraph(self._generate_single_node_graph())
+
+        assert qubit.is_root
+        assert not qubit[0].is_root
+        assert not qubit[0][0].is_root
+
+    def test_parent_structure(self):
+        """Test that the parent property of a nested QubitGraph references the correct objects."""
+        qubit = QubitGraph(self._generate_single_node_graph())
+        qubit[0] = QubitGraph(self._generate_single_node_graph())
+
+        assert qubit.parent is None
+        assert qubit[0].parent is qubit
+        assert qubit[0][0].parent is qubit[0]
+
+        # Also test cascaded parent operations
+        assert qubit[0][0].parent.parent is qubit
 
 
 class TestQubitGraphRepresentation:
