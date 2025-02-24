@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ class FromBloq(Operation):
         super().__init__(wires=wires, id=None)
 
     def __repr__(self):
-        return f'FromBloq({self._hyperparameters["bloq"]})'
+        return f'FromBloq({self._hyperparameters["bloq"]}, wires={self.wires})'
 
     def compute_decomposition(self, wires, **kwargs):  # pylint: disable=arguments-differ
         ops = []
@@ -95,7 +95,7 @@ class FromBloq(Operation):
                 for idx in total_wires:
                     mapped_wires.append(wires[idx])
                 op = binst.bloq.as_pl_op(mapped_wires)
-                
+
                 if op:
                     ops.append(op)
                 for succ in succ_cxns:
