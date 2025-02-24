@@ -369,6 +369,26 @@ class TestQubitGraphIndexing:
             qubit[0] = nx.Graph()
 
 
+class TestQubitGraphNesting:
+    """Tests relating to the nesting of QubitGraphs."""
+
+    @staticmethod
+    def _generate_single_node_graph():
+        """Return a graph containing a single node with label 0."""
+        graph = nx.Graph()
+        graph.add_node(0)
+        return graph
+
+    def test_is_leaf(self):
+        """Test the is_leaf() method on each layer in a nested QubitGraph."""
+        qubit = QubitGraph(self._generate_single_node_graph())
+        qubit[0] = QubitGraph(self._generate_single_node_graph())
+
+        assert not qubit.is_leaf
+        assert not qubit[0].is_leaf
+        assert qubit[0][0].is_leaf
+
+
 class TestQubitGraphRepresentation:
     """Tests for representing a QubitGraph as a string."""
 

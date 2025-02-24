@@ -183,10 +183,23 @@ class QubitGraph:
     def is_initialized(self):
         """Checks if the underlying qubits have been initialized.
 
+        A QubitGraph may be uninitialized if it is a leaf node in the hierarchical graph structure.
+
         Returns:
             bool: Returns True if the underlying qubits have been initialized, False otherwise.
         """
         return self._graph_qubits is not None
+
+    @property
+    def is_leaf(self):
+        """Checks if this QubitGraph object is a leaf node in the hierarchical graph structure.
+
+        A QubitGraph node is a leaf when it has no underlying qubit graph.
+
+        Returns:
+            bool: Returns True if this QubitGraph object is a leaf node.
+        """
+        return self._graph_qubits is None
 
     def clear(self):
         """Clears the graph of underlying qubits."""
