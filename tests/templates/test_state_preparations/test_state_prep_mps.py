@@ -20,8 +20,8 @@ import pytest
 
 import pennylane as qml
 from pennylane.templates.state_preparations.state_prep_mps import (
-    right_canonicalize_mps,
     _validate_mps_shape,
+    right_canonicalize_mps,
 )
 
 
