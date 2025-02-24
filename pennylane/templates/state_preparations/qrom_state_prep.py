@@ -18,6 +18,7 @@ Contains the QROMStatePreparation template.
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import Wires
 
 import itertools
 
@@ -104,7 +105,9 @@ def func_to_binary(n_precision, x , func):
 
     """
 
-  return bin(int(2**(n_precision) + 2**(n_precision)*func(x)))[-n_precision:]
+  output =  bin(int(2**(n_precision) + 2**(n_precision)*func(x)))[-n_precision:]
+  print(output)
+  return output
 
 
 class QROMStatePreparation(Operation):
@@ -160,6 +163,19 @@ class QROMStatePreparation(Operation):
 
     def __init__(self, state_vector, wires, precision_wires, work_wires = None, id = None):
 
+        n_amplitudes = len(state_vector)
+        if n_amplitudes != 2 ** len(Wires(wires)):
+            raise ValueError(
+                f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
+            )
+
+        if not qml.math.is_abstract(state_vector):
+            norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
+            if not qml.math.allclose(norm, 1.0, atol=1e-3):
+                raise ValueError(
+                    f"State vectors have to be of norm 1.0, vector has squared norm {norm}"
+                )
+
         self.state_vector = state_vector
         self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
         self.hyperparameters["precision_wires"] = qml.wires.Wires(precision_wires)
@@ -169,6 +185,33 @@ class QROMStatePreparation(Operation):
 
         super().__init__(state_vector, wires= all_wires, id=id)
 
+    def _flatten(self):
+        hyperparameters = (
+            ("wires", self.hyperparameters["input_wires"]),
+            ("precision_wires", self.hyperparameters["precision_wires"]),
+            ("work_wires", self.hyperparameters["work_wires"]),
+        )
+        return (self.state_vector,), hyperparameters
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        hyperparams_dict = dict(metadata)
+        return cls(data[0], **hyperparams_dict)
+
+    def map_wires(self, wire_map):
+        new_wires = Wires(
+            [wire_map.get(wire, wire) for wire in self.hyperparameters["input_wires"]]
+        )
+        new_precision_wires = Wires(
+            [wire_map.get(wire, wire) for wire in self.hyperparameters["precision_wires"]]
+        )
+
+        new_work_wires = Wires(
+            [wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]]
+        )
+        return QROMStatePreparation(
+            self.state_vector, new_wires, new_precision_wires, new_work_wires
+        )
 
     def decomposition(self):  # pylint: disable=arguments-differ
         filtered_hyperparameters = {
