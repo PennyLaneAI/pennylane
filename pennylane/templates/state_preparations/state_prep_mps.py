@@ -23,13 +23,13 @@ from pennylane.wires import Wires
 
 
 def right_canonicalize_mps(mps):
-    r"""Transform a matrix product state into its right-canonical form.
+    r"""Transform a matrix product state (MPS) into its right-canonical form.
 
     Args:
         mps (list[TensorLike]): List of tensors representing the MPS.
 
     Returns:
-        A list of tensors representing the MPS in right-canonical form.
+        List of tensors representing the MPS in right-canonical form.
 
 
     A right-canonicalized MPS is a matrix product state where each tensor :math:`A^{(j)}` satisfies
@@ -119,9 +119,9 @@ class MPSPrep(Operation):
 
         This operator is natively supported on the ``lightning.tensor`` device, which is designed to run MPS
         structures efficiently. For other devices, this operation prepares the state vector represented by the
-        MPS using a gate-based decomposition from Eq. (23) in `[arXiv:2310.18410]
+        MPS using a gate-based decomposition from Eq. (23) in `arXiv:2310.18410
         <https://arxiv.org/pdf/2310.18410>`_, which requires the right canonicalization of the MPS via
-        ``right_canonicalize`` and auxiliary qubits to be given via ``work_wires``.
+        :func:`~.right_canonicalize_mps` and auxiliary qubits to be given via ``work_wires``.
 
     Args:
         mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
@@ -330,7 +330,7 @@ class MPSPrep(Operation):
         mps, wires, work_wires, right_canonicalize=False
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
-        The decomposition follows Eq. (23) in `[arXiv:2310.18410] <https://arxiv.org/pdf/2310.18410>`_.
+        The decomposition follows Eq. (23) in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
         Args:
             mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
@@ -364,7 +364,7 @@ class MPSPrep(Operation):
         mps[0] = mps[0].reshape((1, *mps[0].shape))
         mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
-        # We transform the mps to ensure that the generated matrix is unitary
+        # Transform the MPS to ensure that the generated matrix is unitary
         if right_canonicalize:
             mps = right_canonicalize_mps(mps)
 
@@ -372,7 +372,7 @@ class MPSPrep(Operation):
 
         for i, Ai in enumerate(mps):
 
-            # encodes the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
+            # Encode the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
             vectors = []
             for column in Ai:
 
@@ -397,7 +397,7 @@ class MPSPrep(Operation):
             unitary_matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
             unitary_matrix *= qml.math.sign(
                 qml.math.diag(R)
-            )  # enforces uniqueness for QR decomposition
+            )  # Enforce uniqueness for QR decomposition
 
             ops.append(qml.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires))
 
