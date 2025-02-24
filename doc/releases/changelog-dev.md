@@ -331,6 +331,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `qml.capture.run_autograph` is now idempotent.
+  This means `run_autograph(fn) = run_autograph(run_autograph(fn))`.
+  [(#7001)](https://github.com/PennyLaneAI/pennylane/pull/7001)
+
 * Minor changes to `DQInterpreter` for speedups with program capture execution.
   [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
 
