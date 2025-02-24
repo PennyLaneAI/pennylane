@@ -46,31 +46,27 @@ def _get_plxpr_merge_rotations():
         transform when program capture is enabled."""
 
         def __init__(self, atol=1e-8, include_gates=None):
-            super().__init__()
             self._env = {}
             self.atol = atol
             self.include_gates = include_gates
 
-            # dict[wire, operator]
+            # dict[wire (int), op (Operator)]
             self.previous_ops = {}
 
         def interpret_and_refresh_previous_ops(self, op: Operator):
             """Interpret the previous_ops dictionary and add the operator to the previous_ops dictionary."""
 
-            # Use list(dict(...)) as opposed to a set to maintain deterministic order
+            # Use list(dict.fromkeys(...)) as opposed to a set to maintain deterministic order
             previous_ops_on_wires = list(dict.fromkeys(self.previous_ops.get(w) for w in op.wires))
 
-            # Remove the previous operations from the previous_ops dictionary
+            # Refresh the previous_ops dictionary with the current operator
             for o in previous_ops_on_wires:
                 if o is not None:
                     for w in o.wires:
-                        self.previous_ops.pop(w)
-
-            # Refresh the previous_ops dictionary with the current operator
+                        del self.previous_ops[w]
             for w in op.wires:
                 self.previous_ops[w] = op
 
-            # List comprehensions are run in a separate scope.
             # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
             # pylint: disable=super-with-arguments
             return [
@@ -86,7 +82,7 @@ def _get_plxpr_merge_rotations():
                 op (Operator): a pennylane operator instance
 
             Returns:
-                Any
+                None
 
             This method is only called when the operator's output is a dropped variable,
             so the output will not affect later equations in the circuit.
@@ -96,20 +92,18 @@ def _get_plxpr_merge_rotations():
 
             if self.include_gates is not None and op.name not in self.include_gates:
                 self.interpret_and_refresh_previous_ops(op)
-                return []
+                return
 
             if op not in composable_rotations:
                 self.interpret_and_refresh_previous_ops(op)
-                return []
+                return
 
-            # Get the previous operation on the same wire
             previous_op = self.previous_ops.get(op.wires[0])
             if previous_op is None:
                 for w in op.wires:
                     self.previous_ops[w] = op
-                return []
+                return
 
-            # Previous operator detected, check if we can merge
             wires_exactly_match = op.wires == previous_op.wires
             are_same_type = isinstance(op, type(previous_op))
             can_merge = wires_exactly_match and are_same_type
@@ -128,23 +122,22 @@ def _get_plxpr_merge_rotations():
 
                 # Update operator on these wires with the merged one
                 # pylint: disable = protected-access
-                skip_operation = False
+                angle_is_zero = False
                 if not qml.math.is_abstract(cumulative_angles):
-                    skip_operation = qml.math.allclose(
+                    angle_is_zero = qml.math.allclose(
                         cumulative_angles, 0.0, atol=self.atol, rtol=0
                     )
 
-                if skip_operation:
+                if angle_is_zero:
                     for w in op.wires:
-                        self.previous_ops.pop(w)
-                    return []
+                        del self.previous_ops[w]
+                    return
 
                 for w in op.wires:
                     self.previous_ops[w] = op.__class__._primitive.impl(
                         *cumulative_angles, wires=op.wires
                     )
-
-                return []
+                return
 
             # If we cannot merge, interpret the previous operations and refresh the previous_ops dictionary
             self.interpret_and_refresh_previous_ops(op)
@@ -219,10 +212,8 @@ def _get_plxpr_merge_rotations():
             self._env = {}
             return outvals
 
-    # pylint: disable=redefined-outer-name
-    def merge_rotations_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
+    # pylint: disable=redefined-outer-name,disable=unused-argument
+    def merge_rotations_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         merge_rotations = MergeRotationsInterpreter(
             atol=tkwargs.pop("atol", 1e-8), include_gates=tkwargs.pop("include_gates", None)
         )
