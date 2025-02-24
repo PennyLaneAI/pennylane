@@ -128,7 +128,7 @@ def _get_plxpr_merge_rotations():
                         cumulative_angles, 0.0, atol=self.atol, rtol=0
                     )
 
-                if angle_is_zero:
+                if angle_is_zero and not qml.math.requires_grad(cumulative_angles):
                     for w in op.wires:
                         del self.previous_ops[w]
                     return
