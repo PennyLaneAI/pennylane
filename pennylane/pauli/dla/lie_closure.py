@@ -45,7 +45,7 @@ def lie_closure(
 
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
-            Lie closure.
+            Lie closure. It’s assumed that all coefficients are purely imaginary. Eg. ``X(0)`` will be computed as ``1j*X(0)``.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure
             calculation. Default is ``False``.
