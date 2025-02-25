@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import pennylane as qml
 from dataclasses import dataclass, field
 
 
@@ -31,6 +32,11 @@ class Resources:
 
     num_gates: int = 0
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
+
+    def __post_init__(self):
+        """Verify that the gate counts and the number of gates are consistent."""
+        assert all(v > 0 for v in self.gate_counts.values())
+        assert self.num_gates == sum(self.gate_counts.values())
 
     def __add__(self, other: Resources):
         return Resources(
@@ -86,6 +92,10 @@ class CompressedResourceOp:
     """
 
     def __init__(self, op_type, params: dict = None):
+        if not isinstance(op_type, type):
+            raise TypeError(f"op_type must be a type, got {op_type}")
+        if not issubclass(op_type, qml.operation.Operator):
+            raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()

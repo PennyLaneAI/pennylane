@@ -21,11 +21,12 @@ from typing import Callable
 from .resources import Resources
 
 
-def decomposition(qfunc: Callable) -> DecompositionRule:
+def decomposition(qfunc: Callable, resource_fn: Callable = None) -> DecompositionRule:
     """Decorator that wraps a qfunc in a ``DecompositionRule``.
 
     Args:
-        qfunc (Callable): the quantum function to wrap
+        qfunc (Callable): the quantum function that represents the decomposition.
+        resource_fn (Callable): a function that computes a gate count of this decomposition rule.
 
     Returns:
         DecompositionRule: the decomposition rule.
@@ -55,7 +56,9 @@ def decomposition(qfunc: Callable) -> DecompositionRule:
         Hadamard.add_decomposition(_hadamard_to_rz_rx)
 
     """
-    return DecompositionRule(qfunc)
+    decomposition_rule = DecompositionRule(qfunc)
+    if resource_fn is not None:
+        decomposition_rule._compute_resources = resource_fn  # pylint: disable=protected-access
 
 
 class DecompositionRule:
