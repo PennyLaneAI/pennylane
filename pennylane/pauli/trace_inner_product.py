@@ -38,7 +38,7 @@ def trace_inner_product(
 
     Args:
         A (Union[PauliSentence, Operator, TensorLike]): First operator
-        B (Union[PauliSentence, Operator, TensorLike]): Second operator
+        B (Union[PauliSentence, Operator, TensorLike]): Second operator of the same type as ``A``
 
     Returns:
         Union[float, TensorLike]: Result is either a single float or a batch of floats.
@@ -99,5 +99,5 @@ def trace_inner_product(
         )
 
     raise NotImplementedError(
-        "Inputs to pennylane.pauli.trace_inner_product need to be iterables of matrices or operators with a pauli_rep"
+        "Inputs to pennylane.pauli.trace_inner_product need to be of the same type and iterables of matrices or operators with a pauli_rep"
     )
