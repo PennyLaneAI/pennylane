@@ -953,43 +953,47 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
 
     """
 
-    poly_list = list(poly)
-    # Trailing zeros are removed from the array
-    for _ in range(len(poly_list)):
-        if not qml.math.isclose(poly_list[-1], 0.0):
-            break
-        poly_list.pop()
+    poly = copy.copy(poly)
 
-    if len(poly_list) == 1:
+    ind = len(poly)
+    # Trailing zeros are removed from the array
+    for item in reversed(poly):
+        if not qml.math.allclose(item, 0.0):
+            break
+        ind -= 1
+
+    poly = poly[:ind]
+
+    if len(poly) == 1:
         raise AssertionError("The polynomial must have at least degree 1.")
 
     for x in [-1, 0, 1]:
-        if qml.math.abs(qml.math.sum(coeff * x**i for i, coeff in enumerate(poly_list))) > 1:
+        if qml.math.abs(qml.math.sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
             # Check that |P(x)| ≤ 1. Only points -1, 0, 1 will be checked.
             raise AssertionError("The polynomial must satisfy that |P(x)| ≤ 1 for all x in [-1, 1]")
 
     if routine in ["QSVT", "QSP"]:
         if not (
-            np.isclose(qml.math.sum(qml.math.abs(poly_list[::2])), 0.0)
-            or np.isclose(qml.math.sum(qml.math.abs(poly_list[1::2])), 0.0)
+            np.isclose(qml.math.sum(qml.math.abs(poly[::2])), 0.0)
+            or np.isclose(qml.math.sum(qml.math.abs(poly[1::2])), 0.0)
         ):
             raise AssertionError(
                 "The polynomial has no definite parity. All odd or even entries in the array must take a value of zero."
             )
         assert np.allclose(
-            np.array(poly_list, dtype=np.complex128).imag, 0
+            np.array(poly, dtype=np.complex128).imag, 0
         ), "Array must not have an imaginary part"
 
     if routine == "QSVT":
         if angle_solver == "root-finding":
-            return transform_angles(_compute_qsp_angle(poly_list), "QSP", "QSVT")
+            return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
         raise AssertionError("Invalid angle solver method. We currently support 'root-finding'")
 
     if routine == "QSP":
         if angle_solver == "root-finding":
-            return _compute_qsp_angle(poly_list)
+            return _compute_qsp_angle(poly)
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
 
     if routine == "GQSP":
-        return _compute_gqsp_angles(poly_list)
+        return _compute_gqsp_angles(poly)
     raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
