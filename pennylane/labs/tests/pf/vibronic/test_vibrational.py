@@ -6,7 +6,9 @@ import numpy as np
 import pytest
 import scipy as sp
 
+import pennylane as qml
 from pennylane.labs.pf import HOState, VibrationalHamiltonian
+from pennylane.labs.vibrational import vibrational_pes
 
 
 class TestFragments:
@@ -144,3 +146,36 @@ class TestMultiMode:
                 actual[i, j] = state1.dot(ham.apply(state2))
 
         assert np.allclose(actual, expected)
+
+class TestExpectation:
+
+    @pytest.mark.parametrize("symbols, charge, geometry", [
+        (['H', 'H'], 0, np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+        (['H', 'H', 'H'], 1, np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 1.0]]))
+    ])
+    def test_molecular_ham(self, symbols, charge, geometry):
+        """Test the exepctation value against PL"""
+
+        mol = qml.qchem.Molecule(symbols, geometry, charge=charge)
+        pes = vibrational_pes(mol, quad_order=5, cubic=True, dipole_level=1)
+
+        phi_one_body, phi_two_body, phi_three_body = qml.qchem.taylor_coeffs(pes)
+        omegas = pes.freqs
+
+        print("one")
+        print(phi_one_body)
+        print("two")
+        print(phi_two_body)
+        print("three")
+        print(phi_three_body)
+
+        taylor_ham_qubit = qml.qchem.taylor_hamiltonian(pes)
+        taylor_ham_matrix = taylor_ham_qubit.sparse_matrix()
+        taylor_ham_eigdecomp = taylor_ham_qubit.eigendecomposition
+        taylor_ham_eigvec = taylor_ham_eigdecomp['eigvec']
+        taylor_ham_eigval = taylor_ham_eigdecomp['eigval']
+
+        vham = VibrationalHamiltonian(len(omegas), omegas, [np.array(0), phi_one_body, phi_two_body, phi_three_body])
+
+        for eigvec, eigval, in zip(taylor_ham_eigvec, taylor_ham_eigval):
+            print(eigvec, eigval)
