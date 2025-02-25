@@ -145,7 +145,7 @@ class TestIntegration:
 
         ag_fn = run_autograph(fn)
         ag_ag_fn = run_autograph(ag_fn)
-        assert ag_ag_fn == ag_fn
+        assert ag_ag_fn is ag_fn
         assert ag_ag_fn(4) == 16
 
     def test_unsupported_object(self):
