@@ -315,7 +315,9 @@ class ParametricMidMeasureMP(MidMeasureMP):
             f"{self.plane} plane not implemented. Available plans are 'XY' 'ZX' and 'YZ'."
         )
 
-    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
+    def label(
+        self, decimals: float = None, base_label: str = None, cache: dict = None
+    ):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -376,7 +378,9 @@ class XMidMeasureMP(ParametricMidMeasureMP):
         """Representation of this class."""
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
-    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
+    def label(
+        self, decimals: float = None, base_label: str = None, cache: dict = None
+    ):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -440,7 +444,9 @@ class YMidMeasureMP(ParametricMidMeasureMP):
         """Representation of this class."""
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
-    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
+    def label(
+        self, decimals: float = None, base_label: str = None, cache: dict = None
+    ):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
