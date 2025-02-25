@@ -301,6 +301,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* Specifying `pipeline=None` with `qml.compile` is now deprecated. A sequence of
+  transforms should always be specified.
+
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
   A folllow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
   [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
