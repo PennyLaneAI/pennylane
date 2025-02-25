@@ -15,8 +15,6 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 # pylint:disable=
-
-import pennylane as qml
 from qualtran import (
     Bloq,
     CompositeBloq,
@@ -26,10 +24,12 @@ from qualtran import (
     DecomposeNotImplementedError,
     DecomposeTypeError,
 )
-from pennylane.operation import Operation
-from pennylane.wires import WiresLike
 
 import numpy as np
+import pennylane as qml
+
+from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
 def get_bloq_registers_info(bloq):

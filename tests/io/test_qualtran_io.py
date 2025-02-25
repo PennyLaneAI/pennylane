@@ -14,10 +14,8 @@
 """
 Unit tests for the :mod:`pennylane.io.qualtran_io` module.
 """
-import pytest
-
-import pennylane as qml
 import numpy as np
+import pennylane as qml
 
 
 class TestFromBloq:
