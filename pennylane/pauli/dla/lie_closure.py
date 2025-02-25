@@ -135,6 +135,8 @@ def lie_closure(
 
         >>> dla_ops = [qml.pauli_decompose(op) for op in dla]
 
+        Note that the results are only equivalent up to minus signs. This is okay because the sets of basis operators describe the same Lie algebra.
+
     """
     if matrix:
         return _lie_closure_matrix(generators, max_iterations, verbose, tol)
