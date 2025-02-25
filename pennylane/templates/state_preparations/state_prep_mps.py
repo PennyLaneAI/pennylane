@@ -109,6 +109,56 @@ def right_canonicalize_mps(mps):
                [np.ones((4, 2))])
 
         mps_rc = qml.right_canonicalize_mps(mps)
+
+    .. details::
+        :title: Usage Details
+
+        The input MPS must be a list of :math:`n` tensors :math:`[A^{(0)}, ..., A^{(n-1)}]`
+        with shapes :math:`d_0, ..., d_{n-1}`, respectively. The first and last tensors have rank :math:`2`
+        while the intermediate tensors have rank :math:`3`.
+
+        The first tensor must have the shape :math:`d_0 = (d_{0,0}, d_{0,1})` where :math:`d_{0,0}`
+        and :math:`d_{0,1}`  correspond to the physical dimension of the site and an auxiliary bond
+        dimension connecting it to the next tensor, respectively.
+
+        The last tensor must have the shape :math:`d_{n-1} = (d_{n-1,0}, d_{n-1,1})` where :math:`d_{n-1,0}`
+        and :math:`d_{n-1,1}` represent the auxiliary dimension from the previous site and the physical
+        dimension of the site, respectively.
+
+        The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
+
+        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor
+        - :math:`d_{j,1}` is the physical dimension for the site
+        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor
+
+        Note that the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
+
+        Additionally, the physical dimension of the site should always be fixed at :math:`2`
+        (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
+
+        The following example shows a valid MPS input containing four tensors with
+        dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
+
+        .. code-block::
+
+            mps = [
+                np.array([[0.0, 0.107], [0.994, 0.0]]),
+                np.array(
+                    [
+                        [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                        [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                    ]
+                ),
+                np.array(
+                    [
+                        [[-1.0, 0.0], [0.0, 0.0]],
+                        [[0.0, 0.0], [0.0, 1.0]],
+                        [[0.0, -1.0], [0.0, 0.0]],
+                        [[0.0, 0.0], [1.0, 0.0]],
+                    ]
+                ),
+                np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+            ]
     """
 
     _validate_mps_shape(mps)
