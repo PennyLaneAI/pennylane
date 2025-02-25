@@ -126,7 +126,7 @@ def structure_constants(
     >>> qml.math.allclose(adjoint_rep, adjoint_rep2)
     True
 
-    We can also input the DLA in form of matrices. For that we use :func:`~lie_closure` with the ``matrix=True``.
+    We can also input the DLA as a list of matrices. For that we use :func:`~lie_closure` with ``matrix=True``.
 
     >>> n = 4
     >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
