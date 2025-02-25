@@ -1012,6 +1012,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
     # Keep track of previous iteration for convergence check
     Y_prev = None
 
+    # pylint: disable=too-many-nested-blocks
     for iter_num in range(max_iter):
         Y = Ynew
         Z = Znew
