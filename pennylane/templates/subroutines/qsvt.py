@@ -956,7 +956,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
     poly_list = list(poly)
     # Trailing zeros are removed from the array
     for _ in range(len(poly_list)):
-        if not np.isclose(poly_list[-1], 0.0):
+        if not qml.math.isclose(poly_list[-1], 0.0):
             break
         poly_list.pop()
 
