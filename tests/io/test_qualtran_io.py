@@ -37,7 +37,7 @@ class TestFromBloq:
 
         w1 = bb.add_register("wire1", 1)
         w2 = bb.add_register("wire2", 1)
-        aux = bb.add_register("aux_wires", 2)  # add wires
+        aux = bb.add_register("aux_wires", 2)
 
         aux_wires = bb.split(aux)
 
@@ -110,9 +110,7 @@ class TestFromBloq:
         from qualtran.bloqs.arithmetic import Product, Add
         from pennylane.wires import Wires
 
-        bb = BloqBuilder()  # bb is the circuit like object
-
-        # -------- Qualtran Construction: --------
+        bb = BloqBuilder()
 
         w1 = bb.add_register("p1", 3)
         w2 = bb.add_register("p2", 3)
