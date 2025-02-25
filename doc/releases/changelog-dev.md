@@ -34,6 +34,7 @@
 * Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
+  [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
 
 <h3>Improvements 🛠</h3>
 
@@ -210,6 +211,7 @@
 * Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
   with program capture enabled.
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
+  [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
 
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
@@ -255,8 +257,11 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
-* The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
-  [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
+* The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
+  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
+
+* `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
+  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
 
 * The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
   [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
@@ -297,6 +302,10 @@
   [(#6827)](https://github.com/PennyLaneAI/pennylane/pull/6827)
 
 <h3>Deprecations 👋</h3>
+
+* Specifying `pipeline=None` with `qml.compile` is now deprecated. A sequence of
+  transforms should always be specified.
+  [(#7004)](https://github.com/PennyLaneAI/pennylane/pull/7004)
 
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
   A folllow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
@@ -421,6 +430,9 @@
 * The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
   passed to the `QNode`, instead of assuming the method is always `deferred`.
   [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
+
+* The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
+  [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
 
 <h3>Contributors ✍️</h3>
 
