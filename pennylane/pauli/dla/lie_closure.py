@@ -131,6 +131,8 @@ def lie_closure(
 
         >>> dla_ops = [qml.pauli_decompose(op) for op in dla]
 
+        Note that the results are only equivalent up to minus signs. This is okay because the sets of basis operators describe the same Lie algebra.
+
     """
     warnings.warn(
         "Calling center via ``qml.pauli.lie_closure`` is deprecated. ``lie_closure`` has moved to ``pennylane.liealg``. "

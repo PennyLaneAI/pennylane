@@ -163,14 +163,16 @@ class TestControlledQubitUnitary:
         """Test that both combinations of control and target wires lead to the same operator"""
         base_op = [[0, 1], [1, 0]]
 
-        control_wires_1, wires_1 = [0, 1], [2]
-        op_1 = qml.ControlledQubitUnitary(base_op, wires=control_wires_1 + wires_1)
+        control_wires_1, target_wires_1 = [0, 1], [2]
+        op_1 = qml.ControlledQubitUnitary(base_op, wires=control_wires_1 + target_wires_1)
 
         assert op_1.base.wires == Wires(2)
         assert op_1.control_wires == Wires([0, 1])
 
-        control_wires_2, wires_2 = [0, 1, 2], ()
-        op_2 = qml.ControlledQubitUnitary(base_op, wires=Wires(control_wires_2) + Wires(wires_2))
+        control_wires_2, target_wires_2 = [0, 1, 2], ()
+        op_2 = qml.ControlledQubitUnitary(
+            base_op, wires=Wires(control_wires_2) + Wires(target_wires_2)
+        )
 
         assert op_2.base.wires == Wires(2)
         assert op_2.control_wires == Wires([0, 1])

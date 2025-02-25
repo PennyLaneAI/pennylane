@@ -25,7 +25,7 @@ def trace_inner_product(
 ):
     r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)` between two operators :math:`A` and :math:`B`.
 
-    If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
+    If the inputs are ``np.ndarray``, leading [broadcasting](https://docs.pennylane.ai/en/stable/introduction/circuits.html#parameter-broadcasting-in-qnodes) axes are supported for either or both
     inputs.
 
     .. warning::
@@ -38,10 +38,10 @@ def trace_inner_product(
 
     Args:
         A (Union[PauliSentence, Operator, TensorLike]): First operator
-        B (Union[PauliSentence, Operator, TensorLike]): Second operator
+        B (Union[PauliSentence, Operator, TensorLike]): Second operator of the same type as ``A``
 
     Returns:
-        Union[float, TensorLike]: Result is either a single float or a batch of floats.
+        Union[float, TensorLike]: Result is either a single float or an array of floats (in batches of the broadcasting dimension).
 
     **Example**
 
@@ -99,5 +99,5 @@ def trace_inner_product(
         )
 
     raise NotImplementedError(
-        "Inputs to pennylane.pauli.trace_inner_product need to be iterables of matrices or operators with a pauli_rep"
+        "Inputs to pennylane.pauli.trace_inner_product need to be of the same type and iterables of matrices or operators with a pauli_rep"
     )
