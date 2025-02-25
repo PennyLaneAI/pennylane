@@ -19,10 +19,11 @@ import numpy as np
 import pytest
 from gate_data import CNOT, II, SWAP, I, Toffoli
 from scipy.sparse import csr_matrix
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.math import expand_matrix, expand_vector
+from pennylane.math import expand_matrix, expand_vector, sqrt_matrix, sqrt_matrix_sparse
 
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
@@ -1068,3 +1069,36 @@ class TestExpandVector:
         """Test exception raised if incorrect sized vector provided."""
         with pytest.raises(ValueError, match="Vector parameter must be of length"):
             expand_vector(TestExpandVector.VECTOR1, [0, 1], 4)
+
+
+class TestSqrtMatrix:
+    """Tests for the sqrt_matrix function."""
+
+    # NOTE: make sure the matrix is positive definite
+    dm_list = [
+        np.array([[1, 0], [0, 1]]),
+        np.array([[1, 0], [0, 2]]),
+        np.array([[4, 2], [2, 3]]),
+    ]
+    shape_list = range(2, 10)
+
+    @pytest.mark.parametrize("dm", dm_list)
+    def test_sqrt_matrix_sparse_dm(self, dm, tol):
+        """Test the sqrt_matrix function."""
+
+        A = qml.math.asarray(dm)
+        A_sparse = csr_matrix(A)
+
+        assert np.allclose(sqrt_matrix(A), sqrt_matrix_sparse(A_sparse).toarray(), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("shape", shape_list)
+    def test_sqrt_matrix_sparse_random(self, shape, tol):
+        """Test the sqrt_matrix function."""
+
+        # From unitary group
+        dm = unitary_group.rvs(shape)
+        dm = dm @ dm.T.conj()
+        A = qml.math.asarray(dm)
+        A_sparse = csr_matrix(A)
+
+        assert np.allclose(sqrt_matrix(A), sqrt_matrix_sparse(A_sparse).toarray(), atol=tol, rtol=0)
