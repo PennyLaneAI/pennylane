@@ -37,6 +37,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
+  [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
+
+* The `qml.measurements.NullMeasurement` measurement process is added to allow for profiling problems
+  without the overheads associated with performing measurements.
+  [(#6989)](https://github.com/PennyLaneAI/pennylane/pull/6989)
+
 * `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
   [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
 
@@ -203,6 +210,7 @@
 * Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
   with program capture enabled.
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
+  [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
 
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
@@ -248,7 +256,7 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
-* The qnode primitive now stores the `ExecutionConfig` instead `qnode_kwargs`.
+* The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
 
 * `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
@@ -293,6 +301,10 @@
   [(#6827)](https://github.com/PennyLaneAI/pennylane/pull/6827)
 
 <h3>Deprecations 👋</h3>
+
+* Specifying `pipeline=None` with `qml.compile` is now deprecated. A sequence of
+  transforms should always be specified.
+  [(#7004)](https://github.com/PennyLaneAI/pennylane/pull/7004)
 
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
   A folllow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
