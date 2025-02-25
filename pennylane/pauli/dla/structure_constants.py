@@ -137,8 +137,7 @@ def structure_constants(
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> from pennylane.labs.dla import structure_constants_matrix
-    >>> adj = structure_constants_matrix(g)
+    >>> adj = qml.structure_constants(g, matrix=True)
     >>> adj.shape
     (12, 12, 12)
 
@@ -226,7 +225,7 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
 
-    This function computes the structure constants of a Lie algebra provided by their matrix matrix representation,
+    This function computes the structure constants of a Lie algebra provided by their matrix representation,
     obtained from, e.g., :func:`~lie_closure`.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
     :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
@@ -258,8 +257,7 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> from pennylane.labs.dla import structure_constants_matrix
-    >>> adj = structure_constants_matrix(g)
+    >>> adj = qml.structure_constants(g, matrix=True)
     >>> adj.shape
     (12, 12, 12)
 
