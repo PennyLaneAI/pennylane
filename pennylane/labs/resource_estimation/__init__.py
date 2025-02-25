@@ -242,5 +242,3 @@ from .templates import (
     ResourceSuperposition,
     ResourceQubitUnitary,
 )
-
-from .compact_objects import CompactState
