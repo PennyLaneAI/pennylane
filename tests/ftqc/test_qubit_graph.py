@@ -29,14 +29,14 @@ class TestQubitGraphsInitialization:
     def test_initialization_trivial(self):
         """Trivial case: test that we can initialize a QubitGraph object. Also test that the
         underlying qubit graph is uninitialized."""
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
         assert not qubit.is_initialized
 
     def test_initialization_constructor(self):
         """Test that we can initialize a QubitGraph with a user-defined graph of underlying qubits
         using the QubitGraph constructor."""
         g = nx.hexagonal_lattice_graph(3, 2)
-        qubit = QubitGraph(g)
+        qubit = QubitGraph(0, g)
 
         assert set(qubit.nodes) == set(g.nodes)
         assert set(qubit.edges) == set(g.edges)
@@ -48,7 +48,7 @@ class TestQubitGraphsInitialization:
     def test_init_graph(self):
         """Test that we can initialize a QubitGraph with a user-defined graph of underlying qubits."""
         g = nx.hexagonal_lattice_graph(3, 2)
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
         qubit.init_graph(g)
 
         assert set(qubit.nodes) == set(g.nodes)
@@ -68,7 +68,7 @@ class TestQubitGraphsInitialization:
               |          |          |
             (1,0) ---- (1,1) ---- (1,2)
         """
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
         m, n = 2, 3
         qubit.init_graph_2d_grid(m, n)
 
@@ -98,12 +98,12 @@ class TestQubitGraphsInitialization:
         m1, n1 = 1, 2
 
         # Initialize top-layer qubit (layer 0)
-        qubit0 = QubitGraph()
+        qubit0 = QubitGraph(0)
         qubit0.init_graph_2d_grid(m0, n0)
 
         for node in qubit0.nodes:
             # Initialize each next-to-top-layer qubit (layer 1)
-            qubit1 = QubitGraph()
+            qubit1 = QubitGraph(node)
             qubit1.init_graph_2d_grid(m1, n1)
 
             qubit0[node] = qubit1
@@ -124,7 +124,7 @@ class TestQubitGraphsInitialization:
 
     def test_init_graph_3d_grid(self):
         """Test that we can initialize a QubitGraph with a 3D Cartesian grid of underlying qubits."""
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
         n0, n1, n2 = 2, 3, 4
         qubit.init_graph_nd_grid((n0, n1, n2))
 
@@ -140,7 +140,7 @@ class TestQubitGraphsInitialization:
         """Test that we can initialize a QubitGraph with the underlying qubits following the
         structure of the 17-qubit surface code.
         """
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
         qubit.init_graph_surface_code_17()
 
         # Create the expected graph structure for Surface Code 17
@@ -178,6 +178,13 @@ class TestQubitGraphsInitialization:
             assert isinstance(qubit[node], QubitGraph)
             assert qubit[node].parent is qubit
 
+    def test_initialization_with_invalid_id(self):
+        """Test that attempting to initialize a QubitGraph with an invalid ID raises the appropriate
+        error.
+        """
+        with pytest.raises(TypeError, match="'None' is not a valid QubitGraph ID"):
+            _ = QubitGraph(None)
+
     def test_init_graph_with_invalid_type_raises_type_error(self):
         """Test that attempting to initialize a graph with an invalid graph type raises a TypeError."""
 
@@ -195,34 +202,34 @@ class TestQubitGraphsInitialization:
         # Test initialization with constructor
         with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
             invalid_graph = NotAGraph()
-            _ = QubitGraph(invalid_graph)
+            _ = QubitGraph(0, invalid_graph)
 
         with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
             invalid_graph = SomethingWithOnlyNodes()
-            _ = QubitGraph(invalid_graph)
+            _ = QubitGraph(0, invalid_graph)
 
         with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
             invalid_graph = SomethingWithOnlyEdges()
-            _ = QubitGraph(invalid_graph)
+            _ = QubitGraph(0, invalid_graph)
 
         # Test initialization with `init_graph` method
         with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
             invalid_graph = NotAGraph()
-            q = QubitGraph()
+            q = QubitGraph(0)
             q.init_graph(invalid_graph)
 
         with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
             invalid_graph = SomethingWithOnlyNodes()
-            q = QubitGraph()
+            q = QubitGraph(0)
             q.init_graph(invalid_graph)
 
         with pytest.raises(TypeError, match="QubitGraph requires a graph-like input"):
             invalid_graph = SomethingWithOnlyEdges()
-            q = QubitGraph()
+            q = QubitGraph(0)
             q.init_graph(invalid_graph)
 
         with pytest.raises(TypeError, match="QubitGraph requires a graph-like input, got NoneType"):
-            q = QubitGraph()
+            q = QubitGraph(0)
             q.init_graph(None)
 
 
@@ -231,7 +238,7 @@ class TestQubitGraphOperations:
 
     def test_clear(self):
         """Test basic usage of the ``QubitGraph.clear`` method."""
-        q = QubitGraph()
+        q = QubitGraph(0)
         assert q.graph is None
 
         q.init_graph(nx.grid_2d_graph(2, 1))
@@ -242,7 +249,7 @@ class TestQubitGraphOperations:
 
     def test_connected_qubits(self):
         """Test basic usage of the ``QubitGraph.connected_qubits`` method."""
-        q = QubitGraph()
+        q = QubitGraph(0)
         q.init_graph(nx.grid_2d_graph(2, 2))
 
         assert set(q.connected_qubits((0, 0))) == set([q[(0, 1)], q[(1, 0)]])
@@ -256,7 +263,7 @@ class TestQubitGraphIterationMethods:
 
     def test_iterate_nodes(self):
         """Test that we can iterate over the nodes of a QubitGraph."""
-        q = QubitGraph()
+        q = QubitGraph(0)
         q.init_graph_nd_grid((2,))
 
         for i, node in enumerate(q.nodes):
@@ -264,7 +271,7 @@ class TestQubitGraphIterationMethods:
 
     def test_iterate_edges(self):
         """Test that we can iterate over the edges of a QubitGraph."""
-        q = QubitGraph()
+        q = QubitGraph(0)
         q.init_graph_nd_grid((2,))
 
         for i, edge in enumerate(q.edges):
@@ -274,7 +281,7 @@ class TestQubitGraphIterationMethods:
         """Test that wrapping a QubitGraph in a sequential container does not implicitly iterate
         over the underlying qubit graph.
         """
-        q = QubitGraph()
+        q = QubitGraph(0)
         q.init_graph_nd_grid((2,))
 
         q_tuple = tuple(q)
@@ -287,7 +294,7 @@ class TestQubitGraphIndexing:
 
     def test_linear_indexing(self):
         """Test basic linear indexing."""
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
 
         n = 3
         qubit.init_graph_nd_grid((n,))
@@ -298,13 +305,13 @@ class TestQubitGraphIndexing:
 
     def test_linear_indexing_nested(self):
         """Test basic linear indexing in a nested QubitGraph."""
-        qubit0 = QubitGraph()
+        qubit0 = QubitGraph(0)
 
         n0, n1 = 3, 2
         qubit0.init_graph_nd_grid((n0,))
 
         for node in qubit0.nodes:
-            q1 = QubitGraph()
+            q1 = QubitGraph(node)
             q1.init_graph_nd_grid((n1,))
 
             qubit0[node] = q1
@@ -316,7 +323,7 @@ class TestQubitGraphIndexing:
 
     def test_linear_indexing_slice(self):
         """Test basic linear indexing using slices."""
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
         qubit.init_graph_nd_grid((4,))
 
         qubit_slice_02 = qubit[0:2]
@@ -341,10 +348,10 @@ class TestQubitGraphIndexing:
 
     def test_assignment(self):
         """Test assignment of a new QubitGraph object at a given index."""
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
         qubit.init_graph_nd_grid((2,))
 
-        new_qubit = QubitGraph()
+        new_qubit = QubitGraph(1)
         new_qubit.init_graph_nd_grid((2, 2))
 
         qubit[0] = new_qubit
@@ -353,9 +360,38 @@ class TestQubitGraphIndexing:
         assert qubit[0].nodes is not None
         assert not qubit[1].is_initialized
 
+    def test_attributes_after_assignment(self):
+        """Test that the relevant attributes of a new QubitGraph object have been updated correctly
+        after an assignment operation.
+        """
+        qubit = QubitGraph(0)
+        qubit.init_graph_nd_grid((2,))
+
+        new_qubit = QubitGraph(1)
+        new_qubit.init_graph_nd_grid((2, 2))
+
+        # Checks before assignment
+        assert qubit.id == 0
+        assert qubit.parent is None
+
+        assert new_qubit.id == 1
+        assert new_qubit.parent is None
+
+        # Assign `new_qubit` to node in `qubit` with label 0
+        qubit[0] = new_qubit
+
+        # The parent attributes should not have changed after assignment
+        assert qubit.id == 0
+        assert qubit.parent is None
+
+        # Checks update attributes of new qubit
+        assert qubit[0] is new_qubit
+        assert qubit[0].id == 0
+        assert qubit[0].parent is qubit
+
     def test_invalid_index_raises_keyerror(self):
         """Test that accessing a QubitGraph with an invalid index raises a KeyError."""
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
         qubit.init_graph_nd_grid((2,))
 
         invalid_index = 4
@@ -365,7 +401,7 @@ class TestQubitGraphIndexing:
     def test_invalid_assignment_raises_typeerror(self):
         """Test that attempting to assign a value that is not a QubitGraph to a node in the graph
         raises a TypeError."""
-        qubit = QubitGraph()
+        qubit = QubitGraph(0)
         qubit.init_graph_nd_grid((2,))
 
         with pytest.raises(TypeError, match="item assignment type must also be a QubitGraph"):
@@ -387,8 +423,8 @@ class TestQubitGraphNesting:
 
     def test_is_leaf(self):
         """Test the is_leaf() method on each layer in a nested QubitGraph."""
-        qubit = QubitGraph(self._generate_single_node_graph())
-        qubit[0] = QubitGraph(self._generate_single_node_graph())
+        qubit = QubitGraph(0, self._generate_single_node_graph())
+        qubit[0] = QubitGraph(1, self._generate_single_node_graph())
 
         assert not qubit.is_leaf
         assert not qubit[0].is_leaf
@@ -398,8 +434,8 @@ class TestQubitGraphNesting:
         """Test that is_leaf and is_initialized are interpreted correctly."""
         # Case 1: Fully initialized but lowest layer is null graph
         #  -> In this case, lowest layer is both a leaf node and initialized
-        qubit1 = QubitGraph(self._generate_single_node_graph())
-        qubit1[0] = QubitGraph(nx.null_graph())
+        qubit1 = QubitGraph(0, self._generate_single_node_graph())
+        qubit1[0] = QubitGraph(1, nx.null_graph())
 
         assert not qubit1.is_leaf
         assert qubit1[0].is_leaf
@@ -407,17 +443,17 @@ class TestQubitGraphNesting:
 
         # Case 2: Lowest layer is not initialized
         #  -> In this case, lowest layer is a leaf node but NOT initialized
-        qubit1 = QubitGraph(self._generate_single_node_graph())
-        qubit1[0] = QubitGraph()
+        qubit2 = QubitGraph(0, self._generate_single_node_graph())
+        qubit2[0] = QubitGraph(1)
 
-        assert not qubit1.is_leaf
-        assert qubit1[0].is_leaf
-        assert not qubit1[0].is_initialized
+        assert not qubit2.is_leaf
+        assert qubit2[0].is_leaf
+        assert not qubit2[0].is_initialized
 
     def test_is_root(self):
         """Test the is_leaf() method on each layer in a nested QubitGraph."""
-        qubit = QubitGraph(self._generate_single_node_graph())
-        qubit[0] = QubitGraph(self._generate_single_node_graph())
+        qubit = QubitGraph(0, self._generate_single_node_graph())
+        qubit[0] = QubitGraph(1, self._generate_single_node_graph())
 
         assert qubit.is_root
         assert not qubit[0].is_root
@@ -425,8 +461,8 @@ class TestQubitGraphNesting:
 
     def test_parent_structure(self):
         """Test that the parent property of a nested QubitGraph references the correct objects."""
-        qubit = QubitGraph(self._generate_single_node_graph())
-        qubit[0] = QubitGraph(self._generate_single_node_graph())
+        qubit = QubitGraph(0, self._generate_single_node_graph())
+        qubit[0] = QubitGraph(1, self._generate_single_node_graph())
 
         assert qubit.parent is None
         assert qubit[0].parent is qubit
@@ -441,8 +477,43 @@ class TestQubitGraphRepresentation:
 
     def test_representation(self):
         """Test basic conversion of a QubitGraph to its string representation."""
-        q = QubitGraph()
-        assert str(q) == "QubitGraph"
+        q = QubitGraph(0)
+        assert str(q) == "QubitGraph<0>"
+
+        q = QubitGraph("0")
+        assert str(q) == "QubitGraph<0>"
+
+        q = QubitGraph((0, 0))
+        assert str(q) == "QubitGraph<(0, 0)>"
+
+        q = QubitGraph(("aux", 0))
+        assert str(q) == "QubitGraph<('aux', 0)>"
+
+    def test_representation_nested(self):
+        """Test conversion of a nested QubitGraph to its string representation."""
+        graph = nx.Graph()
+        graph.add_node(1)
+        q = QubitGraph(0, graph)
+        assert str(q) == "QubitGraph<0>"
+        assert str(q[1]) == "QubitGraph<0, 1>"
+
+        graph = nx.Graph()
+        graph.add_node("1")
+        q = QubitGraph(0, graph)
+        assert str(q) == "QubitGraph<0>"
+        assert str(q["1"]) == "QubitGraph<0, 1>"
+
+        graph = nx.Graph()
+        graph.add_node((0, 0))
+        q = QubitGraph(0, graph)
+        assert str(q) == "QubitGraph<0>"
+        assert str(q[(0, 0)]) == "QubitGraph<0, (0, 0)>"
+
+        graph = nx.Graph()
+        graph.add_node(("aux", 0))
+        q = QubitGraph(0, graph)
+        assert str(q) == "QubitGraph<0>"
+        assert str(q[("aux", 0)]) == "QubitGraph<0, ('aux', 0)>"
 
 
 class TestQubitGraphWorkflows:
@@ -450,8 +521,8 @@ class TestQubitGraphWorkflows:
 
     def test_execution(self):
         """Test execution of a simple circuit using QubitGraph objects as wires."""
-        q0 = QubitGraph()
-        q1 = QubitGraph()
+        q0 = QubitGraph(0)
+        q1 = QubitGraph(1)
         q0.init_graph_nd_grid((2,))
         q1.init_graph_nd_grid((2,))
 
@@ -473,13 +544,13 @@ class TestQubitGraphsWarnings:
 
     def test_access_uninitialized_nodes_warning(self):
         """Test that accessing the nodes property of an uninitialized graph emits a UserWarning."""
-        q = QubitGraph()
+        q = QubitGraph(0)
         with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
             _ = q.nodes
 
     def test_access_uninitialized_edges_warning(self):
         """Test that accessing the edges property of an uninitialized graph emits a UserWarning."""
-        q = QubitGraph()
+        q = QubitGraph(0)
         with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
             _ = q.edges
 
@@ -487,7 +558,7 @@ class TestQubitGraphsWarnings:
         """Test that accessing the connected qubits of a qubit with an uninitialized graph emits a
         UserWarning.
         """
-        q = QubitGraph()
+        q = QubitGraph(0)
         with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
             for connected_q in q.connected_qubits(0):
                 _ = connected_q
@@ -496,7 +567,7 @@ class TestQubitGraphsWarnings:
         """Test that accessing an element of a qubit with the subscript operator with an
         uninitialized graph emits a UserWarning.
         """
-        q = QubitGraph()
+        q = QubitGraph(0)
         with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
             _ = q[0]
 
@@ -504,13 +575,13 @@ class TestQubitGraphsWarnings:
         """Test that assigning an element of a qubit with an uninitialized graph emits a
         UserWarning.
         """
-        q = QubitGraph()
+        q = QubitGraph(0)
         with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
-            q[0] = QubitGraph()
+            q[0] = QubitGraph(1)
 
     def test_reinitialization_warning(self):
         """Test that re-initializing an already-initialized graph emits a UserWarning."""
-        q = QubitGraph()
+        q = QubitGraph(0)
         q.init_graph_2d_grid(2, 2)
 
         with pytest.warns(UserWarning, match="Attempting to re-initialize a QubitGraph"):
@@ -542,10 +613,10 @@ class TestQubitGraphsWarnings:
         with pytest.warns(
             UserWarning, match="QubitGraph expects an input graph of type 'networkx.Graph'"
         ):
-            _ = QubitGraph(g)
+            _ = QubitGraph(0, g)
 
         # Test that `init_graph` method raises warning
-        q = QubitGraph()
+        q = QubitGraph(0)
         with pytest.warns(
             UserWarning, match="QubitGraph expects an input graph of type 'networkx.Graph'"
         ):

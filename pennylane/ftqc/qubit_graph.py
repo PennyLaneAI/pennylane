@@ -31,6 +31,7 @@ class QubitGraph:
     logical qubits and physical qubits.
 
     Args:
+        id (Any): An identifier for this QubitGraph object.
         graph (graph-like, optional): The graph to use as the QubitGraph's underlying qubits.
             Inputting None (the default), leaves the underlying qubit graph in an uninitialized
             state, in which case one of the graph-initialization methods may be used to define the
@@ -47,10 +48,14 @@ class QubitGraph:
             * Recall that a _transversal operation_ is defined as a logical operator that is formed
               by applying the individual physical operators to each qubit in a QEC code block.
         * Implement tensor-like indexing and slicing.
-        * Improve string representation of QubitGraph objects.
     """
 
-    def __init__(self, graph: Optional[nx.Graph] = None):
+    def __init__(self, id, graph: Optional[nx.Graph] = None):
+        if id is None:
+            raise TypeError("'None' is not a valid QubitGraph ID.")
+
+        self._id = id  # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
+
         if graph is not None:
             self._check_graph_type_supported_and_raise_or_warn(graph)
 
@@ -67,7 +72,7 @@ class QubitGraph:
         Currently only basic, linear indexing and slicing is supported.
 
         Args:
-            key: Node label in the underlying qubit graph.
+            key (Any): Node label in the underlying qubit graph.
 
         TODO: Allow for more advanced tensor-like indexing and slicing.
         """
@@ -86,9 +91,31 @@ class QubitGraph:
 
         Currently only basic, linear indexing is supported. Slicing is not supported.
 
+        The QubitGraph assignment operator transfers ownership of the new QubitGraph object passed
+        as the parameter `value` to the parent QubitGraph object. It does so by updating two of the
+        new object's attributes:
+
+            1. It updates the new object's `id` to be equal to the label of the node to which it has
+               been assigned, as given by the `key` parameter.
+            2. It updates the new object's `parent` attribute to be the current QubitGraph object.
+
         Args:
-            key: Node label in the underlying qubit graph.
+            key (Any): Node label in the underlying qubit graph.
             value (QubitGraph): The QubitGraph object to assign to the node with the given key.
+
+        Example:
+
+            >>> graph = nx.Graph()
+            >>> graph.add_node(0)
+            >>> q_top = QubitGraph("top", graph)
+            >>> print(f"{q_top}; {q_top.nodes}")
+            QubitGraph<top>; [0]
+            >>> q_new = QubitGraph("new", graph)
+            >>> print(f"{q_new}; {q_new.nodes}")
+            QubitGraph<new>; [0]
+            >>> q_top[0] = q_new
+            >>> print(f"{q_top[0]}; {q_top[0].nodes}")
+            QubitGraph<top, 0>; [0]
 
         TODO: Allow for more advanced tensor-like indexing and slicing.
         """
@@ -102,8 +129,10 @@ class QubitGraph:
             self._warn_uninitialized()
             return
 
+        value._id = key
+        value._parent = self
+
         self._graph_qubits.nodes[key]["qubits"] = value
-        self._graph_qubits.nodes[key]["qubits"]._parent = self
 
     def __iter__(self):
         """Dummy QubitGraph iterator method that yields itself.
@@ -114,7 +143,7 @@ class QubitGraph:
         Consider the example where we wrap a QubitGraph object in a tuple. With this dummy
         __iter__() method defined, the resulting tuple contains the top-level QubitGraph object:
 
-            >>> q = QubitGraph()
+            >>> q = QubitGraph(0)
             >>> q.init_graph_nd_grid((2,))
             >>> tuple(q)
             (<QubitGraph object>,)
@@ -123,7 +152,7 @@ class QubitGraph:
         values that the __getitem__() method yield, which creates a tuple of the QubitGraph objects
         contained in the underlying qubit graph:
 
-            >>> q = QubitGraph()
+            >>> q = QubitGraph(0)
             >>> q.init_graph_nd_grid((2,))
             >>> tuple(q)
             >>> (<QubitGraph object>, <QubitGraph object>)
@@ -136,10 +165,42 @@ class QubitGraph:
     def __repr__(self):
         """Representation of a QubitGraph object.
 
-        TODO:
-            Improve this representation.
+        This representation displays the full index hierarchy of a nested QubitGraph object.
+
+        Examples:
+
+            >>> QubitGraph(0)
+            QubitGraph<0>
+
+            >>> q = QubitGraph(0)
+            >>> q.init_graph_nd_grid((2, 2))
+            >>> q
+            QubitGraph<0>
+            >>> q[(0, 1)]
+            QubitGraph<0, (0, 1)>
+            >>> graph = nx.Graph()
+            >>> graph.add_node("aux")
+            >>> q[(0, 1)].init_graph(graph)
+            >>> q[(0, 1)]["aux"]
+            QubitGraph<0, (0, 1), aux>
+
         """
-        return "QubitGraph"
+        if self.is_root:
+            return f"QubitGraph<{self._id}>"
+
+        ids = [self.id]
+        parent = self.parent
+        while parent is not None:
+            ids.append(parent.id)
+            parent = parent.parent
+
+        ids_str = ", ".join(str(id) for id in ids[::-1])
+        return f"QubitGraph<{ids_str}>"
+
+    @property
+    def id(self):
+        """Gets the QubitGraph ID."""
+        return self._id
 
     @property
     def graph(self):
@@ -257,7 +318,7 @@ class QubitGraph:
         Example:
 
             >>> graph = networkx.hexagonal_lattice_graph(3, 2)
-            >>> q = QubitGraph(graph)
+            >>> q = QubitGraph(0, graph)
         """
         if graph is None:
             raise TypeError("QubitGraph requires a graph-like input, got NoneType.")
@@ -280,7 +341,7 @@ class QubitGraph:
 
         Example:
 
-            >>> q = QubitGraph()
+            >>> q = QubitGraph(0)
             >>> q.init_graph_2d_grid(2, 3)
 
             This example initializes the underlying qubits as a 2x3 2-dimensional Cartesian grid
@@ -306,7 +367,7 @@ class QubitGraph:
 
         Example:
 
-            >>> q = QubitGraph()
+            >>> q = QubitGraph(0)
             >>> q.init_graph_2d_grid(2, 2, 3)
 
             This example initializes the underlying qubits as a 2x2x3 3-dimensional Cartesian grid
@@ -396,8 +457,8 @@ class QubitGraph:
         ), "Underlying qubit graph object must have 'nodes' attribute"
 
         for node in self._graph_qubits.nodes:
-            q = QubitGraph()
-            q._parent = self
+            q = QubitGraph(id=node)
+            q._parent = self  # pylint: disable=protected-access
             self[node] = q
 
     @staticmethod
