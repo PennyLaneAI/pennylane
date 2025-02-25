@@ -621,7 +621,7 @@ class TestMatrix:
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix_format(self, op1, mat1, op2, mat2):
-        """Test that the sparse matrix of a Prod op is defined and correct."""
+        """Test that the sparse matrix accepts the format parameter."""
         from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
         sum_op = qml.sum(op1(wires=0), op2(wires=1))
