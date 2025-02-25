@@ -140,6 +140,7 @@ class FromBloq(Operation):
                     for reg in binst.bloq.signature.rights()
                 }
 
+                # TODO: list has inconsistent shapes
                 try:
                     soq_to_wires_len = list(soq_to_wires.values())[-1][-1] + 1
                 except TypeError:
