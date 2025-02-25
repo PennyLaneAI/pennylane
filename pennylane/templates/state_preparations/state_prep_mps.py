@@ -440,7 +440,6 @@ class MPSPrep(Operation):
             # Encode the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
             vectors = []
             for column in Ai:
-
                 vector = qml.math.zeros(2**n_wires, like=interface, dtype=dtype)
 
                 if interface == "jax":
@@ -460,9 +459,7 @@ class MPSPrep(Operation):
             d, k = vectors.shape
             new_columns = qml.math.array(np.random.RandomState(42).random((d, d - k)))
             unitary_matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
-            unitary_matrix *= qml.math.sign(
-                qml.math.diag(R)
-            )  # Enforce uniqueness for QR decomposition
+            unitary_matrix *= qml.math.sign(qml.math.diag(R))  # Enforce uniqueness for QR decomposition
 
             ops.append(qml.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires))
 
