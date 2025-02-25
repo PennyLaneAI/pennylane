@@ -58,100 +58,8 @@ class ResourceTrotterProduct(
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 
-    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
-
-    Args:
-        hamiltonian (Union[.Hamiltonian, .Sum, .SProd]): The Hamiltonian written as a linear combination
-            of operators with known matrix exponentials.
-        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
-        n (int): An integer representing the number of Trotter steps to perform
-        order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
-
-    Raises:
-        TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
-        ValueError: The ``hamiltonian`` must have atleast two terms.
-        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian.
-        ValueError: The ``order`` is not one or a positive even integer.
-
-    **Example**
-
-    .. code-block:: python3
-
-        coeffs = [0.25, 0.75]
-        ops = [qml.X(0), qml.Z(0)]
-        H = qml.dot(coeffs, ops)
-
-        dev = qml.device("default.qubit", wires=2)
-        @qml.qnode(dev)
-        def my_circ():
-            # Prepare some state
-            qml.Hadamard(0)
-
-            # Evolve according to H
-            qml.TrotterProduct(H, time=2.4, order=2)
-
-            # Measure some quantity
-            return qml.state()
-
-    >>> my_circ()
-    array([-0.13259524+0.59790098j,  0.        +0.j        , -0.13259524-0.77932754j,  0.        +0.j        ])
-
-    .. warning::
-
-        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
-        mathematically identical :class:`~.LinearCombination` objects may undergo different time
-        evolutions due to the order in which those observables are stored. The order of observables
-        can be queried using the :meth:`~.Sum.terms` method.
-
-    .. warning::
-
-        ``TrotterProduct`` does not automatically simplify the input Hamiltonian, allowing
-        for a more fine-grained control over the decomposition but also risking an increased
-        runtime and number of gates required. Simplification can be performed manually by
-        applying :func:`~.simplify` to your Hamiltonian before using it in ``TrotterProduct``.
-
-    .. details::
-        :title: Usage Details
-
-        An *upper-bound* for the error in approximating time-evolution using this operator can be
-        computed by calling :func:`~.TrotterProduct.error()`. It is computed using two different methods; the
-        "one-norm-bound" scaling method and the "commutator-bound" scaling method. (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
-
-        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
-        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="one-norm-bound")
-        SpectralNormError(8.039062500000003e-06)
-        >>> op.error(method="commutator-bound")
-        SpectralNormError(6.166666666666668e-06)
-
-        This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
-        of :class:`~.ApproxTimeEvolution` by taking the adjoint:
-
-        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
-
-        We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
-        evolution time:
-
-        .. code-block:: python3
-
-            @qml.qnode(dev)
-            def my_circ(c1, c2, time):
-                # Prepare H:
-                H = qml.dot([c1, c2], [qml.X(0), qml.Z(0)])
-
-                # Prepare some state
-                qml.Hadamard(0)
-
-                # Evolve according to H
-                qml.TrotterProduct(H, time, order=2)
-
-                # Measure some quantity
-                return qml.expval(qml.Z(0) @ qml.Z(1))
-
-        >>> args = np.array([1.23, 4.5, 0.1])
-        >>> qml.grad(my_circ)(*tuple(args))
-        (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
+    Resources:
+        The resources are defined according to the recurrsive formula presented above.
     """
 
     @staticmethod
@@ -298,68 +206,8 @@ def resource_trotterize(qfunc, n=1, order=2, reverse=False):
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 
-    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
-
-    Suppose we have direct access to the operators which represent the exponentiated terms of
-    a hamiltonian:
-
-    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} | for j \in [1, N] \}.
-
-    Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
-    first order expansion :math:`S_{1}(t)`; this function expands it to any higher order Suzuki-Trotter product.
-
-    .. warning::
-
-        :code:`trotterize()` requires the :code:`qfunc` argument is a function with a very specific call
-        signature. The first argument should be a time parameter which will be modified according to the
-        Suzuki-Trotter product formula. The wires required by the circuit should be either the last
-        explicit argument or the first keyword argument.
-        :code:`qfunc((time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n))`
-
-    Args:
-        qfunc (Callable): the first-order expansion given as a callable function which queues operations
-        n (int): an integer representing the number of Trotter steps to perform
-        order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
-        name (str): an optional name for the instance
-        **non_trainable_kwargs (dict): non-trainable keyword arguments of the first-order expansion function
-
-    Returns:
-        Callable: a function with the same signature as :code:`qfunc`, when called it queues an instance of
-            :class:`~.TrotterizedQfunc`
-
-    **Example**
-
-    .. code-block:: python3
-
-        def first_order_expansion(time, theta, phi, wires, flip=False):
-            "This is the first order expansion (U_1)."
-            ResourceRX(time*theta, wires[0])
-            ResourceRY(time*phi, wires[1])
-            if flip:
-                ResourceCNOT(wires=wires[:2])
-
-        @qml.qnode(qml.device("default.qubit"))
-        def my_circuit(time, theta, phi, num_trotter_steps):
-            resource_trotterize(
-                first_order_expansion,
-                n=num_trotter_steps,
-                order=2,
-            )(time, theta, phi, wires=['a', 'b', 'c'], flip=True)
-            return qml.state()
-
-    We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
-
-        >>> time = 0.1
-        >>> theta, phi = (0.12, -3.45)
-        >>> print(qml.draw(my_circuit, level=3)(time, theta, phi, num_trotter_steps=1))
-        a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-        b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
-        >>>
-        >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=3))
-        a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
-        b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
-
+    Resources:
+        The resources are defined according to the recurrsive formula presented above.
     """
 
     @wraps(qfunc)
