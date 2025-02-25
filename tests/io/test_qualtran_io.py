@@ -28,6 +28,37 @@ class TestFromBloq:
 
         assert qml.FromBloq(XGate(), 1).__repr__() == "FromBloq(XGate, wires=Wires([1]))"
 
+    def test_composite_bloq_advanced(self):
+        """Tests that a composite bloq with higher level abstract bloqs has the correct
+        decomposition after wrapped with `FromBloq`"""
+        from qualtran import BloqBuilder
+        from qualtran import QUInt
+        from qualtran.bloqs.arithmetic import Product, Add
+        from pennylane.wires import Wires
+
+        bb = BloqBuilder()
+
+        w1 = bb.add_register("p1", 3)
+        w2 = bb.add_register("p2", 3)
+        w3 = bb.add_register("q1", 3)
+        w4 = bb.add_register("q2", 3)
+
+        w1, w2, res1 = bb.add(Product(3, 3), a=w1, b=w2)
+        w3, w4, res2 = bb.add(Product(3, 3), a=w3, b=w4)
+        p1p2, p1p2_plus_q1q2 = bb.add(Add(QUInt(bitsize=6), QUInt(bitsize=6)), a=res1, b=res2)
+
+        cbloq = bb.finalize(p1=w1, p2=w2, q1=w3, q2=w4, p1p2=p1p2, p1p2_plus_q1q2=p1p2_plus_q1q2)
+
+        expected = [
+            qml.FromBloq(Product(3, 3), wires=Wires([0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17])),
+            qml.FromBloq(Product(3, 3), wires=Wires([6, 7, 8, 9, 10, 11, 18, 19, 20, 21, 22, 23])),
+            qml.FromBloq(
+                Add(QUInt(bitsize=6), QUInt(bitsize=6)),
+                wires=Wires([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]),
+            ),
+        ]
+        assert qml.FromBloq(cbloq, wires=range(24)).decomposition()
+
     def test_composite_bloq(self):
         """Tests that a simple composite bloq has the correct decomposition after wrapped with `FromBloq`"""
         from qualtran import BloqBuilder
