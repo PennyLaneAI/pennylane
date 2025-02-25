@@ -78,6 +78,33 @@ class FromBloq(Operation):
     Args:
         bloq: the bloq to wrap
         wires: the wires to act on
+
+    **Example**
+
+    Given a qualtran bloq:
+
+    from qualtran.bloqs.basic_gates import CNOT
+
+    >>> qualtran_toffoli = qml.FromBloq(CNOT(), [0, 1])
+    >>> qualtran_toffoli.matrix()
+    array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+       [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+
+    A simple example showcasing how to use `qml.FromBloq` inside a device:
+
+    .. code-block::
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.FromBloq(XGate(), [0])
+            return qml.expval(qml.Z(wires=[0]))
+
+    >>> circuit()
+    -1.0
     """
 
     def __init__(self, bloq: Bloq, wires: WiresLike):
