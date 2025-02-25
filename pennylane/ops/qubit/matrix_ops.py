@@ -27,7 +27,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.math import cast, conj, expand_matrix, eye, norm, sqrt, sqrt_matrix, transpose, zeros
+from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
