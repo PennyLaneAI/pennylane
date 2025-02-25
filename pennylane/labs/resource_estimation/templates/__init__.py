@@ -27,13 +27,12 @@ from .subroutines import (
     ResourceModExp,
     ResourceMultiplier,
     ResourcePhaseAdder,
-    ResourceQubitUnitary
 )
 
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
 
 from .stateprep import (
-    ResourceSuperposition, 
-    ResourceStatePrep, 
-    ResourceMottonenStatePreparation, 
+    ResourceSuperposition,
+    ResourceStatePrep,
+    ResourceMottonenStatePreparation,
 )

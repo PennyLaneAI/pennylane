@@ -48,8 +48,8 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
 
 class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOperator):
     """Resource class for the MottonenStatePreparation template.
-    
-    Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010. 
+
+    Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
     """
 
     @staticmethod
@@ -85,24 +85,26 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
     """Resource class for the Superposition template."""
 
     @staticmethod
-    def _resource_decomp(num_stateprep_wires, num_basis_states, size_basis_state, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(
+        num_stateprep_wires, num_basis_states, size_basis_state, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
         r"""The resources are computed following the PennyLane decomposition of
-        the class. This class was designed based on the method described in 
-        https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339. 
+        the class. This class was designed based on the method described in
+        https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339.
 
         We use the following (somewhat naive) assumptions to approximate the
-        resources: 
-        
+        resources:
+
         -  The MottonenStatePreparation routine is assumed for the state prep
-        component. 
-        -  The permutation block requires 2 multi-controlled X gates and a 
-        series of CNOT gates. On average we will be controlling on and flipping 
+        component.
+        -  The permutation block requires 2 multi-controlled X gates and a
+        series of CNOT gates. On average we will be controlling on and flipping
         half the number of bits in :code:`size_basis`. (i.e for any given basis
-        state, half will be ones and half will be zeros). 
+        state, half will be ones and half will be zeros).
         -  If the number of basis states provided spans the set of all basis states,
         then we don't need to permute. In general, there is a probability associated
-        with not needing to permute wires if the basis states happen to match, we 
-        estimate this quantity aswell. 
+        with not needing to permute wires if the basis states happen to match, we
+        estimate this quantity aswell.
         """
         gate_types = {}
         msp = re.ResourceMottonenStatePreparation.resource_rep(num_stateprep_wires)
@@ -111,19 +113,23 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         cnot = re.ResourceCNOT.resource_rep()
         num_zero_ctrls = size_basis_state // 2
         multi_x = re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires=size_basis_state, num_ctrl_values=num_zero_ctrls, num_work_wires=0,
+            num_ctrl_wires=size_basis_state,
+            num_ctrl_values=num_zero_ctrls,
+            num_work_wires=0,
         )
 
-        basis_size = 2 ** size_basis_state
+        basis_size = 2**size_basis_state
         prob_matching_basis_states = num_basis_states / basis_size
-        num_permutes =  round(num_basis_states * (1 - prob_matching_basis_states))
-        
+        num_permutes = round(num_basis_states * (1 - prob_matching_basis_states))
+
         if num_permutes:
-            gate_types[cnot] = num_permutes * (size_basis_state // 2)  # average number of bits to flip
+            gate_types[cnot] = num_permutes * (
+                size_basis_state // 2
+            )  # average number of bits to flip
             gate_types[multi_x] = 2 * num_permutes  # for compute and uncompute
 
         return gate_types
-    
+
     def resource_params(self) -> Dict:
         bases = self.hyperparameters["bases"]
         num_basis_states = len(bases)
@@ -131,15 +137,17 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         num_stateprep_wires = math.ceil(math.log2(len(self.coeffs)))
 
         return {
-            "num_stateprep_wires": num_stateprep_wires, 
+            "num_stateprep_wires": num_stateprep_wires,
             "num_basis_states": num_basis_states,
             "size_basis_state": size_basis_state,
         }
-    
+
     @classmethod
-    def resource_rep(cls, num_stateprep_wires, num_basis_states, size_basis_state) -> CompressedResourceOp:
+    def resource_rep(
+        cls, num_stateprep_wires, num_basis_states, size_basis_state
+    ) -> CompressedResourceOp:
         params = {
-            "num_stateprep_wires": num_stateprep_wires, 
+            "num_stateprep_wires": num_stateprep_wires,
             "num_basis_states": num_basis_states,
             "size_basis_state": size_basis_state,
         }

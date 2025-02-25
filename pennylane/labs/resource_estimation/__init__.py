@@ -139,7 +139,7 @@ State Preparation Templates
     ~ResourceStatePrep
     ~ResourceSuperposition
     ~ResourceMottonenStatePreparation
-    
+
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
 
@@ -240,7 +240,4 @@ from .templates import (
     resource_trotterize,
     ResourceMottonenStatePreparation,
     ResourceSuperposition,
-    ResourceQubitUnitary,
 )
-
-from .compact_objects import CompactState

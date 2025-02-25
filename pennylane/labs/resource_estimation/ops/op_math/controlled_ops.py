@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for controlled operations."""
-from typing import Dict
 from collections import defaultdict
+from typing import Dict
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
@@ -463,7 +463,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         x = re.ResourceX.resource_rep()
         if num_ctrl_values:
             gate_types[x] = num_ctrl_values * 2
-        
+
         if num_ctrl_wires == 0:
             gate_types[x] += 1
             return gate_types
