@@ -57,7 +57,7 @@ class TestFromBloq:
                 wires=Wires([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]),
             ),
         ]
-        assert qml.FromBloq(cbloq, wires=range(24)).decomposition()
+        assert qml.FromBloq(cbloq, wires=range(24)).decomposition() == expected
 
     def test_composite_bloq(self):
         """Tests that a simple composite bloq has the correct decomposition after wrapped with `FromBloq`"""
