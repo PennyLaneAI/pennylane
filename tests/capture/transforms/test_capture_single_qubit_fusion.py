@@ -518,8 +518,6 @@ class TestSingleQubitFusionHigherOrderPrimitives:
         @SingleQubitFusionInterpreter()
         def circuit(x):
 
-            qml.CNOT(wires=[0, 1])
-
             def true_branch(x):
                 qml.RX(x, wires=0)
                 qml.S(wires=0)
@@ -529,6 +527,7 @@ class TestSingleQubitFusionHigherOrderPrimitives:
                 qml.H(0)
                 qml.H(1)
 
+            qml.CNOT(wires=[0, 1])
             qml.cond(x > 0.5, true_branch, false_branch)(x)
             qml.CNOT(wires=[0, 1])
 
