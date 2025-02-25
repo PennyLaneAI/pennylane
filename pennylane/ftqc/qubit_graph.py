@@ -121,7 +121,11 @@ class QubitGraph:
             >>> print(f"{q_top[0]}; {q_top[0].nodes}")
             QubitGraph<top, 0>; [0]
 
-        TODO: Allow for more advanced tensor-like indexing and slicing.
+        TODO:
+
+            - Allow for more advanced tensor-like indexing and slicing.
+            - Explicitly disallow assigning a QubitGraph object that would make the nesting
+              structure cyclic.
         """
         if not isinstance(value, QubitGraph):
             raise TypeError(
@@ -191,18 +195,25 @@ class QubitGraph:
         if self.is_root:
             return f"QubitGraph<{self._id}>"
 
+        if self.has_cycle():
+            # NOTE: For now, we check if the QubitGraph nesting structure is cyclic and break early,
+            # rather than iterating up through the parents until we reach the max-traversal depth.
+            # Eventually, it would be better to explicitly disallow constructing a cyclically nested
+            # QubitGraph.
+            self._warn_cyclically_nested_graph()
+            return f"QubitGraph<{self._id}; cyclic>"
+
         depth_counter = 1
 
         ids = [self.id]
         parent = self.parent
         while parent is not None:
-            # TODO: For now, we check against the fail-safe to prevent infinite traversal through
-            # nested graph structure. This might arise if a user accidentally creates a cyclical
-            # nesting structure, e.g. q0 -> q1 -> q0. In the future, we should explicitly check for
-            # cycles, or better yet, check for cycles on assignment and prevent the user from
-            # creating such a structure.
+            # To prevent extremely long string representations, we break early once we reach the
+            # max-traversal depth. Generally, we should never expect more than this many layers of
+            # nested QubitGraphs, so emit a warning.
             if depth_counter >= MAX_TRAVERSAL_DEPTH:
                 self._warn_max_traversal_depth_reached("__repr__")
+                ids.append("...")
                 break
 
             ids.append(parent.id)
@@ -323,6 +334,30 @@ class QubitGraph:
 
         for neighbor in self._graph_qubits.neighbors(node):
             yield self[neighbor]
+
+    def has_cycle(self) -> bool:
+        """Checks if the QubitGraph contains a cycle in its nesting structure.
+
+        This method uses Floyd's cycle-finding algorithm (also known as Floyd's tortoise and hare
+        algorithm) by iterating up through the QubitGraph's parent.
+
+        Returns:
+            bool: Returns True if this QubitGraph has a cycle in its nesting structure.s
+        """
+        if self._parent is None:
+            return False
+
+        slow = self._parent
+        fast = self._parent
+
+        while (fast is not None) and (fast.parent is not None):
+            slow = slow.parent
+            fast = fast.parent.parent
+
+            if slow == fast:
+                return True
+
+        return False
 
     def init_graph(self, graph: nx.Graph):
         """Initialize the QubitGraph's underlying qubits with the given graph.
@@ -504,6 +539,18 @@ class QubitGraph:
         warnings.warn(
             f"Maximum traversal depth reached in '{algo_name}' "
             f"(traversal depth > {MAX_TRAVERSAL_DEPTH})",
+            UserWarning,
+        )
+
+    @staticmethod
+    def _warn_cyclically_nested_graph():
+        """Emit a UserWarning when a cyclically nested graph structure was detected in a QubitGraph
+        object.
+        """
+        warnings.warn(
+            "A cyclically nested graph structure was detected in a QubitGraph object. QubitGraph "
+            "objects should generally not be cyclically nested since such structures have neither "
+            "well-defined root nor leaf nodes.",
             UserWarning,
         )
 

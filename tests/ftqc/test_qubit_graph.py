@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ftqc import QubitGraph
+from pennylane.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
 
 # pylint: disable=too-few-public-methods
 
@@ -256,6 +257,43 @@ class TestQubitGraphOperations:
         assert set(q.connected_qubits((0, 1))) == set([q[(0, 0)], q[(1, 1)]])
         assert set(q.connected_qubits((1, 0))) == set([q[(0, 0)], q[(1, 1)]])
         assert set(q.connected_qubits((1, 1))) == set([q[(0, 1)], q[(1, 0)]])
+
+    def test_has_cycle(self):
+        """Test basic usage of the ``QubitGraph.has_cycle`` method to detect cyclically nested
+        graph structures.
+        """
+        # 1 layer; no cycle
+        q = QubitGraph(0)
+        assert not q.has_cycle()
+
+        # 1 layer; self cycle
+        q._parent = q  # pylint: disable=protected-access
+        assert q.has_cycle()
+
+        # 2 layers; no cycle
+        q = QubitGraph(0)
+        q.init_graph_nd_grid((1,))
+        assert not q.has_cycle()
+        assert not q[0].has_cycle()
+
+        # 2 layers; cyclic
+        q[0] = q
+        assert q.has_cycle()
+        assert q[0].has_cycle()
+
+        # 3 layers; no cycle
+        q = QubitGraph(0)
+        q.init_graph_nd_grid((1,))
+        q[0].init_graph_nd_grid((1,))
+        assert not q.has_cycle()
+        assert not q[0].has_cycle()
+        assert not q[0][0].has_cycle()
+
+        # 3 layers; cyclic
+        q[0][0] = q
+        assert q.has_cycle()
+        assert q[0].has_cycle()
+        assert q[0][0].has_cycle()
 
 
 class TestQubitGraphIterationMethods:
@@ -517,18 +555,32 @@ class TestQubitGraphRepresentation:
 
     def test_representation_cyclically_nested_graph(self):
         """This test currently checks that attempting to represent a cyclically nested graph
-        structure emits a max-traversal-depth warning.
+        structure emits a warning stating that a cycle was detected.
 
-        In the future, such an operation should explicitly check for cyclical nesting and fail, or
-        creating a cyclically nested graph structure should fail upfront.
+        In the future, it would be better to explicitly disallow constructing a cyclically nested
+        QubitGraph.
         """
         # Create a cyclically nested graph
         q = QubitGraph(0)
         q.init_graph_nd_grid((1,))
         q[0] = q
 
+        with pytest.warns(UserWarning, match="A cyclically nested graph structure was detected"):
+            assert str(q) == "QubitGraph<0; cyclic>"
+
+    def test_representation_deeply_nested_graph(self):
+        """Test that attempting to represent a deeply nested QubitGraph object emits a 'Maximum
+        traversal depth reached' warning, and that the resulting string representation begins with
+        leading ellipses, i.e. 'QubitGraph<...,'."""
+        q = QubitGraph(0)
+        q.init_graph_nd_grid((1,))
+        q_next = q
+        for _ in range(MAX_TRAVERSAL_DEPTH):
+            q_next = q_next[0]
+            q_next.init_graph_nd_grid((1,))
+
         with pytest.warns(UserWarning, match="Maximum traversal depth reached"):
-            str(q)
+            assert str(q_next).startswith("QubitGraph<...,")
 
 
 class TestQubitGraphWorkflows:
