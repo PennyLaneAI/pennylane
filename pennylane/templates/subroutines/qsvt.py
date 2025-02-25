@@ -953,9 +953,9 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
 
     """
 
-    poly = copy.copy(poly)
+    poly = qml.math.array(poly, like="numpy")
 
-    ind = qml.math.shape(poly)[0]
+    ind = len(poly)
     # Trailing zeros are removed from the array
     for item in reversed(poly):
         if not qml.math.allclose(item, 0.0):
