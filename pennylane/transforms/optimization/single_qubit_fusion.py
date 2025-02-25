@@ -67,19 +67,23 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             self.previous_ops.clear()
             self._env.clear()
 
-        def _handle_non_fusible_op(self, op: Operator) -> list:
-            """Handle an operation that cannot be fused into a Rot gate."""
+        def _retrieve_prev_ops_same_wire(self, op: Operator) -> list[Operator]:
+            """Retrieve and removes all previous operations acting on the same wires."""
 
             # The order might not be deterministic if wires (the keys) are abstract.
             # However, this only impacts operators without any shared wires,
             # which does not affect the correctness of the result.
-            previous_ops_on_wires = list(
-                dict.fromkeys(
-                    self.previous_ops.get(w)
-                    for w in op.wires
-                    if self.previous_ops.get(w) is not None
-                )
-            )
+
+            previous_ops_on_wires = {
+                w: self.previous_ops.pop(w) for w in op.wires if w in self.previous_ops
+            }
+
+            return previous_ops_on_wires.values()
+
+        def _handle_non_fusible_op(self, op: Operator) -> list:
+            """Handle an operation that cannot be fused into a Rot gate."""
+
+            previous_ops_on_wires = self._retrieve_prev_ops_same_wire(op)
 
             res = []
             for prev_op in previous_ops_on_wires:
@@ -90,9 +94,6 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                 res.append(super().interpret_operation(rot))
 
             res.append(super().interpret_operation(op))
-
-            for w in op.wires:
-                self.previous_ops.pop(w, None)
 
             return res
 
@@ -140,11 +141,10 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             # We interpret directly if the gate is explicitly excluded,
             # after interpreting all previous operations on the same wires.
             if self.exclude_gates and op.name in self.exclude_gates:
-                previous_ops = {
-                    w: self.previous_ops.pop(w) for w in op.wires if w in self.previous_ops
-                }
 
-                for prev_op in previous_ops.values():
+                previous_ops_on_wires = self._retrieve_prev_ops_same_wire(op)
+
+                for prev_op in previous_ops_on_wires:
                     super().interpret_operation(prev_op)
 
                 return super().interpret_operation(op)
@@ -162,9 +162,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             # As above, the order might not be deterministic if wires (the keys) are abstract.
             # However, this only impacts operators without any shared wires,
             # which does not affect the correctness of the result.
-            ops_remaining = list(dict.fromkeys(self.previous_ops.values()))
-
-            for op in ops_remaining:
+            for op in self.previous_ops.values():
                 super().interpret_operation(op)
 
             self.previous_ops.clear()
