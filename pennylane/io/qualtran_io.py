@@ -131,7 +131,6 @@ class FromBloq(Operation):
             }
 
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
-                # TODO: Rename this variable to something more intuitive
                 in_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.lefts()
@@ -141,22 +140,16 @@ class FromBloq(Operation):
                     for reg in binst.bloq.signature.rights()
                 }
 
+                try:
+                    soq_to_wires_len = list(soq_to_wires.values())[-1][-1] + 1
+                except TypeError:
+                    soq_to_wires_len = list(soq_to_wires.values())[-1] + 1
+
                 for pred in pred_cxns:
                     soq = pred.right
                     soq_to_wires[soq] = soq_to_wires[pred.left]
                     in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
 
-                total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
-                if len(total_wires) == 0:  # if bloq decomposes to allocate + subbloqs
-                    total_wires = [-1]  # dummy value
-
-                mapped_wires = []
-                for idx in total_wires:
-                    mapped_wires.append(wires[idx])
-                op = binst.bloq.as_pl_op(mapped_wires)
-
-                if op:
-                    ops.append(op)
                 for succ in succ_cxns:
                     soq = succ.left
                     if soq.reg.side == Side.RIGHT:
@@ -165,14 +158,24 @@ class FromBloq(Operation):
                         if len(in_quregs) != len(out_quregs) and soq.reg.side == Side.RIGHT:
                             total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
                             ascending_vals = np.arange(
-                                list(soq_to_wires.values())[-1][-1] + 1,
-                                total_elements + list(soq_to_wires.values())[-1][-1] + 1,
+                                soq_to_wires_len,
+                                total_elements + soq_to_wires_len,
                                 dtype=object,
                             )
                             in_quregs[soq.reg.name] = ascending_vals.reshape(
                                 (*soq.reg.shape, soq.reg.bitsize)
                             )
                         soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
+
+                total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
+
+                mapped_wires = []
+                for idx in total_wires:
+                    mapped_wires.append(wires[idx])
+                op = binst.bloq.as_pl_op(mapped_wires)
+
+                if op:
+                    ops.append(op)
         except (DecomposeNotImplementedError, DecomposeTypeError):
             pass
 
