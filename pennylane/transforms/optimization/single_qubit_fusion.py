@@ -53,27 +53,30 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
         def __init__(self, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None):
             """Initialize the interpreter."""
             self.atol = atol
-            self.exclude_gates = exclude_gates
+            self.exclude_gates = set(exclude_gates) if exclude_gates is not None else None
             self.previous_ops = {}
             self._env = {}
 
         def setup(self) -> None:
             """Initialize the instance before interpreting equations."""
             self.previous_ops = {}
-            self._env = {}
+            self._env.clear()
 
         def cleanup(self) -> None:
             """Clean up the instance after interpreting equations."""
             self.previous_ops.clear()
             self._env.clear()
 
-        def _retrieve_prev_ops_same_wire(self, op: Operator) -> list[Operator]:
-            """Retrieve and removes all previous operations acting on the same wires."""
+        def _retrieve_prev_ops_same_wire(self, op: Operator):
+            """Retrieve and removes all previous operations acting on the same wire(s) as the given operation."""
 
-            # The order might not be deterministic if wires (the keys) are abstract.
+            # The order might not be deterministic if the wires (that is, keys) are abstract.
             # However, this only impacts operators without any shared wires,
             # which does not affect the correctness of the result.
 
+            # If the wires are concrete, the order of the keys (that is, wires)
+            # and thus the values should reflect the order in which they are iterated
+            # because in Python 3.7+ dictionaries maintain insertion order.
             previous_ops_on_wires = {
                 w: self.previous_ops.pop(w) for w in op.wires if w in self.previous_ops
             }
@@ -159,9 +162,6 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
         def interpret_all_previous_ops(self) -> None:
             """Interpret all previous operations stored in the instance."""
 
-            # As above, the order might not be deterministic if wires (the keys) are abstract.
-            # However, this only impacts operators without any shared wires,
-            # which does not affect the correctness of the result.
             for op in self.previous_ops.values():
                 super().interpret_operation(op)
 
