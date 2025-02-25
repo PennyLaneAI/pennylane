@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse matrix.
+  [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
+
 * Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
