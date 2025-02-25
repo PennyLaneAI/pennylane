@@ -225,34 +225,6 @@ class QubitUnitary(Operation):
             "U is a dense matrix. Use matrix method instead"
         )
 
-    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
-        r"""Representation of the operator as a sparse matrix in the computational basis.
-
-        If ``wire_order`` is provided, the numerical representation considers the position of the
-        operator's wires in the global wire order. Otherwise, the wire order defaults to the
-        operator's wires.
-
-        A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
-
-        .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
-
-        Args:
-            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
-
-        Returns:
-            scipy.sparse._csr.csr_matrix: sparse matrix representation
-
-        """
-        if not self.has_sparse_matrix:
-            raise qml.operation.SparseMatrixUndefinedError(
-                f"The sparse matrix representation of {self} has not been defined."
-            )
-        canonical_sparse_matrix = self.compute_sparse_matrix(
-            *self.parameters, **self.hyperparameters
-        )
-
-        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
-
     @staticmethod
     def compute_decomposition(U: TensorLike, wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
