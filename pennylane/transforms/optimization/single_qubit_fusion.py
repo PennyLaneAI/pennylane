@@ -14,7 +14,7 @@
 """Transform for fusing sequences of single-qubit gates."""
 # pylint: disable=too-many-branches
 
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import Optional
 
 import pennylane as qml
@@ -243,7 +243,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 SingleQubitFusionInterpreter, single_qubit_plxpr_to_plxpr = _get_plxpr_single_qubit_fusion()
 
 
-@transform
+@partial(transform, plxpr_transform=single_qubit_plxpr_to_plxpr)
 def single_qubit_fusion(
     tape: QuantumScript, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:

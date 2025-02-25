@@ -187,6 +187,26 @@ class TestSingleQubitFusionInterpreter:
         jaxpr = jax.make_jaxpr(circuit)()
         assert len(jaxpr.eqns) == 0
 
+    def test_atol_kwarg(self):
+        """Test that the atol kwarg is correctly passed to the fusion transformation."""
+
+        @SingleQubitFusionInterpreter(atol=1e-5)
+        def circuit():
+            qml.RZ(0.1, wires=0)
+            qml.RZ((-0.1 + 1e-4), wires=0)
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 1
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        transformed_ops_check = [qml.Rot(0.0001, 0, 0, wires=[0])]
+
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check, strict=True):
+            qml.assert_equal(op1, op2)
+
     def test_single_qubit_fusion_not_implemented(self):
         """Test that fusion is correctly skipped for single-qubit gates where the rotation angles are not specified."""
 
@@ -674,3 +694,24 @@ class TestSingleQubitFusionPLXPR:
         assert transformed_jaxpr.eqns[0].primitive == qml.Rot._primitive
         assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    def test_applying_plxpr_decorator(self):
+        """Test that the single-qubit fusion transformation works when applying the plxpr decorator."""
+
+        @qml.capture.expand_plxpr_transforms
+        @qml.transforms.optimization.single_qubit_fusion
+        def circuit():
+            qml.RZ(0.3, wires=0)
+            qml.Hadamard(wires=0)
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+            qml.RX(0.1, wires=0)
+            qml.SX(wires=0)
+            qml.T(wires=0)
+            qml.PauliX(wires=0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.Rot._primitive
+        assert jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
