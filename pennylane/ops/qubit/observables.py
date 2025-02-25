@@ -22,7 +22,7 @@ from copy import copy
 from typing import Optional, Union
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
@@ -364,7 +364,9 @@ class SparseHamiltonian(Observable):
         return H.toarray()
 
     @staticmethod
-    def compute_sparse_matrix(H: csr_matrix) -> csr_matrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(
+        H: spmatrix, format="csr"
+    ) -> spmatrix:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
