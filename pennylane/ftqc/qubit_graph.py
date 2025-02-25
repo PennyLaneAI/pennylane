@@ -21,6 +21,10 @@ from typing import Optional, Union
 
 import networkx as nx
 
+# Fail-safe for algorithms that traverse the nested graph structure
+# In other words, we should never expect more than this many layers of nested QubitGraphs
+MAX_TRAVERSAL_DEPTH = 100
+
 
 class QubitGraph:
     """A class to represent a hierarchical qubit memory model as nested graphs of qubits.
@@ -183,16 +187,28 @@ class QubitGraph:
             >>> q[(0, 1)].init_graph(graph)
             >>> q[(0, 1)]["aux"]
             QubitGraph<0, (0, 1), aux>
-
         """
         if self.is_root:
             return f"QubitGraph<{self._id}>"
 
+        depth_counter = 1
+
         ids = [self.id]
         parent = self.parent
         while parent is not None:
+            # TODO: For now, we check against the fail-safe to prevent infinite traversal through
+            # nested graph structure. This might arise if a user accidentally creates a cyclical
+            # nesting structure, e.g. q0 -> q1 -> q0. In the future, we should explicitly check for
+            # cycles, or better yet, check for cycles on assignment and prevent the user from
+            # creating such a structure.
+            if depth_counter >= MAX_TRAVERSAL_DEPTH:
+                self._warn_max_traversal_depth_reached("__repr__")
+                break
+
             ids.append(parent.id)
             parent = parent.parent
+
+            depth_counter += 1
 
         ids_str = ", ".join(str(id) for id in ids[::-1])
         return f"QubitGraph<{ids_str}>"
@@ -473,6 +489,21 @@ class QubitGraph:
             "Attempting to re-initialize a QubitGraph. If you wish to initialize the underlying "
             "qubits with a new graph structure, you must first call QubitGraph.clear() and then "
             "call the initialization method.",
+            UserWarning,
+        )
+
+    @staticmethod
+    def _warn_max_traversal_depth_reached(algo_name: str):
+        """Emit a UserWarning when an algorithm traversing through the layers of a nested QubitGraph
+        surpasses the maximum traversal depth.
+
+        Args:
+            algo_name (str): The name of the algorithm that triggered the max traversal-depth
+                warning.
+        """
+        warnings.warn(
+            f"Maximum traversal depth reached in '{algo_name}' "
+            f"(traversal depth > {MAX_TRAVERSAL_DEPTH})",
             UserWarning,
         )
 

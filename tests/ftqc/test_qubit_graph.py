@@ -515,6 +515,21 @@ class TestQubitGraphRepresentation:
         assert str(q) == "QubitGraph<0>"
         assert str(q[("aux", 0)]) == "QubitGraph<0, ('aux', 0)>"
 
+    def test_representation_cyclically_nested_graph(self):
+        """This test currently checks that attempting to represent a cyclically nested graph
+        structure emits a max-traversal-depth warning.
+
+        In the future, such an operation should explicitly check for cyclical nesting and fail, or
+        creating a cyclically nested graph structure should fail upfront.
+        """
+        # Create a cyclically nested graph
+        q = QubitGraph(0)
+        q.init_graph_nd_grid((1,))
+        q[0] = q
+
+        with pytest.warns(UserWarning, match="Maximum traversal depth reached"):
+            str(q)
+
 
 class TestQubitGraphWorkflows:
     """Tests of QubitGraph workflows."""
