@@ -1,6 +1,7 @@
 """The Fragment class"""
 
 from __future__ import annotations
+from typing import Sequence
 
 from abc import ABC, abstractmethod
 
@@ -23,14 +24,6 @@ class Fragment(ABC):
     def __matmul__(self, other: Fragment) -> Fragment:
         raise NotImplementedError
 
-    def commutator(self, other: Fragment) -> Fragment:
-        """Return the commutator [self, other]"""
-        return (self @ other) - (other @ self)
-
-    def nested_commutator(self, a: Fragment, b: Fragment) -> Fragment:
-        """Return the commutator [self, [a, b]]"""
-        return self.commutator(a.commutator(b))
-
     @abstractmethod
     def norm(self, *args) -> float:
         """Compute the norm of the fragment"""
@@ -40,3 +33,20 @@ class Fragment(ABC):
     def apply(self, state):
         """Apply to a state on the right"""
         raise NotImplementedError
+
+def commutator(a: Fragment, b: Fragment) -> Fragment:
+    """Return the commutator [a, b]"""
+    return a@b - b@a
+
+def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
+    """Return [a, [b, [c, d]]]"""
+
+    if len(fragments) < 2:
+        raise ValueError("Need at least two fragments to commute.")
+
+    if len(fragments) == 2:
+        return commutator(*fragments)
+
+    head, *tail = fragments
+
+    return commutator(head, nested_commutator(tail))
