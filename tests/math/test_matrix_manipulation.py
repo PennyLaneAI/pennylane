@@ -1081,6 +1081,22 @@ class TestSqrtMatrix:
         np.array([[4, 2], [2, 3]]),
     ]
     shape_list = range(2, 10)
+    # NOTE: sqrt_matrix is frequently used by BlockEncode
+    #       here below are some test matrices that are used
+    #       in the BlockEncode tests
+    matrices = [
+        # 2x2 matrices
+        np.array([[0.1, 0.2], [0.3, 0.4]]),
+        # Non-square matrices
+        np.array([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2]]),
+        # 3x3 matrix
+        np.array([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]]),
+        # Identity-like matrices
+        np.array([[1, 0], [0, 1]]),
+        np.identity(3),
+        # Matrix with complex entries
+        0.2 * np.array([[0.3, 0.9539392j], [0.9539392j, -0.3]]),
+    ]
 
     @pytest.mark.parametrize("dm", dm_list)
     def test_sqrt_matrix_sparse_dm(self, dm, tol):
@@ -1102,3 +1118,29 @@ class TestSqrtMatrix:
         A_sparse = csr_matrix(A)
 
         assert np.allclose(sqrt_matrix(A), sqrt_matrix_sparse(A_sparse).toarray(), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("matrix", matrices)
+    def test_sqrt_matrix_inputs(self, matrix, tol):
+        """Test sqrt_matrix function with various input matrices."""
+
+        # type M^T M
+        A = matrix.T.conj() @ matrix
+        A = np.eye(A.shape[0]) - A
+        A_sparse = csr_matrix(A)
+
+        result_sparse = sqrt_matrix_sparse(A_sparse)
+        result = result_sparse.toarray()
+        result_2 = result @ result
+
+        assert np.allclose(result_2, A, atol=tol, rtol=0)
+
+        # type M M^T
+        A = matrix @ matrix.T.conj()
+        A = np.eye(A.shape[0]) - A
+        A_sparse = csr_matrix(A)
+
+        result_sparse = sqrt_matrix_sparse(A_sparse)
+        result = result_sparse.toarray()
+        result_2 = result @ result
+
+        assert np.allclose(result_2, A, atol=tol, rtol=0)

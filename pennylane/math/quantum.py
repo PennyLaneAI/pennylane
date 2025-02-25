@@ -988,7 +988,13 @@ def sqrt_matrix_sparse(density_matrix):
         raise TypeError(
             "Only use this method for sparse matrices, or there will be an inevitable performance hit and divergence risk."
         )
+    if density_matrix.nnz == 0:
+        return density_matrix
     return _denman_beavers_iterations(density_matrix, max_iter=100, tol=1e-10)
+
+
+def _inv_newton(M, guess):
+    return 2 * guess - guess @ M @ guess
 
 
 def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
@@ -1006,45 +1012,40 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
         LinAlgError: If matrix inversion fails
     """
     mat = csc_matrix(mat)
-    Ynew = mat
-    Znew = sp.sparse.eye(mat.shape[0]).tocsc()
+    Y = mat
+    Z = sp.sparse.eye(mat.shape[0]).tocsc()
 
     # Keep track of previous iteration for convergence check
     Y_prev = None
 
     # pylint: disable=too-many-nested-blocks
     for iter_num in range(max_iter):
-        Y = Ynew
-        Z = Znew
 
-        try:
-            # Compute next iteration
+        # Compute next iteration
+        if iter_num < 2:
             Zinv = spla.inv(Z)
             Yinv = spla.inv(Y)
+        else:
+            # Take newton step
+            Zinv = _inv_newton(Z, Zinv)
+            Yinv = _inv_newton(Y, Yinv)
 
-            Ynew = 0.5 * (Y + Zinv)
-            Znew = 0.5 * (Z + Yinv)
+        Y = 0.5 * (Y + Zinv)
+        Z = 0.5 * (Z + Yinv)
 
-            # Check convergence every 10 iterations
-            if iter_num % 10 == 0:
-                if Y_prev is not None:
-                    # Compute Frobenius norm of difference
-                    diff = (Y - Y_prev).data
-                    if len(diff) > 0:  # Handle empty sparse matrices
-                        norm_diff = np.linalg.norm(diff)
-                        if norm_diff < tol:
-                            break
-                Y_prev = Y.copy()
-
-        except (sp.linalg.LinAlgError, RuntimeError) as e:
-            raise sp.linalg.LinAlgError(
-                f"Matrix inversion failed at iteration {iter_num}: {str(e)}"
-            ) from e
+        # Check convergence every 10 iterations
+        if iter_num % 10 == 0:
+            if Y_prev is not None:
+                # Compute Frobenius norm of difference
+                diff = (Y - Y_prev).data
+                if len(diff) > 0:  # Handle empty sparse matrices
+                    norm_diff = np.linalg.norm(diff)
+                    if norm_diff < tol:
+                        break
+            Y_prev = Y.copy()
 
     try:
-        X = spla.inv(Z)
-        B = Znew
-        return 2 * X - X @ B @ X
+        return Y
     except (sp.linalg.LinAlgError, RuntimeError) as e:
         raise sp.linalg.LinAlgError("Matrix inversion failed in final computation") from e
 
