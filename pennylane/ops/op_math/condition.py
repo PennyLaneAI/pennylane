@@ -27,7 +27,9 @@ from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
-def all_output_shapes(f):
+def _all_output_shapes(f):
+    """Add the shapes of all the returned variables before the returned variables."""
+
     def new_f(*args, **kwargs):
         out = f(*args, **kwargs)
         shapes = []
@@ -226,7 +228,6 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         return self.false_fn(*args, **kwargs)  # pylint: disable=not-callable
 
     def __call_capture_enabled(self, *args, **kwargs):
-        print(args, kwargs)
         import jax  # pylint: disable=import-outside-toplevel
 
         cond_prim = _get_cond_qfunc_prim()
@@ -257,7 +258,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             else:
                 f = FlatFn(functools.partial(fn, **kwargs))
                 if jax.config.jax_dynamic_shapes:
-                    f = all_output_shapes(f)
+                    f = _all_output_shapes(f)
                 jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
                 jaxpr_branches.append(jaxpr.jaxpr)
                 consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
@@ -266,7 +267,6 @@ class CondCallable:  # pylint:disable=too-few-public-methods
 
         _validate_jaxpr_returns(jaxpr_branches)
         flat_args, _ = jax.tree_util.tree_flatten(args)
-        print("about to bind")
         results = cond_prim.bind(
             *conditions,
             *consts,
@@ -662,33 +662,9 @@ def cond(
     return wrapper
 
 
-def _validate_abstract_values(
-    outvals: list, expected_outvals: list, branch_type: str, index: Optional[int] = None
-) -> None:
-    """Ensure the collected abstract values match the expected ones."""
-
-    if len(outvals) != len(expected_outvals):
-        raise ValueError(
-            f"Mismatch in number of output variables in {branch_type} branch"
-            f"{'' if index is None else ' #' + str(index)}: "
-            f"{len(outvals)} vs {len(expected_outvals)}"
-        )
-
-    for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
-        if (
-            all(not qml.math.is_abstract(o) for o in (outval, expected_outval))
-            and outval != expected_outval
-        ):
-            raise ValueError(
-                f"Mismatch in output abstract values in {branch_type} branch"
-                f"{'' if index is None else ' #' + str(index)} at position {i}: "
-                f"{outval} vs {expected_outval}"
-            )
-
-
 def _register_custom_staging_rule(cond_prim):
-    import jax
-    from jax._src.interpreters import partial_eval as pe
+    import jax  # pylint: disable=import-outside-toplevel
+    from jax._src.interpreters import partial_eval as pe  # pylint: disable=import-outside-toplevel
 
     def _new_outvar(jaxpr_trace, outvar, env):
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
@@ -703,17 +679,14 @@ def _register_custom_staging_rule(cond_prim):
     def custom_staging_rule(jaxpr_trace, *tracers, **params):
         if not jax.config.jax_dynamic_shapes:
             return jaxpr_trace.default_process_primitive(cond_prim, tracers, params)
-        print("in custom staging rule")
-        jaxpr = params["jaxpr_branches"][0]
+        true_outvars = params["jaxpr_branches"][0].outvars
 
         env = {}
-        returned_vars, out_tracers = list(
-            zip(*(_new_outvar(jaxpr_trace, var, env) for var in jaxpr.outvars))
+        out_tracers, returned_vars = tuple(
+            zip(*(_new_outvar(jaxpr_trace, var, env) for var in true_outvars))
         )
 
-        print("making invars")
         invars = [jaxpr_trace.getvar(x) for x in tracers]
-        print("made invars ", invars)
         eqn = pe.new_jaxpr_eqn(
             invars,
             returned_vars,
@@ -721,11 +694,35 @@ def _register_custom_staging_rule(cond_prim):
             params,
             jax.core.no_effects,
         )
-        print("new eqn: ", eqn)
         jaxpr_trace.frame.add_eqn(eqn)
         return out_tracers
 
     pe.custom_staging_rules[cond_prim] = custom_staging_rule
+
+
+def _validate_abstract_values(
+    outvals: list, expected_outvals: list, branch_type: str, index: Optional[int] = None
+) -> None:
+    """Ensure the collected abstract values match the expected ones."""
+
+    if len(outvals) != len(expected_outvals):
+        raise ValueError(
+            f"Mismatch in number of output variables in {branch_type} branch"
+            f"{'' if index is None else ' #' + str(index)}: "
+            f"{len(outvals)} vs {len(expected_outvals)}"
+        )
+
+    for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
+        # for now, skip validation if any dynamic shapes
+        if (
+            all(isinstance(o, int) for o in getattr(outval, "shape", ()))
+            and outval != expected_outval
+        ):
+            raise ValueError(
+                f"Mismatch in output abstract values in {branch_type} branch"
+                f"{'' if index is None else ' #' + str(index)} at position {i}: "
+                f"{outval} vs {expected_outval}"
+            )
 
 
 def _validate_jaxpr_returns(jaxpr_branches):
@@ -752,9 +749,9 @@ def _validate_jaxpr_returns(jaxpr_branches):
 def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
-    import jax  # pylint: disable=import-outside-toplevel
-
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import (  # pylint: disable=import-outside-toplevel
+        NonInterpPrimitive,
+    )
 
     cond_prim = NonInterpPrimitive("cond")
     cond_prim.multiple_results = True
@@ -786,7 +783,7 @@ def _get_cond_qfunc_prim():
                 continue
             if isinstance(pred, qml.measurements.MeasurementValue):
                 with qml.queuing.AnnotatedQueue() as q:
-                    out = jax.core.eval_jaxpr(jaxpr, consts, *args)
+                    out = qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
 
                 if len(out) != 0:
                     raise ConditionalTransformError(
@@ -796,7 +793,7 @@ def _get_cond_qfunc_prim():
                 for wrapped_op in q:
                     Conditional(pred, wrapped_op.obj)
             elif pred:
-                return jax.core.eval_jaxpr(jaxpr, consts, *args)
+                return qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
 
         return ()
 

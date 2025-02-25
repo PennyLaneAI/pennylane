@@ -803,3 +803,33 @@ def test_cond_abstracted_axes(enable_disable_dynamic_shapes):
 
     output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
     assert qml.math.allclose(output_false[0], 0)  # 0 * 1
+
+
+def test_cond_dynamic_shape_output(enable_disable_dynamic_shapes):
+    """test that cond can return dynamic shapes."""
+
+    def true_fn(n):
+        return jax.numpy.arange(n)
+
+    def false_fn(n):
+        return jax.numpy.zeros(n**2)
+
+    def f(val, n):
+        return {"result": qml.cond(val, true_fn, false_fn=false_fn)(n)}
+
+    jaxpr = jax.make_jaxpr(f)(True, 3)
+
+    assert len(jaxpr.jaxpr.outvars) == 2
+    assert jaxpr.jaxpr.outvars[1].aval.shape[0] is jaxpr.jaxpr.outvars[0]
+
+    [a, b] = qml.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, True, 4)
+
+    assert a == 4
+    assert qml.math.allclose(b, true_fn(4))
+
+    [c, d] = qml.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, False, 7)
+    assert c == 49
+    assert qml.math.allclose(d, false_fn(7))
+
+    res = f(True, 6)  # slicing out the shape variable
+    assert qml.math.allclose(res["result"], jax.numpy.arange(6))
