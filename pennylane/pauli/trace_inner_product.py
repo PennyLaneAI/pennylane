@@ -41,7 +41,7 @@ def trace_inner_product(
         B (Union[PauliSentence, Operator, TensorLike]): Second operator of the same type as ``A``
 
     Returns:
-        Union[float, TensorLike]: Result is either a single float or a batch of floats.
+        Union[float, TensorLike]: Result is either a single float or an array of floats (in batches of the broadcasting dimension).
 
     **Example**
 
