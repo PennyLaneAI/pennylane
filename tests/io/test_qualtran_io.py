@@ -106,8 +106,8 @@ class TestFromBloq:
         registers and wires."""
 
         from qualtran import BloqBuilder
-        from qualtran import QBit, QInt, QUInt, QAny
-        from qualtran.bloqs.arithmetic import OutOfPlaceAdder, Product, Add
+        from qualtran import QUInt
+        from qualtran.bloqs.arithmetic import Product, Add
         from pennylane.wires import Wires
 
         bb = BloqBuilder()  # bb is the circuit like object
