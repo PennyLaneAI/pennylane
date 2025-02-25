@@ -31,10 +31,11 @@ from pennylane.wires import WiresLike
 
 import numpy as np
 
+
 def get_bloq_registers_info(bloq):
-    """Returns a `qml.registers` object associated with all named and unnamed registers and wires 
+    """Returns a `qml.registers` object associated with all named and unnamed registers and wires
     in the bloq.
-    
+
     Args:
         bloq: the bloq to get the registers info of
 
@@ -53,7 +54,7 @@ def get_bloq_registers_info(bloq):
     """
 
     cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
-    
+
     temp_register_dict = {}
     for reg in cbloq.signature.rights():
         temp_register_dict[reg.name] = reg.bitsize
@@ -111,7 +112,7 @@ class FromBloq(Operation):
         self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
 
-    def __repr__(self):
+    def __repr__(self):  # pylint: disable=protected-access
         return f'FromBloq({self._hyperparameters["bloq"]}, wires={self.wires})'
 
     def compute_decomposition(self, wires, **kwargs):  # pylint: disable=arguments-differ
@@ -162,7 +163,9 @@ class FromBloq(Operation):
                         if len(in_quregs) != len(out_quregs) and soq.reg.side == Side.RIGHT:
                             total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
                             ascending_vals = np.arange(
-                                list(soq_to_wires.values())[-1][-1]+1, total_elements + list(soq_to_wires.values())[-1][-1]+1, dtype=object
+                                list(soq_to_wires.values())[-1][-1] + 1,
+                                total_elements + list(soq_to_wires.values())[-1][-1] + 1,
+                                dtype=object,
                             )
                             in_quregs[soq.reg.name] = ascending_vals.reshape(
                                 (*soq.reg.shape, soq.reg.bitsize)
@@ -173,7 +176,7 @@ class FromBloq(Operation):
 
         return ops
 
-    def compute_matrix(*params, **kwargs):  # pylint: disable=unused-argument
+    def compute_matrix(*params, **kwargs):  # pylint: disable=unused-argument, no-self-argument
         bloq = params[0]._hyperparameters["bloq"]
 
         return bloq.tensor_contract()
