@@ -67,10 +67,8 @@ class TestSingleQubitFusionInterpreter:
             qml.Rot(-4.36933023474497, 1.9838145748474882, -0.9592113138119485, wires=[0])
         ]
 
-        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check, strict=True):
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
         "exclude_gates, expected_ops",
@@ -128,7 +126,7 @@ class TestSingleQubitFusionInterpreter:
         ],
     )
     def test_single_qubit_fusion_exclude_gates(self, exclude_gates, expected_ops):
-        """Test that a sequence of single-qubit gates all fuse when excluding certain gates."""
+        """Test that a sequence of single-qubit gates partially fuse when excluding certain gates."""
 
         @SingleQubitFusionInterpreter(exclude_gates=exclude_gates)
         def circuit():
@@ -150,8 +148,8 @@ class TestSingleQubitFusionInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         jaxpr_ops = collector.state["ops"]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert qml.equal(op1, op2)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_single_qubit_fusion_no_gates_after(self):
         """Test that gates with nothing after are applied without modification."""
@@ -171,8 +169,8 @@ class TestSingleQubitFusionInterpreter:
         jaxpr_ops = collector.state["ops"]
 
         transformed_ops_check = [qml.RZ(0.1, wires=0), qml.Hadamard(wires=1)]
-        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
-            assert qml.equal(op1, op2)
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_single_qubit_cancelled_fusion(self):
         """Test if a sequence of single-qubit gates that all cancel yields no operations."""
@@ -215,12 +213,8 @@ class TestSingleQubitFusionInterpreter:
             qml.Rot(3.241592653589793, np.pi / 2, 0.0, wires=[0]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
-            # The qml.equal function does not recognize two qml.Rot operators
-            # as equivalent unless the input angles are exactly the same
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_single_qubit_fusion_multiple_qubits(self):
         """Test that all sequences of single-qubit gates across multiple qubits fuse properly."""
@@ -251,12 +245,8 @@ class TestSingleQubitFusionInterpreter:
             qml.Rot(np.pi / 2, np.pi / 2, 0.3, wires=[1]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
-            # The qml.equal function does not recognize two qml.Rot operators
-            # as equivalent unless the input angles are exactly the same
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_returned_op_is_not_fused(self):
         """Test that ops that are returned by the function being transformed are not fused."""
@@ -275,8 +265,8 @@ class TestSingleQubitFusionInterpreter:
 
         transformed_ops_check = [qml.H(0), qml.H(0)]
 
-        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
-            assert qml.equal(op1, op2)
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_no_wire_ops_not_fused(self):
         """Test that inverse operations with no wires are not fused."""
@@ -301,12 +291,8 @@ class TestSingleQubitFusionInterpreter:
             qml.Rot(-0.7853981633974485, 0.0, -2.356194490192345, wires=[0]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, transformed_ops_check):
-            # The qml.equal function does not recognize two qml.Rot operators
-            # as equivalent unless the input angles are exactly the same
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, transformed_ops_check, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_single_qubit_fusion_traced_wires(self):
         """Test that single-qubit gates with traced wires are fused correctly."""
@@ -341,12 +327,8 @@ class TestSingleQubitFusionInterpreter:
             qml.Hadamard(wires=[3]),  # H not fused and not converted to Rot
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            # The qml.equal function currently does not distinguish between
-            # two qml.Rot operators as equivalent unless the input angles are exactly the same
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_single_qubit_fusion_traced_consts_params(self):
         """Test that single-qubit gates with traced parameters and constants are fused correctly."""
@@ -384,12 +366,8 @@ class TestSingleQubitFusionInterpreter:
             qml.Rot(0.51580256, 0.57563156, 0.30755687, wires=[1]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            # The qml.equal function currently does not distinguish between
-            # CRY(0.30000001192092896, wires=[1, 2]) and CRY(0.3, wires=[1, 2])
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2, check_interface=False)
 
 
 class TestSingleQubitFusionHigherOrderPrimitives:
@@ -459,6 +437,7 @@ class TestSingleQubitFusionHigherOrderPrimitives:
                 if getattr(eqn.primitive, "prim_type", "") == "operator"
             ]
         )
+        assert len(qfunc_jaxpr.eqns) == 7
 
         assert qfunc_jaxpr.eqns[0].primitive == qml.Rot._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qml.Rot._primitive
@@ -565,15 +544,11 @@ class TestSingleQubitFusionHigherOrderPrimitives:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, selector)
         jaxpr_ops = collector.state["ops"]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            # The qml.equal function does not recognize two qml.Rot operators
-            # as equivalent unless the input angles are exactly the same
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2, check_interface=False)
 
     def test_for_loop(self):
-        """Test that for operators inside a for loop are correctly fused."""
+        """Test that operators inside a for loop are correctly fused."""
 
         @SingleQubitFusionInterpreter()
         def circuit(x):
@@ -611,12 +586,8 @@ class TestSingleQubitFusionHigherOrderPrimitives:
             qml.CNOT(wires=[0, 1]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            # The qml.equal function does not recognize two qml.Rot operators
-            # as equivalent unless the input angles are exactly the same
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2, check_interface=False)
 
     def test_while_loop(self):
         """Test that while operators inside a while loop are correctly fused."""
@@ -660,22 +631,14 @@ class TestSingleQubitFusionHigherOrderPrimitives:
             qml.CNOT(wires=[0, 1]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            # The qml.equal function does not recognize two qml.Rot operators
-            # as equivalent unless the input angles are exactly the same
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
 
 class TestSingleQubitFusionPLXPR:
     """Unit tests for the single-qubit fusion transformation on PLXPRs."""
 
-    @pytest.mark.parametrize(
-        "atol, exclude_gates",
-        [(1e-5, None), (0.0, ["RY"])],
-    )
-    def test_single_qubit_fusion_plxpr_to_plxpr(self, atol, exclude_gates):
+    def test_single_qubit_fusion_plxpr_to_plxpr(self):
         """Test that the single-qubit fusion transformation works on a plxpr."""
 
         def circuit():
@@ -690,7 +653,7 @@ class TestSingleQubitFusionPLXPR:
 
         jaxpr = jax.make_jaxpr(circuit)()
         transformed_jaxpr = single_qubit_plxpr_to_plxpr(
-            jaxpr.jaxpr, jaxpr.consts, [], {"atol": atol, "exclude_gates": exclude_gates}
+            jaxpr.jaxpr, jaxpr.consts, [], {"atol": 1e-5, "exclude_gates": "RY"}
         )
         assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
         assert len(transformed_jaxpr.eqns) == 3
