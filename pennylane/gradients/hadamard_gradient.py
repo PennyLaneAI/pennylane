@@ -32,7 +32,7 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_no_variance,
-    choose_trainable_params,
+    choose_trainable_param_indices,
 )
 from .metric_tensor import _get_aux_wire
 
@@ -78,7 +78,7 @@ def _expand_transform_hadamard(
                 "Can only differentiate Hamiltonian "
                 f"coefficients for expectations, not {tape.measurements}."
             ) from e
-    if len(batch) > 1 or batch[0] is not tape: # split to single terms modified the tape
+    if len(batch) > 1 or batch[0] is not tape:  # split to single terms modified the tape
         _ = [_inplace_set_trainable_params(t) for t in batch]
     return batch, postprocessing
 
@@ -281,7 +281,7 @@ def hadamard_grad(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    trainable_param_indices = choose_trainable_params(tape, argnum)
+    trainable_param_indices = choose_trainable_param_indices(tape, argnum)
 
     # Validate or get default for aux_wire
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
@@ -375,7 +375,7 @@ def processing_fn(results: qml.typing.ResultBatch, tape, coeffs, generators_per_
     final_res = []
     for coeff, res in zip(coeffs, results):
         if not isinstance(res, (tuple, list)):
-            res = [res] # add singleton dimension back in for one measurement
+            res = [res]  # add singleton dimension back in for one measurement
         final_res.append([qml.math.convert_like(2 * coeff * r, r) for r in res])
 
     # Post process for probs

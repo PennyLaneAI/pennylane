@@ -248,6 +248,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
+  to better reflect what it actually does.
+  [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
+
 * `MultiControlledX` no longer accepts strings as control values.
   [(#6835)](https://github.com/PennyLaneAI/pennylane/pull/6835)
 

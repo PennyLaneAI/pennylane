@@ -101,7 +101,7 @@ def assert_no_trainable_tape_batching(tape, transform_name):
             )
 
 
-def choose_trainable_params(tape, argnum=None):
+def choose_trainable_param_indices(tape, argnum=None):
     """Returns a list of trainable parameter indices in the tape.
 
     Chooses the subset of trainable parameters to compute the Jacobian for. The function
@@ -115,6 +115,17 @@ def choose_trainable_params(tape, argnum=None):
 
     Returns:
         list: list of the trainable parameter indices
+
+    Note that trainable param indices are a **double pointer**.
+
+    >>> tape = qml.tape.QuantumScript([qml.RX(0.0, 0), qml.RY(1.0, 0), qml.RZ(2.0, 0)], trainable_params=[1,2])
+    >>> chose_trainable_param_indices(tape, argnum=[0])
+    [0]
+    >>> tape.get_operation(0)
+    (RY(1.0, wires=[0]), 1, 0)
+
+    In this case ``[0]`` points to the ``RY`` parameter. ``0`` selects into ``tape.trainable_params``,
+    which selects into ``tape.data``.
 
     """
 
