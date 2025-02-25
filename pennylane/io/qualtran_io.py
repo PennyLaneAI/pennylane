@@ -115,7 +115,9 @@ class FromBloq(Operation):
     def __repr__(self):  # pylint: disable=protected-access
         return f'FromBloq({self._hyperparameters["bloq"]}, wires={self.wires})'
 
-    def compute_decomposition(self, wires, **kwargs):  # pylint: disable=arguments-differ, unused-argument
+    def compute_decomposition(
+        self, wires, **kwargs
+    ):  # pylint: disable=arguments-differ, unused-argument
         ops = []
         bloq = self._hyperparameters["bloq"]
 

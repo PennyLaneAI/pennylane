@@ -100,3 +100,41 @@ class TestFromBloq:
             qml.SWAP(wires=[1, 4]),
             qml.SWAP(wires=[2, 5]),
         ]
+
+    def test_get_bloq_registers_info(self):
+        """Tests that get_bloq_registers_info returns the expected dictionary with the correct
+        registers and wires."""
+
+        from qualtran import BloqBuilder
+        from qualtran import QBit, QInt, QUInt, QAny
+        from qualtran.bloqs.arithmetic import OutOfPlaceAdder, Product, Add
+        from pennylane.wires import Wires
+
+        bb = BloqBuilder()  # bb is the circuit like object
+
+        # -------- Qualtran Construction: --------
+
+        w1 = bb.add_register("p1", 3)
+        w2 = bb.add_register("p2", 3)
+        w3 = bb.add_register("q1", 3)
+        w4 = bb.add_register("q2", 3)
+
+        w1, w2, res1 = bb.add(Product(3, 3), a=w1, b=w2)
+        w3, w4, res2 = bb.add(Product(3, 3), a=w3, b=w4)
+        p1p2, p1p2_plus_q1q2 = bb.add(Add(QUInt(bitsize=6), QUInt(bitsize=6)), a=res1, b=res2)
+
+        circuit_bloq = bb.finalize(
+            p1=w1, p2=w2, q1=w3, q2=w4, p1p2=p1p2, p1p2_plus_q1q2=p1p2_plus_q1q2
+        )
+
+        expected = {
+            "p1": Wires([0, 1, 2]),
+            "p2": Wires([3, 4, 5]),
+            "q1": Wires([6, 7, 8]),
+            "q2": Wires([9, 10, 11]),
+            "p1p2": Wires([12, 13, 14, 15, 16, 17]),
+            "p1p2_plus_q1q2": Wires([18, 19, 20, 21, 22, 23]),
+        }
+        actual = qml.get_bloq_registers_info(circuit_bloq)
+
+        assert actual == expected
