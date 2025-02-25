@@ -148,7 +148,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
 
     def cleanup(self) -> None:
         self.initial_key = self.key  # be cautious of leaked tracers, but we should be fine.
-        self.stateref = None
+        # self.stateref = None
 
     def interpret_operation(self, op):
         self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)

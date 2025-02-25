@@ -683,8 +683,9 @@ def flattened_for(
     abstract_shapes = invals[abstract_shapes_slice]
 
     res = init_state
+    copied = copy(self)
     for i in range(start, stop, step):
-        res = copy(self).eval(jaxpr_body_fn, consts, *abstract_shapes, i, *res)
+        res = copied.eval(jaxpr_body_fn, consts, *abstract_shapes, i, *res)
 
     return res
 
