@@ -52,7 +52,7 @@ def measure_arbitrary_basis(
 
     Args:
         wires (Wires): The wire to measure.
-        angle (float): the angle of rotation defining the axis, specified in radians
+        angle (float): The angle of rotation defining the axis, specified in radians.
         plane (str): The plane the measurement basis lies in. Options are "XY", "YZ" and "ZX"
         reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
             state after measurement.
