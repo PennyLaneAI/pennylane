@@ -25,7 +25,7 @@ def trace_inner_product(
 ):
     r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)` between two operators :math:`A` and :math:`B`.
 
-    If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
+    If the inputs are ``np.ndarray``, leading [broadcasting](https://docs.pennylane.ai/en/stable/introduction/circuits.html#parameter-broadcasting-in-qnodes) axes are supported for either or both
     inputs.
 
     .. warning::
