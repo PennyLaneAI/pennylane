@@ -255,8 +255,8 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
-* The `QROM` template decomposes more efficiently when `work_wires` are not used.
-  [#6968)](https://github.com/PennyLaneAI/pennylane/pull/6968)
+* The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
+  [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
 
 * The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
   [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
