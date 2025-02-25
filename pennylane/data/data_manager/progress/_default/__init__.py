@@ -108,6 +108,7 @@ class DefaultProgress:
         elif task_id < self._term_info.max_display_lines:
             self._task_display_lines[task_id] = self._get_task_display_line(self.tasks[task_id])
 
+    # pylint: disable = too-many-arguments
     def update(
         self,
         task_id: int,
