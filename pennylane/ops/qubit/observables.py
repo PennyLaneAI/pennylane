@@ -656,8 +656,8 @@ class BasisStateProjector(Projector, Operation):
 
     @staticmethod
     def compute_sparse_matrix(  # pylint: disable=arguments-differ
-        basis_state: TensorLike,
-    ) -> csr_matrix:
+        basis_state: TensorLike, format="csr"
+    ) -> spmatrix:
         """
         Computes the sparse CSR matrix representation of the projector onto the basis state.
 
@@ -672,7 +672,9 @@ class BasisStateProjector(Projector, Operation):
         data = [1]
         rows = [int("".join(str(bit) for bit in basis_state), 2)]
         cols = rows
-        return csr_matrix((data, (rows, cols)), shape=(2**num_qubits, 2**num_qubits))
+        return csr_matrix((data, (rows, cols)), shape=(2**num_qubits, 2**num_qubits)).asformat(
+            format
+        )
 
 
 class StateVectorProjector(Projector):
