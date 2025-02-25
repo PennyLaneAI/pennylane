@@ -415,21 +415,32 @@ class TestSingleQubitFusionHigherOrderPrimitives:
         @qml.qnode(qml.device("default.qubit", wires=3))
         def circuit(input):
             qml.Hadamard(wires=0)
-            qml.RZ(input[0], wires=1)
-            qml.RY(input[1], wires=1)
-            qml.RX(input[2], wires=2)
+            qml.RZ(input[0], wires=0)
+            qml.PauliY(wires=1)
+            qml.RZ(input[1], wires=0)
             qml.CNOT(wires=[1, 2])
+            qml.CRY(input[2], wires=[1, 2])
+            qml.PauliZ(wires=0)
+            qml.CRY(input[3], wires=[1, 2])
+            qml.Rot(input[0], input[1], input[2], wires=1)
+            qml.Rot(input[2], input[3], input[0], wires=1)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
-        input = jax.numpy.array([np.pi, np.pi / 2, np.pi / 3])
+        input = jax.numpy.array([0.1, 0.2, 0.3, 0.4])
 
         jaxpr = jax.make_jaxpr(grad_fn(circuit))(input)
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == grad_prim if grad_fn == qml.grad else jacobian_prim
 
-        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        # pylint: disable=inconsistent-return-statements
+        def _find_eq_with_name(jaxpr, name):
+            for eq in jaxpr.eqns:
+                if name in eq.params:
+                    return eq.params[name]
+
+        inner_jaxpr = _find_eq_with_name(jaxpr, "jaxpr")
         assert len(inner_jaxpr.eqns) == 1
-        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        qfunc_jaxpr = _find_eq_with_name(inner_jaxpr, "qfunc_jaxpr")
         qfunc_jaxpr = qfunc_jaxpr.replace(
             eqns=[
                 eqn
@@ -437,18 +448,21 @@ class TestSingleQubitFusionHigherOrderPrimitives:
                 if getattr(eqn.primitive, "prim_type", "") == "operator"
             ]
         )
-        assert len(qfunc_jaxpr.eqns) == 7
+        assert len(qfunc_jaxpr.eqns) == 9
 
         assert qfunc_jaxpr.eqns[0].primitive == qml.Rot._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qml.Rot._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.CNOT._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[4].primitive == qml.PauliX._primitive
-        assert qfunc_jaxpr.eqns[5].primitive == qml.PauliX._primitive
-        assert qfunc_jaxpr.eqns[6].primitive == qml.ops.Prod._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.CNOT._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.CRY._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.CRY._primitive
+        assert qfunc_jaxpr.eqns[4].primitive == qml.Rot._primitive
+        assert qfunc_jaxpr.eqns[5].primitive == qml.Rot._primitive
+        assert qfunc_jaxpr.eqns[6].primitive == qml.PauliX._primitive
+        assert qfunc_jaxpr.eqns[7].primitive == qml.PauliX._primitive
+        assert qfunc_jaxpr.eqns[8].primitive == qml.ops.Prod._primitive
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.literals, input)[0]
-        assert qml.math.allclose(result, np.zeros((3, 3)))
+        result_check = [-0.19037952, -0.19037946, 0.73068166, 0.7306816]
+        assert qml.math.allclose(result, result_check)
 
     def test_transform_higher_order_primitive(self):
         """Test that the inner_jaxpr of transform primitives is not transformed."""
