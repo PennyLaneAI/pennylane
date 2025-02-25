@@ -992,23 +992,60 @@ def sqrt_matrix_sparse(density_matrix):
 
 
 def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
+    """Compute matrix square root using the Denman-Beavers iteration.
+
+    Args:
+        mat (scipy.sparse.csc_matrix): Input sparse matrix
+        max_iter (int): Maximum number of iterations
+        tol (float): Convergence tolerance
+
+    Returns:
+        scipy.sparse.csc_matrix: Square root of the input matrix
+
+    Raises:
+        LinAlgError: If matrix inversion fails
+    """
     mat = csc_matrix(mat)
     Ynew = mat
-
     Znew = sp.sparse.eye(mat.shape[0]).tocsc()
-    for _ in range(max_iter):
+
+    # Keep track of previous iteration for convergence check
+    Y_prev = None
+
+    for iter_num in range(max_iter):
         Y = Ynew
         Z = Znew
-        # TODO: implement the tol control logic
-        # basic idea: check norm_diff every 10 iter. If norm_diff < tol, break
-        Ynew = 0.5 * (Y + spla.inv(Z))
-        Znew = 0.5 * (Z + spla.inv(Y))
-        # TODO: common error catch to be here -- failure of spla.inv
 
+        try:
+            # Compute next iteration
+            Zinv = spla.inv(Z)
+            Yinv = spla.inv(Y)
 
-    X = spla.inv(Z)
-    B = Znew
-    return 2 * X - X @ B @ X
+            Ynew = 0.5 * (Y + Zinv)
+            Znew = 0.5 * (Z + Yinv)
+
+            # Check convergence every 10 iterations
+            if iter_num % 10 == 0:
+                if Y_prev is not None:
+                    # Compute Frobenius norm of difference
+                    diff = (Y - Y_prev).data
+                    if len(diff) > 0:  # Handle empty sparse matrices
+                        norm_diff = np.linalg.norm(diff)
+                        if norm_diff < tol:
+                            break
+                Y_prev = Y.copy()
+
+        except (sp.linalg.LinAlgError, RuntimeError) as e:
+            raise sp.linalg.LinAlgError(
+                f"Matrix inversion failed at iteration {iter_num}: {str(e)}"
+            ) from e
+
+    try:
+        X = spla.inv(Z)
+        B = Znew
+        return 2 * X - X @ B @ X
+    except (sp.linalg.LinAlgError, RuntimeError) as e:
+        raise sp.linalg.LinAlgError("Matrix inversion failed in final computation") from e
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
