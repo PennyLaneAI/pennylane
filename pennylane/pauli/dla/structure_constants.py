@@ -120,7 +120,7 @@ def structure_constants(
     array([-2.,  0.,  2.])
 
     We can also use matrix representations for the computation, which is sometimes faster, in particular for sums of many Pauli words.
-    This is just affecting how the structure constants are computed internally, it does not change the result.
+    This only affects how the structure constants are computed internally, it does not change the result.
 
     >>> adjoint_rep2 = qml.structure_constants(dla, is_orthogonal=False, matrix=True)
     >>> qml.math.allclose(adjoint_rep, adjoint_rep2)
