@@ -70,7 +70,7 @@ class QubitGraph:
         if self._graph_qubits is not None:
             self._initialize_all_nodes_as_qubit_graph()
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> "QubitGraph":
         """QubitGraph subscript operator for read access.
 
         Currently only basic, linear indexing and slicing is supported.
@@ -166,7 +166,7 @@ class QubitGraph:
         """
         yield self
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Representation of a QubitGraph object.
 
         This representation displays the full index hierarchy of a nested QubitGraph object.
@@ -258,7 +258,7 @@ class QubitGraph:
         return self._graph_qubits.edges
 
     @property
-    def is_initialized(self):
+    def is_initialized(self) -> bool:
         """Checks if the underlying qubits have been initialized.
 
         The underlying qubit graph is considered uninitialized if and only if it is NoneType. A
@@ -271,7 +271,7 @@ class QubitGraph:
         return self._graph_qubits is not None
 
     @property
-    def is_leaf(self):
+    def is_leaf(self) -> bool:
         """Checks if this QubitGraph object is a leaf node in the hierarchical graph structure.
 
         A QubitGraph node is a leaf when it has no underlying qubit graph, either if the underlying
@@ -293,7 +293,7 @@ class QubitGraph:
         return self._parent
 
     @property
-    def is_root(self):
+    def is_root(self) -> bool:
         """Checks if this QubitGraph object is a root node in the hierarchical graph structure.
 
         A QubitGraph node is a root when it has no parent QubitGraph object.
@@ -311,7 +311,7 @@ class QubitGraph:
         """Returns an iterator over all of the qubits connected to the qubit with label ``node``.
 
         Args:
-            node (node like): The label of a node in the qubit graph.
+            node (node-like): The label of a node in the qubit graph.
 
         Returns:
             iterator: An iterator over all QubitGraph objects connected to the qubit with label
