@@ -568,12 +568,12 @@ class TestSingleQubitFusionHigherOrderPrimitives:
 
             qml.CNOT(wires=[0, 1])
 
-            @qml.for_loop(0, 1)
+            @qml.for_loop(0, 3)
             # pylint: disable=unused-argument
             def loop(i, x):
                 qml.RX(x, wires=0)
                 qml.RZ(x, wires=0)
-                return qml.Hadamard(wires=0)
+                return x
 
             # pylint: disable=no-value-for-parameter
             loop(x)
@@ -590,12 +590,13 @@ class TestSingleQubitFusionHigherOrderPrimitives:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, np.pi)
         jaxpr_ops = collector.state["ops"]
-        assert len(jaxpr_ops) == 4
+        assert len(jaxpr_ops) == 5
 
         expected_ops = [
             qml.CNOT(wires=[0, 1]),
             qml.Rot(np.pi / 2, np.pi, np.pi / 2, wires=[0]),  # RX and RZ fused
-            qml.Hadamard(wires=[0]),  # Should not be fused because is returned
+            qml.Rot(np.pi / 2, np.pi, np.pi / 2, wires=[0]),  # RX and RZ fused
+            qml.Rot(np.pi / 2, np.pi, np.pi / 2, wires=[0]),  # RX and RZ fused
             qml.CNOT(wires=[0, 1]),
         ]
 
