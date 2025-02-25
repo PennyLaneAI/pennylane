@@ -22,7 +22,17 @@ jnp = pytest.importorskip("jax.numpy")
 
 from pennylane.transforms.defer_measurements import DeferMeasurementsInterpreter
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.usefixtures("enable_disable_plxpr"),
+    pytest.mark.integration,
+]
+
+
+def create_execution_config(postselect_mode=None):
+    return qml.devices.ExecutionConfig(
+        mcm_config={"mcm_method": "deferred", "postselect_mode": postselect_mode}
+    )
 
 
 class TestExecutionAnalytic:
@@ -42,7 +52,7 @@ class TestExecutionAnalytic:
             return qml.expval(qml.PauliX(0))
 
         jaxpr = jax.make_jaxpr(f)()
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
         assert qml.math.allclose(res, 0)
 
     def test_qubit_reset(self):
@@ -57,7 +67,7 @@ class TestExecutionAnalytic:
             return qml.expval(qml.PauliZ(0))
 
         jaxpr = jax.make_jaxpr(f)()
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
         assert qml.math.allclose(res, 1)
 
     @pytest.mark.parametrize("reset", [False, True])
@@ -75,7 +85,7 @@ class TestExecutionAnalytic:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Z(1))
 
         jaxpr = jax.make_jaxpr(f)()
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
 
         eigval = -2 * postselect + 1
         if reset:
@@ -96,7 +106,7 @@ class TestExecutionAnalytic:
             return qml.expval(qml.PauliZ(0))
 
         jaxpr = jax.make_jaxpr(f)()
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
         # If 0 measured, RX does nothing, so state is |0>. If 1 measured, RX(pi)
         # makes state |1> -> |0>, so <Z> will always be 1
         assert qml.math.allclose(res, 1)
@@ -131,7 +141,9 @@ class TestExecutionAnalytic:
 
         phi = jnp.pi / 3
         jaxpr = jax.make_jaxpr(f)(phi)
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, phi)
+        res = dev.eval_jaxpr(
+            jaxpr.jaxpr, jaxpr.consts, phi, execution_config=create_execution_config()
+        )
         expected = 0.5 * (jnp.cos(phi) + jnp.sin(phi) ** 2)
         assert qml.math.allclose(res, expected)
 
@@ -170,15 +182,21 @@ class TestExecutionAnalytic:
         jaxpr = jax.make_jaxpr(f)(0.5)
 
         arg_true = 3.0
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg_true)
+        res = dev.eval_jaxpr(
+            jaxpr.jaxpr, jaxpr.consts, arg_true, execution_config=create_execution_config()
+        )
         assert qml.math.allclose(res, 1)  # Final state |0>; <Z> = 1
 
         arg_elif = 2.0
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg_elif)
+        res = dev.eval_jaxpr(
+            jaxpr.jaxpr, jaxpr.consts, arg_elif, execution_config=create_execution_config()
+        )
         assert qml.math.allclose(res, 0)  # Equal prob of |0>, |1>; <Z> = 1
 
         arg_true = 1.0
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg_true)
+        res = dev.eval_jaxpr(
+            jaxpr.jaxpr, jaxpr.consts, arg_true, execution_config=create_execution_config()
+        )
         assert qml.math.allclose(res, -1)  # Final state |1>, <Z> = -1
 
     @pytest.mark.parametrize(
@@ -212,7 +230,7 @@ class TestExecutionAnalytic:
         transformed_f = DeferMeasurementsInterpreter(num_wires=5)(f)
 
         jaxpr = jax.make_jaxpr(transformed_f)()
-        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
 
         with qml.capture.pause():
             qnode_f = qml.QNode(f, dev, mcm_method="deferred")
@@ -225,3 +243,17 @@ class TestExecutionAnalytic:
 # pylint: disable=too-few-public-methods
 class TestExecutionFiniteShots:
     """Tests for executing circuits with finite shots."""
+
+    def test_hw_like_samples(self):
+        """Test that postselect_mode="hw-like" updates the number of samples as expected."""
+
+    def test_fill_shots_samples(self):
+        """Test that postselect_mode="fill-shots" updates the number of samples as expected."""
+
+    @pytest.mark.parametrize("mp_fn", [qml.sample, qml.expval, qml.probs, qml.var])
+    def test_mcm_statistics(self, mp_fn):
+        """Test that collecting statistics on MCMs works as expected with finite shots."""
+
+    @pytest.mark.parametrize("mp_fn", [qml.sample, qml.expval, qml.probs, qml.var])
+    def test_non_mcm_terminal_measurements(self, mp_fn):
+        """Test that non-MCM terminal measurement results are correct with finite shots."""
