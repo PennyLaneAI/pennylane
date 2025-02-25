@@ -683,9 +683,6 @@ class Controlled(SymbolicOp):
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
-        if wire_order is not None:
-            raise NotImplementedError("wire_order argument is not yet implemented.")
-
         try:
             target_mat = self.base.sparse_matrix()
         except operation.SparseMatrixUndefinedError as e:
@@ -704,6 +701,9 @@ class Controlled(SymbolicOp):
         m = sparse.eye(total_states, format="lil", dtype=target_mat.dtype)
 
         m[start_ind:end_ind, start_ind:end_ind] = target_mat
+
+        wire_order = wire_order or self.wires
+        m = qml.math.expand_matrix(m, wires=self.wires, wire_order=wire_order)
 
         return m.asformat(format=format)
 
@@ -864,18 +864,19 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
         # has some special case handling of its own for further decomposition
         return _decompose_pauli_x_based_no_control_values(op)
 
-    if isinstance(op.base, qml.GlobalPhase) and len(op.control_wires) == 1:
-        # use Lemma 5.2 from https://arxiv.org/pdf/quant-ph/9503016
-        return [qml.PhaseShift(phi=-op.data[0], wires=op.control_wires)]
-    # A multi-wire controlled PhaseShift should be decomposed first using the decomposition
-    # of ControlledPhaseShift. This is because the decomposition of PhaseShift contains a
-    # GlobalPhase that we do not have a handling for.
-    # TODO: remove this special case when we support ControlledGlobalPhase [sc-44933]
-    if isinstance(op.base, qml.PhaseShift):
-        base_decomp = qml.ControlledPhaseShift.compute_decomposition(*op.data, op.wires[-2:])
-        return [
-            ctrl(new_op, op.control_wires[:-1], work_wires=op.work_wires) for new_op in base_decomp
-        ]
+    if isinstance(op.base, qml.GlobalPhase):
+        # A singly-controlled global phase is the same as a phase shift on the control wire
+        # (Lemma 5.2 from https://arxiv.org/pdf/quant-ph/9503016)
+        # Mathematically, this is the equation (with Id_2 being the 2-dim. identity matrix)
+        # |0><0|⊗ Id_2 + |1><1|⊗ e^{i\phi} = [|0><0| + |1><1| e^{i\phi}] ⊗ Id_2
+        phase_shift = qml.PhaseShift(phi=-op.data[0], wires=op.control_wires[-1])
+        if len(op.control_wires) == 1:
+            return [phase_shift]
+        # For N>1 control wires, we simply add N-1 control wires to the phase shift
+        # Mathematically, this is the equation (proven by inserting an identity)
+        # (Id_{2^N} - |1><1|^N)⊗ Id_2 + |1><1|^N ⊗ e^{i\phi}
+        # = (Id_{2^{N-1}} - |1><1|^{N-1}) ⊗ Id_4 + |1><1|^{N-1} ⊗ [|0><0|+|1><1|e^{i\phi}]⊗ Id_2
+        return [ctrl(phase_shift, control=op.control_wires[:-1])]
 
     # TODO: will be removed in the second part of the controlled rework [sc-37951]
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
@@ -905,14 +906,6 @@ def _decompose_no_control_values(op: Controlled) -> Optional[list["operation.Ope
         return None
 
     base_decomp = op.base.decomposition()
-    if len(base_decomp) == 0 and isinstance(op.base, qml.GlobalPhase) and len(op.control_wires) > 1:
-        warnings.warn(
-            "Multi-Controlled-GlobalPhase currently decomposes to nothing, and this will likely "
-            "produce incorrect results. Consider implementing your circuit with a different set "
-            "of operations, or use a device that natively supports GlobalPhase.",
-            UserWarning,
-        )
-
     return [ctrl(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
 
