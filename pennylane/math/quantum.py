@@ -1044,10 +1044,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
                         break
             Y_prev = Y.copy()
 
-    try:
-        return Y
-    except (sp.linalg.LinAlgError, RuntimeError) as e:
-        raise sp.linalg.LinAlgError("Matrix inversion failed in final computation") from e
+    return Y
 
 
 def _compute_relative_entropy(rho, sigma, base=None):

@@ -1144,3 +1144,9 @@ class TestSqrtMatrix:
         result_2 = result @ result
 
         assert np.allclose(result_2, A, atol=tol, rtol=0)
+
+    def test_sqrt_matrix_sparse_input_valid(self):
+        """Test that if dense input errors raised"""
+        A = np.array([[1, 0], [0, 1]])
+        with pytest.raises(TypeError, match="Only use this method for sparse matrices"):
+            sqrt_matrix_sparse(A)
