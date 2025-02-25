@@ -857,7 +857,7 @@ class TestBasisStateProjector:
         expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state, format=format)
         assert isinstance(actual_matrix, expected_type)
-        # assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
 
 class TestStateVectorProjector:
