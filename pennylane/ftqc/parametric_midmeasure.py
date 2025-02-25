@@ -463,6 +463,10 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
         return _label
 
+    def diagonalizing_gates(self):
+        """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
+        return [qml.adjoint(qml.S(self.wires)), qml.H(self.wires)]
+
 
 @_add_operation_to_drawer.register
 def _(op: ParametricMidMeasureMP, drawer, layer, _):

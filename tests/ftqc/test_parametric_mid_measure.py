@@ -339,6 +339,31 @@ class TestMidMeasureXAndY:
         assert np.allclose(res, expected_res)
         assert XMidMeasureMP([0]).diagonalizing_gates() == [qml.H(0)]
 
+    def test_diagonalizing_gates_y(self):
+        """Test that diagonalizing a YMidMeasureMP and measuring in the computational
+        basis corresponds to the expected observable"""
+
+        dev = qml.device("default.qubit")
+
+        @diagonalize_mcms
+        @qml.qnode(dev, mcm_method="tree-traversal")
+        def circ(state):
+            qml.StatePrep(state, wires=0)
+            mp = YMidMeasureMP([0])
+            assert mp.has_diagonalizing_gates
+            return qml.expval(qml.Z(0))
+
+        rng = np.random.default_rng(seed=111)
+        input_state = rng.random(2) + 1j * rng.random(2)
+        input_state = input_state / np.linalg.norm(input_state)
+
+        res = circ(input_state)
+
+        expected_res = apply_qubit_measurement(qml.expval(qml.Y(0)), input_state)
+
+        assert np.allclose(res, expected_res)
+        assert YMidMeasureMP([0]).diagonalizing_gates() == [qml.adjoint(qml.S(0)), qml.H(0)]
+
 
 class TestMeasureFunctions:
     """Test that the measure functions (measure_arbitrary_basis, measure_x, and
