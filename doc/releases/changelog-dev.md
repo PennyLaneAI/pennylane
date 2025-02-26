@@ -37,10 +37,9 @@
 
 * The `default.mixed` device now adheres to the newer device API introduced in 
   [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
-  [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
-  
   This means that `default.mixed` now supports not having to specify the number of wires,
   more predictable behaviour with interfaces, support for `qml.Snapshot`, and more.
+  [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
 
 * `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
   [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
@@ -420,7 +419,6 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Henry Chang,
 Yushao Chen,
-Diksha Dhawan,
 Isaac De Vlugt,
 Diksha Dhawan,
 Lillian M.A. Frederiksen,

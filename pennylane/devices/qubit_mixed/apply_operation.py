@@ -760,7 +760,7 @@ def apply_density_matrix(
     # partial_trace reduces the dimension to only the complement wires
     sigma = qml.math.partial_trace(state, indices=op_wires)
     # sigma now has shape:
-    # (batch_size?, 2^(n - num_wires), 2^(n - num_wires)) where n = total wires
+    # (batch_size, 2^(n - num_wires), 2^(n - num_wires)) where n = total wires
 
     # 2. Take kron(sigma, density_matrix)
     sigma_dim = 2 ** len(complement_wires)  # dimension of complement subsystem
