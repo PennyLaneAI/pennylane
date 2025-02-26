@@ -99,13 +99,13 @@ def measure_arbitrary_basis(
 
         The plane and angle are related to the axis of measurement by the following formuals:
 
-        :math:`XY=\frac{1}{\sqrt{2}} (|0\rangle + e^{i\phi} |1\rangle)`,
+        .. math:: XY =\frac{1}{\sqrt{2}} (|0\rangle + e^{i\phi} |1\rangle),
 
-        :math:`YZ=(\cos{\frac{\theta}{2}}|0\rangle + i \sin{\frac{\theta}{2}} |1\rangle)`, and
+        .. math:: YZ =\cos{\frac{\theta}{2}}|0\rangle + i \sin{\frac{\theta}{2}} |1\rangle`,\text{ and}
 
-        :math:`ZX= (\cos{\frac{\theta}{2}}|0\rangle + \sin{\frac{\theta}{2}} |1\rangle)`
+        .. math:: ZX = \cos{\frac{\theta}{2}}|0\rangle + \sin{\frac{\theta}{2}} |1\rangle`
 
-        where, in terms of `spherical coordinates <https://en.wikipedia.org/wiki/Spherical_coordinate_system>_` in
+        where, in terms of `spherical coordinates <https://en.wikipedia.org/wiki/Spherical_coordinate_system>`_ in
         the physics convention, the angle :math:`\phi` is the azimuthal angle denoting rotation of the axis of
         measurement around the Z axis of the Bloch sphere, and angle :math:`theta` is the polar angle denoting
         the angle between the axis of measurement and the Z axis.
