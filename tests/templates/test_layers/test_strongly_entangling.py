@@ -155,8 +155,9 @@ class TestDecomposition:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_plxpr_decomposition works correctly."""
 
-    def test_strongly_entangling_plxpr(self):
-        """Test that the dynamic decomoposition of StronglyEntanglingLayer has correct plxpr"""
+    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
+    def test_strongly_entangling_plxpr(self, max_expansion):
+        """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
         import jax
 
         from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim
@@ -164,7 +165,6 @@ class TestDynamicDecomposition:
 
         layers = 5
         n_wires = 3
-        max_expansion = 1
         gate_set = None
         imprimitive = qml.CNOT
 
@@ -203,15 +203,17 @@ class TestDynamicDecomposition:
         assert imprimitive_inner_eqn[-1].primitive == imprimitive._primitive
 
     @pytest.mark.parametrize("autograph", [True, False])
-    @pytest.mark.parametrize("layers", [1, 2, 3])
-    @pytest.mark.parametrize("n_wires", [2, 3])
-    @pytest.mark.parametrize("imprimitive", [qml.CNOT, qml.CZ])
+    @pytest.mark.parametrize(
+        "n_layers, n_wires, ranges",
+        [(2, 2, [1, 1]), (1, 3, [2]), (4, 4, [2, 3, 1, 3]), (4, 4, None)],
+    )
+    @pytest.mark.parametrize("imprimitive", [qml.CNOT, qml.CZ, None])
     @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, 5, None])
     @pytest.mark.parametrize(
         "gate_set", [[qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.GlobalPhase], None]
     )
     def test_strongly_entangling_state(
-        self, layers, n_wires, imprimitive, max_expansion, gate_set, autograph
+        self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
     ):  # pylint:disable=too-many-arguments
         """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
 
@@ -221,14 +223,16 @@ class TestDynamicDecomposition:
 
         from pennylane.transforms.decompose import DecomposeInterpreter
 
-        weight_shape = (layers, n_wires, 3)
+        weight_shape = (n_layers, n_wires, 3)
         weights = np.random.random(size=weight_shape)
         wires = list(range(n_wires))
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
         @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=autograph)
         def circuit(weights, wires):
-            qml.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)
+            qml.StronglyEntanglingLayers(
+                weights, wires=wires, ranges=ranges, imprimitive=imprimitive
+            )
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
@@ -239,7 +243,9 @@ class TestDynamicDecomposition:
             @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
             @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
             def circuit_comparison():
-                qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
+                qml.StronglyEntanglingLayers(
+                    weights, wires=range(n_wires), ranges=ranges, imprimitive=imprimitive
+                )
                 return qml.state()
 
             result_comparison = circuit_comparison()

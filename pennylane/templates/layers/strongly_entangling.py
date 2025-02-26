@@ -239,7 +239,7 @@ class StronglyEntanglingLayers(Operation):
     # pylint:disable = no-value-for-parameter
     @staticmethod
     def compute_plxpr_decomposition(
-        weights, *wires, ranges=None, imprimitive=None
+        weights, *wires, ranges, imprimitive
     ):  # pylint: disable=arguments-differ
         wires = qml.math.array(wires, like="jax")
         ranges = qml.math.array(ranges, like="jax")
