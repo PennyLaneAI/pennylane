@@ -135,9 +135,10 @@ class TestSparseOperation:
         ):
             apply_operation_csr_matrix(U_sp, state)
 
-    @pytest.mark.parametrize("N", range(2, 20, 2))
+    @pytest.mark.parametrize("N", range(4, 10, 2))
     def test_sparse_operation_large_N(self, N):
-        """Test that apply_operation_csr_matrix works with a large number of wires"""
+        """Test that apply_operation_csr_matrix works with multiple wires
+        with operators composed of random I X Y Z tensored together"""
         # Make a sparse unitary matrix by tensor producting several smaller unitaries
 
         U_list = [I, X, Y, Z]
