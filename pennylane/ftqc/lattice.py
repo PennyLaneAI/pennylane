@@ -82,21 +82,35 @@ class Lattice:
 
 
 class LatticeShape(Enum):
-    chain = (1, 1)
-    square = (2, 2)
-    rectangle = (3, 2)
-    triangle = (4, 2)
-    honeycomb = (5, 2)
-    cubic = (6, 3)
+    """Enum to define valid set of lattice shape supported."""
+
+    chain = 1
+    square = 2
+    rectangle = 3
+    triangle = 4
+    honeycomb = 5
+    cubic = 6
 
 
-class LatticeGraphGenerator(Enum):
-    chain = "grid_graph"
-    square = "grid_graph"
-    rectangle = "grid_graph"
-    cubic = "grid_graph"
-    triangle = "triangular_lattice_graph"
-    honeycomb = "hexagonal_lattice_graph"
+# map between lattice name and dimensions
+_LATTICE_DIM_MAP = {
+    "chain": 1,
+    "square": 2,
+    "rectangle": 2,
+    "cubic": 3,
+    "triangle": 2,
+    "honeycomb": 2,
+}
+
+# map between lattice name and networkx method name
+_LATTICE_GENERATOR_MAP = {
+    "chain": "grid_graph",
+    "square": "grid_graph",
+    "rectangle": "grid_graph",
+    "cubic": "grid_graph",
+    "triangle": "triangular_lattice_graph",
+    "honeycomb": "hexagonal_lattice_graph",
+}
 
 
 def generate_lattice(dims: list[int], lattice: str) -> Lattice:
@@ -114,7 +128,6 @@ def generate_lattice(dims: list[int], lattice: str) -> Lattice:
     Raises:
         ValueError: If the lattice shape is not supported or the dimensions are invalid.
     """
-    # TODOs: Add default support to CSS, Shor, Foliation code lattices.
 
     lattice_shape = lattice.strip().lower()
     supported_shape = [shape.name for shape in LatticeShape]
@@ -125,18 +138,18 @@ def generate_lattice(dims: list[int], lattice: str) -> Lattice:
             f"Please set lattice to: {supported_shape}."
         )
 
-    if LatticeShape[lattice_shape].value[1] != len(dims):
+    if _LATTICE_DIM_MAP[lattice_shape] != len(dims):
         raise ValueError(
-            f"For a {lattice_shape} lattice, the length of dims should {LatticeShape[lattice_shape].value[1]} instead of {len(dims)}"
+            f"For a {lattice_shape} lattice, the length of dims should {_LATTICE_DIM_MAP[lattice_shape]} instead of {len(dims)}"
         )
 
-    lattice_generate_method = getattr(nx, LatticeGraphGenerator[lattice_shape].value)
+    lattice_generate_method = getattr(nx, _LATTICE_GENERATOR_MAP[lattice_shape])
 
-    if LatticeGraphGenerator[lattice_shape].value == "grid_graph":
+    if _LATTICE_GENERATOR_MAP[lattice_shape] == "grid_graph":
         lattice_obj = Lattice(lattice_shape, lattice_generate_method(dims))
         return lattice_obj
 
-    if LatticeGraphGenerator[lattice_shape].value in [
+    if _LATTICE_GENERATOR_MAP[lattice_shape] in [
         "triangular_lattice_graph",
         "hexagonal_lattice_graph",
     ]:
