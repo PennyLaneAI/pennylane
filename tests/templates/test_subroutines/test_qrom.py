@@ -42,6 +42,20 @@ class TestQROM:
         ("bitstrings", "target_wires", "control_wires", "work_wires", "clean"),
         [
             (
+                ["111", "101", "100", "110"],
+                [0, 1, 2],
+                [3, 4],
+                None,
+                False,
+            ),
+            (
+                ["111", "101", "100", "110"],
+                [0, 1, 2],
+                [3, 4],
+                None,
+                True,
+            ),
+            (
                 ["11", "01", "00", "10"],
                 [0, 1],
                 [2, 3],
@@ -258,3 +272,14 @@ def test_wrong_wires_error(bitstrings, control_wires, target_wires, msg_match):
     """Test that error is raised if more ops are requested than can fit in control wires"""
     with pytest.raises(ValueError, match=msg_match):
         qml.QROM(bitstrings, control_wires, target_wires, work_wires=None)
+
+
+def test_none_work_wires_case():
+    """Test that clean version is not applied if work wires are not used"""
+
+    gates_clean = qml.QROM.compute_decomposition(["1", "0", "0", "1"], [0, 1], [2], [], clean=True)
+    expected_gates = qml.QROM.compute_decomposition(
+        ["1", "0", "0", "1"], [0, 1], [2], [], clean=False
+    )
+
+    assert gates_clean == expected_gates

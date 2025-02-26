@@ -578,7 +578,8 @@ class QNode:
         if kwargs:
             if any(k in qml.gradients.SUPPORTED_GRADIENT_KWARGS for k in list(kwargs.keys())):
                 warnings.warn(
-                    f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please specify all arguments in the gradient_kwargs argument.",
+                    f"Specifying gradient keyword arguments {list(kwargs.keys())} as additional kwargs has been deprecated and will be removed in v0.42. \
+                    Instead, please specify these arguments through the `gradient_kwargs` dictionary argument.",
                     qml.PennyLaneDeprecationWarning,
                 )
             gradient_kwargs |= kwargs
@@ -662,7 +663,7 @@ class QNode:
     @property
     def interface(self) -> str:
         """The interface used by the QNode"""
-        return self._interface.value
+        return "jax" if qml.capture.enabled() else self._interface.value
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):

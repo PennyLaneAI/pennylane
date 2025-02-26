@@ -643,7 +643,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         jaxpr = jax.make_jaxpr(f)(x)
         assert jaxpr.eqns[0].primitive == qnode_prim
         assert jaxpr.eqns[0].params["device"] == dev
-        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "parameter-shift"
+        assert jaxpr.eqns[0].params["execution_config"].gradient_method == "parameter-shift"
 
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         collector = CollectOpsandMeas()
