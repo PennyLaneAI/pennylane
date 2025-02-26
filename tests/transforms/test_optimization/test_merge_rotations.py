@@ -67,7 +67,10 @@ class TestMergeRotations:
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
         assert not ops
 
-    @pytest.mark.xfail(reason="Algorithmic bug, cannot collapse subsequent rotation gates.")
+    @pytest.mark.xfail(
+        reason="Algorithmic bug, cannot collapse rotation gates fully. See issue #7009.",
+        strict=True,
+    )
     def test_one_qubit_rotation_merge_with_gates_in_between(self):
         """Test that a single-qubit circuit with adjacent rotation along the same
         axis either merge, or cancel if the angles sum to 0."""
