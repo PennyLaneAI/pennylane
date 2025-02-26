@@ -34,6 +34,11 @@
 * Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
   following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
+  [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
+
+* ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
+  Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
+  [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 <h3>Improvements 🛠</h3>
 
@@ -265,6 +270,11 @@
 * The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
   [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
 
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
+  [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
 <h3>Breaking changes 💔</h3>
 
 * `MultiControlledX` no longer accepts strings as control values.
@@ -430,10 +440,14 @@
   passed to the `QNode`, instead of assuming the method is always `deferred`.
   [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
 
+* The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
+  [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Utkarsh Azad,
 Henry Chang,
 Yushao Chen,
@@ -442,6 +456,7 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Korbinian Kottmann,
 Christina Lee,
 Mudit Pandey,
 Andrija Paurevic,
