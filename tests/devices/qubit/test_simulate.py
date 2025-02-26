@@ -88,14 +88,15 @@ class TestSparsePipeline:
     def test_sparse_op(self, state):
         """Test that a sparse QubitUnitary operation works on default.qubit with expval measurement."""
         mat = sp.sparse.csr_matrix([[0, 1], [1, 0]])
+        op = qml.QubitUnitary(mat, wires=[0])
+        qs = qml.tape.QuantumScript(
+            ops=[qml.StatePrep(state, wires=range(8), pad_with=0), op],
+            measurements=[qml.expval(qml.Z(0))],
+        )
 
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit(state, mat):
-            qml.StatePrep(state, wires=range(8), pad_with=0)
-            qml.QubitUnitary(mat, wires=[0])
-            return qml.expval(qml.Z(0))
+        result = simulate(qs)
 
-        assert qml.math.allclose(circuit(state, mat), -1)
+        assert qml.math.allclose(result, -1)
 
 
 # pylint: disable=too-few-public-methods
