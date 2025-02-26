@@ -1017,10 +1017,18 @@ interface_test_data = [
 @pytest.mark.parametrize("t,interface", interface_test_data)
 def test_get_interface(t, interface):
     """Test that the interface of a tensor-like object
-
     is correctly returned."""
     res = fn.get_interface(t)
     assert res == interface
+
+
+def test_get_interface_scipy():
+    """Test that the interface of a scipy sparse matrix is correctly returned."""
+    matrix = sci.sparse.csr_matrix([[0, 1], [1, 0]])
+
+    assert fn.get_interface(matrix) == "scipy"
+    assert fn.get_interface(matrix, matrix) == "scipy"
+    assert fn.get_interface(*[matrix, matrix]) == "scipy"
 
 
 # pylint: disable=too-few-public-methods

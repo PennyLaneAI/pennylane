@@ -85,6 +85,7 @@ SUPPORTED_INTERFACE_NAMES = list(Interface)
 """list[Interface]: allowed interface names"""
 
 
+# pylint: disable=too-many-return-statements
 def get_interface(*values):
     """Determines the correct framework to dispatch to given a tensor-like object or a
     sequence of tensor-like objects.
@@ -150,6 +151,9 @@ def get_interface(*values):
 
     if "autograd" in interfaces:
         return "autograd"
+
+    if "scipy" in interfaces:
+        return "scipy"
 
     return "numpy"
 
