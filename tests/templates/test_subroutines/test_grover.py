@@ -290,3 +290,90 @@ def test_jax_jit():
     jit_circuit = jax.jit(circuit)
 
     assert qml.math.allclose(circuit(), jit_circuit())
+
+
+@pytest.mark.jax
+@pytest.mark.usefixtures("enable_disable_plxpr")
+# pylint:disable=protected-access
+class TestDynamicDecomposition:
+    """Tests that dynamic decomposition via compute_plxpr_decomposition works correctly."""
+
+    def test_grover_plxpr(self):
+        """Test that the dynamic decomoposition of Grover has correct plxpr"""
+        import jax
+
+        from pennylane.capture.primitives import for_loop_prim, qnode_prim
+        from pennylane.transforms.decompose import DecomposeInterpreter
+
+        n_wires = 5
+        wires = [0, 1, 2]
+        work_wires = [3, 4]
+        max_expansion = 1
+        gate_set = None
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
+        def circuit(wires, work_wires):
+            qml.GroverOperator(wires=wires, work_wires=work_wires)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(wires=wires, work_wires=work_wires)
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr_eqns = jaxpr.eqns[0].params["qfunc_jaxpr"].eqns
+
+        # 2 Hadamard loops
+        hadamard_loops_eqns = [eqn for eqn in qfunc_jaxpr_eqns if eqn.primitive == for_loop_prim]
+        assert len(hadamard_loops_eqns) == 2
+        for hadamard_loop in hadamard_loops_eqns:
+            assert hadamard_loop.primitive == for_loop_prim
+            hadamard_inner_eqns = hadamard_loop.params["jaxpr_body_fn"].eqns
+            assert hadamard_inner_eqns[-1].primitive == qml.Hadamard._primitive
+
+        # 4 remaining operations
+        remaining_ops = [
+            eqn
+            for eqn in qfunc_jaxpr_eqns
+            if eqn.primitive
+            in (qml.PauliZ._primitive, qml.MultiControlledX._primitive, qml.GlobalPhase._primitive)
+        ]
+        assert len(remaining_ops) == 4
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    @pytest.mark.parametrize(
+        "wires, work_wires", [([0, 1, 2], [3, 4]), ([0, 1, 4], [2, 3]), ([0, 2, 4], [1])]
+    )
+    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
+    @pytest.mark.parametrize(
+        "gate_set", [[qml.Hadamard, qml.CNOT, qml.PauliX, qml.GlobalPhase, qml.RZ], None]
+    )
+    def test_grover(
+        self, max_expansion, gate_set, wires, work_wires, autograph
+    ):  # pylint:disable=too-many-arguments
+        """Test that Grover gives correct result after dynamic decomposition."""
+
+        from functools import partial
+
+        import jax
+
+        from pennylane.transforms.decompose import DecomposeInterpreter
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=autograph)
+        def circuit(wires, work_wires):
+            qml.GroverOperator(wires=wires, work_wires=work_wires)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(wires=wires, work_wires=work_wires)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, *work_wires)
+
+        with qml.capture.pause():
+
+            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+            def circuit_comparison():
+                qml.GroverOperator(wires=wires, work_wires=work_wires)
+                return qml.state()
+
+            result_comparison = circuit_comparison()
+
+        assert qml.math.allclose(*result, result_comparison)

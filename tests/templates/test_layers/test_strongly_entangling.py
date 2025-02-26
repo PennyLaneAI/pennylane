@@ -149,6 +149,104 @@ class TestDecomposition:
                     range_idx += 1
 
 
+@pytest.mark.jax
+@pytest.mark.usefixtures("enable_disable_plxpr")
+# pylint:disable=protected-access
+class TestDynamicDecomposition:
+    """Tests that dynamic decomposition via compute_plxpr_decomposition works correctly."""
+
+    def test_strongly_entangling_plxpr(self):
+        """Test that the dynamic decomoposition of StronglyEntanglingLayer has correct plxpr"""
+        import jax
+
+        from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim
+        from pennylane.transforms.decompose import DecomposeInterpreter
+
+        layers = 5
+        n_wires = 3
+        max_expansion = 1
+        gate_set = None
+        imprimitive = qml.CNOT
+
+        weight_shape = (layers, n_wires, 3)
+        weights = np.random.random(size=weight_shape)
+        wires = list(range(n_wires))
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
+        def circuit(weights, wires):
+            qml.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr_eqns = jaxpr.eqns[0].params["qfunc_jaxpr"].eqns
+
+        layer_loop_eqn = [eqn for eqn in qfunc_jaxpr_eqns if eqn.primitive == for_loop_prim]
+        assert layer_loop_eqn[0].primitive == for_loop_prim
+        layer_inner_eqn = layer_loop_eqn[0].params["jaxpr_body_fn"].eqns
+
+        rot_loop_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == for_loop_prim]
+        assert rot_loop_eqn[0].primitive == for_loop_prim
+        rot_inner_eqn = rot_loop_eqn[0].params["jaxpr_body_fn"].eqns
+        assert rot_inner_eqn[-1].primitive == qml.Rot._primitive
+
+        cond_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == cond_prim]
+        assert cond_eqn[0].primitive == cond_prim
+        true_branch_eqns = cond_eqn[0].params["jaxpr_branches"][0].eqns
+        false_branch_eqns = cond_eqn[0].params["jaxpr_branches"][1].eqns
+        assert false_branch_eqns == []
+
+        imprimitive_loop_eqn = [eqn for eqn in true_branch_eqns if eqn.primitive == for_loop_prim]
+        assert imprimitive_loop_eqn[0].primitive == for_loop_prim
+        imprimitive_inner_eqn = imprimitive_loop_eqn[0].params["jaxpr_body_fn"].eqns
+        assert imprimitive_inner_eqn[-1].primitive == imprimitive._primitive
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    @pytest.mark.parametrize("layers", [1, 2, 3])
+    @pytest.mark.parametrize("n_wires", [2, 3])
+    @pytest.mark.parametrize("imprimitive", [qml.CNOT, qml.CZ])
+    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, 5, None])
+    @pytest.mark.parametrize(
+        "gate_set", [[qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.GlobalPhase], None]
+    )
+    def test_strongly_entangling_state(
+        self, layers, n_wires, imprimitive, max_expansion, gate_set, autograph
+    ):  # pylint:disable=too-many-arguments
+        """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
+
+        from functools import partial
+
+        import jax
+
+        from pennylane.transforms.decompose import DecomposeInterpreter
+
+        weight_shape = (layers, n_wires, 3)
+        weights = np.random.random(size=weight_shape)
+        wires = list(range(n_wires))
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=autograph)
+        def circuit(weights, wires):
+            qml.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
+
+        with qml.capture.pause():
+
+            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+            def circuit_comparison():
+                qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
+                return qml.state()
+
+            result_comparison = circuit_comparison()
+
+        assert qml.math.allclose(*result, result_comparison)
+
+
 class TestInputs:
     """Test inputs and pre-processing."""
 
