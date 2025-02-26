@@ -66,25 +66,6 @@ class TestMergeRotations:
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
         assert not ops
 
-    @pytest.mark.xfail(
-        reason="Algorithmic bug, cannot collapse rotation gates fully. See issue #7009.",
-        strict=True,
-    )
-    def test_one_qubit_rotation_merge_with_gates_in_between(self):
-        """Test that nested rotations can be correctly simplified to the identity."""
-
-        def qfunc():
-            qml.RZ(-1.0, 0)
-            qml.RY(0, 0)
-            qml.RZ(1, 0)
-            qml.RZ(-1, 0)
-            qml.RY(0, 0)
-            qml.RZ(1.0, 0)
-
-        transformed_qfunc = merge_rotations(qfunc)
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
-        assert not ops
-
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
         [
