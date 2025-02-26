@@ -370,10 +370,9 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
-    import scipy  # pylint: disable=import-outside-toplevel
-
-    if scipy.sparse.issparse(x):
+    if like="scipy":
         return x.dot(y)
+
 
     return np.dot(x, y, like=like)
 
