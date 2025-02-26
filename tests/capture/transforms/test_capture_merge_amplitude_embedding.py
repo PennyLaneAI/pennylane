@@ -41,6 +41,20 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 class TestRepeatedQubitDeviceErrors:
     """Test DeviceError is raised when operations exist before the AmplitudeEmbedding operators."""
 
+    def test_repeated_traced_wire_error(self):
+        """Test that an error is raised if its the same traced wire."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def qfunc(wire):
+            qml.X(wire)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=wire)
+
+        with pytest.raises(
+            qml.DeviceError,
+            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+        ):
+            jax.make_jaxpr(qfunc)(1)
+
     def test_simple_repeated_qubit_error(self):
         """Test that an error is raised if a qubit in the AmplitudeEmbedding had operations applied to it before."""
 
