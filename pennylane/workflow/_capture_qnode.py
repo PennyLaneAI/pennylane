@@ -206,6 +206,7 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
     preprocess_program, _ = device.preprocess()
     final_jaxpr = preprocess_program(
         transformed_jaxpr.jaxpr, transformed_jaxpr.consts, *non_const_args
+    )
 
     partial_eval = partial(
         device.eval_jaxpr, final_jaxpr.jaxpr, final_jaxpr.consts, execution_config=execution_config
