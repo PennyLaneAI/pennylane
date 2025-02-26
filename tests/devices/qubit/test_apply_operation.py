@@ -44,7 +44,7 @@ ml_frameworks_list = [
 def apply_operation_sparse_wrapped(op, state, is_state_batched: bool = False):
     """Apply an operation to a state using the sparse matrix method"""
     # Convert op to a CSR matrix
-    op = qml.QubitUnitary(qml.math.asarray(op.matrix(), like="numpy"), wires=op.wires)
+    op = qml.QubitUnitary(csr_matrix(op.matrix()), wires=op.wires)
     # Convert state into numpy
     state = qml.math.asarray(state, like="numpy")
     return apply_operation_csr_matrix(op, state, is_state_batched)
@@ -86,6 +86,16 @@ def test_custom_operator_with_matrix():
 
 class TestSparseOperation:
     """Test the sparse matrix application method"""
+
+    ops_to_sparsify = [
+        qml.PauliX(0),
+        qml.CNOT((0, 1)),
+        qml.Toffoli((0, 1, 2)),
+        qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values=[1, 1, 1, 1]),
+        qml.GroverOperator(wires=[0, 1, 2]),
+        qml.IsingXX(np.pi / 2, wires=[0, 1]),
+        qml.DoubleExcitation(np.pi / 4, wires=[0, 1, 2, 3]),
+    ]
 
     def test_sparse_operation_dense_state(self):
         """Test that apply_operation works with a sparse matrix operation"""
@@ -183,6 +193,22 @@ class TestSparseOperation:
         # Confirm the return type and shape
         assert isinstance(new_state, np.ndarray)
         assert new_state.shape == expected_shape
+
+    @pytest.mark.parametrize("op", ops_to_sparsify)
+    def test_sparse_operation_wrapper(self, op):
+        """Test that apply_operation_sparse_wrapped correctly handles larger quantum operations
+        by converting them to sparse matrices"""
+
+        # Get a compatible state
+        wires = op.wires
+        system_size = len(wires)
+        state = np.random.rand(2**system_size) + 1j * np.random.rand(2**system_size)
+        state = state / np.linalg.norm(state)
+        state = state.reshape([2] * system_size)
+
+        new_state = apply_operation_sparse_wrapped(op, state)
+        expected_state = apply_operation(op, state)
+        assert qml.math.allclose(new_state, expected_state)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -369,8 +395,6 @@ class TestTwoQubitStateSpecialCases:
 
     def test_globalphase(self, method, wire, ml_framework):
         """Test the application of a GlobalPhase gate on a two qubit state."""
-        if method == apply_operation_sparse_wrapped:
-            pytest.skip("There is no need to test the sparse method for GlobalPhase.")
         initial_state = np.array(
             [
                 [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
