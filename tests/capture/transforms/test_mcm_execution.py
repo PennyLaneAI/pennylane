@@ -244,8 +244,9 @@ class TestExecutionAnalytic:
 class TestExecutionFiniteShots:
     """Tests for executing circuits with finite shots."""
 
+    @pytest.mark.parametrize("n_postselects", [1, 2, 3])
     @pytest.mark.parametrize("postselect", [0, 1])
-    def test_hw_like_samples(self, postselect):
+    def test_hw_like_samples(self, postselect, n_postselects):
         """Test that postselect_mode="hw-like" updates the number of samples as expected."""
         num_wires = 5
         dev = qml.device(
@@ -255,8 +256,9 @@ class TestExecutionFiniteShots:
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
         def f():
-            qml.Hadamard(0)
-            qml.measure(0, postselect=postselect)
+            for _ in range(n_postselects):
+                qml.Hadamard(0)
+                qml.measure(0, postselect=postselect)
             return qml.sample(wires=[0])
 
         jaxpr = jax.make_jaxpr(f)()
@@ -265,10 +267,13 @@ class TestExecutionFiniteShots:
         )
         assert all(qml.math.allclose(r, postselect) for r in res)
         lens = [len(r) for r in res]
-        assert qml.math.allclose(qml.math.mean(lens), 500, atol=10, rtol=0)
+        assert qml.math.allclose(
+            qml.math.mean(lens), int(1000 / (2**n_postselects)), atol=5 * n_postselects, rtol=0
+        )
 
+    @pytest.mark.parametrize("n_postselects", [1, 2, 3])
     @pytest.mark.parametrize("postselect", [0, 1])
-    def test_fill_shots_samples(self, postselect):
+    def test_fill_shots_samples(self, postselect, n_postselects):
         """Test that postselect_mode="fill-shots" updates the number of samples as expected."""
         num_wires = 5
         dev = qml.device(
@@ -278,8 +283,9 @@ class TestExecutionFiniteShots:
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
         def f():
-            qml.Hadamard(0)
-            qml.measure(0, postselect=postselect)
+            for _ in range(n_postselects):
+                qml.Hadamard(0)
+                qml.measure(0, postselect=postselect)
             return qml.sample(wires=[0])
 
         jaxpr = jax.make_jaxpr(f)()

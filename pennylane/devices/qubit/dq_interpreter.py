@@ -95,7 +95,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
 
         self.initial_key = key
         self.stateref = None
-        self.execution_config = execution_config
+        self.execution_config = ExecutionConfig() if execution_config is None else execution_config
 
         super().__init__()
 

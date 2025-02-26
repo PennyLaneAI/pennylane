@@ -941,7 +941,6 @@ class DefaultQubit(Device):
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
-        execution_config = execution_config or DefaultExecutionConfig
         if self.wires is None:
             raise qml.DeviceError("Device wires are required for jaxpr execution.")
         if self.shots.has_partitioned_shots:
