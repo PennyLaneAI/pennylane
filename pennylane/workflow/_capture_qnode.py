@@ -198,18 +198,18 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
     def user_transform_wrapper(*inner_args):
         return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
-    user_jaxpr = jax.make_jaxpr(user_transform_wrapper)(*non_const_args)
-    transformed_jaxpr = qnode.transform_program(
-        user_jaxpr.jaxpr, user_jaxpr.consts, *non_const_args
-    )
+    qfunc_jaxpr = jax.make_jaxpr(user_transform_wrapper)(*non_const_args)
+    if qnode.transform_program:
+        qfunc_jaxpr = qnode.transform_program(
+            qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *non_const_args
+        )
 
     preprocess_program, _ = device.preprocess()
-    final_jaxpr = preprocess_program(
-        transformed_jaxpr.jaxpr, transformed_jaxpr.consts, *non_const_args
-    )
+    if preprocess_program:
+        qfunc_jaxpr = preprocess_program(qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *non_const_args)
 
     partial_eval = partial(
-        device.eval_jaxpr, final_jaxpr.jaxpr, final_jaxpr.consts, execution_config=execution_config
+        device.eval_jaxpr, qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, execution_config=execution_config
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)
