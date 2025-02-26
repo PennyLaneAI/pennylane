@@ -789,47 +789,108 @@ class TestPytree:
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
 
 
-# pylint: disable=unused-argument
-def test_cond_abstracted_axes(enable_disable_dynamic_shapes):
-    """Test cond can accept inputs with dynamic shapes."""
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestDynamicShapeValdiation:
 
-    def workflow(x, predicate):
-        return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
+    def test_different_outval_types(self):
 
-    jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
+        def true_fn():
+            return qml.X(0)
 
-    output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
-    assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
+        def false_fn():
+            return jax.numpy.array(3)
 
-    output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
-    assert qml.math.allclose(output_false[0], 0)  # 0 * 1
+        def f(val):
+            return qml.cond(val, true_fn, false_fn=false_fn)()
+
+        with pytest.raises(ValueError, match="Mismatch in output abstract values"):
+            f(True)
+
+    def test_different_dtype(self):
+
+        def true_fn(n):
+            return jax.numpy.arange(n, dtype=int)
+
+        def false_fn(n):
+            return jax.numpy.arange(n, dtype=float)
+
+        def f(val, n):
+            return qml.cond(val, true_fn, false_fn=false_fn)(n)
+
+        with pytest.raises(ValueError, match="Mismatch in output abstract values"):
+            f(True, 3)
+
+    def test_one_dynamic_shape_other_not(self):
+
+        def true_fn(n):  # pylint: disable=unused-argument
+            return jax.numpy.ones(2)
+
+        def false_fn(n):
+            return jax.numpy.ones(n)
+
+        def f(val, n):
+            return qml.cond(val, true_fn, false_fn=false_fn)(n)
+
+        with pytest.raises(ValueError, match="Mismatch in output abstract values"):
+            f(True, 3)
+
+    def test_different_concrete_shapes(self):
+
+        def true_fn():
+            return jax.numpy.ones(3)
+
+        def false_fn():
+            return jax.numpy.ones(4)
+
+        def f(val):
+            return qml.cond(val, true_fn, false_fn=false_fn)()
+
+        with pytest.raises(ValueError, match="Mismatch in output abstract values"):
+            f(True)
 
 
-def test_cond_dynamic_shape_output(enable_disable_dynamic_shapes):
-    """test that cond can return dynamic shapes."""
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestDynamicShapes:
 
-    def true_fn(n):
-        return jax.numpy.arange(n)
+    def test_cond_abstracted_axes(self):
+        """Test cond can accept inputs with dynamic shapes."""
 
-    def false_fn(n):
-        return jax.numpy.zeros(n**2)
+        def workflow(x, predicate):
+            return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
 
-    def f(val, n):
-        return {"result": qml.cond(val, true_fn, false_fn=false_fn)(n)}
+        jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
 
-    jaxpr = jax.make_jaxpr(f)(True, 3)
+        output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
+        assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
 
-    assert len(jaxpr.jaxpr.outvars) == 2
-    assert jaxpr.jaxpr.outvars[1].aval.shape[0] is jaxpr.jaxpr.outvars[0]
+        output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
+        assert qml.math.allclose(output_false[0], 0)  # 0 * 1
 
-    [a, b] = qml.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, True, 4)
+    def test_cond_dynamic_shape_output(self):
+        """test that cond can return dynamic shapes."""
 
-    assert a == 4
-    assert qml.math.allclose(b, true_fn(4))
+        def true_fn(n):
+            return jax.numpy.arange(n, dtype=int)
 
-    [c, d] = qml.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, False, 7)
-    assert c == 49
-    assert qml.math.allclose(d, false_fn(7))
+        def false_fn(n):
+            return jax.numpy.zeros(n**2, dtype=int)
 
-    res = f(True, 6)  # slicing out the shape variable
-    assert qml.math.allclose(res["result"], jax.numpy.arange(6))
+        def f(val, n):
+            return {"result": qml.cond(val, true_fn, false_fn=false_fn)(n)}
+
+        jaxpr = jax.make_jaxpr(f)(True, 3)
+
+        assert len(jaxpr.jaxpr.outvars) == 2
+        assert jaxpr.jaxpr.outvars[1].aval.shape[0] is jaxpr.jaxpr.outvars[0]
+
+        [a, b] = qml.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, True, 4)
+
+        assert a == 4
+        assert qml.math.allclose(b, true_fn(4))
+
+        [c, d] = qml.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, False, 7)
+        assert c == 49
+        assert qml.math.allclose(d, false_fn(7))
+
+        res = f(True, 6)  # slicing out the shape variable
+        assert qml.math.allclose(res["result"], jax.numpy.arange(6))

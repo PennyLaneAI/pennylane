@@ -34,7 +34,7 @@ def _all_output_shapes(f):
         out = f(*args, **kwargs)
         shapes = []
         for x in out:
-            shapes.extend(x.shape)
+            shapes.extend(getattr(x, "shape", ()))
         return *shapes, *out
 
     return new_f
@@ -666,7 +666,14 @@ def _register_custom_staging_rule(cond_prim):
     import jax  # pylint: disable=import-outside-toplevel
     from jax._src.interpreters import partial_eval as pe  # pylint: disable=import-outside-toplevel
 
-    def _new_outvar(jaxpr_trace, outvar, env):
+    def _tracer_and_outvar(jaxpr_trace, outvar, env: dict):
+        """
+        Create a new tracer and returned var from the true branch outvar
+        returned vars are cached in env for use in future shapes
+        """
+        if not hasattr(outvar.aval, "shape"):
+            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval)
+            return out_tracer, jaxpr_trace.makevar(out_tracer)
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
         new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
         out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
@@ -677,13 +684,17 @@ def _register_custom_staging_rule(cond_prim):
         return out_tracer, new_var
 
     def custom_staging_rule(jaxpr_trace, *tracers, **params):
+        """
+        Add new jaxpr equation to the jaxpr_trace and return new tracers.
+        """
         if not jax.config.jax_dynamic_shapes:
+            # fallback to normal behavior
             return jaxpr_trace.default_process_primitive(cond_prim, tracers, params)
         true_outvars = params["jaxpr_branches"][0].outvars
 
-        env = {}
+        env = {}  # branch var to new equation var
         out_tracers, returned_vars = tuple(
-            zip(*(_new_outvar(jaxpr_trace, var, env) for var in true_outvars))
+            zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in true_outvars))
         )
 
         invars = [jaxpr_trace.getvar(x) for x in tracers]
@@ -700,29 +711,46 @@ def _register_custom_staging_rule(cond_prim):
     pe.custom_staging_rules[cond_prim] = custom_staging_rule
 
 
+def _shape_error(branch_type, branch_index, i, outval, expected_outval):
+    raise ValueError(
+        f"Mismatch in output abstract values in {branch_type} branch "
+        f"#{branch_index} at position {i}: "
+        f"{outval} vs {expected_outval}."
+    )
+
+
 def _validate_abstract_values(
-    outvals: list, expected_outvals: list, branch_type: str, index: Optional[int] = None
+    outvals: list, expected_outvals: list, branch_type: str, branch_index: int
 ) -> None:
     """Ensure the collected abstract values match the expected ones."""
+    import jax  # pylint: disable=import-outside-toplevel
 
     if len(outvals) != len(expected_outvals):
-        raise ValueError(
+        msg = (
             f"Mismatch in number of output variables in {branch_type} branch"
-            f"{'' if index is None else ' #' + str(index)}: "
-            f"{len(outvals)} vs {len(expected_outvals)}"
+            f" #{branch_index}: {len(outvals)} vs {len(expected_outvals)} "
+            f" for {outvals} and {expected_outvals}"
         )
+        if jax.config.jax_dynamic_shapes:
+            msg += "\n This may be due to different sized shapes when dynamic shapes are enabled."
+        raise ValueError(msg)
 
     for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
-        # for now, skip validation if any dynamic shapes
-        if (
-            all(isinstance(o, int) for o in getattr(outval, "shape", ()))
-            and outval != expected_outval
-        ):
-            raise ValueError(
-                f"Mismatch in output abstract values in {branch_type} branch"
-                f"{'' if index is None else ' #' + str(index)} at position {i}: "
-                f"{outval} vs {expected_outval}"
-            )
+        if jax.config.jax_dynamic_shapes:
+            # we need to be a bit more manual with the comparison.
+            if type(outval) != type(expected_outval):  # pylint: disable=unidiomatic-typecheck
+                _shape_error(branch_type, branch_index, i, outval, expected_outval)
+            if getattr(outval, "dtype", None) != getattr(expected_outval, "dtype", None):
+                _shape_error(branch_type, branch_index, i, outval, expected_outval)
+
+            for s1, s2 in zip(getattr(outval, "shape", ()), getattr(expected_outval, "shape", ())):
+                if isinstance(s1, jax.core.Var) != isinstance(s2, jax.core.Var):
+                    _shape_error(branch_type, branch_index, i, outval, expected_outval)
+                elif isinstance(s1, int) and s1 != s2:
+                    _shape_error(branch_type, branch_index, i, outval, expected_outval)
+
+        elif outval != expected_outval:
+            _shape_error(branch_type, branch_index, i, outval, expected_outval)
 
 
 def _validate_jaxpr_returns(jaxpr_branches):
