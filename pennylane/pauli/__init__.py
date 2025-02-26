@@ -52,3 +52,5 @@ from .grouping import (
 )
 
 from .dla import PauliVSpace, lie_closure, structure_constants, center
+
+from .trace_inner_product import trace_inner_product
