@@ -559,13 +559,13 @@ class TestCommuteControlledHigherOrderPrimitives:
         @CommuteControlledInterpreter()
         def circuit(x):
 
-            @qml.for_loop(0, 2)
+            @qml.for_loop(0, 1)
             # pylint: disable=unused-argument
             def loop(i, x):
                 qml.RX(x, wires=2)
                 qml.CNOT(wires=[0, 2])
                 qml.Toffoli(wires=[0, 1, 2])
-                return x
+                return qml.H(0)
 
             qml.CNOT(wires=[0, 1])
             # pylint: disable=no-value-for-parameter
@@ -582,16 +582,14 @@ class TestCommuteControlledHigherOrderPrimitives:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, np.pi)
         jaxpr_ops = collector.state["ops"]
-        assert len(jaxpr_ops) == 8
+        assert len(jaxpr_ops) == 6
 
         expected_ops = [
             qml.CNOT(wires=[0, 1]),
             qml.CNOT(wires=[0, 2]),
             qml.Toffoli(wires=[0, 1, 2]),
             qml.RX(np.pi, wires=[2]),
-            qml.CNOT(wires=[0, 2]),
-            qml.Toffoli(wires=[0, 1, 2]),
-            qml.RX(np.pi, wires=[2]),
+            qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
         ]
 
