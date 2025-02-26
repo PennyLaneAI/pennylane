@@ -152,6 +152,28 @@ def _left_givens(indices, unitary, j):
         return __left_givens_jax(indices, unitary, j)
     return __left_givens(indices, unitary, j)
 
+def __mats_calc(unitary, grot_mat, i, j):
+    sphase_mat = qml.math.diag(qml.math.diag(unitary)[qml.math.array([i, j])])
+    decomp_mat = qml.math.conj(grot_mat).T @ sphase_mat
+    givens_mat = _givens_matrix(*decomp_mat[1, :].T)
+    nphase_mat = decomp_mat @ givens_mat.T
+    return sphase_mat, decomp_mat, givens_mat, nphase_mat
+
+@jax.jit
+def __mats_calc_jax(unitary, grot_mat, i, j):
+    sphase_mat = qml.math.diag(qml.math.diag(unitary)[jax.numpy.asarray([i, j])])
+    decomp_mat = qml.math.conj(grot_mat).T @ sphase_mat
+    givens_mat = _givens_matrix(*decomp_mat[1, :].T)
+    nphase_mat = decomp_mat @ givens_mat.T
+    return sphase_mat, decomp_mat, givens_mat, nphase_mat
+
+def _mats_calc(unitary, grot_mat, i, j):
+    like = qml.math.get_interface(unitary)
+    if like == "jax":
+        return __mats_calc_jax(unitary, grot_mat, i, j)
+    return __mats_calc(unitary, grot_mat, i, j)
+    
+
 # pylint:disable = too-many-branches
 def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
@@ -264,10 +286,8 @@ def givens_decomposition(unitary):
 
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
-        sphase_mat = qml.math.diag(qml.math.diag(unitary)[qml.math.array([i, j])])
-        decomp_mat = qml.math.conj(grot_mat).T @ sphase_mat
-        givens_mat = _givens_matrix(*decomp_mat[1, :].T)
-        nphase_mat = decomp_mat @ givens_mat.T
+
+        sphase_mat, decomp_mat, givens_mat, nphase_mat = _mats_calc(unitary, grot_mat, i, j)
 
         # check for T_{m,n}^{-1} x D = D x T.
         if not qml.math.is_abstract(decomp_mat) and not qml.math.allclose(
