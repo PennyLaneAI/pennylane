@@ -267,8 +267,8 @@ def _can_commute(op1: Operator, op2: Operator) -> bool:
 
     if _shares_control_wires(op1, op2):
         return op1.basis == "Z"
-    else:
-        return op1.basis == op2.basis
+
+    return op1.basis == op2.basis
 
 
 def _commute_controlled_right(op_list):
