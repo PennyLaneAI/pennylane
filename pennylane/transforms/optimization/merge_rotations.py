@@ -109,22 +109,27 @@ def _get_plxpr_merge_rotations():
             can_merge = wires_exactly_match and are_same_type
 
             if can_merge:
+                angles_cancel = False
                 if isinstance(op, qml.Rot):
                     # Order of arguments matter for the Rot gate!
                     cumulative_angles = fuse_rot_angles(
                         qml.math.stack(previous_op.parameters),
                         qml.math.stack(op.parameters),
                     )
+                    test_angles = qml.math.stack(
+                        [cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]
+                    )
                 else:
                     cumulative_angles = qml.math.stack(previous_op.parameters) + qml.math.stack(
                         op.parameters
                     )
+                    test_angles = cumulative_angles
 
-                # Update operator on these wires with the merged one
+                angles_cancel = qml.math.allclose(test_angles, 0.0, atol=self.atol, rtol=0)
                 keep_merged_op = (
                     qml.math.is_abstract(cumulative_angles)
                     or qml.math.requires_grad(cumulative_angles)
-                    or not qml.math.allclose(cumulative_angles, 0.0, atol=self.atol, rtol=0)
+                    or not angles_cancel
                 )
                 if keep_merged_op:
                     # pylint: disable = protected-access
@@ -135,7 +140,6 @@ def _get_plxpr_merge_rotations():
                 else:
                     for w in op.wires:
                         del self.previous_ops[w]
-
                 return
 
             # If we cannot merge, interpret the previous operations and refresh the previous_ops dictionary
