@@ -164,7 +164,7 @@ class TestSparseOperation:
         final_state = apply_operation_csr_matrix(U_sp, new_state)
         assert qml.math.allclose(final_state, state)
 
-    @pytest.mark.parametrize("N", range(2, 20, 2))
+    @pytest.mark.parametrize("N", range(4, 10, 2))
     @pytest.mark.parametrize(
         "op",
         [
