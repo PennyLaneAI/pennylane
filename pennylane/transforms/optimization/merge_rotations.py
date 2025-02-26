@@ -121,22 +121,21 @@ def _get_plxpr_merge_rotations():
                     )
 
                 # Update operator on these wires with the merged one
-                # pylint: disable = protected-access
-                angle_is_zero = False
-                if not qml.math.is_abstract(cumulative_angles):
-                    angle_is_zero = qml.math.allclose(
-                        cumulative_angles, 0.0, atol=self.atol, rtol=0
-                    )
-
-                if angle_is_zero and not qml.math.requires_grad(cumulative_angles):
+                keep_merged_op = (
+                    qml.math.is_abstract(cumulative_angles)
+                    or qml.math.requires_grad(cumulative_angles)
+                    or not qml.math.allclose(cumulative_angles, 0.0, atol=self.atol, rtol=0)
+                )
+                if keep_merged_op:
+                    # pylint: disable = protected-access
+                    for w in op.wires:
+                        self.previous_ops[w] = op.__class__._primitive.impl(
+                            *cumulative_angles, wires=op.wires
+                        )
+                else:
                     for w in op.wires:
                         del self.previous_ops[w]
-                    return
 
-                for w in op.wires:
-                    self.previous_ops[w] = op.__class__._primitive.impl(
-                        *cumulative_angles, wires=op.wires
-                    )
                 return
 
             # If we cannot merge, interpret the previous operations and refresh the previous_ops dictionary
