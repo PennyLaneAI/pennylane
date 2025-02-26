@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,22 +30,22 @@ from pennylane.templates.state_preparations.qrom_state_prep import (
 
 
 def test_sum_by_prefix():
-    """Test _sum_by_prefix function"""
+    """Test _sum_by_prefix private function"""
 
     vector = [1, 3, 5, 2, 1, 3, 2, 2]
     prefix = "10"
     assert np.isclose(_sum_by_prefix(vector, prefix), 4)
 
 
-def test_get_basis_state_list():
-    """Test _get_basis_state_list function"""
+def test__func_to_binary():
+    """Test _func_to_binary private function"""
 
     output = _func_to_binary(3, 0.25, lambda x: np.sqrt(x))
     assert output == "100"
 
 
 def test_get_basis_state_list():
-    """Test _get_basis_state_list function"""
+    """Test _get_basis_state_list private function"""
 
     output = _get_basis_state_list(3, add_zero=True)
     expected = ["0000", "0010", "0100", "0110", "1000", "1010", "1100", "1110"]
@@ -225,7 +225,7 @@ class TestQROMStatePreparation:
 
         import tensorflow as tf
 
-        state = [1 / 2, -1 / 2, 1j / 2, -1j / 2]
+        state = [1 / 2, -1 / 2, 1 / 2, -1 / 2]
 
         wires = qml.registers({"work": 2, "precision": 2, "state": 2})
         dev = qml.device("default.qubit", wires=6)

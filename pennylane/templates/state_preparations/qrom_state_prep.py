@@ -130,7 +130,7 @@ class QROMStatePreparation(Operation):
     .. code-block::
 
         dev = qml.device("default.qubit", wires=6)
-        state_vector = np.array([1,0,0,0]) / 2.0
+        state_vector = np.array([1,0,0,0])
         wires = [0, 1]
         precision_wires = [2, 3, 4]
         work_wires = [5]
@@ -151,17 +151,15 @@ class QROMStatePreparation(Operation):
         controlled rotations to apply these values to the target qubits.
 
         The input `state_vector` must have a length that is a power of 2. The number of `wires`
-        must be at least :math:`\log_2(\text{len}(state\_vector))`. The number of `precision_wires` determines the
+        must be :math:`\log_2(\text{len}(state\_vector))`. The number of `precision_wires` determines the
         precision with which the amplitudes and phases are encoded.
 
-        The `work_wires` are used as auxiliary qubits in the QROM operation. They should be distinct
-        from the `wires` and `precision_wires`.
+        The `work_wires` are used as auxiliary qubits in the QROM operation.
 
         The decomposition involves encoding the probabilities and phases of the state vector using
         QROMs and then applying controlled rotations based on the values stored in the `precision_wires`.
-        The decomposition applies CRY rotations for amplitude encoding and controlled GlobalPhase rotations for the phase encoding.
-
-        The user must ensure that the number of precision wires is enough to store the values. The relation between the number of precision wires `n_p` and the precision `p` is given by :math:`p = 2^{-n_p}`.
+        The decomposition applies CRY rotations for amplitude encoding and controlled GlobalPhase
+        rotations for the phase encoding.
     """
 
     def __init__(self, state_vector, wires, precision_wires, work_wires=None, id=None):
@@ -193,6 +191,10 @@ class QROMStatePreparation(Operation):
         )
 
         super().__init__(state_vector, wires=all_wires, id=id)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     def _flatten(self):
         hyperparameters = (
@@ -240,15 +242,16 @@ class QROMStatePreparation(Operation):
         Computes the decomposition operations for the given state vector.
 
         Args:
-            state_vector (array-like): The state vector.
-            wires (list): List of control wires.
-            precision_wires (list): List of precision wires.
-            work_wires (list or None): List of work wires (can be None).
+        state_vector (TensorLike): The state vector to prepare.
+        wires (Sequence[int]): The wires on which to prepare the state.
+        precision_wires (Sequence[int]): The wires used for storing the binary representations of the
+            amplitudes and phases.
+        work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
 
         Returns:
             list: List of decomposition operations.
         """
-        # Square each component of the state vector
+
         probs = qml.math.abs(state_vector) ** 2
         phases = qml.math.angle(state_vector) % (2 * np.pi)
 
@@ -256,7 +259,7 @@ class QROMStatePreparation(Operation):
         num_iterations = int(qml.math.log2(len(probs)))
         for i in range(num_iterations):
 
-            # Calculation of the numerator and denominator of the function f (Eq.5 [arXiv:quant-ph/0208112])
+            # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
             prefixes = _get_basis_state_list(n_wires=i)
             probs_denominator = [_sum_by_prefix(probs, prefix=p) for p in prefixes]
 
@@ -315,7 +318,6 @@ class QROMStatePreparation(Operation):
             )
         )
 
-        # Turn binary representation into proper rotation
         for ind, wire in enumerate(precision_wires):
             rotation_angle = 2 ** (-ind - 1)
             decomp_ops.append(
@@ -324,7 +326,6 @@ class QROMStatePreparation(Operation):
                 )
             )
 
-        # Clean wires used to store the theta values
         decomp_ops.append(
             qml.adjoint(qml.QROM)(
                 bitstrings=thetas_binary,
