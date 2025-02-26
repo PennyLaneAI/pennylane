@@ -793,6 +793,7 @@ class TestPytree:
 class TestDynamicShapeValdiation:
 
     def test_different_outval_types(self):
+        """Test an error is raised if the outvals have different types."""
 
         def true_fn():
             return qml.X(0)
@@ -807,6 +808,7 @@ class TestDynamicShapeValdiation:
             f(True)
 
     def test_different_dtype(self):
+        """Test an error is raised in the outputs have different dtypes."""
 
         def true_fn(n):
             return jax.numpy.arange(n, dtype=int)
@@ -821,12 +823,13 @@ class TestDynamicShapeValdiation:
             f(True, 3)
 
     def test_one_dynamic_shape_other_not(self):
+        """Test that an error is raised if one dimension in abstract on one branch, but not on another."""
 
         def true_fn(n):  # pylint: disable=unused-argument
-            return jax.numpy.ones(2)
+            return jax.numpy.ones((2, n))
 
         def false_fn(n):
-            return jax.numpy.ones(n)
+            return jax.numpy.ones((n, 2))
 
         def f(val, n):
             return qml.cond(val, true_fn, false_fn=false_fn)(n)
@@ -835,6 +838,7 @@ class TestDynamicShapeValdiation:
             f(True, 3)
 
     def test_different_concrete_shapes(self):
+        """Test that errors are still raised if they have different concrete shapes."""
 
         def true_fn():
             return jax.numpy.ones(3)
@@ -847,6 +851,21 @@ class TestDynamicShapeValdiation:
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             f(True)
+
+    def test_different_sized_shapes(self):
+        """Test an error is raised with different sized shapes."""
+
+        def true_fn(n):
+            return jax.numpy.ones((3, n))
+
+        def false_fn(n):
+            return jax.numpy.ones(n)
+
+        def f(val, n):
+            return qml.cond(val, true_fn, false_fn=false_fn)(n)
+
+        with pytest.raises(ValueError, match="may be due to different sized shapes"):
+            f(True, 4)
 
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
@@ -894,3 +913,18 @@ class TestDynamicShapes:
 
         res = f(True, 6)  # slicing out the shape variable
         assert qml.math.allclose(res["result"], jax.numpy.arange(6))
+
+    def test_return_operators_with_dynamic_enabled(self):
+        """Test that we can return operators when dynamic shapes are enabled."""
+
+        def f(val, w):
+            return qml.cond(val, qml.X, false_fn=qml.Y)(w)
+
+        x_op = f(True, 0)
+        qml.assert_equal(x_op, qml.X(0))
+        y_op = f(False, 3)
+        qml.assert_equal(y_op, qml.Y(3))
+
+        jaxpr = jax.make_jaxpr(f)(False, 3)
+        [x_op2] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 3)
+        qml.assert_equal(x_op2, qml.X(3))

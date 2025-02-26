@@ -289,7 +289,10 @@ class CondCallable:  # pylint:disable=too-few-public-methods
 
 
 def cond(
-    condition, true_fn: Callable = None, false_fn: Optional[Callable] = None, elifs: Sequence = ()
+    condition,
+    true_fn: Optional[Callable] = None,
+    false_fn: Optional[Callable] = None,
+    elifs: Sequence = (),
 ):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
