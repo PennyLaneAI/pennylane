@@ -412,6 +412,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_interface` now correctly extracts the `"scipy"` interface. 
+  [(#7015)](https://github.com/PennyLaneAI/pennylane/pull/7015)
+
 * `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
   [(#6975)](https://github.com/PennyLaneAI/pennylane/pull/6975)
 
