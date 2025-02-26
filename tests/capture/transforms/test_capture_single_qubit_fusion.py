@@ -484,38 +484,6 @@ class TestSingleQubitFusionHigherOrderPrimitives:
         result_check = [-0.19037952, -0.19037946, 0.73068166, 0.7306816]
         assert qml.math.allclose(result, result_check)
 
-    def test_transform_higher_order_primitive(self):
-        """Test that the inner_jaxpr of transform primitives is not transformed."""
-
-        @qml.transform
-        def fictitious_transform(tape):
-            """Fictitious transform"""
-            return [tape], lambda res: res[0]
-
-        @SingleQubitFusionInterpreter()
-        def circuit():
-            @fictitious_transform
-            def g():
-                qml.S(0)
-                qml.T(0)
-
-            qml.RX(0.1, 0)
-            g()
-            qml.RY(0.2, 0)
-
-        jaxpr = jax.make_jaxpr(circuit)()
-
-        assert len(jaxpr.eqns) == 3
-
-        assert jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert jaxpr.eqns[1].primitive == fictitious_transform._primitive
-        assert jaxpr.eqns[2].primitive == qml.RY._primitive
-
-        inner_jaxpr = jaxpr.eqns[1].params["inner_jaxpr"]
-        assert len(inner_jaxpr.eqns) == 2
-        assert inner_jaxpr.eqns[0].primitive == qml.S._primitive
-        assert inner_jaxpr.eqns[1].primitive == qml.T._primitive
-
     @pytest.mark.parametrize(
         "selector, expected_ops",
         [

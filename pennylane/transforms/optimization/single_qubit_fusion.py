@@ -201,8 +201,6 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                     self.interpret_all_previous_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
-                    if prim_type == "transform":
-                        self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     subfuns, params = eqn.primitive.get_bind_params(eqn.params)
                     outvals = eqn.primitive.bind(*subfuns, *invals, **params)
