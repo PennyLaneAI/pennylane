@@ -136,11 +136,6 @@ ar.register_function("scipy", "real", lambda x: x.real)
 ar.register_function("scipy", "imag", lambda x: x.imag)
 ar.register_function("scipy", "size", lambda x: np.prod(x.shape))
 
-# Even scipy's own sum falls back to numpy. So we simply fallback entirely here
-ar.register_function(
-    "scipy", "sum", lambda x, axis: sp.sparse.coo_array(x.toarray().sum(axis=axis))
-)
-
 # -------------------------------- NumPy --------------------------------- #
 
 ar.register_function("numpy", "flatten", lambda x: x.flatten())
