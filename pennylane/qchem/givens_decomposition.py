@@ -16,9 +16,10 @@ This module contains the functions needed for performing basis transformations d
 """
 
 import pennylane as qml
+import jax
 
 
-def _givens_matrix(a, b, left=True, tol=1e-8):
+def __givens_matrix(a, b, left=True, tol=1e-8):
     r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
@@ -64,11 +65,26 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
 
     phase = qml.math.where(abs_b < tol, 1.0, (1.0 * b * qml.math.conj(a)) / (aprod + 1e-15))
     phase = qml.math.where(abs_a < tol, 1.0, phase)
+    if interface_a == "jax":
+        return jax.lax.cond(left,
+            lambda phase, cosine, sine: qml.math.array([[phase * cosine, -sine], [phase * sine, cosine]], like=interface),
+            lambda phase, cosine, sine: qml.math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface),
+            phase, cosine, sine)
 
     if left:
         return qml.math.array([[phase * cosine, -sine], [phase * sine, cosine]], like=interface)
 
     return qml.math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
+
+@jax.jit
+def __givens_matrix_jax(a, b, left=True, tol=1e-8):
+    return __givens_matrix(a, b, left=left, tol=tol)
+
+def _givens_matrix(a, b, left=True, tol=1e-8):
+    interface = qml.math.get_interface(a)
+    if interface != "jax":
+        return __givens_matrix(a, b, left=left, tol=tol)
+    return __givens_matrix_jax(a, b, left=left, tol=tol)
 
 
 def _set_unitary_matrix(unitary_matrix, index, value, like=None):
