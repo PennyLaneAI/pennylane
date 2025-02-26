@@ -14,9 +14,10 @@
 """Transforms for pushing commuting gates through targets/control qubits."""
 
 from collections import deque
-from functools import lru_cache
-from typing import Optional
+from functools import lru_cache, partial
+from typing import Optional, Sequence
 
+from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -32,7 +33,6 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
         from jax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
-        from pennylane.operation import Operator
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -74,10 +74,6 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             """Clean up the instance after interpreting equations."""
             self.op_deque.clear()
 
-        def _find_previous_gate(self, wires: Wires, search_list) -> Optional[int]:
-            """Finds the previous gate index that shares wires."""
-            return find_next_gate(wires, list(reversed(search_list)))
-
         def _interpret_operation_left(self, op: Operator) -> list:
             """Interpret a PennyLane operation and push it through controlled operations as far left as possible."""
 
@@ -88,21 +84,16 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 self.op_deque.append(op)
                 return []
 
-            prev_gate_idx = self._find_previous_gate(op.wires, self.op_deque)
+            prev_gate_idx = _find_previous_gate_on_wires(op.wires, self.op_deque)
             new_location = self.current_location
 
             while prev_gate_idx is not None:
                 prev_gate = self.op_deque[new_location - prev_gate_idx - 1]
 
-                if prev_gate.basis is None:
+                if prev_gate.basis is None or len(prev_gate.control_wires) == 0:
                     break
 
-                if len(prev_gate.control_wires) == 0:
-                    break
-
-                shared_controls = Wires.shared_wires([Wires(op.wires), prev_gate.control_wires])
-
-                if len(shared_controls) > 0:
+                if _shares_control_wires(op, prev_gate):
                     if op.basis == "Z":
                         new_location = new_location - prev_gate_idx - 1
                     else:
@@ -114,7 +105,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                     else:
                         break
 
-                prev_gate_idx = self._find_previous_gate(
+                prev_gate_idx = _find_previous_gate_on_wires(
                     op.wires, list(self.op_deque)[:new_location]
                 )
 
@@ -127,34 +118,31 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 
             # This function follows the same logic used in the `_commute_controlled_right` function.
 
-            current_location = len(self.op_deque) - 1
+            self.current_location = len(self.op_deque) - 1
 
-            while current_location >= 0:
-                current_gate = self.op_deque[current_location]
+            while self.current_location >= 0:
+                current_gate = self.op_deque[self.current_location]
 
                 if getattr(current_gate, "basis", None) is None or len(current_gate.wires) != 1:
-                    current_location -= 1
+                    self.current_location -= 1
                     continue
 
                 next_gate_idx = find_next_gate(
-                    current_gate.wires, list(self.op_deque)[current_location + 1 :]
+                    current_gate.wires, list(self.op_deque)[self.current_location + 1 :]
                 )
 
-                new_location = current_location
+                new_location = self.current_location
 
                 while next_gate_idx is not None:
                     next_gate = self.op_deque[new_location + next_gate_idx + 1]
 
-                    if getattr(next_gate, "basis", None) is None:
+                    if (
+                        getattr(next_gate, "basis", None) is None
+                        or len(next_gate.control_wires) == 0
+                    ):
                         break
 
-                    if len(next_gate.control_wires) == 0:
-                        break
-                    shared_controls = Wires.shared_wires(
-                        [Wires(current_gate.wires), next_gate.control_wires]
-                    )
-
-                    if len(shared_controls) > 0:
+                    if _shares_control_wires(current_gate, next_gate):
                         if current_gate.basis == "Z":
                             new_location += next_gate_idx + 1
                         else:
@@ -171,8 +159,8 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                     )
 
                 self.op_deque.insert(new_location + 1, current_gate)
-                del self.op_deque[current_location]
-                current_location -= 1
+                del self.op_deque[self.current_location]
+                self.current_location -= 1
 
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance."""
@@ -180,8 +168,8 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             if self.direction == "left":
                 return self._interpret_operation_left(op)
 
-            # If the direction is right, we simply append the operation
-            # to the list while we scan through the operations forwards.
+            # If the direction is right, we append the operator
+            # to the list while we scan through the operators forwards.
             self.op_deque.append(op)
             return []
 
@@ -192,14 +180,14 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 for op in self.op_deque:
                     super().interpret_operation(op)
                 self.op_deque.clear()
+                return
 
             # If the direction is right, push the gates in each sub-list
-            # created at this stage by traversing the list backwards.
+            # created at this stage by traversing it backwards.
             self._interpret_all_operations_right()
 
             for op in self.op_deque:
                 super().interpret_operation(op)
-
             self.op_deque.clear()
 
         def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
@@ -213,7 +201,6 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             """
 
             self.setup()
-
             self._env = {}
 
             for arg, invar in zip(args, jaxpr.invars, strict=True):
@@ -236,8 +223,6 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                     self.interpret_all_previous_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
-                    if prim_type == "transform":
-                        self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     subfuns, params = eqn.primitive.get_bind_params(eqn.params)
                     outvals = eqn.primitive.bind(*subfuns, *invals, **params)
@@ -264,7 +249,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
     def commute_controlled_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
-        interpreter = CommuteControlledInterpreter()
+        interpreter = CommuteControlledInterpreter(direction=tkwargs.get("direction", "right"))
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
@@ -275,6 +260,18 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 
 
 CommuteControlledInterpreter, commute_controlled_plxpr_to_plxpr = _get_plxpr_commute_controlled()
+
+
+def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> Optional[int]:
+    """Finds the previous gate index that shares wires."""
+
+    return find_next_gate(wires, reversed(prevs_ops))
+
+
+def _shares_control_wires(op: Operator, gate: Operator) -> bool:
+    """Check if the operation shares wires with the control wires of the provided gate."""
+
+    return len(Wires.shared_wires([Wires(op.wires), gate.control_wires])) > 0
 
 
 def _commute_controlled_right(op_list):
@@ -319,12 +316,9 @@ def _commute_controlled_right(op_list):
             # controlled so we can't push through.
             if len(next_gate.control_wires) == 0:
                 break
-            shared_controls = Wires.shared_wires(
-                [Wires(current_gate.wires), next_gate.control_wires]
-            )
 
             # Case 1: overlap is on the control wires. Only Z-type gates go through
-            if len(shared_controls) > 0:
+            if _shares_control_wires(current_gate, next_gate):
                 if current_gate.basis == "Z":
                     new_location += next_gate_idx + 1
                 else:
@@ -383,11 +377,8 @@ def _commute_controlled_left(op_list):
 
             if len(prev_gate.control_wires) == 0:
                 break
-            shared_controls = Wires.shared_wires(
-                [Wires(current_gate.wires), prev_gate.control_wires]
-            )
 
-            if len(shared_controls) > 0:
+            if _shares_control_wires(current_gate, prev_gate):
                 if current_gate.basis == "Z":
                     new_location = new_location - prev_gate_idx - 1
                 else:
@@ -408,7 +399,7 @@ def _commute_controlled_left(op_list):
     return op_list
 
 
-@transform
+@partial(transform, plxpr_transform=commute_controlled_plxpr_to_plxpr)
 def commute_controlled(
     tape: QuantumScript, direction="right"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:

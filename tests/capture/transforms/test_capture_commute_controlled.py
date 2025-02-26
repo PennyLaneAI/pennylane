@@ -23,13 +23,13 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
+from functools import partial
+
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.commute_controlled import (
-    CommuteControlledInterpreter,
-    commute_controlled,
-    commute_controlled_plxpr_to_plxpr,
-)
+    CommuteControlledInterpreter, commute_controlled,
+    commute_controlled_plxpr_to_plxpr)
 
 
 class TestCommuteControlledInterpreter:
@@ -71,11 +71,9 @@ class TestCommuteControlledInterpreter:
             qml.PauliX(wires=2),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
             # jax inserts a dtype for the array which confuses qml.equal
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+            qml.assert_equal(op1, op2, check_interface=False)
 
     @pytest.mark.parametrize("direction", [("left"), ("right")])
     def test_gate_blocked_different_basis(self, direction):
@@ -102,10 +100,8 @@ class TestCommuteControlledInterpreter:
             qml.PauliY(wires=1),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_push_x_gates_right(self):
         """Test that X-basis gates before controlled-X-type gates on targets get pushed ahead."""
@@ -137,10 +133,8 @@ class TestCommuteControlledInterpreter:
             qml.PauliX(wires=1),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_push_x_gates_left(self):
         """Test that X-basis gates after controlled-X-type gates on targets get pushed back."""
@@ -172,10 +166,8 @@ class TestCommuteControlledInterpreter:
             qml.CRX(0.1, wires=[0, 1]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("direction", [("left"), ("right")])
     def test_dont_push_x_gates(self, direction):
@@ -204,10 +196,8 @@ class TestCommuteControlledInterpreter:
             qml.Toffoli(wires=[2, 0, 1]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_push_y_gates_right(self):
         """Test that Y-basis gates before controlled-Y-type gates on targets get pushed ahead."""
@@ -235,10 +225,8 @@ class TestCommuteControlledInterpreter:
             qml.RY(0.3, wires=1),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_push_y_gates_left(self):
         """Test that Y-basis gates after controlled-Y-type gates on targets get pushed behind."""
@@ -266,10 +254,8 @@ class TestCommuteControlledInterpreter:
             qml.CY(wires=[0, 1]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("direction", [("left"), ("right")])
     def test_dont_push_y_gates(self, direction):
@@ -300,10 +286,8 @@ class TestCommuteControlledInterpreter:
             qml.RY(0.3, wires=0),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_push_z_gates_right(self):
         """Test that Z-basis gates before controlled-Z-type gates on controls *and* targets get pushed ahead."""
@@ -339,10 +323,8 @@ class TestCommuteControlledInterpreter:
             qml.PauliZ(wires=0),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_push_z_gates_left(self):
         """Test that Z-basis after before controlled-Z-type gates on controls *and*
@@ -379,10 +361,8 @@ class TestCommuteControlledInterpreter:
             qml.CRZ(0.5, wires=[0, 1]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
         "direction, expected_ops",
@@ -456,10 +436,8 @@ class TestCommuteControlledInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         jaxpr_ops = collector.state["ops"]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert qml.math.allclose(op1.parameters, op2.parameters)
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
 
 class TestCommuteControlledHigherOrderPrimitives:
@@ -502,40 +480,6 @@ class TestCommuteControlledHigherOrderPrimitives:
 
         assert qml.math.allclose(result, expected_result)
 
-    def test_transform_higher_order_primitive(self):
-        """Test that the inner_jaxpr of transform primitives is not transformed."""
-
-        @qml.transform
-        def fictitious_transform(tape):
-            """Fictitious transform"""
-            return [tape], lambda res: res[0]
-
-        @CommuteControlledInterpreter()
-        def circuit():
-            @fictitious_transform
-            def g():
-                qml.RX(0.1, wires=2)
-                qml.CNOT(wires=[0, 2])
-                qml.Toffoli(wires=[0, 1, 2])
-
-            qml.RX(0.1, 0)
-            g()
-            qml.RY(0.2, 0)
-
-        jaxpr = jax.make_jaxpr(circuit)()
-
-        assert len(jaxpr.eqns) == 3
-
-        assert jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert jaxpr.eqns[1].primitive == fictitious_transform._primitive
-        assert jaxpr.eqns[2].primitive == qml.RY._primitive
-
-        inner_jaxpr = jaxpr.eqns[1].params["inner_jaxpr"]
-        assert len(inner_jaxpr.eqns) == 3
-        assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert inner_jaxpr.eqns[1].primitive == qml.CNOT._primitive
-        assert inner_jaxpr.eqns[2].primitive == qml.Toffoli._primitive
-
     @pytest.mark.parametrize(
         "selector, expected_ops",
         [
@@ -577,8 +521,6 @@ class TestCommuteControlledHigherOrderPrimitives:
         @CommuteControlledInterpreter()
         def circuit(selector, x):
 
-            qml.CNOT(wires=[0, 1])
-
             def true_branch(x):
                 qml.RY(x, wires=2)
                 qml.CNOT(wires=[0, 2])
@@ -590,6 +532,7 @@ class TestCommuteControlledHigherOrderPrimitives:
                 qml.CNOT(wires=[0, 2])
                 qml.Toffoli(wires=[0, 1, 2])
 
+            qml.CNOT(wires=[0, 1])
             qml.cond(selector > 0.5, true_branch, false_branch)(x)
             qml.CNOT(wires=[0, 1])
 
@@ -605,18 +548,14 @@ class TestCommuteControlledHigherOrderPrimitives:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, selector, np.pi)
         jaxpr_ops = collector.state["ops"]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
     def test_for_loop(self):
         """Test that for operators inside a for loop are correctly pushed."""
 
         @CommuteControlledInterpreter()
         def circuit(x):
-
-            qml.CNOT(wires=[0, 1])
 
             @qml.for_loop(0, 1)
             # pylint: disable=unused-argument
@@ -626,9 +565,9 @@ class TestCommuteControlledHigherOrderPrimitives:
                 qml.Toffoli(wires=[0, 1, 2])
                 return qml.Hadamard(wires=0)
 
+            qml.CNOT(wires=[0, 1])
             # pylint: disable=no-value-for-parameter
             loop(x)
-
             qml.CNOT(wires=[0, 1])
 
         jaxpr = jax.make_jaxpr(circuit)(np.pi)
@@ -652,10 +591,8 @@ class TestCommuteControlledHigherOrderPrimitives:
             qml.CNOT(wires=[0, 1]),
         ]
 
-        for op1, op2 in zip(jaxpr_ops, expected_ops):
-            assert op1.name == op2.name
-            assert qml.math.allclose(op1.parameters, op2.parameters)
-            assert op1.wires == op2.wires
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
 
 
 class TestCommuteControlledPLXPR:
@@ -699,3 +636,32 @@ class TestCommuteControlledPLXPR:
         assert transformed_jaxpr.eqns[11].primitive == qml.Z._primitive
         assert transformed_jaxpr.eqns[12].primitive == qml.X._primitive
         assert transformed_jaxpr.eqns[13].primitive == qml.CRY._primitive
+
+    @pytest.mark.parametrize("direction", ["left", "right"])
+    def test_applying_plxpr_decorator(self, direction):
+        """Test that the single-qubit fusion transformation works when applying the plxpr decorator."""
+
+        @qml.capture.expand_plxpr_transforms
+        @partial(commute_controlled, direction=direction)
+        def circuit():
+            qml.PauliX(wires=2)
+            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2])
+            qml.PauliX(wires=2)
+
+        # This circuit should be unchanged
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.jaxpr.eqns) == 3
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        expected_ops = [
+            qml.PauliX(wires=2),
+            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2]),
+            qml.PauliX(wires=2),
+        ]
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2, check_interface=False)
