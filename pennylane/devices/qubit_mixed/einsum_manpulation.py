@@ -72,6 +72,7 @@ def get_einsum_mapping(
     )
 
 
+# pylint: disable=too-many-arguments
 def _map_indices_apply_channel(
     *, state_indices, kraus_index, new_row_indices, row_indices, new_col_indices, col_indices
 ):

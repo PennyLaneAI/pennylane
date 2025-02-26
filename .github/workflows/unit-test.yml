@@ -132,7 +132,7 @@ jobs:
           done <<< "$ADDITIONAL_OS_PACKAGES"
 
       - name: Upgrade PIP and install wheel
-        run: uv pip install --upgrade pip wheel
+        run: uv pip install --upgrade pip wheel setuptools>=75.8.1
       
       - name: Install PennyLane dependencies
         run: |
@@ -158,7 +158,7 @@ jobs:
         shell: bash
         run: |
           uv build --wheel  
-          uv pip install dist/PennyLane*.whl
+          uv pip install dist/pennylane*.whl
 
       - name: Install additional PIP packages (Post PennyLane Install)
         shell: bash

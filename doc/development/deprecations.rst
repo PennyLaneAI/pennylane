@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Specifying ``pipeline=None`` with ``qml.compile`` is now deprecated.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
 
   - Deprecated in v0.41
