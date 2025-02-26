@@ -201,7 +201,7 @@ class TestSparseOperation:
 
         # Get a compatible state
         wires = op.wires
-        system_size = len(wires)
+        system_size = len(wires)+1
         state = np.random.rand(2**system_size) + 1j * np.random.rand(2**system_size)
         state = state / np.linalg.norm(state)
         state = state.reshape([2] * system_size)
