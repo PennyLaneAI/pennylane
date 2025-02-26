@@ -482,18 +482,21 @@ class TestHigherOrderPrimitiveIntegration:
         def f(x):
             @qml.cond(x > 2)
             def cond_f():
-                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+                qml.Z(0)
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=2)
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
             def _():
+                qml.Y(1)
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
-                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+                qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=2)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
             def _():
+                qml.X(2)
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
                 return qml.expval(qml.X(0))
@@ -512,10 +515,12 @@ class TestHigherOrderPrimitiveIntegration:
         expected_primitives = [
             qml.AmplitudeEmbedding._primitive,
             qml.Z._primitive,
+            qml.Z._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
+            eqn.primitive == exp_prim
+            for eqn, exp_prim in zip(branch.eqns, expected_primitives, strict=True)
         )
 
         # Elif branch
@@ -524,10 +529,12 @@ class TestHigherOrderPrimitiveIntegration:
         expected_primitives = [
             qml.AmplitudeEmbedding._primitive,
             qml.Y._primitive,
+            qml.Y._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
+            eqn.primitive == exp_prim
+            for eqn, exp_prim in zip(branch.eqns, expected_primitives, strict=True)
         )
 
         # Else branch
@@ -536,10 +543,12 @@ class TestHigherOrderPrimitiveIntegration:
         expected_primitives = [
             qml.AmplitudeEmbedding._primitive,
             qml.X._primitive,
+            qml.X._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
+            eqn.primitive == exp_prim
+            for eqn, exp_prim in zip(branch.eqns, expected_primitives, strict=True)
         )
 
     def test_for_loop_prim(self):
