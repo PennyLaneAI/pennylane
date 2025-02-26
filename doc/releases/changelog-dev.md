@@ -412,7 +412,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.math.get_interface` now correctly extracts the `"scipy"` interface. 
+* `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
+  of sparse matrices. 
   [(#7015)](https://github.com/PennyLaneAI/pennylane/pull/7015)
 
 * `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
