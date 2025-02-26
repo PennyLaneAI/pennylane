@@ -42,6 +42,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
+[(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
+
 * `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
   [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
 
@@ -284,6 +287,10 @@
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 <h3>Breaking changes 💔</h3>
+
+* `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
+  to better reflect what it actually does.
+  [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
 
 * `MultiControlledX` no longer accepts strings as control values.
   [(#6835)](https://github.com/PennyLaneAI/pennylane/pull/6835)
