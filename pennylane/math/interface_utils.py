@@ -140,20 +140,11 @@ def get_interface(*values):
             UserWarning,
         )
 
-    if "tensorflow" in interfaces:
-        return "tensorflow"
+    priority_interfaces = {"tensorflow", "torch", "jax", "autograd", "scipy"}
+    matching_interface = priority_interfaces.intersection(interfaces)
 
-    if "torch" in interfaces:
-        return "torch"
-
-    if "jax" in interfaces:
-        return "jax"
-
-    if "autograd" in interfaces:
-        return "autograd"
-
-    if "scipy" in interfaces:
-        return "scipy"
+    if matching_interface:
+        return matching_interface.pop()
 
     return "numpy"
 
