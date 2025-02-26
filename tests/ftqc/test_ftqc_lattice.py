@@ -53,7 +53,7 @@ class TestLattice:
         """Test for getting the neighbors of a node."""
         graph = nx.grid_graph([3, 3])
         lattice = Lattice("rectangle", graph)
-        assert set(lattice.get_neighbors((1, 1))) == set(graph.neighbors((1,1))) 
+        assert set(lattice.get_neighbors((1, 1))) == set(graph.neighbors((1, 1)))
 
     def test_get_nodes(self):
         """Test for getting nodes."""
