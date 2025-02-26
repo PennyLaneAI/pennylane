@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane.decomposition.resources import Resources, CompressedResourceOp
 from pennylane.decomposition.decomposition_rule import DecompositionRule, decomposition
+from pennylane.decomposition.decomposition_rule import _decompositions
 
 
 class TestDecompositionRule:
@@ -77,8 +78,8 @@ class TestDecompositionRule:
         @multi_rz_decomposition.resources
         def _(num_wires):
             return {
-                qml.RZ.make_resource_rep(): 1,
-                qml.CNOT.make_resource_rep(): 2 * (num_wires - 1),
+                CompressedResourceOp(qml.RZ): 1,
+                CompressedResourceOp(qml.CNOT): 2 * (num_wires - 1),
             }
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
@@ -115,3 +116,42 @@ class TestDecompositionRule:
 
         with pytest.raises(NotImplementedError, match="No resource estimation found"):
             multi_rz_decomposition.compute_resources(num_wires=3)
+
+    def test_decomposition_dictionary(self):
+        """Tests that decomposition rules can be registered for an operator."""
+
+        class CustomOp(qml.operation.Operation):
+            pass
+
+        @qml.decomposition
+        def custom_decomp(theta, wires, **__):
+            qml.RZ(theta, wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RZ(theta, wires=wires[0])
+
+        @custom_decomp.resources
+        def _():
+            return {
+                CompressedResourceOp(qml.RZ): 2,
+                CompressedResourceOp(qml.CNOT): 1,
+            }
+
+        @qml.decomposition
+        def custom_decomp2(theta, wires, **__):
+            qml.RX(theta, wires=wires[0])
+            qml.CZ(wires=[wires[0], wires[1]])
+            qml.RX(theta, wires=wires[0])
+
+        @custom_decomp2.resources
+        def _():
+            return {
+                CompressedResourceOp(qml.RX): 2,
+                CompressedResourceOp(qml.CZ): 1,
+            }
+
+        qml.add_decomposition(CustomOp, custom_decomp)
+        qml.add_decomposition(CustomOp, custom_decomp2)
+
+        assert qml.get_decompositions(CustomOp) == [custom_decomp, custom_decomp2]
+
+        _decompositions.pop(CustomOp)  # cleanup

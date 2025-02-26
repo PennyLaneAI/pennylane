@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Callable
 
 from .resources import Resources
@@ -61,7 +62,7 @@ def decomposition(qfunc: Callable, resource_fn: Callable = None) -> Decompositio
 
     The signature of this function should be ``(**resource_params)``, where ``resource_params``
     should agree with the ``resource_params`` property of the operator.
-    
+
     The two functions can be combined to create a ``DecompositionRule`` object:
 
     .. code-block:: python
@@ -128,3 +129,16 @@ class DecompositionRule:
             self._compute_resources = resource_func
 
         return _compute_resources_decorator
+
+
+_decompositions = defaultdict(list)
+
+
+def add_decomposition(op_type, decomposition_rule: DecompositionRule) -> None:
+    """Register a decomposition rule with an operator class."""
+    _decompositions[op_type].append(decomposition_rule)
+
+
+def get_decompositions(op_type) -> list[DecompositionRule]:
+    """Get all known decomposition rules for an operator class."""
+    return _decompositions[op_type][:]

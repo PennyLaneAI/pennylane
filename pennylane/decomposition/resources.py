@@ -16,8 +16,9 @@
 
 from __future__ import annotations
 
-import pennylane as qml
 from dataclasses import dataclass, field
+
+import pennylane as qml
 
 
 @dataclass(frozen=True)
