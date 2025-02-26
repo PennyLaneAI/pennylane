@@ -42,7 +42,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `merge_rotations` now correctly simplifies `qml.Rot` operators whose angles yield the identity operator.
+* `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
   [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
 
 * `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
