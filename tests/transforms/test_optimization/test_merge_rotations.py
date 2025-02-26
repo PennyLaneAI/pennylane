@@ -56,8 +56,7 @@ class TestMergeRotations:
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
     def test_rot_gate_cancel(self):
-        """Test that a single-qubit circuit with adjacent rotation along the same
-        axis either merge, or cancel if the angles sum to 0."""
+        """Test that two rotation gates get merged to the identity operator (cancel)."""
 
         def qfunc():
             qml.Rot(-1, 0, 1, wires=0)
@@ -72,8 +71,7 @@ class TestMergeRotations:
         strict=True,
     )
     def test_one_qubit_rotation_merge_with_gates_in_between(self):
-        """Test that a single-qubit circuit with adjacent rotation along the same
-        axis either merge, or cancel if the angles sum to 0."""
+        """Test that nested rotations can be correctly simplified to the identity."""
 
         def qfunc():
             qml.RZ(-1.0, 0)
