@@ -1028,7 +1028,6 @@ def test_get_interface_scipy():
 
     assert fn.get_interface(matrix) == "scipy"
     assert fn.get_interface(matrix, matrix) == "scipy"
-    assert fn.get_interface(*[matrix, matrix]) == "scipy"
 
 
 # pylint: disable=too-few-public-methods
