@@ -953,7 +953,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
 
     """
 
-    poly = qml.math.trim_zeros(qml.math.array(poly, like="numpy"), "b")
+    poly = qml.math.trim_zeros(qml.math.array(poly, like="numpy"), trim="b")
 
     if len(poly) == 1:
         raise AssertionError("The polynomial must have at least degree 1.")
