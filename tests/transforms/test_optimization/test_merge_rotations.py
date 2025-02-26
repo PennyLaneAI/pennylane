@@ -55,6 +55,35 @@ class TestMergeRotations:
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
+    def test_rot_gate_cancel(self):
+        """Test that a single-qubit circuit with adjacent rotation along the same
+        axis either merge, or cancel if the angles sum to 0."""
+
+        def qfunc():
+            qml.Rot(-1, 0, 1, wires=0)
+            qml.Rot(-1, 0, 1, wires=0)
+
+        transformed_qfunc = merge_rotations(qfunc)
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        assert not ops
+
+    @pytest.mark.xfail(reason="Algorithmic bug, cannot collapse subsequent rotation gates.")
+    def test_one_qubit_rotation_merge_with_gates_in_between(self):
+        """Test that a single-qubit circuit with adjacent rotation along the same
+        axis either merge, or cancel if the angles sum to 0."""
+
+        def qfunc():
+            qml.RZ(-1.0, 0)
+            qml.RY(0, 0)
+            qml.RZ(1, 0)
+            qml.RZ(-1, 0)
+            qml.RY(0, 0)
+            qml.RZ(1.0, 0)
+
+        transformed_qfunc = merge_rotations(qfunc)
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        assert not ops
+
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
         [
