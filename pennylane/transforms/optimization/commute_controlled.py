@@ -93,17 +93,10 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 if prev_gate.basis is None or len(prev_gate.control_wires) == 0:
                     break
 
-                if _shares_control_wires(op, prev_gate):
-                    if op.basis == "Z":
-                        new_location = new_location - prev_gate_idx - 1
-                    else:
-                        break
-
+                if _can_commute(op, prev_gate):
+                    new_location = new_location - prev_gate_idx - 1
                 else:
-                    if op.basis == prev_gate.basis:
-                        new_location = new_location - prev_gate_idx - 1
-                    else:
-                        break
+                    break
 
                 prev_gate_idx = _find_previous_gate_on_wires(
                     op.wires, list(self.op_deque)[:new_location]
@@ -142,17 +135,10 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                     ):
                         break
 
-                    if _shares_control_wires(current_gate, next_gate):
-                        if current_gate.basis == "Z":
-                            new_location += next_gate_idx + 1
-                        else:
-                            break
-
+                    if _can_commute(current_gate, next_gate):
+                        new_location += next_gate_idx + 1
                     else:
-                        if current_gate.basis == next_gate.basis:
-                            new_location += next_gate_idx + 1
-                        else:
-                            break
+                        break
 
                     next_gate_idx = find_next_gate(
                         current_gate.wires, list(self.op_deque)[new_location + 1 :]
@@ -274,6 +260,15 @@ def _shares_control_wires(op: Operator, gate: Operator) -> bool:
     """Check if the operation shares wires with the control wires of the provided gate."""
 
     return len(Wires.shared_wires([Wires(op.wires), gate.control_wires])) > 0
+
+
+def _can_commute(op1: Operator, op2: Operator) -> bool:
+    """Helper that returns True if op1 can commute with op2 based on their basis and control wires."""
+
+    if _shares_control_wires(op1, op2):
+        return op1.basis == "Z"
+    else:
+        return op1.basis == op2.basis
 
 
 def _commute_controlled_right(op_list):
