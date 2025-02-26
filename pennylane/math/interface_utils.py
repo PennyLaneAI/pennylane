@@ -139,11 +139,10 @@ def get_interface(*values):
             UserWarning,
         )
 
-    priority_interfaces = {"tensorflow", "torch", "jax", "autograd", "scipy"}
-    matching_interface = priority_interfaces.intersection(interfaces)
-
-    if matching_interface:
-        return matching_interface.pop()
+    priority_queue = ("tensorflow", "torch", "jax", "autograd", "scipy")
+    for target_interface in priority_queue:
+        if target_interface in interfaces:
+            return target_interface
 
     return "numpy"
 
