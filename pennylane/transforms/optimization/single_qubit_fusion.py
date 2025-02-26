@@ -53,7 +53,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
         def __init__(self, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None):
             """Initialize the interpreter."""
             self.atol = atol
-            self.exclude_gates = set(exclude_gates) if exclude_gates is not None else None
+            self.exclude_gates = set(exclude_gates) if exclude_gates is not None else set()
             self.previous_ops = {}
             self._env = {}
 
@@ -68,13 +68,13 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             self._env.clear()
 
         def _retrieve_prev_ops_same_wire(self, op: Operator):
-            """Retrieve and removes all previous operations acting on the same wire(s) as the given operation."""
+            """Retrieve and remove all previous operations that act on the same wire(s) as the given operation."""
 
-            # The order might not be deterministic if the wires (that is, keys) are abstract.
+            # The order might not be deterministic if the wires (keys) are abstract.
             # However, this only impacts operators without any shared wires,
             # which does not affect the correctness of the result.
 
-            # If the wires are concrete, the order of the keys (that is, wires)
+            # If the wires are concrete, the order of the keys (wires)
             # and thus the values should reflect the order in which they are iterated
             # because in Python 3.7+ dictionaries maintain insertion order.
             previous_ops_on_wires = {
@@ -130,20 +130,20 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
                 new_rot = qml.Rot._primitive.impl(*cumulative_angles, wires=op.wires)
                 self.previous_ops[op_wire] = new_rot
             else:
-                self.previous_ops.pop(op_wire, None)
+                del self.previous_ops[op_wire]
 
             return []
 
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance."""
 
-            # Operators like Identity() have no wires, so we interpret them directly
+            # Operators like Identity() have no wires
             if len(op.wires) == 0:
                 return super().interpret_operation(op)
 
             # We interpret directly if the gate is explicitly excluded,
             # after interpreting all previous operations on the same wires.
-            if self.exclude_gates and op.name in self.exclude_gates:
+            if op.name in self.exclude_gates:
 
                 previous_ops_on_wires = self._retrieve_prev_ops_same_wire(op)
 
@@ -296,7 +296,7 @@ def single_qubit_fusion(
     .. note::
 
         The order of the gates resulting from the fusion may be different depending
-        on wether program capture is enabled or not. This only impacts the order of
+        on whether program capture is enabled or not. This only impacts the order of
         operations that do not share any wires, so the correctness of the circuit is not affected.
 
     .. warning::
@@ -523,7 +523,6 @@ def single_qubit_fusion(
                 next_gate_angles = qml.math.stack(next_gate.single_qubit_rot_angles())
             except (NotImplementedError, AttributeError):
                 break
-
             cumulative_angles = fuse_rot_angles(cumulative_angles, next_gate_angles)
 
             list_copy.pop(next_gate_idx + 1)
