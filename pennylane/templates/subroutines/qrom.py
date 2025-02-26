@@ -200,7 +200,7 @@ class QROM(Operation):
     ):  # pylint: disable=arguments-differ
 
         if len(control_wires) == 0:
-            return  [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+            return [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
 
         with qml.QueuingManager.stop_recording():
 
