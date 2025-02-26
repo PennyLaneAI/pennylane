@@ -197,23 +197,14 @@ def merge_rotations(
                     cumulative_angles = fuse_rot_angles(cumulative_angles, next_params)
                     # For the Rot gate, the angles can cancel in a non-trivial way
                     # e.g. Rot(φ,0,-φ) = RZ(φ) RY(0) RZ(-φ) = RZ(0) = I.
-                    angles_cancel = qml.math.allclose(
-                        qml.math.stack(
-                            [cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]
-                        ),
-                        0.0,
-                        atol=atol,
-                        rtol=0,
-                    )
+                    test_angles = qml.math.stack(
+                        [cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]
+                    ),
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
                     cumulative_angles = cumulative_angles + next_params
-                    angles_cancel = qml.math.allclose(
-                        cumulative_angles,
-                        0.0,
-                        atol=atol,
-                        rtol=0,
-                    )
+                    test_angles = cumulative_angles
+                angles_cancel = qml.math.allclose(test_angles, 0.0, atol=atol, rtol=0)
             # If it is not, we need to stop
             else:
                 break
