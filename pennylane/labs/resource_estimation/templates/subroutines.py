@@ -62,8 +62,6 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperator):
     """Resource class for QPE"""
 
-    # TODO: Add a secondary resource decomp which falls back to op.pow_resource_decomp
-
     @staticmethod
     def _resource_decomp(
         base_class, base_params, num_estimation_wires, **kwargs
@@ -86,7 +84,7 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
 
         if not isinstance(op, re.ResourceOperator):
             raise TypeError(
-                f"Can't obtain QPE resources when the base unitary {op} is an instance"
+                f"Can't obtain QPE resources when the base unitary {op} isn't an instance"
                 " of ResourceOperator"
             )
 
