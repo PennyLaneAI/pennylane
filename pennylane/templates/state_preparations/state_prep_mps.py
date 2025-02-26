@@ -163,22 +163,23 @@ def right_canonicalize_mps(mps):
 
     _validate_mps_shape(mps)
 
-    mps.copy()
+    mps = mps.copy()
     mps[0] = mps[0].reshape((1, *mps[0].shape))
     mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
-    is_right_canonical = True
-    for tensor in mps[1:-1]:
-        # Right-canonical definition
-        input_matrix = qml.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
-        if not qml.math.allclose(input_matrix, qml.math.eye(tensor.shape[0])):
-            is_right_canonical = False
-            break
+    if not qml.math.is_abstract(mps[0]):
+        is_right_canonical = True
+        for tensor in mps[1:-1]:
+            # Right-canonical definition
+            input_matrix = qml.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+            if not qml.math.allclose(input_matrix, qml.math.eye(tensor.shape[0])):
+                is_right_canonical = False
+                break
 
-    if is_right_canonical:
-        mps[0] = mps[0][0]
-        mps[-1] = mps[-1][:, :, 0]
-        return mps
+        if is_right_canonical:
+            mps[0] = mps[0][0]
+            mps[-1] = mps[-1][:, :, 0]
+            return mps
 
     d_shapes = []
     for tensor in mps[1:-1]:

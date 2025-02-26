@@ -601,3 +601,54 @@ class TestMPSPrep:
             # Right-canonical definition
             contraction_matrix = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
             assert np.allclose(contraction_matrix, np.eye(tensor.shape[0]))
+
+    @pytest.mark.jax
+    def test_right_canonical_jax_jit(self):
+        """Checks that the function `right_canonicalize_mps` works with JAX and JIT"""
+
+        import jax
+        from jax import numpy as jnp
+
+        n_sites = 4
+        mps = (
+            [jnp.ones((2, 4))]
+            + [jnp.ones((4, 2, 4)) for _ in range(1, n_sites - 1)]
+            + [jnp.ones((4, 2))]
+        )
+        mps_rc = jax.jit(right_canonicalize_mps)(mps)
+
+        for i in range(1, n_sites - 1):
+            tensor = mps_rc[i]
+
+            # Right-canonical definition
+            contraction_matrix = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+            assert qml.math.allclose(contraction_matrix, qml.math.eye(tensor.shape[0]))
+
+    def test_immutable_input(self):
+        """Checks that the MPS is not modified"""
+
+        n_sites = 4
+        mps = (
+            [np.ones((2, 4))]
+            + [np.ones((4, 2, 4)) for _ in range(1, n_sites - 1)]
+            + [np.ones((4, 2))]
+        )
+        mps_copy = mps.copy()
+        _ = right_canonicalize_mps(mps)
+
+        for tensor1, tensor2 in zip(mps, mps_copy):
+            assert qml.math.allclose(tensor1, tensor2)
+
+        wires = qml.registers({"work": 2, "state": n_sites})
+        dev = qml.device("default.qubit")
+
+        qs = qml.tape.QuantumScript(
+            qml.MPSPrep.compute_decomposition(
+                mps, wires=wires["state"], work_wires=wires["work"], right_canonicalize=True
+            ),
+            [qml.state()],
+        )
+        _ = dev.execute(qs)
+
+        for tensor1, tensor2 in zip(mps, mps_copy):
+            assert qml.math.allclose(tensor1, tensor2)
