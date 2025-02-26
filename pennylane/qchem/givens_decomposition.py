@@ -116,6 +116,41 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
     unitary_matrix[index[0], index[1]] = value
     return unitary_matrix
 
+def __right_givens(indices, unitary, N, j):
+    interface = qml.math.get_interface(unitary)
+    grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
+    unitary = _set_unitary_matrix(
+        unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
+    )
+    return unitary, qml.math.conj(grot_mat)
+
+@jax.jit
+def __right_givens_jax(indices, unitary, N, j):
+    return __right_givens(indices, unitary, N, j)
+
+def _right_givens(indices, unitary, N, j):
+    like = qml.math.get_interface(unitary)
+    if like == "jax":
+        return __right_givens_jax(indices, unitary, N, j)
+    return __right_givens(indices, unitary, N, j)
+
+def __left_givens(indices, unitary, j):
+    interface = qml.math.get_interface(unitary)
+    grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
+    unitary = _set_unitary_matrix(
+        unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
+    )
+    return unitary, grot_mat
+
+@jax.jit
+def __left_givens_jax(indices, unitary, j):
+    return __left_givens(indices, unitary, j)
+
+def _left_givens(indices, unitary, j):
+    like = qml.math.get_interface(unitary)
+    if like == "jax":
+        return __left_givens_jax(indices, unitary, j)
+    return __left_givens(indices, unitary, j)
 
 # pylint:disable = too-many-branches
 def givens_decomposition(unitary):
@@ -219,18 +254,12 @@ def givens_decomposition(unitary):
         if i % 2:
             for j in range(0, i):
                 indices = [i - j - 1, i - j]
-                grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
-                unitary = _set_unitary_matrix(
-                    unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
-                )
-                right_givens.append((qml.math.conj(grot_mat), indices))
+                unitary, grot_mat_conj = _right_givens(indices, unitary, N, j)
+                right_givens.append((grot_mat_conj, indices))
         else:
             for j in range(1, i + 1):
                 indices = [N + j - i - 2, N + j - i - 1]
-                grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
-                unitary = _set_unitary_matrix(
-                    unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
-                )
+                unitary, grot_mat = _left_givens(indices, unitary, j)
                 left_givens.append((grot_mat, indices))
 
     nleft_givens = []
