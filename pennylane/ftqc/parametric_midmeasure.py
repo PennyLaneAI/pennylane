@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
-from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
+from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
 from pennylane.wires import Wires
 
 
@@ -218,6 +218,38 @@ def measure_y(
     # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
 
     return _measure_impl(wires, YMidMeasureMP, reset=reset, postselect=postselect)
+
+
+def measure_z(
+    wires: Union[Hashable, Wires],
+    reset: bool = False,
+    postselect: Optional[int] = None,
+):
+    r"""Perform a mid-circuit measurement in the Z basis. The measurements are performed using the 0, 1
+    convention rather than the ±1 convention.
+
+    .. note::
+        This function dispatches to :func:`qml.measure <pennylane.measure>`
+
+    For more details on the results of mid-circuit measurements and how to use them,
+    see :func:`qml.measure <pennylane.measure>`.
+
+    Args:
+        wires (Wires): The wire to measure.
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
+        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
+            measurement. None by default. If postselection is requested, only the post-measurement
+            state that is used for postselection will be considered in the remaining circuit.
+
+    Returns:
+        MeasurementValue: the mid-circuit measurement result linked to the created MidMeasureMP
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
+
+    """
+    return measure(wires, reset=reset, postselect=postselect)
 
 
 def _measure_impl(

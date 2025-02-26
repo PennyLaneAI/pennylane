@@ -25,7 +25,6 @@ Modules
     :toctree: api
 
 """
-from pennylane import measure as measure_z
 from .parametric_midmeasure import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
@@ -33,6 +32,7 @@ from .parametric_midmeasure import (
     measure_arbitrary_basis,
     measure_x,
     measure_y,
+    measure_z,
     diagonalize_mcms,
 )
 
