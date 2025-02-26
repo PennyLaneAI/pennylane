@@ -370,9 +370,8 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
-    if like=="scipy":
+    if like == "scipy":
         return x.dot(y)
-
 
     return np.dot(x, y, like=like)
 

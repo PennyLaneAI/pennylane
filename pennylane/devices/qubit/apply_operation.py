@@ -229,8 +229,6 @@ def apply_operation(
         [1., 0.]], requires_grad=True)
 
     """
-    if op.has_sparse_matrix and not op.has_matrix:
-        return apply_operation_csr_matrix(op, state, is_state_batched)
     return _apply_operation_default(op, state, is_state_batched, debugger)
 
 
@@ -251,6 +249,8 @@ def apply_operation_csr_matrix(op, state, is_state_batched: bool = False):
 def _apply_operation_default(op, state, is_state_batched, debugger):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches."""
+    if op.has_sparse_matrix and not op.has_matrix:
+        return apply_operation_csr_matrix(op, state, is_state_batched=is_state_batched)
     if (
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
