@@ -322,18 +322,18 @@ class TestPauliRot:
             {re.ResourceControlled.resource_rep(re.ResourceGlobalPhase, {}, 1, 0, 0): 1},
         ),
         (
-            "III",
+            "X",
             [1],
             [0],
             [],
-            {re.ResourceControlled.resource_rep(re.ResourceGlobalPhase, {}, 1, 1, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRX, {}, 1, 1, 0): 1},
         ),
         (
-            "III",
+            "Y",
             [1, 2],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.resource_rep(re.ResourceGlobalPhase, {}, 2, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRY, {}, 2, 0, 1): 1},
         ),
     )
 
