@@ -418,7 +418,7 @@ class MPSPrep(Operation):
 
         if max_bond_dimension > 2 ** len(work_wires):
             raise ValueError(
-                f"Incorrect number of `work_wires`. At least {int(np.ceil(np.log2(max_bond_dimension)))} `work_wires` must be provided."
+                f"Incorrect number of `work_wires`. At least {int(qml.math.ceil(qml.math.log2(max_bond_dimension)))} `work_wires` must be provided."
             )
 
         ops = []
