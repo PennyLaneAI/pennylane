@@ -14,6 +14,8 @@
 """Unit tests for the ``CommuteControlledInterpreter`` class"""
 
 # pylint:disable=wrong-import-position, unused-argument, protected-access
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -23,13 +25,13 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
-from functools import partial
-
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.commute_controlled import (
-    CommuteControlledInterpreter, commute_controlled,
-    commute_controlled_plxpr_to_plxpr)
+    CommuteControlledInterpreter,
+    commute_controlled,
+    commute_controlled_plxpr_to_plxpr,
+)
 
 
 class TestCommuteControlledInterpreter:

@@ -192,10 +192,12 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 
         def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
+
             Args:
                 jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
+
             Returns:
                 list[TensorLike]: the results of the execution.
             """
