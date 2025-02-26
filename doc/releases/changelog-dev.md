@@ -450,6 +450,10 @@
   passed to the `QNode`, instead of assuming the method is always `deferred`.
   [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
 
+* The `poly_to_angles` function has been improved to correctly work with different interfaces and
+  no longer manipulate the input angles tensor internally.
+  [(#6979)](https://github.com/PennyLaneAI/pennylane/pull/6979)
+
 * The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
   [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
 
