@@ -438,7 +438,6 @@
 * The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
   [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
 
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
