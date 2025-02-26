@@ -244,11 +244,51 @@ class TestExecutionAnalytic:
 class TestExecutionFiniteShots:
     """Tests for executing circuits with finite shots."""
 
-    def test_hw_like_samples(self):
+    @pytest.mark.parametrize("postselect", [0, 1])
+    def test_hw_like_samples(self, postselect):
         """Test that postselect_mode="hw-like" updates the number of samples as expected."""
+        num_wires = 5
+        dev = qml.device(
+            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
+        )
+        config = create_execution_config(postselect_mode="hw-like")
 
-    def test_fill_shots_samples(self):
+        @DeferMeasurementsInterpreter(num_wires=num_wires)
+        def f():
+            qml.Hadamard(0)
+            qml.measure(0, postselect=postselect)
+            return qml.sample(wires=[0])
+
+        jaxpr = jax.make_jaxpr(f)()
+        res = tuple(
+            dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)[0] for _ in range(10)
+        )
+        assert all(qml.math.allclose(r, postselect) for r in res)
+        lens = [len(r) for r in res]
+        assert qml.math.allclose(qml.math.mean(lens), 500, atol=10, rtol=0)
+
+    @pytest.mark.parametrize("postselect", [0, 1])
+    def test_fill_shots_samples(self, postselect):
         """Test that postselect_mode="fill-shots" updates the number of samples as expected."""
+        num_wires = 5
+        dev = qml.device(
+            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
+        )
+        config = create_execution_config(postselect_mode="fill-shots")
+
+        @DeferMeasurementsInterpreter(num_wires=num_wires)
+        def f():
+            qml.Hadamard(0)
+            qml.measure(0, postselect=postselect)
+            return qml.sample(wires=[0])
+
+        jaxpr = jax.make_jaxpr(f)()
+        res = tuple(
+            dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)[0] for _ in range(5)
+        )
+        assert all(qml.math.allclose(r, postselect) for r in res)
+        lens = [len(r) for r in res]
+        assert all(l == 1000 for l in lens)
 
     @pytest.mark.parametrize("mp_fn", [qml.sample, qml.expval, qml.probs, qml.var])
     def test_mcm_statistics(self, mp_fn):
