@@ -396,7 +396,9 @@ class PlxprInterpreter:
         def wrapper(*args, **kwargs):
             with qml.QueuingManager.stop_recording():
                 jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
-            results = self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+
+            flat_args = jax.tree_util.tree_leaves(args)
+            results = self.eval(jaxpr.jaxpr, jaxpr.consts, *flat_args)
             assert flat_f.out_tree
             # slice out any dynamic shape variables
             results = results[-flat_f.out_tree.num_leaves :]
@@ -589,7 +591,7 @@ def handle_while_loop(
 
 # pylint: disable=unused-argument, too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
-def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr, n_consts):
+def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
@@ -602,7 +604,7 @@ def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr,
         shots=shots,
         qnode=qnode,
         device=device,
-        qnode_kwargs=qnode_kwargs,
+        execution_config=execution_config,
         qfunc_jaxpr=new_qfunc_jaxpr.jaxpr,
         n_consts=len(new_qfunc_jaxpr.consts),
     )
