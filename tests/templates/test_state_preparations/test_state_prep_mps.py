@@ -625,7 +625,7 @@ class TestMPSPrep:
             assert qml.math.allclose(contraction_matrix, qml.math.eye(tensor.shape[0]))
 
     def test_immutable_input(self):
-        """Checks that the MPS is not modified"""
+        """Verifies that the input MPS remains unchanged after processing."""
 
         n_sites = 4
         mps = (
