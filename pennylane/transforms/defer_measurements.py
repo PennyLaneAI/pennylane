@@ -640,9 +640,41 @@ def defer_measurements(
         :title: Deferred measurements with program capture
 
         ``qml.defer_measurements`` can be applied to callables when program capture is enabled. To do so,
-        the ``aux_wires`` argument must be provided, which should be a sequence of integers to be used
-        as the target wires for transforming mid-circuit measurements. With program capture enabled, some
-        new features, as well as new restrictions are introduced, that are detailed below:
+        the ``num_wires`` argument must be provided, which should be an integer corresponding to the total
+        number of available wires. For ``m`` mid-circuit measurements, ``range(num_wires - m, num_wires)``
+        will be the range of wires used to map mid-circuit measurements to ``CNOT`` gates.
+
+        .. warning::
+
+            While the transform includes validation to avoid overlap between wires of the original
+            circuit and mid-circuit measurement target wires, if any wires of the original ciruit
+            are traced, i.e. dependent on dynamic arguments to the transformed workflow, the
+            validation may not catch overlaps. Consider the following example:
+
+            .. code-block:: python
+
+                from functools import partial
+                import jax
+
+                qml.capture.enable()
+
+                @qml.capture.expand_plxpr_transforms
+                @partial(qml.defer_measurements, num_wires=1)
+                def f(n):
+                    qml.measure(n)
+
+            >>> jax.make_jaxpr(f)(0)
+            { lambda ; a:i64[]. let _:AbstractOperator() = CNOT[n_wires=2] a 0 in () }
+
+            The circuit gets transformed without issue because the concrete value of the measured wire
+            is unknown. However, execution with n = 0 would raise an error, as the CNOT wires would
+            be (0, 0).
+
+            Thus, users must by cautious when transforming a circuit. **For ``n`` total wires and
+            ``c`` circuit wires, the number of mid-circuit measurements allowed is ``n - c``.**
+
+        Using ``defer_measurements`` with program capture enabled introduces new features and
+        restrictions:
 
         **New features**
 
@@ -666,7 +698,7 @@ def defer_measurements(
               qml.capture.enable()
 
               @qml.capture.expand_plxpr_transforms
-              @partial(qml.defer_measurements, aux_wires=list(range(5, 10)))
+              @partial(qml.defer_measurements, num_wires=10)
               def f():
                   m0 = qml.measure(0)
 
@@ -676,21 +708,21 @@ def defer_measurements(
 
           >>> jax.make_jaxpr(f)()
           { lambda ; . let
-              _:AbstractOperator() = CNOT[n_wires=2] 0 5
+              _:AbstractOperator() = CNOT[n_wires=2] 0 9
               a:f64[] = mul 0.0 3.141592653589793
               b:f64[] = sin a
               c:AbstractOperator() = RX[n_wires=1] b 0
               _:AbstractOperator() = Controlled[
                 control_values=(False,)
                 work_wires=Wires([])
-              ] c 5
+              ] c 9
               d:f64[] = mul 1.0 3.141592653589793
               e:f64[] = sin d
               f:AbstractOperator() = RX[n_wires=1] e 0
               _:AbstractOperator() = Controlled[
                 control_values=(True,)
                 work_wires=Wires([])
-              ] f 5
+              ] f 9
               g:AbstractOperator() = PauliZ[n_wires=1] 0
               h:AbstractMeasurement(n_wires=None) = expval_obs g
             in (h,) }
