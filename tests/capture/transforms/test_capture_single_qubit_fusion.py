@@ -663,6 +663,31 @@ class TestSingleQubitFusionPLXPR:
         assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    def test_expand_plxpr_transform(self):
+        """Test that the transform works with expand_plxpr_transform"""
+
+        @qml.transforms.optimization.single_qubit_fusion
+        def circuit():
+            qml.RZ(0.3, wires=0)
+            qml.Hadamard(wires=0)
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+            qml.RX(0.1, wires=0)
+            qml.SX(wires=0)
+            qml.T(wires=0)
+            qml.PauliX(wires=0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert jaxpr.eqns[0].primitive == qml.transforms.optimization.single_qubit_fusion._primitive
+
+        transformed_qfunc = qml.capture.expand_plxpr_transforms(circuit)
+        transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()
+
+        assert len(transformed_jaxpr.eqns) == 3
+        assert transformed_jaxpr.eqns[0].primitive == qml.Rot._primitive
+        assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+        assert transformed_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
     def test_applying_plxpr_decorator(self):
         """Test that the single-qubit fusion transformation works when applying the plxpr decorator."""
 
