@@ -1017,6 +1017,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
 
     # Keep track of previous iteration for convergence check
     Y_prev = None
+    norm_diff = None
 
     # pylint: disable=too-many-nested-blocks
     for iter_num in range(max_iter):
@@ -1043,7 +1044,10 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
                     if norm_diff < tol:
                         break
             Y_prev = Y.copy()
-
+    if norm_diff > tol:
+        raise UserWarning(
+            f"Denman Beavers not converged until the end of {max_iter} loops, with last norm error {norm_diff}"
+        )
     return Y
 
 
