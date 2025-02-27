@@ -17,7 +17,7 @@ mid-circuit measurements with a parameterized measurement axis."""
 
 import uuid
 from collections.abc import Hashable
-from typing import Optional, Union
+from typing import Iterable, Optional, Union
 
 import numpy as np
 
@@ -363,17 +363,17 @@ class ParametricMidMeasureMP(MidMeasureMP):
         )
 
     def label(
-        self, decimals: float = None, base_label: str = None, cache: dict = None
+        self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None
     ):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
-            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+            decimals: If ``None``, no parameters are included. Else,
+                how to round the parameters. Defaults to None.
+            base_label: overwrite the non-parameter component of the label.
                 Required to match general call signature. Not used.
-            cache=None (dict): dictionary that carries information between label calls
-                in the same drawing. Required to match general call signature. Not used.
+            cache: dictionary that carries information between label calls in the
+                same drawing. Required to match general call signature. Not used.
 
         Returns:
             str: label to use in drawings
@@ -426,17 +426,17 @@ class XMidMeasureMP(ParametricMidMeasureMP):
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
     def label(
-        self, decimals: float = None, base_label: str = None, cache: dict = None
+        self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None
     ):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
-            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+            decimals: If ``None``, no parameters are included. Else, how to round
+                the parameters. Required to match general call signature. Not used.
+            base_label: overwrite the non-parameter component of the label.
                 Required to match general call signature. Not used.
-            cache=None (dict): dictionary that carries information between label calls
-                in the same drawing. Required to match general call signature. Not used.
+            cache: dictionary that carries information between label calls in the
+                same drawing. Required to match general call signature. Not used.
 
         Returns:
             str: label to use in drawings
@@ -492,17 +492,17 @@ class YMidMeasureMP(ParametricMidMeasureMP):
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
     def label(
-        self, decimals: float = None, base_label: str = None, cache: dict = None
+        self, decimals: int = None, base_label: str = None, cache: dict = None
     ):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
-            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+            decimals: If ``None``, no parameters are included. Else, how to round
+                the parameters. Required to match general call signature. Not used.
+            base_label: overwrite the non-parameter component of the label.
                 Required to match general call signature. Not used.
-            cache=None (dict): dictionary that carries information between label calls
-                in the same drawing. Required to match general call signature. Not used.
+            cache: dictionary that carries information between label calls in the
+                same drawing. Required to match general call signature. Not used.
 
         Returns:
             str: label to use in drawings
