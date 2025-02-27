@@ -110,6 +110,12 @@ def right_canonicalize_mps(mps):
 
         mps_rc = qml.right_canonicalize_mps(mps)
 
+        # We now check that the definition of right-canonical is fulfilled
+        for i in range(1, n_sites - 1):
+            tensor = mps_rc[i]
+            contraction_matrix = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+            assert np.allclose(contraction_matrix, np.eye(tensor.shape[0]))
+
     .. details::
         :title: Usage Details
 
