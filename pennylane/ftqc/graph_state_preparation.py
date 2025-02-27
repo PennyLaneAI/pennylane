@@ -14,29 +14,32 @@
 
 """This module contains the classes and functions for creating cluster state for measurement based quantum computing (MBQC)."""
 
-from typing import List, Optional
-
-from pennylane import Operations
+import pennylane as qml
+from pennylane import Operation
 from .lattice import Lattice
+from .qubit_graph import QubitGraph
 
     
-class GraphStatePreparation(Operations):
+class GraphStatePreparation(Operation):
     r"""
     This class represents cluster state used in the MBQC formalism.
 
     Args:
-        ops: Gate operations
+        lattice: Lattice representation of qubits connectivity
+        qubit_ops: Operations to prepare the initial state of each qubit
+        entanglement_ops: Operations to entangle nearest qubits
+        wires: QubitGraph object maps qubit to wires 
     """
-    def __init__(ops: Operations):
-        if len(ops.wires) == 1:
-            self._init_1d_cluster_state()
-        elif ops.name == 'CNOT':
-            self._init_2d_cluster_state()
-        else:
-            raise(f"The {ops.name} gate is not supported.")
+    def __init__(lattice: Lattice, qubit_ops: Operation, entanglement_ops: Operation, wires: QubitGraph):
+        self._lattice = lattice
+        self._qubit_ops = qubit_ops
+        self._entanglement_ops = entanglement_ops
+        self._wires = wires
     
-    def _init_1d_cluster_state(self):
-        # for 1 qubit gate
-    
-    def _init_2d_cluster_state(self):
-        # for CNOT gate 
+    def decompose(self):
+        # Add qubit_ops to the queue
+
+
+        # Add entanglement_ops to the queue
+        
+        
