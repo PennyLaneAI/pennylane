@@ -79,7 +79,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 
             # This function follows the same logic used in the `_commute_controlled_left` function.
 
-            if op.basis is None or len(op.wires) != 1:
+            if not _can_be_pushed_through(op):
                 self.current_location += 1
                 self.op_deque.append(op)
                 return []
@@ -116,7 +116,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             while self.current_location >= 0:
                 current_gate = self.op_deque[self.current_location]
 
-                if getattr(current_gate, "basis", None) is None or len(current_gate.wires) != 1:
+                if not _can_be_pushed_through(current_gate):
                     self.current_location -= 1
                     continue
 
@@ -277,7 +277,16 @@ def _can_push_through(op: Operator) -> bool:
     # Only go ahead if information is available.
     # If the gate does not have control_wires defined, it is not
     # controlled so we can't push through.
-    return getattr(op, "basis", None) is not None and len(op.control_wires) > 0
+    return hasattr(op, "basis") and len(op.control_wires) > 0
+
+
+def _can_be_pushed_through(op: Operator) -> bool:
+    """Check if the provided gate is a single-qubit gate that can be pushed through."""
+
+    # We are looking only at the gates that can be pushed through
+    # controls/targets; these are single-qubit gates with the basis
+    # property specified.
+    return hasattr(op, "basis") and len(op.wires) == 1
 
 
 def _commute_controlled_right(op_list):
@@ -298,10 +307,7 @@ def _commute_controlled_right(op_list):
     while current_location >= 0:
         current_gate = op_list[current_location]
 
-        # We are looking only at the gates that can be pushed through
-        # controls/targets; these are single-qubit gates with the basis
-        # property specified.
-        if getattr(current_gate, "basis", None) is None or len(current_gate.wires) != 1:
+        if not _can_be_pushed_through(current_gate):
             current_location -= 1
             continue
 
@@ -350,7 +356,7 @@ def _commute_controlled_left(op_list):
     while current_location < len(op_list):
         current_gate = op_list[current_location]
 
-        if current_gate.basis is None or len(current_gate.wires) != 1:
+        if not _can_be_pushed_through(current_gate):
             current_location += 1
             continue
 
