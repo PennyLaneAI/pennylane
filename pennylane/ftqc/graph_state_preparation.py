@@ -12,23 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the classes and functions for creating cluster state for measurement based quantum computing (MBQC)."""
+r"""This module contains the GraphStatePreparation template."""
 
 import pennylane as qml
-from pennylane import Operation
+from pennylane.operation import Operation
+
 from .lattice import Lattice
 from .qubit_graph import QubitGraph
 
-    
+
 class GraphStatePreparation(Operation):
     r"""
-    This class represents cluster state used in the MBQC formalism.
+    Encode a graph state with the specified lattice structure, operations on each qubit, entanglement operations for nearest qubits and qubit graph.
+    The initial graph is :math:`|0\rangle^{V}`, given each qubit in the graph is in the :math:`|0\rangle` state and is not entangled with each other. 
+    The target graph state :math:`| \psi \rangle = \prod\limits_{\{a, b\} \in E} U_{ab}|+\rangle^{V}` is prepared as below:
+    1. Each qubit is prepared as :math:`|+\rangle^{V}` state by applying the `qubit_ops` (`Hadamard` gate) operation.
+    2. Entangle every nearest qubit pair in the graph with `entanglement_ops` (`CZ` gate) operation.
 
     Args:
-        lattice: Lattice representation of qubits connectivity
-        qubit_ops: Operations to prepare the initial state of each qubit
-        entanglement_ops: Operations to entangle nearest qubits
-        wires: QubitGraph object maps qubit to wires 
+        lattice (Lattice): Graph representation of qubits connectivity.
+        qubit_ops (Operations): Operator to prepare the initial state of each qubit.
+        entanglement_ops (Operations): Operator to entangle nearest qubits.
+        wires (QubitGraph): QubitGraph object mapping qubit to wires.
     """
     def __init__(lattice: Lattice, qubit_ops: Operation, entanglement_ops: Operation, wires: QubitGraph):
         self._lattice = lattice
@@ -37,7 +42,6 @@ class GraphStatePreparation(Operation):
         self._wires = wires
     
     def decompose(self):
-
         # Add qubit_ops to the queue
         # traverse the nodes in the qubit graph
 
