@@ -28,6 +28,7 @@ from pennylane.capture.primitives import (
     grad_prim,
     jacobian_prim,
     while_loop_prim,
+    measure_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.single_qubit_fusion import (
@@ -635,6 +636,29 @@ class TestSingleQubitFusionHigherOrderPrimitives:
 
         for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
             qml.assert_equal(op1, op2)
+
+    def test_mid_circuit_measurement(self):
+        """Test that mid-circuit measurements are correctly handled."""
+
+        @SingleQubitFusionInterpreter()
+        def circuit():
+            qml.RX(0.1, wires=0)
+            qml.S(wires=0)
+            qml.measure(0)
+            qml.RX(0.1, wires=0)
+            qml.S(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 5
+
+        # I test the jaxpr like this because `CollectOpsandMeas`
+        # currently interprets a mid-circuit measurement as an operator, not a measurement
+        assert jaxpr.eqns[0].primitive == qml.Rot._primitive
+        assert jaxpr.eqns[1].primitive == measure_prim
+        assert jaxpr.eqns[2].primitive == qml.Rot._primitive
+        assert jaxpr.eqns[3].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
 class TestSingleQubitFusionPLXPR:
