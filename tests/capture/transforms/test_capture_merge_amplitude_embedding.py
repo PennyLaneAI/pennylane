@@ -26,6 +26,7 @@ from pennylane.capture.primitives import (
     for_loop_prim,
     grad_prim,
     jacobian_prim,
+    measure_prim,
     qnode_prim,
     while_loop_prim,
 )
@@ -40,6 +41,23 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 class TestRepeatedQubitDeviceErrors:
     """Test DeviceError is raised when operations exist before the AmplitudeEmbedding operators."""
+
+    def test_repeated_wire_with_mcm(self):
+        """Test that an error is raised if AmplitudeEmbedding acts on the same wires as an MCM."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def qfunc():
+            qml.Hadamard(wires=2)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+            qml.measure(wires=1)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            qml.DeviceError,
+            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+        ):
+            jax.make_jaxpr(qfunc)()
 
     def test_repeated_traced_wire_error(self):
         """Test that an error is raised if AmplitudeEmbedding acts on the same traced wire"""
@@ -430,6 +448,47 @@ def test_plxpr_to_plxpr_transform():
 
 class TestHigherOrderPrimitiveIntegration:
     """Test that the transform works correctly when applied with higher order primitives."""
+
+    def test_measure_prim(self):
+        """Test that the transform works correctly when the merge is blocked by a MCM."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def qfunc():
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+            qml.Hadamard(wires=2)
+            qml.measure(wires=0)
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
+        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[2].primitive == measure_prim
+
+    @pytest.mark.xfail(
+        reason="The transform does not currently merge the AmplitudeEmbedding operators."
+    )
+    def test_measure_prim_block(self):
+        """Test that the transform works correctly when the merge is blocked by a MCM."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def qfunc():
+            qml.Hadamard(wires=2)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
+            qml.measure(wires=0)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
+        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[2].primitive == measure_prim
 
     def test_ctrl_transform_prim(self):
         """Test that the transform works correctly when applied with ctrl_transform_prim."""

@@ -36,7 +36,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.base_interpreter import jaxpr_to_jaxpr
-        from pennylane.capture.primitives import cond_prim
+        from pennylane.capture.primitives import cond_prim, measure_prim
         from pennylane.operation import Operator
     except ImportError:  # pragma: no cover
         return None, None
@@ -247,6 +247,19 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             consts_slices=new_consts_slices,
             args_slice=new_args_slice,
         )
+
+    @MergeAmplitudeEmbeddingInterpreter.register_primitive(measure_prim)
+    def _(self, *invals, **params):
+
+        self.state["visited_wires"] = self.state["visited_wires"].union(set(invals))
+        # pylint: disable=protected-access
+        self._merge_amplitude_embedding_gates()
+        self.interpret_all_previous_ops()
+
+        _, params = measure_prim.get_bind_params(params)
+        op = measure_prim.bind(*invals, **params)
+
+        return op
 
     def merge_amplitude_embedding_plxpr_to_plxpr(jaxpr, consts, _, __, *args):
         interpreter = MergeAmplitudeEmbeddingInterpreter()
