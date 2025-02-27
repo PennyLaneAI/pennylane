@@ -17,7 +17,7 @@ and defines the API to access and manipulate these data structures.
 """
 
 import warnings
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import networkx as nx
 
@@ -54,7 +54,7 @@ class QubitGraph:
         * Implement tensor-like indexing and slicing.
     """
 
-    def __init__(self, id, graph: Optional[nx.Graph] = None):
+    def __init__(self, id: Any, graph: Optional[nx.Graph] = None):
         if id is None:
             raise TypeError("'None' is not a valid QubitGraph ID.")
 
@@ -70,7 +70,7 @@ class QubitGraph:
         if self._graph_qubits is not None:
             self._initialize_all_nodes_as_qubit_graph()
 
-    def __getitem__(self, key) -> "QubitGraph":
+    def __getitem__(self, key: Any) -> "QubitGraph":
         """QubitGraph subscript operator for read access.
 
         Currently only basic, linear indexing and slicing is supported.
@@ -90,7 +90,7 @@ class QubitGraph:
 
         return self._graph_qubits.nodes[key]["qubits"]
 
-    def __setitem__(self, key, value: "QubitGraph"):
+    def __setitem__(self, key: Any, value: "QubitGraph"):
         """QubitGraph subscript operator for assignment.
 
         Currently only basic, linear indexing is supported. Slicing is not supported.
