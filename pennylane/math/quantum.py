@@ -1039,12 +1039,11 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
             if Y_prev is not None:
                 # Compute Frobenius norm of difference
                 diff = (Y - Y_prev).data
-                if len(diff) > 0:  # Handle empty sparse matrices
-                    norm_diff = np.linalg.norm(diff)
-                    if norm_diff < tol:
-                        break
+                norm_diff = np.linalg.norm(diff)
+                if norm_diff < tol:
+                    break
             Y_prev = Y.copy()
-    if norm_diff > tol:
+    if norm_diff and norm_diff > tol:
         raise UserWarning(
             f"Denman Beavers not converged until the end of {max_iter} loops, with last norm error {norm_diff}"
         )
