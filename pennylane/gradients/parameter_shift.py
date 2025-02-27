@@ -15,13 +15,14 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
+import warnings
 from functools import partial
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.measurements import VarianceMP
+from pennylane.measurements import ExpectationMP, VarianceMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -40,7 +41,7 @@ from .gradient_transform import (
     _swap_first_two_axes,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
-    choose_trainable_params,
+    choose_trainable_param_indices,
     find_and_validate_gradient_methods,
     reorder_grads,
 )
@@ -372,11 +373,17 @@ def expval_param_shift(
         op, op_idx, _ = tape.get_operation(idx)
 
         if op.name == "LinearCombination":
+            warnings.warn(
+                "Please use qml.gradients.split_to_single_terms so that the ML framework "
+                "can compute the gradients of the coefficients.",
+                UserWarning,
+            )
+
             # operation is a Hamiltonian
-            if tape[op_idx].return_type is not qml.measurements.Expectation:
+            if not isinstance(tape[op_idx], ExpectationMP):
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
-                    f"coefficients for expectations, not {tape[op_idx].return_type.value}"
+                    f"coefficients for expectations, not {tape[op_idx]}"
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
@@ -1120,8 +1127,8 @@ def param_shift(
 
     method = "analytic" if fallback_fn is None else "best"
 
-    trainable_params = choose_trainable_params(tape, argnum)
-    diff_methods = find_and_validate_gradient_methods(tape, method, trainable_params)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, method, trainable_params_indices)
 
     if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)

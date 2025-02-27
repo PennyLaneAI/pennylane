@@ -17,6 +17,7 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import Enum
@@ -128,13 +129,15 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     # pylint:disable=too-many-instance-attributes
 
+    _shortname = None
+
     _obs_primitive: Optional["jax.core.Primitive"] = None
     _wires_primitive: Optional["jax.core.Primitive"] = None
     _mcm_primitive: Optional["jax.core.Primitive"] = None
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
-        name = getattr(cls.return_type, "value", cls.__name__)
+        name = getattr(cls._shortname, "value", cls.__name__)
         cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
         cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
         cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
@@ -269,7 +272,12 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     @property
     def return_type(self) -> Optional[ObservableReturnTypes]:
         """Measurement return type."""
-        return None
+        warnings.warn(
+            "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
+            "Instead, please use isinstance for type checking directly.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        return self._shortname
 
     @property
     def numeric_type(self) -> type:
@@ -333,7 +341,14 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     def __repr__(self):
         """Representation of this class."""
-        name_str = self.return_type.value if self.return_type else type(self).__name__
+        if self._shortname:
+            if isinstance(self._shortname, str):
+                name_str = self._shortname
+            else:
+                name_str = self._shortname.value
+        else:
+            name_str = type(self).__name__
+
         if self.mv is not None:
             return f"{name_str}({repr(self.mv)})"
         if self.obs:
@@ -342,7 +357,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
+        return f"{getattr(self._shortname, 'value', 'None')}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
@@ -408,9 +423,10 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         """
         if self.mv is not None:
             if getattr(self.mv, "name", None) == "MeasurementValue":
-                # Indexing a MeasurementValue gives the output of the processing function
-                # for the binary number corresponding to the index.
-                return qml.math.asarray([self.mv[i] for i in range(2 ** len(self.wires))])
+                # "Eigvals" should be the processed values for all branches of a MeasurementValue
+                _, processed_values = tuple(zip(*self.mv.items()))
+                interface = qml.math.get_deep_interface(processed_values)
+                return qml.math.asarray(processed_values, like=interface)
             return qml.math.arange(0, 2 ** len(self.wires), 1)
 
         if self.obs is not None:
@@ -573,6 +589,8 @@ class SampleMeasurement(MeasurementProcess):
     >>> circuit()
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
+
+    _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
 
     @abstractmethod
     def process_samples(

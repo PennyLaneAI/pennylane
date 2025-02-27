@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - master
+  merge_group:
+    types:
+      - checks_requested
   pull_request:
     types:
       - opened
@@ -20,10 +23,8 @@ env:
 jobs:
   gpu-tests:
     runs-on:
-      - self-hosted
-      - ubuntu-22.04
-      - gpu
-
+      - single-gpu-x64
+    
     if: >-
       ${{
         github.event_name == 'push' ||
@@ -54,13 +55,13 @@ jobs:
           echo "LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" >> $GITHUB_ENV
 
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Setup Python
         id: setup_python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -91,7 +92,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip && pip install wheel --upgrade
+          python -m pip install --upgrade pip wheel setuptools>=75.8.1
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
 
@@ -102,7 +103,7 @@ jobs:
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
+          pip install dist/pennylane*.whl
 
       - name: Install Lightning-master
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
