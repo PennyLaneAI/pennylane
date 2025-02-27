@@ -138,6 +138,7 @@ def _measure_classical_shadow(
         mp (~.measurements.SampleMeasurement): The sample measurement to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (~.measurements.Shots): The number of samples to take
+        is_state_batched (bool): Whether the state is batched or not
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -177,6 +178,7 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None, is_state_ba
         wire_order (qml.wires.Wires): The global wire ordering
         shots (int): Number of classical-shadow snapshots
         rng (None or int or Generator): Random seed for measurement bits
+        is_state_batched (bool): Whether the state is batched or not
 
     Returns:
         np.ndarray[int]: shape (2, shots, num_shadow_qubits).
