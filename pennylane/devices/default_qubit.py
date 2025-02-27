@@ -62,6 +62,8 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
+    if op.has_sparse_matrix and (not op.has_matrix) and len(op.wires) >= 3:
+        return True
     if op.name == "Snapshot":
         return True
     if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
