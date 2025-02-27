@@ -71,7 +71,7 @@ class TestRepeatedQubitDeviceErrors:
             jax.make_jaxpr(qfunc)()
 
     def test_repeated_qubit_error_before_higher_order_prim(self):
-        """Test that wire collision is able to be detected before a higher order primitive is applied."""
+        """Test that wire collision can be detected before a higher-order primitive is applied."""
 
         def ctrl_fn():
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
