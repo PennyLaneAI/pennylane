@@ -36,17 +36,24 @@ class GraphStatePreparation(Operation):
         wires (QubitGraph): QubitGraph object mapping qubit to wires.
     """
     def __init__(lattice: Lattice, qubit_ops: Operation, entanglement_ops: Operation, wires: QubitGraph):
+        if len(lattice.get_nodes) != len(wires):
+            raise ValueError(f'The number of vertices in the lattice is : {len(lattice.get_nodes)} and does not match the number of wires {len(wires)}')
         self._lattice = lattice
         self._qubit_ops = qubit_ops
         self._entanglement_ops = entanglement_ops
         self._wires = wires
-    
+
+    @staticmethod
     def decompose(self):
+        op_list = []
         # Add qubit_ops to the queue
         # traverse the nodes in the qubit graph
-
+        for v in self._lattice.get_graph:
+            op_list.append(self._qubit_ops(self._wires[v]))
 
         # Add entanglement_ops to the queue
         # traverse the edges in the qubit graph
+        for v0, v1 in self._lattice.get_edges:
+            op_list.append(self._entanglement_ops(self._wires[v0],self._wires[v1]))
         
         
