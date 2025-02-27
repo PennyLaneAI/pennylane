@@ -510,7 +510,7 @@ class QubitGraph:
 
     def _initialize_all_nodes_as_qubit_graph(self):
         """Helper function to initialize all nodes in the underlying qubit graph as uninitialized
-        QubitGraph objects. This functions also sets the ``parent`` attribute appropriately.
+        QubitGraph objects. This function also sets the ``parent`` attribute appropriately.
         """
         assert self._graph_qubits is not None, "Underlying qubit graph object must not be None"
         assert hasattr(
