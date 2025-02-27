@@ -194,22 +194,8 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
 
-    @qml.capture.expand_plxpr_transforms
-    def user_transform_wrapper(*inner_args):
-        return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
-
-    qfunc_jaxpr = jax.make_jaxpr(user_transform_wrapper)(*non_const_args)
-    if qnode.transform_program:
-        qfunc_jaxpr = qnode.transform_program(
-            qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *non_const_args
-        )
-
-    preprocess_program, _ = device.preprocess()
-    if preprocess_program:
-        qfunc_jaxpr = preprocess_program(qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *non_const_args)
-
     partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, execution_config=execution_config
+        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)
@@ -409,6 +395,48 @@ def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
     return hash(serialized)
 
 
+def _process_qfunc(qnode, all_args, kwargs, abstracted_axes):
+    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
+    # pylint: disable=protected-access
+    qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
+    flat_fn = FlatFn(qfunc)
+    qfunc_args, abstract_shapes, flat_dyn_args = all_args
+
+    try:
+        qfunc_jaxpr = jax.make_jaxpr(
+            flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
+        )(*qfunc_args)
+    except (
+        jax.errors.TracerArrayConversionError,
+        jax.errors.TracerIntegerConversionError,
+        jax.errors.TracerBoolConversionError,
+    ) as exc:
+        raise CaptureError(
+            "Autograph must be used when Python control flow is dependent on a dynamic "
+            "variable (a function input). Please ensure autograph=True or use native control "
+            "flow functions like for_loop, while_loop, etc."
+        ) from exc
+
+    @qml.capture.expand_plxpr_transforms
+    def user_transform_wrapper(*inner_args):
+        return qml.capture.PlxprInterpreter().eval(
+            qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *inner_args
+        )
+
+    non_const_args = (*abstract_shapes, *flat_dyn_args)
+    qfunc_jaxpr = jax.make_jaxpr(user_transform_wrapper)(*non_const_args)
+    if qnode.transform_program:
+        qfunc_jaxpr = qnode.transform_program(
+            qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *non_const_args
+        )
+
+    preprocess_program, _ = qnode.device.preprocess()
+    if preprocess_program:
+        qfunc_jaxpr = preprocess_program(qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *non_const_args)
+
+    return flat_fn, qfunc_jaxpr
+
+
 def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
@@ -494,36 +522,19 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     flat_static_args = jax.tree_util.tree_leaves(static_args)
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_dynamic_args)
     cache_key = _get_jaxpr_cache_key(flat_dynamic_args, flat_static_args, kwargs, abstracted_axes)
-    using_cached_plxpr = False
+    cached_value = qnode.capture_cache.get(cache_key, None)
 
-    # pylint: disable=protected-access
-    if cache_key in qnode.capture_cache:
-        qfunc_jaxpr, out_tree = qnode.capture_cache[cache_key]
-        using_cached_plxpr = True
+    if cached_value:
+        qfunc_jaxpr, out_tree = cached_value
+        flat_fn = None  # To suppress pylint
     else:
-        qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-        # pylint: disable=protected-access
-        qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
-        flat_fn = FlatFn(qfunc)
+        if abstracted_axes:
+            # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
+            # as the original dynamic arguments
+            abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
 
-        try:
-            if abstracted_axes:
-                # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
-                # as the original dynamic arguments
-                abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
-            qfunc_jaxpr = jax.make_jaxpr(
-                flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
-            )(*args)
-        except (
-            jax.errors.TracerArrayConversionError,
-            jax.errors.TracerIntegerConversionError,
-            jax.errors.TracerBoolConversionError,
-        ) as exc:
-            raise CaptureError(
-                "Autograph must be used when Python control flow is dependent on a dynamic "
-                "variable (a function input). Please ensure autograph=True or use native control "
-                "flow functions like for_loop, while_loop, etc."
-            ) from exc
+        all_args = (args, abstract_shapes, flat_dynamic_args)
+        flat_fn, qfunc_jaxpr = _process_qfunc(qnode, all_args, kwargs, abstracted_axes)
 
     config = construct_execution_config(
         qnode, resolve=False
@@ -541,7 +552,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         n_consts=len(qfunc_jaxpr.consts),
     )
 
-    if not using_cached_plxpr:
+    if not cached_value:
         assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
         out_tree = flat_fn.out_tree
         qnode.capture_cache[cache_key] = (qfunc_jaxpr, out_tree)
