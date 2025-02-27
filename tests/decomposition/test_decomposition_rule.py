@@ -123,6 +123,8 @@ class TestDecompositionRule:
         class CustomOp(qml.operation.Operation):
             pass
 
+        assert not qml.has_decomposition(CustomOp)
+
         @qml.decomposition
         def custom_decomp(theta, wires, **__):
             qml.RZ(theta, wires=wires[0])
@@ -151,6 +153,8 @@ class TestDecompositionRule:
 
         qml.add_decomposition(CustomOp, custom_decomp)
         qml.add_decomposition(CustomOp, custom_decomp2)
+
+        assert qml.has_decomposition(CustomOp)
 
         assert qml.get_decompositions(CustomOp) == [custom_decomp, custom_decomp2]
 

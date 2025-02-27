@@ -20,4 +20,5 @@ from .decomposition_rule import (
     DecompositionRule,
     add_decomposition,
     get_decompositions,
+    has_decomposition,
 )

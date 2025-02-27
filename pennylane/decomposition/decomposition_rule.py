@@ -142,3 +142,8 @@ def add_decomposition(op_type, decomposition_rule: DecompositionRule) -> None:
 def get_decompositions(op_type) -> list[DecompositionRule]:
     """Get all known decomposition rules for an operator class."""
     return _decompositions[op_type][:]
+
+
+def has_decomposition(op_type) -> bool:
+    """Check whether an operator has decomposition rules defined."""
+    return op_type in _decompositions and len(_decompositions[op_type]) > 0
