@@ -94,7 +94,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                     break
 
                 if _can_commute(op, prev_gate):
-                    new_location = new_location - prev_gate_idx - 1
+                    new_location -= prev_gate_idx + 1
                 else:
                     break
 
