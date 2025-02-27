@@ -111,7 +111,7 @@ def annihilation_operator(
 
 def string_to_matrix(
     op: str, gridpoints: int, sparse: bool = False, basis: str = "realspace"
-) -> Union[np.ndarray, sp.sparse.csr_matrix]:
+) -> Union[np.ndarray, sp.sparse.csr_array]:
     """Return a csr matrix representation of a Vibronic op"""
 
     matrix = _identity(gridpoints, sparse=sparse)
@@ -150,35 +150,31 @@ def tensor_with_identity(
 
     matrix = lookup[modes - 1]
     for mode in range(modes - 2, -1, -1):
-        if mode in index:
-            matrix = _kron(lookup[mode], matrix)
-        else:
-            matrix = _kron(_identity(gridpoints, sparse=sparse), matrix)
-            # matrix = sp.linalg.block_diag(*[matrix] * gridpoints)
+        matrix = _kron(lookup[mode], matrix)
 
     return matrix
 
 
-def _identity(dim: int, sparse: bool) -> Union[np.ndarray, sp.sparse.csr_matrix]:
+def _identity(dim: int, sparse: bool) -> Union[np.ndarray, sp.sparse.csr_array]:
     if sparse:
-        return sp.sparse.identity(dim, format="csr")
+        return sp.sparse.eye_array(dim, format="csr")
 
     return np.eye(dim)
 
 
-def _kron(a: Union[np.ndarray, sp.sparse.csr_matrix], b: Union[np.ndarray, sp.sparse.csr_matrix]):
+def _kron(a: Union[np.ndarray, sp.sparse.csr_array], b: Union[np.ndarray, sp.sparse.csr_array]):
     if isinstance(a, np.ndarray) and isinstance(b, np.ndarray):
         return np.kron(a, b)
 
-    if isinstance(a, sp.sparse.csr_matrix) and isinstance(b, sp.sparse.csr_matrix):
-        return sp.sparse.kron(a, b)
+    if isinstance(a, sp.sparse.csr_array) and isinstance(b, sp.sparse.csr_array):
+        return sp.sparse.kron(a, b, format="csr")
 
-    raise TypeError
+    raise TypeError(f"Matrices must be ndarray or csr_array. Got {type(a)} and {type(b)}.")
 
 
-def _zeros(shape: Tuple[int], sparse: bool = False):
+def _zeros(shape: Tuple[int], sparse: bool = False) -> Union[np.ndarray, sp.sparse.csr_array]:
     if sparse:
-        return sp.sparse.csr_matrix(shape)
+        return sp.sparse.csr_array(shape)
 
     return np.zeros(shape)
 
