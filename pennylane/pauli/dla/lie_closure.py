@@ -13,30 +13,33 @@
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
 import warnings
-from collections.abc import Iterable
 from copy import copy
 from functools import reduce
 
 # pylint: disable=too-many-arguments
 from itertools import product
-from typing import Union
+from typing import Iterable, Union
 
 import numpy as np
 import scipy
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
 
 from ..pauli_arithmetic import PauliSentence, PauliWord
+from ..trace_inner_product import trace_inner_product
 
 
 def lie_closure(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
+    generators: Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]],
+    *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
+    matrix: bool = False,
     tol: float = None,
-) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
+) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
     r"""Compute the dynamical Lie algebra from a set of generators.
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
@@ -44,7 +47,7 @@ def lie_closure(
     All these operators together form the DLA, see e.g. section IIB of `arXiv:2308.01432 <https://arxiv.org/abs/2308.01432>`__.
 
     Args:
-        generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
+        generators (Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]]): generating set for which to compute the
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure
@@ -52,20 +55,22 @@ def lie_closure(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
+        matrix (bool): Whether or not matrix representations should be used and returned in the Lie closure computation. This can help
+            speed up the computation when using sums of Paulis with many terms. Default is ``False``.
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
     Returns:
-        Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
+        Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`], np.ndarray]: a basis of either :class:`~.PauliSentence`, :class:`~.Operator`, or ``np.ndarray`` instances that is closed under
         commutators (Lie closure).
 
-    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`
 
     **Example**
 
-    Let us walk through a simple example of computing the Lie closure of the generators of the transverse field Ising model on two qubits.
-
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
+    >>> dla = qml.lie_closure(ops)
 
+    Let us walk through what happens in this simple example of computing the Lie closure of these generators (the transverse field Ising model on two qubits).
     A first round of commutators between all elements yields:
 
     >>> qml.commutator(X(0) @ X(1), Z(0))
@@ -117,7 +122,25 @@ def lie_closure(
         >>> type(dla[0])
         pennylane.pauli.pauli_arithmetic.PauliSentence
 
+        In the case of sums of Pauli operators with many terms, it is often faster to use the matrix representation of the operators rather than
+        the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation.
+        We can force this by using the ``matrix`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``, where ``dim_g`` is the
+        dimension of the DLA and ``n`` the number of qubits.
+
+        >>> dla = qml.lie_closure(ops, matrix=True)
+        >>> dla.shape
+        (6, 4, 4)
+
+        You can retrieve a semi-analytic representation again by using :func:`~pauli_decompose`.
+
+        >>> dla_ops = [qml.pauli_decompose(op) for op in dla]
+
+        Note that the results are only equivalent up to minus signs. This is okay because the sets of basis operators describe the same Lie algebra.
+
     """
+    if matrix:
+        return _lie_closure_matrix(generators, max_iterations, verbose, tol)
+
     if not all(isinstance(op, (PauliSentence, PauliWord)) for op in generators):
         if pauli:
             raise TypeError(
@@ -140,9 +163,16 @@ def lie_closure(
             print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
 
         # compute all commutators. We compute the commutators between all newly added operators
-        # and all original generators. This limits the number of commutators added in each
-        # iteration, but it gives us a correspondence between the while loop iteration and the
-        # nesting level of the commutators.
+        # and all original generators. This limits the amount of vectorization we are doing but
+        # gives us a correspondence between the while loop iteration and the nesting level of
+        # the commutators.
+        # The logic here is that all nested commutators can be brought in the form
+        # $[a, [b, [c, [d....]]]]$ with $a, b, c, d...$ all from the original set of operators,
+        # i.e., no commutators between commutators are needed, but only iterative application of
+        # $[a, \circ]$ for some $a$ from the initial set.
+        # This is true because of the [Jacobi identity](https://en.wikipedia.org/wiki/Jacobi_identity). For example (marking Jacobi with a $\star$):
+        # $[[a,b], [c,d]]=[[a,b], e] \overset{\star}{=} -[[e, a], b] - [[b, e], a] = -[[[c,d],a],b]-[[b,[c,d]],a]=-[b,[a,[c,d]]]+[a,[b,[c,d]]]$
+        # So finding all four-operators commutators will allow us to reach all elements needed to express the nested commutators on the left hand side.
         for ps1, ps2 in product(vspace.basis[old_length:], vspace.basis[:initial_length]):
             com = ps1.commutator(ps2)
             com.simplify(tol=vspace.tol)
@@ -467,3 +497,162 @@ class PauliVSpace:
         rank3 = np.linalg.matrix_rank(np.concatenate([self._M, other_M], axis=1))
 
         return rank1 == rank2 and rank2 == rank3
+
+
+def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis_length: int = 0):
+    """Find a linearly independent basis of a list of (skew-) Hermitian matrices
+
+    .. note:: The first ``subbasis_length`` elements of ``matrices`` are assumed to already be orthogonal and Hermitian and will not be changed.
+
+    Args:
+        matrices (Union[numpy.ndarray, Iterable[numpy.ndarray]]): A list of Hermitian matrices.
+        tol (float): Tolerance for linear dependence check. Defaults to ``1e-10``.
+        subbasis_length (int): The first `subbasis_length` elements in `matrices` are left untouched.
+
+    Returns:
+        np.ndarray: Stacked array of linearly independent basis matrices.
+
+    Raises:
+        ValueError: If not all input matrices are (skew-) Hermitian.
+    """
+    if tol is None:
+        tol = 1e-10
+
+    basis = list(matrices[:subbasis_length])
+    for A in matrices[subbasis_length:]:
+        if not qml.math.is_abstract(A):
+            if not qml.math.allclose(qml.math.transpose(qml.math.conj(A)), A):
+                A = 1j * A
+                if not qml.math.allclose(qml.math.transpose(qml.math.conj(A)), A):
+                    raise ValueError(f"At least one basis matrix is not (skew-)Hermitian:\n{A}")
+
+        B = copy(A)
+        if len(basis) > 0:
+            lhs = trace_inner_product(basis, A)
+            B -= qml.math.tensordot(lhs, qml.math.stack(basis), axes=[[0], [0]])
+        if (
+            norm := qml.math.real(qml.math.sqrt(trace_inner_product(B, B)))
+        ) > tol:  # Tolerance for numerical stability
+            B /= qml.math.cast_like(norm, B)
+            basis.append(B)
+    return qml.math.array(basis)
+
+
+def _lie_closure_matrix(
+    generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
+    max_iterations: int = 10000,
+    verbose: bool = False,
+    tol: float = None,
+):
+    r"""Compute the dynamical Lie algebra :math:`\mathfrak{g}` from a set of generators using their matrix representation.
+
+    This function computes the Lie closure of a set of generators using their matrix representation.
+    This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
+    :class:`~PauliSentence` employed in :func:`~lie_closure`, e.g., when few generators are sums of many Paulis.
+
+    .. seealso::
+
+        For details on the mathematical definitions, see :func:`~lie_closure` and our
+        `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
+
+    Args:
+        generators (Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]): generating set for which to compute the
+            Lie closure.
+        max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
+        verbose (bool): whether to print out progress updates during Lie closure
+            calculation. Default is ``False``.
+        tol (float): Numerical tolerance for the linear independence check between algebra elements
+
+    Returns:
+        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linearly independent basis of the DLA :math:`\mathfrak{g}` as matrices.
+
+    **Example**
+
+    Compute the Lie closure of the isotropic Heisenberg model with generators :math:`\{X_i X_{i+1} + Y_i Y_{i+1} + Z_i Z_{i+1}\}_{i=0}^{n-1}`.
+
+    >>> n = 5
+    >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]
+    >>> g = _lie_closure_matrix(gens)
+
+    The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~batched_pauli_decompose`.
+
+    >>> g_ops = [qml.pauli_decompose(op) for op in g]
+
+    **Internal representation**
+
+    The input operators are converted to Hermitian matrices internally. This means
+    that we compute the operators :math:`G_\alpha` in the algebra :math:`\{iG_\alpha\}_\alpha`,
+    which itself consists of skew-Hermitian objects (commutators produce skew-Hermitian objects,
+    so Hermitian operators alone can not form an algebra with the standard commutator).
+    """
+
+    if not isinstance(generators[0], TensorLike):
+        # operator input
+        all_wires = qml.wires.Wires.all_wires([_.wires for _ in generators])
+        n = len(all_wires)
+        assert all_wires.toset() == set(range(n))
+
+        generators = np.array(
+            [qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex
+        )
+        chi = 2**n
+        assert np.shape(generators) == (len(generators), chi, chi)
+
+    elif isinstance(generators[0], TensorLike) and isinstance(generators, (list, tuple)):
+        # list of matrices
+        interface = qml.math.get_interface(generators[0])
+        generators = qml.math.stack(generators, like=interface)
+
+    chi = qml.math.shape(generators[0])[0]
+    assert qml.math.shape(generators) == (len(generators), chi, chi)
+
+    epoch = 0
+    old_length = 0
+    vspace = _hermitian_basis(generators, tol, old_length)
+    new_length = initial_length = len(vspace)
+
+    while (new_length > old_length) and (epoch < max_iterations):
+        if verbose:
+            print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
+
+        # compute all commutators. We compute the commutators between all newly added operators
+        # and all original generators. This limits the amount of vectorization we are doing but
+        # gives us a correspondence between the while loop iteration and the nesting level of
+        # the commutators.
+        # The logic here is that all nested commutators can be brought in the form
+        # $[a, [b, [c, [d....]]]]$ with $a, b, c, d...$ all from the original set of operators,
+        # i.e., no commutators between commutators are needed, but only iterative application of
+        # $[a, \circ]$ for some $a$ from the initial set.
+        # This is true because of the [Jacobi identity](https://en.wikipedia.org/wiki/Jacobi_identity). For example (marking Jacobi with a $\star$):
+        # $[[a,b], [c,d]]=[[a,b], e] \overset{\star}{=} -[[e, a], b] - [[b, e], a] = -[[[c,d],a],b]-[[b,[c,d]],a]=-[b,[a,[c,d]]]+[a,[b,[c,d]]]$
+        # So finding all four-operators commutators will allow us to reach all elements needed to express the nested commutators on the left hand side.
+        # [m0, m1] = m0 m1 - m1 m0
+        # Implement einsum "aij,bjk->abik" by tensordot and moveaxis
+        m0m1 = qml.math.moveaxis(
+            qml.math.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[2], [1]]), 1, 2
+        )
+        m0m1 = qml.math.reshape(m0m1, (-1, chi, chi))
+
+        # Implement einsum "aij,bki->abkj" by tensordot and moveaxis
+        m1m0 = qml.math.moveaxis(
+            qml.math.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[1], [2]]), 1, 3
+        )
+        m1m0 = qml.math.reshape(m1m0, (-1, chi, chi))
+        all_coms = m0m1 - m1m0
+
+        # sub-select linearly independent subset
+        vspace = qml.math.concatenate([vspace, all_coms])
+        vspace = _hermitian_basis(vspace, tol, old_length)
+
+        # Updated number of linearly independent PauliSentences from previous and current step
+        old_length = new_length
+        new_length = len(vspace)
+        epoch += 1
+
+        if epoch == max_iterations:
+            warnings.warn(f"reached the maximum number of iterations {max_iterations}", UserWarning)
+
+    if verbose:
+        print(f"After {epoch} epochs, reached a DLA size of {new_length}")
+
+    return vspace
