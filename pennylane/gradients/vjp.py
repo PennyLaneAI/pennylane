@@ -25,7 +25,7 @@ import pennylane as qml
 
 def _convert(jac, dy_row):
     """Utility to convert and cast the jacobian as dy_row."""
-    if isinstance(jac, tuple):
+    if isinstance(jac, (tuple, list)):
         jac_new = []
         for j in jac:
             j_ = qml.math.convert_like(j, dy_row)
@@ -120,7 +120,7 @@ def compute_vjp_single(dy, jac, num=None):
     # TODO: Excplictly catalogue and update raises for known types.
 
     # Single measurement with a single param
-    if not isinstance(jac, (tuple, autograd.builtins.SequenceBox)):
+    if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
         # No trainable parameters
         if jac.shape == (0,):
             res = qml.math.zeros((1, 0))
