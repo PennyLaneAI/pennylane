@@ -33,6 +33,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
         from jax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
+        from pennylane.capture.primitives import measure_prim
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -230,6 +231,11 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             self._env = {}
             self.cleanup()
             return outvals
+
+    @CommuteControlledInterpreter.register_primitive(measure_prim)
+    def _(_, *invals, **params):
+        _, params = measure_prim.get_bind_params(params)
+        return measure_prim.bind(*invals, **params)
 
     def commute_controlled_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args

@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
-from pennylane.capture.primitives import cond_prim, for_loop_prim
+from pennylane.capture.primitives import cond_prim, for_loop_prim, measure_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.commute_controlled import (
     CommuteControlledInterpreter,
@@ -595,6 +595,34 @@ class TestCommuteControlledHigherOrderPrimitives:
 
         for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
             qml.assert_equal(op1, op2)
+
+    def test_mid_circuit_measurement(self):
+        """Test that mid-circuit measurements are correctly handled."""
+
+        @CommuteControlledInterpreter()
+        def circuit(x):
+            qml.RX(x, wires=2)
+            qml.CNOT(wires=[0, 2])
+            qml.Toffoli(wires=[0, 1, 2])
+            qml.measure(0)
+            qml.RX(x, wires=2)
+            qml.CNOT(wires=[0, 2])
+            qml.Toffoli(wires=[0, 1, 2])
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(circuit)(np.pi)
+        assert len(jaxpr.eqns) == 9
+
+        # I test the jaxpr like this because `CollectOpsandMeas`
+        # currently interprets a mid-circuit measurement as an operator, not a measurement
+        assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[1].primitive == qml.Toffoli._primitive
+        assert jaxpr.eqns[2].primitive == qml.RX._primitive
+        assert jaxpr.eqns[3].primitive == measure_prim
+        assert jaxpr.eqns[4].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[5].primitive == qml.Toffoli._primitive
+        assert jaxpr.eqns[6].primitive == qml.RX._primitive
+        assert jaxpr.eqns[7].primitive == qml.PauliZ._primitive
 
 
 class TestCommuteControlledPLXPR:
