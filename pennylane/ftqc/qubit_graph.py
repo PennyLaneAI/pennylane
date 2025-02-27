@@ -44,14 +44,14 @@ class QubitGraph:
             graphs and graph-like types are also permitted. An object is considered "graph-like" if
             it has both a 'nodes' and an 'edges' attribute.
 
-    TODO:
+    ..  TODO:
 
-        * How to represent operations on qubits?
-            * We should be able to broadcast operations to underlying qubits, assuming operations
+        - How to represent operations on qubits?
+            - We should be able to broadcast operations to underlying qubits, assuming operations
               are transversal.
-            * Recall that a _transversal operation_ is defined as a logical operator that is formed
+            - Recall that a *transversal operation* is defined as a logical operator that is formed
               by applying the individual physical operators to each qubit in a QEC code block.
-        * Implement tensor-like indexing and slicing.
+        - Implement tensor-like indexing and slicing.
     """
 
     def __init__(self, id: Any, graph: Optional[nx.Graph] = None):
@@ -78,7 +78,9 @@ class QubitGraph:
         Args:
             key (Any): Node label in the underlying qubit graph.
 
-        TODO: Allow for more advanced tensor-like indexing and slicing.
+        ..  TODO:
+
+            - Allow for more advanced tensor-like indexing and slicing.
         """
         if not self.is_initialized:
             self._warn_uninitialized()
@@ -96,12 +98,12 @@ class QubitGraph:
         Currently only basic, linear indexing is supported. Slicing is not supported.
 
         The QubitGraph assignment operator transfers ownership of the new QubitGraph object passed
-        as the parameter `value` to the parent QubitGraph object. It does so by updating two of the
-        new object's attributes:
+        as the parameter ``value`` to the parent QubitGraph object. It does so by updating two of
+        the new object's attributes:
 
-            1. It updates the new object's `id` to be equal to the label of the node to which it has
-               been assigned, as given by the `key` parameter.
-            2. It updates the new object's `parent` attribute to be the current QubitGraph object.
+            1. It updates the new object's ``id`` to be equal to the label of the node to which it
+               has been assigned, as given by the ``key`` parameter.
+            2. It updates the new object's ``parent`` attribute to be the current QubitGraph object.
 
         Args:
             key (Any): Node label in the underlying qubit graph.
@@ -121,7 +123,7 @@ class QubitGraph:
             >>> print(f"{q_top[0]}; {q_top[0].nodes}")
             QubitGraph<top, 0>; [0]
 
-        TODO:
+        ..  TODO:
 
             - Allow for more advanced tensor-like indexing and slicing.
             - Explicitly disallow assigning a QubitGraph object that would make the nesting
@@ -146,19 +148,19 @@ class QubitGraph:
         """Dummy QubitGraph iterator method that yields itself.
 
         This method ensures that no implicit iteration takes place over the nodes in the underlying
-        qubit graph, which is possible since we have defined __getitem__().
+        qubit graph, which is possible since we have defined ``__getitem__()``.
 
         Consider the example where we wrap a QubitGraph object in a tuple. With this dummy
-        __iter__() method defined, the resulting tuple contains the top-level QubitGraph object:
+        ``__iter__()`` method defined, the resulting tuple contains the top-level QubitGraph object:
 
             >>> q = QubitGraph(0)
             >>> q.init_graph_nd_grid((2,))
             >>> tuple(q)
             (QubitGraph<0>,)
 
-        Without this dummy method defined, the tuple() constructor attempts to iterate over the
-        values that the __getitem__() method yield, which creates a tuple of the QubitGraph objects
-        contained in the underlying qubit graph:
+        Without this dummy method defined, the ``tuple()`` constructor attempts to iterate over the
+        values that the ``__getitem__()`` method yield, which creates a tuple of the QubitGraph
+        objects contained in the underlying qubit graph:
 
             >>> # Without QubitGraph.__iter__() defined
             >>> q = QubitGraph(0)
@@ -166,8 +168,8 @@ class QubitGraph:
             >>> tuple(q)
             (QubitGraph<0, 0>, QubitGraph<0, 1>)
 
-        Making QubitGraph non-iterable is especially important when using it as input to the Wires
-        class, which checks if the input is iterable by wrapping it in a tuple.
+        Making QubitGraph non-iterable is especially important when using it as input to the
+        :class:`~.Wires` class, which checks if the input is iterable by wrapping it in a tuple.
         """
         yield self
 
@@ -239,11 +241,12 @@ class QubitGraph:
     def nodes(self):
         """Gets the set of nodes in the underlying qubit graph.
 
-        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
+        If the underlying qubit graph has not been initialized, emit a ``UserWarning`` and return
+        None.
 
         Returns:
             networkx.NodeView: The set of nodes, with native support for operations such as
-                `len(g.nodes)`, `n in g.nodes`, `g.nodes & h.nodes`, etc. See the networkx
+                ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the networkx
                 documentation for more information.
         """
         if self._graph_qubits is None:
@@ -260,7 +263,7 @@ class QubitGraph:
 
         Returns:
             networkx.EdgeView: The set of edges, with native support for operations such as
-                `len(g.edges)`, `e in g.edges`, `g.edges & h.edges`, etc. See the networkx
+                ``len(g.edges)``, ``e in g.edges``, ``g.edges & h.edges``, etc. See the networkx
                 documentation for more information.
         """
         if self._graph_qubits is None:
@@ -340,10 +343,10 @@ class QubitGraph:
         """Checks if the QubitGraph contains a cycle in its nesting structure.
 
         This method uses Floyd's cycle-finding algorithm (also known as Floyd's tortoise and hare
-        algorithm) by iterating up through the QubitGraph's parent.
+        algorithm) by iterating up through the QubitGraphs' parents.
 
         Returns:
-            bool: Returns True if this QubitGraph has a cycle in its nesting structure.s
+            bool: Returns True if this QubitGraph has a cycle in its nesting structure.
         """
         if self._parent is None:
             return False
@@ -399,6 +402,8 @@ class QubitGraph:
             This example initializes the underlying qubits as a 2x3 2-dimensional Cartesian grid
             with graph structure and qubit indexing below:
 
+            ::
+
                 (0,0) --- (0,1) --- (0,2)
                   |         |         |
                 (1,0) --- (1,1) --- (1,2)
@@ -424,6 +429,8 @@ class QubitGraph:
 
             This example initializes the underlying qubits as a 2x2x3 3-dimensional Cartesian grid
             with graph structure and qubit indexing below:
+
+            ::
 
                       (2,0,0) ------------- (2,0,1)
                      /|                    /|
@@ -455,6 +462,8 @@ class QubitGraph:
 
         The nodes are indexed as follows, where 'd' refers to data qubits and 'a' to auxiliary
         qubits:
+
+        ::
 
                           a9
                          /   \
@@ -501,7 +510,7 @@ class QubitGraph:
 
     def _initialize_all_nodes_as_qubit_graph(self):
         """Helper function to initialize all nodes in the underlying qubit graph as uninitialized
-        QubitGraph objects. This functions also sets the _parent attribute appropriately.
+        QubitGraph objects. This functions also sets the ``parent`` attribute appropriately.
         """
         assert self._graph_qubits is not None, "Underlying qubit graph object must not be None"
         assert hasattr(
