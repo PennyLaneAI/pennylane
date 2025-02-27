@@ -42,7 +42,7 @@ class TestRepeatedQubitDeviceErrors:
     """Test DeviceError is raised when operations exist before the AmplitudeEmbedding operators."""
 
     def test_repeated_traced_wire_error(self):
-        """Test that an error is raised if its the same traced wire."""
+        """Test that an error is raised if AmplitudeEmbedding acts on the same traced wire"""
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc(wire):
