@@ -16,6 +16,7 @@
 
 import networkx as nx
 import pytest
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane.ftqc import QubitGraph
@@ -174,6 +175,22 @@ class TestQubitGraphsInitialization:
 
         assert set(qubit.nodes) == set(expected_graph.nodes)
         assert set(qubit.edges) == set(expected_graph.edges)
+
+        for node in qubit.nodes:
+            assert isinstance(qubit[node], QubitGraph)
+            assert qubit[node].parent is qubit
+
+    @pytest.mark.xfail(reason="QubitGraph does not yet support rustworkx graphs")
+    def test_initialization_with_rustworkx_graph(self):
+        """Test that we can initialize a QubitGraph using a rustworkx graph."""
+        g = rx.PyGraph()
+        g.add_nodes_from([0, 1])
+        g.add_edge(0, 1, None)
+
+        qubit = QubitGraph(0, g)
+
+        assert set(qubit.nodes) == set(g.nodes())
+        assert set(qubit.edges) == set(g.edges())
 
         for node in qubit.nodes:
             assert isinstance(qubit[node], QubitGraph)
