@@ -37,9 +37,12 @@ class GraphStatePreparation(Operation):
         self._wires = wires
     
     def decompose(self):
+
         # Add qubit_ops to the queue
+        # traverse the nodes in the qubit graph
 
 
         # Add entanglement_ops to the queue
+        # traverse the edges in the qubit graph
         
         
