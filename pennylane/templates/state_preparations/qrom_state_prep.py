@@ -303,37 +303,39 @@ class QROMStatePreparation(Operation):
                 )
             )
 
-        # Compute the binary representations of the phases
-        func = lambda x: (x) / (2 * np.pi)
-        thetas_binary = [_func_to_binary(len(precision_wires), phase, func) for phase in phases]
+        if not qml.math.allclose(phases, 0.0):
+            # Compute the binary representations of the phases
+            func = lambda x: (x) / (2 * np.pi)
+            thetas_binary = [_func_to_binary(len(precision_wires), phase, func) for phase in phases]
 
-        # Apply the QROM operation to encode the thetas binary representation
-        decomp_ops.append(
-            qml.QROM(
-                bitstrings=thetas_binary,
-                target_wires=precision_wires,
-                control_wires=wires,
-                work_wires=work_wires,
-                clean=False,
-            )
-        )
-
-        for ind, wire in enumerate(precision_wires):
-            rotation_angle = 2 ** (-ind - 1)
+            # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
-                qml.ctrl(
-                    qml.GlobalPhase((2 * np.pi) * (-rotation_angle), wires=wires[0]), control=wire
+                qml.QROM(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=wires,
+                    work_wires=work_wires,
+                    clean=False,
                 )
             )
 
-        decomp_ops.append(
-            qml.adjoint(qml.QROM)(
-                bitstrings=thetas_binary,
-                target_wires=precision_wires,
-                control_wires=wires,
-                work_wires=work_wires,
-                clean=False,
+            for ind, wire in enumerate(precision_wires):
+                rotation_angle = 2 ** (-ind - 1)
+                decomp_ops.append(
+                    qml.ctrl(
+                        qml.GlobalPhase((2 * np.pi) * (-rotation_angle), wires=wires[0]),
+                        control=wire,
+                    )
+                )
+
+            decomp_ops.append(
+                qml.adjoint(qml.QROM)(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=wires,
+                    work_wires=work_wires,
+                    clean=False,
+                )
             )
-        )
 
         return decomp_ops

@@ -137,6 +137,21 @@ class TestQROMStatePreparation:
 
         assert np.allclose(state, output, atol=0.05)
 
+    def test_decomposition(self):
+        """Test that the correct gates are added in the decomposition"""
+
+        wires = qml.registers({"work": 3, "precision": 3, "state": 2})
+
+        decomposition = qml.QROMStatePreparation.compute_decomposition(
+            np.array([1 / 2, 1j / 2, -1 / 2, -1j / 2]),
+            wires=wires["state"],
+            work_wires=wires["work"],
+            precision_wires=wires["precision"],
+        )
+
+        for gate in decomposition:
+            assert gate.name in ["QROM", "Adjoint(QROM)", "CRY", "C(GlobalPhase)"]
+
     @pytest.mark.jax
     def test_interface_jax(self):
         """Test QROMStatePreparation works with jax"""
