@@ -22,7 +22,7 @@ from pennylane.gradients.gradient_transform import (
     SUPPORTED_GRADIENT_KWARGS,
     _find_gradient_methods,
     _validate_gradient_methods,
-    choose_trainable_params,
+    choose_trainable_param_indices,
 )
 from pennylane.transforms.core import TransformDispatcher
 
@@ -85,7 +85,7 @@ class TestGradAnalysis:
             qml.probs(wires=[0, 1])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        trainable_params = choose_trainable_params(tape, None)
+        trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods(tape, trainable_params)
 
         assert diff_methods[0] is None
@@ -102,7 +102,7 @@ class TestGradAnalysis:
             qml.expval(qml.PauliY(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        trainable_params = choose_trainable_params(tape, None)
+        trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods(tape, trainable_params)
 
         assert diff_methods[0] == "A"
@@ -118,7 +118,7 @@ class TestGradAnalysis:
             qml.expval(qml.PauliY(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        trainable_params = choose_trainable_params(tape, None)
+        trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods(tape, trainable_params, use_graph=False)
 
         assert diff_methods[0] == "A"
@@ -139,7 +139,7 @@ class TestGradAnalysis:
             qml.probs(wires=[0, 1])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        trainable_params = choose_trainable_params(tape, None)
+        trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods(tape, trainable_params)
 
         assert diff_methods[0] is None
@@ -182,7 +182,7 @@ class TestGradMethodValidation:
 
 
 class TestChooseParams:
-    """Test the helper function choose_trainable_params."""
+    """Test the helper function choose_trainable_param_indices."""
 
     def test_without_argnum(self):
         """Test that the method returns all params when used with ``argnum=None``."""
@@ -191,7 +191,7 @@ class TestChooseParams:
             [qml.expval(qml.PauliZ(0))],
             trainable_params=[1, 2],
         )
-        chosen = choose_trainable_params(tape, None)
+        chosen = choose_trainable_param_indices(tape, None)
         assert chosen == [0, 1]
 
     def test_with_integer_argnum(self):
@@ -202,7 +202,7 @@ class TestChooseParams:
             [qml.expval(qml.PauliZ(0))],
             trainable_params=[1, 2],
         )
-        chosen = choose_trainable_params(tape, argnum=1)
+        chosen = choose_trainable_param_indices(tape, argnum=1)
         assert chosen == [1]
 
     def test_warning_with_empty_argnum(self):
@@ -214,7 +214,7 @@ class TestChooseParams:
             trainable_params=[1, 2],
         )
         with pytest.warns(UserWarning, match="No trainable parameters were specified"):
-            chosen = choose_trainable_params(tape, [])
+            chosen = choose_trainable_param_indices(tape, [])
         assert chosen == []
 
 

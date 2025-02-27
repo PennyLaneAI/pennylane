@@ -42,6 +42,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
+[(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
+
 * `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
   [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
 
@@ -189,6 +192,9 @@
 
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
+ 
+* `qml.qchem.taper` now handles wire ordering for the tapered observables more robustly.
+  [(#6954)](https://github.com/PennyLaneAI/pennylane/pull/6954)
 
 * A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
   measurement basis in the XY, YZ or ZX plane. 
@@ -276,6 +282,10 @@
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 <h3>Breaking changes 💔</h3>
+
+* `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
+  to better reflect what it actually does.
+  [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
 
 * `MultiControlledX` no longer accepts strings as control values.
   [(#6835)](https://github.com/PennyLaneAI/pennylane/pull/6835)
@@ -439,6 +449,10 @@
 * The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
   passed to the `QNode`, instead of assuming the method is always `deferred`.
   [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
+
+* The `poly_to_angles` function has been improved to correctly work with different interfaces and
+  no longer manipulate the input angles tensor internally.
+  [(#6979)](https://github.com/PennyLaneAI/pennylane/pull/6979)
 
 * The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
   [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
