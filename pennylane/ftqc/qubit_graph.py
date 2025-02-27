@@ -154,16 +154,17 @@ class QubitGraph:
             >>> q = QubitGraph(0)
             >>> q.init_graph_nd_grid((2,))
             >>> tuple(q)
-            (<QubitGraph object>,)
+            (QubitGraph<0>,)
 
         Without this dummy method defined, the tuple() constructor attempts to iterate over the
         values that the __getitem__() method yield, which creates a tuple of the QubitGraph objects
         contained in the underlying qubit graph:
 
+            >>> # Without QubitGraph.__iter__() defined
             >>> q = QubitGraph(0)
             >>> q.init_graph_nd_grid((2,))
             >>> tuple(q)
-            >>> (<QubitGraph object>, <QubitGraph object>)
+            (QubitGraph<0, 0>, QubitGraph<0, 1>)
 
         Making QubitGraph non-iterable is especially important when using it as input to the Wires
         class, which checks if the input is iterable by wrapping it in a tuple.
