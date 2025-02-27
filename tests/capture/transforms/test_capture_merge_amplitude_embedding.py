@@ -321,14 +321,17 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
             qml.Hadamard(wires=0)
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 0.0, 0.0, 1.0]), wires=[2, 3])
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(qfunc)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
+        expected_state = [0.0] * 16
+        expected_state[-1] = 1.0
         expected_ops = [
-            qml.AmplitudeEmbedding([0.0, 0.0, 0.0, 1.0], wires=[0, 1]),
+            qml.AmplitudeEmbedding(expected_state, wires=[0, 1, 2, 3]),
             qml.Hadamard(wires=[0]),
         ]
 
