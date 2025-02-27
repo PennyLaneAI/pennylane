@@ -58,9 +58,6 @@ logger.addHandler(logging.NullHandler())
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
-    if qml.capture.enabled():
-        return op.has_matrix
-
     if op.name == "QFT" and len(op.wires) >= 6:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
