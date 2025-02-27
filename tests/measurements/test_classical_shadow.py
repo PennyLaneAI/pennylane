@@ -907,6 +907,13 @@ def test_availability_legacy_arithmetic(wires, interface, circuit_basis, basis_r
         legacy_ratios, 1 / 3, atol=5e-1
     )  # Make sure large enough tol, we don't care about the accuracy of a legacy function
 
+    legacy_bits, legacy_recipes = super(type(dev), dev).classical_shadow(obs=obs, circuit=tape)
+    new_bits = legacy_bits[legacy_recipes == basis_recipe]
+    legacy_ratios = np.unique(new_bits, return_counts=True)[1] / (wires * shots)
+    # Check the shape with basis recipe
+    assert legacy_bits.shape == (shots, wires)
+    assert np.allclose(legacy_ratios, 1 / 3, atol=5e-1)
+
 
 def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
     dev = DefaultQubitLegacy(wires=wires, shots=shots)
