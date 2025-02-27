@@ -365,7 +365,7 @@ class QSVT(Operation):
 
         .. code-block::
 
-            poly = [0, -1, 0, 0.5, 0, 0.5]
+            poly = np.array([0, -1, 0, 0.5, 0, 0.5])
             angles = qml.poly_to_angles(poly, "QSVT")
             input_matrix = np.array([[0.2, 0.1], [0.1, -0.1]])
 
@@ -825,7 +825,7 @@ def transform_angles(angles, routine1, routine2):
 
         .. code-block::
 
-            poly = [0, 1.0, 0, -1/2, 0, 1/3]
+            poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
 
             qsp_angles = qml.poly_to_angles(poly, "QSP")
             qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
@@ -911,7 +911,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
 
     .. code-block::
 
-        >>> poly = [0, 1.0, 0, -1/2, 0, 1/3]
+        >>> poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
         >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
         >>> print(qsvt_angles)
         [-5.49778714  1.57079633  1.57079633  0.5833829   1.61095884  0.74753829]
@@ -925,7 +925,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
 
         .. code-block::
 
-            poly = [0, 1.0, 0, -1/2, 0, 1/3]
+            poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
 
             qsvt_angles = qml.poly_to_angles(poly, "QSVT")
 
@@ -953,11 +953,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
 
     """
 
-    # Trailing zeros are removed from the array
-    for _ in range(len(poly)):
-        if not np.isclose(poly[-1], 0.0):
-            break
-        poly.pop()
+    poly = qml.math.trim_zeros(qml.math.array(poly, like="numpy"), trim="b")
 
     if len(poly) == 1:
         raise AssertionError("The polynomial must have at least degree 1.")

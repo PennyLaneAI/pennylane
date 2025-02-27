@@ -167,3 +167,4 @@ See our :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <
     ~lie_closure
     ~structure_constants
     ~center
+
