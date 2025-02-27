@@ -209,6 +209,9 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
+  [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
+
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
   be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
   same shapes and data types will be able to use this cached plxpr instead of capturing the program again.
@@ -362,7 +365,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* A `control_flow` module is created to contain `qml.for_loop` and `qml.while_loop`. They previously existed in the `compiler` module.
+* A `control_flow` module is created to contain `qml.for_loop` and `qml.while_loop`. They
+  previously existed in the `compiler` module.
+  [(#7017)](https://github.com/PennyLaneAI/pennylane/pull/7017)
+
+* `qml.capture.run_autograph` is now idempotent.
+  This means `run_autograph(fn) = run_autograph(run_autograph(fn))`.
+  [(#7001)](https://github.com/PennyLaneAI/pennylane/pull/7001)
 
 * Minor changes to `DQInterpreter` for speedups with program capture execution.
   [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
