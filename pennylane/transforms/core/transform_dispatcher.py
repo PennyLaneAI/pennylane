@@ -287,8 +287,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return qnode
 
     def _capture_qnode_transform(self, qnode, targs, tkwargs):
-        qnode = self.default_qnode_transform(qnode, targs, tkwargs)
-        return self._capture_qfunc_transform(qnode, targs, tkwargs)
+        # This does the same thing as `default_qnode_transform`, but a new method
+        # is still added so that we can change it if we want to in the future.
+        return self.default_qnode_transform(qnode, targs, tkwargs)
 
     def _capture_qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function when program capture is enabled"""
