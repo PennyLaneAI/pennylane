@@ -362,6 +362,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* A `control_flow` module is created to contain `qml.for_loop` and `qml.while_loop`. They previously existed in the `compiler` module.
+
 * Minor changes to `DQInterpreter` for speedups with program capture execution.
   [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
 
