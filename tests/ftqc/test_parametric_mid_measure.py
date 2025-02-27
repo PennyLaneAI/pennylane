@@ -464,6 +464,23 @@ class TestMeasureFunctions:
         ):
             func([0, 1])
 
+    @pytest.mark.parametrize("reset", [True, False])
+    @pytest.mark.parametrize("postselect", [0, 1, None])
+    def test_measure_z_dispatches_to_measure(self, reset, postselect):
+        """Test that the measurement in the computational basis calls the standard
+        PennyLane MCM class, and passes through the arguments"""
+
+        m = qml.ftqc.measure_z(0, reset=reset, postselect=postselect)
+
+        assert isinstance(m, MeasurementValue)
+
+        assert len(m.measurements) == 1
+
+        mp = m.measurements[0]
+        assert mp.reset == reset
+        assert mp.postselect == postselect
+        assert isinstance(mp, MidMeasureMP)
+
 
 class TestDrawParametricMidMeasure:
     @pytest.mark.matplotlib
