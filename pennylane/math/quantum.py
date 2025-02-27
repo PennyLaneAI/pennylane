@@ -16,6 +16,7 @@ import functools
 
 # pylint: disable=import-outside-toplevel
 import itertools
+import warnings
 from string import ascii_letters as ABC
 
 import scipy as sp
@@ -1010,44 +1011,68 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
 
     Raises:
         LinAlgError: If matrix inversion fails
+        ValueError: If NaN values or overflow are encountered during computation
     """
-    mat = csc_matrix(mat)
-    Y = mat
-    Z = sp.sparse.eye(mat.shape[0]).tocsc()
 
-    # Keep track of previous iteration for convergence check
-    Y_prev = None
-    norm_diff = None
+    # Set up warning filters to catch specific warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.filterwarnings("error", category=RuntimeWarning)
 
-    # pylint: disable=too-many-nested-blocks
-    for iter_num in range(max_iter):
+        try:
+            mat = csc_matrix(mat)
+            Y = mat
+            Z = sp.sparse.eye(mat.shape[0]).tocsc()
 
-        # Compute next iteration
-        if iter_num < 2:
-            Zinv = spla.inv(Z)
-            Yinv = spla.inv(Y)
-        else:
-            # Take newton step
-            Zinv = _inv_newton(Z, Zinv)
-            Yinv = _inv_newton(Y, Yinv)
+            # Keep track of previous iteration for convergence check
+            Y_prev = None
+            norm_diff = None
 
-        Y = 0.5 * (Y + Zinv)
-        Z = 0.5 * (Z + Yinv)
+            for iter_num in range(max_iter):
+                # Compute next iteration
+                if iter_num < 2:
+                    Zinv = spla.inv(Z)
+                    Yinv = spla.inv(Y)
+                else:
+                    # Take newton step
+                    Zinv = _inv_newton(Z, Zinv)
+                    Yinv = _inv_newton(Y, Yinv)
 
-        # Check convergence every 10 iterations
-        if iter_num % 10 == 0:
-            if Y_prev is not None:
-                # Compute Frobenius norm of difference
-                diff = (Y - Y_prev).data
-                norm_diff = np.linalg.norm(diff)
-                if norm_diff < tol:
-                    break
-            Y_prev = Y.copy()
-    if norm_diff and norm_diff > tol:
-        raise UserWarning(
-            f"Denman Beavers not converged until the end of {max_iter} loops, with last norm error {norm_diff}"
-        )
-    return Y
+                Y = 0.5 * (Y + Zinv)
+                Z = 0.5 * (Z + Yinv)
+
+                # Check for NaN or infinite values
+                if (
+                    np.any(np.isnan(Y.data))
+                    or np.any(np.isnan(Z.data))
+                    or np.any(np.isinf(Y.data))
+                    or np.any(np.isinf(Z.data))
+                ):
+                    raise ValueError("NaN or infinite values encountered during computation")
+
+                # Check convergence every 10 iterations
+                if iter_num % 10 == 0:
+                    if Y_prev is not None:
+                        # Compute Frobenius norm of difference
+                        diff = (Y - Y_prev).data
+                        norm_diff = np.linalg.norm(diff)
+                        if norm_diff < tol:
+                            break
+                    Y_prev = Y.copy()
+
+            if norm_diff and norm_diff > tol:
+                raise UserWarning(
+                    f"Denman Beavers not converged until the end of {max_iter} loops, with last norm error {norm_diff}"
+                )
+            return Y
+
+        except RuntimeWarning as w:
+            error_msg = str(w)
+            if "invalid value" in error_msg:
+                raise ValueError("Invalid values encountered during matrix multiplication") from w
+            elif "overflow" in error_msg:
+                raise ValueError("Overflow encountered during matrix multiplication") from w
+            else:
+                raise ValueError(f"Numerical error encountered: {error_msg}") from w
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
