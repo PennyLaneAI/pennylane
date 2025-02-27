@@ -318,6 +318,35 @@ def test_cleanup_method():
     assert inst.state is None
 
 
+def test_mid_circuit_measurement():
+    """Test that mid-circuit measurements are correctly handled."""
+
+    class MCMTester(PlxprInterpreter):
+
+        def interpret_mcm_eqn(self, eqn):
+            """Before interpreting a mid-circuit measurement equation, applies an RX gate to the qubit."""
+
+            invals = [self.read(invar) for invar in eqn.invars]
+            with qml.QueuingManager.stop_recording():
+                op = qml.RX._primitive.impl(0.1, *invals)
+            self.interpret_operation(op)
+            _, params = eqn.primitive.get_bind_params(eqn.params)
+            return eqn.primitive.bind(*invals, **params)
+
+    @MCMTester()
+    def f():
+        qml.measure(1, reset=True, postselect=1)
+        return qml.expval(qml.Z(0))
+
+    jaxpr = jax.make_jaxpr(f)()
+
+    assert len(jaxpr.eqns) == 4
+    assert jaxpr.eqns[0].primitive == qml.RX._primitive
+    assert str(jaxpr.eqns[1].primitive) == "measure"
+    assert jaxpr.eqns[2].primitive == qml.PauliZ._primitive
+    assert jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
 def test_returning_operators():
     """Test that operators that are returned are still processed by the interpreter."""
 

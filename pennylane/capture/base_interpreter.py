@@ -335,6 +335,20 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(measurement)
         return jax.tree_util.tree_unflatten(struct, data)
 
+    def interpret_mcm_eqn(self, eqn: "jax.core.JaxprEqn"):
+        """Interpret an equation corresponding to a mid-circuit measurement process.
+
+        Args:
+            eqn (jax.core.JaxprEqn)
+
+        This method can be overridden to provide custom behavior for mid-circuit measurements.
+
+        """
+
+        invals = [self.read(invar) for invar in eqn.invars]
+        _, params = eqn.primitive.get_bind_params(eqn.params)
+        return eqn.primitive.bind(*invals, **params)
+
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
         """Evaluate a jaxpr.
 
@@ -366,6 +380,8 @@ class PlxprInterpreter:
                 outvals = self.interpret_operation_eqn(eqn)
             elif getattr(primitive, "prim_type", "") == "measurement":
                 outvals = self.interpret_measurement_eqn(eqn)
+            elif getattr(primitive, "name", "") == "measure":
+                outvals = self.interpret_mcm_eqn(eqn)
             else:
                 invals = [self.read(invar) for invar in eqn.invars]
                 subfuns, params = primitive.get_bind_params(eqn.params)
