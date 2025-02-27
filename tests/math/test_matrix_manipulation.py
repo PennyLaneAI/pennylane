@@ -1097,6 +1097,15 @@ class TestSqrtMatrix:
         # Matrix with complex entries
         0.2 * np.array([[0.3, 0.9539392j], [0.9539392j, -0.3]]),
     ]
+    # negative matrices: matrices that have negative eigenvalues
+    matrices_negative = [
+        # 2x2 matrix with negative eigenvalue
+        np.array([[1, 2], [2, -3]]),
+        # 3x3 matrix with mixed positive/negative eigenvalues
+        np.array([[2, -1, 0], [-1, -2, 1], [0, 1, 3]]),
+        # 4x4 matrix with negative eigenvalues
+        np.array([[1, 2, 0, 1], [2, -2, 1, 0], [0, 1, -3, 2], [1, 0, 2, -1]]),
+    ]
 
     @pytest.mark.parametrize("dm", dm_list)
     def test_sqrt_matrix_sparse_dm(self, dm, tol):
@@ -1144,6 +1153,12 @@ class TestSqrtMatrix:
         result_2 = result @ result
 
         assert np.allclose(result_2, A, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("m", matrices_negative)
+    def test_sqrt_matrix_sparse_input_negative(self, m):
+        m = csr_matrix(m)
+        with pytest.raises(ValueError):
+            sqrt_matrix_sparse(m)
 
     def test_sqrt_matrix_sparse_input_valid(self):
         """Test that if dense input errors raised"""
