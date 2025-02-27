@@ -45,14 +45,14 @@ class TestPauliRotation:
     params_errors = [10e-3, 10e-4, 10e-5]
     params_ctrl_res = [
         {
-            re.ResourceHadamard.make_resource_rep(): 2,
-            re.ResourceRZ.make_resource_rep(): 2,
+            re.ResourceHadamard.resource_rep(): 2,
+            re.ResourceRZ.resource_rep(): 2,
         },
         {
-            re.ResourceRY.make_resource_rep(): 2,
+            re.ResourceRY.resource_rep(): 2,
         },
         {
-            re.ResourceRZ.make_resource_rep(): 2,
+            re.ResourceRZ.resource_rep(): 2,
         },
     ]
 
@@ -72,7 +72,7 @@ class TestPauliRotation:
         """Test the compact representation"""
         op = resource_class(1.24, wires=0)
         expected = re.CompressedResourceOp(resource_class, {})
-        assert op.make_resource_rep() == expected
+        assert op.resource_rep() == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
@@ -84,7 +84,7 @@ class TestPauliRotation:
         op = resource_class(1.24, wires=0)
         expected = _rotation_resources(epsilon=epsilon)
 
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params, config=config) == expected
@@ -101,7 +101,7 @@ class TestPauliRotation:
     def test_adjoint_decomposition(self, resource_class, epsilon):
         """Test that the adjoint decompositions are correct."""
 
-        expected = {resource_class.make_resource_rep(): 1}
+        expected = {resource_class.resource_rep(): 1}
         assert resource_class.adjoint_resource_decomp() == expected
 
         op = resource_class(1.24, wires=0)
@@ -121,7 +121,7 @@ class TestPauliRotation:
     def test_pow_decomposition(self, resource_class, epsilon, z):
         """Test that the pow decompositions are correct."""
 
-        expected = {resource_class.make_resource_rep(): 1}
+        expected = {resource_class.resource_rep(): 1}
         assert resource_class.pow_resource_decomp(z) == expected
 
         op = resource_class(1.24, wires=0)
@@ -147,10 +147,10 @@ class TestPauliRotation:
         self, resource_class, controlled_class, epsilon
     ):
         """Test that the controlled decompositions are correct."""
-        expected = {controlled_class.make_resource_rep(): 1}
+        expected = {controlled_class.resource_rep(): 1}
         assert resource_class.controlled_resource_decomp(1, 0, 0) == expected
 
-        expected = {controlled_class.make_resource_rep(): 1, re.ResourceX.make_resource_rep(): 2}
+        expected = {controlled_class.resource_rep(): 1, re.ResourceX.resource_rep(): 2}
         assert resource_class.controlled_resource_decomp(1, 1, 0) == expected
 
         op = resource_class(1.24, wires=0)
@@ -170,19 +170,19 @@ class TestPauliRotation:
             [1, 2],
             [1, 1],
             ["w1"],
-            {re.ResourceMultiControlledX.make_resource_rep(2, 0, 1): 2},
+            {re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2},
         ),
         (
             [1, 2],
             [1, 0],
             [],
-            {re.ResourceMultiControlledX.make_resource_rep(2, 1, 0): 2},
+            {re.ResourceMultiControlledX.resource_rep(2, 1, 0): 2},
         ),
         (
             [1, 2, 3],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceMultiControlledX.make_resource_rep(3, 2, 2): 2},
+            {re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2},
         ),
     )
 
@@ -218,8 +218,8 @@ class TestRot:
     def test_resources(self):
         """Test the resources method"""
         op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
-        ry = re.ResourceRY.make_resource_rep()
-        rz = re.ResourceRZ.make_resource_rep()
+        ry = re.ResourceRY.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
         expected = {ry: 1, rz: 2}
 
         assert op.resources() == expected
@@ -228,16 +228,16 @@ class TestRot:
         """Test the compressed representation"""
         op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
         expected = re.CompressedResourceOp(re.ResourceRot, {})
-        assert op.make_resource_rep() == expected
+        assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
         """Test that the resources can be obtained from the compact representation"""
         op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
-        ry = re.ResourceRY.make_resource_rep()
-        rz = re.ResourceRZ.make_resource_rep()
+        ry = re.ResourceRY.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
         expected = {ry: 1, rz: 2}
 
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -250,7 +250,7 @@ class TestRot:
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""
 
-        expected = {re.ResourceRot.make_resource_rep(): 1}
+        expected = {re.ResourceRot.resource_rep(): 1}
         assert re.ResourceRot.adjoint_resource_decomp() == expected
 
         op = re.ResourceRot(1.24, 1.25, 1.26, wires=0)
@@ -262,14 +262,14 @@ class TestRot:
         assert r1 == r2
 
     ctrl_data = (
-        ([1], [1], [], {re.ResourceCRot.make_resource_rep(): 1}),
+        ([1], [1], [], {re.ResourceCRot.resource_rep(): 1}),
         (
             [1],
             [0],
             [],
             {
-                re.ResourceCRot.make_resource_rep(): 1,
-                re.ResourceX.make_resource_rep(): 2,
+                re.ResourceCRot.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 2,
             },
         ),
         (
@@ -277,9 +277,9 @@ class TestRot:
             [1, 1],
             ["w1"],
             {
-                re.ResourceRZ.make_resource_rep(): 3,
-                re.ResourceRY.make_resource_rep(): 2,
-                re.ResourceMultiControlledX.make_resource_rep(2, 0, 1): 2,
+                re.ResourceRZ.resource_rep(): 3,
+                re.ResourceRY.resource_rep(): 2,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
             },
         ),
         (
@@ -287,9 +287,9 @@ class TestRot:
             [1, 0, 0],
             ["w1", "w2"],
             {
-                re.ResourceRZ.make_resource_rep(): 3,
-                re.ResourceRY.make_resource_rep(): 2,
-                re.ResourceMultiControlledX.make_resource_rep(3, 2, 2): 2,
+                re.ResourceRZ.resource_rep(): 3,
+                re.ResourceRY.resource_rep(): 2,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
             },
         ),
     )
@@ -313,9 +313,9 @@ class TestRot:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     pow_data = (
-        (1, {re.ResourceRot.make_resource_rep(): 1}),
-        (2, {re.ResourceRot.make_resource_rep(): 1}),
-        (5, {re.ResourceRot.make_resource_rep(): 1}),
+        (1, {re.ResourceRot.resource_rep(): 1}),
+        (2, {re.ResourceRot.resource_rep(): 1}),
+        (5, {re.ResourceRot.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -334,8 +334,8 @@ class TestPhaseShift:
     def test_resources(self):
         """Test the resources method"""
         op = re.ResourcePhaseShift(0.1, wires=0)
-        rz = re.ResourceRZ.make_resource_rep()
-        global_phase = re.ResourceGlobalPhase.make_resource_rep()
+        rz = re.ResourceRZ.resource_rep()
+        global_phase = re.ResourceGlobalPhase.resource_rep()
 
         expected = {rz: 1, global_phase: 1}
 
@@ -345,16 +345,16 @@ class TestPhaseShift:
         """Test the compressed representation"""
         op = re.ResourcePhaseShift(0.1, wires=0)
         expected = re.CompressedResourceOp(re.ResourcePhaseShift, {})
-        assert op.make_resource_rep() == expected
+        assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
         """Test that the resources can be obtained from the compact representation"""
         op = re.ResourcePhaseShift(0.1, wires=0)
-        global_phase = re.ResourceGlobalPhase.make_resource_rep()
-        rz = re.ResourceRZ.make_resource_rep()
+        global_phase = re.ResourceGlobalPhase.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
         expected = {global_phase: 1, rz: 1}
 
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -367,7 +367,7 @@ class TestPhaseShift:
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""
 
-        expected = {re.ResourcePhaseShift.make_resource_rep(): 1}
+        expected = {re.ResourcePhaseShift.resource_rep(): 1}
         assert re.ResourcePhaseShift.adjoint_resource_decomp() == expected
 
         op = re.ResourcePhaseShift(0.1, wires=0)
@@ -379,14 +379,14 @@ class TestPhaseShift:
         assert r1 == r2
 
     ctrl_data = (
-        ([1], [1], [], {re.ResourceControlledPhaseShift.make_resource_rep(): 1}),
+        ([1], [1], [], {re.ResourceControlledPhaseShift.resource_rep(): 1}),
         (
             [1],
             [0],
             [],
             {
-                re.ResourceControlledPhaseShift.make_resource_rep(): 1,
-                re.ResourceX.make_resource_rep(): 2,
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+                re.ResourceX.resource_rep(): 2,
             },
         ),
         (
@@ -394,8 +394,8 @@ class TestPhaseShift:
             [1, 1],
             ["w1"],
             {
-                re.ResourceControlledPhaseShift.make_resource_rep(): 1,
-                re.ResourceMultiControlledX.make_resource_rep(2, 0, 1): 2,
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
             },
         ),
         (
@@ -403,8 +403,8 @@ class TestPhaseShift:
             [1, 0, 0],
             ["w1", "w2"],
             {
-                re.ResourceControlledPhaseShift.make_resource_rep(): 1,
-                re.ResourceMultiControlledX.make_resource_rep(3, 2, 2): 2,
+                re.ResourceControlledPhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
             },
         ),
     )
@@ -428,9 +428,9 @@ class TestPhaseShift:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     pow_data = (
-        (1, {re.ResourcePhaseShift.make_resource_rep(): 1}),
-        (2, {re.ResourcePhaseShift.make_resource_rep(): 1}),
-        (5, {re.ResourcePhaseShift.make_resource_rep(): 1}),
+        (1, {re.ResourcePhaseShift.resource_rep(): 1}),
+        (2, {re.ResourcePhaseShift.resource_rep(): 1}),
+        (5, {re.ResourcePhaseShift.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)

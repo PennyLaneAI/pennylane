@@ -33,14 +33,14 @@ class TestMultiRZ:
     def test_resource_rep(self, num_wires):
         """Test that the compressed representation is correct."""
         expected = re.CompressedResourceOp(re.ResourceMultiRZ, {"num_wires": num_wires})
-        assert re.ResourceMultiRZ.make_resource_rep(num_wires) == expected
+        assert re.ResourceMultiRZ.resource_rep(num_wires) == expected
 
     @pytest.mark.parametrize("num_wires", range(1, 10))
     def test_resources(self, num_wires):
         """Test that the resources are correct."""
         expected = {
-            re.ResourceCNOT.make_resource_rep(): 2 * (num_wires - 1),
-            re.ResourceRZ.make_resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2 * (num_wires - 1),
+            re.ResourceRZ.resource_rep(): 1,
         }
         assert re.ResourceMultiRZ.resources(num_wires) == expected
 
@@ -49,11 +49,11 @@ class TestMultiRZ:
         """Test that the resources can be computed from the compressed representation and params."""
         op = re.ResourceMultiRZ(0.5, wires=range(num_wires))
         expected = {
-            re.ResourceCNOT.make_resource_rep(): 2 * (num_wires - 1),
-            re.ResourceRZ.make_resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2 * (num_wires - 1),
+            re.ResourceRZ.resource_rep(): 1,
         }
 
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -61,7 +61,7 @@ class TestMultiRZ:
     @pytest.mark.parametrize("num_wires", range(1, 5))
     def test_adjoint_decomp(self, num_wires):
         """Test that the adjoint decomposition is correct."""
-        expected = {re.ResourceMultiRZ.make_resource_rep(num_wires=num_wires): 1}
+        expected = {re.ResourceMultiRZ.resource_rep(num_wires=num_wires): 1}
         assert re.ResourceMultiRZ.adjoint_resource_decomp(num_wires=num_wires) == expected
 
         multi_rz = re.ResourceMultiRZ(0.123, wires=range(num_wires))
@@ -75,8 +75,8 @@ class TestMultiRZ:
             [1],
             [],
             {
-                re.ResourceCNOT.make_resource_rep(): 4,
-                re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 1, 0, 0): 1,
+                re.ResourceCNOT.resource_rep(): 4,
+                re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 1, 0, 0): 1,
             },
         ),
         (
@@ -84,10 +84,10 @@ class TestMultiRZ:
             [0],
             [],
             {
-                re.ResourceControlled.make_resource_rep(
+                re.ResourceControlled.resource_rep(
                     re.ResourceMultiRZ, {"num_wires": 3}, 1, 0, 0
                 ): 1,
-                re.ResourceX.make_resource_rep(): 2,
+                re.ResourceX.resource_rep(): 2,
             },
         ),
         (
@@ -95,8 +95,8 @@ class TestMultiRZ:
             [1, 1],
             ["w1"],
             {
-                re.ResourceCNOT.make_resource_rep(): 4,
-                re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 2, 0, 1): 1,
+                re.ResourceCNOT.resource_rep(): 4,
+                re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 2, 0, 1): 1,
             },
         ),
         (
@@ -104,10 +104,10 @@ class TestMultiRZ:
             [1, 0, 0],
             ["w1", "w2"],
             {
-                re.ResourceControlled.make_resource_rep(
+                re.ResourceControlled.resource_rep(
                     re.ResourceMultiRZ, {"num_wires": 3}, 3, 0, 2
                 ): 1,
-                re.ResourceX.make_resource_rep(): 4,
+                re.ResourceX.resource_rep(): 4,
             },
         ),
     )
@@ -139,10 +139,10 @@ class TestMultiRZ:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     pow_data = (
-        (1, {re.ResourceMultiRZ.make_resource_rep(num_wires=4): 1}),
-        (2, {re.ResourceMultiRZ.make_resource_rep(num_wires=4): 1}),
-        (3, {re.ResourceMultiRZ.make_resource_rep(num_wires=4): 1}),
-        (4, {re.ResourceMultiRZ.make_resource_rep(num_wires=4): 1}),
+        (1, {re.ResourceMultiRZ.resource_rep(num_wires=4): 1}),
+        (2, {re.ResourceMultiRZ.resource_rep(num_wires=4): 1}),
+        (3, {re.ResourceMultiRZ.resource_rep(num_wires=4): 1}),
+        (4, {re.ResourceMultiRZ.resource_rep(num_wires=4): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -170,7 +170,7 @@ class TestPauliRot:
     def test_resource_rep(self, pauli_word):
         """Test that the compressed representation is correct."""
         expected = re.CompressedResourceOp(re.ResourcePauliRot, {"pauli_word": pauli_word})
-        assert re.ResourcePauliRot.make_resource_rep(pauli_word) == expected
+        assert re.ResourcePauliRot.resource_rep(pauli_word) == expected
 
     expected_h_count = (0, 4, 6, 6, 0)
     expected_s_count = (0, 1, 0, 1, 0)
@@ -182,14 +182,14 @@ class TestPauliRot:
         active_wires = len(pauli_word.replace("I", ""))
 
         if set(pauli_word) == {"I"}:
-            expected = {re.ResourceGlobalPhase.make_resource_rep(): 1}
+            expected = {re.ResourceGlobalPhase.resource_rep(): 1}
         else:
             expected = {
-                re.ResourceHadamard.make_resource_rep(): expected_h_count,
-                re.ResourceS.make_resource_rep(): expected_s_count,
-                re.ResourceAdjoint.make_resource_rep(re.ResourceS, {}): expected_s_count,
-                re.ResourceRZ.make_resource_rep(): 1,
-                re.ResourceCNOT.make_resource_rep(): 2 * (active_wires - 1),
+                re.ResourceHadamard.resource_rep(): expected_h_count,
+                re.ResourceS.resource_rep(): expected_s_count,
+                re.ResourceAdjoint.resource_rep(re.ResourceS, {}): expected_s_count,
+                re.ResourceRZ.resource_rep(): 1,
+                re.ResourceCNOT.resource_rep(): 2 * (active_wires - 1),
             }
 
         assert re.ResourcePauliRot.resources(pauli_word) == expected
@@ -201,15 +201,15 @@ class TestPauliRot:
         active_wires = len(pauli_word.replace("I", ""))
 
         if set(pauli_word) == {"I"}:
-            expected = {re.ResourceGlobalPhase.make_resource_rep(): 1}
+            expected = {re.ResourceGlobalPhase.resource_rep(): 1}
         else:
             expected = {
-                re.ResourceHadamard.make_resource_rep(): expected_h_count,
-                re.ResourceRX.make_resource_rep(): expected_rx_count,
-                re.ResourceMultiRZ.make_resource_rep(active_wires): 1,
+                re.ResourceHadamard.resource_rep(): expected_h_count,
+                re.ResourceRX.resource_rep(): expected_rx_count,
+                re.ResourceMultiRZ.resource_rep(active_wires): 1,
             }
 
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -217,7 +217,7 @@ class TestPauliRot:
     @pytest.mark.parametrize("pauli_word", pauli_words)
     def test_adjoint_decomp(self, pauli_word):
         """Test that the adjoint decomposition is correct."""
-        expected = {re.ResourcePauliRot.make_resource_rep(pauli_word=pauli_word): 1}
+        expected = {re.ResourcePauliRot.resource_rep(pauli_word=pauli_word): 1}
         assert re.ResourcePauliRot.adjoint_resource_decomp(pauli_word=pauli_word) == expected
 
         op = re.ResourcePauliRot(theta=0.5, pauli_word=pauli_word, wires=range(len(pauli_word)))
@@ -232,9 +232,9 @@ class TestPauliRot:
             [1],
             [],
             {
-                re.ResourceHadamard.make_resource_rep(): 6,
-                re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 1, 0, 0): 1,
-                re.ResourceCNOT.make_resource_rep(): 4,
+                re.ResourceHadamard.resource_rep(): 6,
+                re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 1, 0, 0): 1,
+                re.ResourceCNOT.resource_rep(): 4,
             },
         ),
         (
@@ -243,9 +243,9 @@ class TestPauliRot:
             [0],
             [],
             {
-                re.ResourceHadamard.make_resource_rep(): 6,
-                re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 1, 1, 0): 1,
-                re.ResourceCNOT.make_resource_rep(): 4,
+                re.ResourceHadamard.resource_rep(): 6,
+                re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 1, 1, 0): 1,
+                re.ResourceCNOT.resource_rep(): 4,
             },
         ),
         (
@@ -254,9 +254,9 @@ class TestPauliRot:
             [1, 1],
             ["w1"],
             {
-                re.ResourceHadamard.make_resource_rep(): 6,
-                re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 2, 0, 1): 1,
-                re.ResourceCNOT.make_resource_rep(): 4,
+                re.ResourceHadamard.resource_rep(): 6,
+                re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 2, 0, 1): 1,
+                re.ResourceCNOT.resource_rep(): 4,
             },
         ),
         (
@@ -265,11 +265,11 @@ class TestPauliRot:
             [1],
             [],
             {
-                re.ResourceHadamard.make_resource_rep(): 6,
-                re.ResourceS.make_resource_rep(): 1,
-                re.ResourceAdjoint.make_resource_rep(re.ResourceS, {}): 1,
-                re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 1, 0, 0): 1,
-                re.ResourceCNOT.make_resource_rep(): 6,
+                re.ResourceHadamard.resource_rep(): 6,
+                re.ResourceS.resource_rep(): 1,
+                re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
+                re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 1, 0, 0): 1,
+                re.ResourceCNOT.resource_rep(): 6,
             },
         ),
         (
@@ -278,11 +278,11 @@ class TestPauliRot:
             [0],
             [],
             {
-                re.ResourceHadamard.make_resource_rep(): 6,
-                re.ResourceS.make_resource_rep(): 1,
-                re.ResourceAdjoint.make_resource_rep(re.ResourceS, {}): 1,
-                re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 1, 1, 0): 1,
-                re.ResourceCNOT.make_resource_rep(): 6,
+                re.ResourceHadamard.resource_rep(): 6,
+                re.ResourceS.resource_rep(): 1,
+                re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
+                re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 1, 1, 0): 1,
+                re.ResourceCNOT.resource_rep(): 6,
             },
         ),
         (
@@ -291,11 +291,11 @@ class TestPauliRot:
             [1, 1],
             ["w1"],
             {
-                re.ResourceHadamard.make_resource_rep(): 6,
-                re.ResourceS.make_resource_rep(): 1,
-                re.ResourceAdjoint.make_resource_rep(re.ResourceS, {}): 1,
-                re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 2, 0, 1): 1,
-                re.ResourceCNOT.make_resource_rep(): 6,
+                re.ResourceHadamard.resource_rep(): 6,
+                re.ResourceS.resource_rep(): 1,
+                re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
+                re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 2, 0, 1): 1,
+                re.ResourceCNOT.resource_rep(): 6,
             },
         ),
         (
@@ -303,21 +303,21 @@ class TestPauliRot:
             [1],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceGlobalPhase, {}, 1, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceGlobalPhase, {}, 1, 0, 0): 1},
         ),
         (
             "III",
             [1],
             [0],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceGlobalPhase, {}, 1, 1, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceGlobalPhase, {}, 1, 1, 0): 1},
         ),
         (
             "III",
             [1, 2],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceGlobalPhase, {}, 2, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceGlobalPhase, {}, 2, 0, 1): 1},
         ),
     )
 
@@ -352,7 +352,7 @@ class TestPauliRot:
     def test_pow_decomp(self, z, pauli_word):
         """Test that the pow decomposition is correct."""
         op = re.ResourcePauliRot(theta=0.5, pauli_word=pauli_word, wires=range(len(pauli_word)))
-        expected_res = {re.ResourcePauliRot.make_resource_rep(pauli_word=pauli_word): 1}
+        expected_res = {re.ResourcePauliRot.resource_rep(pauli_word=pauli_word): 1}
         assert op.pow_resource_decomp(z, **op.resource_params()) == expected_res
 
         op2 = re.ResourcePow(op, z)
@@ -370,13 +370,13 @@ class TestIsingXX:
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
         expected = re.CompressedResourceOp(re.ResourceIsingXX, {})
-        assert re.ResourceIsingXX.make_resource_rep() == expected
+        assert re.ResourceIsingXX.resource_rep() == expected
 
     def test_resources(self):
         """Test that the resources are correct."""
         expected = {
-            re.ResourceCNOT.make_resource_rep(): 2,
-            re.ResourceRX.make_resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2,
+            re.ResourceRX.resource_rep(): 1,
         }
         assert re.ResourceIsingXX.resources() == expected
 
@@ -384,10 +384,10 @@ class TestIsingXX:
         """Test that the resources can be computed from the compressed representation and params."""
         op = re.ResourceIsingXX(0.5, wires=[0, 1])
         expected = {
-            re.ResourceCNOT.make_resource_rep(): 2,
-            re.ResourceRX.make_resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2,
+            re.ResourceRX.resource_rep(): 1,
         }
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -404,15 +404,15 @@ class TestIsingXY:
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
         expected = re.CompressedResourceOp(re.ResourceIsingXY, {})
-        assert re.ResourceIsingXY.make_resource_rep() == expected
+        assert re.ResourceIsingXY.resource_rep() == expected
 
     def test_resources(self):
         """Test that the resources are correct."""
         expected = {
-            re.ResourceHadamard.make_resource_rep(): 2,
-            re.ResourceCY.make_resource_rep(): 2,
-            re.ResourceRY.make_resource_rep(): 1,
-            re.ResourceRX.make_resource_rep(): 1,
+            re.ResourceHadamard.resource_rep(): 2,
+            re.ResourceCY.resource_rep(): 2,
+            re.ResourceRY.resource_rep(): 1,
+            re.ResourceRX.resource_rep(): 1,
         }
         assert re.ResourceIsingXY.resources() == expected
 
@@ -420,12 +420,12 @@ class TestIsingXY:
         """Test that the resources can be computed from the compressed representation and params."""
         op = re.ResourceIsingXY(0.5, wires=[0, 1])
         expected = {
-            re.ResourceHadamard.make_resource_rep(): 2,
-            re.ResourceCY.make_resource_rep(): 2,
-            re.ResourceRY.make_resource_rep(): 1,
-            re.ResourceRX.make_resource_rep(): 1,
+            re.ResourceHadamard.resource_rep(): 2,
+            re.ResourceCY.resource_rep(): 2,
+            re.ResourceRY.resource_rep(): 1,
+            re.ResourceRX.resource_rep(): 1,
         }
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -442,13 +442,13 @@ class TestIsingYY:
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
         expected = re.CompressedResourceOp(re.ResourceIsingYY, {})
-        assert re.ResourceIsingYY.make_resource_rep() == expected
+        assert re.ResourceIsingYY.resource_rep() == expected
 
     def test_resources(self):
         """Test that the resources are correct."""
         expected = {
-            re.ResourceCY.make_resource_rep(): 2,
-            re.ResourceRY.make_resource_rep(): 1,
+            re.ResourceCY.resource_rep(): 2,
+            re.ResourceRY.resource_rep(): 1,
         }
         assert re.ResourceIsingYY.resources() == expected
 
@@ -456,10 +456,10 @@ class TestIsingYY:
         """Test that the resources can be computed from the compressed representation and params."""
         op = re.ResourceIsingYY(0.5, wires=[0, 1])
         expected = {
-            re.ResourceCY.make_resource_rep(): 2,
-            re.ResourceRY.make_resource_rep(): 1,
+            re.ResourceCY.resource_rep(): 2,
+            re.ResourceRY.resource_rep(): 1,
         }
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -476,13 +476,13 @@ class TestIsingZZ:
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
         expected = re.CompressedResourceOp(re.ResourceIsingZZ, {})
-        assert re.ResourceIsingZZ.make_resource_rep() == expected
+        assert re.ResourceIsingZZ.resource_rep() == expected
 
     def test_resources(self):
         """Test that the resources are correct."""
         expected = {
-            re.ResourceCNOT.make_resource_rep(): 2,
-            re.ResourceRZ.make_resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2,
+            re.ResourceRZ.resource_rep(): 1,
         }
         assert re.ResourceIsingZZ.resources() == expected
 
@@ -490,10 +490,10 @@ class TestIsingZZ:
         """Test that the resources can be computed from the compressed representation and params."""
         op = re.ResourceIsingZZ(0.5, wires=[0, 1])
         expected = {
-            re.ResourceCNOT.make_resource_rep(): 2,
-            re.ResourceRZ.make_resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2,
+            re.ResourceRZ.resource_rep(): 1,
         }
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -510,14 +510,14 @@ class TestPSWAP:
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
         expected = re.CompressedResourceOp(re.ResourcePSWAP, {})
-        assert re.ResourcePSWAP.make_resource_rep() == expected
+        assert re.ResourcePSWAP.resource_rep() == expected
 
     def test_resources(self):
         """Test that the resources are correct."""
         expected = {
-            re.ResourceSWAP.make_resource_rep(): 1,
-            re.ResourceCNOT.make_resource_rep(): 2,
-            re.ResourcePhaseShift.make_resource_rep(): 1,
+            re.ResourceSWAP.resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2,
+            re.ResourcePhaseShift.resource_rep(): 1,
         }
         assert re.ResourcePSWAP.resources() == expected
 
@@ -525,11 +525,11 @@ class TestPSWAP:
         """Test that the resources can be computed from the compressed representation and params."""
         op = re.ResourcePSWAP(0.5, wires=[0, 1])
         expected = {
-            re.ResourceSWAP.make_resource_rep(): 1,
-            re.ResourceCNOT.make_resource_rep(): 2,
-            re.ResourcePhaseShift.make_resource_rep(): 1,
+            re.ResourceSWAP.resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2,
+            re.ResourcePhaseShift.resource_rep(): 1,
         }
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected

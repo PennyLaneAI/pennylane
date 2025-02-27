@@ -54,7 +54,7 @@ class TestQFT:
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = re.CompressedResourceOp(re.ResourceQFT, {"num_wires": num_wires})
-        assert re.ResourceQFT.make_resource_rep(num_wires) == expected
+        assert re.ResourceQFT.resource_rep(num_wires) == expected
 
     @pytest.mark.parametrize(
         "num_wires, num_hadamard, num_swap, num_ctrl_phase_shift",
@@ -74,7 +74,7 @@ class TestQFT:
 
         expected = {hadamard: num_hadamard, swap: num_swap, ctrl_phase_shift: num_ctrl_phase_shift}
 
-        rep = re.ResourceQFT.make_resource_rep(num_wires)
+        rep = re.ResourceQFT.resource_rep(num_wires)
         actual = rep.op_type.resources(**rep.params)
 
         assert actual == expected

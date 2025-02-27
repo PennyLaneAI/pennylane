@@ -36,22 +36,21 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
             gate_types = defaultdict(int)
             decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
-                rep = cls.make_resource_rep(gate.op_type, gate.params)
+                rep = cls.resource_rep(gate.op_type, gate.params)
                 gate_types[rep] = count
 
             return gate_types
 
-    @property
     def resource_params(self) -> dict:
-        return {"base_class": type(self.base), "base_params": self.base.resource_params}
+        return {"base_class": type(self.base), "base_params": self.base.resource_params()}
 
     @classmethod
-    def make_resource_rep(cls, base_class, base_params) -> re.CompressedResourceOp:
+    def resource_rep(cls, base_class, base_params) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {"base_class": base_class, "base_params": base_params})
 
     @staticmethod
     def adjoint_resource_decomp(base_class, base_params) -> Dict[re.CompressedResourceOp, int]:
-        return {base_class.make_resource_rep(**base_params): 1}
+        return {base_class.resource_rep(**base_params): 1}
 
     @staticmethod
     def tracking_name(base_class, base_params) -> str:
@@ -78,34 +77,29 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         if num_ctrl_values == 0:
             decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
-                rep = cls.make_resource_rep(
-                    gate.op_type, gate.params, num_ctrl_wires, 0, num_work_wires
-                )
+                rep = cls.resource_rep(gate.op_type, gate.params, num_ctrl_wires, 0, num_work_wires)
                 gate_types[rep] = count
 
             return gate_types
 
-        no_control = cls.make_resource_rep(
-            base_class, base_params, num_ctrl_wires, 0, num_work_wires
-        )
-        x = re.ResourceX.make_resource_rep()
+        no_control = cls.resource_rep(base_class, base_params, num_ctrl_wires, 0, num_work_wires)
+        x = re.ResourceX.resource_rep()
         gate_types[no_control] = 1
         gate_types[x] = 2 * num_ctrl_values
 
         return gate_types
 
-    @property
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
-            "base_params": self.base.resource_params,
+            "base_params": self.base.resource_params(),
             "num_ctrl_wires": len(self.control_wires),
             "num_ctrl_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
         }
 
     @classmethod
-    def make_resource_rep(
+    def resource_rep(
         cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(
@@ -132,7 +126,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
-            cls.make_resource_rep(
+            cls.resource_rep(
                 base_class,
                 base_params,
                 outer_num_ctrl_wires + num_ctrl_wires,
@@ -163,25 +157,24 @@ class ResourcePow(PowOperation, re.ResourceOperator):
             gate_types = defaultdict(int)
             decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
-                rep = cls.make_resource_rep(gate.op_type, z, gate.params)
+                rep = cls.resource_rep(gate.op_type, z, gate.params)
                 gate_types[rep] = count
 
             return gate_types
         except re.ResourcesNotDefined:
             pass
 
-        return {base_class.make_resource_rep(**base_params): z}
+        return {base_class.resource_rep(**base_params): z}
 
-    @property
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
             "z": self.z,
-            "base_params": self.base.resource_params,
+            "base_params": self.base.resource_params(),
         }
 
     @classmethod
-    def make_resource_rep(cls, base_class, z, base_params) -> re.CompressedResourceOp:
+    def resource_rep(cls, base_class, z, base_params) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(
             cls, {"base_class": base_class, "z": z, "base_params": base_params}
         )
@@ -190,7 +183,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     def pow_resource_decomp(
         cls, z0, base_class, z, base_params
     ) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.make_resource_rep(base_class, z0 * z, base_params): 1}
+        return {cls.resource_rep(base_class, z0 * z, base_params): 1}
 
     @staticmethod
     def tracking_name(base_class, z, base_params) -> str:
