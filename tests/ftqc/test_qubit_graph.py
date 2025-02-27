@@ -188,6 +188,7 @@ class TestQubitGraphsInitialization:
 
     def test_init_graph_with_invalid_type_raises_type_error(self):
         """Test that attempting to initialize a graph with an invalid graph type raises a TypeError."""
+        # pylint: disable=missing-class-docstring
 
         class NotAGraph:
             pass
@@ -668,6 +669,7 @@ class TestQubitGraphsWarnings:
         """Test that initializing a QubitGraph with a graph-like object that is not a networkx.Graph
         object emits a UserWarning.
         """
+        # pylint: disable=missing-class-docstring
 
         class CustomGraph:
             def __init__(self):
