@@ -42,7 +42,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
             return gate_types
 
     def resource_params(self) -> dict:
-        return {"base_class": type(self.base), "base_params": self.base.resource_params()}
+        return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
     @classmethod
     def resource_rep(cls, base_class, base_params) -> re.CompressedResourceOp:
@@ -92,7 +92,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
-            "base_params": self.base.resource_params(),
+            "base_params": self.base.resource_params,
             "num_ctrl_wires": len(self.control_wires),
             "num_ctrl_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
@@ -170,7 +170,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         return {
             "base_class": type(self.base),
             "z": self.z,
-            "base_params": self.base.resource_params(),
+            "base_params": self.base.resource_params,
         }
 
     @classmethod

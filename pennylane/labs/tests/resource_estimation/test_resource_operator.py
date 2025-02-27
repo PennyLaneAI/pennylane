@@ -107,7 +107,7 @@ def test_set_resources():
 
 
 def test_resource_rep_from_op():
-    """Test that the resource_rep property is the composition of resource_params and resource_rep"""
+    """Test that the resource_rep_from_op method is the composition of resource_params and resource_rep"""
 
     class DummyClass(re.ResourceQFT, re.ResourceOperator):
         """Dummy class for testing"""
@@ -129,4 +129,4 @@ def test_resource_rep_from_op():
             return f"DummyClass({foo}, {bar})"
 
     op = DummyClass(wires=[1, 2, 3])
-    assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params())
+    assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params)

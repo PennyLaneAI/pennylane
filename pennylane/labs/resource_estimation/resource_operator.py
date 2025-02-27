@@ -69,7 +69,7 @@ class ResourceOperator(ABC):
         .. code-block:: bash
 
             >>> op = ResourceQFT(range(3))
-            >>> op.resources(**op.resource_params())
+            >>> op.resources(**op.resource_params)
             {Hadamard(): 3, SWAP(): 1, ControlledPhaseShift(): 3}
 
     """
@@ -92,6 +92,7 @@ class ResourceOperator(ABC):
         cls.resources = new_func
 
     @abstractmethod
+    @property
     def resource_params(self) -> dict:
         """Returns a dictionary containing the minimal information needed to
         compute a compressed representation"""
@@ -104,7 +105,7 @@ class ResourceOperator(ABC):
 
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
-        return self.__class__.resource_rep(**self.resource_params())
+        return self.__class__.resource_rep(**self.resource_params)
 
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -130,7 +131,7 @@ class ResourceOperator(ABC):
 
     def tracking_name_from_op(self) -> str:
         """Returns the tracking name built with the operator's parameters."""
-        return self.__class__.tracking_name(**self.resource_params())
+        return self.__class__.tracking_name(**self.resource_params)
 
 
 class ResourcesNotDefined(Exception):
