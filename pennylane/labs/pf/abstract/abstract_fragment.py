@@ -1,9 +1,9 @@
 """The Fragment class"""
 
 from __future__ import annotations
-from typing import Sequence
 
 from abc import ABC, abstractmethod
+from typing import Sequence
 
 
 class Fragment(ABC):
@@ -34,9 +34,11 @@ class Fragment(ABC):
         """Apply to a state on the right"""
         raise NotImplementedError
 
+
 def commutator(a: Fragment, b: Fragment) -> Fragment:
     """Return the commutator [a, b]"""
-    return a@b - b@a
+    return a @ b - b @ a
+
 
 def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
     """Return [a, [b, [c, d]]]"""

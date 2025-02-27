@@ -1,4 +1,4 @@
-""""
+""" "
 Spin-vibronic Hamiltonian details as specified in the SI of
 
 T. Northey, T.J. Penfold,

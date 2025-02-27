@@ -275,7 +275,7 @@ class TestProbs:
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires",
-        [([3, 1, 0])],
+        [[3, 1, 0]],
     )
     def test_process_density_matrix_medium(self, interface, subset_wires):
         """Test processing of a random generated, medium-sized density matrices."""

@@ -9,6 +9,49 @@ import scipy as sp
 import pennylane as qml
 from pennylane.labs.pf import HOState, VibrationalHamiltonian
 from pennylane.labs.vibrational import vibrational_pes
+from pennylane.qchem.vibrational.taylor_ham import _threebody_degs, _twobody_degs
+
+
+def _transform_coeffs(phis):
+    """Transform the coefficients"""
+
+    taylor_1, taylor_2, taylor_3 = phis
+
+    start_deg = 2
+    n_modes, num_1d_coeffs = np.shape(taylor_1)
+    taylor_deg = num_1d_coeffs + start_deg - 1
+
+    phis = []
+    for i in range(5):
+        shape = (n_modes,) * (i + 1)
+        phis.append(np.zeros(shape))
+
+    # one-mode
+    for m1 in range(n_modes):
+        for deg_i in range(start_deg, taylor_deg + 1):
+            index = (m1,) * deg_i
+            phis[deg_i - 1][index] = taylor_1[m1, deg_i - start_deg]
+
+    # two-mode
+    degs_2d = _twobody_degs(taylor_deg, min_deg=start_deg)
+    for m1 in range(n_modes):
+        for m2 in range(m1):
+            for deg_idx, Qs in enumerate(degs_2d):
+                q1deg, q2deg = Qs[:2]
+                index = ((m1,) * q1deg) + ((m2,) * q2deg)
+                phis[q1deg + q2deg - 1][index] = taylor_2[m1, m2, deg_idx]
+
+    # three-mode
+    degs_3d = _threebody_degs(taylor_deg, min_deg=start_deg)
+    for m1 in range(n_modes):
+        for m2 in range(m1):
+            for m3 in range(m2):
+                for deg_idx, Qs in enumerate(degs_3d):
+                    q1deg, q2deg, q3deg = Qs[:3]
+                    index = ((m1,) * q1deg) + ((m2,) * q2deg) + ((m3,) * q3deg)
+                    phis[q1deg + q2deg + q3deg - 1][index] = taylor_3[m1, m2, m3, deg_idx]
+
+    return phis
 
 
 class TestFragments:
@@ -30,7 +73,7 @@ class TestFragments:
         assert np.allclose(frag1, frag2)
 
 
-class Test1Mode:
+class TestHarmonic1Mode:
     """Test the vibrational Hamiltonian on a single mode"""
 
     freq = 1.2345
@@ -80,7 +123,7 @@ class Test1Mode:
         assert np.allclose(actual, expected)
 
 
-class TestMultiMode:
+class TestHarmonicMultiMode:
     """Test the vibrational Hamiltonian with multiple modes"""
 
     n_states = 3
@@ -147,35 +190,120 @@ class TestMultiMode:
 
         assert np.allclose(actual, expected)
 
+
 class TestExpectation:
 
-    @pytest.mark.parametrize("symbols, charge, geometry", [
-        (['H', 'H'], 0, np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
-        (['H', 'H', 'H'], 1, np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 1.0]]))
-    ])
-    def test_molecular_ham(self, symbols, charge, geometry):
-        """Test the exepctation value against PL"""
+    mat1 = np.array(
+        [[0.01095216 + 0.0j, 0.00018082 + 0.0j], [0.00018082 + 0.0j, 0.01095216 + 0.0j]]
+    )
+    mat2 = np.array(
+        [
+            [
+                1.85130786e-02 + 0.0j,
+                4.00934485e-05 + 0.0j,
+                1.10670334e-03 + 0.0j,
+                -4.01192823e-04 + 0.0j,
+                2.06315706e-03 + 0.0j,
+                1.70409266e-04 + 0.0j,
+                -5.92787860e-04 + 0.0j,
+                -7.53000830e-05 + 0.0j,
+            ],
+            [
+                4.00934485e-05 + 0.0j,
+                1.85130786e-02 + 0.0j,
+                -4.01192823e-04 + 0.0j,
+                1.10670334e-03 + 0.0j,
+                1.70409266e-04 + 0.0j,
+                2.06315706e-03 + 0.0j,
+                -7.53000830e-05 + 0.0j,
+                -5.92787860e-04 + 0.0j,
+            ],
+            [
+                1.10670334e-03 + 0.0j,
+                -4.01192823e-04 + 0.0j,
+                1.85130786e-02 + 0.0j,
+                4.00934485e-05 + 0.0j,
+                -5.92787860e-04 + 0.0j,
+                -7.53000830e-05 + 0.0j,
+                2.06315706e-03 + 0.0j,
+                1.70409266e-04 + 0.0j,
+            ],
+            [
+                -4.01192823e-04 + 0.0j,
+                1.10670334e-03 + 0.0j,
+                4.00934485e-05 + 0.0j,
+                1.85130786e-02 + 0.0j,
+                -7.53000830e-05 + 0.0j,
+                -5.92787860e-04 + 0.0j,
+                1.70409266e-04 + 0.0j,
+                2.06315706e-03 + 0.0j,
+            ],
+            [
+                2.06315706e-03 + 0.0j,
+                1.70409266e-04 + 0.0j,
+                -5.92787860e-04 + 0.0j,
+                -7.53000830e-05 + 0.0j,
+                1.85130786e-02 + 0.0j,
+                4.00934485e-05 + 0.0j,
+                1.10670334e-03 + 0.0j,
+                -4.01192823e-04 + 0.0j,
+            ],
+            [
+                1.70409266e-04 + 0.0j,
+                2.06315706e-03 + 0.0j,
+                -7.53000830e-05 + 0.0j,
+                -5.92787860e-04 + 0.0j,
+                4.00934485e-05 + 0.0j,
+                1.85130786e-02 + 0.0j,
+                -4.01192823e-04 + 0.0j,
+                1.10670334e-03 + 0.0j,
+            ],
+            [
+                -5.92787860e-04 + 0.0j,
+                -7.53000830e-05 + 0.0j,
+                2.06315706e-03 + 0.0j,
+                1.70409266e-04 + 0.0j,
+                1.10670334e-03 + 0.0j,
+                -4.01192823e-04 + 0.0j,
+                1.85130786e-02 + 0.0j,
+                4.00934485e-05 + 0.0j,
+            ],
+            [
+                -7.53000830e-05 + 0.0j,
+                -5.92787860e-04 + 0.0j,
+                1.70409266e-04 + 0.0j,
+                2.06315706e-03 + 0.0j,
+                -4.01192823e-04 + 0.0j,
+                1.10670334e-03 + 0.0j,
+                4.00934485e-05 + 0.0j,
+                1.85130786e-02 + 0.0j,
+            ],
+        ]
+    )
+
+    H2_params = (["H", "H"], 0, np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), mat1)
+    H3_params = (
+        ["H", "H", "H"],
+        1,
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 1.0]]),
+        mat2,
+    )
+
+    @pytest.mark.parametrize("symbols, charge, geometry, expected", [H2_params, H3_params])
+    def test_matrix(self, symbols, charge, geometry, expected):
+        """Test the matrix"""
 
         mol = qml.qchem.Molecule(symbols, geometry, charge=charge)
         pes = vibrational_pes(mol, quad_order=5, cubic=True, dipole_level=1)
 
-        phi_one_body, phi_two_body, phi_three_body = qml.qchem.taylor_coeffs(pes)
+        phis = [np.array(0)] + _transform_coeffs(qml.qchem.taylor_coeffs(pes))
         omegas = pes.freqs
 
-        print("one")
-        print(phi_one_body)
-        print("two")
-        print(phi_two_body)
-        print("three")
-        print(phi_three_body)
+        ham = VibrationalHamiltonian(len(omegas), omegas, phis)
+        actual = ham.operator().matrix(2, len(omegas), basis="harmonic")
 
-        taylor_ham_qubit = qml.qchem.taylor_hamiltonian(pes)
-        taylor_ham_matrix = taylor_ham_qubit.sparse_matrix()
-        taylor_ham_eigdecomp = taylor_ham_qubit.eigendecomposition
-        taylor_ham_eigvec = taylor_ham_eigdecomp['eigvec']
-        taylor_ham_eigval = taylor_ham_eigdecomp['eigval']
+        assert np.allclose(actual, expected)
 
-        vham = VibrationalHamiltonian(len(omegas), omegas, [np.array(0), phi_one_body, phi_two_body, phi_three_body])
-
-        for eigvec, eigval, in zip(taylor_ham_eigvec, taylor_ham_eigval):
-            print(eigvec, eigval)
+    @pytest.mark.parametrize("symbols, charge, geometry, expected", [H2_params, H3_params])
+    def test_expectation(self, symbols, charge, geometry, expected):
+        """Test the expectation values"""

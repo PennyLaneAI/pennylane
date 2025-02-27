@@ -138,7 +138,7 @@ class TestStateMP:
 
     @pytest.mark.parametrize(
         "dm",
-        [(np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531 + 0.0j)],
+        [np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531 + 0.0j],
     )
     def test_process_density_matrix(self, dm):
         """Test the processing of a state vector."""

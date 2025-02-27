@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function extracting the tapes at postprocessing at any stage of a transform program.
-
-"""
+"""Contains a function extracting the tapes at postprocessing at any stage of a transform program."""
 import inspect
 from collections.abc import Callable
 from contextlib import nullcontext

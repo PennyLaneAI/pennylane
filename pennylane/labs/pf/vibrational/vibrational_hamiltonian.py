@@ -100,3 +100,6 @@ class VibrationalHamiltonian:
         """Returns a RealspaceSum representing the Hamiltonian"""
 
         return self.harmonic_fragment() + self.anharmonic_fragment()
+
+    def matrix(self, gridpoints: int, sparse: bool = False):
+        pass
