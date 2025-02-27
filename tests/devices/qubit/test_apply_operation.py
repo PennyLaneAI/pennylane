@@ -916,7 +916,7 @@ class TestLargerOperations:
         for _op in op.decomposition():
             expected_state = method(_op, expected_state)
 
-        assert qml.math.allclose(expected_state, new_state)
+        assert qml.math.allclose(new_state, expected_state)
 
 
 class TestApplyGroverOperator:
