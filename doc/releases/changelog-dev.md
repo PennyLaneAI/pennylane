@@ -42,7 +42,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
+* Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
   following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
   [(#6925)](https://github.com/PennyLaneAI/pennylane/pull/6925)
   
