@@ -1,7 +1,3 @@
-.. NOTE: This file is already added in https://github.com/PennyLaneAI/pennylane/pull/6953
-.. (currently under review). Adding it here to check the docs rendering; will resolve once #6953
-.. is merged.
-
 qml.ftqc
 ========
 
