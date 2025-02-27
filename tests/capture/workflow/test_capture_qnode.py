@@ -289,7 +289,6 @@ def test_capture_qnode_kwargs():
     expected_config = qml.devices.ExecutionConfig(
         gradient_method="parameter-shift",
         grad_on_execution=False,
-        use_device_gradient=False,
         derivative_order=2,
         use_device_jacobian_product=False,
         mcm_config=qml.devices.MCMConfig(mcm_method=None, postselect_mode=None),
