@@ -90,7 +90,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self.state["visited_wires"] = self.state["visited_wires"].union(set(op.wires))
 
         def merge_and_purge_new_operations(self):
-            """Merge the gates and insert it at the beginning of the new operations; then interpret said gates."""
+            """Merge the gates and insert it at the beginning of the new operations; then interpret said gate."""
             if len(self.input_wires) > 0:
                 final_wires = self.input_wires[0]
                 final_vector = self.input_vectors[0]
