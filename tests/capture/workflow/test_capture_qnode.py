@@ -131,11 +131,13 @@ def test_simple_qnode():
     assert eqn0.params["qnode"] == circuit
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
     expected_config = qml.devices.ExecutionConfig(
-        gradient_method="best",
+        gradient_method="backprop",
+        use_device_gradient=True,
         gradient_keyword_arguments={},
         use_device_jacobian_product=False,
         interface="jax",
         grad_on_execution=False,
+        device_options={"max_workers": None, "rng": dev._rng, "prng_key": None},
     )
     assert eqn0.params["execution_config"] == expected_config
 
@@ -287,10 +289,12 @@ def test_capture_qnode_kwargs():
     expected_config = qml.devices.ExecutionConfig(
         gradient_method="parameter-shift",
         grad_on_execution=False,
+        use_device_gradient=False,
         derivative_order=2,
         use_device_jacobian_product=False,
         mcm_config=qml.devices.MCMConfig(mcm_method=None, postselect_mode=None),
         interface=qml.math.Interface.JAX,
+        device_options={"max_workers": None, "rng": dev._rng, "prng_key": None},
     )
     assert jaxpr.eqns[0].params["execution_config"] == expected_config
 

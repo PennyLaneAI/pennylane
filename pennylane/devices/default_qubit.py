@@ -936,6 +936,7 @@ class DefaultQubit(Device):
         return tuple(zip(*results))
 
     # pylint: disable=import-outside-toplevel, unused-argument
+    @debug_logger
     def eval_jaxpr(
         self, jaxpr: "jax.core.Jaxpr", consts: Sequence[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
@@ -957,15 +958,7 @@ class DefaultQubit(Device):
         )
         return interpreter.eval(jaxpr, consts, *args)
 
-    # pylint :disable=import-outside-toplevel, unused-argument
-    def jaxpr_jvp(
-        self, jaxpr, args: tuple[TensorLike], tangents: tuple[TensorLike], execution_config=None
-    ) -> tuple[list[TensorLike], list[TensorLike]]:
-        if getattr(execution_config, "gradient_method", "backprop") == "adjoint":
-            from .qubit.jaxpr_adjoint import execute_and_jvp
-
-            return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
-
+    def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):
         import jax
 
         def _make_zero(tan, arg):
@@ -984,6 +977,24 @@ class DefaultQubit(Device):
             )
 
         return jax.jvp(backprop_eval, args, tangents)
+
+    # pylint :disable=import-outside-toplevel, unused-argument
+    @debug_logger
+    def jaxpr_jvp(
+        self, jaxpr, args: tuple[TensorLike], tangents: tuple[TensorLike], execution_config=None
+    ) -> tuple[list[TensorLike], list[TensorLike]]:
+        gradient_method = getattr(execution_config, "gradient_method", "backprop")
+        if gradient_method == "backprop":
+            return self._backprop_jvp(jaxpr, args, tangents, execution_config=execution_config)
+
+        if gradient_method == "adjoint":
+            from .qubit.jaxpr_adjoint import execute_and_jvp
+
+            return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
+
+        raise NotImplementedError(
+            f"DefaultQubit does not support gradient_method={gradient_method}"
+        )
 
 
 def _simulate_wrapper(circuit, kwargs):
