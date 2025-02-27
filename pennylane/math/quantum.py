@@ -982,7 +982,7 @@ def sqrt_matrix_sparse(density_matrix):
         density_matrix (sparse): 2D sparse density matrix of the quantum system.
 
     Returns:
-        (sparse): Square root of the density matrix. Even thought type as `csr_matrix` or `csc_matrix`, the output is not guaranteed to be sparse as well.
+        (sparse): Square root of the density matrix. Even though data type as `csr_matrix` or `csc_matrix`, the output matrix is not guaranteed to be sparse as well.
     """
     if not issparse(density_matrix):
         raise TypeError(
@@ -1001,7 +1001,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
     """Compute matrix square root using the Denman-Beavers iteration.
 
     Args:
-        mat (scipy.sparse.csc_matrix): Input sparse matrix
+        mat (sparse): Input sparse matrix
         max_iter (int): Maximum number of iterations
         tol (float): Convergence tolerance
 
