@@ -32,6 +32,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
+        from jax.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.base_interpreter import jaxpr_to_jaxpr
@@ -46,16 +47,16 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
         def __init__(self):
             self._env = {}
-            self.new_operations = []
+            self.previous_ops = []
             self.state = {"visited_wires": set()}
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def setup(self) -> None:
             """Setup the interpreter for a new evaluation."""
-            self.new_operations = []
+            self.previous_ops = []
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
-        def interpret_operation(self, op: Operator):
+        def interpret_operation(self, op: Operator) -> None:
             """Interpret a PennyLane operation instance.
 
             If the operator is not an ``AmplitudeEmbedding`` operator, it is added to the new operations list;
@@ -75,7 +76,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
             """
             if not isinstance(op, AmplitudeEmbedding):
-                self.new_operations.append(op)
+                self.previous_ops.append(op)
                 self.state["visited_wires"] = self.state["visited_wires"].union(set(op.wires))
                 return
 
@@ -89,8 +90,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self.input_batch_size.append(op.batch_size)
             self.state["visited_wires"] = self.state["visited_wires"].union(set(op.wires))
 
-        def merge_and_purge_new_operations(self):
-            """Merge the gates and insert it at the beginning of the new operations; then interpret said gate."""
+        def _merge_amplitude_embedding_gates(self) -> None:
+            """Merge the AmplitudeEmbedding gates and insert it at the beginning of the previously seen operations."""
             if len(self.input_wires) > 0:
                 final_wires = self.input_wires[0]
                 final_vector = self.input_vectors[0]
@@ -112,19 +113,20 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                         final_vector = flatten(final_vector)
 
                 # pylint: disable=protected-access
-                self.new_operations.insert(
+                self.previous_ops.insert(
                     0, qml.AmplitudeEmbedding._primitive.impl(final_vector, wires=final_wires)
                 )
 
-            for op in self.new_operations:
+        def interpret_all_previous_ops(self) -> None:
+            """Interpret all previous operations and clear the setup variables."""
+
+            for op in self.previous_ops:
                 super().interpret_operation(op)
 
-            # Clear setup variables except visited wires
-            self.new_operations = []
-            self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
+            self.setup()
 
         # pylint: disable=too-many-branches
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
+        def eval(self, jaxpr: Jaxpr, consts: Sequence, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
@@ -145,40 +147,46 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 self._env[constvar] = const
 
             for eqn in jaxpr.eqns:
-                primitive = eqn.primitive
-                custom_handler = self._primitive_registrations.get(primitive, None)
+                custom_handler = self._primitive_registrations.get(eqn.primitive, None)
+                prim_type = getattr(eqn.primitive, "prim_type", "")
 
-                if getattr(primitive, "prim_type", "") == "higher_order":
-                    self.merge_and_purge_new_operations()
+                # Currently cannot merge through higher order primitives.
+                # Workaround is to merge and insert the merged gate before entering
+                # a higher order primitive.
+                if prim_type == "higher_order":
+                    self._merge_amplitude_embedding_gates()
+                    self.interpret_all_previous_ops()
 
                 if custom_handler:
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
-                elif getattr(primitive, "prim_type", "") == "operator":
+                elif prim_type == "operator":
                     outvals = self.interpret_operation_eqn(eqn)
-                elif getattr(primitive, "prim_type", "") == "measurement":
-                    self.merge_and_purge_new_operations()
+                elif prim_type == "measurement":
+                    self._merge_amplitude_embedding_gates()
+                    self.interpret_all_previous_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
                     invals = [self.read(invar) for invar in eqn.invars]
-                    extra_args, params = primitive.get_bind_params(eqn.params)
-                    outvals = primitive.bind(*extra_args, *invals, **params)
+                    extra_args, params = eqn.primitive.get_bind_params(eqn.params)
+                    outvals = eqn.primitive.bind(*extra_args, *invals, **params)
 
-                if not primitive.multiple_results:
+                if not eqn.primitive.multiple_results:
                     outvals = [outvals]
                 for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                     self._env[outvar] = outval
 
-            # The following is needed because any operations inside self.new_operations have not yet
+            # The following is needed because any operations inside self.previous_ops have not yet
             # been applied. At this point, we **know** that any operations that should be merged
-            # have been merged, and operations left inside self.new_operations should be applied
-            self.merge_and_purge_new_operations()
+            # have been merged, and operations left inside self.previous_ops should be applied
+            self._merge_amplitude_embedding_gates()
+            self.interpret_all_previous_ops()
 
             # Read the final result of the Jaxpr from the environment
             outvals = []
             for var in jaxpr.outvars:
                 outval = self.read(var)
-                if isinstance(outval, qml.operation.Operator):
+                if isinstance(outval, Operator):
                     outvals.append(super().interpret_operation(outval))
                 else:
                     outvals.append(outval)
@@ -187,8 +195,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self._env = {}
             return outvals
 
-    # Overwrite the cond primitive so that wire collision can be handled
-    # correctly across the different branches
+    # Overwrite the cond primitive so that visited wires can be correctly
+    # detected across the different branches.
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
     def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
         args = invals[args_slice]
@@ -211,11 +219,12 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             else:
                 new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
-                # Remember all wires we've seen so far so collisions continue to be detected
-                # after the cond
+                # Update wires we've seen so far so collisions with
+                # newly seen wires from the branches continue to be
+                # detected after the cond
                 visited_wires |= self.state["visited_wires"]
 
-                # Reset visited wires for next branch so we don't get false positive collisions
+                # Reset visited wires for the next branch so we don't get false positive collisions
                 # (copy so if state mutates we preserved true initial wires)
                 self.state["visited_wires"] = copy(initial_wires)
 

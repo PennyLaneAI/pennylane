@@ -124,7 +124,7 @@ class TestRepeatedQubitDeviceErrors:
             def _():
                 qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=2)
 
-            qml.X(collision_wire)
+            qml.X(collision_wire)  # Each branch of the cond will have a collision with this wire
             cond_f()
 
         with pytest.raises(
@@ -151,7 +151,7 @@ class TestRepeatedQubitDeviceErrors:
             def _():
                 qml.X(2)
 
-            cond_f()
+            cond_f()  # Each branch of the cond will have a collision with this wire
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=collision_wire)
 
         with pytest.raises(
@@ -403,18 +403,26 @@ def test_plxpr_to_plxpr_transform():
         return qml.expval(qml.Z(0))
 
     jaxpr = jax.make_jaxpr(qfunc)()
-    args = ()
-    transformed_jaxpr = merge_amplitude_embedding_plxpr_to_plxpr(
-        jaxpr.jaxpr, jaxpr.consts, [], {}, *args
-    )
+    transformed_jaxpr = merge_amplitude_embedding_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
     assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
-
     assert len(transformed_jaxpr.eqns) == 4
-    assert transformed_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-    assert qml.math.allclose(transformed_jaxpr.eqns[0].params["n_wires"], 2)
-    assert transformed_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-    assert transformed_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-    assert transformed_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    collector = CollectOpsandMeas()
+    collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts)
+
+    expected_ops = [
+        qml.AmplitudeEmbedding([0.0, 0.0, 0.0, 1.0], wires=[0, 1]),
+        qml.Hadamard(0),
+    ]
+
+    ops = collector.state["ops"]
+    assert ops == expected_ops
+
+    expected_meas = [
+        qml.expval(qml.PauliZ(0)),
+    ]
+    meas = collector.state["measurements"]
+    assert meas == expected_meas
 
 
 class TestHigherOrderPrimitiveIntegration:
@@ -679,10 +687,10 @@ class TestHigherOrderPrimitiveIntegration:
             return qml.grad(circuit)(a, b)
 
         jaxpr = jax.make_jaxpr(f)(0.0, 1.0)
-
         assert jaxpr.eqns[0].primitive == grad_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        print(qfunc_jaxpr.eqns)
         assert qfunc_jaxpr.eqns[-4].primitive == qml.AmplitudeEmbedding._primitive
         assert qml.math.allclose(qfunc_jaxpr.eqns[-4].params["n_wires"], 2)
         assert qfunc_jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
