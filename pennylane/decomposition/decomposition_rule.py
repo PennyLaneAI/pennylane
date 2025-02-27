@@ -117,6 +117,7 @@ class DecompositionRule:
         if self._compute_resources is None:
             raise NotImplementedError("No resource estimation found for this decomposition rule.")
         gate_counts: dict = self._compute_resources(*args, **kwargs)
+        assert isinstance(gate_counts, dict), "Resource function must return a dictionary."
         gate_counts = {op: count for op, count in gate_counts.items() if count > 0}
         num_gates = sum(gate_counts.values())
         return Resources(num_gates, gate_counts)

@@ -232,7 +232,6 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
-from pennylane.decomposition import CompressedResourceOp
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -350,7 +349,7 @@ class ClassPropertyDescriptor:  # pragma: no cover
         return self
 
 
-def classproperty(func):
+def classproperty(func) -> ClassPropertyDescriptor:
     """The class property decorator"""
     if not isinstance(func, (classmethod, staticmethod)):
         func = classmethod(func)
@@ -1381,32 +1380,40 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         raise DecompositionUndefinedError
 
-    @property
-    def resource_params(self) -> dict:
-        """A dictionary containing the minimal information needed to compute a
-        resource estimate of the operator's decomposition.
+    @classproperty
+    def resource_param_keys(self) -> set:
+        """The keys to the ``resource_params`` dictionary.
 
-        For most operators, this should just be an empty dictionary, but a default implementation
-        is intentionally not provided so that each operator type is forced to explicitly define its
-        resource params.
+        All decomposition rules registered with an operator class is expected to have a resource
+        function with parameters that are consistent with the operator's ``resource_param_keys``.
+        The ``qml.make_resource_rep`` method will also expect keyword arguments that match these
+        keys for each operator type.
+
+        .. seealso::
+            :meth:`~.Operator.resource_params`
 
         """
         raise NotImplementedError
 
     @property
-    def resource_rep(self) -> CompressedResourceOp:
-        """The compressed resource representation of this operator."""
-        return self.__class__.make_resource_rep(**self.resource_params)
+    def resource_params(self) -> dict:
+        """A dictionary containing the minimal information needed to compute a
+        resource estimate of the operator's decomposition.
 
-    @classmethod
-    def make_resource_rep(cls, **resource_params) -> CompressedResourceOp:
-        """Create a compressed resource representation of the operator.
+        Two instances of the same operator type should have identical ``resource_params`` iff
+        their decompositions exhibit the same counts for each gate type, even if the individual
+        gate parameters differ.
 
-        Typically, this method should simply return ``CompressedResourceOp(cls, resource_params)``,
-        but a default implementation is intentionally not provided to force each operator type
-        to define how its resource representation is constructed more verbosely.
+        For most operators with static decompositions, this should just be an empty dictionary,
+        but for gates such as ``MultiRZ`` whose decomposition depends on certain parameters such
+        as the number of wires, the ``resource_params`` should contain this information. Note
+        that the ``resource_params`` should only contain the **minimal** information needed to
+        determine the gate count for an operator's decomposition.
 
         """
+        # For most operators, this should just be an empty dictionary, but a default
+        # implementation is intentionally not provided so that each operator class is
+        # forced to explicitly define its resource params.
         raise NotImplementedError
 
     # pylint: disable=no-self-argument, comparison-with-callable

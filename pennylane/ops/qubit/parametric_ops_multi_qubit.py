@@ -24,6 +24,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import decomposition, add_decomposition, make_resource_rep
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.typing import TensorLike
@@ -66,6 +67,8 @@ class MultiRZ(Operation):
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_param_keys = {"num_wires"}
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -193,6 +196,10 @@ class MultiRZ(Operation):
 
         return ops
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": self.hyperparameters["num_wires"]}
+
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
@@ -206,6 +213,30 @@ class MultiRZ(Operation):
             return qml.Identity(wires=self.wires[0])
 
         return MultiRZ(theta, wires=self.wires)
+
+
+@decomposition
+def _multi_rz_decomposition(theta, wires, **__):
+
+    @qml.for_loop(len(wires) - 1, 0, -1)
+    def _pre_cnot(i):
+        qml.CNOT(wires=(wires[i], wires[i - 1]))
+
+    @qml.for_loop(1, len(wires) - 1, 1)
+    def _post_cnot(i):
+        qml.CNOT(wires=(wires[i], wires[i - 1]))
+
+    _pre_cnot()
+    qml.RZ(theta, wires=wires[0])
+    _post_cnot()
+
+
+@_multi_rz_decomposition.resources
+def _multi_rz_decomposition_resources(num_wires):
+    return {qml.make_resource_rep(qml.RZ): 1, qml.make_resource_rep(qml.CNOT): 2 * (num_wires - 1)}
+
+
+qml.add_decomposition(MultiRZ, _multi_rz_decomposition)
 
 
 class PauliRot(Operation):
