@@ -90,7 +90,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             while prev_gate_idx is not None:
                 prev_gate = self.op_deque[new_location - prev_gate_idx - 1]
 
-                if prev_gate.basis is None or len(prev_gate.control_wires) == 0:
+                if not _can_push_through(prev_gate):
                     break
 
                 if _can_commute(op, prev_gate):
@@ -129,10 +129,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 while next_gate_idx is not None:
                     next_gate = self.op_deque[new_location + next_gate_idx + 1]
 
-                    if (
-                        getattr(next_gate, "basis", None) is None
-                        or len(next_gate.control_wires) == 0
-                    ):
+                    if not _can_push_through(next_gate):
                         break
 
                     if _can_commute(current_gate, next_gate):
@@ -263,12 +260,24 @@ def _shares_control_wires(op: Operator, gate: Operator) -> bool:
 
 
 def _can_commute(op1: Operator, op2: Operator) -> bool:
-    """Helper that returns True if op1 can commute with op2 based on their basis and control wires."""
+    """Helper that determines if op1 can commute with op2 based on their basis and control wires."""
 
+    # Case 1: overlap is on the control wires. Only Z-type gates go through
     if _shares_control_wires(op1, op2):
         return op1.basis == "Z"
 
+    # Case 2: since we know the gates overlap somewhere, and it's a
+    # single-qubit gate, if it wasn't on a control it's the target.
     return op1.basis == op2.basis
+
+
+def _can_push_through(op: Operator) -> bool:
+    """Check if the provided gate can be pushed through."""
+
+    # Only go ahead if information is available.
+    # If the gate does not have control_wires defined, it is not
+    # controlled so we can't push through.
+    return getattr(op, "basis", None) is not None and len(op.control_wires) > 0
 
 
 def _commute_controlled_right(op_list):
@@ -305,29 +314,13 @@ def _commute_controlled_right(op_list):
         while next_gate_idx is not None:
             next_gate = op_list[new_location + next_gate_idx + 1]
 
-            # Only go ahead if information is available
-            if getattr(next_gate, "basis", None) is None:
+            if not _can_push_through(next_gate):
                 break
 
-            # If the next gate does not have control_wires defined, it is not
-            # controlled so we can't push through.
-            if len(next_gate.control_wires) == 0:
-                break
-
-            # Case 1: overlap is on the control wires. Only Z-type gates go through
-            if _shares_control_wires(current_gate, next_gate):
-                if current_gate.basis == "Z":
-                    new_location += next_gate_idx + 1
-                else:
-                    break
-
-            # Case 2: since we know the gates overlap somewhere, and it's a
-            # single-qubit gate, if it wasn't on a control it's the target.
+            if _can_commute(current_gate, next_gate):
+                new_location += next_gate_idx + 1
             else:
-                if current_gate.basis == next_gate.basis:
-                    new_location += next_gate_idx + 1
-                else:
-                    break
+                break
 
             next_gate_idx = find_next_gate(current_gate.wires, op_list[new_location + 1 :])
 
@@ -369,23 +362,13 @@ def _commute_controlled_left(op_list):
         while prev_gate_idx is not None:
             prev_gate = op_list[new_location - prev_gate_idx - 1]
 
-            if prev_gate.basis is None:
+            if not _can_push_through(prev_gate):
                 break
 
-            if len(prev_gate.control_wires) == 0:
-                break
-
-            if _shares_control_wires(current_gate, prev_gate):
-                if current_gate.basis == "Z":
-                    new_location = new_location - prev_gate_idx - 1
-                else:
-                    break
-
+            if _can_commute(current_gate, prev_gate):
+                new_location -= prev_gate_idx + 1
             else:
-                if current_gate.basis == prev_gate.basis:
-                    new_location = new_location - prev_gate_idx - 1
-                else:
-                    break
+                break
 
             prev_gate_idx = find_next_gate(current_gate.wires, op_list[:new_location][::-1])
 
