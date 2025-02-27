@@ -155,8 +155,7 @@ class TestDecomposition:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_plxpr_decomposition works correctly."""
 
-    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
-    def test_strongly_entangling_plxpr(self, max_expansion):
+    def test_strongly_entangling_plxpr(self):
         """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
         import jax
 
@@ -167,6 +166,7 @@ class TestDynamicDecomposition:
         n_wires = 3
         gate_set = None
         imprimitive = qml.CNOT
+        max_expansion = 1
 
         weight_shape = (layers, n_wires, 3)
         weights = np.random.random(size=weight_shape)

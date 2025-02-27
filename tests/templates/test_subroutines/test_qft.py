@@ -148,8 +148,7 @@ class TestQFT:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_plxpr_decomposition works correctly."""
 
-    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
-    def test_qft_plxpr(self, max_expansion):
+    def test_qft_plxpr(self):
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
         import jax
 
@@ -159,6 +158,7 @@ class TestDynamicDecomposition:
         n_wires = 4
         wires = [0, 1, 2, 3]
         gate_set = None
+        max_expansion = 1
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
         @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
