@@ -288,6 +288,7 @@ def test_capture_qnode_kwargs():
     assert jaxpr.eqns[0].primitive == qnode_prim
     expected_config = qml.devices.ExecutionConfig(
         gradient_method="parameter-shift",
+        use_device_gradient=False,
         grad_on_execution=False,
         derivative_order=2,
         use_device_jacobian_product=False,

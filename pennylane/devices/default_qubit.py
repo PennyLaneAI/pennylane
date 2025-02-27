@@ -981,8 +981,12 @@ class DefaultQubit(Device):
     # pylint :disable=import-outside-toplevel, unused-argument
     @debug_logger
     def jaxpr_jvp(
-        self, jaxpr, args: tuple[TensorLike], tangents: tuple[TensorLike], execution_config=None
-    ) -> tuple[list[TensorLike], list[TensorLike]]:
+        self,
+        jaxpr,
+        args: Sequence[TensorLike],
+        tangents: Sequence[TensorLike],
+        execution_config=None,
+    ) -> tuple[Sequence[TensorLike], Sequence[TensorLike]]:
         gradient_method = getattr(execution_config, "gradient_method", "backprop")
         if gradient_method == "backprop":
             return self._backprop_jvp(jaxpr, args, tangents, execution_config=execution_config)
