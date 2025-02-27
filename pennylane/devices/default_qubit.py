@@ -29,7 +29,7 @@ import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
-from pennylane.ops.op_math.condition import Conditional
+from pennylane.ops.op_math import Conditional, SymbolicOp
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
@@ -62,17 +62,18 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
+    if op.name == "Snapshot":
+        return True
+    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
+        return False
     if (
         isinstance(op, qml.operation.Operator)
+        and not isinstance(op, SymbolicOp)
         and op.has_sparse_matrix
         and (not op.has_matrix)
         and len(op.wires) >= 3
     ):
         return True
-    if op.name == "Snapshot":
-        return True
-    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
-        return False
 
     return (
         (isinstance(op, Conditional) and stopping_condition(op.base))
