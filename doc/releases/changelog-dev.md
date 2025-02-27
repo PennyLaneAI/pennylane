@@ -209,6 +209,9 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
+  [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
+
 * Added class `qml.capture.transforms.CommuteControlledInterpreter` that moves commuting gates past control 
   and target qubits of controlled operations following the same API as `qml.transforms.commute_controlled` 
   when experimental program capture is enabled.
@@ -366,6 +369,10 @@
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
+
+* `qml.capture.run_autograph` is now idempotent.
+  This means `run_autograph(fn) = run_autograph(run_autograph(fn))`.
+  [(#7001)](https://github.com/PennyLaneAI/pennylane/pull/7001)
 
 * Minor changes to `DQInterpreter` for speedups with program capture execution.
   [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
