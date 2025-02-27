@@ -29,7 +29,39 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
 
 
-def register_primitive_for_expansion(primitive, plxpr_transform, tape_transform):
+def _create_plxpr_fallback_transform(tape_transform):
+
+    def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        def wrapper(*inner_args):
+            tape = qml.tape.plxpr_to_tape(jaxpr, consts, *inner_args)
+            tapes, _ = tape_transform(tape, *targs, **tkwargs)
+            if len(tapes) > 1:
+                raise TransformError(
+                    f"Cannot apply {tape_transform.__name__} transform with program "
+                    "capture enabled. Only transforms that return a single QuantumTape "
+                    "and null processing function are usable with program capture."
+                )
+
+            for op in tape.operations:
+                data, struct = jax.tree_util.tree_flatten(op)
+                jax.tree_util.tree_unflatten(struct, data)
+
+            out = []
+            for mp in tape.measurements:
+                data, struct = jax.tree_util.tree_flatten(mp)
+                out.append(jax.tree_util.tree_unflatten(struct, data))
+
+            return tuple(out)
+
+        return jax.make_jaxpr(wrapper)(*args)
+
+    return plxpr_fallback_transform
+
+
+def _register_primitive_for_expansion(primitive, plxpr_transform):
     """Register a transform such that it can be expanded when applied to a function with
     program capture enabled."""
     # pylint: disable=import-outside-toplevel
@@ -44,44 +76,16 @@ def register_primitive_for_expansion(primitive, plxpr_transform, tape_transform)
     def _(
         self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=too-many-arguments,missing-docstring
-        if plxpr_transform is None:
-
-            def _plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
-                import jax
-
-                def wrapper(*inner_args):
-
-                    tape = qml.tape.plxpr_to_tape(jaxpr, consts, *inner_args)
-                    [tape], _ = tape_transform(tape, *targs, **tkwargs)
-
-                    for op in tape.operations:
-                        data, struct = jax.tree_util.tree_flatten(op)
-                        jax.tree_util.tree_unflatten(struct, data)
-
-                    out = []
-                    for mp in tape.measurements:
-                        data, struct = jax.tree_util.tree_flatten(mp)
-                        out.append(jax.tree_util.tree_unflatten(struct, data))
-
-                    return tuple(out)
-
-                return jax.make_jaxpr(wrapper)(*args)
-
-        else:
-            _plxpr_transform = plxpr_transform
-
-        inner_args = invals[args_slice]
-        inner_consts = invals[consts_slice]
+        args = invals[args_slice]
+        consts = invals[consts_slice]
         targs = invals[targs_slice]
 
-        def wrapper(*args):
-            return copy(self).eval(inner_jaxpr, inner_consts, *args)
+        def wrapper(*inner_args):
+            return copy(self).eval(inner_jaxpr, consts, *inner_args)
 
-        unravelled_jaxpr = jax.make_jaxpr(wrapper)(*inner_args)
-        final_jaxpr = _plxpr_transform(
-            unravelled_jaxpr.jaxpr, unravelled_jaxpr.consts, targs, tkwargs, *inner_args
-        )
-        return copy(self).eval(final_jaxpr.jaxpr, final_jaxpr.consts, *inner_args)
+        jaxpr = jax.make_jaxpr(wrapper)(*args)
+        jaxpr = plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
+        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
@@ -139,9 +143,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         self._use_argnum_in_expand = use_argnum_in_expand
         functools.update_wrapper(self, transform)
 
-        self._plxpr_transform = plxpr_transform
+        self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
         self._primitive = _create_transform_primitive(self._transform.__name__)
-        register_primitive_for_expansion(self._primitive, self._plxpr_transform, self._transform)
+        _register_primitive_for_expansion(self._primitive, self._plxpr_transform)
 
     def __call__(
         self, *targs, **tkwargs

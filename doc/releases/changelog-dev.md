@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane transforms that return a single tape and null processing functions can now be used with
+  program capture enabled, even if a `plxpr_transform` is not provided.
+  [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
+
+  The transform will fail if the transformed function contains control flow with dynamic parameters.
+  This includes:
+  * `qml.cond` with dynamic parameters as predicates.
+  * `qml.for_loop` with dynamic parameters for ``start``, ``stop``, or ``step``.
+  * `qml.while_loop` with dynamic parameters as predicates.
+
 * `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
   `qml.defer_measurements` can be executed on `default.qubit`.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
