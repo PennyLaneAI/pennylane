@@ -46,7 +46,7 @@ class TestResourceAdjoint:
     @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_params))
     def test_resource_params(self, op, expected):
         """Test that the resources are correct"""
-        assert op.resource_params() == expected
+        assert op.resource_params == expected
 
     expected_names = [
         "Adjoint(QFT)",
@@ -169,7 +169,7 @@ class TestResourceControlled:
     @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_params))
     def test_resource_params(self, op, expected):
         """Test that the resources are correct"""
-        assert op.resource_params() == expected
+        assert op.resource_params == expected
 
     expected_names = [
         "C(QFT,1,0,0)",
@@ -249,7 +249,7 @@ class TestResourcePow:
     @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_params))
     def test_resource_params(self, op, expected):
         """Test that the resources are correct"""
-        assert op.resource_params() == expected
+        assert op.resource_params == expected
 
     expected_names = [
         "Pow(QFT, 2)",
@@ -260,7 +260,7 @@ class TestResourcePow:
     @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_names))
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
-        rep = op.resource_rep()
+        rep = op.resource_rep_from_op()
         name = rep.op_type.tracking_name(**rep.params)
         assert name == expected
 

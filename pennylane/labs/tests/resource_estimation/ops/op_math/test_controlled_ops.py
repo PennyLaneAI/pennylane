@@ -30,48 +30,48 @@ class TestResourceCH:
         """Test that the resources method produces the expected resources."""
 
         expected_resources = {
-            re.ResourceRY.make_resource_rep(): 2,
-            re.ResourceHadamard.make_resource_rep(): 2,
-            re.ResourceCNOT.make_resource_rep(): 1,
+            re.ResourceRY.resource_rep(): 2,
+            re.ResourceHadamard.resource_rep(): 2,
+            re.ResourceCNOT.resource_rep(): 1,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCH, {})
-        assert self.op.make_resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
             ["c1"],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceHadamard, {}, 2, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceHadamard, {}, 2, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceHadamard, {}, 3, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceHadamard, {}, 3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceHadamard, {}, 4, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceHadamard, {}, 4, 2, 2): 1},
         ),
     )
 
@@ -93,12 +93,12 @@ class TestResourceCH:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
         (2, {}),
-        (5, {op.make_resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -107,7 +107,7 @@ class TestResourceCH:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCY:
@@ -119,48 +119,48 @@ class TestResourceCY:
         """Test that the resources method produces the expected resources."""
 
         expected_resources = {
-            re.ResourceS.make_resource_rep(): 1,
-            re.ResourceCNOT.make_resource_rep(): 1,
-            re.ResourceAdjoint.make_resource_rep(re.ResourceS, {}): 1,
+            re.ResourceS.resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 1,
+            re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCY, {})
-        assert self.op.make_resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
             ["c1"],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceY, {}, 2, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceY, {}, 2, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceY, {}, 3, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceY, {}, 3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceY, {}, 4, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceY, {}, 4, 2, 2): 1},
         ),
     )
 
@@ -182,12 +182,12 @@ class TestResourceCY:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
         (2, {}),
-        (5, {op.make_resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -196,7 +196,7 @@ class TestResourceCY:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCZ:
@@ -208,47 +208,47 @@ class TestResourceCZ:
         """Test that the resources method produces the expected resources."""
 
         expected_resources = {
-            re.ResourceHadamard.make_resource_rep(): 2,
-            re.ResourceCNOT.make_resource_rep(): 1,
+            re.ResourceHadamard.resource_rep(): 2,
+            re.ResourceCNOT.resource_rep(): 1,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCZ, {})
-        assert self.op.make_resource_rep() == expected_rep
+        assert self.op.resource_rep() == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
             ["c1"],
             [1],
             [],
-            {re.ResourceCCZ.make_resource_rep(): 1},
+            {re.ResourceCCZ.resource_rep(): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceZ, {}, 3, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceZ, {}, 4, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceZ, {}, 4, 2, 2): 1},
         ),
     )
 
@@ -270,12 +270,12 @@ class TestResourceCZ:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
         (2, {}),
-        (5, {op.make_resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -284,7 +284,7 @@ class TestResourceCZ:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCSWAP:
@@ -295,47 +295,47 @@ class TestResourceCSWAP:
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
         expected_resources = {
-            re.ResourceToffoli.make_resource_rep(): 1,
-            re.ResourceCNOT.make_resource_rep(): 2,
+            re.ResourceToffoli.resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCSWAP, {})
-        assert self.op.make_resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
             ["c1"],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceSWAP, {}, 2, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceSWAP, {}, 2, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceSWAP, {}, 3, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceSWAP, {}, 3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceSWAP, {}, 4, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceSWAP, {}, 4, 2, 2): 1},
         ),
     )
 
@@ -357,12 +357,12 @@ class TestResourceCSWAP:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
         (2, {}),
-        (5, {op.make_resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -371,7 +371,7 @@ class TestResourceCSWAP:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCCZ:
@@ -382,47 +382,47 @@ class TestResourceCCZ:
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
         expected_resources = {
-            re.ResourceHadamard.make_resource_rep(): 2,
-            re.ResourceToffoli.make_resource_rep(): 1,
+            re.ResourceHadamard.resource_rep(): 2,
+            re.ResourceToffoli.resource_rep(): 1,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCCZ, {})
-        assert self.op.make_resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
             ["c1"],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceZ, {}, 3, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceZ, {}, 4, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceZ, {}, 4, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceZ, {}, 5, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceZ, {}, 5, 2, 2): 1},
         ),
     )
 
@@ -444,12 +444,12 @@ class TestResourceCCZ:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
         (2, {}),
-        (5, {op.make_resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -458,7 +458,7 @@ class TestResourceCCZ:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCNOT:
@@ -474,39 +474,39 @@ class TestResourceCNOT:
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected = re.CompressedResourceOp(re.ResourceCNOT, {})
-        assert self.op.make_resource_rep() == expected
+        assert self.op.resource_rep() == expected
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
             ["c1"],
             [1],
             [],
-            {re.ResourceToffoli.make_resource_rep(): 1},
+            {re.ResourceToffoli.resource_rep(): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceMultiControlledX.make_resource_rep(3, 0, 1): 1},
+            {re.ResourceMultiControlledX.resource_rep(3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceMultiControlledX.make_resource_rep(4, 2, 2): 1},
+            {re.ResourceMultiControlledX.resource_rep(4, 2, 2): 1},
         ),
     )
 
@@ -528,12 +528,12 @@ class TestResourceCNOT:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
         (2, {}),
-        (5, {op.make_resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
         (8, {}),
     )
 
@@ -543,7 +543,7 @@ class TestResourceCNOT:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceToffoli:
@@ -555,19 +555,19 @@ class TestResourceToffoli:
         """Test that the resources method produces the expected resources."""
 
         expected_resources = {
-            re.ResourceS.make_resource_rep(): 1,
-            re.ResourceT.make_resource_rep(): 2,
-            re.ResourceAdjoint.make_resource_rep(re.ResourceT, {}): 2,
-            re.ResourceCZ.make_resource_rep(): 1,
-            re.ResourceCNOT.make_resource_rep(): 9,
-            re.ResourceHadamard.make_resource_rep(): 3,
+            re.ResourceS.resource_rep(): 1,
+            re.ResourceT.resource_rep(): 2,
+            re.ResourceAdjoint.resource_rep(re.ResourceT, {}): 2,
+            re.ResourceCZ.resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 9,
+            re.ResourceHadamard.resource_rep(): 3,
         }
         assert self.op.resources(**self.op.resource_params()) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceToffoli, {})
-        assert self.op.make_resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params()) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
@@ -576,7 +576,7 @@ class TestResourceToffoli:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
@@ -587,19 +587,19 @@ class TestResourceToffoli:
             ["c1"],
             [1],
             [],
-            {re.ResourceMultiControlledX.make_resource_rep(3, 0, 0): 1},
+            {re.ResourceMultiControlledX.resource_rep(3, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceMultiControlledX.make_resource_rep(4, 0, 1): 1},
+            {re.ResourceMultiControlledX.resource_rep(4, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceMultiControlledX.make_resource_rep(5, 2, 2): 1},
+            {re.ResourceMultiControlledX.resource_rep(5, 2, 2): 1},
         ),
     )
 
@@ -624,9 +624,9 @@ class TestResourceToffoli:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
         (2, {}),
-        (5, {op.make_resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
         (8, {}),
     )
 
@@ -671,29 +671,29 @@ class TestResourceMultiControlledX:
     )
 
     expected_resources = (
-        {re.ResourceCNOT.make_resource_rep(): 1},
-        {re.ResourceToffoli.make_resource_rep(): 1},
+        {re.ResourceCNOT.resource_rep(): 1},
+        {re.ResourceToffoli.resource_rep(): 1},
         {
-            re.ResourceCNOT.make_resource_rep(): 2,
-            re.ResourceToffoli.make_resource_rep(): 1,
+            re.ResourceCNOT.resource_rep(): 2,
+            re.ResourceToffoli.resource_rep(): 1,
         },
-        {re.ResourceCNOT.make_resource_rep(): 69},
+        {re.ResourceCNOT.resource_rep(): 69},
         {
-            re.ResourceX.make_resource_rep(): 2,
-            re.ResourceCNOT.make_resource_rep(): 1,
-        },
-        {
-            re.ResourceX.make_resource_rep(): 2,
-            re.ResourceToffoli.make_resource_rep(): 1,
+            re.ResourceX.resource_rep(): 2,
+            re.ResourceCNOT.resource_rep(): 1,
         },
         {
-            re.ResourceX.make_resource_rep(): 4,
-            re.ResourceCNOT.make_resource_rep(): 2,
-            re.ResourceToffoli.make_resource_rep(): 1,
+            re.ResourceX.resource_rep(): 2,
+            re.ResourceToffoli.resource_rep(): 1,
         },
         {
-            re.ResourceX.make_resource_rep(): 6,
-            re.ResourceCNOT.make_resource_rep(): 69,
+            re.ResourceX.resource_rep(): 4,
+            re.ResourceCNOT.resource_rep(): 2,
+            re.ResourceToffoli.resource_rep(): 1,
+        },
+        {
+            re.ResourceX.resource_rep(): 6,
+            re.ResourceCNOT.resource_rep(): 69,
         },
     )
 
@@ -716,7 +716,7 @@ class TestResourceMultiControlledX:
         """Test the resource_rep produces the correct compressed representation."""
         op_resource_params = self._prep_params(*params)
         expected_rep = re.CompressedResourceOp(re.ResourceMultiControlledX, op_resource_params)
-        assert op.make_resource_rep(**op.resource_params()) == expected_rep
+        assert op.resource_rep(**op.resource_params()) == expected_rep
 
     @pytest.mark.parametrize("op, params", zip(res_ops, res_params))
     def test_resource_params(self, op, params):
@@ -732,7 +732,7 @@ class TestResourceMultiControlledX:
             work_wires=["w1"],
         )
 
-        expected_res = {op.make_resource_rep(**op.resource_params()): 1}
+        expected_res = {op.resource_rep(**op.resource_params()): 1}
         op2 = re.ResourceAdjoint(op)
 
         assert op.adjoint_resource_decomp(**op.resource_params()) == expected_res
@@ -743,15 +743,15 @@ class TestResourceMultiControlledX:
             ["c1"],
             [1],
             [],
-            {re.ResourceToffoli.make_resource_rep(): 1},
+            {re.ResourceToffoli.resource_rep(): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["work1"],
             {
-                re.ResourceCNOT.make_resource_rep(): 2,
-                re.ResourceToffoli.make_resource_rep(): 1,
+                re.ResourceCNOT.resource_rep(): 2,
+                re.ResourceToffoli.resource_rep(): 1,
             },
         ),
         (
@@ -759,8 +759,8 @@ class TestResourceMultiControlledX:
             [1, 0, 0, 1],
             ["work1", "work2"],
             {
-                re.ResourceX.make_resource_rep(): 4,
-                re.ResourceCNOT.make_resource_rep(): 69,
+                re.ResourceX.resource_rep(): 4,
+                re.ResourceCNOT.resource_rep(): 69,
             },
         ),
     )
@@ -790,9 +790,9 @@ class TestResourceMultiControlledX:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     pow_data = (
-        (1, {re.ResourceMultiControlledX.make_resource_rep(5, 3, 1): 1}),
+        (1, {re.ResourceMultiControlledX.resource_rep(5, 3, 1): 1}),
         (2, {}),
-        (5, {re.ResourceMultiControlledX.make_resource_rep(5, 3, 1): 1}),
+        (5, {re.ResourceMultiControlledX.resource_rep(5, 3, 1): 1}),
         (6, {}),
     )
 
@@ -820,16 +820,16 @@ class TestResourceCRX:
         """Test that the resources method produces the expected resources."""
 
         expected_resources = {
-            re.ResourceRZ.make_resource_rep(): 2,
-            re.ResourceHadamard.make_resource_rep(): 2,
-            re.ResourceCNOT.make_resource_rep(): 2,
+            re.ResourceRZ.resource_rep(): 2,
+            re.ResourceHadamard.resource_rep(): 2,
+            re.ResourceCNOT.resource_rep(): 2,
         }
         assert self.op.resources(**self.op.resource_params()) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCRX, {})
-        assert self.op.make_resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params()) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
@@ -838,7 +838,7 @@ class TestResourceCRX:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
@@ -849,19 +849,19 @@ class TestResourceCRX:
             ["c1"],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRX, {}, 2, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRX, {}, 2, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRX, {}, 3, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRX, {}, 3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRX, {}, 4, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRX, {}, 4, 2, 2): 1},
         ),
     )
 
@@ -886,9 +886,9 @@ class TestResourceCRX:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
-        (2, {op.make_resource_rep(): 1}),
-        (5, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
+        (2, {op.resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -909,15 +909,15 @@ class TestResourceCRY:
         """Test that the resources method produces the expected resources."""
 
         expected_resources = {
-            re.ResourceRY.make_resource_rep(): 2,
-            re.ResourceCNOT.make_resource_rep(): 2,
+            re.ResourceRY.resource_rep(): 2,
+            re.ResourceCNOT.resource_rep(): 2,
         }
         assert self.op.resources(**self.op.resource_params()) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCRY, {})
-        assert self.op.make_resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params()) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
@@ -926,7 +926,7 @@ class TestResourceCRY:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
@@ -937,19 +937,19 @@ class TestResourceCRY:
             ["c1"],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRY, {}, 2, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRY, {}, 2, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRY, {}, 3, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRY, {}, 3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRY, {}, 4, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRY, {}, 4, 2, 2): 1},
         ),
     )
 
@@ -974,9 +974,9 @@ class TestResourceCRY:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
-        (2, {op.make_resource_rep(): 1}),
-        (5, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
+        (2, {op.resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -997,15 +997,15 @@ class TestResourceCRZ:
         """Test that the resources method produces the expected resources."""
 
         expected_resources = {
-            re.ResourceRZ.make_resource_rep(): 2,
-            re.ResourceCNOT.make_resource_rep(): 2,
+            re.ResourceRZ.resource_rep(): 2,
+            re.ResourceCNOT.resource_rep(): 2,
         }
         assert self.op.resources(**self.op.resource_params()) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCRZ, {})
-        assert self.op.make_resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params()) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
@@ -1014,7 +1014,7 @@ class TestResourceCRZ:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
@@ -1025,19 +1025,19 @@ class TestResourceCRZ:
             ["c1"],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 2, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 2, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 3, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRZ, {}, 4, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRZ, {}, 4, 2, 2): 1},
         ),
     )
 
@@ -1062,9 +1062,9 @@ class TestResourceCRZ:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
-        (2, {op.make_resource_rep(): 1}),
-        (5, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
+        (2, {op.resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -1084,16 +1084,16 @@ class TestResourceCRot:
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
         expected_resources = {
-            re.ResourceRY.make_resource_rep(): 2,
-            re.ResourceRZ.make_resource_rep(): 3,
-            re.ResourceCNOT.make_resource_rep(): 2,
+            re.ResourceRY.resource_rep(): 2,
+            re.ResourceRZ.resource_rep(): 3,
+            re.ResourceCNOT.resource_rep(): 2,
         }
         assert self.op.resources(**self.op.resource_params()) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCRot, {})
-        assert self.op.make_resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params()) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
@@ -1102,7 +1102,7 @@ class TestResourceCRot:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        expected_res = {self.op.make_resource_rep(): 1}
+        expected_res = {self.op.resource_rep(): 1}
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
@@ -1113,19 +1113,19 @@ class TestResourceCRot:
             ["c1"],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRot, {}, 2, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRot, {}, 2, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRot, {}, 3, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRot, {}, 3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourceRot, {}, 4, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourceRot, {}, 4, 2, 2): 1},
         ),
     )
 
@@ -1150,9 +1150,9 @@ class TestResourceCRot:
         assert op2.resources(**op2.resource_params()) == expected_res
 
     pow_data = (
-        (1, {op.make_resource_rep(): 1}),
-        (2, {op.make_resource_rep(): 1}),
-        (5, {op.make_resource_rep(): 1}),
+        (1, {op.resource_rep(): 1}),
+        (2, {op.resource_rep(): 1}),
+        (5, {op.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -1196,14 +1196,14 @@ class TestResourceControlledPhaseShift:
         op = re.ResourceControlledPhaseShift(phi, wires)
         expected = re.CompressedResourceOp(re.ResourceControlledPhaseShift, {})
 
-        assert op.make_resource_rep() == expected
+        assert op.resource_rep() == expected
 
     @pytest.mark.parametrize("phi, wires", params)
     def test_resource_rep_from_op(self, phi, wires):
         """Test resource_rep_from_op method"""
 
         op = re.ResourceControlledPhaseShift(phi, wires)
-        assert op.resource_rep() == re.ResourceControlledPhaseShift.make_resource_rep(
+        assert op.resource_rep_from_op() == re.ResourceControlledPhaseShift.resource_rep(
             **op.resource_params()
         )
 
@@ -1218,7 +1218,7 @@ class TestResourceControlledPhaseShift:
             re.CompressedResourceOp(re.ResourceRZ, {}): 3,
         }
 
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_params = op_compressed_rep.params
         op_compressed_rep_type = op_compressed_rep.op_type
 
@@ -1247,19 +1247,19 @@ class TestResourceControlledPhaseShift:
             ["c1"],
             [1],
             [],
-            {re.ResourceControlled.make_resource_rep(re.ResourcePhaseShift, {}, 2, 0, 0): 1},
+            {re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 2, 0, 0): 1},
         ),
         (
             ["c1", "c2"],
             [1, 1],
             ["w1"],
-            {re.ResourceControlled.make_resource_rep(re.ResourcePhaseShift, {}, 3, 0, 1): 1},
+            {re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 0, 1): 1},
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             ["w1", "w2"],
-            {re.ResourceControlled.make_resource_rep(re.ResourcePhaseShift, {}, 4, 2, 2): 1},
+            {re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 4, 2, 2): 1},
         ),
     )
 
