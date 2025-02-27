@@ -39,7 +39,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         e^{-i x \bm{O}}
 
     Args:
-        op (.Operator): operator to evolve
+        op (.Operator): operator to evolve. This must be passed as a _positional_ argument. Passing it as a keyword argument will result in an error.
         coeff (float): coefficient multiplying the exponentiated operator
 
     Returns:
@@ -61,7 +61,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         </html>
 
     Args:
-        op (.ParametrizedHamiltonian): Hamiltonian to evolve
+        op (.ParametrizedHamiltonian): Hamiltonian to evolve. This must be passed as a _positional_ argument.
 
     Returns:
         .ParametrizedEvolution: time evolution :math:`U(t_0, t_1)` of the Hamiltonian
