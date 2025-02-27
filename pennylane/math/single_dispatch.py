@@ -55,13 +55,9 @@ def _builtins_shape(x):
     return ar.shape(x)
 
 
-def _builtins_coerce(x, like=None):
-    return ar.numpy.asarray(x, like=like)
-
-
 ar.register_function("builtins", "ndim", _builtins_ndim)
 ar.register_function("builtins", "shape", _builtins_shape)
-ar.register_function("builtins", "coerce", _builtins_coerce)
+ar.register_function("builtins", "coerce", lambda x: x)
 ar.register_function("builtins", "logical_mod", lambda x, y: x % y)
 ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
