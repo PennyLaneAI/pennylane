@@ -28,7 +28,7 @@ from qualtran import (
 import numpy as np
 import pennylane as qml
 
-from pennylane.operation import Operation
+from pennylane.operation import Operation, MatrixUndefinedError, classproperty
 from pennylane.wires import WiresLike
 
 
@@ -140,11 +140,12 @@ class FromBloq(Operation):
                     for reg in binst.bloq.signature.rights()
                 }
 
-                # TODO: list has inconsistent shapes
-                try:
-                    soq_to_wires_len = list(soq_to_wires.values())[-1][-1] + 1
-                except TypeError:
-                    soq_to_wires_len = list(soq_to_wires.values())[-1] + 1
+                soq_to_wires_len = 0
+                if len(soq_to_wires.values()) > 0:
+                    try:
+                        soq_to_wires_len = list(soq_to_wires.values())[-1][-1] + 1
+                    except (IndexError, TypeError):
+                        soq_to_wires_len = list(soq_to_wires.values())[-1] + 1
 
                 for pred in pred_cxns:
                     soq = pred.right
@@ -182,7 +183,14 @@ class FromBloq(Operation):
 
         return ops
 
+    @property
+    def has_matrix(self) -> bool:
+        r"""Return if the bloq has a valid matrix representation."""
+        bloq = self._hyperparameters["bloq"]
+        matrix = bloq.tensor_contract()
+        return matrix.shape == (2**len(self.wires), 2**len(self.wires))
+
     def compute_matrix(*params, **kwargs):  # pylint: disable=unused-argument, no-self-argument
         bloq = params[0]._hyperparameters["bloq"]
-
-        return bloq.tensor_contract()
+        matrix = bloq.tensor_contract()
+        return matrix
