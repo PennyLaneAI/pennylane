@@ -808,7 +808,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             tensor_like: matrix representation
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
-
         if (
             wire_order is None
             or self.wires == Wires(wire_order)
@@ -817,6 +816,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                 and set(self.wires) == set(wire_order)
             )
         ):
+            print("here")
             return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
