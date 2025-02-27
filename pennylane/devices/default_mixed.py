@@ -384,9 +384,15 @@ def _apply_state_vector(total_wires, state, device_wires, interface="numpy", tol
     """Initialize the internal state in a specified pure state.
 
     Args:
+        total_wires (Wires): Total wires in the system
         state (array[complex]): normalized input state of length
-            ``2**len(wires)``
+            ``2**len(device_wires)``
         device_wires (Wires): wires that get initialized in the state
+        interface (str): Interface to use for array operations. Defaults to "numpy".
+        tolerance (float): Tolerance for checking if state is normalized. Defaults to 1e-10.
+
+    Returns:
+        array[complex]: The density matrix for the full system after applying the state
     """
     num_total_wires = len(total_wires)
 
