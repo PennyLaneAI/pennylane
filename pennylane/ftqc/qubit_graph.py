@@ -454,8 +454,8 @@ class QubitGraph:
     def init_graph_surface_code_17(self):
         r"""Initialize the QubitGraph's underlying qubits as the 17-qubit surface code graph from
 
-            Tomita & Svore, 2014, Low-distance Surface Codes under Realistic Quantum Noise.
-                https://arxiv.org/abs/1404.3747.
+        Y. Tomita & K. Svore, 2014, *Low-distance Surface Codes under Realistic Quantum Noise*.
+        `arXiv:1404.3747 <https://arxiv.org/abs/1404.3747>`_.
 
         This graph structure is commonly referred to as the "ninja star" surface code given its
         shape.
