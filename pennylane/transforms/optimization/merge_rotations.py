@@ -133,10 +133,9 @@ def _get_plxpr_merge_rotations():
             )
             if keep_merged_op:
                 # pylint: disable = protected-access
+                new_op = op.__class__._primitive.impl(*cumulative_angles, wires=op.wires)
                 for w in op.wires:
-                    self.previous_ops[w] = op.__class__._primitive.impl(
-                        *cumulative_angles, wires=op.wires
-                    )
+                    self.previous_ops[w] = new_op
             else:
                 for w in op.wires:
                     del self.previous_ops[w]
