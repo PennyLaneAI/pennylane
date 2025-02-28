@@ -816,7 +816,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                 and set(self.wires) == set(wire_order)
             )
         ):
-            print("here")
             return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
