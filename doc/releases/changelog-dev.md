@@ -426,6 +426,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.ops.Controlled.has_sparse_matrix` now provides the correct information
+  by checking if the target operator has a sparse or dense matrix defined.
+  [(#7025)](https://github.com/PennyLaneAI/pennylane/pull/7025)
+
 * `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
   [(#6975)](https://github.com/PennyLaneAI/pennylane/pull/6975)
 
