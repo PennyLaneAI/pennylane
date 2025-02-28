@@ -16,10 +16,10 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 """
 # pylint:disable=
 import numpy as np
-import pennylane as qml
 
-from pennylane.wires import WiresLike
+import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 _has_qualtran = True
 try:
@@ -27,11 +27,11 @@ try:
     from qualtran import (
         Bloq,
         CompositeBloq,
-        Soquet,
-        LeftDangle,
-        Side,
         DecomposeNotImplementedError,
         DecomposeTypeError,
+        LeftDangle,
+        Side,
+        Soquet,
     )
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     _has_qualtran = False
@@ -192,10 +192,9 @@ class FromBloq(Operation):
 
         return ops
 
-    @property  # pylint: disable=invalid-overridden-method,
-    def has_matrix(
-        self,
-    ) -> bool:  # pylint: disable=protected-access, arguments-renamed
+    # pylint: disable=invalid-overridden-method, arguments-renamed
+    @property
+    def has_matrix(self) -> bool:  # pylint: disable=protected-access
         r"""Return if the bloq has a valid matrix representation."""
         bloq = self._hyperparameters["bloq"]
         matrix = bloq.tensor_contract()
