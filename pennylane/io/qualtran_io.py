@@ -78,7 +78,7 @@ def _get_named_registers(registers):
 
 class FromBloq(Operation):
     r"""
-    A shim for using bloqs as a PennyLane operation.
+    A shim for using bloqs as a PennyLane :class:`~.Operation`.
 
     Args:
         bloq (Bloq): the bloq to wrap
