@@ -106,41 +106,40 @@ def _get_plxpr_merge_rotations():
             are_same_type = isinstance(op, type(previous_op))
             can_merge = wires_exactly_match and are_same_type
 
-            if can_merge:
-                if isinstance(op, qml.Rot):
-                    # Order of arguments matter for the Rot gate!
-                    cumulative_angles = fuse_rot_angles(
-                        qml.math.stack(previous_op.parameters),
-                        qml.math.stack(op.parameters),
-                    )
-                    test_angles = qml.math.stack(
-                        [cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]
-                    )
-                else:
-                    cumulative_angles = qml.math.stack(previous_op.parameters) + qml.math.stack(
-                        op.parameters
-                    )
-                    test_angles = cumulative_angles
-
-                angles_cancel = qml.math.allclose(test_angles, 0.0, atol=self.atol, rtol=0)
-                keep_merged_op = (
-                    qml.math.is_abstract(cumulative_angles)
-                    or qml.math.requires_grad(cumulative_angles)
-                    or not angles_cancel
-                )
-                if keep_merged_op:
-                    # pylint: disable = protected-access
-                    for w in op.wires:
-                        self.previous_ops[w] = op.__class__._primitive.impl(
-                            *cumulative_angles, wires=op.wires
-                        )
-                else:
-                    for w in op.wires:
-                        del self.previous_ops[w]
+            if not can_merge:
+                self.interpret_and_refresh_previous_ops(op)
                 return
 
-            # If we cannot merge, interpret the previous operations and refresh the previous_ops dictionary
-            self.interpret_and_refresh_previous_ops(op)
+            if isinstance(op, qml.Rot):
+                # Order of arguments matter for the Rot gate!
+                cumulative_angles = fuse_rot_angles(
+                    qml.math.stack(previous_op.parameters),
+                    qml.math.stack(op.parameters),
+                )
+                test_angles = qml.math.stack(
+                    [cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]
+                )
+            else:
+                cumulative_angles = qml.math.stack(previous_op.parameters) + qml.math.stack(
+                    op.parameters
+                )
+                test_angles = cumulative_angles
+
+            angles_cancel = qml.math.allclose(test_angles, 0.0, atol=self.atol, rtol=0)
+            keep_merged_op = (
+                qml.math.is_abstract(cumulative_angles)
+                or qml.math.requires_grad(cumulative_angles)
+                or not angles_cancel
+            )
+            if keep_merged_op:
+                # pylint: disable = protected-access
+                for w in op.wires:
+                    self.previous_ops[w] = op.__class__._primitive.impl(
+                        *cumulative_angles, wires=op.wires
+                    )
+            else:
+                for w in op.wires:
+                    del self.previous_ops[w]
 
         def interpret_and_clear_previous_ops(self) -> None:
             """Interpret all the previously seen operations and then clear."""
