@@ -181,7 +181,7 @@ class GroverOperator(Operation):
     # pylint:disable = no-value-for-parameter
     @staticmethod
     def compute_qfunc_decomposition(
-        *wires, n_wires, work_wires
+        *wires, work_wires, n_wires
     ):  # pylint: disable=arguments-differ
         wires = qml.math.array(wires, like="jax")
         work_wires = qml.math.array(work_wires, like="jax")

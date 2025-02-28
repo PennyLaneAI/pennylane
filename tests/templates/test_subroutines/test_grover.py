@@ -307,7 +307,7 @@ class TestDynamicDecomposition:
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         wires = [0, 1, 2]
-        work_wires = [3, 4]
+        work_wires = np.array([3, 4])
         gate_set = None
         max_expansion = 1
 
@@ -339,22 +339,19 @@ class TestDynamicDecomposition:
 
         # Validate Ops
         collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires, *work_wires)
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires, work_wires)
         ops_list = collector.state["ops"]
-
+        print(jaxpr)  # For debugging
         tape = qml.tape.QuantumScript([qml.GroverOperator(wires=wires, work_wires=work_wires)])
         [decomp_tape], _ = qml.transforms.decompose(
             tape, max_expansion=max_expansion, gate_set=gate_set
         )
         for op1, op2 in zip(ops_list, decomp_tape.operations):
-            if op1.name == "MultiControlledX":
-                pass
-            elif op1.name == "GlobalPhase":
+            if op1.name == "GlobalPhase":
                 assert op1.name == op2.name
                 assert qml.math.allclose(op1.parameters, op2.parameters)
-
             else:
-                assert qml.equal(op1, op2)
+                assert qml.equal(op1, op2)  # can see leaked tracer for MultiControlledX!
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize(
