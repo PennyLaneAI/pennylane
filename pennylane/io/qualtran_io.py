@@ -23,7 +23,7 @@ from pennylane.wires import WiresLike
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import qualtran # pylint: disable=unused-import
+    import qualtran  # pylint: disable=unused-import
     from qualtran import (
         Bloq,
         CompositeBloq,
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 _has_qualtran = True
 try:
-    import qualtran  
+    import qualtran
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     _has_qualtran = False
 
@@ -116,7 +116,7 @@ class FromBloq(Operation):
     -1.0
     """
 
-    def __init__(self, bloq, wires: WiresLike):
+    def __init__(self, bloq: Bloq, wires: WiresLike):
         assert isinstance(bloq, Bloq)
         self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
