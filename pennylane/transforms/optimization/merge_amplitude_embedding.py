@@ -120,10 +120,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
         def interpret_all_previous_ops(self) -> None:
             """Interpret all previous operations and clear the setup variables."""
-
             for op in self.previous_ops:
                 super().interpret_operation(op)
-
             self.previous_ops.clear()
 
         # pylint: disable=too-many-branches
@@ -253,8 +251,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(measure_prim)
     def _(self, *invals, **params):
-
         # Make sure to record that we have visited the wires on this measurement
+        # in order to be able to detect potential wire collisions with future AE gates
         self.state["visited_wires"] = self.state["visited_wires"].union(set(invals))
         # pylint: disable=protected-access
         if len(self.input_wires) > 0:
