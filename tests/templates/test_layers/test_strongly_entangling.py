@@ -160,6 +160,7 @@ class TestDynamicDecomposition:
         import jax
 
         from pennylane.capture.primitives import cond_prim, for_loop_prim
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         layers = 5
@@ -178,8 +179,9 @@ class TestDynamicDecomposition:
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
-        jaxpr_eqns = jaxpr.eqns
 
+        # Validate Jaxpr
+        jaxpr_eqns = jaxpr.eqns
         layer_loop_eqn = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
         assert layer_loop_eqn[0].primitive == for_loop_prim
         layer_inner_eqn = layer_loop_eqn[0].params["jaxpr_body_fn"].eqns
@@ -199,6 +201,21 @@ class TestDynamicDecomposition:
         assert imprimitive_loop_eqn[0].primitive == for_loop_prim
         imprimitive_inner_eqn = imprimitive_loop_eqn[0].params["jaxpr_body_fn"].eqns
         assert imprimitive_inner_eqn[-1].primitive == imprimitive._primitive
+
+        # Validate Ops
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
+        ops_list = collector.state["ops"]
+        print(ops_list)
+        tape = qml.tape.QuantumScript(
+            [qml.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)]
+        )
+        [decomp_tape], _ = qml.transforms.decompose(
+            tape, max_expansion=max_expansion, gate_set=gate_set
+        )
+        print(f"tape: {decomp_tape.operations}")
+        assert ops_list[0] == decomp_tape.operations[0]
+        assert False
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize(
