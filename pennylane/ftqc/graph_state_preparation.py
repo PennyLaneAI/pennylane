@@ -49,7 +49,7 @@ class GraphStatePreparation(Operation):
         self._wires = wires
 
     @staticmethod
-    def decompose(self):
+    def compute_decomposition():
         op_list = []
         # Add qubit_ops to the queue
         # traverse the nodes in the qubit graph
