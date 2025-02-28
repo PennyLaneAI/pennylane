@@ -81,8 +81,6 @@ def _get_plxpr_merge_rotations():
             Args:
                 op (Operator): a pennylane operator instance
 
-            Returns:
-                None
 
             This method is only called when the operator's output is a dropped variable,
             so the output will not affect later equations in the circuit.
