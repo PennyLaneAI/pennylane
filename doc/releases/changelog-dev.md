@@ -426,6 +426,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.ops.Controlled.has_sparse_matrix` is now accurate.
+
 * `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
   [(#6975)](https://github.com/PennyLaneAI/pennylane/pull/6975)
 
