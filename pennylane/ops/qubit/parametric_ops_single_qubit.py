@@ -277,6 +277,8 @@ class RZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = set()
+
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -367,6 +369,10 @@ class RZ(Operation):
 
     def adjoint(self) -> "RZ":
         return RZ(-self.data[0], wires=self.wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [RZ(self.data[0] * z, wires=self.wires)]

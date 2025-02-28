@@ -349,7 +349,7 @@ class ClassPropertyDescriptor:  # pragma: no cover
         return self
 
 
-def classproperty(func):
+def classproperty(func) -> ClassPropertyDescriptor:
     """The class property decorator"""
     if not isinstance(func, (classmethod, staticmethod)):
         func = classmethod(func)
@@ -1379,6 +1379,41 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
 
         raise DecompositionUndefinedError
+
+    @classproperty
+    def resource_param_keys(self) -> set:
+        """The keys to the ``resource_params`` dictionary.
+
+        All decomposition rules registered with an operator class is expected to have a resource
+        function with parameters that are consistent with the operator's ``resource_param_keys``.
+        The ``qml.resource_rep`` function will also expect keyword arguments that match these
+        keys for each operator type.
+
+        .. seealso::
+            :meth:`~.Operator.resource_params`
+
+        """
+
+    @property
+    def resource_params(self) -> dict:
+        """A dictionary containing the minimal information needed to compute a
+        resource estimate of the operator's decomposition.
+
+        Two instances of the same operator type should have identical ``resource_params`` iff
+        their decompositions exhibit the same counts for each gate type, even if the individual
+        gate parameters differ.
+
+        For most operators with static decompositions, this should just be an empty dictionary,
+        but for gates such as ``MultiRZ`` whose decomposition depends on certain parameters such
+        as the number of wires, the ``resource_params`` should contain this information. Note
+        that the ``resource_params`` should only contain the **minimal** information needed to
+        determine the gate count for an operator's decomposition.
+
+        """
+        # For most operators, this should just be an empty dictionary, but a default
+        # implementation is intentionally not provided so that each operator class is
+        # forced to explicitly define its resource params.
+        raise NotImplementedError
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
