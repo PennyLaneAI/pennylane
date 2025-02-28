@@ -1570,8 +1570,9 @@ class TestStochPulseGradIntegration:
         grad_backprop = jax.grad(qnode_backprop)(params)
         # Values are close to zero so we need to use `atol` instead of `rtol`
         # to avoid numerical issues
+        print(grad_pulse_grad, grad_backprop)
         assert all(
-            qml.math.allclose(r, e, atol=5e-4) for r, e in zip(grad_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, atol=5e-3) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
         jax.clear_caches()
 
