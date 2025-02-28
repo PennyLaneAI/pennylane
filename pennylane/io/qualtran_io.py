@@ -118,8 +118,9 @@ class FromBloq(Operation):
         bloq = self._hyperparameters["bloq"]
 
         try:
+            # Bloqs need to be decomposed in order to access the connections
             cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
-            temp_registers = _get_named_registers(cbloq.signature.lefts())
+            temp_registers = _get_named_registers(cbloq.signature.lefts()) 
             soq_to_wires = {
                 Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])
                 for reg in cbloq.signature.lefts()
@@ -131,11 +132,15 @@ class FromBloq(Operation):
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.lefts()
                 }
+                # The out_quregs inform us of the total # of wires in the circuit to account for
+                # wires that are split or allocated in the cbloq
                 out_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.rights()
                 }
 
+                # This is to track the number of wires defined at the LeftDangle stage
+                # so if we need to add more wires, we know what index to start at
                 soq_to_wires_len = 0
                 if len(soq_to_wires.values()) > 0:
                     try:
@@ -151,9 +156,10 @@ class FromBloq(Operation):
                 for succ in succ_cxns:
                     soq = succ.left
                     if soq.reg.side == Side.RIGHT:
-                        # If in_quregs is not equal to out_quregs, we insert key, value pair where the key is
-                        # the register name, and the value is the list of wires associated with it
-                        if len(in_quregs) != len(out_quregs) and soq.reg.side == Side.RIGHT:
+                        # When in_quregs != out_quregs, it means that there are wires unaccounted
+                        # for. We account for these wires and update soq_to_wires and in_quregs
+                        # accordingly.
+                        if len(in_quregs) != len(out_quregs):
                             total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
                             ascending_vals = np.arange(
                                 soq_to_wires_len,
