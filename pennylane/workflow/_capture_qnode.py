@@ -106,6 +106,7 @@ not even started thinking about how it might be possible to do so.
 features is non-exhaustive.
 
 """
+import logging
 from functools import partial
 from numbers import Number
 from warnings import warn
@@ -116,9 +117,13 @@ from jax.interpreters import ad, batching, mlir
 import pennylane as qml
 from pennylane.capture import CaptureError, FlatFn
 from pennylane.capture.custom_primitives import QmlPrimitive
+from pennylane.logging import debug_logger
 from pennylane.typing import TensorLike
 
 from .construct_execution_config import construct_execution_config
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _is_scalar_tensor(arg) -> bool:
@@ -184,6 +189,7 @@ qnode_prim.prim_type = "higher_order"
 
 
 # pylint: disable=too-many-arguments, unused-argument
+@debug_logger
 @qnode_prim.def_impl
 def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
     if shots != device.shots:
@@ -203,6 +209,7 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
 
 
 # pylint: disable=unused-argument
+@debug_logger
 @qnode_prim.def_abstract_eval
 def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
 
@@ -282,15 +289,7 @@ def _qnode_batching_rule(
 # This structure will change as we add more diff methods
 
 
-def _make_zero(tan, arg):
-    return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
-
-
-def _backprop(args, tangents, **impl_kwargs):
-    tangents = tuple(map(_make_zero, tangents, args))
-    return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
-
-
+@debug_logger
 def _finite_diff(args, tangents, **impl_kwargs):
     f = partial(qnode_prim.bind, **impl_kwargs)
     return qml.gradients.finite_diff_jvp(
@@ -298,17 +297,26 @@ def _finite_diff(args, tangents, **impl_kwargs):
     )
 
 
-diff_method_map = {"backprop": _backprop, "finite-diff": _finite_diff}
+diff_method_map = {"finite-diff": _finite_diff}
 
 
-def _qnode_jvp(args, tangents, *, execution_config, device, **impl_kwargs):
-    config = device.setup_execution_config(execution_config)
+@debug_logger
+def _qnode_jvp(args, tangents, *, execution_config, device, qfunc_jaxpr, **impl_kwargs):
+    if execution_config.use_device_gradient:
+        return device.jaxpr_jvp(qfunc_jaxpr, args, tangents, execution_config=execution_config)
 
-    if config.gradient_method not in diff_method_map:
-        raise NotImplementedError(f"diff_method {config.gradient_method} not yet implemented.")
+    if execution_config.gradient_method not in diff_method_map:
+        raise NotImplementedError(
+            f"diff_method {execution_config.gradient_method} not yet implemented."
+        )
 
-    return diff_method_map[config.gradient_method](
-        args, tangents, execution_config=config, device=device, **impl_kwargs
+    return diff_method_map[execution_config.gradient_method](
+        args,
+        tangents,
+        execution_config=execution_config,
+        device=device,
+        qfunc_jaxpr=qfunc_jaxpr,
+        **impl_kwargs,
     )
 
 
@@ -514,6 +522,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     config = construct_execution_config(
         qnode, resolve=False
     )()  # no need for args and kwargs as not resolving
+    config = qnode.device.setup_execution_config(config)
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
