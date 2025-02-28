@@ -68,17 +68,17 @@ class Lattice:
         return self._graph.neighbors(node)
 
     @property
-    def get_nodes(self):
+    def nodes(self):
         r"""Returns all nodes in the lattice."""
         return self._graph.nodes
 
     @property
-    def get_edges(self):
+    def edges(self):
         r"""Returns all edges in the lattice."""
         return self._graph.edges
 
     @property
-    def get_graph(self) -> nx.Graph:
+    def graph(self) -> nx.Graph:
         r"""Returns the underlying NetworkX graph object representing the lattice."""
         return self._graph
 
