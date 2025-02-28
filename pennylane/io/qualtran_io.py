@@ -23,11 +23,7 @@ from pennylane.wires import WiresLike
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from qualtran import Bloq
-
-_has_qualtran = True
-try:
-    import qualtran  # pylint: disable=unused-import
+    import qualtran # pylint: disable=unused-import
     from qualtran import (
         Bloq,
         CompositeBloq,
@@ -37,6 +33,10 @@ try:
         DecomposeNotImplementedError,
         DecomposeTypeError,
     )
+
+_has_qualtran = True
+try:
+    import qualtran  
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     _has_qualtran = False
 
