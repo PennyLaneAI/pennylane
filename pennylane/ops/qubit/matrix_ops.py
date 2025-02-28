@@ -295,7 +295,7 @@ class QubitUnitary(Operation):
             return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
         U = self.sparse_matrix()
         adjoint_sp_mat = U.conjugate().transpose()
-        # Note: it is necessary to explicitly cast back to csr, or it will be come csc
+        # Note: it is necessary to explicitly cast back to csr, or it will become csc.
         return QubitUnitary(adjoint_sp_mat, wires=self.wires)
 
     def pow(self, z: Union[int, float]):
