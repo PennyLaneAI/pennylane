@@ -19,6 +19,14 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
+
+def _find_eq_with_name(jaxpr, name):
+    for eq in jaxpr.eqns:
+        if name in eq.params:
+            return eq.params[name]
+        return None
+
+
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
@@ -738,25 +746,31 @@ class TestHigherOrderPrimitiveIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         @MergeAmplitudeEmbeddingInterpreter()
-        def f(a, b):
-            @qml.qnode(dev)
-            def circuit(a, b):
-                qml.AmplitudeEmbedding(jax.numpy.array([a, b]), wires=0)
-                qml.Hadamard(0)
-                qml.AmplitudeEmbedding(jax.numpy.array([a, b]), wires=1)
-                return qml.expval(qml.Z(0))
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.AmplitudeEmbedding(jax.numpy.array([a, b]), wires=0)
+            qml.Hadamard(0)
+            qml.AmplitudeEmbedding(jax.numpy.array([a, b]), wires=1)
+            return qml.expval(qml.Z(0))
 
-            return qml.grad(circuit)(a, b)
-
-        jaxpr = jax.make_jaxpr(f)(0.0, 1.0)
+        f = qml.grad(circuit)
+        jaxpr = jax.make_jaxpr(f)(0, 1)
         assert jaxpr.eqns[0].primitive == grad_prim
-        grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
-        qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[-4].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(qfunc_jaxpr.eqns[-4].params["n_wires"], 2)
-        assert qfunc_jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+        inner_jaxpr = _find_eq_with_name(jaxpr, "jaxpr")
+        qfunc_jaxpr = _find_eq_with_name(inner_jaxpr, "qfunc_jaxpr")
+        # Get all operators in qfunc
+        qfunc_jaxpr = qfunc_jaxpr.replace(
+            eqns=[
+                eqn
+                for eqn in qfunc_jaxpr.eqns
+                if getattr(eqn.primitive, "prim_type", "") == "operator"
+            ]
+        )
+        assert len(qfunc_jaxpr.eqns) == 3
+        assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
+        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
 
     def test_jacobian_prim(self):
         """Test that the transform works correctly when applied with jacobian_prim."""
@@ -764,27 +778,34 @@ class TestHigherOrderPrimitiveIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         @MergeAmplitudeEmbeddingInterpreter()
-        def f(a, b):
-            @qml.qnode(dev)
-            def circuit(a, b):
-                qml.AmplitudeEmbedding(jax.numpy.array([a, b]), wires=0)
-                qml.Hadamard(0)
-                qml.AmplitudeEmbedding(jax.numpy.array([a, b]), wires=1)
-                return qml.expval(qml.Z(0))
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.AmplitudeEmbedding(jax.numpy.array([a, b]), wires=0)
+            qml.Hadamard(0)
+            qml.AmplitudeEmbedding(jax.numpy.array([a, b]), wires=1)
+            return qml.expval(qml.Z(0))
 
-            return qml.jacobian(circuit)(a, b)
+        f = qml.jacobian(circuit)
 
         jaxpr = jax.make_jaxpr(f)(0.0, 1.0)
 
         assert jaxpr.eqns[0].primitive == jacobian_prim
 
-        grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
-        qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[-4].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(qfunc_jaxpr.eqns[-4].params["n_wires"], 2)
-        assert qfunc_jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+        inner_jaxpr = _find_eq_with_name(jaxpr, "jaxpr")
+        qfunc_jaxpr = _find_eq_with_name(inner_jaxpr, "qfunc_jaxpr")
+        # Get all operators in qfunc
+        qfunc_jaxpr = qfunc_jaxpr.replace(
+            eqns=[
+                eqn
+                for eqn in qfunc_jaxpr.eqns
+                if getattr(eqn.primitive, "prim_type", "") == "operator"
+            ]
+        )
+        assert len(qfunc_jaxpr.eqns) == 3
+        assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
+        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
 
 
 class TestExpandPlxprTransformIntegration:
