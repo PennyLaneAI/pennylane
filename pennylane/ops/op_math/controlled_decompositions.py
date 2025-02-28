@@ -669,3 +669,84 @@ def _decompose_mcx_with_one_worker(control_wires, target_wire, work_wire):
     ]
 
     return gates
+
+
+def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
+    r"""
+    Helper function to create linear-depth ladder operations used in Khattar and Gidney's MCX synthesis.
+    In particular, this implements Step-1 and Step-2 on Fig. 3 of [1] except for the first and last
+    CCX gates.
+
+    Args:
+        wires (Wires): Wires to apply the ladder operations on. wires[0] is assumed to be ancilla.
+
+    Returns:
+        tuple[list[Operator], int]: linear-depth ladder circuit and the index of control qubit to
+        apply the final CCX gate.
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+    """
+
+    n = len(wires)
+    if n <= 3:
+        raise ValueError("n = n_ctrls + 1 => n_ctrls >= 3 to use MCX ladder. Otherwise, use CCX")
+
+    gates = []
+    # up-ladder
+    for i in range(2, n - 2, 2):
+        gates.append(qml.Toffoli(wires=[wires[i + 1], wires[i + 2], wires[i]]))
+        gates.append(qml.PauliX(wires=wires[i]))
+    
+    # down-ladder
+    if n % 2 != 0:
+        x, y, t = n - 3, n - 5, n - 6
+    else:
+        x, y, t = n - 1, n - 4, n - 5
+    
+    if t > 0:
+        gates.append(qml.Toffoli(wires=[wires[x], wires[y], wires[t]]))
+        gates.append(qml.PauliX(wires=wires[t]))
+    
+    for i in range(t, 2, -2):
+        gates.append(qml.Toffoli(wires=[wires[i], wires[i - 1], wires[i - 2]]))
+        gates.append(qml.PauliX(wires=wires[i - 2]))
+    
+    mid_second_ctrl = 1 + max(0, 6 - n)
+    final_ctrl = mid_second_ctrl - 1
+    
+    return gates, final_ctrl
+
+
+def decompose_mcx_1_ancilla(control_wires, target_wire, work_wires, clean=True):
+    r"""
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit as
+    described in Sec. 5 of [1].
+
+    Args:
+        num_ctrl_qubits (int): The number of control qubits.
+        clean (bool): If True, the ancilla is clean, otherwise it is dirty.
+
+    Returns:
+        list[Operator] The synthesized quantum circuit.
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+    """
+
+    gates = []
+    ladder_ops, final_ctrl = _linear_depth_ladder_ops(work_wires + control_wires)
+    gates.append(qml.Toffoli(wires=[control_wires[0], control_wires[1], work_wires[0]]))
+    gates += ladder_ops
+    gates.append(qml.Toffoli(wires=[work_wires[0], control_wires[final_ctrl], target_wire[0]]))
+    gates += ladder_ops[::-1]
+    gates.append(qml.Toffoli(wires=[control_wires[0], control_wires[1], work_wires[0]]))
+
+    if not clean:
+        gates += ladder_ops
+        gates.append(qml.Toffoli(wires=[work_wires[0], control_wires[0], target_wire[0]]))
+        gates += ladder_ops[::-1]
+
+    return gates
