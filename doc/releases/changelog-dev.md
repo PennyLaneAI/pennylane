@@ -43,6 +43,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
+  [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
+  
+* Bump `rng_salt` to `v0.40.0`.
+  [(#6854)](https://github.com/PennyLaneAI/pennylane/pull/6854)
+
 * `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
 [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
 
@@ -58,6 +64,9 @@
 
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+
+* A `Lattice` class and a `generate_lattice` method is added to the `qml.ftqc` module. The `generate_lattice` method is to generate 1D, 2D, 3D grid graphs with the given geometric parameters.
+  [(#6958)](https://github.com/PennyLaneAI/pennylane/pull/6958)
 
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
@@ -198,17 +207,28 @@
   [(#6954)](https://github.com/PennyLaneAI/pennylane/pull/6954)
 
 * A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
-  measurement basis in the XY, YZ or ZX plane. 
+  measurement basis in the XY, YZ or ZX plane. Subclasses `XMidMeasureMP` and `YMidMeasureMP` represent
+  X-basis and Y-basis measurements. These classes are part of the experimental `ftqc` module.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
 
 * A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices 
   that only natively support mid-circuit measurements in the computational basis.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+
+* Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added in the experimental `ftqc` module. These functions 
+  apply a mid-circuit measurement and return a `MeasurementValue`. They are analogous to `qml.measure` for 
+  the computational basis, but instead measure in the X-basis, Y-basis, or an arbitrary basis, respectively.
+  Function `qml.ftqc.measure_z` is also added as an alias for `qml.measure`.
+  [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
   
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
+  [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
 
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
   be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
@@ -219,10 +239,11 @@
   should be considered static when capturing the quantum program.
   [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
 
-* Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
-  with program capture enabled.
+* A new, experimental `Operator` method called `compute_qfunc_decomposition` has been added to represent decompositions with structure (e.g., control flow). 
+  This method is only used when capture is enabled with `qml.capture.enable()`.
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
   [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
+  [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
 
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
@@ -363,6 +384,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `qml.capture.run_autograph` is now idempotent.
+  This means `run_autograph(fn) = run_autograph(run_autograph(fn))`.
+  [(#7001)](https://github.com/PennyLaneAI/pennylane/pull/7001)
+
 * Minor changes to `DQInterpreter` for speedups with program capture execution.
   [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
 
@@ -420,6 +445,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
+  of sparse matrices. 
+  [(#7015)](https://github.com/PennyLaneAI/pennylane/pull/7015)
+
+* `qml.ops.Controlled.has_sparse_matrix` now provides the correct information
+  by checking if the target operator has a sparse or dense matrix defined.
+  [(#7025)](https://github.com/PennyLaneAI/pennylane/pull/7025)
+
 * `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
   [(#6975)](https://github.com/PennyLaneAI/pennylane/pull/6975)
 
@@ -475,4 +508,5 @@ Korbinian Kottmann,
 Christina Lee,
 Mudit Pandey,
 Andrija Paurevic,
+Shuli Shu,
 David Wierichs
