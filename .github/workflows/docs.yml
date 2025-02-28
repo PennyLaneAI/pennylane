@@ -54,7 +54,6 @@ jobs:
             && pip3 install .
             && pip3 install openfermionpyscf
             && pip3 install aiohttp fsspec h5py
-            && pip3 install pip install git+https://github.com/PennyLaneAI/Qualtran-PL.git@bloq_to_op
         build-command: "sphinx-build -b html . _build -W --keep-going"
 
     - name: Freeze dependencies
