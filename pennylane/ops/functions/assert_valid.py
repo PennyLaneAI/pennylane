@@ -18,11 +18,11 @@ Operator class is correctly defined.
 
 import copy
 import pickle
+from collections import defaultdict
 from string import ascii_lowercase
 
 import numpy as np
 import scipy.sparse
-from black.trans import defaultdict
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
