@@ -15,15 +15,21 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 # pylint:disable=
-from qualtran import (
-    Bloq,
-    CompositeBloq,
-    Soquet,
-    LeftDangle,
-    Side,
-    DecomposeNotImplementedError,
-    DecomposeTypeError,
-)
+_has_qualtran = False
+
+try:
+    import qualtran  # pylint: disable=unused-import
+    from qualtran import (
+        Bloq,
+        CompositeBloq,
+        Soquet,
+        LeftDangle,
+        Side,
+        DecomposeNotImplementedError,
+        DecomposeTypeError,
+    )
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    _has_qualtran = False
 
 import numpy as np
 import pennylane as qml
@@ -52,7 +58,10 @@ def get_bloq_registers_info(bloq):
     >>> qml.get_bloq_registers_info(Swap(3))
     {'x': Wires([0, 1, 2]), 'y': Wires([3, 4, 5])}
     """
-
+    if not _has_qualtran:
+        raise ImportError(
+            "Qualtran is required for get_bloq_registers_info. Please install it with `pip install qualtran`"
+        )
     cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
 
     temp_register_dict = {reg.name: reg.bitsize for reg in cbloq.signature.rights()}
@@ -105,6 +114,10 @@ class FromBloq(Operation):
     """
 
     def __init__(self, bloq: Bloq, wires: WiresLike):
+        if not _has_qualtran:
+            raise ImportError(
+                "Qualtran is required for FromBloq. Please install it with `pip install qualtran`"
+            )
         assert isinstance(bloq, Bloq)
         self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
