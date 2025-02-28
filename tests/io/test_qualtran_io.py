@@ -14,8 +14,12 @@
 """
 Unit tests for the :mod:`pennylane.io.qualtran_io` module.
 """
+import pytest
+
 import numpy as np
 import pennylane as qml
+
+qualtran = pytest.importorskip("qualtran")
 
 
 class TestFromBloq:
