@@ -19,6 +19,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.wires import WiresLike
+from pennylane.operation import Operation
 
 _has_qualtran = True
 try:
@@ -75,7 +76,7 @@ def _get_named_registers(registers):
     return qml.registers(temp_register_dict)
 
 
-class FromBloq(qml.Operation):
+class FromBloq(Operation):
     r"""
     A shim for using bloqs as a PennyLane operation.
 
