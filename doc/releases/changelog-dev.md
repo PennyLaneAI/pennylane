@@ -229,10 +229,11 @@
   should be considered static when capturing the quantum program.
   [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
 
-* Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
-  with program capture enabled.
+* A new, experimental `Operator` method called `compute_qfunc_decomposition` has been added to represent decompositions with structure (e.g., control flow). 
+  This method is only used when capture is enabled with `qml.capture.enable()`.
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
   [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
+  [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
 
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
