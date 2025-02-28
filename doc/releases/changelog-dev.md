@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse matrix.
+  [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
+
 * `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
   `qml.defer_measurements` can be executed on `default.qubit`.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
