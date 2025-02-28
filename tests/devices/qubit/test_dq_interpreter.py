@@ -62,6 +62,7 @@ def test_setup_and_cleanup():
     assert dq.key is key
 
     assert dq.stateref["shots"] == qml.measurements.Shots(2)
+    assert dq.shots == qml.measurements.Shots(2)
 
     assert dq.state is dq.stateref["state"]
     assert dq.is_state_batched is False
@@ -73,7 +74,7 @@ def test_setup_and_cleanup():
     assert dq.stateref is None
 
 
-@pytest.mark.parametrize("name", ("state", "key", "is_state_batched"))
+@pytest.mark.parametrize("name", ("state", "key", "is_state_batched", "shots"))
 def test_working_state_key_before_setup(name):
     """Test that state and key can't be accessed before setup."""
 
