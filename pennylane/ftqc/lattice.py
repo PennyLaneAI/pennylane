@@ -164,4 +164,4 @@ def generate_lattice(dims: Sequence[int], lattice: str) -> Lattice:
         lattice_obj = Lattice(lattice_shape, lattice_generate_method(dims[0], dims[1]))
         return lattice_obj
 
-    raise NotImplementedError  # pragma : no cover
+    raise NotImplementedError  # pragma: no cover
