@@ -66,18 +66,12 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return True
     if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
-    if (
-        isinstance(op, qml.operation.Operator)
-        and op.has_sparse_matrix
-        and (not op.has_matrix)
-        and len(op.wires) >= 3
-    ):
-        return True
 
     return (
         (isinstance(op, Conditional) and stopping_condition(op.base))
         or isinstance(op, MidMeasureMP)
         or op.has_matrix
+        or op.has_sparse_matrix
     )
 
 
