@@ -96,7 +96,8 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
         """Function for mapping wires in plxpr"""
-        wire_map = tkwargs.pop("wire_map")
+        
+        wire_map = tkwargs.get("wire_map")
         interpreter = MapWiresInterpreter(wire_map)
 
         def wrapper(*inner_args):

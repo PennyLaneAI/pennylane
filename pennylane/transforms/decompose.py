@@ -287,7 +287,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
     ):  # pylint: disable=unused-argument
         """Function from decomposing jaxpr."""
         decomposer = DecomposeInterpreter(
-            gate_set=tkwargs.pop("gate_set", None), max_expansion=tkwargs.pop("max_expansion", None)
+            gate_set=tkwargs.get("gate_set", None), max_expansion=tkwargs.get("max_expansion", None)
         )
 
         def wrapper(*inner_args):
