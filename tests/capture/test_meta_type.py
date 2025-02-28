@@ -30,7 +30,7 @@ def test_custom_capture_meta():
     """Test that we can capture custom classes with the CaptureMeta metaclass by defining
     the _primitive_bind_call method."""
 
-    p = jax.core.Primitive("p")
+    p = jax.extend.core.Primitive("p")
 
     @p.def_abstract_eval
     def _(a):
