@@ -18,7 +18,6 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 import numpy as np
 import pennylane as qml
 
-from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
 _has_qualtran = True
@@ -76,7 +75,7 @@ def _get_named_registers(registers):
     return qml.registers(temp_register_dict)
 
 
-class FromBloq(Operation):
+class FromBloq(qml.Operation):
     r"""
     A shim for using bloqs as a PennyLane operation.
 
@@ -192,7 +191,7 @@ class FromBloq(Operation):
 
         return ops
 
-    @property # pylint: disable=invalid-overridden-method,
+    @property  # pylint: disable=invalid-overridden-method,
     def has_matrix(
         self,
     ) -> bool:  # pylint: disable=protected-access, arguments-renamed
