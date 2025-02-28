@@ -152,25 +152,22 @@ class TestDynamicDecomposition:
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
         import jax
 
-        from pennylane.capture.primitives import for_loop_prim, qnode_prim
+        from pennylane.capture.primitives import for_loop_prim
         from pennylane.transforms.decompose import DecomposeInterpreter
 
-        n_wires = 4
         wires = [0, 1, 2, 3]
         gate_set = None
         max_expansion = 1
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
         def circuit(wires):
             qml.QFT(wires=wires)
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(wires=wires)
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr_eqns = jaxpr.eqns[0].params["qfunc_jaxpr"].eqns
+        jaxpr_eqns = jaxpr.eqns
 
-        outer_loop, swap_loop = [eqn for eqn in qfunc_jaxpr_eqns if eqn.primitive == for_loop_prim]
+        outer_loop, swap_loop = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
         assert outer_loop.primitive == for_loop_prim
         assert swap_loop.primitive == for_loop_prim
         outer_loop_eqn = outer_loop.params["jaxpr_body_fn"].eqns

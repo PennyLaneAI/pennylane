@@ -200,7 +200,7 @@ class GroverOperator(Operation):
         )
         PauliZ(wires[-1])
         hadamard_loop()
-        GlobalPhase(np.pi)
+        GlobalPhase(np.pi, wires=wires[0])
 
     @staticmethod
     def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument

@@ -302,27 +302,24 @@ class TestDynamicDecomposition:
         """Test that the dynamic decomposition of Grover has the correct plxpr"""
         import jax
 
-        from pennylane.capture.primitives import for_loop_prim, qnode_prim
+        from pennylane.capture.primitives import for_loop_prim
         from pennylane.transforms.decompose import DecomposeInterpreter
 
-        n_wires = 5
         wires = [0, 1, 2]
         work_wires = [3, 4]
         gate_set = None
         max_expansion = 1
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
         def circuit(wires, work_wires):
             qml.GroverOperator(wires=wires, work_wires=work_wires)
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(wires=wires, work_wires=work_wires)
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr_eqns = jaxpr.eqns[0].params["qfunc_jaxpr"].eqns
+        jaxpr_eqns = jaxpr.eqns
 
         # 2 Hadamard loops
-        hadamard_loops_eqns = [eqn for eqn in qfunc_jaxpr_eqns if eqn.primitive == for_loop_prim]
+        hadamard_loops_eqns = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
         assert len(hadamard_loops_eqns) == 2
         for hadamard_loop in hadamard_loops_eqns:
             assert hadamard_loop.primitive == for_loop_prim
@@ -332,7 +329,7 @@ class TestDynamicDecomposition:
         # 4 remaining operations
         remaining_ops = [
             eqn
-            for eqn in qfunc_jaxpr_eqns
+            for eqn in jaxpr_eqns
             if eqn.primitive
             in (qml.PauliZ._primitive, qml.MultiControlledX._primitive, qml.GlobalPhase._primitive)
         ]

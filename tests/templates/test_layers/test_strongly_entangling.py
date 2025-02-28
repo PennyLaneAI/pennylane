@@ -159,7 +159,7 @@ class TestDynamicDecomposition:
         """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
         import jax
 
-        from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim
+        from pennylane.capture.primitives import cond_prim, for_loop_prim
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         layers = 5
@@ -173,16 +173,14 @@ class TestDynamicDecomposition:
         wires = list(range(n_wires))
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
         def circuit(weights, wires):
             qml.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr_eqns = jaxpr.eqns[0].params["qfunc_jaxpr"].eqns
+        jaxpr_eqns = jaxpr.eqns
 
-        layer_loop_eqn = [eqn for eqn in qfunc_jaxpr_eqns if eqn.primitive == for_loop_prim]
+        layer_loop_eqn = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
         assert layer_loop_eqn[0].primitive == for_loop_prim
         layer_inner_eqn = layer_loop_eqn[0].params["jaxpr_body_fn"].eqns
 
