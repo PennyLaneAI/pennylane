@@ -92,32 +92,31 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
         def _merge_and_insert_at_the_start(self) -> None:
             """Merge the AmplitudeEmbedding gates and insert it at the beginning of the previously seen operations."""
-            if len(self.input_wires) > 0:
-                final_wires = self.input_wires[0]
-                final_vector = self.input_vectors[0]
-                final_batch_size = self.input_batch_size[0]
+            final_wires = self.input_wires[0]
+            final_vector = self.input_vectors[0]
+            final_batch_size = self.input_batch_size[0]
 
-                for w, v, b in zip(
-                    self.input_wires[1:],
-                    self.input_vectors[1:],
-                    self.input_batch_size[1:],
-                    strict=True,
-                ):
-                    final_vector = final_vector[..., :, None] * v[..., None, :]
-                    final_batch_size = final_batch_size or b
-                    final_wires = final_wires + w
+            for w, v, b in zip(
+                self.input_wires[1:],
+                self.input_vectors[1:],
+                self.input_batch_size[1:],
+                strict=True,
+            ):
+                final_vector = final_vector[..., :, None] * v[..., None, :]
+                final_batch_size = final_batch_size or b
+                final_wires = final_wires + w
 
-                    if final_batch_size:
-                        final_vector = reshape(final_vector, (final_batch_size, -1))
-                    else:
-                        final_vector = flatten(final_vector)
+                if final_batch_size:
+                    final_vector = reshape(final_vector, (final_batch_size, -1))
+                else:
+                    final_vector = flatten(final_vector)
 
-                # pylint: disable=protected-access
-                self.previous_ops.insert(
-                    0, qml.AmplitudeEmbedding._primitive.impl(final_vector, wires=final_wires)
-                )
-                # Clear history of amplitude embedding gates since we've merged
-                self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
+            # pylint: disable=protected-access
+            self.previous_ops.insert(
+                0, qml.AmplitudeEmbedding._primitive.impl(final_vector, wires=final_wires)
+            )
+            # Clear history of amplitude embedding gates since we've merged
+            self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def interpret_all_previous_ops(self) -> None:
             """Interpret all previous operations and clear the setup variables."""
@@ -156,7 +155,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 # Workaround is to merge and insert the merged gate before entering
                 # a higher order primitive.
                 if prim_type == "higher_order":
-                    self._merge_and_insert_at_the_start()
+                    if len(self.input_wires) > 0:
+                        self._merge_and_insert_at_the_start()
                     self.interpret_all_previous_ops()
 
                 if custom_handler:
@@ -165,7 +165,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 elif prim_type == "operator":
                     outvals = self.interpret_operation_eqn(eqn)
                 elif prim_type == "measurement":
-                    self._merge_and_insert_at_the_start()
+                    if len(self.input_wires) > 0:
+                        self._merge_and_insert_at_the_start()
                     self.interpret_all_previous_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
@@ -179,9 +180,9 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                     self._env[outvar] = outval
 
             # The following is needed because any operations inside self.previous_ops have not yet
-            # been applied. At this point, we **know** that any operations that should be merged
-            # have been merged, and operations left inside self.previous_ops should be applied
-            self._merge_and_insert_at_the_start()
+            # been applied.
+            if len(self.input_wires) > 0:
+                self._merge_and_insert_at_the_start()
             self.interpret_all_previous_ops()
 
             # Read the final result of the Jaxpr from the environment
@@ -256,7 +257,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         # Make sure to record that we have visited the wires on this measurement
         self.state["visited_wires"] = self.state["visited_wires"].union(set(invals))
         # pylint: disable=protected-access
-        self._merge_and_insert_at_the_start()
+        if len(self.input_wires) > 0:
+            self._merge_and_insert_at_the_start()
         self.interpret_all_previous_ops()
 
         _, params = measure_prim.get_bind_params(params)
