@@ -42,7 +42,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         op (.Operator): operator to evolve. This must be passed as a *positional* argument. Passing it as a *keyword* argument will result in an error.
         coeff (float): coefficient multiplying the exponentiated operator
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
-            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
+            also known as the Trotter number. Defaults to `None`. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
 
     Returns:
