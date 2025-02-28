@@ -353,17 +353,18 @@ class TestMapWiresInterpreter:
 
 def test_map_wires_plxpr_to_plxpr():
     """Test that transforming plxpr works."""
-    wire_map = {0: 5, 1: 6, 2: 7}
 
-    def circuit(x):
+    def circuit():
         qml.X(0)
-        qml.CRX(x, [0, 1])
+        qml.CRX(0, [0, 1])
         qml.CNOT([1, 2])
         return qml.expval(qml.Z(0))
 
-    args = (1.2,)
-    jaxpr = jax.make_jaxpr(circuit)(*args)
-    transformed_jaxpr = map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [wire_map], {}, *args)
+    wire_map = {0: 5, 1: 6, 2: 7}
+    targs = (wire_map,)
+    tkwargs = {}
+    jaxpr = jax.make_jaxpr(circuit)()
+    transformed_jaxpr = map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs)
     assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
 
