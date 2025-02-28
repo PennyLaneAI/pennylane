@@ -18,9 +18,10 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 import numpy as np
 import pennylane as qml
 
+from typing import TYPE_CHECKING
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
-from typing import TYPE_CHECKING
+
 
 if TYPE_CHECKING:
     import qualtran  # pylint: disable=unused-import
@@ -116,7 +117,7 @@ class FromBloq(Operation):
     -1.0
     """
 
-    def __init__(self, bloq: Bloq, wires: WiresLike):
+    def __init__(self, bloq, wires: WiresLike):
         assert isinstance(bloq, Bloq)
         self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
