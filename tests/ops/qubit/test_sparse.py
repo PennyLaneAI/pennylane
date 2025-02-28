@@ -16,7 +16,7 @@ Unit tests for the SparseHamiltonian observable.
 """
 import numpy as np
 import pytest
-from scipy.sparse import coo_matrix, csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
 import pennylane as qml
 
@@ -106,6 +106,12 @@ SPARSEHAMILTONIAN_TEST_MATRIX = np.array(
 )
 
 SPARSE_HAMILTONIAN_TEST_DATA = [(np.array([[1, 0], [-1.5, 0]])), (np.eye(4))]
+SPARSE_MATRIX_FORMATS = [
+    ("coo", coo_matrix),
+    ("csr", csr_matrix),
+    ("lil", lil_matrix),
+    ("csc", csc_matrix),
+]
 
 H_row = np.array([0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15])
 H_col = np.array([0, 1, 2, 3, 12, 4, 5, 6, 9, 7, 8, 6, 9, 10, 11, 3, 12, 13, 14, 15])
@@ -174,6 +180,20 @@ class TestSparse:
         assert isinstance(res_static, csr_matrix)
         assert np.allclose(res_dynamic.toarray(), sparse_hamiltonian, atol=tol, rtol=0)
         assert np.allclose(res_static.toarray(), sparse_hamiltonian, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("sparse_matrix_format", SPARSE_MATRIX_FORMATS)
+    @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
+    def test_sparse_matrix_format(self, sparse_matrix_format, sparse_hamiltonian, tol):
+        """Test that the sparse matrix accepts the format parameter."""
+        format, expected_type = sparse_matrix_format
+
+        num_wires = int(np.log2(len(sparse_hamiltonian[0])))
+        sparse_hamiltonian_csr = csr_matrix(sparse_hamiltonian)
+        res_dynamic = qml.SparseHamiltonian(sparse_hamiltonian_csr, range(num_wires)).sparse_matrix(
+            format=format
+        )
+        assert isinstance(res_dynamic, expected_type)
+        assert np.allclose(res_dynamic.toarray(), sparse_hamiltonian, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_matrix(self, sparse_hamiltonian, tol):

@@ -847,6 +847,25 @@ class TestMatrix:
 
         assert np.allclose(true_mat, prod_mat)
 
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix_format(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix accepts the format parameter."""
+        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+
+        prod_op = qml.sum(op1(wires=0), op2(wires=1))
+        true_mat = math.kron(mat1, np.eye(2)) + math.kron(np.eye(2), mat2)
+        assert isinstance(prod_op.sparse_matrix(), csr_matrix)
+        prod_op_csc = prod_op.sparse_matrix(format="csc")
+        prod_op_lil = prod_op.sparse_matrix(format="lil")
+        prod_op_coo = prod_op.sparse_matrix(format="coo")
+        assert isinstance(prod_op_csc, csc_matrix)
+        assert isinstance(prod_op_lil, lil_matrix)
+        assert isinstance(prod_op_coo, coo_matrix)
+        assert np.allclose(true_mat, prod_op_csc.todense())
+        assert np.allclose(true_mat, prod_op_lil.todense())
+        assert np.allclose(true_mat, prod_op_coo.todense())
+
     def test_sparse_matrix_global_phase(self):
         """Test that a prod with a global phase still defines a sparse matrix."""
 

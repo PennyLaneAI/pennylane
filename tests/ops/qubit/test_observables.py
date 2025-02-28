@@ -19,7 +19,7 @@ import pickle
 import numpy as np
 import pytest
 from gate_data import H, I, X, Y, Z
-from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
 import pennylane as qml
 from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
@@ -107,6 +107,13 @@ STATEVECTORPROJECTOR_TEST_MATRICES = [
 STATEVECTORPROJECTOR_TEST_DATA = zip(
     STATEVECTORPROJECTOR_TEST_STATES, STATEVECTORPROJECTOR_TEST_MATRICES
 )
+
+SPARSE_MATRIX_FORMATS = [
+    ("coo", coo_matrix),
+    ("csr", csr_matrix),
+    ("lil", lil_matrix),
+    ("csc", csc_matrix),
+]
 
 projector_sv = [qml.Projector(np.array([0.5, 0.5, 0.5, 0.5]), [0, 1])]
 
@@ -837,6 +844,20 @@ class TestBasisStateProjector:
         x = np.array([0.4, 0.8, 1.2])
         res = circuit(x)
         assert qml.math.allclose(res, np.cos(x / 2) ** 2)
+
+    @pytest.mark.parametrize("sparse_matrix_format", SPARSE_MATRIX_FORMATS)
+    def test_projector_sparse_matrix_format(self, sparse_matrix_format):
+        """Test that the sparse matrix accepts the format parameter."""
+
+        format, expected_type = sparse_matrix_format
+        basis_state = [0, 1]
+        data = [1]
+        row_indices = [1]
+        col_indices = [1]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state, format=format)
+        assert isinstance(actual_matrix, expected_type)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
 
 class TestStateVectorProjector:

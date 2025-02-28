@@ -41,7 +41,7 @@ from gate_data import (
     Y,
     Z,
 )
-from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -1058,6 +1058,7 @@ SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
     (qml.PauliY(wires=0), Y),
     (qml.CY(wires=[0, 1]), CY),
     (qml.CZ(wires=[0, 1]), CZ),
+    (qml.SWAP(wires=(0, 1)), SWAP),
 )
 
 
@@ -1069,6 +1070,24 @@ def test_sparse_matrix(op, mat):
     assert isinstance(sparse_mat, type(expected_sparse_mat))
     assert all(sparse_mat.data == expected_sparse_mat.data)
     assert all(sparse_mat.indices == expected_sparse_mat.indices)
+
+
+FORMATS = [("coo", coo_matrix), ("csr", csr_matrix), ("lil", lil_matrix), ("csc", csc_matrix)]
+
+SPARSE_MATRIX_SUPPORTED_OPERATIONS_AND_FORMATS = [
+    (*op, *f) for op in SPARSE_MATRIX_SUPPORTED_OPERATIONS for f in FORMATS
+]
+
+
+@pytest.mark.parametrize(
+    "op, mat, format, expected_format", SPARSE_MATRIX_SUPPORTED_OPERATIONS_AND_FORMATS
+)
+def test_sparse_matrix_format(op, mat, format, expected_format):
+    expected_sparse_mat = expected_format(mat)
+    sparse_mat = op.sparse_matrix(format=format)
+    assert isinstance(sparse_mat, expected_format)
+    assert isinstance(sparse_mat, type(expected_sparse_mat))
+    assert all(sparse_mat.data == expected_sparse_mat.data)
 
 
 label_data = [

@@ -352,9 +352,9 @@ class Sum(CompositeOp):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     @handle_recursion_error
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
         gen = ((op.sparse_matrix(), op.wires) for op in self)
 
@@ -362,7 +362,7 @@ class Sum(CompositeOp):
 
         wire_order = wire_order or self.wires
 
-        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order).asformat(format)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
