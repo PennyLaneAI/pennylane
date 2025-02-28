@@ -177,7 +177,7 @@ class TestDeferMeasurementsInterpreter:
             qml.Rot(x, m1, m2, 0)
 
         with pytest.raises(
-            qml.capture.CaptureError,
+            qml.transforms.TransformError,
             match="Cannot create operations with multiple parameters based on",
         ):
             _ = jax.make_jaxpr(f)(1.5)

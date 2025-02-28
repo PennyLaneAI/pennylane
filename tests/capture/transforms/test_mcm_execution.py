@@ -20,6 +20,8 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
+# We import sampling so that we can correctly spy function calls for unit testing
+from pennylane.devices.qubit import sampling
 from pennylane.transforms.defer_measurements import DeferMeasurementsInterpreter
 
 pytestmark = [
@@ -241,6 +243,7 @@ class TestExecutionAnalytic:
 
 
 # pylint: disable=too-few-public-methods
+@pytest.mark.slow
 class TestExecutionFiniteShots:
     """Tests for executing circuits with finite shots."""
 
@@ -268,7 +271,7 @@ class TestExecutionFiniteShots:
         assert all(qml.math.allclose(r, postselect) for r in res)
         lens = [len(r) for r in res]
         assert qml.math.allclose(
-            qml.math.mean(lens), int(1000 / (2**n_postselects)), atol=5 * n_postselects, rtol=0
+            qml.math.mean(lens), int(1000 / (2**n_postselects)), atol=5 + 2 * n_postselects, rtol=0
         )
 
     @pytest.mark.parametrize("n_postselects", [1, 2, 3])
@@ -296,10 +299,87 @@ class TestExecutionFiniteShots:
         lens = [len(r) for r in res]
         assert all(l == 1000 for l in lens)
 
-    @pytest.mark.parametrize("mp_fn", [qml.sample, qml.expval, qml.probs, qml.var])
-    def test_mcm_statistics(self, mp_fn):
-        """Test that collecting statistics on MCMs works as expected with finite shots."""
+    def test_correct_sampling(self, mocker):
+        """Test that sampling is performed with the correct pipeline."""
+        num_wires = 5
+        dev = qml.device("default.qubit", wires=num_wires, shots=100, seed=jax.random.PRNGKey(1234))
+        config = create_execution_config(postselect_mode="fill-shots")
 
-    @pytest.mark.parametrize("mp_fn", [qml.sample, qml.expval, qml.probs, qml.var])
-    def test_non_mcm_terminal_measurements(self, mp_fn):
-        """Test that non-MCM terminal measurement results are correct with finite shots."""
+        @DeferMeasurementsInterpreter(num_wires=num_wires)
+        def f():
+            for i in range(4):
+                qml.Hadamard(0)
+                qml.measure(0, reset=bool(i % 2))
+
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        expected_state = qml.math.zeros(2**num_wires, dtype=complex)
+        # Last MCM resets state, so only first half of state-vector will be non-zero,
+        # corresponding to |0> on wire 0. Uniform superposition with real amplitudes
+        # because we only used Hadamard.
+        expected_state[:16] = 1
+        # Computed which indices will have negative amplitude by hand
+        expected_state[[3, 7, 11, 12, 13, 14]] = -1
+        expected_state /= qml.math.norm(expected_state)
+        expected_state = qml.math.reshape(expected_state, (2,) * num_wires)
+        measure_spy = mocker.spy(sampling, "sample_state")
+
+        _ = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)
+        measure_spy.assert_called()
+        state = measure_spy.call_args.args[0]
+        shots = measure_spy.call_args.kwargs["shots"]
+        assert qml.math.allclose(state, expected_state)
+        assert shots == 100
+
+    @pytest.mark.parametrize("n_postselects", [1, 2, 3])
+    @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+    def test_correct_sampling_postselection(self, postselect_mode, n_postselects, mocker):
+        """Test that sampling is performed using the correct pipeline with postselection."""
+        num_wires = 4
+        dev = qml.device(
+            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
+        )
+        config = create_execution_config(postselect_mode=postselect_mode)
+
+        @DeferMeasurementsInterpreter(num_wires=num_wires)
+        def f():
+            for _ in range(n_postselects):
+                qml.Hadamard(0)
+                qml.measure(0, postselect=1)
+
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        spied_shots = []
+        # Map n_postselects to tuple (state index with non-zero amplitude, amplitude)
+        postselect_inds_and_vals = {1: (9, 1), 2: (11, -1), 3: (15, 1)}
+        ind, val = postselect_inds_and_vals[n_postselects]
+
+        expected_state = qml.math.zeros(2**num_wires, dtype=complex)
+        expected_state[ind] = val
+        expected_state = qml.math.reshape(expected_state, (2,) * num_wires)
+        measure_spy = mocker.spy(sampling, "sample_state")
+
+        for _ in range(5):
+            _ = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)
+
+            measure_spy.assert_called()
+            state = measure_spy.call_args.args[0]
+            shots = measure_spy.call_args.kwargs["shots"]
+            spied_shots.append(shots)
+            assert qml.math.allclose(state, expected_state)
+
+            measure_spy.reset_mock()
+
+        if postselect_mode == "fill-shots":
+            assert all(s == 1000 for s in spied_shots)
+        else:
+            assert qml.math.allclose(
+                qml.math.mean(spied_shots),
+                1000 / (2**n_postselects),
+                atol=5 + 2 * n_postselects,
+                rtol=0,
+            )

@@ -119,7 +119,7 @@ def _get_plxpr_defer_measurements():
         # pylint: disable=import-outside-toplevel
         import jax
 
-        from pennylane.capture import CaptureError, PlxprInterpreter
+        from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import cond_prim, ctrl_transform_prim, measure_prim
     except ImportError:  # pragma: no cover
         return None, None
@@ -167,7 +167,8 @@ def _get_plxpr_defer_measurements():
             self.state["used_wires"] |= wires.toset()
             if self.state["used_wires"].intersection(range(cur_target, self._num_wires)):
                 raise TransformError(
-                    "Too many mid-circuit measurements for the specified number of wires."
+                    "Too many mid-circuit measurements for the specified number of wires "
+                    "with 'defer_measurements'."
                 )
 
         def interpret_dynamic_operation(self, data, struct, inds):
@@ -182,13 +183,14 @@ def _get_plxpr_defer_measurements():
                 struct (PyTreeDef): Pytree structure of the operator
                 inds (Sequence[int]): Indices of mid-circuit measurement values in ``data``
 
-            Returns:
-                None
+            Raises:
+                TransformError: if there is overlap between the used circuit wires and mid-circuit
+                measurement target wires
             """
             if len(inds) > 1:
-                raise CaptureError(
+                raise TransformError(
                     "Cannot create operations with multiple parameters based on "
-                    "mid-circuit measurements."
+                    "mid-circuit measurements with 'defer_measurements'."
                 )
 
             idx = inds[0]

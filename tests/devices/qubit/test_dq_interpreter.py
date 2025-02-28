@@ -373,7 +373,7 @@ class TestSampling:
 
         lens = [len(f()) for _ in range(10)]
         assert qml.math.allclose(
-            qml.math.mean(lens), int(1000 / (2**n_postselects)), atol=5 * n_postselects, rtol=0
+            qml.math.mean(lens), int(1000 / (2**n_postselects)), atol=5 + 2 * n_postselects, rtol=0
         )
 
     @pytest.mark.parametrize("n_postselects", [1, 2, 3])

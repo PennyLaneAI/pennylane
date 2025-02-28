@@ -21,12 +21,12 @@ import numpy as np
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
+from pennylane.devices import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.ops import adjoint, ctrl
 from pennylane.ops.qubit import Projector
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
-from ..execution_config import ExecutionConfig
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
@@ -95,7 +95,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
 
         self.initial_key = key
         self.stateref = None
-        self.execution_config = ExecutionConfig() if execution_config is None else execution_config
+        self.execution_config = execution_config or ExecutionConfig()
 
         super().__init__()
 
