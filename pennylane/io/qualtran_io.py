@@ -55,9 +55,7 @@ def get_bloq_registers_info(bloq):
 
     cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
 
-    temp_register_dict = {}
-    for reg in cbloq.signature.rights():
-        temp_register_dict[reg.name] = reg.bitsize
+    temp_register_dict = {reg.name: reg.bitsize for reg in cbloq.signature.rights()}
 
     return qml.registers(temp_register_dict)
 
@@ -65,9 +63,7 @@ def get_bloq_registers_info(bloq):
 def _get_named_registers(registers):
     """Returns a `qml.registers` object associated with the named registers in the bloq"""
 
-    temp_register_dict = {}
-    for reg in registers:
-        temp_register_dict[reg.name] = reg.bitsize
+    temp_register_dict = {reg.name: reg.bitsize for reg in registers}
 
     return qml.registers(temp_register_dict)
 
@@ -171,9 +167,7 @@ class FromBloq(Operation):
 
                 total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
 
-                mapped_wires = []
-                for idx in total_wires:
-                    mapped_wires.append(wires[idx])
+                mapped_wires = [wires[idx] for idx in total_wires]
                 op = binst.bloq.as_pl_op(mapped_wires)
 
                 if op:
