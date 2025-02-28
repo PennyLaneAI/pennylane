@@ -464,6 +464,11 @@
 * The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
   [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
 
+* Processing mid-circuit measurements inside conditionals is not supported and previously resulted in 
+  unclear error messages or incorrect results. It is now explicitly not allowed, and raises an error when 
+  processing the tape.
+  [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
