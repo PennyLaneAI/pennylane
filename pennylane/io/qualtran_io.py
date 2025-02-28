@@ -42,7 +42,6 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     _has_qualtran = False
 
 
-
 def get_bloq_registers_info(bloq):
     """Returns a `qml.registers` object associated with all named and unnamed registers and wires
     in the bloq.
@@ -117,6 +116,7 @@ class FromBloq(Operation):
     >>> circuit()
     -1.0
     """
+
     def __init__(self, bloq: Bloq, wires: WiresLike):
         assert isinstance(bloq, Bloq)
         self._hyperparameters = {"bloq": bloq}
