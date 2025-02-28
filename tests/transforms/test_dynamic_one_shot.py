@@ -43,7 +43,7 @@ def test_get_legacy_capability():
     dev = qml.devices.LegacyDeviceFacade(dev)
     caps = get_legacy_capabilities(dev)
     assert caps["model"] == "qubit"
-    assert not ("supports_mid_measure" in caps)
+    assert not "supports_mid_measure" in caps
     assert not _supports_one_shot(dev)
 
     dev2 = qml.devices.DefaultMixed(wires=[0], shots=1)
