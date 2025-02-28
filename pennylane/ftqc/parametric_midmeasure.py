@@ -519,6 +519,7 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
+        # alternatively we could apply (Z, S) instead of adjoint(S)
         return [qml.adjoint(qml.S(self.wires)), qml.H(self.wires)]
 
 
