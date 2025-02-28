@@ -1352,10 +1352,10 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @classproperty
     def has_plxpr_decomposition(cls) -> bool:
         """Whether or not the Operator returns a defined plxpr decomposition."""
-        return cls.compute_plxpr_decomposition != Operator.compute_plxpr_decomposition
+        return cls.compute_qfunc_decomposition != Operator.compute_qfunc_decomposition
 
     @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters) -> None:
+    def compute_qfunc_decomposition(*args, **hyperparameters) -> None:
         r"""Experimental method to compute the dynamic decomposition of the operator with program capture enabled.
 
         When the program capture feature is enabled with ``qml.capture.enable()``, the decomposition of the operator
@@ -1365,7 +1365,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         of another operator, in which case the decomposition is performed with :meth:`~.Operator.compute_decomposition`
         (even if this method is defined), and not with this method.
 
-        When ``compute_plxpr_decomposition`` is defined for an operator, the control flow operations within the method
+        When ``compute_qfunc_decomposition`` is defined for an operator, the control flow operations within the method
         (specifying the decomposition of the operator) are recorded in the JAX representation.
 
         This method is experimental and subject to change.
