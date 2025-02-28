@@ -502,21 +502,24 @@ class TestHigherOrderPrimitiveIntegration:
         """Test that the transform works correctly when applied with ctrl_transform_prim."""
 
         def ctrl_fn():
-            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
-            qml.X(0)
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
+            qml.X(0)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=2)
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f():
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
             qml.ctrl(ctrl_fn, [2, 3])()
             qml.RY(0, 1)
 
         jaxpr = jax.make_jaxpr(f)()
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == ctrl_transform_prim
-        assert jaxpr.eqns[1].primitive == qml.RY._primitive
+        assert len(jaxpr.eqns) == 3
+        # TODO: This AE should be merged with the one in ctrl_fn, limitation of PC
+        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert jaxpr.eqns[1].primitive == ctrl_transform_prim
+        assert jaxpr.eqns[2].primitive == qml.RY._primitive
 
-        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]
         assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
         assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
         assert inner_jaxpr.eqns[1].primitive == qml.X._primitive
