@@ -20,7 +20,7 @@ from collections import defaultdict
 from typing import Callable
 
 from pennylane.operation import Operator
-from .resources import Resources, CompressedResourceOp, make_resource_rep
+from .resources import Resources, CompressedResourceOp, resource_rep
 
 
 def decomposition(qfunc: Callable, resource_fn: Callable = None) -> DecompositionRule:
@@ -144,16 +144,16 @@ def decomposition(qfunc: Callable, resource_fn: Callable = None) -> Decompositio
 
             def _my_decomposition_resources(num_wires):
                 return {
-                    qml.make_resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 2,
-                    qml.make_resource_rep(qml.MultiRZ, num_wires=num_wires): 1
+                    qml.resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 2,
+                    qml.resource_rep(qml.MultiRZ, num_wires=num_wires): 1
                 }
 
-        where ``qml.make_resource_rep`` is a utility function that wraps an operator type and
+        where ``qml.resource_rep`` is a utility function that wraps an operator type and
         any additional information relavent to its resource estimate into a data structure.
 
     .. seealso::
 
-        :func:`~pennylane.make_resource_rep`
+        :func:`~pennylane.resource_rep`
 
     """
     decomposition_rule = DecompositionRule(qfunc)
@@ -201,14 +201,14 @@ def _auto_wrap(op_type):
     if not issubclass(op_type, Operator):
         raise TypeError(
             "The keys of the dictionary returned by the resource function must be a subclass of "
-            "Operator or a CompressedResourceOp constructed with qml.make_resource_rep"
+            "Operator or a CompressedResourceOp constructed with qml.resource_rep"
         )
     try:
-        return make_resource_rep(op_type)
+        return resource_rep(op_type)
     except TypeError as e:
         raise TypeError(
             f"Operator {op_type.__name__} has non-empty resource_param_keys. A resource "
-            f"representation must be explicitly constructed using qml.make_resource_rep"
+            f"representation must be explicitly constructed using qml.resource_rep"
         ) from e
 
 

@@ -127,7 +127,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule):
     tape = qml.tape.QuantumScript.from_queue(q)
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
-        resource_rep = qml.make_resource_rep(type(_op), **_op.resource_params)
+        resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
     assert gate_counts == actual_gate_counts
 

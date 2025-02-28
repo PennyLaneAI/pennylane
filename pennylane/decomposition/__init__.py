@@ -14,7 +14,7 @@
 
 """The decomposition module."""
 
-from .resources import Resources, CompressedResourceOp, make_resource_rep
+from .resources import Resources, CompressedResourceOp, resource_rep
 from .decomposition_rule import (
     decomposition,
     DecompositionRule,

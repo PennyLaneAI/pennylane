@@ -1386,7 +1386,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         All decomposition rules registered with an operator class is expected to have a resource
         function with parameters that are consistent with the operator's ``resource_param_keys``.
-        The ``qml.make_resource_rep`` method will also expect keyword arguments that match these
+        The ``qml.resource_rep`` function will also expect keyword arguments that match these
         keys for each operator type.
 
         .. seealso::

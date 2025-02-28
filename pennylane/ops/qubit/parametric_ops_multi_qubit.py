@@ -24,7 +24,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import decomposition, add_decomposition, make_resource_rep
+from pennylane.decomposition import decomposition, add_decomposition, resource_rep
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.typing import TensorLike
@@ -233,7 +233,7 @@ def _multi_rz_decomposition(theta, wires, **__):
 
 @_multi_rz_decomposition.resources
 def _multi_rz_decomposition_resources(num_wires):
-    return {qml.make_resource_rep(qml.RZ): 1, qml.make_resource_rep(qml.CNOT): 2 * (num_wires - 1)}
+    return {qml.resource_rep(qml.RZ): 1, qml.resource_rep(qml.CNOT): 2 * (num_wires - 1)}
 
 
 qml.add_decomposition(MultiRZ, _multi_rz_decomposition)

@@ -119,7 +119,7 @@ def _make_hashable(d) -> tuple:
     return tuple((k, _make_hashable(v)) for k, v in d.items()) if isinstance(d, dict) else d
 
 
-def make_resource_rep(op_type, **kwargs) -> CompressedResourceOp:
+def resource_rep(op_type, **kwargs) -> CompressedResourceOp:
     """Creates a ``CompressedResourceOp`` representation of an operator.
 
     When defining the resource function associated with a decomposition rule. The keys of the
