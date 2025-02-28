@@ -750,3 +750,128 @@ def decompose_mcx_1_ancilla(control_wires, target_wire, work_wires, clean=True):
         gates += ladder_ops[::-1]
 
     return gates
+
+
+def _ccxn(wires_x: WiresLike, wires_y: WiresLike, wires_t: WiresLike) -> list[Operation]:
+    r"""
+    Construct a quantum circuit for creating n-condionally clean ancillae using 3n qubits. This
+    implements Fig. 4a of [1]. The order of returned qubits is x, y, target.
+
+    Args:
+        wires_x (Wires): The wires for x.
+        wires_y (Wires): The wires for y.
+        wires_t (Wires): The wires for target.
+
+    Returns:
+        list[Operation]: The quantum circuit for creating n-condionally clean ancillae.
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+    """
+
+    if len(wires_x) != len(wires_y) or len(wires_x) != len(wires_t):
+        raise ValueError("The number of wires must be the same for x, y, and target.")
+
+    gates = []
+    for i in range(len(wires_x)):
+        gates.append(qml.X(wires=wires_t[i]))
+        gates.append(qml.Toffoli(wires=[wires_x[i], wires_y[i], wires_t[i]]))
+
+    return gates
+
+
+def _build_logn_depth_ccx_ladder(
+    work_wire: WiresLike, control_wires: list[WiresLike]
+) -> tuple[list[Operator], list[Operator]]:
+    r"""
+    Helper function to build a log-depth ladder compose of CCX and X gates as shown in Fig. 4b of [1].
+
+    Args:
+        work_wire (Wire): The work wire.
+        control_wires (list[Wire]): The control wires.
+
+    Returns:
+        A tuple consisting of the log-depth ladder circuit of cond. clean ancillae and the list of
+        indices of control qubit to apply the linear-depth MCX gate.
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+    """
+
+    gates = []
+    anc = [work_wire]
+    final_ctrls = []
+
+    while len(control_wires) > 1:
+        next_batch_len = min(len(anc) + 1, len(control_wires))
+        control_wires, nxt_batch = control_wires[next_batch_len:], control_wires[:next_batch_len]
+        new_anc = []
+        while len(nxt_batch) > 1:
+            ccx_n = len(nxt_batch) // 2
+            st = int(len(nxt_batch) % 2)
+            ccx_x, ccx_y, ccx_t = (
+                nxt_batch[st : st + ccx_n],
+                nxt_batch[st + ccx_n :],
+                anc[-ccx_n:],
+            )
+            assert len(ccx_x) == len(ccx_y) == len(ccx_t) == ccx_n >= 1
+            if ccx_t != [work_wire]:
+                gates += _ccxn(ccx_x, ccx_y, ccx_t)
+            else:
+                gates.append(qml.Toffoli(wires=[ccx_x[0], ccx_y[0], ccx_t[0]]))
+            new_anc += nxt_batch[st:]  #                     # newly created cond. clean ancilla
+            nxt_batch = ccx_t + nxt_batch[:st]
+            anc = anc[:-ccx_n]
+
+        anc = sorted(anc + new_anc)
+        final_ctrls += nxt_batch
+
+    final_ctrls += control_wires
+    final_ctrls = sorted(final_ctrls)
+    final_ctrls.remove(work_wire)  #                        # exclude ancilla
+    return gates, final_ctrls
+
+
+def decompose_mcx_with_two_workers(
+    control_wires: WiresLike, target_wire: WiresLike, work_wires: WiresLike, clean: bool = True
+) -> list[Operator]:
+    r"""
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
+
+    Args:
+        control_wires (Wires): The control wires.
+        target_wire (Wires): The target wire.
+        work_wires (Wires): The work wires.
+        clean (bool): If True, the ancilla is clean, otherwise it is dirty.
+
+    Returns:
+        The synthesized quantum circuit.
+    """
+
+    if len(work_wires) < 2:
+        raise ValueError("At least 2 work wires are needed for this decomposition.")
+    
+    gates = []
+    ladder_ops, final_ctrls = _build_logn_depth_ccx_ladder(work_wires[0], control_wires)
+    gates += ladder_ops
+    if len(final_ctrls) == 1:  # Already a toffoli
+        gates.append(qml.Toffoli(wires=[work_wires[0], final_ctrls[0], target_wire[0]]))
+    else:
+        mid_mcx = decompose_mcx_1_ancilla(
+            work_wires[0:1] + final_ctrls, target_wire[0], work_wires[1:2], clean=True
+        )
+        gates += mid_mcx
+    gates += ladder_ops[::-1]
+
+    if not clean:
+        # perform toggle-detection if ancilla is dirty
+        gates += ladder_ops[1:]
+        if len(final_ctrls) == 1:
+            gates.append(qml.Toffoli(wires=[work_wires[0], final_ctrls[0], target_wire[0]]))
+        else:
+            gates += mid_mcx
+        gates += ladder_ops[1:][::-1]
+
+    return gates
