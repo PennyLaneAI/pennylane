@@ -42,6 +42,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Bump `rng_salt` to `v0.40.0`.
+  [(#6854)](https://github.com/PennyLaneAI/pennylane/pull/6854)
+
 * `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
 [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
 
