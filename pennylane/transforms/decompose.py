@@ -284,6 +284,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
     def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``decompose`` transform on plxpr."""
+        
         interpreter = DecomposeInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):

@@ -17,6 +17,7 @@ This module contains the qml.map_wires function.
 from collections.abc import Callable
 from functools import lru_cache, partial
 from typing import Union, overload
+from warnings import warn
 
 import pennylane as qml
 from pennylane import transform
@@ -26,7 +27,6 @@ from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
-from warnings import warn
 
 
 @lru_cache
@@ -70,6 +70,7 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
 
         def __init__(self, wire_map: dict) -> None:
             """Initialize the interpreter."""
+            super().__init__()
             self.wire_map = wire_map
             self._check_wire_map()
 

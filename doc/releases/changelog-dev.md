@@ -365,7 +365,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Interpreters for quantum transforms no longer remove arguments passed to the transform. 
+* Interpreters for quantum transforms now validate arguments used by the transform and no longer remove them.
   Furthermore, interpreters no longer check if the equation in the `jaxpr` is a transform.
   [(#7023)](https://github.com/PennyLaneAI/pennylane/pull/7023)
 

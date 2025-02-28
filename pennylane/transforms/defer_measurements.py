@@ -404,9 +404,8 @@ def _get_plxpr_defer_measurements():
 
         return []
 
-    def defer_measurements_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
+    def defer_measurements_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
+        """Function for applying the ``defer_measurements`` transform on plxpr."""
 
         if (aux_wires := tkwargs.get("aux_wires", None)) is None:
             raise ValueError(

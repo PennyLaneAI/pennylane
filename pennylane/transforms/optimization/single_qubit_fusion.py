@@ -225,6 +225,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 
     def single_qubit_fusion_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``single_qubit_fusion`` transform on plxpr."""
+        
         interpreter = SingleQubitFusionInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
