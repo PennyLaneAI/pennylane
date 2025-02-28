@@ -225,7 +225,7 @@
   with program capture enabled.
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
   [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
-  [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
+  [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
 
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
