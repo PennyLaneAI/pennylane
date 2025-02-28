@@ -105,7 +105,6 @@ def _get_plxpr_merge_rotations():
             can_merge = wires_exactly_match and are_same_type
 
             if can_merge:
-                angles_cancel = False
                 if isinstance(op, qml.Rot):
                     # Order of arguments matter for the Rot gate!
                     cumulative_angles = fuse_rot_angles(
