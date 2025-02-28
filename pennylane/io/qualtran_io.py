@@ -15,7 +15,7 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 # pylint:disable=
-_has_qualtran = False
+_has_qualtran = True
 
 try:
     import qualtran  # pylint: disable=unused-import
