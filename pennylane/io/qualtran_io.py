@@ -28,7 +28,7 @@ from qualtran import (
 import numpy as np
 import pennylane as qml
 
-from pennylane.operation import Operation, MatrixUndefinedError, classproperty
+from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
 
@@ -184,11 +184,13 @@ class FromBloq(Operation):
         return ops
 
     @property
-    def has_matrix(self) -> bool:
+    def has_matrix(
+        self,
+    ) -> bool:  # pylint: disable=invalid-overriden-method, protected-access, no-method-argument
         r"""Return if the bloq has a valid matrix representation."""
         bloq = self._hyperparameters["bloq"]
         matrix = bloq.tensor_contract()
-        return matrix.shape == (2**len(self.wires), 2**len(self.wires))
+        return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
     def compute_matrix(*params, **kwargs):  # pylint: disable=unused-argument, no-self-argument
         bloq = params[0]._hyperparameters["bloq"]
