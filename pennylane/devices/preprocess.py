@@ -41,7 +41,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-def _operator_decomposition_gen(
+def _operator_decomposition_gen(  # pylint: disable = too-many-positional-arguments
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
@@ -196,6 +196,11 @@ def mid_circuit_measurements(
     if mcm_method is None:
         mcm_method = "one-shot" if tape.shots else "deferred"
 
+    if any(is_conditional_mcm(op) for op in tape.operations):
+        raise NotImplementedError(
+            "Conditionally applied mid-circuit measurements are not supported"
+        )
+
     if mcm_method == "one-shot":
         return qml.dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
     if mcm_method == "tree-traversal":
@@ -203,6 +208,16 @@ def mid_circuit_measurements(
     return qml.defer_measurements(
         tape, allow_postselect=isinstance(device, qml.devices.DefaultQubit)
     )
+
+
+def is_conditional_mcm(operation):
+    """Returns True if the operation is a mid-circuit measurement nested inside a Conditional,
+    and False otherwise."""
+
+    if isinstance(operation, qml.ops.Conditional):
+        if isinstance(operation.base, qml.measurements.MidMeasureMP):
+            return True
+    return False
 
 
 @transform
@@ -294,7 +309,7 @@ def validate_adjoint_trainable_params(
 
 
 @transform
-def decompose(
+def decompose(  # pylint: disable = too-many-positional-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
