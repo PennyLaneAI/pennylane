@@ -197,12 +197,20 @@
   [(#6954)](https://github.com/PennyLaneAI/pennylane/pull/6954)
 
 * A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
-  measurement basis in the XY, YZ or ZX plane. 
+  measurement basis in the XY, YZ or ZX plane. Subclasses `XMidMeasureMP` and `YMidMeasureMP` represent
+  X-basis and Y-basis measurements. These classes are part of the experimental `ftqc` module.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
 
 * A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices 
   that only natively support mid-circuit measurements in the computational basis.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+
+* Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added in the experimental `ftqc` module. These functions 
+  apply a mid-circuit measurement and return a `MeasurementValue`. They are analogous to `qml.measure` for 
+  the computational basis, but instead measure in the X-basis, Y-basis, or an arbitrary basis, respectively.
+  Function `qml.ftqc.measure_z` is also added as an alias for `qml.measure`.
+  [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
   
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
@@ -221,10 +229,11 @@
   should be considered static when capturing the quantum program.
   [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
 
-* Implemented a `compute_plxpr_decomposition` method in the `qml.operation.Operator` class to apply dynamic decompositions
-  with program capture enabled.
+* A new, experimental `Operator` method called `compute_qfunc_decomposition` has been added to represent decompositions with structure (e.g., control flow). 
+  This method is only used when capture is enabled with `qml.capture.enable()`.
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
   [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
+  [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
 
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
@@ -425,6 +434,14 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
+  of sparse matrices. 
+  [(#7015)](https://github.com/PennyLaneAI/pennylane/pull/7015)
+
+* `qml.ops.Controlled.has_sparse_matrix` now provides the correct information
+  by checking if the target operator has a sparse or dense matrix defined.
+  [(#7025)](https://github.com/PennyLaneAI/pennylane/pull/7025)
 
 * `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
   [(#6975)](https://github.com/PennyLaneAI/pennylane/pull/6975)
