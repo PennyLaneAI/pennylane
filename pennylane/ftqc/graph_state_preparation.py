@@ -39,14 +39,16 @@ class GraphStatePreparation(Operation):
     def __init__(
         lattice: Lattice, qubit_ops: Operation, entanglement_ops: Operation, wires: QubitGraph
     ):
-        if len(lattice.get_nodes) != len(wires):
+        if len(lattice.nodes) != len(wires):
             raise ValueError(
                 f"The number of vertices in the lattice is : {len(lattice.get_nodes)} and does not match the number of wires {len(wires)}"
             )
-        self._lattice = lattice
-        self._qubit_ops = qubit_ops
-        self._entanglement_ops = entanglement_ops
-        self._wires = wires
+        
+        self.hyperparameters["lattice"] = lattice
+        self.hyperparameters["qubit_ops"] = qubit_ops
+        self.hyperparameters["entanglement_ops"] = entanglement_ops
+        self.hyperparameters["wires"] = wires
+
     
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
@@ -54,7 +56,8 @@ class GraphStatePreparation(Operation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(self._lattice, self._qubit_ops, self._entanglement_ops, self._wires)
+        return self.compute_decomposition(**self.hyperparameters)
+
 
 
     @staticmethod
