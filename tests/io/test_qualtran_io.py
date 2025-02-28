@@ -14,9 +14,9 @@
 """
 Unit tests for the :mod:`pennylane.io.qualtran_io` module.
 """
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
 
 qualtran = pytest.importorskip("qualtran")
@@ -37,9 +37,9 @@ class TestFromBloq:
     def test_composite_bloq_advanced(self):
         """Tests that a composite bloq with higher level abstract bloqs has the correct
         decomposition after wrapped with `FromBloq`"""
-        from qualtran import BloqBuilder
-        from qualtran import QUInt
-        from qualtran.bloqs.arithmetic import Product, Add
+        from qualtran import BloqBuilder, QUInt
+        from qualtran.bloqs.arithmetic import Add, Product
+
         from pennylane.wires import Wires
 
         bb = BloqBuilder()
@@ -68,7 +68,7 @@ class TestFromBloq:
     def test_composite_bloq(self):
         """Tests that a simple composite bloq has the correct decomposition after wrapped with `FromBloq`"""
         from qualtran import BloqBuilder
-        from qualtran.bloqs.basic_gates import Hadamard, CNOT, Toffoli
+        from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli
 
         bb = BloqBuilder()  # bb is the circuit like object
 
@@ -118,7 +118,7 @@ class TestFromBloq:
 
     def test_atomic_bloqs(self):
         """Tests that atomic bloqs have the correct PennyLane equivalent after wrapped with `FromBloq`"""
-        from qualtran.bloqs.basic_gates import Hadamard, CNOT, Toffoli
+        from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli
 
         assert Hadamard().as_pl_op(0) == qml.Hadamard(0)
         assert CNOT().as_pl_op([0, 1]) == qml.CNOT([0, 1])
@@ -146,9 +146,9 @@ class TestFromBloq:
         """Tests that get_bloq_registers_info returns the expected dictionary with the correct
         registers and wires."""
 
-        from qualtran import BloqBuilder
-        from qualtran import QUInt
-        from qualtran.bloqs.arithmetic import Product, Add
+        from qualtran import BloqBuilder, QUInt
+        from qualtran.bloqs.arithmetic import Add, Product
+
         from pennylane.wires import Wires
 
         bb = BloqBuilder()
