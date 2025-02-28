@@ -30,6 +30,7 @@ from pennylane.capture.primitives import (
     for_loop_prim,
     grad_prim,
     jacobian_prim,
+    measure_prim,
     qnode_prim,
     while_loop_prim,
 )
@@ -667,6 +668,31 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[-3].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    def test_mid_circuit_measurement_prim(self):
+        """Test that mid-circuit measurements are correctly handled."""
+
+        @MergeRotationsInterpreter()
+        def circuit():
+            qml.RX(0.1, wires=0)
+            qml.RX(0.1, wires=0)
+            qml.measure(0)
+            qml.RX(0.1, wires=0)
+            qml.RX(0.1, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 5
+
+        # I test the jaxpr like this because `qml.assert_equal`
+        # has issues with mid-circuit measurements
+        # (Got <class 'pennylane.measurements.mid_measure.MidMeasureMP'>
+        # and <class 'pennylane.measurements.mid_measure.MeasurementValue'>.)
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == measure_prim
+        assert jaxpr.eqns[2].primitive == qml.RX._primitive
+        assert jaxpr.eqns[3].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
 class TestExpandPlxprTransformIntegration:

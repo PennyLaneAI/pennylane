@@ -15,6 +15,7 @@
 # pylint: disable=too-many-branches
 
 from functools import lru_cache, partial
+from typing import Optional
 
 import pennylane as qml
 from pennylane.ops.op_math import Adjoint
@@ -36,6 +37,7 @@ def _get_plxpr_merge_rotations():
         from jax.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
+        from pennylane.capture.primitives import measure_prim
         from pennylane.operation import Operator
     except ImportError:  # pragma: no cover
         return None, None
@@ -67,10 +69,10 @@ def _get_plxpr_merge_rotations():
             for w in op.wires:
                 self.previous_ops[w] = op
 
-           results = []
-           for op in previous_ops_on_wires:
-               results.append(super().interpret_operation(op))
-           return results
+            results = []
+            for prev_op in previous_ops_on_wires:
+                results.append(super().interpret_operation(prev_op))
+            return results
 
         # pylint: disable=inconsistent-return-statements
         def interpret_operation(self, op: Operator):
@@ -210,9 +212,15 @@ def _get_plxpr_merge_rotations():
             self._env = {}
             return outvals
 
+    @MergeRotationsInterpreter.register_primitive(measure_prim)
+    def _(_, *invals, **params):
+        _, params = measure_prim.get_bind_params(params)
+        return measure_prim.bind(*invals, **params)
+
+    # pylint: disable=redefined-outer-name
     def merge_rotations_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
         """Function for applying the ``merge_rotations`` transform on plxpr."""
-        
+
         merge_rotations = MergeRotationsInterpreter(**tkwargs)
 
         def wrapper(*inner_args):
