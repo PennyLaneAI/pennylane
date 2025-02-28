@@ -218,9 +218,9 @@ class TestExpval:
 
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])
-    def test_projector_expval(self, state, shots, seed):
+    def test_projector_expval_qnode(self, state, shots, seed):
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
-        its subclasses."""
+        its subclasses when integrating with the ``QNode``."""
         dev = qml.device("default.qubit", wires=3, shots=shots, seed=seed)
 
         @qml.qnode(dev)
