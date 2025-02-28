@@ -109,9 +109,7 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
         like = qml.math.get_interface(unitary_matrix)
 
     if like == "jax":
-        return unitary_matrix.at[index[0], index[1]].set(
-            value, indices_are_sorted=True, unique_indices=True
-        )
+        return unitary_matrix.at[index[0], index[1]].set(value, unique_indices=True, indices_are_sorted=True)
 
     unitary_matrix[index[0], index[1]] = value
     return unitary_matrix
@@ -172,7 +170,48 @@ def _mats_calc(unitary, grot_mat, i, j):
     if like == "jax":
         return __mats_calc_jax(unitary, grot_mat, i, j)
     return __mats_calc(unitary, grot_mat, i, j)
-    
+
+def _fori_loop(lower, upper, body_fun, init_val, *, unroll=None):
+    val = init_val
+    for i in range(lower, upper):
+        val = body_fun(i, val)
+    return val
+
+def _fori_loop_jax(lower, upper, body_fun, init_val, *, unroll=None):
+    return jax.lax.fori_loop(lower, upper, body_fun, init_val, unroll=unroll)
+
+def fori_loop(lower, upper, body_fun, init_val, *, unroll=None, iface=None):
+    #if iface == "jax":
+    #    return _fori_loop_jax(lower, upper, body_fun, init_val, unroll=unroll)
+    return _fori_loop(lower, upper, body_fun, init_val, unroll=unroll)
+
+def _get_right_givens_shape(indices, unitary, N, j):
+    _unitary, _grot_mat_conj = _right_givens(indices, unitary, N, j)
+    return _grot_mat_conj.shape
+
+def _get_right_givens_shape_jax(indices, unitary, N, j):
+    _, shape = jax.make_jaxpr(_right_givens, return_shape=True)(indices, unitary, N, j)
+    _, _grot_mat_conj = shape
+    return _grot_mat_conj.shape, _grot_mat_conj.dtype
+
+def get_right_givens_shape(indices, unitary, N, j):
+    return _get_right_givens_shape_jax(indices, unitary, N, j)
+
+def _get_left_givens_shape(indices, unitary, j):
+    _unitary, _grot_mat = _left_givens(indices, unitary, j)
+    return _grot_mat.shape
+
+def _get_left_givens_shape_jax(indices, unitary, j):
+    _, shape = jax.make_jaxpr(_left_givens, return_shape=True)(indices, unitary, j)
+    _, _grot_mat = shape
+    return _grot_mat.shape, _grot_mat.dtype
+
+def get_left_givens_shape(indices, unitary, j):
+    return _get_left_givens_shape_jax(indices, unitary, j)
+
+def get_n_of_shape(n, shape, dtype):
+    return [qml.math.zeros(shape, dtype)] * n
+
 
 # pylint:disable = too-many-branches
 def givens_decomposition(unitary):
@@ -272,17 +311,48 @@ def givens_decomposition(unitary):
         raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
 
     left_givens, right_givens = [], []
+
+    def _right_givens_for_loop_body(j, val):
+        i, unitary, N, right_givens, indices_agg = val
+        indices = [i - j - 1, i - j]
+        unitary, grot_mat_conj = _right_givens(indices, unitary, N, j)
+        iface = qml.math.get_interface(unitary)
+        #if iface == "jax":
+        #    right_givens = right_givens.at[j].set(grot_mat_conj)
+        #    indices_agg = indices_agg.at[j].set(indices)
+        #else:
+        right_givens[j] = grot_mat_conj
+        indices_agg[j] = indices
+        return i, unitary, N, right_givens, indices_agg
+
+    def _left_givens_for_loop_body(j, val):
+        i, unitary, N, left_givens, indices_agg = val
+        indices = [N + j - i - 2, N + j - i - 1]
+        unitary, grot_mat = _left_givens(indices, unitary, j)
+        iface = qml.math.get_interface(left_givens)
+        #if iface == "jax":
+        #    left_givens = left_givens.at[j - 1].set(grot_mat)
+        #    indices_agg = indices_agg.at[j - 1].set(indices)
+        #else:
+        left_givens[j - 1] = grot_mat
+        indices_agg[j - 1] = indices
+        return i, unitary, N, left_givens, indices_agg
+
     for i in range(1, N):
         if i % 2:
-            for j in range(0, i):
-                indices = [i - j - 1, i - j]
-                unitary, grot_mat_conj = _right_givens(indices, unitary, N, j)
-                right_givens.append((grot_mat_conj, indices))
+            grot_mat_conj_shape, grot_mat_conj_dtype = get_right_givens_shape([i - 1, i], unitary, N, 0)
+            right_givens_empty = get_n_of_shape(i, grot_mat_conj_shape, grot_mat_conj_dtype)
+            init_val = i, unitary, N, right_givens_empty, get_n_of_shape(i, (len(grot_mat_conj_shape),), int)
+            _, unitary, _, right_givens_full, indices_agg = fori_loop(0, i, _right_givens_for_loop_body, init_val, iface=interface)
+            right_givens += [(grot_mat_conj, indices) for grot_mat_conj, indices in zip(right_givens_full, indices_agg)]
         else:
-            for j in range(1, i + 1):
-                indices = [N + j - i - 2, N + j - i - 1]
-                unitary, grot_mat = _left_givens(indices, unitary, j)
-                left_givens.append((grot_mat, indices))
+            grot_mat_shape, grot_mat_dtype = get_left_givens_shape([N + 1 - i - 2, N + 1 - i - 1], unitary, 1)
+            left_givens_empty = get_n_of_shape(i, grot_mat_shape, grot_mat_dtype)
+            init_val = i, unitary, N, left_givens_empty, get_n_of_shape(i, (len(grot_mat_shape),), int)
+            _, unitary, _, left_givens_full, indices_agg = fori_loop(1, i + 1, _left_givens_for_loop_body, init_val, iface=interface)
+            left_givens += [(grot_mat, indices) for grot_mat, indices in zip(left_givens_full, indices_agg)]
+    print(right_givens)
+    print(left_givens)
 
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):

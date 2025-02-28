@@ -169,10 +169,15 @@ class BasisRotation(Operation):
 
         if len(wires) < 2:
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
+        import jax
+        if qml.compiler.active():
+            wires = jax.numpy.asarray(wires)
 
         op_list = []
 
+        import catalyst
         phase_list, givens_list = givens_decomposition(unitary_matrix)
+        #catalyst.debug.print("phase_list={phase_list}, givens_list={givens_list}", phase_list=phase_list, givens_list=givens_list)
 
         for idx, phase in enumerate(phase_list):
             op_list.append(qml.PhaseShift(qml.math.angle(phase), wires=wires[idx]))
