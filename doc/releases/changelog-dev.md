@@ -48,6 +48,9 @@
   more predictable behaviour with interfaces, support for `qml.Snapshot`, and more.
   [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
 
+* `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
+  [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
+  
 * Bump `rng_salt` to `v0.40.0`.
   [(#6854)](https://github.com/PennyLaneAI/pennylane/pull/6854)
 
