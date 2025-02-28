@@ -435,6 +435,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
+  of sparse matrices. 
+  [(#7015)](https://github.com/PennyLaneAI/pennylane/pull/7015)
+
 * `qml.ops.Controlled.has_sparse_matrix` now provides the correct information
   by checking if the target operator has a sparse or dense matrix defined.
   [(#7025)](https://github.com/PennyLaneAI/pennylane/pull/7025)
