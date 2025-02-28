@@ -57,7 +57,7 @@ class HasDiagonalizingGatesOp(qml.operation.Operator):
         return True
 
 
-# pylint: disablt=too-few-public-methods
+# pylint: disable=too-few-public-methods
 class CustomizedSparseOp(qml.operation.Operator):
 
     def __init__(self, wires):
@@ -68,7 +68,7 @@ class CustomizedSparseOp(qml.operation.Operator):
     def has_matrix(self) -> bool:
         return False
 
-    def compute_sparse_matrix(self, U):
+    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument
         return sp.sparse.eye(2 ** len(self.wires))
 
 
@@ -299,7 +299,7 @@ class TestPreprocessing:
             (qml.QubitUnitary(sp.sparse.csr_matrix(np.eye(8)), wires=range(3)), True),
             (qml.QubitUnitary(sp.sparse.eye(2), wires=0), True),
             (qml.adjoint(qml.QubitUnitary(sp.sparse.eye(2), wires=0)), True),
-            (CustomizedSparseOp([0,1,2]), True)
+            (CustomizedSparseOp([0, 1, 2]), True),
         ],
     )
     def test_accepted_operator(self, op, expected):
