@@ -112,12 +112,12 @@ class FromBloq(Operation):
     >>> circuit()
     -1.0
     """
+    if not _has_qualtran:
+        raise ImportError(
+            "Qualtran is required for get_bloq_registers_info. Please install it with `pip install qualtran`"
+        )
 
     def __init__(self, bloq: Bloq, wires: WiresLike):
-        if not _has_qualtran:
-            raise ImportError(
-                "Qualtran is required for FromBloq. Please install it with `pip install qualtran`"
-            )
         assert isinstance(bloq, Bloq)
         self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
