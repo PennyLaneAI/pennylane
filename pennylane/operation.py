@@ -228,7 +228,7 @@ from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, issparse
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
@@ -1852,7 +1852,7 @@ class Operation(Operator):
         id: Optional[str] = None,
     ):
         super().__init__(*params, wires=wires, id=id)
-        self._issparse = False
+        self._issparse = len(params) and issparse(params[0])
 
         # check the grad_recipe validity
         if self.grad_recipe is None:
