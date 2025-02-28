@@ -1367,6 +1367,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         When ``compute_qfunc_decomposition`` is defined for an operator, the control flow operations within the method
         (specifying the decomposition of the operator) are recorded in the JAX representation.
+        
         .. note::
           This method is experimental and subject to change.
 
@@ -1465,6 +1466,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
+
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
