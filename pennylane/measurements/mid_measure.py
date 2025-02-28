@@ -256,11 +256,7 @@ def _create_mid_measure_primitive():
 
     @mid_measure_p.def_abstract_eval
     def _(*_, **__):
-        dtype = (
-            jax.numpy.int64
-            if jax.config.jax_enable_x64  # pylint: disable=no-member
-            else jax.numpy.int32
-        )
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         return jax.core.ShapedArray((), dtype)
 
     return mid_measure_p
@@ -394,14 +390,14 @@ class MeasurementValue(Generic[T]):
         self.measurements = measurements
         self.processing_fn = processing_fn
 
-    def _items(self):
+    def items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
         num_meas = len(self.measurements)
         for i in range(2**num_meas):
             branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             yield branch, self.processing_fn(*branch)
 
-    def _postselected_items(self):
+    def postselected_items(self):
         """A generator representing all the possible outcomes of the MeasurementValue,
         taking postselection into account."""
         # pylint: disable=stop-iteration-return
@@ -518,6 +514,12 @@ class MeasurementValue(Generic[T]):
     def __or__(self, other):
         return self._transform_bin_op(qml.math.logical_or, other)
 
+    def __mod__(self, other):
+        return self._transform_bin_op(qml.math.logical_mod, other)
+
+    def __xor__(self, other):
+        return self._transform_bin_op(qml.math.logical_xor, other)
+
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
@@ -565,6 +567,31 @@ class MeasurementValue(Generic[T]):
 
     def __repr__(self):
         return f"MeasurementValue(wires={self.wires.tolist()})"
+
+
+def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
+    r"""Function to make mid-circuit measurement predicates mutually exclusive.
+
+    The ``conditions`` are predicates to the ``if`` and ``elif`` branches of ``qml.cond``.
+    This function updates all the ``MeasurementValue``\ s in ``conditions`` such that
+    reconciling the correct branch is never ambiguous.
+
+    Args:
+        conditions (Sequence[MeasurementValue]): Sequence containing predicates for ``if``
+            and all ``elif`` branches of a function decorated with :func:`~pennylane.cond`.
+
+    Returns:
+        Sequence[MeasurementValue]: Updated sequence of mutually exclusive predicates.
+    """
+    new_conds = [conditions[0]]
+    false_cond = ~conditions[0]
+
+    for c in conditions[1:]:
+        new_conds.append(false_cond & c)
+        false_cond = false_cond & ~c
+
+    new_conds.append(false_cond)
+    return new_conds
 
 
 def find_post_processed_mcms(circuit):
