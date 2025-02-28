@@ -143,7 +143,6 @@ def test_default_operator_handling():
 @pytest.mark.parametrize(
     "op_class, args, kwargs",
     [
-        # (qml.ControlledQubitUnitary, (jnp.eye(2), [0, 1]), {}),
         (qml.CH, ([0, 1],), {}),
         (qml.CY, ([0, 1],), {}),
         (qml.CZ, ([0, 1],), {}),
@@ -669,8 +668,8 @@ class TestHigherOrderPrimitiveRegistrations:
         assert inner_jaxpr.eqns[1].primitive == qml.RX._primitive
         assert inner_jaxpr.eqns[3].primitive == qml.RX._primitive
 
-        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "backprop"
-        assert jaxpr.eqns[0].params["qnode_kwargs"]["grad_on_execution"] is False
+        assert jaxpr.eqns[0].params["execution_config"].gradient_method == "backprop"
+        assert jaxpr.eqns[0].params["execution_config"].grad_on_execution is False
         assert jaxpr.eqns[0].params["device"] == dev
 
         res1 = f()
