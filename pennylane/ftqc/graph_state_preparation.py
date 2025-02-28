@@ -47,16 +47,21 @@ class GraphStatePreparation(Operation):
         self._qubit_ops = qubit_ops
         self._entanglement_ops = entanglement_ops
         self._wires = wires
+    
+    def decomposition(self) -> list["Operator"]:
+        self.decomposition(self._lattice, self._qubit_ops, self._entanglement_ops, self._wires)
+
 
     @staticmethod
-    def compute_decomposition():
+    def compute_decomposition(lattice: Lattice, qubit_ops: Operation, entanglement_ops: Operation, wires: QubitGraph):
         op_list = []
         # Add qubit_ops to the queue
         # traverse the nodes in the qubit graph
-        for v in self._lattice.get_graph:
-            op_list.append(self._qubit_ops(self._wires[v]))
+        for v in lattice.get_graph:
+            op_list.append(qubit_ops(wires[v]))
 
         # Add entanglement_ops to the queue
         # traverse the edges in the qubit graph
-        for v0, v1 in self._lattice.get_edges:
-            op_list.append(self._entanglement_ops(self._wires[v0], self._wires[v1]))
+        for v0, v1 in lattice.get_edges:
+            op_list.append(entanglement_ops(wires[v0], wires[v1]))
+        return op_list
