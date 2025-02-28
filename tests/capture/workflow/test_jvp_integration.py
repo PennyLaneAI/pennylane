@@ -88,35 +88,35 @@ class TestJVPIntegration:
     def test_jacobian_multiple_outputs(self, diff_method):
         """Test that finite diff can handle multiple outputs."""
 
-        if diff_method == "adjoint":
-            pytest.xfail("adjoint cannot handle probs.")
-
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x):
             qml.RX(x, 0)
-            return (
-                qml.probs(wires=0),
+            mps = [
                 qml.expval(qml.Z(0)),
                 qml.expval(qml.Y(0)),
                 qml.expval(qml.X(0)),
-            )
+            ]
+            if diff_method == "adjoint":
+                return mps
+            return mps + [qml.probs(wires=0)]
 
         x = jnp.array(-0.65)
         jac = jax.jacobian(circuit)(x)
 
-        # probs = [cos(x/2)**2, sin(x/2)**2]
-        probs_jac = [-jnp.cos(x / 2) * jnp.sin(x / 2), jnp.sin(x / 2) * jnp.cos(x / 2)]
-        assert qml.math.allclose(jac[0], probs_jac)
+        assert qml.math.allclose(jac[0], -jnp.sin(x))
+        assert qml.math.allclose(jac[1], -jnp.cos(x))
+        assert qml.math.allclose(jac[2], 0)
 
-        assert qml.math.allclose(jac[1], -jnp.sin(x))
-        assert qml.math.allclose(jac[2], -jnp.cos(x))
-        assert qml.math.allclose(jac[3], 0)
+        if diff_method != "adjoint":
+            # probs = [cos(x/2)**2, sin(x/2)**2]
+            probs_jac = [-jnp.cos(x / 2) * jnp.sin(x / 2), jnp.sin(x / 2) * jnp.cos(x / 2)]
+            assert qml.math.allclose(jac[3], probs_jac)
 
     def test_classical_control_flow(self, diff_method):
         """Test that classical control flow can exist inside the circuit."""
 
         if diff_method == "adjoint":
-            pytest.xfail("need preprocessing and flattening.")
+            pytest.xfail("adjoint cannot handle control flow")
 
         @qml.qnode(qml.device("default.qubit", wires=4), diff_method=diff_method)
         def circuit(x):
