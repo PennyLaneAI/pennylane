@@ -75,10 +75,11 @@ def measure_arbitrary_basis(
     .. code-block:: python3
 
         import pennylane as qml
-        from pennylane.ftqc import measure_arbitrary_basis
+        from pennylane.ftqc import diagonalize_mcms, measure_arbitrary_basis
 
         dev = qml.device("default.qubit", wires=3)
 
+        @diagonalize_mcms
         @qml.qnode(dev, mcm_method="tree-traversal")
         def func(x, y):
             qml.RY(x, wires=0)
@@ -90,9 +91,9 @@ def measure_arbitrary_basis(
 
     Executing this QNode:
 
-    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> pars = np.array([0.643, 0.246])
     >>> func(*pars)
-    tensor([0.90165331, 0.09834669], requires_grad=True)
+    array([0.91237915, 0.08762085])
 
     .. details::
         :title: Plane and angle
