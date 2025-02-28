@@ -56,6 +56,7 @@ class ResourceOperator(ABC):
 
                     return gate_types
 
+                @property
                 def resource_params(self, num_wires) -> dict:
                     return {"num_wires": num_wires}
 

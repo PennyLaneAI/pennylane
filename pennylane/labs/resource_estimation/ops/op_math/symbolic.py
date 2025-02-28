@@ -41,6 +41,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
             return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
@@ -89,6 +90,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
@@ -166,6 +168,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
         return {base_class.resource_rep(**base_params): z}
 
+    @property
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
