@@ -148,9 +148,9 @@ def tensor_with_identity(
             if i == mode:
                 lookup[mode] = lookup[mode] @ ops[count]
 
-    matrix = lookup[modes - 1]
-    for mode in range(modes - 2, -1, -1):
-        matrix = _kron(lookup[mode], matrix)
+    matrix = lookup[0]
+    for mode in range(1, modes):
+        matrix = _kron(matrix, lookup[mode])
 
     return matrix
 

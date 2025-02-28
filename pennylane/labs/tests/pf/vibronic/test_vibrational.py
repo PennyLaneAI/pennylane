@@ -5,53 +5,12 @@ import itertools
 import numpy as np
 import pytest
 import scipy as sp
+from scipy.sparse import csr_array
 
 import pennylane as qml
 from pennylane.labs.pf import HOState, VibrationalHamiltonian
 from pennylane.labs.vibrational import vibrational_pes
 from pennylane.qchem.vibrational.taylor_ham import _threebody_degs, _twobody_degs
-
-
-def _transform_coeffs(phis):
-    """Transform the coefficients"""
-
-    taylor_1, taylor_2, taylor_3 = phis
-
-    start_deg = 2
-    n_modes, num_1d_coeffs = np.shape(taylor_1)
-    taylor_deg = num_1d_coeffs + start_deg - 1
-
-    phis = []
-    for i in range(5):
-        shape = (n_modes,) * (i + 1)
-        phis.append(np.zeros(shape))
-
-    # one-mode
-    for m1 in range(n_modes):
-        for deg_i in range(start_deg, taylor_deg + 1):
-            index = (m1,) * deg_i
-            phis[deg_i - 1][index] = taylor_1[m1, deg_i - start_deg]
-
-    # two-mode
-    degs_2d = _twobody_degs(taylor_deg, min_deg=start_deg)
-    for m1 in range(n_modes):
-        for m2 in range(m1):
-            for deg_idx, Qs in enumerate(degs_2d):
-                q1deg, q2deg = Qs[:2]
-                index = ((m1,) * q1deg) + ((m2,) * q2deg)
-                phis[q1deg + q2deg - 1][index] = taylor_2[m1, m2, deg_idx]
-
-    # three-mode
-    degs_3d = _threebody_degs(taylor_deg, min_deg=start_deg)
-    for m1 in range(n_modes):
-        for m2 in range(m1):
-            for m3 in range(m2):
-                for deg_idx, Qs in enumerate(degs_3d):
-                    q1deg, q2deg, q3deg = Qs[:3]
-                    index = ((m1,) * q1deg) + ((m2,) * q2deg) + ((m3,) * q3deg)
-                    phis[q1deg + q2deg + q3deg - 1][index] = taylor_3[m1, m2, m3, deg_idx]
-
-    return phis
 
 
 class TestFragments:
@@ -193,117 +152,151 @@ class TestHarmonicMultiMode:
 
 class TestExpectation:
 
+    phis1 = [np.array(0), np.array([0.0]), np.array([[-0.00306787]]), np.array([[[0.00051144]]])]
+    omegas1 = np.array([0.0249722])
     mat1 = np.array(
         [[0.01095216 + 0.0j, 0.00018082 + 0.0j], [0.00018082 + 0.0j, 0.01095216 + 0.0j]]
     )
+
+    phis2 = [
+        np.array(0),
+        np.array([0.0, 0.0, 0.0]),
+        np.array(
+            [
+                [-6.21741719e-14, 0.00000000e00, 0.00000000e00],
+                [1.99211595e-13, 9.46571153e-04, 0.00000000e00],
+                [-5.71982634e-14, 8.73074134e-04, -1.31910690e-03],
+            ]
+        ),
+        np.array(
+            [
+                [
+                    [5.53904193e-05, 0.00000000e00, 0.00000000e00],
+                    [0.00000000e00, 0.00000000e00, 0.00000000e00],
+                    [0.00000000e00, 0.00000000e00, 0.00000000e00],
+                ],
+                [
+                    [-4.98906472e-15, 0.00000000e00, 0.00000000e00],
+                    [-3.00847220e-03, 7.84674613e-05, 0.00000000e00],
+                    [0.00000000e00, 0.00000000e00, 0.00000000e00],
+                ],
+                [
+                    [5.97655606e-15, 0.00000000e00, 0.00000000e00],
+                    [3.88965240e-14, -9.17507861e-05, 0.00000000e00],
+                    [-2.99010685e-03, -3.09965385e-03, 1.61908332e-04],
+                ],
+            ]
+        ),
+    ]
+    omegas2 = np.array([0.00978462, 0.00978489, 0.01663723])
     mat2 = np.array(
         [
             [
-                1.85130786e-02 + 0.0j,
-                4.00934485e-05 + 0.0j,
-                1.10670334e-03 + 0.0j,
-                -4.01192823e-04 + 0.0j,
-                2.06315706e-03 + 0.0j,
-                1.70409266e-04 + 0.0j,
-                -5.92787860e-04 + 0.0j,
-                -7.53000830e-05 + 0.0j,
+                1.79171056e-02,
+                2.48044382e-05,
+                -1.06815069e-03,
+                4.36537067e-04,
+                -2.10123449e-03,
+                -2.85917137e-14,
+                9.96152552e-14,
+                1.37476535e-14,
             ],
             [
-                4.00934485e-05 + 0.0j,
-                1.85130786e-02 + 0.0j,
-                -4.01192823e-04 + 0.0j,
-                1.10670334e-03 + 0.0j,
-                1.70409266e-04 + 0.0j,
-                2.06315706e-03 + 0.0j,
-                -7.53000830e-05 + 0.0j,
-                -5.92787860e-04 + 0.0j,
+                2.48044382e-05,
+                1.79171056e-02,
+                4.36537067e-04,
+                -1.06815069e-03,
+                -2.85917137e-14,
+                -2.10123449e-03,
+                1.37476535e-14,
+                9.96152552e-14,
             ],
             [
-                1.10670334e-03 + 0.0j,
-                -4.01192823e-04 + 0.0j,
-                1.85130786e-02 + 0.0j,
-                4.00934485e-05 + 0.0j,
-                -5.92787860e-04 + 0.0j,
-                -7.53000830e-05 + 0.0j,
-                2.06315706e-03 + 0.0j,
-                1.70409266e-04 + 0.0j,
+                -1.06815069e-03,
+                4.36537067e-04,
+                1.79171056e-02,
+                2.48044382e-05,
+                9.96152552e-14,
+                1.37476535e-14,
+                -2.10123449e-03,
+                -2.85917137e-14,
             ],
             [
-                -4.01192823e-04 + 0.0j,
-                1.10670334e-03 + 0.0j,
-                4.00934485e-05 + 0.0j,
-                1.85130786e-02 + 0.0j,
-                -7.53000830e-05 + 0.0j,
-                -5.92787860e-04 + 0.0j,
-                1.70409266e-04 + 0.0j,
-                2.06315706e-03 + 0.0j,
+                4.36537067e-04,
+                -1.06815069e-03,
+                2.48044382e-05,
+                1.79171056e-02,
+                1.37476535e-14,
+                9.96152552e-14,
+                -2.85917137e-14,
+                -2.10123449e-03,
             ],
             [
-                2.06315706e-03 + 0.0j,
-                1.70409266e-04 + 0.0j,
-                -5.92787860e-04 + 0.0j,
-                -7.53000830e-05 + 0.0j,
-                1.85130786e-02 + 0.0j,
-                4.00934485e-05 + 0.0j,
-                1.10670334e-03 + 0.0j,
-                -4.01192823e-04 + 0.0j,
+                -2.10123449e-03,
+                -2.85917137e-14,
+                9.96152552e-14,
+                1.37476535e-14,
+                1.79171056e-02,
+                2.48044382e-05,
+                -1.06815069e-03,
+                4.36537067e-04,
             ],
             [
-                1.70409266e-04 + 0.0j,
-                2.06315706e-03 + 0.0j,
-                -7.53000830e-05 + 0.0j,
-                -5.92787860e-04 + 0.0j,
-                4.00934485e-05 + 0.0j,
-                1.85130786e-02 + 0.0j,
-                -4.01192823e-04 + 0.0j,
-                1.10670334e-03 + 0.0j,
+                -2.85917137e-14,
+                -2.10123449e-03,
+                1.37476535e-14,
+                9.96152552e-14,
+                2.48044382e-05,
+                1.79171056e-02,
+                4.36537067e-04,
+                -1.06815069e-03,
             ],
             [
-                -5.92787860e-04 + 0.0j,
-                -7.53000830e-05 + 0.0j,
-                2.06315706e-03 + 0.0j,
-                1.70409266e-04 + 0.0j,
-                1.10670334e-03 + 0.0j,
-                -4.01192823e-04 + 0.0j,
-                1.85130786e-02 + 0.0j,
-                4.00934485e-05 + 0.0j,
+                9.96152552e-14,
+                1.37476535e-14,
+                -2.10123449e-03,
+                -2.85917137e-14,
+                -1.06815069e-03,
+                4.36537067e-04,
+                1.79171056e-02,
+                2.48044382e-05,
             ],
             [
-                -7.53000830e-05 + 0.0j,
-                -5.92787860e-04 + 0.0j,
-                1.70409266e-04 + 0.0j,
-                2.06315706e-03 + 0.0j,
-                -4.01192823e-04 + 0.0j,
-                1.10670334e-03 + 0.0j,
-                4.00934485e-05 + 0.0j,
-                1.85130786e-02 + 0.0j,
+                1.37476535e-14,
+                9.96152552e-14,
+                -2.85917137e-14,
+                -2.10123449e-03,
+                4.36537067e-04,
+                -1.06815069e-03,
+                2.48044382e-05,
+                1.79171056e-02,
             ],
         ]
     )
 
-    H2_params = (["H", "H"], 0, np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), mat1)
-    H3_params = (
-        ["H", "H", "H"],
-        1,
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 1.0]]),
-        mat2,
+    @pytest.mark.parametrize(
+        "phis, omegas, expected", [(phis1, omegas1, mat1), (phis2, omegas2, mat2)]
     )
-
-    @pytest.mark.parametrize("symbols, charge, geometry, expected", [H2_params, H3_params])
-    def test_matrix(self, symbols, charge, geometry, expected):
+    def test_matrix(self, phis, omegas, expected):
         """Test the matrix"""
-
-        mol = qml.qchem.Molecule(symbols, geometry, charge=charge)
-        pes = vibrational_pes(mol, quad_order=5, cubic=True, dipole_level=1)
-
-        phis = [np.array(0)] + _transform_coeffs(qml.qchem.taylor_coeffs(pes))
-        omegas = pes.freqs
 
         ham = VibrationalHamiltonian(len(omegas), omegas, phis)
         actual = ham.operator().matrix(2, len(omegas), basis="harmonic")
 
         assert np.allclose(actual, expected)
 
-    @pytest.mark.parametrize("symbols, charge, geometry, expected", [H2_params, H3_params])
-    def test_expectation(self, symbols, charge, geometry, expected):
+    @pytest.mark.parametrize(
+        "phis, omegas, expected", [(phis1, omegas1, mat1), (phis2, omegas2, mat2)]
+    )
+    def test_expectation(self, phis, omegas, expected):
         """Test the expectation values"""
+
+        n_modes = len(omegas)
+        eigvals, eigvecs = np.linalg.eig(expected)
+
+        ham = VibrationalHamiltonian(n_modes, omegas, phis)
+
+        for i, eigval in enumerate(eigvals):
+            eigvec = eigvecs[:, i]
+            ho_state = HOState.from_scipy(n_modes, 2, csr_array(eigvec.reshape(2**n_modes, 1)))
+            assert np.isclose(ham.operator().expectation(ho_state, ho_state), eigval)
