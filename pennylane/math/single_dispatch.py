@@ -57,6 +57,7 @@ def _builtins_shape(x):
 
 ar.register_function("builtins", "ndim", _builtins_ndim)
 ar.register_function("builtins", "shape", _builtins_shape)
+ar.register_function("builtins", "coerce", lambda x: x)
 ar.register_function("builtins", "logical_mod", lambda x, y: x % y)
 ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
@@ -64,8 +65,9 @@ ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
-
+ar.register_function("scipy", "coerce", lambda x: x)
 ar.register_function("scipy", "shape", np.shape)
+ar.register_function("scipy", "dot", np.dot)
 ar.register_function("scipy", "conj", np.conj)
 ar.register_function("scipy", "transpose", np.transpose)
 ar.register_function("scipy", "ndim", np.ndim)
