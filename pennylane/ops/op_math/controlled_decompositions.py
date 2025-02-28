@@ -522,21 +522,23 @@ def ctrl_decomp_bisect(
 
 
 def decompose_mcx(control_wires, target_wire, work_wires):
-    """Decomposes the multi-controlled PauliX gate using decompositions from
-    `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_"""
-    num_work_wires_needed = len(control_wires) - 2
+    """Decomposes the multi-controlled PauliX"""
 
     if len(control_wires) == 1:
         return [qml.CNOT(wires=control_wires + Wires(target_wire))]
     if len(control_wires) == 2:
         return qml.Toffoli.compute_decomposition(wires=control_wires + Wires(target_wire))
 
-    if len(work_wires) >= num_work_wires_needed:
-        # Lemma 7.2
+    if len(work_wires) >= len(control_wires) - 2:
+        # Lemma 7.2 of `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_
         return _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
+    if len(work_wires) >= 2:
+        return _decompose_mcx_with_two_workers(control_wires, target_wire, work_wires[0:2])
+    if len(work_wires) == 1:
+        return _decompose_mcx_with_one_worker_kg24(control_wires, target_wire, work_wires)
     if len(work_wires) >= 1:
         # Lemma 7.3
-        return _decompose_mcx_with_one_worker(control_wires, target_wire, work_wires[0])
+        return _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wires[0])
 
     # Lemma 7.5
     with qml.QueuingManager.stop_recording():
@@ -652,9 +654,12 @@ def _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires):
     return gates
 
 
-def _decompose_mcx_with_one_worker(control_wires, target_wire, work_wire):
-    """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.3 of
-    https://arxiv.org/abs/quant-ph/9503016, which requires a single work wire"""
+def _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wire):
+    """
+    Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.3 of
+    https://arxiv.org/abs/quant-ph/9503016, which requires a single work wire. This approach
+    requires O(16k) CX gates, where k is the number of control wires.
+    """
     tot_wires = len(control_wires) + 2
     partition = int(np.ceil(tot_wires / 2))
 
@@ -719,7 +724,7 @@ def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
     return gates, final_ctrl
 
 
-def decompose_mcx_1_ancilla(control_wires, target_wire, work_wires, clean=True):
+def _decompose_mcx_with_one_worker_kg24(control_wires, target_wire, work_wires, clean=True):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit as
     described in Sec. 5 of [1].
@@ -821,7 +826,7 @@ def _build_logn_depth_ccx_ladder(
                 gates += _ccxn(ccx_x, ccx_y, ccx_t)
             else:
                 gates.append(qml.Toffoli(wires=[ccx_x[0], ccx_y[0], ccx_t[0]]))
-            new_anc += nxt_batch[st:]  #                     # newly created cond. clean ancilla
+            new_anc += nxt_batch[st:]  #                    # newly created cond. clean ancilla
             nxt_batch = ccx_t + nxt_batch[:st]
             anc = anc[:-ccx_n]
 
@@ -834,8 +839,11 @@ def _build_logn_depth_ccx_ladder(
     return gates, final_ctrls
 
 
-def decompose_mcx_with_two_workers(
-    control_wires: WiresLike, target_wire: WiresLike, work_wires: WiresLike, clean: bool = True
+def _decompose_mcx_with_two_workers(
+    control_wires: WiresLike,
+    target_wire: WiresLike,
+    work_wires: WiresLike,
+    clean: bool = True,
 ) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
@@ -852,14 +860,14 @@ def decompose_mcx_with_two_workers(
 
     if len(work_wires) < 2:
         raise ValueError("At least 2 work wires are needed for this decomposition.")
-    
+
     gates = []
     ladder_ops, final_ctrls = _build_logn_depth_ccx_ladder(work_wires[0], control_wires)
     gates += ladder_ops
     if len(final_ctrls) == 1:  # Already a toffoli
         gates.append(qml.Toffoli(wires=[work_wires[0], final_ctrls[0], target_wire[0]]))
     else:
-        mid_mcx = decompose_mcx_1_ancilla(
+        mid_mcx = _decompose_mcx_with_one_worker_kg24(
             work_wires[0:1] + final_ctrls, target_wire[0], work_wires[1:2], clean=True
         )
         gates += mid_mcx
