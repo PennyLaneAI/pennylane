@@ -21,10 +21,11 @@ at your own discretion.
 .. autosummary::
     :toctree: api
 
-    apply_operation
     create_initial_state
+    apply_operation
     measure
-    sampling
+    measure_with_samples
+    sample_state
     simulate
 """
 from .apply_operation import apply_operation

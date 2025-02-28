@@ -1775,6 +1775,9 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return 1
 
+            def process_density_matrix(self, density_matrix, wire_order):
+                return 1
+
         @qml.qnode(dev)
         def circuit():
             qml.X(0)
@@ -1794,6 +1797,9 @@ class TestStateMeasurement:
             """Dummy state measurement."""
 
             def process_state(self, state, wire_order):
+                return 1
+
+            def process_density_matrix(self, density_matrix, wire_order):
                 return 1
 
         @qml.qnode(dev)
