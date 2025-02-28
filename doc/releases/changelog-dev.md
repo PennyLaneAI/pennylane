@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a class `qml.capture.transforms.MergeRotationsInterpreter` that merges rotation operators
+  following the same API as `qml.transforms.optimization.merge_rotations` when experimental program capture is enabled.
+  [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
+
 * `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
   `qml.defer_measurements` can be executed on `default.qubit`.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
