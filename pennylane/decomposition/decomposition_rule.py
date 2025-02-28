@@ -19,18 +19,19 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Callable
 
-from .resources import Resources
+from pennylane.operation import Operator
+from .resources import Resources, CompressedResourceOp, make_resource_rep
 
 
 def decomposition(qfunc: Callable, resource_fn: Callable = None) -> DecompositionRule:
-    """Creates a DecompositionRule from a quantum function.
+    """Creates a decomposition rule from a quantum function.
 
     Args:
-        qfunc (Callable): the quantum function that represents the decomposition.
-        resource_fn (Callable): a function that computes a gate count of this decomposition rule.
+        qfunc (Callable): the quantum function that implements the decomposition.
+        resource_fn (Callable): a function that returns a gate count of this decomposition.
 
     Returns:
-        DecompositionRule: the decomposition rule.
+        DecompositionRule: a data structure that represents a decomposition rule.
 
     **Example**
 
@@ -40,58 +41,119 @@ def decomposition(qfunc: Callable, resource_fn: Callable = None) -> Decompositio
 
         import pennylane as qml
 
-        def _multi_rz_decomposition(theta, wires, **__):
-            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                qml.CNOT(wires=(w0, w1))
-            qml.RZ(theta, wires=wires[0])
-            for w0, w1 in zip(wires[1:], wires[:-1]):
-                qml.CNOT(wires=(w0, w1))
+        def _cnot_decomp(wires):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
 
-    The signature of this qfunc should be ``(*params, wires, **hyperparams)``.
+    This qfunc is expected to take ``(*op.params, op.wires, **op.hyperparameters)`` as arguments,
+    where ``op`` is an instance of the operator type that this decomposition is for.
 
     Along with the qfunc implementation of a decomposition, a resource function should be defined
-    that computes a resource estimate for this decomposition rule from a set of parameters:
+    that returns a dictionary mapping operator types to their number of occurrences:
 
     .. code-block:: python
 
-        def _multi_rz_decomposition_resources(num_wires):
+        def _cnot_decomp_resources():
             return {
-                qml.RZ.make_resource_rep(): 1,
-                qml.CNOT.make_resource_rep(): 2 * (num_wires - 1)
+                qml.H: 2,
+                qml.CZ: 1,
             }
 
-    The signature of this function should be ``(**resource_params)``, where ``resource_params``
-    should agree with the ``resource_params`` property of the operator.
-
-    The two functions can be combined to create a ``DecompositionRule`` object:
+    A decomposition rule can be created from these two functions, and added to an operator class
+    as an alternative decomposition rule:
 
     .. code-block:: python
 
-        multi_rz_decomposition = decomposition(
-            _multi_rz_decomposition,
-            resource_fn=_multi_rz_decomposition_resources
-        )
+        cnot_decomp = qml.decomposition(_cnot_decomp, resource_fn=_cnot_decomp_resources)
+        qml.add_decomposition(qml.CNOT, cnot_decomp)
 
-    Alternatively, use the decorator syntax:
+    Alternatively, the decorator syntax is also supported:
 
     .. code-block:: python
 
         @qml.decomposition
-        def multi_rz_decomposition(theta, wires, **__):
-            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                qml.CNOT(wires=(w0, w1))
-            qml.RZ(theta, wires=wires[0])
-            for w0, w1 in zip(wires[1:], wires[:-1]):
-                qml.CNOT(wires=(w0, w1))
+        def cnot_decomp(wires):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
 
-        @multi_rz_decomposition.resources
-        def _(num_wires):
+        @cnot_decomp.resources
+        def _():
             return {
-                qml.RZ.make_resource_rep(): 1,
-                qml.CNOT.make_resource_rep(): 2 * (num_wires - 1)
+                qml.H: 2,
+                qml.CZ: 1,
             }
 
-    Now ``multi_rz_decomposition`` is a ``DecompositionRule`` object.
+        qml.add_decomposition(qml.CNOT, cnot_decomp)
+
+    .. details::
+        :title: Usage Details
+
+        In many cases, the resource function of an operator's decomposition is not static. For
+        example, consider ``MultiRZ``, whose decomposition function looks like:
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            def _multi_rz_decomposition(theta, wires, **__):
+                for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
+                    qml.CNOT(wires=(w0, w1))
+                qml.RZ(theta, wires=wires[0])
+                for w0, w1 in zip(wires[1:], wires[:-1]):
+                    qml.CNOT(wires=(w0, w1))
+
+        We notice that the number of ``CNOT`` gates required to compose a ``MultiRZ`` depends on
+        the number of wires. For each operator class, we can find the set of parameters that
+        affect the gate count of its decompositions in the ``resource_param_keys`` attribute:
+
+        >>> qml.CNOT.resource_param_keys
+        {}
+        >>> qml.MultiRZ.resource_param_keys
+        {'num_wires'}
+
+        The resource function for any decomposition of ``MultiRZ`` should take ``num_wires`` as
+        an argument:
+
+        .. code-block:: python
+
+            def _multi_rz_decomposition_resources(num_wires):
+                return {
+                    qml.CNOT: 2 * (num_wires - 1),
+                    qml.RZ: 1
+                }
+
+        Consequentially, two ``MultiRZ`` gates acting on different numbers of wires will have
+        different decompositions. As a result, when defining a decomposition rule that contains
+        ``MultiRZ`` gates, we require that more information is provided.
+
+        Consider a fictitious operator with the following decomposition:
+
+        .. code-block:: python
+
+            def _my_decomposition(thata, wires):
+                qml.MultiRZ(theta, wires=wires[:-1])
+                qml.MultiRZ(theta, wires=wires)
+                qml.MultiRZ(theta, wires=wires[1:])
+
+        It contains two ``MultiRZ`` gates on ``num_wires - 1`` wires and one ``MultiRZ`` gate on
+        ``num_wires`` wires, which is reflected in its corresponding resource function:
+
+        .. code-block:: python
+
+            def _my_decomposition_resources(num_wires):
+                return {
+                    qml.make_resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 2,
+                    qml.make_resource_rep(qml.MultiRZ, num_wires=num_wires): 1
+                }
+
+        where ``qml.make_resource_rep`` is a utility function that wraps an operator type and
+        any additional information relavent to its resource estimate into a data structure.
+
+    .. seealso::
+
+        :func:`~pennylane.make_resource_rep`
 
     """
     decomposition_rule = DecompositionRule(qfunc)
@@ -118,7 +180,7 @@ class DecompositionRule:
             raise NotImplementedError("No resource estimation found for this decomposition rule.")
         gate_counts: dict = self._compute_resources(*args, **kwargs)
         assert isinstance(gate_counts, dict), "Resource function must return a dictionary."
-        gate_counts = {op: count for op, count in gate_counts.items() if count > 0}
+        gate_counts = {_auto_wrap(op): count for op, count in gate_counts.items() if count > 0}
         num_gates = sum(gate_counts.values())
         return Resources(num_gates, gate_counts)
 
@@ -130,6 +192,24 @@ class DecompositionRule:
             self._compute_resources = resource_func
 
         return _compute_resources_decorator
+
+
+def _auto_wrap(op_type):
+    """Conveniently wrap an operator type in a resource representation."""
+    if isinstance(op_type, CompressedResourceOp):
+        return op_type
+    if not issubclass(op_type, Operator):
+        raise TypeError(
+            "The keys of the dictionary returned by the resource function must be a subclass of "
+            "Operator or a CompressedResourceOp constructed with qml.make_resource_rep"
+        )
+    try:
+        return make_resource_rep(op_type)
+    except TypeError as e:
+        raise TypeError(
+            f"Operator {op_type.__name__} has non-empty resource_param_keys. A resource "
+            f"representation must be explicitly constructed using qml.make_resource_rep"
+        ) from e
 
 
 _decompositions = defaultdict(list)

@@ -122,7 +122,10 @@ def _make_hashable(d) -> tuple:
 def make_resource_rep(op_type, **kwargs) -> CompressedResourceOp:
     """Creates a ``CompressedResourceOp`` representation of an operator.
 
-    This function should be used to
+    When defining the resource function associated with a decomposition rule. The keys of the
+    returned dictionary should be created using this function. The resource rep of an operator
+    is a lightweight data structure containing the minimal information needed to determine the
+    resource estimate of a decomposition.
 
     Args:
         op_type: the operator type
@@ -132,16 +135,19 @@ def make_resource_rep(op_type, **kwargs) -> CompressedResourceOp:
     """
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
-    missing_params = op_type.resource_param_keys - set(kwargs.keys())
-    if missing_params:
-        raise TypeError(
-            f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
-            f"Expected: {op_type.resource_param_keys}"
-        )
-    invalid_params = set(kwargs.keys()) - op_type.resource_param_keys
-    if invalid_params:
-        raise TypeError(
-            f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
-            f"Expected: {op_type.resource_param_keys}"
-        )
+    try:
+        missing_params = op_type.resource_param_keys - set(kwargs.keys())
+        if missing_params:
+            raise TypeError(
+                f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
+                f"Expected: {op_type.resource_param_keys}"
+            )
+        invalid_params = set(kwargs.keys()) - op_type.resource_param_keys
+        if invalid_params:
+            raise TypeError(
+                f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
+                f"Expected: {op_type.resource_param_keys}"
+            )
+    except NotImplementedError as e:
+        raise NotImplementedError(f"resource_param_keys undefined for {op_type.__name__}") from e
     return CompressedResourceOp(op_type, kwargs)
