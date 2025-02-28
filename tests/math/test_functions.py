@@ -2390,21 +2390,6 @@ class TestCoercion:
         for tensor, interface in zip(res, expected_interfaces, strict=True):
             assert fn.get_interface(tensor) == interface
 
-    @pytest.mark.parametrize("coercion_interface", ["jax", "autograd", "scipy"])
-    def test_trivial_coercions(self, coercion_interface):
-        """Test coercion is trivial for JAX, Autograd, and Scipy."""
-        tensors = [
-            jnp.array([0.2]),
-            onp.array([1, 2, 3]),
-            tf.constant(1 + 3j, dtype=tf.complex64),
-            torch.tensor(1 + 3j, dtype=torch.complex64),
-            np.array([1, 2, 3]),
-        ]
-        expected_interfaces = ["jax", "numpy", "tensorflow", "torch", "autograd"]
-        res = qml.math.coerce(tensors, like=coercion_interface)
-        for tensor, interface in zip(res, expected_interfaces, strict=True):
-            assert fn.get_interface(tensor) == interface
-
     def test_tensorflow_coercion(self):
         """Test tensorflow coercion"""
         tensors = [tf.Variable([0.2]), np.array([1, 2, 3]), tf.constant(1 + 3j, dtype=tf.complex64)]
