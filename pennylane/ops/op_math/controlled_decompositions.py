@@ -27,7 +27,7 @@ from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
     _get_single_qubit_rot_angles_via_matrix,
 )
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 
 def _is_single_qubit_special_unitary(op):
@@ -698,24 +698,24 @@ def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
     for i in range(2, n - 2, 2):
         gates.append(qml.Toffoli(wires=[wires[i + 1], wires[i + 2], wires[i]]))
         gates.append(qml.PauliX(wires=wires[i]))
-    
+
     # down-ladder
     if n % 2 != 0:
         x, y, t = n - 3, n - 5, n - 6
     else:
         x, y, t = n - 1, n - 4, n - 5
-    
+
     if t > 0:
         gates.append(qml.Toffoli(wires=[wires[x], wires[y], wires[t]]))
         gates.append(qml.PauliX(wires=wires[t]))
-    
+
     for i in range(t, 2, -2):
         gates.append(qml.Toffoli(wires=[wires[i], wires[i - 1], wires[i - 2]]))
         gates.append(qml.PauliX(wires=wires[i - 2]))
-    
+
     mid_second_ctrl = 1 + max(0, 6 - n)
     final_ctrl = mid_second_ctrl - 1
-    
+
     return gates, final_ctrl
 
 
