@@ -50,10 +50,7 @@
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
 
-* A `Lattice` class is added to the `qml.ftqc` module.
-  [(#6958)](https://github.com/PennyLaneAI/pennylane/pull/6958)
-
-* A `generate_lattice` method is added to the `qml.ftqc` module to generate 1D, 2D, 3D grid graphs with given dimensions in each axis.
+* A `Lattice` class and a `generate_lattice` method is added to the `qml.ftqc` module. The `generate_lattice` method is to generate 1D, 2D, 3D grid graphs with given dimensions in each axis.
   [(#6958)](https://github.com/PennyLaneAI/pennylane/pull/6958)
 
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
