@@ -363,9 +363,7 @@ def test_map_wires_plxpr_to_plxpr():
 
     args = (1.2,)
     jaxpr = jax.make_jaxpr(circuit)(*args)
-    transformed_jaxpr = map_wires_plxpr_to_plxpr(
-        jaxpr.jaxpr, jaxpr.consts, [], {"wire_map": wire_map}, *args
-    )
+    transformed_jaxpr = map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [wire_map], {}, *args)
     assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
 
@@ -390,3 +388,35 @@ def test_map_wires_plxpr_to_plxpr():
     assert_wires(jaxpr.eqns[3], transformed_jaxpr.eqns[3])
 
     assert transformed_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+def test_map_wires_plxpr_to_plxpr_queue_warning():
+    """Test that a warning is raised if ``queue=True``."""
+
+    def f():
+        qml.Hadamard(0)
+        return qml.expval(qml.PauliZ(0))
+
+    wire_map = {0: 1}
+    targs = (wire_map,)
+    tkwargs = {"queue": True}
+    jaxpr = jax.make_jaxpr(f)()
+
+    with pytest.warns(UserWarning, match="Cannot set 'queue=True'"):
+        map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs)
+
+
+def test_map_wires_plxpr_to_plxpr_replace_warning():
+    """Test that a warning is raised if ``replace=True``."""
+
+    def f():
+        qml.Hadamard(0)
+        return qml.expval(qml.PauliZ(0))
+
+    wire_map = {0: 1}
+    targs = (wire_map,)
+    tkwargs = {"replace": True}
+    jaxpr = jax.make_jaxpr(f)()
+
+    with pytest.warns(UserWarning, match="Cannot set 'replace=True'"):
+        map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs)

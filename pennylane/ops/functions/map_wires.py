@@ -26,6 +26,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
+from warnings import warn
 
 
 @lru_cache
@@ -71,7 +72,6 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
             """Initialize the interpreter."""
             self.wire_map = wire_map
             self._check_wire_map()
-            super().__init__()
 
         def _check_wire_map(self) -> None:
             """Check that the wire map is valid and does not contain dynamic values."""
@@ -92,13 +92,23 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
                 measurement = measurement.map_wires(self.wire_map)
             return super().interpret_measurement(measurement)
 
-    def map_wires_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
-        """Function for mapping wires in plxpr"""
-        
-        wire_map = tkwargs.get("wire_map")
-        interpreter = MapWiresInterpreter(wire_map)
+    def map_wires_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``map_wires`` transform on plxpr."""
+
+        if tkwargs.get("queue", False):
+            warn(
+                "Cannot set 'queue=True' with qml.capture.enabled() "
+                "when using qml.map_wires. Argument will be ignored.",
+                UserWarning,
+            )
+        if tkwargs.get("replace", False):
+            warn(
+                "Cannot set 'replace=True' with qml.capture.enabled() "
+                "when using qml.map_wires. Argument will be ignored.",
+                UserWarning,
+            )
+
+        interpreter = MapWiresInterpreter(*targs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)

@@ -223,12 +223,9 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             self.cleanup()
             return outvals
 
-    def single_qubit_fusion_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
-        interpreter = SingleQubitFusionInterpreter(
-            atol=tkwargs.get("atol", 1e-8), exclude_gates=tkwargs.get("exclude_gates", None)
-        )
+    def single_qubit_fusion_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``single_qubit_fusion`` transform on plxpr."""
+        interpreter = SingleQubitFusionInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
