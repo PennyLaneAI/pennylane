@@ -1368,7 +1368,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         When ``compute_qfunc_decomposition`` is defined for an operator, the control flow operations within the method
         (specifying the decomposition of the operator) are recorded in the JAX representation.
 
-        This method is experimental and subject to change.
+        .. note::
+          This method is experimental and subject to change.
 
         .. seealso:: :meth:`~.Operator.compute_decomposition`.
 
