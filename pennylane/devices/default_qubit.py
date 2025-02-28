@@ -68,7 +68,6 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if (
         isinstance(op, qml.operation.Operator)
-        and not isinstance(op, SymbolicOp)
         and op.has_sparse_matrix
         and (not op.has_matrix)
         and len(op.wires) >= 3
