@@ -18,13 +18,12 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 import numpy as np
 import pennylane as qml
 
-from typing import TYPE_CHECKING
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
-
-if TYPE_CHECKING:
-    import qualtran  # pylint: disable=unused-import
+_has_qualtran = True
+try:
+    import qualtran
     from qualtran import (
         Bloq,
         CompositeBloq,
@@ -34,10 +33,6 @@ if TYPE_CHECKING:
         DecomposeNotImplementedError,
         DecomposeTypeError,
     )
-
-_has_qualtran = True
-try:
-    import qualtran
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     _has_qualtran = False
 
