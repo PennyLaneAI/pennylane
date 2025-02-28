@@ -105,6 +105,10 @@ class TestFromBloq:
             qml.Toffoli([1, 2, 0]),
         ]
         assert mapped_decomp == mapped_expected_decomp
+        assert np.allclose(
+            qml.FromBloq(circuit_bloq, wires=list(range(4))).matrix(),
+            circuit_bloq.tensor_contract(),
+        )
 
     def test_atomic_bloqs(self):
         """Tests that atomic bloqs have the correct PennyLane equivalent after wrapped with `FromBloq`"""
