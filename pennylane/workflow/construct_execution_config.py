@@ -16,8 +16,9 @@ import functools
 
 import pennylane as qml
 from pennylane.math import Interface
-from pennylane.workflow import construct_tape
-from pennylane.workflow.resolution import _resolve_execution_config
+
+from .construct_tape import construct_tape
+from .resolution import _resolve_execution_config
 
 
 def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):

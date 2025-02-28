@@ -1,5 +1,5 @@
 qml.ftqc
-===========
+========
 
 .. currentmodule:: pennylane.ftqc
 

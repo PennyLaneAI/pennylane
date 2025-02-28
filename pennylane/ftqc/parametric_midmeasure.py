@@ -40,7 +40,7 @@ def measure_arbitrary_basis(
     The measurements are performed using the 0, 1 convention rather than the ±1 convention.
 
     If a device doesn't support mid-circuit measurements natively, then the desired ``mcm_method`` for
-    executing mid-circuit measurement should be passed to the QNode.
+    executing mid-circuit measurements should be passed to the QNode.
 
     .. warning::
         Measurements should be diagonalized before execution for any device that only natively supports
@@ -61,7 +61,7 @@ def measure_arbitrary_basis(
             state that is used for postselection will be considered in the remaining circuit.
 
     Returns:
-        MeasurementValue: the mid-circuit measurement result linked to the created MidMeasureMP
+        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasureMP``.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
@@ -98,7 +98,7 @@ def measure_arbitrary_basis(
     .. details::
         :title: Plane and angle
 
-        The plane and angle are related to the axis of measurement by the following formuals:
+        The plane and angle are related to the axis of measurement by the following formulas:
 
         .. math:: M_{XY}(\phi) =\frac{1}{\sqrt{2}} (|0\rangle + e^{i\phi} |1\rangle),
 
@@ -165,7 +165,7 @@ def measure_x(
             state that is used for postselection will be considered in the remaining circuit.
 
     Returns:
-        MeasurementValue: the mid-circuit measurement result linked to the created MidMeasureMP
+        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasureMP``.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
@@ -208,7 +208,7 @@ def measure_y(
             state that is used for postselection will be considered in the remaining circuit.
 
     Returns:
-        MeasurementValue: the mid-circuit measurement result linked to the created MidMeasureMP
+        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasureMP``.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
@@ -243,7 +243,7 @@ def measure_z(
             state that is used for postselection will be considered in the remaining circuit.
 
     Returns:
-        MeasurementValue: the mid-circuit measurement result linked to the created MidMeasureMP
+        MeasurementValue: The mid-circuit measurement result linked to the created ``MidMeasureMP``.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
