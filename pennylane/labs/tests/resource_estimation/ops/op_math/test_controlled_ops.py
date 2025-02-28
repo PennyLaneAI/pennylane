@@ -34,17 +34,17 @@ class TestResourceCH:
             re.ResourceHadamard.resource_rep(): 2,
             re.ResourceCNOT.resource_rep(): 1,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCH, {})
-        assert self.op.resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
@@ -52,7 +52,7 @@ class TestResourceCH:
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
@@ -93,7 +93,7 @@ class TestResourceCH:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
@@ -107,7 +107,7 @@ class TestResourceCH:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCY:
@@ -123,17 +123,17 @@ class TestResourceCY:
             re.ResourceCNOT.resource_rep(): 1,
             re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCY, {})
-        assert self.op.resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
@@ -141,7 +141,7 @@ class TestResourceCY:
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
@@ -182,7 +182,7 @@ class TestResourceCY:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
@@ -196,7 +196,7 @@ class TestResourceCY:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCZ:
@@ -211,7 +211,7 @@ class TestResourceCZ:
             re.ResourceHadamard.resource_rep(): 2,
             re.ResourceCNOT.resource_rep(): 1,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
@@ -221,7 +221,7 @@ class TestResourceCZ:
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
@@ -229,7 +229,7 @@ class TestResourceCZ:
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
@@ -270,7 +270,7 @@ class TestResourceCZ:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
@@ -284,7 +284,7 @@ class TestResourceCZ:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCSWAP:
@@ -298,17 +298,17 @@ class TestResourceCSWAP:
             re.ResourceToffoli.resource_rep(): 1,
             re.ResourceCNOT.resource_rep(): 2,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCSWAP, {})
-        assert self.op.resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
@@ -316,7 +316,7 @@ class TestResourceCSWAP:
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
@@ -357,7 +357,7 @@ class TestResourceCSWAP:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
@@ -371,7 +371,7 @@ class TestResourceCSWAP:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCCZ:
@@ -385,17 +385,17 @@ class TestResourceCCZ:
             re.ResourceHadamard.resource_rep(): 2,
             re.ResourceToffoli.resource_rep(): 1,
         }
-        assert self.op.resources(**self.op.resource_params()) == expected_resources
+        assert self.op.resources(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
         expected_rep = re.CompressedResourceOp(re.ResourceCCZ, {})
-        assert self.op.resource_rep(**self.op.resource_params()) == expected_rep
+        assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
@@ -403,7 +403,7 @@ class TestResourceCCZ:
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
@@ -444,7 +444,7 @@ class TestResourceCCZ:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
@@ -458,7 +458,7 @@ class TestResourceCCZ:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceCNOT:
@@ -479,7 +479,7 @@ class TestResourceCNOT:
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
         expected_params = {}
-        assert self.op.resource_params() == expected_params
+        assert self.op.resource_params == expected_params
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
@@ -487,7 +487,7 @@ class TestResourceCNOT:
         op2 = re.ResourceAdjoint(self.op)
 
         assert self.op.adjoint_resource_decomp() == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
@@ -528,7 +528,7 @@ class TestResourceCNOT:
             self.op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
@@ -543,7 +543,7 @@ class TestResourceCNOT:
         op2 = re.ResourcePow(self.op, z)
 
         assert self.op.pow_resource_decomp(z) == expected_res
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestResourceToffoli:
