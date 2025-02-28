@@ -27,8 +27,8 @@ from pennylane.capture.primitives import (
     for_loop_prim,
     grad_prim,
     jacobian_prim,
-    while_loop_prim,
     measure_prim,
+    while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.single_qubit_fusion import (
