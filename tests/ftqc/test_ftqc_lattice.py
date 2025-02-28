@@ -28,8 +28,8 @@ class TestLattice:
         graph = nx.Graph([(0, 1), (1, 2)])
         lattice = Lattice("test", graph=graph)
         assert lattice.shape == "test"
-        assert len(lattice.nodes()) == 3
-        assert len(lattice.edges()) == 2
+        assert len(lattice.nodes) == 3
+        assert len(lattice.edges) == 2
 
     def test_lattice_creation_with_nodes_and_edges(self):
         """Test for Lattice object created by a list of nodes and edges."""
