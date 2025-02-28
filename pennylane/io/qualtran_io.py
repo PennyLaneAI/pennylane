@@ -116,7 +116,7 @@ class FromBloq(Operation):
     -1.0
     """
 
-    def __init__(self, bloq: Bloq, wires: WiresLike):
+    def __init__(self, bloq, wires: WiresLike):
         assert isinstance(bloq, Bloq)
         self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
