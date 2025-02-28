@@ -42,7 +42,7 @@ def get_bloq_registers_info(bloq):
     in the bloq.
 
     Args:
-        bloq: the bloq to get the registers info of
+        bloq (Bloq): the bloq to get the registers info of
 
     Returns:
         dict: A dictionary that has all the named and un-named registers with default wire
@@ -81,8 +81,8 @@ class FromBloq(Operation):
     A shim for using bloqs as a PennyLane operation.
 
     Args:
-        bloq: the bloq to wrap
-        wires: the wires to act on
+        bloq (Bloq): the bloq to wrap
+        wires (WiresLike): the wires to act on
 
     **Example**
 
