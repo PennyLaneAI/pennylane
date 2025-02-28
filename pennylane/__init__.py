@@ -28,6 +28,7 @@ from pennylane.decomposition import (
     add_decomposition,
     get_decompositions,
     has_decomposition,
+    make_resource_rep,
 )
 import pennylane.kernels
 import pennylane.math

@@ -222,7 +222,7 @@ def _multi_rz_decomposition(theta, wires, **__):
     def _pre_cnot(i):
         qml.CNOT(wires=(wires[i], wires[i - 1]))
 
-    @qml.for_loop(1, len(wires) - 1, 1)
+    @qml.for_loop(1, len(wires), 1)
     def _post_cnot(i):
         qml.CNOT(wires=(wires[i], wires[i - 1]))
 

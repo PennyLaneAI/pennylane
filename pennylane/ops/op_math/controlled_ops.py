@@ -880,6 +880,8 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = set()
+
     name = "CNOT"
 
     def _flatten(self):
@@ -924,6 +926,10 @@ class CNOT(ControlledOp):
             qml.DecompositionUndefinedError
         """
         raise qml.operation.DecompositionUndefinedError
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
