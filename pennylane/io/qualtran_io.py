@@ -121,7 +121,7 @@ class FromBloq(Operation):
         try:
             # Bloqs need to be decomposed in order to access the connections
             cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
-            temp_registers = _get_named_registers(cbloq.signature.lefts()) 
+            temp_registers = _get_named_registers(cbloq.signature.lefts())
             soq_to_wires = {
                 Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])
                 for reg in cbloq.signature.lefts()
