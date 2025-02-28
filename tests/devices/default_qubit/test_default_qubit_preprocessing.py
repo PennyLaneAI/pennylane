@@ -282,6 +282,8 @@ class TestPreprocessing:
             (qml.pow(qml.RX(1.1, 0), 3), True),
             (qml.pow(qml.RX(qml.numpy.array(1.1), 0), 3), False),
             (qml.QubitUnitary(sp.sparse.csr_matrix(np.eye(8)), wires=range(3)), True),
+            (qml.QubitUnitary(sp.sparse.eye(2), wires=0), True),
+            (qml.adjoint(qml.QubitUnitary(sp.sparse.eye(2), wires=0))), True),
         ],
     )
     def test_accepted_operator(self, op, expected):
