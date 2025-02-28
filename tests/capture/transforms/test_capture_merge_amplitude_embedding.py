@@ -752,7 +752,6 @@ class TestHigherOrderPrimitiveIntegration:
         assert jaxpr.eqns[0].primitive == grad_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        print(qfunc_jaxpr.eqns)
         assert qfunc_jaxpr.eqns[-4].primitive == qml.AmplitudeEmbedding._primitive
         assert qml.math.allclose(qfunc_jaxpr.eqns[-4].params["n_wires"], 2)
         assert qfunc_jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
