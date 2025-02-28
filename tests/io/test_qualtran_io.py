@@ -25,12 +25,14 @@ qualtran = pytest.importorskip("qualtran")
 class TestFromBloq:
     """Test that FromBloq accurately wraps around Bloqs."""
 
-    def test_repr(self):
-        """Tests that FromBloq has the correct __repr__"""
+    def test_bloq_init(self):
+        """Tests that FromBloq's __init__() functions as intended"""
 
         from qualtran.bloqs.basic_gates import XGate
 
         assert qml.FromBloq(XGate(), 1).__repr__() == "FromBloq(XGate, wires=Wires([1]))"
+        with pytest.raises(AssertionError):
+            qml.FromBloq("123", 1)
 
     def test_composite_bloq_advanced(self):
         """Tests that a composite bloq with higher level abstract bloqs has the correct
