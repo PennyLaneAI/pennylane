@@ -23,7 +23,7 @@ from pennylane.wires import WiresLike
 
 _has_qualtran = True
 try:
-    import qualtran
+    import qualtran  # pylint:disable=unused-import
     from qualtran import (
         Bloq,
         CompositeBloq,
