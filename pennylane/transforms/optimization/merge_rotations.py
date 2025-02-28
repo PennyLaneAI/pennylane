@@ -211,11 +211,10 @@ def _get_plxpr_merge_rotations():
             self._env = {}
             return outvals
 
-    # pylint: disable=redefined-outer-name
     def merge_rotations_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
-        merge_rotations = MergeRotationsInterpreter(
-            atol=tkwargs.get("atol", 1e-8), include_gates=tkwargs.get("include_gates", None)
-        )
+        """Function for applying the ``merge_rotations`` transform on plxpr."""
+        
+        merge_rotations = MergeRotationsInterpreter(**tkwargs)
 
         def wrapper(*inner_args):
             return merge_rotations.eval(jaxpr, consts, *inner_args)
