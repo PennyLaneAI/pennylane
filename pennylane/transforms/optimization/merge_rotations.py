@@ -67,12 +67,10 @@ def _get_plxpr_merge_rotations():
             for w in op.wires:
                 self.previous_ops[w] = op
 
-            # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
-            # pylint: disable=super-with-arguments
-            return [
-                super(MergeRotationsInterpreter, self).interpret_operation(o)
-                for o in previous_ops_on_wires
-            ]
+           results = []
+           for op in previous_ops_on_wires:
+               results.append(super().interpret_operation(op))
+           return results
 
         # pylint: disable=inconsistent-return-statements
         def interpret_operation(self, op: Operator):
