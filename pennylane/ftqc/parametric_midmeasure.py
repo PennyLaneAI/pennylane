@@ -90,9 +90,9 @@ def measure_arbitrary_basis(
 
     Executing this QNode:
 
-    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> pars = np.array([0.643, 0.246])
     >>> func(*pars)
-    tensor([0.90165331, 0.09834669], requires_grad=True)
+    array([0.90165331, 0.09834669])
 
     .. details::
         :title: Plane and angle
