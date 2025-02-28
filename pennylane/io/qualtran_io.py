@@ -186,13 +186,15 @@ class FromBloq(Operation):
     @property
     def has_matrix(
         self,
-    ) -> bool:  # pylint: disable=invalid-overriden-method, protected-access, no-method-argument
+    ) -> bool:  # pylint: disable=invalid-overridden-method, protected-access
         r"""Return if the bloq has a valid matrix representation."""
         bloq = self._hyperparameters["bloq"]
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    def compute_matrix(*params, **kwargs):  # pylint: disable=unused-argument, no-self-argument
+    def compute_matrix(
+        *params, **kwargs
+    ):  # pylint: disable=unused-argument, no-self-argument, no-method-argument, protected-access
         bloq = params[0]._hyperparameters["bloq"]
         matrix = bloq.tensor_contract()
         return matrix
