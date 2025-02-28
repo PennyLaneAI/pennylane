@@ -42,6 +42,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
+  [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
+
 * `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
 [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
 
@@ -60,6 +63,7 @@
 
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
+  [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
 
   ```pycon
   >>> import numpy as np
