@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for controlled operations."""
+from collections import defaultdict
 from typing import Dict
 
 import pennylane as qml
@@ -457,11 +458,15 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         num_work_wires,
         **kwargs,  # pylint: disable=unused-argument
     ) -> Dict[re.CompressedResourceOp, int]:
-        gate_types = {}
+        gate_types = defaultdict(int)
 
+        x = re.ResourceX.resource_rep()
         if num_ctrl_values:
-            x = re.ResourceX.resource_rep()
             gate_types[x] = num_ctrl_values * 2
+
+        if num_ctrl_wires == 0:
+            gate_types[x] += 1
+            return gate_types
 
         cnot = re.ResourceCNOT.resource_rep()
         if num_ctrl_wires == 1:

@@ -119,12 +119,26 @@ Templates
     ~ResourceQFT
     ~ResourceQPE
     ~ResourceQubitization
+    ~ResourceQROM
     ~ResourceReflection
     ~ResourceSelect
-    ~ResourceStatePrep
     ~ResourceTrotterProduct
     ~ResourceTrotterizedQfunc
     ~resource_trotterize
+    ~ResourceControlledSequence
+    ~ResourceModExp
+    ~ResourceMultiplier
+    ~ResourcePhaseAdder
+
+State Preparation Templates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceStatePrep
+    ~ResourceSuperposition
+    ~ResourceMottonenStatePreparation
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -207,16 +221,23 @@ from .ops import (
 )
 
 from .templates import (
+    ResourceControlledSequence,
+    ResourceModExp,
+    ResourceMultiplier,
+    ResourcePhaseAdder,
     ResourceBasisRotation,
     ResourcePrepSelPrep,
     ResourceQFT,
     ResourceQPE,
     ResourceQuantumPhaseEstimation,
     ResourceQubitization,
+    ResourceQROM,
     ResourceReflection,
     ResourceSelect,
     ResourceStatePrep,
     ResourceTrotterProduct,
     ResourceTrotterizedQfunc,
     resource_trotterize,
+    ResourceMottonenStatePreparation,
+    ResourceSuperposition,
 )
