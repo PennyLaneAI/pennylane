@@ -652,8 +652,10 @@ class TestSingleQubitFusionHigherOrderPrimitives:
         jaxpr = jax.make_jaxpr(circuit)()
         assert len(jaxpr.eqns) == 5
 
-        # I test the jaxpr like this because `CollectOpsandMeas`
-        # currently interprets a mid-circuit measurement as an operator, not a measurement
+        # I test the jaxpr like this because `qml.assert_equal`
+        # has issues with mid-circuit measurements
+        # (Got <class 'pennylane.measurements.mid_measure.MidMeasureMP'>
+        # and <class 'pennylane.measurements.mid_measure.MeasurementValue'>.)
         assert jaxpr.eqns[0].primitive == qml.Rot._primitive
         assert jaxpr.eqns[1].primitive == measure_prim
         assert jaxpr.eqns[2].primitive == qml.Rot._primitive
