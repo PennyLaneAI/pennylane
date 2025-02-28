@@ -136,8 +136,6 @@ class QubitUnitary(Operation):
         U_shape = qml.math.shape(U)
         dim = 2 ** len(wires)
 
-        self._issparse = False
-
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
         if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):

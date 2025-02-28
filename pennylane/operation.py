@@ -1852,6 +1852,7 @@ class Operation(Operator):
         id: Optional[str] = None,
     ):
         super().__init__(*params, wires=wires, id=id)
+        self._issparse = False
 
         # check the grad_recipe validity
         if self.grad_recipe is None:
