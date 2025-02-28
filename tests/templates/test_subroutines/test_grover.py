@@ -296,13 +296,14 @@ def test_jax_jit():
 @pytest.mark.usefixtures("enable_disable_plxpr")
 # pylint:disable=protected-access
 class TestDynamicDecomposition:
-    """Tests that dynamic decomposition via compute_plxpr_decomposition works correctly."""
+    """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
     def test_grover_plxpr(self):
         """Test that the dynamic decomposition of Grover has the correct plxpr"""
         import jax
 
         from pennylane.capture.primitives import for_loop_prim
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         wires = [0, 1, 2]
@@ -311,13 +312,14 @@ class TestDynamicDecomposition:
         max_expansion = 1
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        def circuit(wires, work_wires):
+        def circuit(work_wires, wires):
             qml.GroverOperator(wires=wires, work_wires=work_wires)
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(wires=wires, work_wires=work_wires)
-        jaxpr_eqns = jaxpr.eqns
 
+        # Validate Jaxpr
+        jaxpr_eqns = jaxpr.eqns
         # 2 Hadamard loops
         hadamard_loops_eqns = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
         assert len(hadamard_loops_eqns) == 2
@@ -334,6 +336,25 @@ class TestDynamicDecomposition:
             in (qml.PauliZ._primitive, qml.MultiControlledX._primitive, qml.GlobalPhase._primitive)
         ]
         assert len(remaining_ops) == 4
+
+        # Validate Ops
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires, *work_wires)
+        ops_list = collector.state["ops"]
+
+        tape = qml.tape.QuantumScript([qml.GroverOperator(wires=wires, work_wires=work_wires)])
+        [decomp_tape], _ = qml.transforms.decompose(
+            tape, max_expansion=max_expansion, gate_set=gate_set
+        )
+        for op1, op2 in zip(ops_list, decomp_tape.operations):
+            if op1.name == "MultiControlledX":
+                pass
+            elif op1.name == "GlobalPhase":
+                assert op1.name == op2.name
+                assert qml.math.allclose(op1.parameters, op2.parameters)
+
+            else:
+                assert qml.equal(op1, op2)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize(

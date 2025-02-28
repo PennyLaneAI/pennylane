@@ -146,13 +146,14 @@ class TestQFT:
 @pytest.mark.usefixtures("enable_disable_plxpr")
 # pylint:disable=protected-access
 class TestDynamicDecomposition:
-    """Tests that dynamic decomposition via compute_plxpr_decomposition works correctly."""
+    """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
     def test_qft_plxpr(self):
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
         import jax
 
         from pennylane.capture.primitives import for_loop_prim
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         wires = [0, 1, 2, 3]
@@ -165,8 +166,9 @@ class TestDynamicDecomposition:
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(wires=wires)
-        jaxpr_eqns = jaxpr.eqns
 
+        # Validate Jaxpr
+        jaxpr_eqns = jaxpr.eqns
         outer_loop, swap_loop = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
         assert outer_loop.primitive == for_loop_prim
         assert swap_loop.primitive == for_loop_prim
@@ -182,6 +184,17 @@ class TestDynamicDecomposition:
         assert cphaseshift_eqns[-1].primitive == qml.ControlledPhaseShift._primitive
 
         assert swap_loop_eqn[-1].primitive == qml.SWAP._primitive
+
+        # Validate Ops
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires)
+        ops_list = collector.state["ops"]
+        tape = qml.tape.QuantumScript([qml.QFT(wires=wires)])
+        [decomp_tape], _ = qml.transforms.decompose(
+            tape, max_expansion=max_expansion, gate_set=gate_set
+        )
+        for op1, op2 in zip(ops_list, decomp_tape.operations):
+            assert qml.equal(op1, op2, check_interface=False)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("n_wires", [4, 5])

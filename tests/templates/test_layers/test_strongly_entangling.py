@@ -153,11 +153,12 @@ class TestDecomposition:
 @pytest.mark.usefixtures("enable_disable_plxpr")
 # pylint:disable=protected-access
 class TestDynamicDecomposition:
-    """Tests that dynamic decomposition via compute_plxpr_decomposition works correctly."""
+    """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
     def test_strongly_entangling_plxpr(self):
         """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
         import jax
+        from jax import numpy as jnp
 
         from pennylane.capture.primitives import cond_prim, for_loop_prim
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -206,16 +207,13 @@ class TestDynamicDecomposition:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
         ops_list = collector.state["ops"]
-        print(ops_list)
         tape = qml.tape.QuantumScript(
-            [qml.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)]
+            [qml.StronglyEntanglingLayers(jnp.array(weights), wires=wires, imprimitive=imprimitive)]
         )
         [decomp_tape], _ = qml.transforms.decompose(
             tape, max_expansion=max_expansion, gate_set=gate_set
         )
-        print(f"tape: {decomp_tape.operations}")
-        assert ops_list[0] == decomp_tape.operations[0]
-        assert False
+        assert ops_list == decomp_tape.operations
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize(
