@@ -84,6 +84,7 @@ class Lattice:
 
 class LatticeShape(Enum):
     """Enum to define valid set of lattice shape supported."""
+
     chain = 1
     square = 2
     rectangle = 3
