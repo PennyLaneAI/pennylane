@@ -441,15 +441,14 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
         * If there are two control qubits, treat the resources as a :code:`Toffoli` gate.
 
-        * If there are three control qubits, the resources are two :code:`CNOT` gates and
-          one :code:`Toffoli` gate.
+        * If there are three control qubits, the resources are three :code:`Toffoli` gates.
 
         * If there are more than three control qubits (:math:`n`), the resources are given by
-          :math:`36n - 111` :code:`CNOT` gates.
-
+          :math:`36n - 111` :code:`CNOT` gates if there is one work wire. Otherwise, we use 
+          the waterfall construction described in `Encoding Electronic Spectra in Quantum 
+          Circuits with Linear T Complexity <https://arxiv.org/pdf/1805.03662>`_. The resources 
+          are given as :math:`2n - 3` :code:`Toffoli` gates  if there are :math:`n - 2` work wires.
     """
-
-    # TODO: There is a more efficient resource decomposition, need to update this based on the paper.
 
     @staticmethod
     def _resource_decomp(
@@ -478,13 +477,19 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             gate_types[toffoli] = 1
             return gate_types
 
-        if num_ctrl_wires == 3:
-            gate_types[cnot] = 2
-            gate_types[toffoli] = 1
+        if num_ctrl_wires == 3 and num_work_wires >= 1:
+            gate_types[toffoli] = 3
             return gate_types
 
-        gate_types[cnot] = 36 * num_ctrl_wires - 111
-        return gate_types
+        if num_ctrl_wires > 3:
+            if num_work_wires >= (num_ctrl_wires - 2):
+                gate_types[toffoli] = 2 * num_ctrl_wires - 3
+                return gate_types
+
+            gate_types[cnot] = 36 * num_ctrl_wires - 111
+            return gate_types
+
+        raise re.ResourcesNotDefined
 
     def resource_params(self) -> dict:
         num_control = len(self.hyperparameters["control_wires"])

@@ -240,5 +240,6 @@ from .templates import (
     resource_trotterize,
     ResourceMottonenStatePreparation,
     ResourceSuperposition,
+    ResourceQROMStatePreparation,
     ResourceQubitUnitary,
 )

@@ -36,4 +36,5 @@ from .stateprep import (
     ResourceSuperposition, 
     ResourceStatePrep, 
     ResourceMottonenStatePreparation, 
+    ResourceQROMStatePreparation,
 )

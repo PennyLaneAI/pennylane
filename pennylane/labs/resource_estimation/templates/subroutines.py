@@ -556,13 +556,19 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
         cnot = re.ResourceCNOT.resource_rep()
         hadamard = re.ResourceHadamard.resource_rep()
-        
         num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
-        num_parallel_computations = min(num_parallel_computations, num_bitstrings)
+        # num_parallel_computations = min(num_parallel_computations, num_bitstrings)
+
+        square_fact = math.floor(math.sqrt(num_bitstrings))  # use a square scheme for rows and cloumns
+        num_parallel_computations = min(num_parallel_computations, square_fact)
+
 
         num_swap_wires = math.floor(math.log2(num_parallel_computations))
         num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
         assert num_swap_wires + num_select_wires <= num_control_wires
+
+        swap_work_wires = (int(2**num_swap_wires) - 1) * size_bitstring
+        free_work_wires = num_work_wires - swap_work_wires
 
         swap_clean_prefactor = 1
         select_clean_prefactor = 1
@@ -575,7 +581,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         # SELECT cost:
         gate_types[cnot] = num_bit_flips  # each unitary in the select is just a CNOT
 
-        multi_x = re.ResourceMultiControlledX.resource_rep(num_select_wires, 0, 0)
+        multi_x = re.ResourceMultiControlledX.resource_rep(num_select_wires, 0, free_work_wires)
         num_total_ctrl_possibilities = 2**num_select_wires
         gate_types[multi_x] = select_clean_prefactor * (
             2 * num_total_ctrl_possibilities  # two applications targetting the aux qubit
