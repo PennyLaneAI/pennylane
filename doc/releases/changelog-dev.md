@@ -198,7 +198,7 @@
 
 * A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
   measurement basis in the XY, YZ or ZX plane. Subclasses `XMidMeasureMP` and `YMidMeasureMP` represent
-  X-basis and Y-basis measurements.
+  X-basis and Y-basis measurements. These classes are part of the experimental `ftqc` module.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
   [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
 
@@ -206,9 +206,10 @@
   that only natively support mid-circuit measurements in the computational basis.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
 
-* Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added. These functions 
+* Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added in the experimental `ftqc` module. These functions 
   apply a mid-circuit measurement and return a `MeasurementValue`. They are analogous to `qml.measure` for 
   the computational basis, but instead measure in the X-basis, Y-basis, or an arbitrary basis, respectively.
+  Function `qml.ftqc.measure_z` is also added as an alias for `qml.measure`.
   [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
   
 * `null.qubit` can now execute jaxpr.
