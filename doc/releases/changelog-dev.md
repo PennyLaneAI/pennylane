@@ -40,6 +40,9 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Created a new ``qml.liealg`` module for Lie algebra functionality.
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
@@ -389,6 +392,9 @@
   [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
   [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
+
+* Pauli module level imports of ``lie_closure``, ``structure_constants`` and ``center`` are deprecated, as functionality is moved to new ``liealg`` module.
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
 
 <h3>Internal changes ⚙️</h3>
 
