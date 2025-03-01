@@ -353,7 +353,10 @@ def _decomposition_1_cnot(U, wires):
     C_ops = one_qubit_decomposition(C, wires[0])
     D_ops = one_qubit_decomposition(D, wires[1])
 
-    return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops
+    # GlobalPhase added to preserve the determinant 1
+    # (as CNOT has determinant -1, see paragraph below
+    # Lemma II.1 in https://arxiv.org/abs/quant-ph/0308033)
+    return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops + [qml.GlobalPhase(np.pi / 4)]
 
 
 def _decomposition_2_cnots(U, wires):
@@ -532,7 +535,10 @@ def _decomposition_3_cnots(U, wires):
     D_ops = one_qubit_decomposition(D, wires[1])
 
     # Return the full decomposition
-    return C_ops + D_ops + interior_decomp + A_ops + B_ops
+    # GlobalPhase added to preserve the determinant 1
+    # (as CNOT has determinant -1, see paragraph below
+    # Lemma II.1 in https://arxiv.org/abs/quant-ph/0308033)
+    return C_ops + D_ops + interior_decomp + A_ops + B_ops + [qml.GlobalPhase(np.pi / 4)]
 
 
 def two_qubit_decomposition(U, wires):
