@@ -535,7 +535,7 @@ def decompose_mcx(control_wires, target_wire, work_wires):
     if len(work_wires) >= 2:
         return _decompose_mcx_with_two_workers(control_wires, target_wire, work_wires[0:2])
     if len(work_wires) == 1:
-        return _decompose_mcx_with_one_worker_kg24(control_wires, target_wire, work_wires)
+        return _decompose_mcx_with_one_worker_kg24(control_wires, target_wire, work_wires[0], clean=False)
     if len(work_wires) >= 1:
         # Lemma 7.3
         return _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wires[0])
@@ -746,16 +746,17 @@ def _decompose_mcx_with_one_worker_kg24(
     """
 
     gates = []
-    ladder_ops, final_ctrl = _linear_depth_ladder_ops([work_wire] + control_wires)
     gates.append(qml.Toffoli(wires=[control_wires[0], control_wires[1], work_wire]))
+    ladder_ops, final_ctrl = _linear_depth_ladder_ops([work_wire] + control_wires)
     gates += ladder_ops
     gates.append(qml.Toffoli(wires=[work_wire, control_wires[final_ctrl], target_wire]))
     gates += ladder_ops[::-1]
     gates.append(qml.Toffoli(wires=[control_wires[0], control_wires[1], work_wire]))
 
     if not clean:
+        # perform toggle-detection if ancilla is dirty
         gates += ladder_ops
-        gates.append(qml.Toffoli(wires=[work_wire, control_wires[0], target_wire]))
+        gates.append(qml.Toffoli(wires=[work_wire, control_wires[final_ctrl], target_wire]))
         gates += ladder_ops[::-1]
 
     return gates
