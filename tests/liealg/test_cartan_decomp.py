@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import cartan_decomp, concurrence_involution, even_odd_involution
+from pennylane.liealg import cartan_decomp, concurrence_involution, even_odd_involution
 
 
 def check_commutation(ops1, ops2, vspace):

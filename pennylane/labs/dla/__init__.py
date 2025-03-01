@@ -79,16 +79,13 @@ two isomorphic simple components (``ClassB``), see `here <https://en.wikipedia.o
 
 """
 
-from .cartan import (
-    cartan_decomp,
+from .recursive_cartan_decomp import (
     recursive_cartan_decomp,
 )
 from .dense_util import (
     adjvec_to_op,
     change_basis_ad_rep,
     check_all_commuting,
-    check_cartan_decomp,
-    check_commutation,
     check_orthonormal,
     pauli_coefficients,
     batched_pauli_decompose,
@@ -96,18 +93,5 @@ from .dense_util import (
     orthonormalize,
 )
 
-from .involutions import (
-    khaneja_glaser_involution,
-    even_odd_involution,
-    concurrence_involution,
-    AI,
-    AII,
-    AIII,
-    BDI,
-    CI,
-    CII,
-    DIII,
-    ClassB,
-)
 from .cartan_subalgebra import cartan_subalgebra
 from .variational_kak import validate_kak, variational_kak_adj, run_opt
