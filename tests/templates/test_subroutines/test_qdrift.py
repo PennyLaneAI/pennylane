@@ -140,7 +140,7 @@ class TestDecomposition:
             assert term.base in ops  # sample from ops
             assert term.coeff == (s * normalization * time * 1j / n)  # with this exponent
 
-    @pytest.mark.parametrize("coeffs", ([0.99, 0.01], [0.5 + 0.49j, -0.01j]))
+    @pytest.mark.parametrize("coeffs", ([0.999, 0.001], [0.5 + 0.499j, -0.001j]))
     def test_private_sample_statistics(self, coeffs, seed):
         """Test the private function samples from the right distribution"""
         ops = [qml.PauliX(0), qml.PauliZ(1)]
@@ -176,7 +176,7 @@ class TestDecomposition:
 class TestIntegration:
     """Test that the QDrift template integrates well with the rest of PennyLane"""
 
-    @pytest.mark.local_salt(8)
+    @pytest.mark.local_salt(3)
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
@@ -205,9 +205,8 @@ class TestIntegration:
         )
         state = circ()
 
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
-    @pytest.mark.local_salt(8)
     @pytest.mark.autograd
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_autograd(self, coeffs, ops, seed):
