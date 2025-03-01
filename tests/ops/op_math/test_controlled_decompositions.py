@@ -1097,7 +1097,7 @@ class TestMCXDecomposition:
         ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
-    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
     def test_decomposition_with_one_worker_kg24(self, n_ctrl_wires):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
@@ -1109,26 +1109,21 @@ class TestMCXDecomposition:
         work_wires = n_ctrl_wires + 1
 
         dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            _decompose_mcx_with_one_worker_kg24(control_wires, target_wire, work_wires)
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
-
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
-            for op in tape.operations:
-                op.queue()
+            record_from_list(_decompose_mcx_with_one_worker_kg24)(
+                control_wires, target_wire, work_wires, clean=False
+            )
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
         u = np.array(
             [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
         ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
-    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
 
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
     def test_decomposition_with_two_workers(self, n_ctrl_wires):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
@@ -1141,18 +1136,14 @@ class TestMCXDecomposition:
 
         dev = qml.device("default.qubit", wires=n_ctrl_wires + 3)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            _decompose_mcx_with_two_workers(control_wires, target_wire, work_wires)
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
-
         @qml.qnode(dev)
         def f(bitstring):
-            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 2))
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
-            for op in tape.operations:
-                op.queue()
-            return qml.probs(wires=range(n_ctrl_wires + 2))
+            record_from_list(_decompose_mcx_with_two_workers)(
+                control_wires, target_wire, work_wires, clean=False
+            )
+            return qml.probs(wires=range(n_ctrl_wires + 1))
 
         u = np.array(
             [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
@@ -1170,17 +1161,13 @@ class TestMCXDecomposition:
         target_wire = n_ctrl_wires
 
         dev = qml.device("default.qubit", wires=n_ctrl_wires + 1)
-        with qml.queuing.AnnotatedQueue() as q:
-            decompose_mcx(control_wires, Wires(target_wire), work_wires=Wires([]))
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
-
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
-            for op in tape.operations:
-                op.queue()
+            record_from_list(decompose_mcx)(
+                control_wires, Wires(target_wire), work_wires=Wires([])
+            )
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
         u = np.array(
