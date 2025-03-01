@@ -27,6 +27,7 @@ from pennylane.capture.primitives import (
     for_loop_prim,
     grad_prim,
     jacobian_prim,
+    measure_prim,
     qnode_prim,
     while_loop_prim,
 )
@@ -425,6 +426,26 @@ class TestCancelInversesInterpreter:
         assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    def test_mid_circuit_measurement(self):
+        """Test that mid-circuit measurements are correctly handled."""
+
+        @CancelInversesInterpreter()
+        def circuit():
+            qml.S(0)
+            qml.measure(0)
+            qml.adjoint(qml.S(0))
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 6
+
+        assert jaxpr.eqns[0].primitive == qml.S._primitive
+        assert jaxpr.eqns[1].primitive == measure_prim
+        assert jaxpr.eqns[2].primitive == qml.S._primitive
+        assert jaxpr.eqns[3].primitive == qml.ops.Adjoint._primitive
+        assert jaxpr.eqns[4].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[5].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
 def test_cancel_inverses_plxpr_to_plxpr():
