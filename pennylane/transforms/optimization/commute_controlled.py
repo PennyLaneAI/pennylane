@@ -15,6 +15,7 @@
 
 from collections import deque
 from functools import lru_cache, partial
+from itertools import islice
 from typing import Optional, Sequence
 
 from pennylane.operation import Operator
@@ -65,7 +66,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             self.direction = direction
             self.op_deque = deque()
             self._env = {}
-            self.current_location = 0
+            self.current_index = 0
 
         def setup(self) -> None:
             """Initialize the instance before interpreting equations."""
@@ -81,30 +82,30 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             # This function follows the same logic used in the `_commute_controlled_left` function.
 
             if not _can_be_pushed_through(op):
-                self.current_location += 1
+                self.current_index += 1
                 self.op_deque.append(op)
                 return []
 
             prev_gate_idx = _find_previous_gate_on_wires(op.wires, self.op_deque)
-            new_location = self.current_location
+            new_index = self.current_index
 
             while prev_gate_idx is not None:
-                prev_gate = self.op_deque[new_location - prev_gate_idx - 1]
+                prev_gate = self.op_deque[new_index - prev_gate_idx - 1]
 
                 if not _can_push_through(prev_gate):
                     break
 
                 if _can_commute(op, prev_gate):
-                    new_location -= prev_gate_idx + 1
+                    new_index -= prev_gate_idx + 1
                 else:
                     break
 
                 prev_gate_idx = _find_previous_gate_on_wires(
-                    op.wires, list(self.op_deque)[:new_location]
+                    op.wires, tuple(islice(self.op_deque, new_index))
                 )
 
-            self.op_deque.insert(new_location, op)
-            self.current_location += 1
+            self.op_deque.insert(new_index, op)
+            self.current_index += 1
             return []
 
         def _interpret_all_operations_right(self) -> None:
@@ -112,39 +113,41 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 
             # This function follows the same logic used in the `_commute_controlled_right` function.
 
-            self.current_location = len(self.op_deque) - 1
+            self.current_index = len(self.op_deque) - 1
 
-            while self.current_location >= 0:
-                current_gate = self.op_deque[self.current_location]
+            while self.current_index >= 0:
+                current_gate = self.op_deque[self.current_index]
 
                 if not _can_be_pushed_through(current_gate):
-                    self.current_location -= 1
+                    self.current_index -= 1
                     continue
 
                 next_gate_idx = find_next_gate(
-                    current_gate.wires, list(self.op_deque)[self.current_location + 1 :]
+                    current_gate.wires,
+                    tuple(islice(self.op_deque, self.current_index + 1, len(self.op_deque))),
                 )
 
-                new_location = self.current_location
+                new_index = self.current_index
 
                 while next_gate_idx is not None:
-                    next_gate = self.op_deque[new_location + next_gate_idx + 1]
+                    next_gate = self.op_deque[new_index + next_gate_idx + 1]
 
                     if not _can_push_through(next_gate):
                         break
 
                     if _can_commute(current_gate, next_gate):
-                        new_location += next_gate_idx + 1
+                        new_index += next_gate_idx + 1
                     else:
                         break
 
                     next_gate_idx = find_next_gate(
-                        current_gate.wires, list(self.op_deque)[new_location + 1 :]
+                        current_gate.wires,
+                        tuple(islice(self.op_deque, new_index + 1, len(self.op_deque))),
                     )
 
-                self.op_deque.insert(new_location + 1, current_gate)
-                del self.op_deque[self.current_location]
-                self.current_location -= 1
+                self.op_deque.insert(new_index + 1, current_gate)
+                del self.op_deque[self.current_index]
+                self.current_index -= 1
 
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance."""
