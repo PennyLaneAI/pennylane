@@ -1098,8 +1098,8 @@ class TestMCXDecomposition:
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
-    def test_decomposition_with_one_worker_kg24(self, n_ctrl_wires):
-        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+    def test_decomposition_with_one_clean_worker_kg24(self, n_ctrl_wires):
+        """Test that the decomposed MCX gate using 1 clean ancilla performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on the case where there is one work wire."""
 
@@ -1109,12 +1109,13 @@ class TestMCXDecomposition:
         work_wires = n_ctrl_wires + 1
 
         dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
+
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
             record_from_list(_decompose_mcx_with_one_worker_kg24)(
-                control_wires, target_wire, work_wires, clean=False
+                control_wires, target_wire, work_wires, work_wire_type="clean"
             )
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
@@ -1124,8 +1125,35 @@ class TestMCXDecomposition:
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
-    def test_decomposition_with_two_workers(self, n_ctrl_wires):
-        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+    def test_decomposition_with_one_dirty_worker_kg24(self, n_ctrl_wires):
+        """Test that the decomposed MCX gate using 1 cirty ancilla performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on the case where there is one work wire."""
+
+        # pylint: disable=protected-access
+        control_wires = Wires(range(n_ctrl_wires))
+        target_wire = n_ctrl_wires
+        work_wires = n_ctrl_wires + 1
+
+        dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(wires=list(control_wires) + [target_wire])
+            record_from_list(_decompose_mcx_with_one_worker_kg24)(
+                control_wires, target_wire, work_wires, work_wire_type="dirty"
+            )
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array(
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+        ).T
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
+    def test_decomposition_with_two_clean_workers(self, n_ctrl_wires):
+        """Test that the decomposed MCX gate using 2 clean ancillae performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on the case where there is one work wire."""
 
@@ -1141,7 +1169,7 @@ class TestMCXDecomposition:
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
             record_from_list(_decompose_mcx_with_two_workers)(
-                control_wires, target_wire, work_wires, clean=False
+                control_wires, target_wire, work_wires, work_wire_type="clean"
             )
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
@@ -1150,7 +1178,34 @@ class TestMCXDecomposition:
         ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
-    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
+    def test_decomposition_with_two_dirty_workers(self, n_ctrl_wires):
+        """Test that the decomposed MCX gate using 2 dirty ancillae performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on the case where there is one work wire."""
+
+        # pylint: disable=protected-access
+        control_wires = Wires(range(n_ctrl_wires))
+        target_wire = n_ctrl_wires
+        work_wires = Wires([n_ctrl_wires + 1, n_ctrl_wires + 2])
+
+        dev = qml.device("default.qubit", wires=n_ctrl_wires + 3)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(wires=list(control_wires) + [target_wire])
+            record_from_list(_decompose_mcx_with_two_workers)(
+                control_wires, target_wire, work_wires, work_wire_type="dirty"
+            )
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array(
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+        ).T
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 8))
     def test_decomposition_with_no_workers(self, n_ctrl_wires):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
@@ -1161,13 +1216,12 @@ class TestMCXDecomposition:
         target_wire = n_ctrl_wires
 
         dev = qml.device("default.qubit", wires=n_ctrl_wires + 1)
+
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
-            record_from_list(decompose_mcx)(
-                control_wires, Wires(target_wire), work_wires=Wires([])
-            )
+            record_from_list(decompose_mcx)(control_wires, Wires(target_wire), work_wires=Wires([]))
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
         u = np.array(

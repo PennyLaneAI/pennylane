@@ -16,7 +16,7 @@ This submodule defines functions to decompose controlled operations
 """
 
 from copy import copy
-from typing import Optional
+from typing import Optional, Literal
 
 import numpy as np
 import numpy.linalg as npl
@@ -521,7 +521,9 @@ def ctrl_decomp_bisect(
     return _ctrl_decomp_bisect_general(target_matrix, target_wire, control_wires)
 
 
-def decompose_mcx(control_wires, target_wire, work_wires):
+def decompose_mcx(
+    control_wires, target_wire, work_wires, work_wire_type: Literal["clean", "ancilla"] = "clean"
+):
     """Decomposes the multi-controlled PauliX"""
 
     if len(control_wires) == 1:
@@ -533,9 +535,13 @@ def decompose_mcx(control_wires, target_wire, work_wires):
         # Lemma 7.2 of `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_
         return _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
     if len(work_wires) >= 2:
-        return _decompose_mcx_with_two_workers(control_wires, target_wire, work_wires[0:2])
+        return _decompose_mcx_with_two_workers(
+            control_wires, target_wire, work_wires[0:2], work_wire_type
+        )
     if len(work_wires) == 1:
-        return _decompose_mcx_with_one_worker_kg24(control_wires, target_wire, work_wires[0], clean=False)
+        return _decompose_mcx_with_one_worker_kg24(
+            control_wires, target_wire, work_wires[0], work_wire_type
+        )
     if len(work_wires) >= 1:
         # Lemma 7.3
         return _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wires[0])
@@ -583,6 +589,7 @@ def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
             control_wires=control_wires[:-1],
             target_wire=control_wires[-1],
             work_wires=work_wires + target_wire,
+            work_wire_type="dirty",
         )
     with qml.QueuingManager.stop_recording():
         powered_op = qml.pow(op, 0.5 * power, lazy=True)
@@ -725,8 +732,11 @@ def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
 
 
 def _decompose_mcx_with_one_worker_kg24(
-    control_wires: list[WiresLike], target_wire: int, work_wire: int, clean=True
-):
+    control_wires: list[WiresLike],
+    target_wire: int,
+    work_wire: int,
+    work_wire_type: Literal["clean", "ancilla"] = "clean",
+) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit as
     described in Sec. 5 of [1].
@@ -735,7 +745,7 @@ def _decompose_mcx_with_one_worker_kg24(
         control_wires (Wires): The control wires.
         target_wire (int): The target wire.
         work_wires (Wires): The work wires.
-        clean (bool): If False, perform uncomputation after we're done. Default is True.
+        work_wire_type (string): If "dirty", perform uncomputation after we're done. Default is "clean".
 
     Returns:
         list[Operator] The synthesized quantum circuit.
@@ -753,7 +763,7 @@ def _decompose_mcx_with_one_worker_kg24(
     gates += ladder_ops[::-1]
     gates.append(qml.Toffoli(wires=[control_wires[0], control_wires[1], work_wire]))
 
-    if not clean:
+    if work_wire_type == "dirty":
         # perform toggle-detection if ancilla is dirty
         gates += ladder_ops
         gates.append(qml.Toffoli(wires=[work_wire, control_wires[final_ctrl], target_wire]))
@@ -848,7 +858,7 @@ def _decompose_mcx_with_two_workers(
     control_wires: WiresLike,
     target_wire: int,
     work_wires: WiresLike,
-    clean: bool = True,
+    work_wire_type: Literal["clean", "ancilla"] = "clean",
 ) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
@@ -857,7 +867,7 @@ def _decompose_mcx_with_two_workers(
         control_wires (Wires): The control wires.
         target_wire (int): The target wire.
         work_wires (Wires): The work wires.
-        clean (bool): If True, the ancilla is clean, otherwise it is dirty.
+        work_wire_type (string): If "dirty" perform uncomputation after we're done. Default is "clean".
 
     Returns:
         The synthesized quantum circuit.
@@ -873,12 +883,12 @@ def _decompose_mcx_with_two_workers(
         gates.append(qml.Toffoli(wires=[work_wires[0], final_ctrls[0], target_wire]))
     else:
         mid_mcx = _decompose_mcx_with_one_worker_kg24(
-            work_wires[0:1] + final_ctrls, target_wire, work_wires[1:2], clean=True
+            work_wires[0:1] + final_ctrls, target_wire, work_wires[1:2], work_wire_type="clean"
         )
         gates += mid_mcx
     gates += ladder_ops[::-1]
 
-    if not clean:
+    if work_wire_type == "dirty":
         # perform toggle-detection if ancilla is dirty
         gates += ladder_ops[1:]
         if len(final_ctrls) == 1:

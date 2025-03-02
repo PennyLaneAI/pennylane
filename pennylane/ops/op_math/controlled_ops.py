@@ -18,7 +18,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 import warnings
 from collections.abc import Iterable
 from functools import lru_cache
-from typing import List, Union
+from typing import List, Union, Literal
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -1301,7 +1301,11 @@ class MultiControlledX(ControlledOp):
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
     def compute_decomposition(
-        wires: WiresLike = None, work_wires: WiresLike = None, control_values=None, **kwargs
+        wires: WiresLike = None,
+        work_wires: WiresLike = None,
+        control_values=None,
+        work_wire_type: Literal["clean", "dirty"] = "clean",
+        **kwargs,
     ):
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -1315,6 +1319,7 @@ class MultiControlledX(ControlledOp):
                 the operation into a series of Toffoli gates.
             control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            work_wire_type (str): whether to use clean or dirty work wires
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1344,7 +1349,7 @@ class MultiControlledX(ControlledOp):
 
         flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
-        decomp = decompose_mcx(control_wires, target_wire, work_wires)
+        decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)
 
         flips2 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
