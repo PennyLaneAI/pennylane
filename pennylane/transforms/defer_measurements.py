@@ -412,13 +412,13 @@ def _get_plxpr_defer_measurements():
                 "'aux_wires' argument for qml.defer_measurements must be provided "
                 "when qml.capture.enabled() is True."
             )
-        if tkwargs.pop("reduce_postselected", None):
+        if tkwargs.pop("reduce_postselected", False):
             warn(
                 "Cannot set 'reduce_postselected=True' with qml.capture.enabled() "
                 "when using qml.defer_measurements. Argument will be ignored.",
                 UserWarning,
             )
-        if tkwargs.pop("allow_postselect", None):
+        if tkwargs.pop("allow_postselect", False):
             warn(
                 "Cannot set 'allow_postselect=True' with qml.capture.enabled() "
                 "when using qml.defer_measurements. Argument will be ignored.",
