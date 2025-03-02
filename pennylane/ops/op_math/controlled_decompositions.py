@@ -738,8 +738,10 @@ def _decompose_mcx_with_one_worker_kg24(
     work_wire_type: Literal["clean", "ancilla"] = "clean",
 ) -> list[Operator]:
     r"""
-    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit as
-    described in Sec. 5 of [1].
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit. It
+    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is clean
+    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is dirty as described in
+    Sec. 5.1 of [1].
 
     Args:
         control_wires (Wires): The control wires.
@@ -812,8 +814,8 @@ def _build_logn_depth_ccx_ladder(
         control_wires (list[Wire]): The control wires.
 
     Returns:
-        A tuple consisting of the log-depth ladder circuit of cond. clean ancillae and the list of
-        indices of control qubit to apply the linear-depth MCX gate.
+        tuple[list[Operator], list[WiresLike]: log-depth ladder circuit of cond. clean ancillae and
+        control_wires to apply the linear-depth MCX gate on.
 
     References:
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
@@ -862,6 +864,9 @@ def _decompose_mcx_with_two_workers(
 ) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
+    It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
+    clean ancillae, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using dirty
+    ancillae as described in Sec. 5 of [1].
 
     Args:
         control_wires (Wires): The control wires.
@@ -870,7 +875,11 @@ def _decompose_mcx_with_two_workers(
         work_wire_type (string): If "dirty" perform uncomputation after we're done. Default is "clean".
 
     Returns:
-        The synthesized quantum circuit.
+        list[Operator]: The synthesized quantum circuit.
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
     if len(work_wires) < 2:
