@@ -25,6 +25,7 @@ Modules
     :toctree: api
 
 """
+from pennylane import ExperimentalWarning
 from .parametric_midmeasure import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
@@ -35,8 +36,10 @@ from .parametric_midmeasure import (
     measure_z,
     diagonalize_mcms,
 )
+from .lattice import Lattice, generate_lattice
 
 __all__ = [
+    "Lattice",
     "ParametricMidMeasureMP",
     "XMidMeasureMP",
     "YMidMeasureMP",
@@ -45,4 +48,5 @@ __all__ = [
     "measure_y",
     "measure_z",
     "diagonalize_mcms",
+    "generate_lattice",
 ]
