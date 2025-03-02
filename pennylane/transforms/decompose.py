@@ -186,7 +186,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             args = (*op.parameters, *op.wires)
 
             jaxpr_decomp = qml.capture.make_plxpr(
-                partial(op.compute_plxpr_decomposition, **op.hyperparameters)
+                partial(op.compute_qfunc_decomposition, **op.hyperparameters)
             )(*args)
 
             self._current_depth += 1
