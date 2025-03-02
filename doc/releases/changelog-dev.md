@@ -229,6 +229,11 @@
 * The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
 
+* Added class `qml.capture.transforms.CommuteControlledInterpreter` that moves commuting gates past control 
+  and target qubits of controlled operations following the same API as `qml.transforms.commute_controlled` 
+  when experimental program capture is enabled.
+  [(#6946)](https://github.com/PennyLaneAI/pennylane/pull/6946)
+
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
   be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
   same shapes and data types will be able to use this cached plxpr instead of capturing the program again.
