@@ -1062,14 +1062,11 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-10):
             )
         return Y
     except (RuntimeWarning, RuntimeError) as e:
-        error_msg = str(e)
-        if "invalid value" in error_msg:
-            raise ValueError(
-                "Invalid values encountered during matrix multiplication: "
-                f"Input matrix: {mat.toarray()}"
-                f"system error: {e}"
-            ) from e
-        raise e
+        raise ValueError(
+            "Invalid values encountered during matrix multiplication: "
+            f"Input matrix: {mat.toarray()}"
+            f"system error: {e}"
+        ) from e
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
