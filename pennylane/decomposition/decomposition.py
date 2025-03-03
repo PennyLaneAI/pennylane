@@ -30,7 +30,7 @@ from dataclasses import dataclass
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
-from .decomposition_rule import DecompositionRule
+from .decomposition_rule import DecompositionRule, get_decompositions
 from .resources import CompressedResourceOp, Resources
 
 
@@ -56,10 +56,18 @@ class DecompositionGraph:
     Args:
         operations (list[Operator]): The list of operations to find decompositions for.
         target_gate_set (set[str]): The names of the gates in the target gate set.
+        fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
+        alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
 
     """
 
-    def __init__(self, operations, target_gate_set: set[str]):
+    def __init__(
+        self,
+        operations,
+        target_gate_set: set[str],
+        fixed_decomps: dict = None,
+        alt_decomps: dict = None,
+    ):
         self._original_ops = operations
         self._target_gate_set = target_gate_set
         self._original_ops_indices: set[int] = set()
@@ -67,7 +75,17 @@ class DecompositionGraph:
         self._graph = rx.PyDiGraph()
         self._op_node_indices: dict[CompressedResourceOp, int] = {}
         self._construct_graph()
+        self._fixed_decomps = fixed_decomps or {}
+        self._alt_decomps = alt_decomps or {}
         self._visitor = None
+
+    def _get_decompositions(self, op_type) -> list[DecompositionRule]:
+        """Helper function to get a list of decomposition rules."""
+        if op_type in self._fixed_decomps:
+            return self._fixed_decomps[op_type]
+        if op_type in self._alt_decomps:
+            return self._alt_decomps[op_type] + get_decompositions(op_type)
+        return get_decompositions(op_type)
 
     def _construct_graph(self):
         """Constructs the decomposition graph."""
@@ -93,7 +111,7 @@ class DecompositionGraph:
             self._target_gate_indices.add(op_node_idx)
             return op_node_idx
 
-        for decomposition in getattr(op_node.op_type, "decompositions", []):
+        for decomposition in self._get_decompositions(op_node.op_type):
             d_node_idx = self._recursively_add_decomposition_node(decomposition, op_node.params)
             self._graph.add_edge(d_node_idx, op_node_idx, 0)
 
