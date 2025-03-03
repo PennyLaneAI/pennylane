@@ -349,7 +349,7 @@ class ClassPropertyDescriptor:  # pragma: no cover
         return self
 
 
-def classproperty(func) -> ClassPropertyDescriptor:
+def classproperty(func):
     """The class property decorator"""
     if not isinstance(func, (classmethod, staticmethod)):
         func = classmethod(func)
@@ -1394,7 +1394,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             :meth:`~.Operator.resource_params`
 
         """
-        raise NotImplementedError
 
     @property
     def resource_params(self) -> dict:

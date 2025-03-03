@@ -133,21 +133,25 @@ def resource_rep(op_type, **kwargs) -> CompressedResourceOp:
             decompositions. This should be consistent with ``op_type.resource_param_keys``.
 
     """
+
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
-    try:
-        missing_params = set(op_type.resource_param_keys) - set(kwargs.keys())
-        if missing_params:
-            raise TypeError(
-                f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
-                f"Expected: {op_type.resource_param_keys}"
-            )
-        invalid_params = set(kwargs.keys()) - set(op_type.resource_param_keys)
-        if invalid_params:
-            raise TypeError(
-                f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
-                f"Expected: {op_type.resource_param_keys}"
-            )
-    except NotImplementedError as e:
-        raise NotImplementedError(f"resource_param_keys undefined for {op_type.__name__}") from e
+
+    if op_type.resource_param_keys is None:
+        raise NotImplementedError(f"resource_param_keys undefined for {op_type.__name__}")
+
+    missing_params = set(op_type.resource_param_keys) - set(kwargs.keys())
+    if missing_params:
+        raise TypeError(
+            f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
+            f"Expected: {op_type.resource_param_keys}"
+        )
+
+    invalid_params = set(kwargs.keys()) - set(op_type.resource_param_keys)
+    if invalid_params:
+        raise TypeError(
+            f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
+            f"Expected: {op_type.resource_param_keys}"
+        )
+
     return CompressedResourceOp(op_type, kwargs)
