@@ -97,7 +97,7 @@ class TestJVP:
         dev = qml.device("default.qubit", wires=1)
         jaxpr = jax.make_jaxpr(lambda x: x + 1)(1)
         config = qml.devices.ExecutionConfig(gradient_method="hello")
-        with pytest.raises(NotImplementedError, match="does not support gradient_method='hello'"):
+        with pytest.raises(NotImplementedError, match="does not support gradient_method=hello"):
             dev.jaxpr_jvp(jaxpr.jaxpr, jaxpr.consts, 2, execution_config=config)
 
     def test_adjoint_unsupported_control_flow(self):
