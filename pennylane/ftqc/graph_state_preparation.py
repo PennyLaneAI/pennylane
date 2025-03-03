@@ -43,7 +43,9 @@ class GraphStatePrep(Operation):
         self.hyperparameters["qubit_graph"] = qubit_graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
-        super().__init__(None, wires=qubit_graph)
+        super().__init__(
+            None, wires=qubit_graph
+        )  # TODO: check if we have to store the qubit states with this operation object
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
@@ -79,11 +81,11 @@ class GraphStatePrep(Operation):
         op_list = []
         # Add qubit_ops to the queue
         # traverse the nodes in the qubit graph
-        for v in qubit_graph.graph:
-            op_list.append(qubit_ops(wires=qubit_graph[v]))
+        for qubit in qubit_graph.graph:
+            op_list.append(qubit_ops(wires=qubit_graph[qubit]))
 
         # Add entanglement_ops to the queue
         # traverse the edges in the qubit graph
-        for v0, v1 in qubit_graph.edges:
-            op_list.append(entanglement_ops(wires=[qubit_graph[v0], qubit_graph[v1]]))
+        for qubit0, qubit1 in qubit_graph.edges:
+            op_list.append(entanglement_ops(wires=[qubit_graph[qubit0], qubit_graph[qubit1]]))
         return op_list

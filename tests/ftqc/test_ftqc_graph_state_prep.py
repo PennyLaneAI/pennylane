@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=no-name-in-module, no-self-use, protected-access
-"""Unit tests for the lattice module"""
-
-import networkx as nx
-import pytest
+"""Unit tests for the GraphStatePrep module"""
 
 import pennylane as qml
-from pennylane.ftqc import GraphStatePrep, Lattice, QubitGraph, generate_lattice
+from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 from pennylane.transforms.decompose import decompose
 
 
@@ -26,6 +23,7 @@ class TestGraphStatePrep:
     """Test for graph state prep"""
 
     def test_circuit_accept_graph_state_prep(self):
+        """Test if a quantum function accepts GraphStatePrep."""
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph("test", lattice.graph)
         dev = qml.device("default.qubit")
@@ -39,12 +37,14 @@ class TestGraphStatePrep:
         assert True
 
     def test_compute_decompose(self):
+        """Test the compute_decomposition method of the GraphStatePrep class."""
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph("test", lattice.graph)
         queue = GraphStatePrep.compute_decomposition(q)
         assert len(queue) == 8  # 4 ops for |0> -> |+> and 4 ops to entangle nearest qubits
 
     def test_decompose(self):
+        """Test the decomposition method of the GraphStatePrep class."""
         lattice = generate_lattice([2, 2, 2], "cubic")
         q = QubitGraph("test", lattice.graph)
         op = GraphStatePrep(qubit_graph=q)
@@ -57,6 +57,7 @@ class TestGraphStatePrep:
                 assert isinstance(queue[i].wires[1], QubitGraph)
 
     def test_preprocess_decompose(self):
+        """Test if pennylane.transforms.decompose work with the GraphStatePrep class."""
         lattice = generate_lattice([2, 2, 2], "cubic")
         q = QubitGraph("test", lattice.graph)
         ops = [GraphStatePrep(qubit_graph=q)]
