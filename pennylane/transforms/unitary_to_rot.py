@@ -71,7 +71,7 @@ def _get_plxpr_unitary_to_rot():
 
             return super().interpret_operation(op)
 
-    def unitary_to_rot_plxpr_to_plxpr(jaxpr, consts,targs, tkwargs, *args):
+    def unitary_to_rot_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``unitary_to_rot`` transform on plxpr."""
 
         interpreter = UnitaryToRotInterpreter(*targs, **tkwargs)
