@@ -17,18 +17,13 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.liealg import cartan_decomp, concurrence_involution, even_odd_involution
-
-
-def check_commutation(ops1, ops2, vspace):
-    """Helper function to check things like [k, m] subspace m; expensive"""
-    for o1 in ops1:
-        for o2 in ops2:
-            com = o1.commutator(o2)
-            assert not vspace.is_independent(com)
-
-    return True
-
+from pennylane.liealg import (
+    cartan_decomp,
+    check_cartan_decomp,
+    check_commutation,
+    concurrence_involution,
+    even_odd_involution,
+)
 
 Ising2 = qml.lie_closure([X(0), X(1), Z(0) @ Z(1)])
 Ising3 = qml.lie_closure([X(0), X(1), X(2), Z(0) @ Z(1), Z(1) @ Z(2)])
@@ -85,6 +80,17 @@ involution_ops = [
     Y(0) - Y(0) @ Y(1) @ Y(2),
     Y(0) @ X(1),
 ]
+
+
+class TestCheckFunctions:
+    """Test check functions for cartan decompositions"""
+
+    def test_check_cartan_decomp(self):
+        """Test that check_cartan_decomp correctly checks Ising cartan decomp from fdhs paper (https://arxiv.org/abs/2104.00728)"""
+        k = [Z(0) @ Y(1), Y(0) @ Z(1)]
+        m = [Z(0) @ Z(1), Y(0) @ Y(1), X(0), X(1)]
+
+        assert check_cartan_decomp(k, m)
 
 
 class TestInvolutions:
