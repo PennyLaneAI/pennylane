@@ -1,5 +1,5 @@
 qml.io
-================
+======
 
 .. currentmodule:: pennylane.io
 
