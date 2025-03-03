@@ -232,8 +232,6 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
-from pennylane.decomposition.decomposition_rule import DecompositionRule
-from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -681,12 +679,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     Optional[jax.core.Primitive]
     """
 
-    _decompositions: list[DecompositionRule] = []
-
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
-        cls._decompositions = []
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -1357,19 +1352,24 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @classproperty
     def has_plxpr_decomposition(cls) -> bool:
         """Whether or not the Operator returns a defined plxpr decomposition."""
-        return cls.compute_plxpr_decomposition != Operator.compute_plxpr_decomposition
+        return cls.compute_qfunc_decomposition != Operator.compute_qfunc_decomposition
 
     @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters) -> None:
+    def compute_qfunc_decomposition(*args, **hyperparameters) -> None:
         r"""Experimental method to compute the dynamic decomposition of the operator with program capture enabled.
 
         When the program capture feature is enabled with ``qml.capture.enable()``, the decomposition of the operator
         is computed with this method if it is defined. Otherwise, the :meth:`~.Operator.compute_decomposition` method is used.
 
-        If this method is defined, the control flow operations within the method are recorded in the JAX representation
-        of the operator's decomposition.
+        The exception to this rule is when the operator is returned from the :meth:`~.Operator.compute_decomposition` method
+        of another operator, in which case the decomposition is performed with :meth:`~.Operator.compute_decomposition`
+        (even if this method is defined), and not with this method.
 
-        This method is experimental and subject to change.
+        When ``compute_qfunc_decomposition`` is defined for an operator, the control flow operations within the method
+        (specifying the decomposition of the operator) are recorded in the JAX representation.
+
+        .. note::
+          This method is experimental and subject to change.
 
         .. seealso:: :meth:`~.Operator.compute_decomposition`.
 
@@ -1382,41 +1382,38 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise DecompositionUndefinedError
 
     @classproperty
-    def decompositions(self) -> list[DecompositionRule]:
-        """A list of decomposition rules for the operator type."""
-        return self._decompositions
+    def resource_param_keys(self) -> tuple:
+        """The keys to the ``resource_params`` dictionary.
 
-    @classmethod
-    def add_decomposition(cls, decomposition: DecompositionRule):
-        """Register a decomposition rule with the class."""
-        cls._decompositions.append(decomposition)
+        All decomposition rules registered with an operator class is expected to have a resource
+        function with parameters that are consistent with the operator's ``resource_param_keys``.
+        The ``qml.resource_rep`` function will also expect keyword arguments that match these
+        keys for each operator type.
+
+        .. seealso::
+            :meth:`~.Operator.resource_params`
+
+        """
 
     @property
     def resource_params(self) -> dict:
         """A dictionary containing the minimal information needed to compute a
         resource estimate of the operator's decomposition.
 
-        For most operators, this should just be an empty dictionary, but a default implementation
-        is intentionally not provided so that each operator type is forced to explicitly define its
-        resource params.
+        Two instances of the same operator type should have identical ``resource_params`` iff
+        their decompositions exhibit the same counts for each gate type, even if the individual
+        gate parameters differ.
+
+        For most operators with static decompositions, this should just be an empty dictionary,
+        but for gates such as ``MultiRZ`` whose decomposition depends on certain parameters such
+        as the number of wires, the ``resource_params`` should contain this information. Note
+        that the ``resource_params`` should only contain the **minimal** information needed to
+        determine the gate count for an operator's decomposition.
 
         """
-        raise NotImplementedError
-
-    @property
-    def resource_rep(self) -> CompressedResourceOp:
-        """The compressed resource representation of this operator."""
-        return self.__class__.make_resource_rep(**self.resource_params)
-
-    @classmethod
-    def make_resource_rep(cls, **resource_params) -> CompressedResourceOp:
-        """Create a compressed resource representation of the operator.
-
-        Typically, this method should simply return ``CompressedResourceOp(cls, resource_params)``,
-        but a default implementation is intentionally not provided to force each operator type
-        to define how its resource representation is constructed more verbosely.
-
-        """
+        # For most operators, this should just be an empty dictionary, but a default
+        # implementation is intentionally not provided so that each operator class is
+        # forced to explicitly define its resource params.
         raise NotImplementedError
 
     # pylint: disable=no-self-argument, comparison-with-callable
@@ -1488,7 +1485,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return cls.generator != Operator.generator
 
-    def generator(self):  # pylint: disable=no-self-use
+    def generator(self) -> "Operator":  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1505,8 +1502,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
 
-        The default value to return is ``None``, indicating that the operation has
-        no defined generator.
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 

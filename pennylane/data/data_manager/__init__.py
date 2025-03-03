@@ -185,7 +185,9 @@ def _download_datasets(  # pylint: disable=too-many-arguments
 
     if pbar is not None:
         if attributes is None:
-            file_sizes = [int(head(url).headers["Content-Length"]) for url in dataset_urls]
+            file_sizes = [
+                int(head(url, timeout=5).headers["Content-Length"]) for url in dataset_urls
+            ]
         else:
             # Can't get file sizes for partial downloads
             file_sizes = (None for _ in dataset_urls)

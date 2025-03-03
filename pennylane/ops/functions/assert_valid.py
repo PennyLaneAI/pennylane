@@ -18,12 +18,14 @@ Operator class is correctly defined.
 
 import copy
 import pickle
+from collections import defaultdict
 from string import ascii_lowercase
 
 import numpy as np
 import scipy.sparse
 
 import pennylane as qml
+from pennylane.decomposition import DecompositionRule
 from pennylane.operation import EigvalsUndefinedError
 
 
@@ -94,6 +96,47 @@ def _check_decomposition(op, skip_wire_mapping):
             qml.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
         )(*op.data, wires=op.wires, **op.hyperparameters)
+
+
+def _check_decomposition_new(op):
+    """Checks involving the new system of decompositions."""
+
+    if type(op).resource_params is qml.operation.Operator.resource_params:
+        assert not qml.has_decomposition(
+            type(op)
+        ), "resource_params must be defined for operators with decompositions"
+        return
+
+    assert set(op.resource_params.keys()) == set(
+        type(op).resource_param_keys
+    ), "resource_params must have the same keys as specified by resource_param_keys"
+
+    for rule in qml.get_decompositions(type(op)):
+        _test_decomposition_rule(op, rule)
+
+
+def _test_decomposition_rule(op, rule: DecompositionRule):
+    """Tests that a decomposition rule is consistent with the operator."""
+
+    # Test that the resource function is correct
+    resources = rule.compute_resources(**op.resource_params)
+    gate_counts = resources.gate_counts
+
+    with qml.queuing.AnnotatedQueue() as q:
+        rule.impl(*op.data, wires=op.wires, **op.hyperparameters)
+    tape = qml.tape.QuantumScript.from_queue(q)
+    actual_gate_counts = defaultdict(int)
+    for _op in tape.operations:
+        resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
+        actual_gate_counts[resource_rep] += 1
+    assert gate_counts == actual_gate_counts
+
+    # Tests that the decomposition produces the same matrix
+    op_matrix = qml.matrix(op)
+    decomp_matrix = qml.matrix(tape, wire_order=op.wires)
+    assert qml.math.allclose(
+        op_matrix, decomp_matrix
+    ), "decomposition must produce the same matrix as the operator."
 
 
 def _check_matrix(op):
@@ -407,6 +450,8 @@ def assert_valid(
     _check_bind_new_parameters(op)
 
     _check_decomposition(op, skip_wire_mapping)
+    _check_decomposition_new(op)
+
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)

@@ -21,7 +21,7 @@ import functools
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import decomposition
+from pennylane.decomposition import register_resources, add_decomposition
 from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -132,6 +132,7 @@ class QFT(Operation):
 
     num_wires = AnyWires
     grad_method = None
+    resource_param_keys = ("num_wires",)
 
     def __init__(self, wires: WiresLike, id=None):
         wires = Wires(wires)
@@ -208,7 +209,15 @@ class QFT(Operation):
         return {"num_wires": len(self.wires)}
 
 
-@decomposition
+def _qft_decomposition_resources(num_wires):
+    return {
+        qml.Hadamard: num_wires,
+        qml.SWAP: num_wires // 2,
+        qml.ControlledPhaseShift: num_wires * (num_wires - 1) // 2,
+    }
+
+
+@register_resources(_qft_decomposition_resources)
 def _qft_decomposition(wires: WiresLike, **__):
 
     n_wires = len(wires)
@@ -225,13 +234,4 @@ def _qft_decomposition(wires: WiresLike, **__):
         qml.SWAP(wires=[wire1, wire2])
 
 
-@_qft_decomposition.resources
-def _qft_decomposition_resources(num_wires):
-    return {
-        qml.Hadamard.make_resource_rep(): num_wires,
-        qml.SWAP.make_resource_rep(): num_wires // 2,
-        qml.ControlledPhaseShift.make_resource_rep(): num_wires * (num_wires - 1) // 2,
-    }
-
-
-QFT.add_decomposition(_qft_decomposition)
+add_decomposition(QFT, _qft_decomposition)
