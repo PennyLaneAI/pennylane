@@ -383,8 +383,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Interpreters for quantum transforms now validate arguments used by the transform and no longer remove them.
-  Furthermore, interpreters no longer check if the equation in the `jaxpr` is a transform.
+* Quantum transform interpreters now perform argument validation and will no longer 
+  check if the equation in the `jaxpr` is a transform.
   [(#7023)](https://github.com/PennyLaneAI/pennylane/pull/7023)
 
 * `qml.capture.run_autograph` is now idempotent.

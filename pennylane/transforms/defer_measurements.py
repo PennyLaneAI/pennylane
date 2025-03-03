@@ -407,7 +407,7 @@ def _get_plxpr_defer_measurements():
     def defer_measurements_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
         """Function for applying the ``defer_measurements`` transform on plxpr."""
 
-        if tkwargs.get("aux_wires", None) is None:
+        if not tkwargs.get("aux_wires", None):
             raise ValueError(
                 "'aux_wires' argument for qml.defer_measurements must be provided "
                 "when qml.capture.enabled() is True."
