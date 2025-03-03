@@ -55,8 +55,11 @@ def test_abstract_resource_params():
         def resource_rep(self):
             return
 
-    with pytest.raises(NotImplementedError):
-        DummyClass().resource_params  # pylint: disable=pointless-statement,expression-not-assigned
+    with pytest.raises(
+        TypeError,
+        match="Can't instantiate abstract class DummyClass with abstract method resource_params",
+    ):
+        DummyClass()
 
 
 def test_abstract_resource_rep():
