@@ -674,7 +674,9 @@ def _register_custom_staging_rule(cond_prim):
     import jax  # pylint: disable=import-outside-toplevel
     from jax._src.interpreters import partial_eval as pe  # pylint: disable=import-outside-toplevel
 
-    def _tracer_and_outvar(jaxpr_trace, outvar, env: dict):
+    def _tracer_and_outvar(
+        jaxpr_trace: pe.DynamicJaxprTrace, outvar: jax.core.Var, env: dict
+    ) -> tuple[pe.DynamicJaxprTracer, jax.core.Var]:
         """
         Create a new tracer and returned var from the true branch outvar
         returned vars are cached in env for use in future shapes
@@ -691,7 +693,9 @@ def _register_custom_staging_rule(cond_prim):
             env[outvar] = new_var
         return out_tracer, new_var
 
-    def custom_staging_rule(jaxpr_trace, *tracers, **params):
+    def custom_staging_rule(
+        jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
+    ) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
         """
         Add new jaxpr equation to the jaxpr_trace and return new tracers.
         """
@@ -781,7 +785,6 @@ def _validate_jaxpr_returns(jaxpr_branches):
         out_avals_branch = [out.aval for out in jaxpr_branch.outvars]
         branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
         _validate_abstract_values(out_avals_branch, out_avals_true, branch_type, idx - 1)
-
 
 
 @functools.lru_cache
