@@ -82,6 +82,10 @@ class Hadamard(Observable, Operation):
     def name(self) -> str:
         return "Hadamard"
 
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1355,6 +1359,10 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)

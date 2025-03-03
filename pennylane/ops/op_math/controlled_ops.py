@@ -2121,6 +2121,10 @@ class ControlledPhaseShift(ControlledOp):
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
