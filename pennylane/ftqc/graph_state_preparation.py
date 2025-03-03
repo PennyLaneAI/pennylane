@@ -43,6 +43,7 @@ class GraphStatePrep(Operation):
         self.hyperparameters["qubit_graph"] = qubit_graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
+        super().__init__(None, wires=qubit_graph)
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
