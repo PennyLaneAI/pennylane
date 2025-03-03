@@ -24,6 +24,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.math import expand_matrix, expand_vector, sqrt_matrix, sqrt_matrix_sparse
+from pennylane.math.quantum import _denman_beavers_iterations
 
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
@@ -1106,6 +1107,14 @@ class TestSqrtMatrix:
         # 4x4 matrix with negative eigenvalues
         np.array([[1, 2, 0, 1], [2, -2, 1, 0], [0, 1, -3, 2], [1, 0, 2, -1]]),
     ]
+    # Known problematic matrices
+    illmats_info_pairs = [
+        (
+            np.array([[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
+            RuntimeError,
+            "Factor is exactly singular",
+        )
+    ]
 
     @pytest.mark.parametrize("dm", dm_list)
     def test_sqrt_matrix_sparse_dm(self, dm, tol):
@@ -1156,8 +1165,16 @@ class TestSqrtMatrix:
 
     @pytest.mark.parametrize("m", matrices_negative)
     def test_sqrt_matrix_sparse_input_negative(self, m):
+        """Test that sqrt_matrix_sparse raises ValueError for matrices with negative eigenvalues."""
         m = csr_matrix(m)
         with pytest.raises(ValueError):
+            sqrt_matrix_sparse(m)
+
+    @pytest.mark.parametrize("m, e, info", illmats_info_pairs)
+    def test_sqrt_matrix_sparse_input_ill_conditioned(self, m, e, info):
+        """Test that appropriate errors are raised for ill-conditioned matrices"""
+        m = csr_matrix(m)
+        with pytest.raises(e, match=info):
             sqrt_matrix_sparse(m)
 
     def test_sqrt_matrix_sparse_input_valid(self):
@@ -1165,3 +1182,79 @@ class TestSqrtMatrix:
         A = np.array([[1, 0], [0, 1]])
         with pytest.raises(TypeError, match="Only use this method for sparse matrices"):
             sqrt_matrix_sparse(A)
+
+
+class TestDenmanBeaversIterations:
+    """Tests for the Denman-Beavers iteration method for matrix square root"""
+
+    def test_singular_matrix(self):
+        """Test that singular matrix raises appropriate error"""
+        n = 4
+        mat = csr_matrix(np.diag([0.0] + [1.0] * (n - 1)))
+
+        with pytest.raises(RuntimeError, match="Factor is exactly singular"):
+            _denman_beavers_iterations(mat)
+
+    def test_overflow_matrix(self):
+        """Test that matrix with very large values raises convergence warning"""
+        n = 4
+        mat = csr_matrix(np.eye(n) * 1e150)
+
+        with pytest.raises(UserWarning, match="Denman Beavers not converged"):
+            _denman_beavers_iterations(mat)
+
+    def test_invalid_value_matrix(self):
+        """Test that matrix leading to invalid values raises appropriate error"""
+        n = 4
+        mat = csr_matrix(np.diag([-1e-10] + [1.0] * (n - 1)))
+
+        with pytest.raises(ValueError, match="nan or inf"):
+            _denman_beavers_iterations(mat)
+
+    def test_non_convergent_matrix(self):
+        """Test that non-convergent matrix raises appropriate error"""
+        n = 4
+        mat = np.eye(n)
+        mat[0, 1] = 1e10
+        mat[1, 0] = 1e-10
+        mat = csr_matrix(mat)
+
+        with pytest.raises(RuntimeError, match="Factor is exactly singular"):
+            _denman_beavers_iterations(mat)
+
+    def test_unstable_matrix(self):
+        """Test that numerically unstable matrix raises convergence warning"""
+        n = 4
+        mat = csr_matrix(np.diag([1e-200, 1e200] + [1.0] * (n - 2)))
+
+        with pytest.raises(UserWarning, match="Denman Beavers not converged"):
+            _denman_beavers_iterations(mat)
+
+    @pytest.mark.parametrize("size", [2, 3, 4, 5])
+    def test_valid_positive_definite(self, size):
+        """Test that valid real, positive definite matrices work correctly"""
+        # Create a positive definite matrix
+        A = np.random.random((size, size))
+        mat = csr_matrix(np.eye(size) - 0.1 * (A @ A.T))
+
+        result = _denman_beavers_iterations(mat)
+        # Check that result is a valid square root
+        result_dense = result.toarray()
+        original_dense = mat.toarray()
+        qml.math.allclose(result_dense @ result_dense, original_dense, atol=1e-7, rtol=1e-7)
+
+    @pytest.mark.parametrize("trial", range(20))
+    def test_hermitian_matrix(self, trial):  # pylint: disable=unused-argument
+        """Test that Hermitian matrices work correctly on Hermitians of positive det"""
+        n = 4
+        A = np.random.random((n, n)) + 1j * np.random.random((n, n))
+        mat = csr_matrix(np.eye(n) - 0.2 * (A @ A.T.conj()))
+        det_mat = np.linalg.det(mat.toarray())
+        if det_mat > 0:
+            result = _denman_beavers_iterations(mat)
+            result_dense = result.toarray()
+            original_dense = mat.toarray()
+            qml.math.allclose(result_dense @ result_dense, original_dense, atol=1e-7, rtol=1e-7)
+        else:
+            with pytest.raises(ValueError, match="Invalid values encountered"):
+                _denman_beavers_iterations(mat)
