@@ -2092,6 +2092,8 @@ class ControlledPhaseShift(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]
 

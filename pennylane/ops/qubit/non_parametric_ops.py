@@ -56,6 +56,8 @@ class Hadamard(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_param_keys = ()
+
     _queue_category = "_ops"
 
     def __init__(self, wires: WiresLike, id: Optional[str] = None):
@@ -1248,6 +1250,7 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_param_keys = ()
     batch_size = None
 
     @property
