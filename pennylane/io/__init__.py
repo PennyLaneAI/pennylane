@@ -11,5 +11,6 @@ from .io import (
     from_qiskit_op,
     from_quil,
     from_quil_file,
+    plugin_converters,
 )
 from .qualtran_io import FromBloq, get_bloq_registers_info
