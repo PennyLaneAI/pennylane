@@ -40,6 +40,9 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Added template `qml.QROMStatePreparation` that prepares arbitrary states using `qml.QROM`.
+  [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
+
 <h3>Improvements 🛠</h3>
 
 * `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
