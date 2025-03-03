@@ -61,7 +61,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             """Initialize the interpreter."""
 
             if direction not in ("left", "right"):
-                raise ValueError("Direction for commute_controlled must be 'left' or 'right'")
+                raise ValueError("Direction for commute_controlled must be 'left' or 'right'.")
 
             self.direction = direction
             self.op_deque = deque()
