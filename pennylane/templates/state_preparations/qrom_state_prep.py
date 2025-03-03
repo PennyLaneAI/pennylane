@@ -130,7 +130,7 @@ class QROMStatePreparation(Operation):
     .. code-block::
 
         dev = qml.device("default.qubit", wires=6)
-        state_vector = np.array([1,0,0,0])
+        state_vector = np.array([1/2,-1/2,1/2,1/2])
         wires = [0, 1]
         precision_wires = [2, 3, 4]
         work_wires = [5]
@@ -145,16 +145,16 @@ class QROMStatePreparation(Operation):
     .. details::
         :title: Usage Details
 
-        This operation implements the state preparation method described in
-        `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`.  It uses a QROM to store
+        This operation implements the state preparation method described
+        in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`. It uses a QROM to store
         the binary representations of the amplitudes and phases of the target state, and then uses
         controlled rotations to apply these values to the target qubits.
 
-        The input `state_vector` must have a length that is a power of 2. The number of `wires`
-        must be :math:`\log_2(\text{len}(state\_vector))`. The number of `precision_wires` determines the
+        The input `state_vector` must have a length that is a power of 2. The number of ``wires``
+        must be :math:`\log_2(\text{len}(state\_vector))`. The number of ``precision_wires`` determines the
         precision with which the amplitudes and phases are encoded.
 
-        The `work_wires` are used as auxiliary qubits in the QROM operation.
+        The ``work_wires`` are used as auxiliary qubits in the QROM operation.
 
         The decomposition involves encoding the probabilities and phases of the state vector using
         QROMs and then applying controlled rotations based on the values stored in the `precision_wires`.
@@ -242,11 +242,12 @@ class QROMStatePreparation(Operation):
         Computes the decomposition operations for the given state vector.
 
         Args:
-        state_vector (TensorLike): The state vector to prepare.
-        wires (Sequence[int]): The wires on which to prepare the state.
-        precision_wires (Sequence[int]): The wires used for storing the binary representations of the
-            amplitudes and phases.
-        work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
+
+            state_vector (TensorLike): The state vector to prepare.
+            wires (Sequence[int]): The wires on which to prepare the state.
+            precision_wires (Sequence[int]): The wires used for storing the binary representations of the
+                amplitudes and phases.
+            work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
 
         Returns:
             list: List of decomposition operations.

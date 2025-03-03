@@ -40,7 +40,7 @@ def test_sum_by_prefix():
 def test__func_to_binary():
     """Test _func_to_binary private function"""
 
-    output = _func_to_binary(3, 0.25, lambda x: np.sqrt(x))
+    output = _func_to_binary(3, 0.25, np.sqrt)
     assert output == "100"
 
 
