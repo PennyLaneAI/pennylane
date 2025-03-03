@@ -31,7 +31,7 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 from .decomposition_rule import DecompositionRule, get_decompositions
-from .resources import CompressedResourceOp, Resources
+from .resources import CompressedResourceOp, Resources, resource_rep
 
 
 class DecompositionError(Exception):
@@ -74,9 +74,9 @@ class DecompositionGraph:
         self._target_gate_indices: set[int] = set()
         self._graph = rx.PyDiGraph()
         self._op_node_indices: dict[CompressedResourceOp, int] = {}
-        self._construct_graph()
         self._fixed_decomps = fixed_decomps or {}
         self._alt_decomps = alt_decomps or {}
+        self._construct_graph()
         self._visitor = None
 
     def _get_decompositions(self, op_type) -> list[DecompositionRule]:
@@ -90,7 +90,7 @@ class DecompositionGraph:
     def _construct_graph(self):
         """Constructs the decomposition graph."""
         for op in self._original_ops:
-            op_node = op.resource_rep
+            op_node = resource_rep(type(op), **op.resource_params)
             idx = self._recursively_add_op_node(op_node)
             self._original_ops_indices.add(idx)
 
@@ -172,7 +172,7 @@ class DecompositionGraph:
             Resources: The resource estimates.
 
         """
-        op_node = op.resource_rep
+        op_node = resource_rep(type(op), **op.resource_params)
         op_node_idx = self._op_node_indices[op_node]
         return self._visitor.d[op_node_idx]
 
@@ -186,7 +186,7 @@ class DecompositionGraph:
             DecompositionRule: The optimal decomposition.
 
         """
-        op_node = op.resource_rep
+        op_node = resource_rep(type(op), **op.resource_params)
         op_node_idx = self._op_node_indices[op_node]
         d_node_idx = self._visitor.p[op_node_idx]
         return self._graph[d_node_idx].rule

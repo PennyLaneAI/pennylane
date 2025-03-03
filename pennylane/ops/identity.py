@@ -310,6 +310,12 @@ class GlobalPhase(Operation):
 
     grad_method = None
 
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     @classmethod
     def _primitive_bind_call(
         cls, phi, wires: WiresLike = (), **kwargs
