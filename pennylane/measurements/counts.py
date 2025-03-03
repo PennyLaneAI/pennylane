@@ -352,11 +352,11 @@ class CountsMP(SampleMeasurement):
         batched = len(shape) == batched_ndims
         if not batched:
             samples = samples[None]
-
         # generate empty outcome dict, populate values with state counts
         base_dict = {k: qml.math.int64(0) for k in outcomes}
-        outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
         results = [qml.math.unique(batch, return_counts=True) for batch in samples]
+        num_batches = len(results)
+        outcome_dicts = [base_dict.copy() for _ in range(num_batches)]
 
         for result, outcome_dict in zip(results, outcome_dicts, strict=True):
             states, _counts = result
