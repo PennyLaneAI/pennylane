@@ -129,7 +129,7 @@ class TestQuantumPhaseEstimation:
         """Test that an error is raised if a resource operator is not provided."""
         with pytest.raises(TypeError, match="Can't obtain QPE resources when"):
             op = re.ResourceQuantumPhaseEstimation(qml.Hadamard(0), estimation_wires=[1, 2, 3])
-            op.resource_params
+            op.resource_params  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize("expected_params", resource_params_data)
     def test_resource_rep(self, expected_params):
