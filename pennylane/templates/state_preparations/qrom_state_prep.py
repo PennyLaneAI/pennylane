@@ -25,7 +25,7 @@ from pennylane.wires import Wires
 
 
 def _sum_by_prefix(vector, prefix):
-    """Calculates the sum of elements in a vector whose index, when represented in binary, starts with a given prefix.
+    r"""Calculates the sum of elements in a vector whose index, when represented in binary, starts with a given prefix.
 
     Args:
         vector (TensorLike): A 1D vector of numerical values.
@@ -60,7 +60,7 @@ def _sum_by_prefix(vector, prefix):
 
 
 def _get_basis_state_list(n_wires, add_zero=False):
-    """Generates a list of binary strings representing basis states.
+    r"""Generates a list of binary strings representing basis states.
 
     Args:
         n_wires (int): The number of wires in the system.
@@ -84,7 +84,7 @@ def _get_basis_state_list(n_wires, add_zero=False):
 
 
 def _func_to_binary(n_precision, x, func):
-    """Converts a value within the range [0, 1) to its binary representation with a specified precision.
+    r"""Converts a value within the range [0, 1) to its binary representation with a specified precision.
 
     This function applies a given transformation function (`func`) to the input value `x` and then converts
     the result to a binary string. The transformation function should map values from the interval [0, 1) to
@@ -103,7 +103,6 @@ def _func_to_binary(n_precision, x, func):
         '100'
 
         Expected value as `\sqrt{0.25} = 0.5`, and it's binary representation is `0.100`.
-
     """
 
     binary_rep = bin(int(2 ** (n_precision + 1) + 2 ** (n_precision) * func(x)))
@@ -162,7 +161,9 @@ class QROMStatePreparation(Operation):
         rotations for the phase encoding.
     """
 
-    def __init__(self, state_vector, wires, precision_wires, work_wires=None, id=None):
+    def __init__(
+        self, state_vector, wires, precision_wires, work_wires=None, id=None
+    ):  # pylint: disable=too-many-arguments
 
         n_amplitudes = len(state_vector)
         if n_amplitudes != 2 ** len(Wires(wires)):
@@ -238,7 +239,7 @@ class QROMStatePreparation(Operation):
     def compute_decomposition(
         state_vector, wires, precision_wires, work_wires
     ):  # pylint: disable=arguments-differ
-        """
+        r"""
         Computes the decomposition operations for the given state vector.
 
         Args:
