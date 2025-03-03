@@ -13,10 +13,11 @@
 # limitations under the License.
 """Unit tests for the ``MapWiresInterpreter`` class"""
 
+from functools import partial
+
 # pylint:disable=wrong-import-position, unused-argument
 import numpy as np
 import pytest
-from functools import partial
 
 import pennylane as qml
 
