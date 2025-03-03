@@ -21,8 +21,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import AI, AII, AIII, BDI, CI, CII, DIII, ClassB, khaneja_glaser_involution
-from pennylane.labs.dla.involutions import Ipq, J, Kpq
+from pennylane.liealg import AI, AII, AIII, BDI, CI, CII, DIII, ClassB
+from pennylane.liealg.involutions import Ipq, J, Kpq
 
 
 class TestMatrixConstructors:
@@ -112,17 +112,6 @@ class TestInvolutionExceptions:
                 with pytest.raises(ValueError, match="please specify p and q"):
                     invol(X(0) @ Y(1), p=p, q=q, wire=0)
 
-    def test_Khaneja_Glaser_exceptions(self):
-        """Test that the Khaneja-Glaser involution raises custom exceptions related
-        to wire and infering p and q."""
-        op = qml.X(0) @ qml.Y(1)
-        with pytest.raises(ValueError, match="Please specify the wire for the Khaneja"):
-            khaneja_glaser_involution(op)
-
-        [op] = op.pauli_rep
-        with pytest.raises(ValueError, match="Can't infer p and q from operator of type <class"):
-            khaneja_glaser_involution(op, wire=0)
-
 
 AI_cases = [
     (X(0) @ Y(1) @ Z(2), True),
@@ -200,8 +189,6 @@ class TestInvolutions:
     def test_AIII(self, op, expected):
         """Test singledispatch for AIII involution"""
         self.run_test_case(op, expected, partial(AIII, p=4, q=4))
-        # Khaneja-Glaser is just AIII with automatically inferred p and q.
-        self.run_test_case(op, expected, partial(khaneja_glaser_involution, wire=0))
 
     @pytest.mark.parametrize("op, expected", BDI_cases)
     def test_BDI(self, op, expected):

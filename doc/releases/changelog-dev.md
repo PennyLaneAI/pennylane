@@ -41,7 +41,25 @@
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 * Created a new ``qml.liealg`` module for Lie algebra functionality.
+
+  ``pennylane.liealg.cartan_decomp`` allows to perform Cartan decompositions using _involution_ functions that return a boolean value.
+  A variety of typically encountered involution functions are included in the module, in particular the following:
+
+  ```
+  even_odd_involution
+  concurrence_involution
+  AI
+  AII
+  AIII
+  BDI
+  CI
+  CII
+  DIII
+  ClassB
+  ```
+
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+  [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
 
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
@@ -308,12 +326,13 @@
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
-<<<<<<< HEAD
 * ``pennylane.labs.dla.structure_constants_dense`` is removed and integrated into ``qml.structure_constants`` using the new ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
-=======
->>>>>>> deaf3901bf775eb18b92d358bb747b548f91a59a
+
+* ``pennylane.labs.khaneja_glaser_involution`` is removed.
+  [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
