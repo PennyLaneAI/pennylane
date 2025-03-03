@@ -263,6 +263,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         return measure_prim.bind(*invals, **params)
 
     def merge_amplitude_embedding_plxpr_to_plxpr(jaxpr, consts, _, __, *args):
+        """Function for applying the ``merge_amplitude_embedding`` transform on plxpr."""
         interpreter = MergeAmplitudeEmbeddingInterpreter()
 
         def wrapper(*inner_args):
