@@ -24,7 +24,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import register_resources, add_decomposition, resource_rep
+from pennylane.decomposition import register_resources, add_decomposition
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.typing import TensorLike
@@ -220,7 +220,7 @@ def _multi_rz_decomposition_resources(num_wires):
 
 
 @register_resources(_multi_rz_decomposition_resources)
-def _multi_rz_decomposition(theta, wires, **__):
+def _multi_rz_decomposition(theta, wires, **__):  # pylint: disable=no-value-for-parameter
 
     @qml.for_loop(len(wires) - 1, 0, -1)
     def _pre_cnot(i):
@@ -235,7 +235,7 @@ def _multi_rz_decomposition(theta, wires, **__):
     _post_cnot()
 
 
-qml.add_decomposition(MultiRZ, _multi_rz_decomposition)
+add_decomposition(MultiRZ, _multi_rz_decomposition)
 
 
 class PauliRot(Operation):
