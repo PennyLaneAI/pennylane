@@ -384,6 +384,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `qml.for_loop` and `qml.while_loop` have been moved from the `compiler` module 
+  to a new `control_flow` module.
+  [(#7017)](https://github.com/PennyLaneAI/pennylane/pull/7017)
+
 * `qml.capture.run_autograph` is now idempotent.
   This means `run_autograph(fn) = run_autograph(run_autograph(fn))`.
   [(#7001)](https://github.com/PennyLaneAI/pennylane/pull/7001)
