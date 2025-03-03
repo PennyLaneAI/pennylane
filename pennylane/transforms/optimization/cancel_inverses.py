@@ -71,7 +71,9 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
         from jax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
+        from pennylane.capture.primitives import measure_prim
         from pennylane.operation import Operator
+
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -239,6 +241,11 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             self.cleanup()
             self._env = {}
             return outvals
+
+    @CancelInversesInterpreter.register_primitive(measure_prim)
+    def _(_, *invals, **params):
+        _, params = measure_prim.get_bind_params(params)
+        return measure_prim.bind(*invals, **params)
 
     def cancel_inverses_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args
