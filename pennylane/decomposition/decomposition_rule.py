@@ -30,8 +30,8 @@ def register_resources(
     """Registers a resource function with a decomposition rule.
 
     Args:
-        resources (Callable): a dictionary of gate counts or a function that returns this
-            dictionary for a decomposition rule.
+        resources (Callable): the resource estimate of a decomposition rule, in the form of a
+            dictionary of gate counts or a function that returns this dictionary.
         qfunc (Callable): the quantum function that implements the decomposition.
 
     Returns:
@@ -96,7 +96,7 @@ def register_resources(
 
             import pennylane as qml
 
-            def _multi_rz_decomposition(theta, wires, **__):
+            def multi_rz_decomposition(theta, wires, **__):
                 for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
                     qml.CNOT(wires=(w0, w1))
                 qml.RZ(theta, wires=wires[0])
@@ -125,23 +125,26 @@ def register_resources(
 
         .. code-block:: python
 
-            qml.register_resources(_multi_rz_resources, _multi_rz_decomposition)
+            multi_rz_decomposition = qml.register_resources(
+                _multi_rz_resources,
+                multi_rz_decomposition
+            )
 
-        Consequentially, two ``MultiRZ`` gates acting on different numbers of wires will have
-        different decompositions. As a result, when defining a decomposition rule that contains
+        We also notice that two ``MultiRZ`` gates acting on different numbers of wires will have
+        different decompositions. Consequently, when defining a decomposition rule that contains
         ``MultiRZ`` gates, we require that more information is provided.
 
         Consider a fictitious operator with the following decomposition:
 
         .. code-block:: python
 
-            def _my_decomposition(thata, wires):
+            def my_decomposition(thata, wires):
                 qml.MultiRZ(theta, wires=wires[:-1])
                 qml.MultiRZ(theta, wires=wires)
                 qml.MultiRZ(theta, wires=wires[1:])
 
         It contains two ``MultiRZ`` gates on ``num_wires - 1`` wires and one ``MultiRZ`` gate on
-        ``num_wires`` wires, which is reflected in its corresponding resource function:
+        ``num_wires`` wires, which should be reflected in its corresponding resource function:
 
         .. code-block:: python
 
@@ -151,12 +154,17 @@ def register_resources(
                     qml.resource_rep(qml.MultiRZ, num_wires=num_wires): 1
                 }
 
+            my_decomposition = qml.register_resources(
+                _my_decomposition_resources,
+                my_decomposition
+            )
+
         where ``qml.resource_rep`` is a utility function that wraps an operator type and
         any additional information relavent to its resource estimate into a data structure.
 
-    .. seealso::
+        .. seealso::
 
-        :func:`~pennylane.resource_rep`
+            :func:`~pennylane.resource_rep`
 
     """
 
