@@ -670,6 +670,7 @@ def _register_custom_staging_rule(cond_prim):
     # see https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L3538
     # and https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L208
     # for reference to how jax is handling staging rules for dynamic shapes in v0.4.28
+    # see also capture/intro_to_dynamic_shapes.md
 
     import jax  # pylint: disable=import-outside-toplevel
     from jax._src.interpreters import partial_eval as pe  # pylint: disable=import-outside-toplevel
