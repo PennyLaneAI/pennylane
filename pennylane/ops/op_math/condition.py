@@ -676,7 +676,9 @@ def _register_custom_staging_rule(cond_prim):
     from jax._src.interpreters import partial_eval as pe  # pylint: disable=import-outside-toplevel
 
     def _tracer_and_outvar(
-        jaxpr_trace: pe.DynamicJaxprTrace, outvar: jax.core.Var, env: dict
+        jaxpr_trace: pe.DynamicJaxprTrace,
+        outvar: jax.core.Var,
+        env: dict[jax.core.Var, jax.core.Var],
     ) -> tuple[pe.DynamicJaxprTracer, jax.core.Var]:
         """
         Create a new tracer and returned var from the true branch outvar
@@ -705,7 +707,7 @@ def _register_custom_staging_rule(cond_prim):
             return jaxpr_trace.default_process_primitive(cond_prim, tracers, params)
         true_outvars = params["jaxpr_branches"][0].outvars
 
-        env = {}  # branch var to new equation var
+        env: dict[jax.core.Var, jax.core.Var] = {}  # branch var to new equation var
         out_tracers, returned_vars = tuple(
             zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in true_outvars), strict=True)
         )
