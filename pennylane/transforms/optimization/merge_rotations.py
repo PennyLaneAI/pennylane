@@ -177,6 +177,7 @@ def merge_rotations(
 
         # We need to use stack to get this to work and be differentiable in all interfaces
         cumulative_angles = qml.math.stack(current_gate.parameters)
+        angles_cancel = False
         interface = qml.math.get_interface(cumulative_angles)
         # As long as there is a valid next gate, check if we can merge the angles
         while next_gate_idx is not None:
@@ -194,9 +195,16 @@ def merge_rotations(
                 # The Rot gate must be treated separately
                 if isinstance(current_gate, qml.Rot):
                     cumulative_angles = fuse_rot_angles(cumulative_angles, next_params)
+                    # For the Rot gate, the angles can cancel in a non-trivial way
+                    # e.g. Rot(φ,0,-φ) = RZ(φ) RY(0) RZ(-φ) = RZ(0) = I.
+                    test_angles = qml.math.stack(
+                        [cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]
+                    )
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
                     cumulative_angles = cumulative_angles + next_params
+                    test_angles = cumulative_angles
+                angles_cancel = qml.math.allclose(test_angles, 0.0, atol=atol, rtol=0)
             # If it is not, we need to stop
             else:
                 break
@@ -210,7 +218,7 @@ def merge_rotations(
         if (
             qml.math.is_abstract(cumulative_angles)
             or qml.math.requires_grad(cumulative_angles)
-            or not qml.math.allclose(cumulative_angles, 0.0, atol=atol, rtol=0)
+            or not angles_cancel
         ):
             with QueuingManager.stop_recording():
                 new_operations.append(
