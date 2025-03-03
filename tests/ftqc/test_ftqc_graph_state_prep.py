@@ -32,14 +32,22 @@ class TestGraphStatePrep:
 
         @qml.qnode(dev)
         def circuit(q):
-            GraphStatePrep(q)
+            GraphStatePrep(qubit_graph = q)
             return qml.probs()
 
         circuit(q)
         assert True
 
-    def test_decompose(self):
+    def test_compute_decompose(self):
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph("test", lattice.graph)
         decomposed_tape = GraphStatePrep.compute_decomposition(q)
         assert len(decomposed_tape) == 8 # 4 ops for |0> -> |+> and 4 ops to entangle nearest qubits
+    
+    def test_decompose(self):
+        lattice = generate_lattice([2, 2, 2], "cubic")
+        q = QubitGraph("test", lattice.graph)
+        graphstateobj = GraphStatePrep(qubit_graph = q)
+        decomposed_tape = graphstateobj.decomposition()
+        assert len(decomposed_tape) == 20 # 8 ops for |0> -> |+> and 12 ops to entangle nearest qubits
+
