@@ -4,4 +4,4 @@ PennyLane templates.
 """
 
 from .io import *
-from .qualtran_io import *
+from .qualtran_io import FromBloq, get_bloq_registers_info
