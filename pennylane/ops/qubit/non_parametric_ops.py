@@ -200,7 +200,11 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-@register_resources({qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1})
+def _hadamard_rz_rx_resources():
+    return {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_hadamard_rz_rx_resources)
 def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qml.RZ(np.pi / 2, wires=wires)
     qml.RX(np.pi / 2, wires=wires)
@@ -211,7 +215,11 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
 add_decomposition(Hadamard, _hadamard_to_rz_rx)
 
 
-@register_resources({qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1})
+def _hadamard_rz_ry_resources():
+    return {qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_hadamard_rz_ry_resources)
 def _hadamard_to_rz_ry(wires: WiresLike, **__):
     qml.RZ(np.pi, wires=wires)
     qml.RY(np.pi / 2, wires=wires)
@@ -1362,7 +1370,11 @@ class SWAP(Operation):
         return True
 
 
-@register_resources({qml.CNOT: 3})
+def _swap_to_cnot_resources():
+    return {qml.CNOT: 3}
+
+
+@register_resources(_swap_to_cnot_resources)
 def _swap_to_cnot(wires, **__):
     qml.CNOT(wires=[wires[0], wires[1]])
     qml.CNOT(wires=[wires[1], wires[0]])

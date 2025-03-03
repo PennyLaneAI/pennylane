@@ -234,6 +234,7 @@ class QFT(Operation):
 
         swaps()
 
+
 def _qft_decomposition_resources(num_wires):
     return {
         qml.Hadamard: num_wires,
@@ -243,20 +244,28 @@ def _qft_decomposition_resources(num_wires):
 
 
 @register_resources(_qft_decomposition_resources)
-def _qft_decomposition(wires: WiresLike, **__):
+def _qft_decomposition(wires: WiresLike, n_wires, **__):
 
-    n_wires = len(wires)
-    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+    shifts = qml.math.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)], like="jax")
     shift_len = len(shifts)
-    for i, wire in enumerate(wires):
-        qml.Hadamard(wire)
-        for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :]):
-            qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
-    first_half_wires = wires[: n_wires // 2]
-    last_half_wires = wires[-(n_wires // 2) :]
 
-    for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
-        qml.SWAP(wires=[wire1, wire2])
+    @qml.for_loop(n_wires)
+    def outer_loop(i):
+        qml.Hadamard(wires[i])
+
+        @qml.for_loop(shift_len - i)
+        def cphaseshift_loop(j):
+            qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
+
+        cphaseshift_loop()
+
+    outer_loop()
+
+    @qml.for_loop(n_wires // 2)
+    def swaps(i):
+        qml.SWAP(wires=[wires[i], wires[n_wires - i - 1]])
+
+    swaps()
 
 
 add_decomposition(QFT, _qft_decomposition)
