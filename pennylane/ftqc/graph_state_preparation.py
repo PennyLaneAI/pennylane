@@ -21,7 +21,7 @@ from .lattice import Lattice
 from .qubit_graph import QubitGraph
 
 
-class GraphStatePreparation(Operation):
+class GraphStatePrep(Operation):
     r"""
     Encode a graph state with the specified lattice structure, operations on each qubit, entanglement operations for nearest qubits and qubit graph.
     The initial graph is :math:`|0\rangle^{V}`, given each qubit in the graph is in the :math:`|0\rangle` state and is not entangled with each other.
@@ -39,7 +39,7 @@ class GraphStatePreparation(Operation):
     def __init__(
         self,
         lattice: Lattice,
-        wires: QubitGraph,
+        wires: list[QubitGraph],
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
     ):
@@ -64,7 +64,7 @@ class GraphStatePreparation(Operation):
     @staticmethod
     def compute_decomposition(
         lattice: Lattice,
-        wires: QubitGraph,
+        wires: list[QubitGraph],
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
     ):
@@ -78,7 +78,7 @@ class GraphStatePreparation(Operation):
 
         Args:
             lattice (Lattice): An instance of Lattice represents the connectivity of qubits.
-            wires (QubitGraph): QubitGraph object mapping qubit to wires.
+            wires (list[QubitGraph]): QubitGraph object mapping qubit to wires.
             qubit_ops (Operations): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
             entanglement_ops (Operations): Operator to entangle nearest qubits. Default as ``qml.CZ``.
 
