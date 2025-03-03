@@ -18,8 +18,8 @@ import networkx as nx
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.decompose import decompose
 from pennylane.ftqc import GraphStatePrep, Lattice, QubitGraph, generate_lattice
+from pennylane.transforms.decompose import decompose
 
 
 class TestGraphStatePrep:
@@ -32,7 +32,7 @@ class TestGraphStatePrep:
 
         @qml.qnode(dev)
         def circuit(q):
-            GraphStatePrep(qubit_graph = q)
+            GraphStatePrep(qubit_graph=q)
             return qml.probs()
 
         circuit(q)
@@ -42,18 +42,35 @@ class TestGraphStatePrep:
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph("test", lattice.graph)
         queue = GraphStatePrep.compute_decomposition(q)
-        assert len(queue) == 8 # 4 ops for |0> -> |+> and 4 ops to entangle nearest qubits
-    
+        assert len(queue) == 8  # 4 ops for |0> -> |+> and 4 ops to entangle nearest qubits
+
     def test_decompose(self):
         lattice = generate_lattice([2, 2, 2], "cubic")
         q = QubitGraph("test", lattice.graph)
-        op = GraphStatePrep(qubit_graph = q)
+        op = GraphStatePrep(qubit_graph=q)
         queue = op.decomposition()
-        assert len(queue) == 20 # 8 ops for |0> -> |+> and 12 ops to entangle nearest qubits
+        assert len(queue) == 20  # 8 ops for |0> -> |+> and 12 ops to entangle nearest qubits
         for i in range(len(queue)):
             assert queue[i].name == "Hadamard" if i < len(lattice.nodes) else queue[i].name == "CZ"
-            assert isinstance(queue[i].wires[0], QubitGraph) 
+            assert isinstance(queue[i].wires[0], QubitGraph)
             if i >= len(lattice.nodes):
                 assert isinstance(queue[i].wires[1], QubitGraph)
 
-
+    def test_preprocess_decompose(self):
+        lattice = generate_lattice([2, 2, 2], "cubic")
+        q = QubitGraph("test", lattice.graph)
+        ops = [GraphStatePrep(qubit_graph=q)]
+        measurements = [qml.probs()]
+        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+        expanded_tapes, _ = decompose(tape)
+        expanded_tape = expanded_tapes[0]
+        for i in range(len(expanded_tape) - 1):
+            assert (
+                expanded_tape[i].name == "Hadamard"
+                if i < len(lattice.nodes)
+                else expanded_tape[i].name == "CZ"
+            )
+            assert isinstance(expanded_tape[i].wires[0], QubitGraph)
+            if i >= len(lattice.nodes):
+                assert isinstance(expanded_tape[i].wires[1], QubitGraph)
+        assert isinstance(expanded_tape, qml.tape.QuantumScript)
