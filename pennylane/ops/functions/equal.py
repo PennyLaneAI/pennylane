@@ -755,39 +755,6 @@ def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
-def _equal_basis_rotation(
-    op1: qml.BasisRotation,
-    op2: qml.BasisRotation,
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
-):
-    if not qml.math.allclose(
-        op1.hyperparameters["unitary_matrix"],
-        op2.hyperparameters["unitary_matrix"],
-        atol=atol,
-        rtol=rtol,
-    ):
-        return (
-            "The hyperparameter unitary_matrix is not equal for op1 and op2.\n"
-            f"Got {op1.hyperparameters['unitary_matrix']}\n and {op2.hyperparameters['unitary_matrix']}."
-        )
-    if op1.wires != op2.wires:
-        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-    if check_interface:
-        interface1 = qml.math.get_interface(op1.hyperparameters["unitary_matrix"])
-        interface2 = qml.math.get_interface(op2.hyperparameters["unitary_matrix"])
-        if interface1 != interface2:
-            return (
-                "The hyperparameter unitary_matrix has different interfaces for op1 and op2."
-                f" Got {interface1} and {interface2}."
-            )
-    return True
-
-
-@_equal_dispatch.register
 def _equal_hilbert_schmidt(
     op1: qml.HilbertSchmidt,
     op2: qml.HilbertSchmidt,

@@ -237,6 +237,8 @@ class TransformProgram:
 
     Programs have several implemented dunder methods for easy manipulation.
 
+    >>> from pennylane.transforms.core.transform_program import TransformProgram
+    >>> from copy import copy
     >>> program = TransformProgram()
     >>> program.add_transform(qml.compile)
     >>> program.add_transform(qml.transforms.cancel_inverses)
@@ -252,7 +254,7 @@ class TransformProgram:
     True
     >>> True if TransformProgram() else False
     False
-    >>> program2 = copy.copy(program)
+    >>> program2 = copy(program)
     >>> program2 == program
     True
     >>> qml.compile in program

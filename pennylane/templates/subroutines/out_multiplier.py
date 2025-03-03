@@ -45,7 +45,7 @@ class OutMultiplier(Operation):
         mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
             work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
-            should be provided. Defaults to empty set.
+            should be provided. Defaults to empty tuple.
 
     **Example**
 

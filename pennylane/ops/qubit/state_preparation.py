@@ -16,9 +16,12 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
-from typing import Optional
+from typing import Optional, Union
+from warnings import warn
 
 import numpy as np
+import scipy as sp
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import math
@@ -102,7 +105,7 @@ class BasisState(StatePrepBase):
             state_list = list(qml.math.toarray(state))
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
-
+        state = qml.math.cast(state, int)
         super().__init__(state, wires=wires, id=id)
 
     def _flatten(self):
@@ -177,13 +180,7 @@ class BasisState(StatePrepBase):
 
 class StatePrep(StatePrepBase):
     r"""StatePrep(state, wires, pad_with = None, normalize = False, validate_norm = True)
-    Prepare subsystems using the given ket vector in the computational basis.
-
-    By setting ``pad_with`` to a real or complex number, ``state`` is automatically padded to dimension
-    :math:`2^n` where :math:`n` is the number of qubits used in the template.
-
-    To represent a valid quantum state vector, the L2-norm of ``state`` must be one.
-    The argument ``normalize`` can be set to ``True`` to automatically normalize the state.
+    Prepare subsystems using a state vector in the computational basis.
 
     **Details:**
 
@@ -204,10 +201,12 @@ class StatePrep(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        state (array[complex]): the state vector to prepare
+        state (array[complex] or csr_matrix): the state vector to prepare
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        pad_with (float or complex):  if not None, the input is padded with this constant to size :math:`2^n`
-        normalize (bool): whether to normalize the state vector
+        pad_with (float or complex): if not ``None``, ``state`` is padded with this constant to be of size :math:`2^n`, where
+            :math:`n` is the number of wires.
+        normalize (bool): whether to normalize the state vector. To represent a valid quantum state vector, the L2-norm
+            of ``state`` must be one. The argument ``normalize`` can be set to ``True`` to normalize the state automatically.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
         validate_norm (bool): whether to validate the norm of the input state
@@ -236,10 +235,13 @@ class StatePrep(StatePrepBase):
         >>> state
         tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
 
+    .. details::
+        :title: Usage Details
+
         **Differentiating with respect to the state**
 
         Due to non-trivial classical processing to construct the state preparation circuit,
-        the state argument is in general **not differentiable**.
+        the state argument is, in general, **not differentiable**.
 
         **Normalization**
 
@@ -277,6 +279,32 @@ class StatePrep(StatePrepBase):
         >>> state
         tensor([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j], requires_grad=True)
 
+        **Sparse state input**
+        `state` can also be provided as a sparse matrix.  The state will be implicitly
+        zero-padded to the full Hilbert space dimension.
+
+        .. code-block:: pycon
+
+            >>> import scipy as sp
+            >>> init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
+            >>> qsv_op = qml.StatePrep(init_state, wires=[1, 2])
+            >>> wire_order = [0, 1, 2]
+            >>> ket = qsv_op.state_vector(wire_order=wire_order)
+            >>> print(ket)  # Sparse representation
+            <Compressed Sparse Row sparse matrix of dtype 'float64'
+                    with 1 stored elements and shape (1, 8)>
+              Coords        Values
+              (0, 2)        1.0
+            >>> print(ket.toarray().flatten())  # Dense representation
+            [0. 0. 1. 0. 0. 0. 0. 0.]
+
+            # Normalization also works with sparse inputs:
+            >>> init_state_sparse = sp.sparse.csr_matrix([1, 1, 1, 1]) # Unnormalized
+            >>> qsv_op_norm = qml.StatePrep(init_state_sparse, wires=range(2), normalize=True)
+            >>> ket_norm = qsv_op_norm.state_vector()
+            >>> print(ket_norm.toarray().flatten()) # Normalized dense representation
+            [0.5 0.5 0.5 0.5]
+
 
     """
 
@@ -287,18 +315,23 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        state: TensorLike,
+        state: Union[TensorLike, csr_matrix],
         wires: WiresLike,
         pad_with=None,
         normalize=False,
         id: Optional[str] = None,
         validate_norm: bool = True,
     ):
-
-        state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
+        self.is_sparse = False
+        if sp.sparse.issparse(state):
+            state = state.tocsr()
+            state = self._preprocess_csr(state, wires, None, normalize, validate_norm)
+            self.is_sparse = True
+        else:
+            state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
 
         self._hyperparameters = {
             "pad_with": pad_with,
@@ -345,6 +378,14 @@ class StatePrep(StatePrepBase):
         return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
     def state_vector(self, wire_order: Optional[WiresLike] = None):
+
+        if self.is_sparse:
+            return (
+                _sparse_statevec_permute_and_embed(self.parameters[0], self.wires, wire_order)
+                if wire_order
+                else self.parameters[0]
+            )
+
         num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
         op_vector = math.reshape(self.parameters[0], op_vector_shape)
@@ -440,6 +481,59 @@ class StatePrep(StatePrepBase):
 
         return state
 
+    @staticmethod
+    def _preprocess_csr(state, wires, pad_with, normalize, validate_norm):
+        """Validate and pre-process inputs as follows:
+
+        * If the state is batched, the following processing is applied to each state set in the batch.
+        * Check that the state tensor is one-dimensional.
+        * pad_with has to be None.
+        * If normalize is false, check that the last dimension of the state is normalized to one. Else, normalize the
+          state tensor.
+        """
+
+        if pad_with:
+            raise ValueError("Non-zero Padding is not supported for sparse states")
+        shape = state.shape
+
+        # Check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is a 2D array
+        if shape[0] != 1:
+            raise ValueError(f"State must be a one-dimensional tensor; got shape {shape}.")
+
+        n_states = shape[-1]
+        dim = 2 ** len(Wires(wires))
+        if n_states > dim:
+            raise ValueError(
+                f"State must be of length {dim} or smaller to be padded; got length {n_states}."
+            )
+        if n_states < dim:
+            warn(
+                f"State must be of length {dim}; got length {n_states}. "
+                f"Automatically padding with zeros.",
+                UserWarning,
+            )
+            # pad a csr_matrix with zeros
+            state.resize((1, dim))
+
+        if not validate_norm:
+            return state
+
+        # normalize
+        if np.issubdtype(state.dtype, np.integer):
+            state = state.astype(float)
+
+        norm = sp.sparse.linalg.norm(state)
+
+        if normalize:
+            state /= norm
+
+        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+            raise ValueError(
+                f"The state must be a vector of norm 1.0; got norm {norm}. "
+                "Use 'normalize=True' to automatically normalize."
+            )
+        return state
+
 
 class QubitDensityMatrix(Operation):
     r"""QubitDensityMatrix(state, wires)
@@ -497,3 +591,44 @@ class QubitDensityMatrix(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
+
+
+def _sparse_statevec_permute_and_embed(
+    state: csr_matrix, wires: list, wire_order: list
+) -> csr_matrix:
+    """Permutes the wires of a statevector represented as a scipy.sparse.csr_matrix. If `wire_order` contains `wires`, then embed the `state` with corresponding orders, padding with bit 0 on other wires.
+
+    Args:
+        state (csr_matrix): the input statevector
+        wires (Iterable[int]): the wires of the input statevector
+        wire_order (Iterable[int]): the wires of the output statevector. E.g., [0, 2, 1] means the permutation of wires 0, 1, 2 to 0, 2, 1. wires=[2, 1] and wire_order=[1, 0, 2] means embedding the input state in a permuted order.
+
+    Returns:
+        csr_matrix: the permuted statevector
+    """
+    wires = Wires(wires)
+    wire_order = Wires(wire_order) if wire_order else wires
+
+    if not wire_order.contains_wires(wires):
+        raise WireError(
+            f"wire_order must contain all wires. Got wires {wires} and wire_order {wire_order}"
+        )
+
+    if wires == wire_order:
+        return state
+
+    index_map = _build_index_map(wires, wire_order)
+    perm_pos = index_map[state.indices]
+    new_csr = csr_matrix((state.data, perm_pos, state.indptr), shape=(1, 2 ** len(wire_order)))
+    return new_csr
+
+
+def _build_index_map(wires, wire_order):
+    n_wires = len(wires)
+    index_map = np.zeros(2**n_wires, dtype=int)
+    for pos in range(2**n_wires):
+        pos_bin = format(pos, f"0{n_wires}b")
+        wire_values_map = {wire: pos_bin[i] for i, wire in enumerate(wires)}
+        pos_bin_perm = [wire_values_map[wire] if wire in wires else "0" for wire in wire_order]
+        index_map[pos] = int("".join(pos_bin_perm), 2)
+    return index_map

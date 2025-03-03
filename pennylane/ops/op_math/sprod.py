@@ -15,7 +15,6 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-from copy import copy
 from typing import Union
 
 import pennylane as qml
@@ -148,7 +147,6 @@ class SProd(ScalarSymbolicOp):
         elif (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
             self.batch_size is None
         ):
-            scalar = copy(self.scalar)
 
             pr = {pw: qnp.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)

@@ -765,8 +765,14 @@ class TestVectorValuedJIT:
             else ""
         )
         if "adjoint" in grad_meth and any(
-            r.return_type
-            in (qml.measurements.Probability, qml.measurements.State, qml.measurements.Variance)
+            isinstance(
+                r,
+                (
+                    qml.measurements.ProbabilityMP,
+                    qml.measurements.StateMP,
+                    qml.measurements.VarianceMP,
+                ),
+            )
             for r in ret
         ):
             pytest.skip("Adjoint does not support probs")
@@ -886,14 +892,17 @@ class TestVectorValuedJIT:
 
 class TestJitAllCounts:
 
+    @pytest.mark.parametrize(
+        "device_name", (pytest.param("default.qubit", marks=pytest.mark.xfail), "reference.qubit")
+    )
     @pytest.mark.parametrize("counts_wires", (None, (0, 1)))
-    def test_jit_allcounts(self, counts_wires):
+    def test_jit_allcounts(self, device_name, counts_wires):
         """Test jitting with counts with all_outcomes == True."""
 
         tape = qml.tape.QuantumScript(
             [qml.RX(0, 0), qml.I(1)], [qml.counts(wires=counts_wires, all_outcomes=True)], shots=50
         )
-        device = qml.device("default.qubit")
+        device = qml.device(device_name, wires=2)
 
         res = jax.jit(qml.execute, static_argnums=(1, 2))(
             (tape,), device, qml.gradients.param_shift
@@ -904,7 +913,14 @@ class TestJitAllCounts:
         for val in ["01", "10", "11"]:
             assert qml.math.allclose(res[val], 0)
 
-    def test_jit_allcounts_broadcasting(self):
+    @pytest.mark.parametrize(
+        "device_name",
+        (
+            pytest.param("default.qubit", marks=pytest.mark.xfail),
+            pytest.param("reference.qubit", marks=pytest.mark.xfail),
+        ),
+    )
+    def test_jit_allcounts_broadcasting(self, device_name):
         """Test jitting with counts with all_outcomes == True."""
 
         tape = qml.tape.QuantumScript(
@@ -912,7 +928,7 @@ class TestJitAllCounts:
             [qml.counts(wires=(0, 1), all_outcomes=True)],
             shots=50,
         )
-        device = qml.device("default.qubit")
+        device = qml.device(device_name, wires=2)
 
         res = jax.jit(qml.execute, static_argnums=(1, 2))(
             (tape,), device, qml.gradients.param_shift
@@ -927,7 +943,6 @@ class TestJitAllCounts:
                 assert qml.math.allclose(ri[val], 0)
 
 
-@pytest.mark.xfail(reason="Need to figure out how to handle this case in a less ambiguous manner")
 def test_diff_method_None_jit():
     """Test that jitted execution works when `diff_method=None`."""
 

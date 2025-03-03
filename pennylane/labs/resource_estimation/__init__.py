@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -62,6 +62,8 @@ Operators
     ~ResourceCY
     ~ResourceCZ
     ~ResourceDoubleExcitation
+    ~ResourceDoubleExcitationMinus
+    ~ResourceDoubleExcitationPlus
     ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
     ~ResourceHadamard
@@ -72,6 +74,10 @@ Operators
     ~ResourceIsingZZ
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
+    ~ResourceMultiControlledX
+    ~ResourceOrbitalRotation
+    ~ResourcePauliRot
+    ~ResourcePhaseShift
     ~ResourcePauliRot
     ~ResourcePhaseShift
     ~ResourcePSWAP
@@ -80,6 +86,7 @@ Operators
     ~ResourceRY
     ~ResourceRZ
     ~ResourceS
+    ~ResourceSingleExcitation
     ~ResourceSingleExcitationMinus
     ~ResourceSingleExcitationPlus
     ~ResourceSWAP
@@ -97,7 +104,9 @@ Symbolic Operators
 
     ~ResourceAdjoint
     ~ResourceControlled
+    ~ResourceExp
     ~ResourcePow
+    ~ResourceProd
 
 Templates
 ~~~~~~~~~
@@ -105,7 +114,17 @@ Templates
 .. autosummary::
     :toctree: api
 
+    ~ResourceBasisRotation
+    ~ResourcePrepSelPrep
     ~ResourceQFT
+    ~ResourceQPE
+    ~ResourceQubitization
+    ~ResourceReflection
+    ~ResourceSelect
+    ~ResourceStatePrep
+    ~ResourceTrotterProduct
+    ~ResourceTrotterizedQfunc
+    ~resource_trotterize
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -152,6 +171,9 @@ from .ops import (
     ResourceCY,
     ResourceCZ,
     ResourceDoubleExcitation,
+    ResourceDoubleExcitationMinus,
+    ResourceDoubleExcitationPlus,
+    ResourceExp,
     ResourceFermionicSWAP,
     ResourceGlobalPhase,
     ResourceHadamard,
@@ -162,15 +184,18 @@ from .ops import (
     ResourceIsingZZ,
     ResourceMultiControlledX,
     ResourceMultiRZ,
+    ResourceOrbitalRotation,
     ResourcePauliRot,
     ResourcePow,
     ResourcePSWAP,
     ResourcePhaseShift,
+    ResourceProd,
     ResourceRot,
     ResourceRX,
     ResourceRY,
     ResourceRZ,
     ResourceS,
+    ResourceSingleExcitation,
     ResourceSingleExcitationMinus,
     ResourceSingleExcitationPlus,
     ResourceSWAP,
@@ -182,5 +207,16 @@ from .ops import (
 )
 
 from .templates import (
+    ResourceBasisRotation,
+    ResourcePrepSelPrep,
     ResourceQFT,
+    ResourceQPE,
+    ResourceQuantumPhaseEstimation,
+    ResourceQubitization,
+    ResourceReflection,
+    ResourceSelect,
+    ResourceStatePrep,
+    ResourceTrotterProduct,
+    ResourceTrotterizedQfunc,
+    resource_trotterize,
 )

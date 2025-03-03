@@ -50,6 +50,14 @@ def build_qfunc(wires):
     return qfunc
 
 
+def test_deprecation_pipeline_None():
+    """Test that specifying `pipeline=None` is deprecated."""
+
+    tape = qml.tape.QuantumScript()
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="pipeline=None is now deprecated"):
+        qml.compile(tape, pipeline=None)
+
+
 class TestCompile:
     """Unit tests for compile function."""
 
@@ -200,6 +208,22 @@ class TestCompileIntegration:
         tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Barrier([0, 1]), qml.CNOT([0, 1])])
         [compiled_tape], _ = qml.compile(tape)
         assert compiled_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1])]
+
+    def test_compile_empty_basis_set(self):
+        """Test that compiling with empty basis set decomposes any decomposable operation."""
+        ops = (
+            qml.RX(0.1, 0),
+            qml.H(1),
+            qml.Barrier([0, 1]),
+            qml.CNOT([1, 0]),
+            qml.PauliY(0),
+            qml.CY([0, 1]),
+        )
+        tape = qml.tape.QuantumScript(ops)
+        decomposable_ops = {op.name for op in tape.operations if op.has_decomposition}
+
+        [transformed_tape], _ = qml.compile(tape, basis_set=[])
+        assert not any(op.name in decomposable_ops for op in transformed_tape.operations)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):

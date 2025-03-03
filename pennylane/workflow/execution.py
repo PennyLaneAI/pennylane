@@ -18,17 +18,17 @@ differentiation support.
 
 import inspect
 import logging
-from collections.abc import Callable
-from dataclasses import replace
-from typing import Optional, Union
+from typing import Callable, Literal, Optional, Union
 from warnings import warn
 
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.math import Interface
+from pennylane.math import Interface, InterfaceLike
 from pennylane.tape import QuantumScriptBatch
+from pennylane.transforms.core import TransformDispatcher, TransformProgram
 from pennylane.typing import ResultBatch
+from pennylane.workflow.resolution import SupportedDiffMethods
 
 from ._setup_transform_program import _setup_transform_program
 from .resolution import _resolve_execution_config, _resolve_interface
@@ -42,19 +42,21 @@ logger.addHandler(logging.NullHandler())
 def execute(
     tapes: QuantumScriptBatch,
     device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
-    diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
-    interface: Optional[Union[str, Interface]] = Interface.AUTO,
-    transform_program=None,
-    inner_transform=None,
-    config=None,
-    grad_on_execution="best",
-    gradient_kwargs=None,
+    diff_method: Optional[Union[Callable, SupportedDiffMethods, TransformDispatcher]] = None,
+    interface: Optional[InterfaceLike] = Interface.AUTO,
+    *,
+    transform_program: TransformProgram = None,
+    grad_on_execution: Literal[True, False, "best"] = "best",
     cache: Union[None, bool, dict, Cache] = True,
-    cachesize=10000,
-    max_diff=1,
-    device_vjp=False,
-    mcm_config=None,
-    gradient_fn="unset",
+    cachesize: int = 10000,
+    max_diff: int = 1,
+    device_vjp: Union[bool, None] = False,
+    postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
+    mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
+    gradient_kwargs: dict = None,
+    mcm_config="unset",
+    config="unset",
+    inner_transform="unset",
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -68,32 +70,38 @@ def execute(
             for the gradient (if supported).
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
+            Available options include ``autograd``, ``torch``, ``tf``, ``jax``, and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
-        inner_transform (.TransformProgram): A transform program to be applied to the tapes in
-            inner execution, inside the ml interface.
-        config (qml.devices.ExecutionConfig): A data structure describing the parameters
-            needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed
-            on the execution or not. Only applies
+            on the execution or not. It only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
-        gradient_kwargs (dict): dictionary of keyword arguments to pass when
-            determining the gradients of tapes
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
-        cachesize (int): the size of the cache
-        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+        cachesize (int): the size of the cache.
+        max_diff (int): If ``diff_method`` is a gradient transform, this option specifies
             the maximum number of derivatives to support. Increasing this value allows
-            for higher order derivatives to be extracted, at the cost of additional
-            (classical) computational overhead during the backwards pass.
-        device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
+            for higher-order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backward pass.
+        device_vjp=False (Optional[bool]): whether or not to use the device-provided Jacobian
             product if it is available.
-        mcm_config (dict): Dictionary containing configuration options for handling
-            mid-circuit measurements.
-        gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed
-            ``diff_method`` and will be removed in v0.41.
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. Default is ``None``.
+        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements.
+            ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
+            the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
+            otherwise. For usage details, please refer to the
+            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes.
+        mcm_config="unset": **DEPRECATED**. This keyword argument has been replaced by ``postselect_mode``
+            and ``mcm_method`` and will be removed in v0.42.
+        config="unset": **DEPRECATED**. This keyword argument has been deprecated and
+            will be removed in v0.42.
+        inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
+            and will be removed in v0.42.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -157,12 +165,29 @@ def execute(
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
 
-    if gradient_fn != "unset":
+    if config != "unset":
         warn(
-            "gradient_fn has been renamed to diff_method in qml.execute",
+            "The config argument has been deprecated and will be removed in v0.42. "
+            "The provided config argument will be ignored. "
+            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
             qml.PennyLaneDeprecationWarning,
         )
-        diff_method = gradient_fn
+
+    if inner_transform != "unset":
+        warn(
+            "The inner_transform argument has been deprecated and will be removed in v0.42. "
+            "The provided inner_transform argument will be ignored. "
+            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
+    if mcm_config != "unset":
+        warn(
+            "The mcm_config argument is deprecated and will be removed in v0.42, use mcm_method and postselect_mode instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        mcm_method = mcm_config.mcm_method
+        postselect_mode = mcm_config.postselect_mode
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
@@ -193,35 +218,22 @@ def execute(
     ### Specifying and preprocessing variables ####
 
     interface = _resolve_interface(interface, tapes)
-    # Only need to calculate derivatives with jax when we know it will be executed later.
 
-    gradient_kwargs = gradient_kwargs or {}
-    mcm_config = mcm_config or {}
-    if not config:
-        config = qml.devices.ExecutionConfig(
-            interface=interface,
-            gradient_method=diff_method,
-            grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
-            use_device_jacobian_product=device_vjp,
-            mcm_config=mcm_config,
-            gradient_keyword_arguments=gradient_kwargs,
-            derivative_order=max_diff,
-        )
-        config = _resolve_execution_config(
-            config, device, tapes, transform_program=transform_program
-        )
-
-    config = replace(
-        config,
+    config = qml.devices.ExecutionConfig(
         interface=interface,
+        gradient_method=diff_method,
+        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+        use_device_jacobian_product=device_vjp,
+        mcm_config=qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method),
+        gradient_keyword_arguments=gradient_kwargs or {},
         derivative_order=max_diff,
     )
+    config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
 
-    if transform_program is None or inner_transform is None:
-        transform_program = transform_program or qml.transforms.core.TransformProgram()
-        transform_program, inner_transform = _setup_transform_program(
-            transform_program, device, config, cache, cachesize
-        )
+    transform_program = transform_program or qml.transforms.core.TransformProgram()
+    transform_program, inner_transform = _setup_transform_program(
+        transform_program, device, config, cache, cachesize
+    )
 
     #### Executing the configured setup #####
     tapes, post_processing = transform_program(tapes)

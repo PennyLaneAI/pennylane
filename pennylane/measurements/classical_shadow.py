@@ -180,8 +180,8 @@ def classical_shadow(wires: WiresLike, seed=None):
             measurements = [qml.classical_shadow(wires=(0,1))]
             tape = qml.tape.QuantumTape(ops, measurements, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0]
+        >>> bits1, recipes1 = qml.execute([tape], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         True
         >>> np.all(bits1 == bits2)
@@ -200,8 +200,8 @@ def classical_shadow(wires: WiresLike, seed=None):
             measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
             tape2 = qml.tape.QuantumTape(ops, measurements2, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape1], device=dev, gradient_fn=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape2], device=dev, gradient_fn=None)[0]
+        >>> bits1, recipes1 = qml.execute([tape1], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape2], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         False
         >>> np.all(bits1 == bits2)
@@ -225,6 +225,8 @@ class ClassicalShadowMP(MeasurementTransform):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    _shortname = Shadow  #! Note: deprecated. Change the value to "shadow" in v0.42
 
     def __init__(
         self,
@@ -446,10 +448,6 @@ class ClassicalShadowMP(MeasurementTransform):
     def numeric_type(self):
         return int
 
-    @property
-    def return_type(self):
-        return Shadow
-
     @classmethod
     def _abstract_eval(
         cls,
@@ -492,6 +490,8 @@ class ShadowExpvalMP(MeasurementTransform):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    _shortname = ShadowExpval  #! Note: deprecated. Change the value to "shadowexpval" in v0.42
 
     def _flatten(self):
         metadata = (
@@ -564,10 +564,6 @@ class ShadowExpvalMP(MeasurementTransform):
     @property
     def numeric_type(self):
         return float
-
-    @property
-    def return_type(self):
-        return ShadowExpval
 
     def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
         return () if isinstance(self.H, Operator) else (len(self.H),)

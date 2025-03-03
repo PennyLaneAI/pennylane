@@ -260,6 +260,7 @@ html_theme_options = {
         "TensorFlow, the TensorFlow logo, and any related marks are trademarks " "of Google Inc."
     ],
     "google_analytics_tracking_id": "G-C480Z9JL0D",
+    "search_on_pennylane_ai": True,
 }
 
 edit_on_github_project = "PennyLaneAI/pennylane"

@@ -24,23 +24,9 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     measure_prim,
 )
-from pennylane.measurements import MeasurementValue
+from pennylane.measurements import MeasurementValue, get_mcm_predicates
 
 from .qscript import QuantumScript
-
-
-def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
-    """Helper function to update predicates with mid-circuit measurements"""
-    # copy from ops.op_math.condition.py
-    new_conds = [conditions[0]]
-    false_cond = ~conditions[0]
-
-    for c in conditions[1:]:
-        new_conds.append(false_cond & c)
-        false_cond = false_cond & ~c
-
-    new_conds.append(false_cond)
-    return new_conds
 
 
 class CollectOpsandMeas(PlxprInterpreter):
@@ -60,8 +46,9 @@ class CollectOpsandMeas(PlxprInterpreter):
             return qml.probs(wires=0), qml.expval(qml.Z(1))
 
     >>> from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+    >>> from jax import make_jaxpr
     >>> qml.capture.enable()
-    >>> plxpr = jax.make_plxpr(f)(0.5)
+    >>> plxpr = make_jaxpr(f)(0.5)
     >>> collector = CollectOpsandMeas()
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
     [probs(wires=[0]), expval(Z(1))]
@@ -162,7 +149,7 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
                 "Cannot use qml.cond with a combination of mid-circuit measurements "
                 "and other classical conditions as predicates."
             )
-        conditions = _get_mcm_predicates(mcm_conditions)
+        conditions = get_mcm_predicates(mcm_conditions)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = all_args[const_slice]
@@ -223,7 +210,7 @@ def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> Quantum
         qml.capture.enable()
 
         plxpr = jax.make_jaxpr(f)(0.5)
-        tape = qml.capture.convert_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
+        tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
         print(qml.drawer.tape_text(tape, decimals=2))
 
     .. code-block::

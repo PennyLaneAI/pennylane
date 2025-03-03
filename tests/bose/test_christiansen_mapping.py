@@ -388,5 +388,5 @@ def test_christiansen_mapping_tolerance(bose_op, qubit_op_data, tol):
 def test_error_is_raised_for_incompatible_type():
     """Test that an error is raised if the input is not a BoseWord or BoseSentence"""
 
-    with pytest.raises(ValueError, match="bose_operator must be a BoseWord or BoseSentence"):
+    with pytest.raises(TypeError, match="bose_operator must be a BoseWord or BoseSentence"):
         christiansen_mapping(X(0))

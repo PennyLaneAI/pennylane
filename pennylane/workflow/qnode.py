@@ -20,20 +20,19 @@ import inspect
 import logging
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any, Literal, Optional, Union, get_args
+from typing import Literal, Optional, Union, get_args
 
-from cachetools import Cache
+from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from ._capture_qnode import capture_qnode
-from .resolution import SupportedDiffMethods
+from .resolution import SupportedDiffMethods, _validate_jax_version
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -61,11 +60,11 @@ def _convert_to_interface(result, interface: Interface):
 def _make_execution_config(
     circuit: Optional["QNode"], diff_method=None, mcm_config=None
 ) -> "qml.devices.ExecutionConfig":
-    circuit_interface = getattr(circuit, "interface", Interface.NUMPY)
+    circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
     grad_on_execution = execute_kwargs.get("grad_on_execution")
-    if circuit_interface == Interface.JAX:
+    if circuit_interface in {Interface.JAX.value, Interface.JAX_JIT.value}:
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
@@ -108,6 +107,10 @@ def _to_qfunc_output_type(
     return qml.pytrees.unflatten(results, qfunc_output_structure)
 
 
+def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
+    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
+
+
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
     for kwarg in gradient_kwargs:
         if kwarg == "expansion_strategy":
@@ -134,7 +137,8 @@ def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
         elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
             warnings.warn(
                 f"Received gradient_kwarg {kwarg}, which is not included in the list of "
-                "standard qnode gradient kwargs."
+                "standard qnode gradient kwargs. Please specify all gradient kwargs through "
+                "the gradient_kwargs argument as a dictionary."
             )
 
 
@@ -172,6 +176,32 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         raise qml.QuantumFunctionError(
             "All measurements must be returned in the order they are measured."
         )
+
+
+def _validate_diff_method(
+    device: SupportedDeviceAPIs, diff_method: Union[str, TransformDispatcher]
+) -> None:
+    if diff_method is None:
+        return
+
+    # performs type validation
+    config = _make_execution_config(None, diff_method)
+
+    if device.supports_derivatives(config):
+        return
+    if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
+        raise qml.QuantumFunctionError(
+            f"Device {device} does not support {diff_method} with requested circuit."
+        )
+    if isinstance(diff_method, str) and diff_method in tuple(get_args(SupportedDiffMethods)):
+        return
+    if isinstance(diff_method, TransformDispatcher):
+        return
+
+    raise qml.QuantumFunctionError(
+        f"Differentiation method {diff_method} not recognized. Allowed "
+        f"options are {tuple(get_args(SupportedDiffMethods))}."
+    )
 
 
 # pylint: disable=too-many-instance-attributes
@@ -285,11 +315,14 @@ class QNode:
             as the name suggests. If not provided,
             the device will determine the best choice automatically. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-
-    Keyword Args:
-        **kwargs: Any additional keyword arguments provided are passed to the differentiation
+        gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
+        static_argnums (Union[int, Sequence[int]]): *Only applicable when the experimental capture mode is enabled.*
+            An ``int`` or collection of ``int``\ s that specify which positional arguments to treat as static.
+        autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to
+            convert Python control flow to native PennyLane control flow. For more information, refer to
+            :doc:`Autograph </development/autograph>`. Defaults to ``True``.
 
     **Example**
 
@@ -364,11 +397,7 @@ class QNode:
         to support it.) A list of supporting operators is available in
         :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting`.
         Whether or not broadcasting delivers an increased performance will depend on whether the
-        used device is a classical simulator and natively supports this. The latter can be checked
-        with the capabilities of the device:
-
-        >>> dev.capabilities()["supports_broadcasting"]
-        True
+        used device is a classical simulator and natively supports this.
 
         If a device does not natively support broadcasting, it will execute broadcasted QNode calls
         by expanding the input arguments into separate executions. That is, every device can
@@ -510,8 +539,14 @@ class QNode:
         device_vjp: Union[None, bool] = False,
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
-        **gradient_kwargs,
+        gradient_kwargs: Optional[dict] = None,
+        static_argnums: Union[int, Iterable[int]] = (),
+        autograph: bool = True,
+        **kwargs,
     ):
+        self._init_args = locals()
+        del self._init_args["self"]
+        del self._init_args["kwargs"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -539,7 +574,17 @@ class QNode:
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
+        gradient_kwargs = gradient_kwargs or {}
+        if kwargs:
+            if any(k in qml.gradients.SUPPORTED_GRADIENT_KWARGS for k in list(kwargs.keys())):
+                warnings.warn(
+                    f"Specifying gradient keyword arguments {list(kwargs.keys())} as additional kwargs has been deprecated and will be removed in v0.42. \
+                    Instead, please specify these arguments through the `gradient_kwargs` dictionary argument.",
+                    qml.PennyLaneDeprecationWarning,
+                )
+            gradient_kwargs |= kwargs
         _validate_gradient_kwargs(gradient_kwargs)
+
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
                 "Detected 'shots' as an argument to the given quantum function. "
@@ -552,23 +597,32 @@ class QNode:
             self._qfunc_uses_shots_arg = False
 
         # input arguments
+        self._autograph = autograph
         self.func = func
         self.device = device
-        self._interface = (
-            Interface.NUMPY if diff_method is None else get_canonical_interface_name(interface)
-        )
+        self._interface = get_canonical_interface_name(interface)
+        if self._interface in (Interface.JAX, Interface.JAX_JIT):
+            _validate_jax_version()
+
         self.diff_method = diff_method
-        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
+        _validate_diff_method(self.device, self.diff_method)
         cache = (max_diff > 1) if cache == "auto" else cache
 
+        self.capture_cache = LRUCache(maxsize=1000)
+        if isinstance(static_argnums, int):
+            static_argnums = (static_argnums,)
+        self.static_argnums = sorted(static_argnums)
+
         # execution keyword arguments
+        _validate_mcm_config(postselect_mode, mcm_method)
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
             "device_vjp": device_vjp,
-            "mcm_config": mcm_config,
+            "postselect_mode": postselect_mode,
+            "mcm_method": mcm_method,
         }
 
         # internal data attributes
@@ -579,10 +633,6 @@ class QNode:
 
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
-
-        # validation check.  Will raise error if bad diff_method
-        if diff_method is not None:
-            QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
 
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
@@ -613,7 +663,7 @@ class QNode:
     @property
     def interface(self) -> str:
         """The interface used by the QNode"""
-        return self._interface.value
+        return "jax" if qml.capture.enabled() else self._interface.value
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):
@@ -631,6 +681,74 @@ class QNode:
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         self._transform_program.push_back(transform_container=transform_container)
+
+    def update(self, **kwargs) -> "QNode":
+        """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
+
+        .. note::
+            The QNode`s transform program cannot be updated using this method.
+
+        Keyword Args:
+            **kwargs: The provided keyword arguments must match that of :meth:`QNode.__init__`.
+                The list of supported gradient keyword arguments can be found at ``qml.gradients.SUPPORTED_GRADIENT_KWARGS``.
+
+        Returns:
+            qnode (QNode): new QNode with updated settings
+
+
+        Raises:
+            ValueError: if provided keyword arguments are invalid
+
+        **Example**
+
+        Let's begin by defining a ``QNode`` object,
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(x):
+                qml.RZ(x, wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.RY(x, wires=1)
+                return qml.expval(qml.PauliZ(1))
+
+        If we wish to try out a new configuration without having to repeat the
+        boiler plate above, we can use the ``QNode.update`` method. For example,
+        we can update the differentiation method and execution arguments,
+
+        >>> new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)
+        >>> print(new_circuit.diff_method)
+        adjoint
+        >>> print(new_circuit.execute_kwargs["device_vjp"])
+        True
+
+        Similarly, if we wish to re-configure the interface used for execution,
+
+        >>> new_circuit= circuit.update(interface="torch")
+        >>> new_circuit(1)
+        tensor(0.5403, dtype=torch.float64)
+        """
+        if not kwargs:
+            valid_params = set(self._init_args.copy()) | qml.gradients.SUPPORTED_GRADIENT_KWARGS
+            raise ValueError(
+                f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
+            )
+        original_init_args = self._init_args.copy()
+        # gradient_kwargs defaults to None
+        original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
+        # nested dictionary update
+        new_gradient_kwargs = kwargs.pop("gradient_kwargs", {})
+        old_gradient_kwargs = original_init_args.get("gradient_kwargs").copy()
+        old_gradient_kwargs.update(new_gradient_kwargs)
+        kwargs["gradient_kwargs"] = old_gradient_kwargs
+
+        original_init_args.update(kwargs)
+        updated_qn = QNode(**original_init_args)
+        # pylint: disable=protected-access
+        updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        return updated_qn
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
@@ -699,147 +817,6 @@ class QNode:
             f"options are {tuple(get_args(SupportedDiffMethods))}."
         )
 
-    # pylint: disable=unused-argument
-    @staticmethod
-    @debug_logger
-    def get_best_method(
-        device: SupportedDeviceAPIs,
-        interface: SupportedInterfaceUserInput,
-        tape: Optional["qml.tape.QuantumTape"] = None,
-    ) -> tuple[
-        Union[TransformDispatcher, Literal["device", "backprop", "parameter-shift", "finite-diff"]],
-        dict[str, Any],
-        SupportedDeviceAPIs,
-    ]:
-        """
-        .. warning::
-
-            This method is deprecated in v0.40 and will be removed in v0.41.
-            Instead, use the :func:`qml.workflow.get_best_diff_method <.workflow.get_best_diff_method>` function.
-
-        Returns the 'best' differentiation method
-        for a particular device and interface combination.
-
-        This method attempts to determine support for differentiation
-        methods using the following order:
-
-        * ``"device"``
-        * ``"backprop"``
-        * ``"parameter-shift"``
-        * ``"finite-diff"``
-
-        The first differentiation method that is supported (going from
-        top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradients
-        are not included here.
-
-        Args:
-            device (.devices.Device): PennyLane device
-            interface (str): name of the requested interface
-            shots
-
-        Returns:
-            tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
-            ``gradient_kwargs``, and the device to use when calling the execute function.
-        """
-
-        warnings.warn(
-            "QNode.get_best_method is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.get_best_diff_method function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-        if not isinstance(device, qml.devices.Device):
-            device = qml.devices.LegacyDeviceFacade(device)
-
-        config = _make_execution_config(None, "best")
-
-        if device.supports_derivatives(config, circuit=tape):
-            new_config = device.setup_execution_config(config)
-            return new_config.gradient_method, {}, device
-
-        if tape and any(isinstance(o, qml.operation.CV) for o in tape):
-            return qml.gradients.param_shift_cv, {"dev": device}, device
-
-        return qml.gradients.param_shift, {}, device
-
-    @staticmethod
-    @debug_logger
-    def best_method_str(device: SupportedDeviceAPIs, interface: SupportedInterfaceUserInput) -> str:
-        """
-        .. warning::
-
-            This method is deprecated in v0.40 and will be removed in v0.41.
-            Instead, use the :func:`qml.workflow.get_best_diff_method <.workflow.get_best_diff_method>` function.
-
-
-        Similar to :meth:`~.get_best_method`, except return the
-        'best' differentiation method in human-readable format.
-
-        This method attempts to determine support for differentiation
-        methods using the following order:
-
-        * ``"device"``
-        * ``"backprop"``
-        * ``"parameter-shift"``
-        * ``"finite-diff"``
-
-        The first differentiation method that is supported (going from
-        top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradient
-        are not included here.
-
-        This method is intended only for debugging purposes. Otherwise,
-        :meth:`~.get_best_method` should be used instead.
-
-        Args:
-            device (.devices.Device): PennyLane device
-            interface (str): name of the requested interface
-
-        Returns:
-            str: The gradient function to use in human-readable format.
-        """
-
-        warnings.warn(
-            "QNode.best_method_str is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.get_best_diff_method function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-        if not isinstance(device, qml.devices.Device):
-            device = qml.devices.LegacyDeviceFacade(device)
-
-        warnings.filterwarnings(
-            "ignore", "QNode.get_best_method is deprecated", qml.PennyLaneDeprecationWarning
-        )
-        transform = QNode.get_best_method(device, interface)[0]
-
-        if transform is qml.gradients.finite_diff:
-            return "finite-diff"
-
-        if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
-            return "parameter-shift"
-
-        # only other options at this point are "backprop" or "device"
-        return transform
-
-    @property
-    def tape(self) -> QuantumTape:
-        """The quantum tape
-
-        .. warning::
-
-            This property is deprecated in v0.40 and will be removed in v0.41.
-            Instead, use the :func:`qml.workflow.construct_tape <.workflow.construct_tape>` function.
-        """
-
-        warnings.warn(
-            "The tape/qtape property is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.construct_tape function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._tape
-
-    qtape = tape  # for backwards compatibility
-
     @debug_logger
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
@@ -871,14 +848,6 @@ class QNode:
         # construct the tape
         tape = self.construct(args, kwargs)
 
-        if self.interface == "auto":
-            interface = qml.math.get_interface(*args, *list(kwargs.values()))
-            try:
-                interface = get_canonical_interface_name(interface)
-            except ValueError:
-                interface = Interface.NUMPY
-        else:
-            interface = self.interface
         # Calculate the classical jacobians if necessary
         self._transform_program.set_classical_component(self, args, kwargs)
 
@@ -886,7 +855,7 @@ class QNode:
             (tape,),
             device=self.device,
             diff_method=self.diff_method,
-            interface=interface,
+            interface=self.interface,
             transform_program=self._transform_program,
             gradient_kwargs=self.gradient_kwargs,
             **self.execute_kwargs,
@@ -898,6 +867,7 @@ class QNode:
         if (
             len(tape.get_parameters(trainable_only=False)) == 0
             and not self._transform_program.is_informative
+            and self.interface != "auto"
         ):
             res = _convert_to_interface(res, qml.math.get_canonical_interface_name(self.interface))
 
@@ -905,6 +875,8 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         if qml.capture.enabled():
+            from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
+
             return capture_qnode(self, *args, **kwargs)
         return self._impl_call(*args, **kwargs)
 

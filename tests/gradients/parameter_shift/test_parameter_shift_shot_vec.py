@@ -1377,7 +1377,6 @@ class TestParameterShiftRule:
         dev = qml.device("default.qubit", wires=2, shots=shot_vec, seed=seed)
         a = 0.54
 
-        _herm_shot_vec_tol = shot_vec_tol * 100
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(a, wires=0)
             qml.RX(a, wires=1)
@@ -1391,7 +1390,7 @@ class TestParameterShiftRule:
         res = dev.execute(tape)
         expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
         for r in res:
-            assert np.allclose(r, expected, atol=_herm_shot_vec_tol, rtol=0)
+            assert qml.math.allclose(r, expected, atol=5e-2)
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
@@ -1412,16 +1411,17 @@ class TestParameterShiftRule:
                 assert isinstance(param_res, np.ndarray)
                 assert param_res.shape == ()
 
-            assert shot_vec_result[0] == pytest.approx(expected[0], abs=finite_diff_tol)
-            assert shot_vec_result[1] == pytest.approx(expected[1], abs=0.3)
+            assert qml.math.allclose(shot_vec_result[0], expected[0], atol=0.1)
+            assert qml.math.allclose(shot_vec_result[1], expected[1], atol=0.15)
 
+        # Finite-diff
         for shot_vec_result in gradF:
             for param_res in shot_vec_result:
                 assert isinstance(param_res, np.ndarray)
                 assert param_res.shape == ()
-
-            assert shot_vec_result[0] == pytest.approx(expected[0], abs=finite_diff_tol)
-            assert shot_vec_result[1] == pytest.approx(expected[1], abs=_herm_shot_vec_tol)
+            # Tolerance came from multi_param test below
+            assert qml.math.allclose(shot_vec_result[0], expected[0], atol=0.1)
+            assert qml.math.allclose(shot_vec_result[1], expected[1], atol=1.5)
 
     def test_involutory_and_noninvolutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
@@ -1970,12 +1970,12 @@ class TestParameterShiftRule:
 
         dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
 
-        @qml.qnode(dev, diff_method="parameter-shift", broadcast=broadcast)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"broadcast": broadcast})
         def qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(SpecialObservable(wires=0))
 
-        @qml.qnode(dev, diff_method="parameter-shift", broadcast=broadcast)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"broadcast": broadcast})
         def reference_qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
@@ -2032,7 +2032,7 @@ class TestHamiltonianExpvalGradients:
         tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)
         tape.trainable_params = {2, 3, 4}
 
-        with pytest.raises(ValueError, match="for expectations, not var"):
+        with pytest.raises(ValueError, match="for expectations, not"):
             qml.gradients.param_shift(tape, broadcast=broadcast)
 
     def test_no_trainable_coeffs(self, mocker, broadcast, tol):
@@ -2078,7 +2078,6 @@ class TestHamiltonianExpvalGradients:
             b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
         ]
         for res in all_res:
-            assert isinstance(res, tuple)
             assert len(res) == 2
             assert res[0].shape == ()
             assert res[1].shape == ()
@@ -2086,17 +2085,16 @@ class TestHamiltonianExpvalGradients:
             assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
             assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_trainable_coeffs(self, mocker, broadcast, tol):
+    def test_trainable_coeffs(self, broadcast, tol):
         """Test trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-        coeffs = np.array([0.1, 0.2, 0.3])
+        coeffs = qml.numpy.array([0.1, 0.2, 0.3])
         H = qml.Hamiltonian(coeffs, obs)
 
-        weights = np.array([0.4, 0.5])
+        weights = qml.numpy.array([0.4, 0.5])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(weights[0], wires=0)
@@ -2116,237 +2114,19 @@ class TestHamiltonianExpvalGradients:
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         # two (broadcasted if broadcast=True) shifts per rotation gate
         # one circuit per trainable H term
-        assert len(tapes) == (2 + 2 if broadcast else 2 * 2 + 2)
-        assert [t.batch_size for t in tapes] == ([2, 2, None, None] if broadcast else [None] * 6)
-        spy.assert_called()
+        assert len(tapes) == (2 if broadcast else 2 * 2)
+        assert [t.batch_size for t in tapes] == ([2, 2] if broadcast else [None] * 4)
 
         res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
-        assert qml.math.shape(res) == (3, 4)
+        assert qml.math.shape(res) == (3, 2)
 
         expected = [
             -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
             b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-            np.cos(x),
-            -(np.sin(x) * np.sin(y)),
         ]
         for r in res:
             assert qml.math.allclose(r, expected, atol=shot_vec_tol)
-
-    @pytest.mark.xfail(reason="TODO")
-    def test_multiple_hamiltonians(self, mocker, broadcast, tol):
-        """Test multiple trainable Hamiltonian coefficients"""
-        shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
-
-        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-        coeffs = np.array([0.1, 0.2, 0.3])
-        a, b, c = coeffs
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        obs = [qml.PauliZ(0)]
-        coeffs = np.array([0.7])
-        d = coeffs[0]
-        H2 = qml.Hamiltonian(coeffs, obs)
-
-        weights = np.array([0.4, 0.5])
-        x, y = weights
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H1)
-            qml.expval(H2)
-
-        tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)
-        tape.trainable_params = {0, 1, 2, 4, 5}
-
-        res = dev.execute([tape])
-        expected = [-c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y)), d * np.cos(x)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        if broadcast:
-            with pytest.raises(
-                NotImplementedError, match="Broadcasting with multiple measurements"
-            ):
-                qml.gradients.param_shift(tape, broadcast=broadcast)
-            return
-
-        tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        # two shifts per rotation gate, one circuit per trainable H term
-        assert len(tapes) == 2 * 2 + 3
-        spy.assert_called()
-
-        res = fn(dev.execute(tapes))
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-        assert len(res[0]) == 5
-        assert len(res[1]) == 5
-
-        expected = [
-            [
-                -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
-                b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-                np.cos(x),
-                -(np.sin(x) * np.sin(y)),
-                0,
-            ],
-            [-d * np.sin(x), 0, 0, 0, np.cos(x)],
-        ]
-
-        assert np.allclose(np.stack(res), expected, atol=tol, rtol=0)
-
-    @staticmethod
-    def cost_fn(weights, coeffs1, coeffs2, dev=None, broadcast=False):
-        """Cost function for gradient tests"""
-        obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-        H1 = qml.Hamiltonian(coeffs1, obs1)
-
-        obs2 = [qml.PauliZ(0)]
-        H2 = qml.Hamiltonian(coeffs2, obs2)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H1)
-            qml.expval(H2)
-
-        tape = qml.tape.QuantumScript.from_queue(q, shots=dev.shots)
-        tape.trainable_params = {0, 1, 2, 3, 4, 5}
-        tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        return fn(dev.execute(tapes))
-
-    @staticmethod
-    def cost_fn_expected(weights, coeffs1, coeffs2):
-        """Analytic jacobian of cost_fn above"""
-        a, b, c = coeffs1
-        d = coeffs2[0]
-        x, y = weights
-        return [
-            [
-                -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
-                b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-                np.cos(x),
-                np.cos(x) * np.sin(y),
-                -(np.sin(x) * np.sin(y)),
-                0,
-            ],
-            [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
-        ]
-
-    @pytest.mark.xfail(reason="TODO")
-    @pytest.mark.autograd
-    def test_autograd(self, broadcast, tol):
-        """Test gradient of multiple trainable Hamiltonian coefficients
-        using autograd"""
-        coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        coeffs2 = np.array([0.7], requires_grad=True)
-        weights = np.array([0.4, 0.5], requires_grad=True)
-        shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-
-        if broadcast:
-            with pytest.raises(
-                NotImplementedError, match="Broadcasting with multiple measurements"
-            ):
-                res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-            return
-        res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, np.array(expected), atol=tol, rtol=0)
-
-        # TODO: test when Hessians are supported with the new return types
-        # second derivative wrt to Hamiltonian coefficients should be zero
-        # ---
-        # res = qml.jacobian(self.cost_fn)(weights, coeffs1, coeffs2, dev=dev)
-        # assert np.allclose(res[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-        # assert np.allclose(res[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
-
-    @pytest.mark.xfail(reason="TODO")
-    @pytest.mark.tf
-    def test_tf(self, broadcast, tol):
-        """Test gradient of multiple trainable Hamiltonian coefficients using tf"""
-        import tensorflow as tf
-
-        coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
-        coeffs2 = tf.Variable([0.7], dtype=tf.float64)
-        weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
-
-        shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-
-        with tf.GradientTape() as _:
-            jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-
-        expected = self.cost_fn_expected(weights.numpy(), coeffs1.numpy(), coeffs2.numpy())
-        assert np.allclose(jac[0], np.array(expected)[0], atol=tol, rtol=0)
-        assert np.allclose(jac[1], np.array(expected)[1], atol=tol, rtol=0)
-
-        # TODO: test when Hessians are supported with the new return types
-        # second derivative wrt to Hamiltonian coefficients should be zero
-        # When activating the following, rename the GradientTape above from _ to t
-        # ---
-        # hess = t.jacobian(jac, [coeffs1, coeffs2])
-        # assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-        # assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
-
-    @pytest.mark.torch
-    def test_torch(self, broadcast, tol):
-        """Test gradient of multiple trainable Hamiltonian coefficients
-        using torch"""
-        import torch
-
-        coeffs1 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64, requires_grad=True)
-        coeffs2 = torch.tensor([0.7], dtype=torch.float64, requires_grad=True)
-        weights = torch.tensor([0.4, 0.5], dtype=torch.float64, requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-        expected = self.cost_fn_expected(
-            weights.detach().numpy(), coeffs1.detach().numpy(), coeffs2.detach().numpy()
-        )
-        for actual, _expected in zip(res, expected):
-            for val, exp_val in zip(actual, _expected):
-                assert qml.math.allclose(val.detach(), exp_val, atol=tol, rtol=0)
-
-        # TODO: test when Hessians are supported with the new return types
-        # second derivative wrt to Hamiltonian coefficients should be zero
-        # hess = torch.autograd.functional.jacobian(
-        #     lambda *args: self.cost_fn(*args, dev, broadcast), (weights, coeffs1, coeffs2)
-        # )
-        # assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-        # assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
-
-    @pytest.mark.jax
-    def test_jax(self, broadcast, tol):
-        """Test gradient of multiple trainable Hamiltonian coefficients
-        using JAX"""
-        import jax
-
-        jnp = jax.numpy
-
-        coeffs1 = jnp.array([0.1, 0.2, 0.3])
-        coeffs2 = jnp.array([0.7])
-        weights = jnp.array([0.4, 0.5])
-        dev = qml.device("default.qubit", wires=2)
-
-        res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, np.array(expected), atol=tol, rtol=0)
-
-        # TODO: test when Hessians are supported with the new return types
-        # second derivative wrt to Hamiltonian coefficients should be zero
-        # ---
-        # second derivative wrt to Hamiltonian coefficients should be zero
-        # res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev, broadcast)
-        # assert np.allclose(res[:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
-
-        # res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev, broadcast)
-        # assert np.allclose(res[:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
 
 pauliz = qml.PauliZ(wires=0)

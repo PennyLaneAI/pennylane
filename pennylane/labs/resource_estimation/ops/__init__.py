@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ from .identity import (
 
 from .qubit import (
     ResourceDoubleExcitation,
+    ResourceDoubleExcitationMinus,
+    ResourceDoubleExcitationPlus,
     ResourceFermionicSWAP,
     ResourceHadamard,
     ResourceIsingXX,
@@ -27,6 +29,7 @@ from .qubit import (
     ResourceIsingYY,
     ResourceIsingZZ,
     ResourceMultiRZ,
+    ResourceOrbitalRotation,
     ResourcePauliRot,
     ResourcePhaseShift,
     ResourcePSWAP,
@@ -35,6 +38,7 @@ from .qubit import (
     ResourceRY,
     ResourceRZ,
     ResourceS,
+    ResourceSingleExcitation,
     ResourceSingleExcitationMinus,
     ResourceSingleExcitationPlus,
     ResourceSWAP,
@@ -55,10 +59,12 @@ from .op_math import (
     ResourceCRX,
     ResourceCRY,
     ResourceCRZ,
+    ResourceExp,
     ResourceToffoli,
     ResourceMultiControlledX,
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
     ResourcePow,
+    ResourceProd,
 )

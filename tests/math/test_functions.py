@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for pennylane.math.single_dispatch
-"""
+"""Unit tests for pennylane.math.single_dispatch"""
 # pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
@@ -1018,10 +1017,29 @@ interface_test_data = [
 @pytest.mark.parametrize("t,interface", interface_test_data)
 def test_get_interface(t, interface):
     """Test that the interface of a tensor-like object
-
     is correctly returned."""
     res = fn.get_interface(t)
     assert res == interface
+
+
+def test_get_interface_scipy():
+    """Test that the interface of a scipy sparse matrix is correctly returned."""
+    matrix = sci.sparse.csr_matrix([[0, 1], [1, 0]])
+
+    assert fn.get_interface(matrix) == "scipy"
+    assert fn.get_interface(matrix, matrix) == "scipy"
+
+
+# pylint: disable=too-few-public-methods
+class TestInterfaceEnum:
+    """Test the Interface enum class"""
+
+    def test_eq(self):
+        """Test that an error is raised if comparing to string"""
+        assert fn.Interface.NUMPY == fn.Interface.NUMPY
+        with pytest.raises(TypeError, match="Cannot compare Interface with str"):
+            # pylint: disable=pointless-statement
+            fn.Interface.NUMPY == "numpy"
 
 
 @pytest.mark.parametrize("t", test_data)
@@ -2355,7 +2373,22 @@ def test_gather(tensor):
 
 
 class TestCoercion:
-    """Test that TensorFlow and PyTorch correctly coerce types"""
+    """Test that qml.math.coerce works for all supported interfaces."""
+
+    @pytest.mark.parametrize("coercion_interface", ["jax", "autograd", "scipy"])
+    def test_trivial_coercions(self, coercion_interface):
+        """Test coercion is trivial for JAX, Autograd, and Scipy."""
+        tensors = [
+            jnp.array([0.2]),
+            onp.array([1, 2, 3]),
+            tf.constant(1 + 3j, dtype=tf.complex64),
+            torch.tensor(1 + 3j, dtype=torch.complex64),
+            np.array([1, 2, 3]),
+        ]
+        expected_interfaces = ["jax", "numpy", "tensorflow", "torch", "autograd"]
+        res = qml.math.coerce(tensors, like=coercion_interface)
+        for tensor, interface in zip(res, expected_interfaces, strict=True):
+            assert fn.get_interface(tensor) == interface
 
     def test_tensorflow_coercion(self):
         """Test tensorflow coercion"""
