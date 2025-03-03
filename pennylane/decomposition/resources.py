@@ -136,13 +136,13 @@ def resource_rep(op_type, **kwargs) -> CompressedResourceOp:
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
     try:
-        missing_params = op_type.resource_param_keys - set(kwargs.keys())
+        missing_params = set(op_type.resource_param_keys) - set(kwargs.keys())
         if missing_params:
             raise TypeError(
                 f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
                 f"Expected: {op_type.resource_param_keys}"
             )
-        invalid_params = set(kwargs.keys()) - op_type.resource_param_keys
+        invalid_params = set(kwargs.keys()) - set(op_type.resource_param_keys)
         if invalid_params:
             raise TypeError(
                 f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "

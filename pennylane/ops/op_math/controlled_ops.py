@@ -880,7 +880,7 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = set()
+    resource_param_keys = ()
 
     name = "CNOT"
 

@@ -277,7 +277,7 @@ class RZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = set()
+    resource_param_keys = ()
 
     basis = "Z"
     grad_method = "A"

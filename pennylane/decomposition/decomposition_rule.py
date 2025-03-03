@@ -109,9 +109,9 @@ def decomposition(qfunc: Callable, resource_fn: Callable = None) -> Decompositio
         affect the gate count of its decompositions in the ``resource_param_keys`` attribute:
 
         >>> qml.CNOT.resource_param_keys
-        {}
+        ()
         >>> qml.MultiRZ.resource_param_keys
-        {'num_wires'}
+        ('num_wires',)
 
         The resource function for any decomposition of ``MultiRZ`` should take ``num_wires`` as
         an argument:

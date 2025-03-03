@@ -1381,7 +1381,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise DecompositionUndefinedError
 
     @classproperty
-    def resource_param_keys(self) -> set:
+    def resource_param_keys(self) -> tuple:
         """The keys to the ``resource_params`` dictionary.
 
         All decomposition rules registered with an operator class is expected to have a resource

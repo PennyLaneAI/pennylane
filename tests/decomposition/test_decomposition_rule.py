@@ -159,3 +159,47 @@ class TestDecompositionRule:
         assert qml.get_decompositions(CustomOp) == [custom_decomp, custom_decomp2]
 
         _decompositions.pop(CustomOp)  # cleanup
+
+    def test_auto_wrap_in_resource_op(self):
+        """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
+
+        class DummyOp(qml.operation.Operator):
+
+            resource_param_keys = ()
+
+        @qml.decomposition
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        @custom_decomp.resources
+        def _():
+            return {
+                DummyOp: 1,
+            }
+
+        assert custom_decomp.compute_resources() == Resources(
+            num_gates=1,
+            gate_counts={
+                CompressedResourceOp(DummyOp): 1,
+            },
+        )
+
+    def test_auto_wrap_fails(self):
+        """Tests that an op with non-empty resource_param_keys cannot be auto-wrapped."""
+
+        class DummyOp(qml.operation.Operator):
+
+            resource_param_keys = {"foo"}
+
+        @qml.decomposition
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        @custom_decomp.resources
+        def _():
+            return {
+                DummyOp: 1,
+            }
+
+        with pytest.raises(TypeError, match="Operator DummyOp has non-empty resource_param_keys"):
+            custom_decomp.compute_resources()
