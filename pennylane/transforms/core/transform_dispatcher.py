@@ -30,14 +30,19 @@ class TransformError(Exception):
 
 
 def _create_plxpr_fallback_transform(tape_transform):
+    # pylint: disable=import-outside-toplevel
+    try:
+        import jax
+    except ImportError:
+        return None
 
     def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
-        # pylint: disable=import-outside-toplevel
-        import jax
 
         def wrapper(*inner_args):
             tape = qml.tape.plxpr_to_tape(jaxpr, consts, *inner_args)
-            tapes, _ = tape_transform(tape, *targs, **tkwargs)
+            with qml.capture.pause():
+                tapes, _ = tape_transform(tape, *targs, **tkwargs)
+
             if len(tapes) > 1:
                 raise TransformError(
                     f"Cannot apply {tape_transform.__name__} transform with program "
@@ -56,7 +61,8 @@ def _create_plxpr_fallback_transform(tape_transform):
 
             return tuple(out)
 
-        return jax.make_jaxpr(wrapper)(*args)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        return jax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*abstract_shapes, *args)
 
     return plxpr_fallback_transform
 
