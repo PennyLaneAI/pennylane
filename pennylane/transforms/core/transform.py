@@ -283,12 +283,13 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
 
         * Transforms that return multiple tapes are not compatible.
         * Transforms that require non-trivial postprocessing of results are not compatible.
+        * Dynamically shaped arrays are not compatible.
         * Functions that are being transformed that contain control flow dependent on dynamic
           parameters are not compatible. This includes:
 
           * :func:`pennylane.cond` with dynamic parameters as predicates.
           * :func:`pennylane.for_loop` with dynamic parameters for ``start``, ``stop``, or ``step``.
-          * :func:`pennylane.while_loop` with dynamic parameters as predicates.
+          * :func:`pennylane.while_loop` does not work.
 
         .. warning::
 

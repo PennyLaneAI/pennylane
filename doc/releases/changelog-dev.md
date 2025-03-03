@@ -12,7 +12,7 @@
   This includes:
   * `qml.cond` with dynamic parameters as predicates.
   * `qml.for_loop` with dynamic parameters for ``start``, ``stop``, or ``step``.
-  * `qml.while_loop` with dynamic parameters as predicates.
+  * `qml.while_loop` does not work.
 
 * `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
   `qml.defer_measurements` can be executed on `default.qubit`.
