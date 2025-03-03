@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -82,4 +82,4 @@ class TestQFT:
     @pytest.mark.parametrize("num_wires", range(10))
     def test_tracking_name(self, num_wires):
         """Test that the tracking name is correct."""
-        assert re.ResourceQFT.tracking_name(num_wires + 1) == "QFT"
+        assert re.ResourceQFT.tracking_name(num_wires + 1) == f"QFT({num_wires+1})"
