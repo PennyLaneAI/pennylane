@@ -107,8 +107,8 @@ def _check_decomposition_new(op):
         ), "resource_params must be defined for operators with decompositions"
         return
 
-    assert (
-        set(op.resource_params.keys()) == set(type(op).resource_param_keys)
+    assert set(op.resource_params.keys()) == set(
+        type(op).resource_param_keys
     ), "resource_params must have the same keys as specified by resource_param_keys"
 
     for rule in qml.get_decompositions(type(op)):

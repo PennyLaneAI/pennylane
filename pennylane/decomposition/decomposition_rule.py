@@ -23,12 +23,15 @@ from pennylane.operation import Operator
 from .resources import Resources, CompressedResourceOp, resource_rep
 
 
-def decomposition(qfunc: Callable, resource_fn: Callable = None) -> DecompositionRule:
-    """Creates a decomposition rule from a quantum function.
+def register_resources(
+    resources: Callable | dict, qfunc: Callable = None
+) -> DecompositionRule | Callable:
+    """Registers a resource function with a decomposition rule.
 
     Args:
+        resources (Callable): a dictionary of gate counts or a function that returns this
+            dictionary for a decomposition rule.
         qfunc (Callable): the quantum function that implements the decomposition.
-        resource_fn (Callable): a function that returns a gate count of this decomposition.
 
     Returns:
         DecompositionRule: a data structure that represents a decomposition rule.
@@ -41,7 +44,7 @@ def decomposition(qfunc: Callable, resource_fn: Callable = None) -> Decompositio
 
         import pennylane as qml
 
-        def _cnot_decomp(wires):
+        def cnot_decomp(wires):
             qml.H(wires=wires[1])
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
@@ -49,41 +52,36 @@ def decomposition(qfunc: Callable, resource_fn: Callable = None) -> Decompositio
     This qfunc is expected to take ``(*op.params, op.wires, **op.hyperparameters)`` as arguments,
     where ``op`` is an instance of the operator type that this decomposition is for.
 
-    Along with the qfunc implementation of a decomposition, a resource function should be defined
-    that returns a dictionary mapping operator types to their number of occurrences:
+    Along with the qfunc implementation of a decomposition, a dictionary mapping operator types to
+    their number of occurrences must be registered:
 
     .. code-block:: python
 
-        def _cnot_decomp_resources():
-            return {
-                qml.H: 2,
-                qml.CZ: 1,
-            }
+        cnot_decomp = qml.register_resources({qml.H: 2, qml.CZ: 1}, cnot_decomp)
 
-    A decomposition rule can be created from these two functions, and added to an operator class
-    as an alternative decomposition rule:
+    This decomposition rule can then be registered with an operator type:
 
     .. code-block:: python
 
-        cnot_decomp = qml.decomposition(_cnot_decomp, resource_fn=_cnot_decomp_resources)
         qml.add_decomposition(qml.CNOT, cnot_decomp)
 
-    Alternatively, the decorator syntax is also supported:
+    or specified as a fixed decomposition rule to the decompose transform:
 
     .. code-block:: python
 
-        @qml.decomposition
+        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: cnot_decomp})
+        def circuit():
+            ...
+
+    Alternatively, use the decorator syntax:
+
+    .. code-block:: python
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
         def cnot_decomp(wires):
             qml.H(wires=wires[1])
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
-
-        @cnot_decomp.resources
-        def _():
-            return {
-                qml.H: 2,
-                qml.CZ: 1,
-            }
 
         qml.add_decomposition(qml.CNOT, cnot_decomp)
 
@@ -108,21 +106,25 @@ def decomposition(qfunc: Callable, resource_fn: Callable = None) -> Decompositio
         the number of wires. For each operator class, we can find the set of parameters that
         affect the gate count of its decompositions in the ``resource_param_keys`` attribute:
 
-        >>> qml.CNOT.resource_param_keys
-        ()
         >>> qml.MultiRZ.resource_param_keys
         ('num_wires',)
 
-        The resource function for any decomposition of ``MultiRZ`` should take ``num_wires`` as
-        an argument:
+        Any decomposition of ``MultiRZ`` is expected to depend on its number of wires, so we define
+        a function that takes ``num_wires`` as an argument:
 
         .. code-block:: python
 
-            def _multi_rz_decomposition_resources(num_wires):
+            def _multi_rz_resources(num_wires):
                 return {
                     qml.CNOT: 2 * (num_wires - 1),
                     qml.RZ: 1
                 }
+
+        and register it with the decomposition rule:
+
+        .. code-block:: python
+
+            qml.register_resources(_multi_rz_resources, _multi_rz_decomposition)
 
         Consequentially, two ``MultiRZ`` gates acting on different numbers of wires will have
         different decompositions. As a result, when defining a decomposition rule that contains
@@ -156,10 +158,14 @@ def decomposition(qfunc: Callable, resource_fn: Callable = None) -> Decompositio
         :func:`~pennylane.resource_rep`
 
     """
-    decomposition_rule = DecompositionRule(qfunc)
-    if resource_fn is not None:
-        decomposition_rule._compute_resources = resource_fn  # pylint: disable=protected-access
-    return decomposition_rule
+
+    if qfunc:  # enables the normal syntax
+        return DecompositionRule(qfunc, resources)
+
+    def _decorator(_qfunc) -> DecompositionRule:
+        return DecompositionRule(_qfunc, resources)
+
+    return _decorator  # enables the decorator syntax
 
 
 class DecompositionRule:
@@ -170,9 +176,13 @@ class DecompositionRule:
 
     """
 
-    def __init__(self, func: Callable):
+    def __init__(self, func: Callable, resources: Callable | dict = None):
         self.impl = func
-        self._compute_resources = None
+        if isinstance(resources, dict):
+            resource_fn = lambda: resources
+            self._compute_resources = resource_fn
+        else:
+            self._compute_resources = resources
 
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
@@ -183,15 +193,6 @@ class DecompositionRule:
         gate_counts = {_auto_wrap(op): count for op, count in gate_counts.items() if count > 0}
         num_gates = sum(gate_counts.values())
         return Resources(num_gates, gate_counts)
-
-    @property
-    def resources(self):
-        """Registers a function as the resource estimator of this decomposition rule."""
-
-        def _compute_resources_decorator(resource_func):
-            self._compute_resources = resource_func
-
-        return _compute_resources_decorator
 
 
 def _auto_wrap(op_type):
