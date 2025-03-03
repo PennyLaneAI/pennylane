@@ -42,6 +42,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
+  [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
+  
+* Bump `rng_salt` to `v0.40.0`.
+  [(#6854)](https://github.com/PennyLaneAI/pennylane/pull/6854)
+
 * `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
 [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
 
@@ -57,6 +63,9 @@
 
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+
+* A `Lattice` class and a `generate_lattice` method is added to the `qml.ftqc` module. The `generate_lattice` method is to generate 1D, 2D, 3D grid graphs with the given geometric parameters.
+  [(#6958)](https://github.com/PennyLaneAI/pennylane/pull/6958)
 
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
@@ -436,6 +445,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
+  of sparse matrices. 
+  [(#7015)](https://github.com/PennyLaneAI/pennylane/pull/7015)
+
 * `qml.ops.Controlled.has_sparse_matrix` now provides the correct information
   by checking if the target operator has a sparse or dense matrix defined.
   [(#7025)](https://github.com/PennyLaneAI/pennylane/pull/7025)
@@ -496,4 +509,5 @@ Christina Lee,
 Joseph Lee,
 Mudit Pandey,
 Andrija Paurevic,
+Shuli Shu,
 David Wierichs

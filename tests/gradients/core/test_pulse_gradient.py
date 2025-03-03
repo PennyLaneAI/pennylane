@@ -1268,7 +1268,9 @@ class TestStochPulseGrad:
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode, argnums=(0, 1))(params_0, params_1)
         exp_grad = exp_grad[0] + exp_grad[1]
-        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
+        # Values are close to zero so we need to use `atol` instead of `rtol`
+        # to avoid numerical issues
+        assert all(qml.math.allclose(r, e, atol=5e-4) for r, e in zip(res, exp_grad))
         jax.clear_caches()
 
     @pytest.mark.slow
@@ -1566,9 +1568,10 @@ class TestStochPulseGradIntegration:
             grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
         assert tracker.totals["executions"] == 1 + 2 * 3 * num_split_times
         grad_backprop = jax.grad(qnode_backprop)(params)
-
+        # Values are close to zero so we need to use `atol` instead of `rtol`
+        # to avoid numerical issues
         assert all(
-            qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, atol=5e-3) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
         jax.clear_caches()
 
