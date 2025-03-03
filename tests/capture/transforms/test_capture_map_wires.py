@@ -16,6 +16,7 @@
 # pylint:disable=wrong-import-position, unused-argument
 import numpy as np
 import pytest
+from functools import partial
 
 import pennylane as qml
 
@@ -421,3 +422,21 @@ def test_map_wires_plxpr_to_plxpr_replace_warning():
 
     with pytest.warns(UserWarning, match="Cannot set 'replace=True'"):
         map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs)
+
+
+def test_map_wire_decorator():
+    """Test that the map wires transforms works when applying the plxpr decorator."""
+
+    @qml.capture.expand_plxpr_transforms
+    @partial(qml.map_wires, wire_map={0: 1})
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit)(0.1)
+    assert len(jaxpr.eqns) == 3
+    assert jaxpr.eqns[0].primitive == qml.RX._primitive
+    assert jaxpr.eqns[0].invars[-1].val == 1
+    assert jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+    assert jaxpr.eqns[1].invars[-1].val == 1
+    assert jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive

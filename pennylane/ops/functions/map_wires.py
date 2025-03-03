@@ -96,20 +96,20 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
     def map_wires_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``map_wires`` transform on plxpr."""
 
-        if tkwargs.get("queue", False):
+        if tkwargs.pop("queue", False):
             warn(
                 "Cannot set 'queue=True' with qml.capture.enabled() "
                 "when using qml.map_wires. Argument will be ignored.",
                 UserWarning,
             )
-        if tkwargs.get("replace", False):
+        if tkwargs.pop("replace", False):
             warn(
                 "Cannot set 'replace=True' with qml.capture.enabled() "
                 "when using qml.map_wires. Argument will be ignored.",
                 UserWarning,
             )
 
-        interpreter = MapWiresInterpreter(*targs)
+        interpreter = MapWiresInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
