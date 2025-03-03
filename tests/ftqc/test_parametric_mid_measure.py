@@ -819,7 +819,7 @@ class TestWorkflows:
             m = qml.measure(0)  # always 1
 
             qml.RX(2.345, 1)
-            qml.cond(m == 1, ParametricMidMeasureMP)(1, angle=np.pi / 2, plane="XY")
+            qml.cond(m == 1, measure_x, measure_y)(1)
             return qml.expval(qml.Z(0))
 
         assert np.isclose(circ(), -np.sin(2.345))

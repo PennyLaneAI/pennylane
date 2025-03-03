@@ -22,6 +22,7 @@ from typing import Iterable, Optional, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.devices.preprocess import is_conditional_mcm
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
 from pennylane.wires import Wires
@@ -594,7 +595,9 @@ def diagonalize_mcms(tape):
     new_operations = []
     mps_mapping = {}
 
-    for op in tape.operations:
+    ops = _consolidate_conditional_measurements(tape.operations)
+
+    for op in ops:
         if isinstance(op, ParametricMidMeasureMP):
 
             # add diagonalizing gates to tape
@@ -644,3 +647,103 @@ def diagonalize_mcms(tape):
     new_tape = tape.copy(operations=new_operations)
 
     return (new_tape,), null_postprocessing
+
+
+def _consolidate_conditional_measurements(ops):
+    # this should occur before general diagonalization, while the measurements are still grouped together
+
+    new_operations = []
+    mps_mapping = {}
+
+    curr_idx = 0
+
+    for i, op in enumerate(ops):
+
+        if i != curr_idx:
+            continue
+
+        if isinstance(op, qml.ops.Conditional):
+
+            # from MCM mapping, map any MCMs in the condition if needed
+            processing_fn = op.meas_val.processing_fn
+            mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
+            expr = MeasurementValue(mps, processing_fn=processing_fn)
+
+            if isinstance(op.base, qml.measurements.MidMeasureMP):
+                conditional_group = [op]
+
+                while (
+                    curr_idx + 1 < len(ops)
+                    and is_conditional_mcm(ops[curr_idx + 1])
+                    and grouped_mcms(op, ops[curr_idx + 1])
+                ):
+                    conditional_group.append(ops[curr_idx + 1])
+                    curr_idx += 1
+
+                _validate_mcm_group(conditional_group)
+
+                # add conditional diagonalizing gates + conditional MCM to the tape
+                with qml.QueuingManager.stop_recording():
+                    for op in conditional_group:
+                        diag_gates = [
+                            qml.ops.Conditional(expr=expr, then_op=gate)
+                            for gate in op.diagonalizing_gates()
+                        ]
+
+                        new_operations.extend(diag_gates)
+
+                    new_mp = MidMeasureMP(
+                        op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
+                    )
+
+                # track mapping from original to computational basis MCMs
+                new_operations.append(new_mp)
+                mps_mapping[op.base] = new_mp
+                curr_idx += 1
+
+            else:
+                with qml.QueuingManager.stop_recording():
+                    new_cond = qml.ops.Conditional(expr=expr, then_op=op.base)
+                new_operations.append(new_cond)
+                curr_idx += 1
+
+        else:
+            new_operations.append(op)
+            curr_idx += 1
+
+    return new_operations
+
+
+def _validate_mcm_group(mcms):
+    """takes a group of MCMs (grouped because they can be described with the same base MCM and they
+    all depend on the same measurements) and confirms that the group is complete, i.e. that each
+    input for the measurement values maps to one output"""
+    meas_vals = [m.meas_val for m in mcms]
+
+    # get each conditionals outcomes for all combinations of inputs
+    all_outcomes = [[outcome for branch, outcome in mv.items()] for mv in meas_vals]
+
+    # sum outcomes for each possible input and confirm they all sum to 1
+    # (i.e. each input is true for one conditional, and false for all the others)
+    all_branches_true_once = np.allclose(np.sum(all_outcomes, axis=0), 1)
+
+    if not all_branches_true_once:
+        raise ValueError(
+            "Using `cond` to add mid-circuit measurements to a circuit must always result in "
+            "application of a mid-circuit measurement. The `wire`, `postselect` and `reset` behaviour "
+            "must also be consistent for all branches of the conditional. Only the basis of "
+            "the measurement (defined by measurement type or by `plane` and `angle`) can vary."
+        )
+
+
+def grouped_mcms(m1, m2):
+    """Takes two conditional MCMs, and confirms that they may require different diagonalizing
+    gates, but are otherwise the same set of instructions"""
+    if (
+        m1.meas_val.measurements == m2.meas_val.measurements
+        and m1.base.reset == m2.base.reset
+        and m1.base.postselect == m2.base.postselect
+        and m1.base.wires == m2.base.wires
+    ):
+        return True
+    return False
