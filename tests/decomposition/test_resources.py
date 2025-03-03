@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition.resources import CompressedResourceOp, Resources
+from pennylane.decomposition.resources import CompressedResourceOp, Resources, resource_rep
 
 
 class TestResources:
@@ -182,3 +182,34 @@ class TestCompressedResourceOp:
 
         op = CompressedResourceOp(qml.MultiRZ, {"num_wires": 5})
         assert repr(op) == "MultiRZ"
+
+
+class TestResourceRep:
+    """Tests the resource_rep utility function."""
+
+    def test_resource_rep_fail(self):
+        """Tests that an error is raised if the op_type is invalid."""
+
+        with pytest.raises(TypeError, match="op_type must be a type of Operator"):
+            resource_rep(int)
+
+    def test_params_mismatch(self):
+        """Tests that an error is raised when parameters are missing."""
+
+        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            resource_param_keys = {"foo", "bar"}
+
+        with pytest.raises(TypeError, match="Missing resource parameters"):
+            resource_rep(DummyOp, foo=2)
+
+        with pytest.raises(TypeError, match="Invalid resource parameters"):
+            resource_rep(DummyOp, foo=2, bar=1, hello=3)
+
+    def test_undefined_resource_params(self):
+        """Tests that an error is raised if the resource_param_keys are not defined."""
+
+        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            pass
+
+        with pytest.raises(NotImplementedError, match="resource_param_keys undefined"):
+            resource_rep(DummyOp)

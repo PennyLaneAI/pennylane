@@ -1394,6 +1394,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             :meth:`~.Operator.resource_params`
 
         """
+        raise NotImplementedError
 
     @property
     def resource_params(self) -> dict:
