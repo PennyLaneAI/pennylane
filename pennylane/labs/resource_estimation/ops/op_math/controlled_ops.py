@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ from typing import Dict
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments
+# pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments,too-many-positional-arguments
 
 
 class ResourceCH(qml.CH, re.ResourceOperator):

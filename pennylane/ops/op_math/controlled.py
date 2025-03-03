@@ -681,6 +681,10 @@ class Controlled(SymbolicOp):
         wire_order = wire_order or self.wires
         return qml.math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
+    @property
+    def has_sparse_matrix(self):
+        return self.base.has_sparse_matrix or self.base.has_matrix
+
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
         try:

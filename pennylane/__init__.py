@@ -21,6 +21,8 @@ from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
+import pennylane.compiler
+from pennylane.compiler import qjit
 import pennylane.capture
 import pennylane.decomposition
 from pennylane.decomposition import (
@@ -30,6 +32,8 @@ from pennylane.decomposition import (
     has_decomposition,
     resource_rep,
 )
+import pennylane.control_flow
+from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
@@ -154,9 +158,6 @@ from pennylane.drawer import draw, draw_mpl
 
 # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
-
-from pennylane.compiler import qjit, while_loop, for_loop
-import pennylane.compiler
 
 import pennylane.data
 
