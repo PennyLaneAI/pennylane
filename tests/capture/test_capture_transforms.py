@@ -20,7 +20,7 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.core import transform
+from pennylane.transforms.core import TransformError, transform
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -28,7 +28,25 @@ jnp = pytest.importorskip("jax.numpy")
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
-@transform
+def z_to_hadamard_plxpr(jaxpr, consts, targs, tkwargs, *args):  # pylint: disable=unused-argument
+
+    class ZToH(qml.capture.PlxprInterpreter):  # pylint: disable=too-few-public-methods
+        """z_to_hadamard plxpr implementation."""
+
+        def interpret_operation(self, op):
+            """Interpret op"""
+            if isinstance(op, qml.PauliZ):
+                return qml.Hadamard(op.wires)
+
+            return super().interpret_operation(op)
+
+    def wrapper(*inner_args):
+        return ZToH().eval(jaxpr, consts, *inner_args)
+
+    return jax.make_jaxpr(wrapper)(*args)
+
+
+@partial(transform, plxpr_transform=z_to_hadamard_plxpr)
 def z_to_hadamard(
     tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
 ):  # pylint: disable=unused-argument
@@ -51,6 +69,30 @@ def expval_z_obs_to_x_obs(
         for mp in tape.measurements
     ]
     return [qml.tape.QuantumScript(tape.operations, new_measurements)], lambda res: res[0]
+
+
+@transform
+def shift_rx_to_end(tape):
+    """Transform that moves all RX gates to the end of the operations list."""
+    new_ops, rxs = [], []
+
+    for op in tape.operations:
+        if isinstance(op, qml.RX):
+            rxs.append(op)
+        else:
+            new_ops.append(op)
+
+    operations = new_ops + rxs
+    new_tape = qml.tape.QuantumScript(
+        operations, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
+    return [new_tape], lambda res: res[0]
+
+
+@transform
+def dummy_multi_tape_transform(tape):
+    """Dummy transform that returns multiple tapes."""
+    return [tape, tape], lambda res: res[0]
 
 
 class TestCaptureTransforms:
@@ -198,3 +240,60 @@ class TestCaptureTransforms:
 
         assert qfunc_jaxpr.eqns[1].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+class TapeTransformFallback:
+    """Unit tests for falling back to tape transforms."""
+
+    def test_multi_tape_transform(self):
+        """Test that a transform that returns multiple tapes raises an error."""
+
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(1.5)
+
+        with pytest.raises(
+            TransformError, match="Only transforms that return a single QuantumTape"
+        ):
+            dummy_multi_tape_transform.plxpr_transform(jaxpr.jaxpr, jaxpr.consts, (), {}, 1.5)
+
+    def test_multi_tape_transform_integration(self):
+        """Test that a transform that returns multiple tapes raises an error as a decorator."""
+
+        @qml.capture.expand_plxpr_transforms
+        @dummy_multi_tape_transform
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            TransformError, match="Only transforms that return a single QuantumTape"
+        ):
+            _ = f(1.5)
+
+    def test_tape_transform(self):
+        """Test that transforming plxpr by falling back to the tape implementation
+        works correctly."""
+
+    def test_tape_transform_for_loop(self):
+        """Test that transforming jaxpr with for_loops unrolls the loop and applies the
+        transform correctly."""
+
+    def test_tape_transform_while_loop(self):
+        """Test that transforming jaxpr with while_loops unrolls the loop and applies the
+        transform correctly."""
+
+    def test_tape_transform_cond(self):
+        """Test that transforming jaxpr with cond flattens the conditional and applies the
+        transform correctly."""
+
+    def test_tape_transform_multiple_transforms(self):
+        """Test that multiple fallback transforms are applied correctly."""
+
+    def test_tape_transform_first_plxpr_transform_last(self):
+        """Test that applying a plxpr transform after a fallback transform works as expected."""
+
+    def test_plxpr_transform_first_tape_transform_last(self):
+        """Test that applying a fallback transform after a plxpr transform works as expected."""

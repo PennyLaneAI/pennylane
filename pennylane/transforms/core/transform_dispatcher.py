@@ -45,12 +45,12 @@ def _create_plxpr_fallback_transform(tape_transform):
                     "and null processing function are usable with program capture."
                 )
 
-            for op in tape.operations:
+            for op in tapes[0].operations:
                 data, struct = jax.tree_util.tree_flatten(op)
                 jax.tree_util.tree_unflatten(struct, data)
 
             out = []
-            for mp in tape.measurements:
+            for mp in tapes[0].measurements:
                 data, struct = jax.tree_util.tree_flatten(mp)
                 out.append(jax.tree_util.tree_unflatten(struct, data))
 
