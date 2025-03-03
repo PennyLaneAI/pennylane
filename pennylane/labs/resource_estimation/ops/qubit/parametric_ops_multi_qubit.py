@@ -42,6 +42,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {"num_wires": len(self.wires)}
 
@@ -149,6 +150,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {
             "pauli_string": self.hyperparameters["pauli_word"],
@@ -232,6 +234,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -304,6 +307,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -380,6 +384,7 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -462,6 +467,7 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -533,6 +539,7 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 

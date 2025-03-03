@@ -46,6 +46,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 

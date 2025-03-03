@@ -55,6 +55,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -109,6 +110,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_rx"])
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -179,6 +181,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_ry"])
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -241,6 +244,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_rz"])
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -301,6 +305,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
         gate_types = {ry: 1, rz: 2}
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 

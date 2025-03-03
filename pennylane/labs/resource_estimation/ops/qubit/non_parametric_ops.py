@@ -27,6 +27,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -76,6 +77,7 @@ class ResourceS(qml.S, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -155,6 +157,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -200,6 +203,7 @@ class ResourceT(qml.T, re.ResourceOperator):
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -252,6 +256,7 @@ class ResourceX(qml.X, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -318,6 +323,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -368,6 +374,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
