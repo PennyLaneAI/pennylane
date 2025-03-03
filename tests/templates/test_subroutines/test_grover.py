@@ -355,6 +355,8 @@ class TestDynamicDecomposition:
                 # MultiControlledX's work_wire is traced in plxpr but not in tape
                 assert op1.name == op2.name
                 assert op1.wires == op2.wires
+                assert op1.control_wires == op2.control_wires
+                assert op1.control_values == op2.control_values
             else:
                 assert qml.equal(op1, op2)
 
