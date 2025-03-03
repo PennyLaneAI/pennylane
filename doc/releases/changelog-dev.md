@@ -439,6 +439,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
+  when experimental program capture is enabled.
+  [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
+
 * `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
   of sparse matrices. 
   [(#7015)](https://github.com/PennyLaneAI/pennylane/pull/7015)

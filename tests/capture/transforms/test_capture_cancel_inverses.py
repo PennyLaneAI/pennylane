@@ -447,6 +447,25 @@ class TestCancelInversesInterpreter:
         assert jaxpr.eqns[4].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[5].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    def test_mid_circuit_measurement_not_blocked(self):
+        """Test that mid-circuit measurements do not block the cancellation of adjacent inverses."""
+
+        @CancelInversesInterpreter()
+        def circuit():
+            qml.S(0)
+            qml.adjoint(qml.S(0))
+            qml.measure(0)
+            qml.H(1)
+            qml.adjoint(qml.H(1))
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 3
+
+        assert jaxpr.eqns[0].primitive == measure_prim
+        assert jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
 
 def test_cancel_inverses_plxpr_to_plxpr():
     """Test that transforming plxpr works."""
