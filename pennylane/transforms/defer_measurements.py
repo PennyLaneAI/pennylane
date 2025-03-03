@@ -404,7 +404,7 @@ def _get_plxpr_defer_measurements():
 
         return []
 
-    def defer_measurements_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
+    def defer_measurements_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``defer_measurements`` transform on plxpr."""
 
         if not tkwargs.get("aux_wires", None):
@@ -425,7 +425,7 @@ def _get_plxpr_defer_measurements():
                 UserWarning,
             )
 
-        interpreter = DeferMeasurementsInterpreter(**tkwargs)
+        interpreter = DeferMeasurementsInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)

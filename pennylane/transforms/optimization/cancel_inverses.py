@@ -236,10 +236,10 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             self._env = {}
             return outvals
 
-    def cancel_inverses_plxpr_to_plxpr(jaxpr, consts, _, __, *args):
+    def cancel_inverses_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``cancel_inverses`` transform on plxpr."""
 
-        interpreter = CancelInversesInterpreter()
+        interpreter = CancelInversesInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
