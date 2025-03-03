@@ -37,6 +37,7 @@ from .parametric_midmeasure import (
     diagonalize_mcms,
 )
 from .lattice import Lattice, generate_lattice
+from .graph_state_preparation import GraphStatePrep
 from .qubit_graph import QubitGraph
 
 __all__ = [
