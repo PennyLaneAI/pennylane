@@ -516,6 +516,8 @@ class CZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CZ"
 
     def _flatten(self):
@@ -537,6 +539,10 @@ class CZ(ControlledOp):
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
