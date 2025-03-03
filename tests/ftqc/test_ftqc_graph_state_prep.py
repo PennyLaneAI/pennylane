@@ -18,6 +18,7 @@ import networkx as nx
 import pytest
 
 import pennylane as qml
+from pennylane.transforms.decompose import decompose
 from pennylane.ftqc import GraphStatePrep, Lattice, QubitGraph, generate_lattice
 
 
@@ -30,9 +31,15 @@ class TestGraphStatePrep:
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
-        def circuit(lattice, q):
-            GraphStatePrep(lattice, q)
+        def circuit(q):
+            GraphStatePrep(q)
             return qml.probs()
 
-        circuit(lattice, q)
+        circuit(q)
         assert True
+
+    def test_decompose(self):
+        lattice = generate_lattice([2, 2], "square")
+        q = QubitGraph("test", lattice.graph)
+        decomposed_tape = GraphStatePrep.compute_decomposition(q)
+        assert len(decomposed_tape) == 8 # 4 ops for |0> -> |+> and 4 ops to entangle nearest qubits
