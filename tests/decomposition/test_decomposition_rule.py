@@ -17,9 +17,12 @@
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition.resources import Resources, CompressedResourceOp
-from pennylane.decomposition.decomposition_rule import DecompositionRule, register_resources
-from pennylane.decomposition.decomposition_rule import _decompositions
+from pennylane.decomposition.decomposition_rule import (
+    DecompositionRule,
+    _decompositions,
+    register_resources,
+)
+from pennylane.decomposition.resources import CompressedResourceOp, Resources
 
 
 class TestDecompositionRule:
@@ -120,7 +123,7 @@ class TestDecompositionRule:
     def test_decomposition_dictionary(self):
         """Tests that decomposition rules can be registered for an operator."""
 
-        class CustomOp(qml.operation.Operation):
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             pass
 
         assert not qml.has_decomposition(CustomOp)
@@ -148,7 +151,7 @@ class TestDecompositionRule:
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
             resource_param_keys = ()
 
@@ -166,7 +169,7 @@ class TestDecompositionRule:
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_param_keys cannot be auto-wrapped."""
 
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
             resource_param_keys = {"foo"}
 

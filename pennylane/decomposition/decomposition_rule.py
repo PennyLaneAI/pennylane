@@ -20,7 +20,8 @@ from collections import defaultdict
 from typing import Callable
 
 from pennylane.operation import Operator
-from .resources import Resources, CompressedResourceOp, resource_rep
+
+from .resources import CompressedResourceOp, Resources, resource_rep
 
 
 def register_resources(
@@ -168,7 +169,7 @@ def register_resources(
     return _decorator  # enables the decorator syntax
 
 
-class DecompositionRule:
+class DecompositionRule:  # pylint: disable=too-few-public-methods
     """Represents a decomposition rule for an operator.
 
     Attributes:

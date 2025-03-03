@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition.resources import Resources, CompressedResourceOp
+from pennylane.decomposition.resources import CompressedResourceOp, Resources
 
 
 class TestResources:
