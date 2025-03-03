@@ -22,6 +22,14 @@ import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
 import pennylane.capture
+import pennylane.decomposition
+from pennylane.decomposition import (
+    register_resources,
+    add_decomposition,
+    get_decompositions,
+    has_decomposition,
+    resource_rep,
+)
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
