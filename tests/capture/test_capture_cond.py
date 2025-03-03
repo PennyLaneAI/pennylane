@@ -856,7 +856,7 @@ class TestDynamicShapeValdiation:
         """Test an error is raised with different sized shapes."""
 
         def true_fn(n):
-            return jax.numpy.ones((3, n))
+            return jax.numpy.ones((n, n))
 
         def false_fn(n):
             return jax.numpy.ones(n)
