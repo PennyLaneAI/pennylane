@@ -16,7 +16,6 @@ import functools
 
 # pylint: disable=import-outside-toplevel
 import itertools
-import warnings
 from string import ascii_letters as ABC
 
 import scipy as sp
