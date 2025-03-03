@@ -176,7 +176,7 @@ class TestModExp:
             )
         )
 
-        for op1, op2 in zip(adder_decomposition, op_list):
+        for op1, op2 in zip(adder_decomposition, op_list, strict=True):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.jax

@@ -424,7 +424,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         if self.mv is not None:
             if getattr(self.mv, "name", None) == "MeasurementValue":
                 # "Eigvals" should be the processed values for all branches of a MeasurementValue
-                _, processed_values = tuple(zip(*self.mv.items()))
+                _, processed_values = tuple(zip(*self.mv.items(), strict=True))
                 interface = qml.math.get_deep_interface(processed_values)
                 return qml.math.asarray(processed_values, like=interface)
             return qml.math.arange(0, 2 ** len(self.wires), 1)

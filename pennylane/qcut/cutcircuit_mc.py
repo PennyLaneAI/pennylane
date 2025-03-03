@@ -460,7 +460,8 @@ def cut_circuit_mc(
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
     fragment_tapes = [
-        qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+        qml.map_wires(t, dict(zip(t.wires, device_wires, strict=True)))[0][0]
+        for t in fragment_tapes
     ]
 
     seed = kwargs.get("seed", None)
@@ -687,8 +688,8 @@ def expand_fragment_tapes_mc(
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.default_rng(seed).choice(range(8), size=(len(pairs), shots), replace=True)
 
-    meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings)}
-    prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings)}
+    meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings, strict=True)}
+    prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings, strict=True)}
 
     all_configs = []
     for tape in tapes:

@@ -146,5 +146,5 @@ class TestTFAutographRun:
         assert jac[1].shape == (2,)
 
         expected = ([-tf.sin(a), tf.sin(a) * tf.sin(b)], [0, -tf.cos(a) * tf.cos(b)])
-        for _r, _e in zip(jac, expected):
+        for _r, _e in zip(jac, expected, strict=True):
             assert np.allclose(_r, _e, atol=atol_for_shots(shots))

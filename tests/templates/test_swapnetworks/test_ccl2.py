@@ -102,7 +102,7 @@ class TestDecomposition:
                 sw_op = qml.FermionicSWAP(np.pi, pair) if fermionic else qml.SWAP(pair)
                 gate_order.append(sw_op)
 
-        for op1, op2 in zip(queue, gate_order):
+        for op1, op2 in zip(queue, gate_order, strict=True):
             qml.assert_equal(op1, op2)
 
     def test_custom_wire_labels(self, tol=1e-8):

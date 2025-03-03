@@ -174,7 +174,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         shot_range: Optional[tuple[int, ...]] = None,
         bin_size: Optional[int] = None,
     ):
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = dict(zip(wire_order, range(len(wire_order)), strict=True))
         mapped_wires = [wire_map[w] for w in self.wires]
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
@@ -212,7 +212,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         inactive_wires = Wires.unique_wires([wire_order, self.wires])
 
         # translate to wire labels used by device
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = dict(zip(wire_order, range(len(wire_order)), strict=True))
         mapped_wires = [wire_map[w] for w in self.wires]
         inactive_wires = [wire_map[w] for w in inactive_wires]
 

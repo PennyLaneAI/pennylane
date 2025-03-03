@@ -325,12 +325,17 @@ class TestQuantumMonteCarlo:
         qpe_tape = qpe_tape.expand()
 
         assert len(queue_after_qpe) == len(qpe_tape.operations)
-        assert all(o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.matrix(), o2.matrix())
-            for o1, o2 in zip(queue_after_qpe, qpe_tape.operations)
+            for o1, o2 in zip(queue_after_qpe, qpe_tape.operations, strict=True)
         )
-        assert all(o1.wires == o2.wires for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(queue_after_qpe, qpe_tape.operations, strict=True)
+        )
 
     def test_expected_value(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value

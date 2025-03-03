@@ -202,7 +202,7 @@ class TestMeasurements:
 
         res = measure(qml.expval(obs), state)
         expected = 0
-        for schmidt, theta in zip(schmidts, rots):
+        for schmidt, theta in zip(schmidts, rots, strict=True):
             expected += schmidt * (4 * (-np.sin(theta) * np.cos(theta)))
 
         assert np.allclose(res, expected)
@@ -386,7 +386,7 @@ class TestBroadcasting:
         res = measure(qml.expval(observable), initial_state, is_state_batched=True)
 
         expanded_mat = np.zeros((9, 9), dtype=complex)
-        for coeff, summand in zip(coeffs, observables):
+        for coeff, summand in zip(coeffs, observables, strict=True):
             mat = summand.matrix()
             expanded_mat += coeff * (
                 np.kron(np.eye(3), mat) if summand.wires[0] == 1 else np.kron(mat, np.eye(3))
@@ -395,7 +395,7 @@ class TestBroadcasting:
         expected = []
         for i in range(BATCH_SIZE):
             expval_sum = 0.0
-            for coeff, summand in zip(coeffs, observables):
+            for coeff, summand in zip(coeffs, observables, strict=True):
                 expval_sum += coeff * get_expval(summand, two_qutrit_batched_state[i])
             expected.append(expval_sum)
 

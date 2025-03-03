@@ -93,7 +93,7 @@ class TestSplitEvolOps:
 
         assert isinstance(ops, tuple) and len(ops) == len(exp_shifts)
 
-        for exp_shift, _ops in zip(exp_shifts, ops):
+        for exp_shift, _ops in zip(exp_shifts, ops, strict=True):
             assert isinstance(_ops, list) and len(_ops) == 3
             # Check that the split-up time evolution is correct
             assert qml.math.allclose(_ops[0].t, [op.t[0], tau])
@@ -155,7 +155,9 @@ class TestSplitEvolOps:
         tau = jax.random.uniform(key) * (exp_time[1] - exp_time[0]) + exp_time[0]
         ops, coeffs = _split_evol_ops(op, ob, tau)
         eigvals = qml.eigvals(ob)
-        exp_coeffs, exp_shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
+        exp_coeffs, exp_shifts = zip(
+            *generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))), strict=True
+        )
 
         # Check coefficients
         assert qml.math.allclose(coeffs, exp_coeffs)
@@ -165,7 +167,7 @@ class TestSplitEvolOps:
 
         assert isinstance(ops, tuple) and len(ops) == len(exp_shifts)
 
-        for exp_shift, _ops in zip(exp_shifts, ops):
+        for exp_shift, _ops in zip(exp_shifts, ops, strict=True):
             assert isinstance(_ops, list) and len(_ops) == 3
             # Check that the split-up time evolution is correct
             assert qml.math.allclose(_ops[0].t, [op.t[0], tau])
@@ -197,9 +199,9 @@ class TestSplitEvolTapes:
         )
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 1)
         assert len(new_tapes) == 2
-        for t, new_ops in zip(new_tapes, split_evolve_ops):
+        for t, new_ops in zip(new_tapes, split_evolve_ops, strict=True):
             qml.assert_equal(t.operations[0], ops[0])
-            for o1, o2 in zip(t.operations[1:-1], new_ops):
+            for o1, o2 in zip(t.operations[1:-1], new_ops, strict=True):
                 qml.assert_equal(o1, o2)
             qml.assert_equal(t.operations[-1], ops[2])
 
@@ -215,8 +217,8 @@ class TestSplitEvolTapes:
         )
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 0)
         assert len(new_tapes) == 2
-        for t, new_ops in zip(new_tapes, split_evolve_ops):
-            for o1, o2 in zip(t.operations, new_ops):
+        for t, new_ops in zip(new_tapes, split_evolve_ops, strict=True):
+            for o1, o2 in zip(t.operations, new_ops, strict=True):
                 qml.assert_equal(o1, o2)
 
         ops = [qml.evolve(ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4), qml.CNOT([0, 2])]
@@ -224,8 +226,8 @@ class TestSplitEvolTapes:
         split_evolve_ops = ([qml.RX(0.6, 2), qml.PauliY(0), qml.RZ(0.0, 0)], [])
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 0)
         assert len(new_tapes) == 2
-        for t, new_ops in zip(new_tapes, split_evolve_ops):
-            for o1, o2 in zip(t.operations[:-1], new_ops):
+        for t, new_ops in zip(new_tapes, split_evolve_ops, strict=True):
+            for o1, o2 in zip(t.operations[:-1], new_ops, strict=True):
                 qml.assert_equal(o1, o2)
             qml.assert_equal(t.operations[-1], ops[1])
 
@@ -241,9 +243,9 @@ class TestSplitEvolTapes:
         )
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 1)
         assert len(new_tapes) == 2
-        for t, new_ops in zip(new_tapes, split_evolve_ops):
+        for t, new_ops in zip(new_tapes, split_evolve_ops, strict=True):
             qml.assert_equal(t.operations[0], ops[0])
-            for o1, o2 in zip(t.operations[1:-1], new_ops):
+            for o1, o2 in zip(t.operations[1:-1], new_ops, strict=True):
                 qml.assert_equal(o1, o2)
             qml.assert_equal(t.operations[-1], ops[2])
 
@@ -848,9 +850,12 @@ class TestStochPulseGrad:
 
         res = fn([])
         assert isinstance(res, tuple) and len(res) == 2
-        for r, exp_shape in zip(res, exp_shapes):
+        for r, exp_shape in zip(res, exp_shapes, strict=True):
             if isinstance(exp_shape, list):
-                assert all(qml.math.allclose(_r, np.zeros(_sh)) for _r, _sh in zip(r, exp_shape))
+                assert all(
+                    qml.math.allclose(_r, np.zeros(_sh))
+                    for _r, _sh in zip(r, exp_shape, strict=True)
+                )
             else:
                 assert qml.math.allclose(r, np.zeros(exp_shape))
         jax.clear_caches()
@@ -1084,7 +1089,7 @@ class TestStochPulseGrad:
         probs_jac = jnp.array([-1, 1]) * (2 * jnp.sin(theta) * jnp.cos(theta))
         exp_jac = (expval_jac * theta_jac, jnp.tensordot(probs_jac, theta_jac, axes=0))
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
-        for j, e in zip(jac, exp_jac):
+        for j, e in zip(jac, exp_jac, strict=True):
             assert qml.math.allclose(j, e, atol=0.2)
 
         r = qml.execute([tape], dev, None)[0]
@@ -1197,7 +1202,7 @@ class TestStochPulseGrad:
 
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode)(params)
-        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
+        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad, strict=True))
         jax.clear_caches()
 
     def test_randomness(self):
@@ -1218,8 +1223,8 @@ class TestStochPulseGrad:
         tapes_a_1, fn_a_1 = stoch_pulse_grad(tape, num_split_times=2, sampler_seed=seed_a)
         tapes_b, fn_b = stoch_pulse_grad(tape, num_split_times=2, sampler_seed=seed_b)
 
-        for tape_a_0, tape_a_1, tape_b in zip(tapes_a_0, tapes_a_1, tapes_b):
-            for op_a_0, op_a_1, op_b in zip(tape_a_0, tape_a_1, tape_b):
+        for tape_a_0, tape_a_1, tape_b in zip(tapes_a_0, tapes_a_1, tapes_b, strict=True):
+            for op_a_0, op_a_1, op_b in zip(tape_a_0, tape_a_1, tape_b, strict=True):
                 if isinstance(op_a_0, qml.pulse.ParametrizedEvolution):
                     # The a_0 and a_1 operators are equal
                     qml.assert_equal(op_a_0, op_a_1)
@@ -1270,7 +1275,7 @@ class TestStochPulseGrad:
         exp_grad = exp_grad[0] + exp_grad[1]
         # Values are close to zero so we need to use `atol` instead of `rtol`
         # to avoid numerical issues
-        assert all(qml.math.allclose(r, e, atol=5e-4) for r, e in zip(res, exp_grad))
+        assert all(qml.math.allclose(r, e, atol=5e-4) for r, e in zip(res, exp_grad, strict=True))
         jax.clear_caches()
 
     @pytest.mark.slow
@@ -1496,11 +1501,11 @@ class TestStochPulseGradIntegration:
         p = params[0] * T
         exp_jac = (jnp.array([-1, 1]) * jnp.sin(2 * p) * T, -2 * jnp.sin(2 * p) * T)
         if hasattr(shots, "len"):
-            for j_shots, e_shots in zip(jac, exp_jac):
-                for j, e in zip(j_shots, e_shots):
+            for j_shots, e_shots in zip(jac, exp_jac, strict=True):
+                for j, e in zip(j_shots, e_shots, strict=True):
                     assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
         else:
-            for j, e in zip(jac, exp_jac):
+            for j, e in zip(jac, exp_jac, strict=True):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
         jax.clear_caches()
 
@@ -1571,7 +1576,8 @@ class TestStochPulseGradIntegration:
         # Values are close to zero so we need to use `atol` instead of `rtol`
         # to avoid numerical issues
         assert all(
-            qml.math.allclose(r, e, atol=5e-3) for r, e in zip(grad_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, atol=5e-3)
+            for r, e in zip(grad_pulse_grad, grad_backprop, strict=True)
         )
         jax.clear_caches()
 
@@ -1603,11 +1609,11 @@ class TestStochPulseGradIntegration:
         p = params[0] * T
         exp_jac = (jnp.array([-1, 1]) * jnp.sin(2 * p) * T, -2 * jnp.sin(2 * p) * T)
         if hasattr(shots, "len"):
-            for j_shots, e_shots in zip(jac, exp_jac):
-                for j, e in zip(j_shots, e_shots):
+            for j_shots, e_shots in zip(jac, exp_jac, strict=True):
+                for j, e in zip(j_shots, e_shots, strict=True):
                     assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
         else:
-            for j, e in zip(jac, exp_jac):
+            for j, e in zip(jac, exp_jac, strict=True):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
         jax.clear_caches()
 
@@ -1656,7 +1662,7 @@ class TestStochPulseGradIntegration:
         params = [jnp.array(0.4)]
         jac_bc = jax.jacobian(circuit_bc)(params)
         jac_no_bc = jax.jacobian(circuit_no_bc)(params)
-        for j0, j1 in zip(jac_bc, jac_no_bc):
+        for j0, j1 in zip(jac_bc, jac_no_bc, strict=True):
             assert qml.math.allclose(j0, j1)
         jax.clear_caches()
 

@@ -550,7 +550,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         tp2 = QuantumScript(fin_ops, [qml.expval(qml.PauliY(2) @ qml.PauliZ(1))])
         fin_batch = batch_type([tp1, tp2])
 
-        for tapeA, tapeB in zip(fin_batch, batch2):
+        for tapeA, tapeB in zip(fin_batch, batch2, strict=True):
             qml.assert_equal(tapeA, tapeB)
         assert abs(comb_postproc(result, fn1, fn2).item() - 0.5) < num_margin
 

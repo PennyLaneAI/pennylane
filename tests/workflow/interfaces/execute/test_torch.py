@@ -286,7 +286,7 @@ class TestTorchExecuteIntegration:
             assert res[0].shape == (4,)
             assert res[1].shape == (4,)
 
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=True):
                 assert torch.allclose(_r[:2], _e, atol=atol_for_shots(shots))
                 assert torch.allclose(_r[2:], _e, atol=atol_for_shots(shots))
 
@@ -294,7 +294,7 @@ class TestTorchExecuteIntegration:
             assert res[0].shape == (2,)
             assert res[1].shape == (2,)
 
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=True):
                 assert torch.allclose(_r, _e, atol=atol_for_shots(shots))
 
     def test_tape_no_parameters(self, execute_kwargs, shots, device_name, seed):
@@ -439,7 +439,7 @@ class TestTorchExecuteIntegration:
             torch.tensor([0, -torch.cos(2 * a) * torch.cos(b)]),
         )
         assert isinstance(jac, tuple) and len(jac) == 2
-        for _j, _e in zip(jac, expected):
+        for _j, _e in zip(jac, expected, strict=True):
             assert torch.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
     def test_classical_processing(self, execute_kwargs, device_name, seed, shots):

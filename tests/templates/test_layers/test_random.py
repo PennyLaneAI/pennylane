@@ -90,14 +90,14 @@ class TestDecomposition:
         queue3 = op3.decomposition()
         decomp3 = op3.compute_decomposition(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
 
-        assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2))
-        assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3))
+        assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2, strict=True))
+        assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3, strict=True))
 
-        for op1, op2 in zip(queue1, decomp1):
+        for op1, op2 in zip(queue1, decomp1, strict=True):
             qml.assert_equal(op1, op2)
-        for op1, op2 in zip(queue2, decomp2):
+        for op1, op2 in zip(queue2, decomp2, strict=True):
             qml.assert_equal(op1, op2)
-        for op1, op2 in zip(queue3, decomp3):
+        for op1, op2 in zip(queue3, decomp3, strict=True):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("n_layers, n_rots", [(3, 4), (1, 2)])
@@ -238,7 +238,7 @@ class TestInterfaces:
             qml.RZ(weights[0][2], wires=1),
         ]
 
-        for op1, op2 in zip(decomp, expected):
+        for op1, op2 in zip(decomp, expected, strict=True):
             qml.assert_equal(op1, op2)
 
     def test_autograd(self, tol):

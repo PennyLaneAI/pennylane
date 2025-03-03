@@ -224,7 +224,9 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
     H_ops = []
     for _coeffs in coeffs:
         ids = qml.math.where(qml.math.abs(_coeffs) > tol)[0]
-        sentence = PauliSentence({_idx_to_pw(idx, n): c for c, idx in zip(_coeffs[ids], ids)})
+        sentence = PauliSentence(
+            {_idx_to_pw(idx, n): c for c, idx in zip(_coeffs[ids], ids, strict=True)}
+        )
         if pauli:
             H_ops.append(sentence)
         else:
@@ -605,7 +607,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
             adj_vecs = np.tensordot(adj_vecs, np.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
-            op_j = sum(c * op for c, op in zip(vec, basis))
+            op_j = sum(c * op for c, op in zip(vec, basis, strict=True))
             op_j.simplify()
             res.append(op_j)
         return res
@@ -617,7 +619,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
             adj_vecs = np.tensordot(adj_vecs, np.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
-            op_j = sum(c * op for c, op in zip(vec, basis))
+            op_j = sum(c * op for c, op in zip(vec, basis, strict=True))
             op_j = qml.simplify(op_j)
             res.append(op_j)
         return res

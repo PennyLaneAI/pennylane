@@ -219,7 +219,7 @@ class TestTensorflowExecuteIntegration:
         assert jac[1].shape == (2,)
 
         expected = ([-tf.sin(a), tf.sin(a) * tf.sin(b)], [0, -tf.cos(a) * tf.cos(b)])
-        for _r, _e in zip(jac, expected):
+        for _r, _e in zip(jac, expected, strict=True):
             assert np.allclose(_r, _e, atol=atol_for_shots(shots))
 
     def test_tape_no_parameters(self, execute_kwargs, shots, device_name, seed):
@@ -385,7 +385,7 @@ class TestTensorflowExecuteIntegration:
             [0, -tf.cos(2 * a) * tf.cos(b)],
         )
         assert isinstance(jac, list) and len(jac) == 2
-        for _j, _e in zip(jac, expected):
+        for _j, _e in zip(jac, expected, strict=True):
             assert np.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
     def test_classical_processing(self, execute_kwargs, device_name, seed, shots):

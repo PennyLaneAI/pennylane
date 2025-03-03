@@ -73,7 +73,7 @@ class TestWiresToJson:
         out = Wires(json.loads(wires_to_json(in_)))
 
         assert hash(in_) == hash(out)
-        for in_w, out_w in zip(in_, out):
+        for in_w, out_w in zip(in_, out, strict=True):
             assert hash(in_w) == hash(out_w)
 
     @pytest.mark.parametrize("in_", [[np.float64(1)], [qml.PauliX(1)]])

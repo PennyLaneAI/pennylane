@@ -200,7 +200,9 @@ class TestMatrix:
         y = np.array([1, 2, 3])
         op = Exp(qml.RX(x, 0), y)
         mat = op.matrix()
-        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qml.math.stack(
+            [Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)]
+        )
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
@@ -213,7 +215,9 @@ class TestMatrix:
         y = jnp.array([1, 2, 3])
         op = Exp(qml.RX(x, 0), y)
         mat = op.matrix()
-        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qml.math.stack(
+            [Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)]
+        )
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, jnp.ndarray)
@@ -227,7 +231,9 @@ class TestMatrix:
         y = torch.tensor([1, 2, 3])
         op = Exp(qml.RX(x, 0), y)
         mat = op.matrix()
-        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qml.math.stack(
+            [Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)]
+        )
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, torch.Tensor)
@@ -241,7 +247,9 @@ class TestMatrix:
         y = tf.constant([1.0, 2.0, 3.0])
         op = Exp(qml.RX(x, 0), y)
         mat = op.matrix()
-        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qml.math.stack(
+            [Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)]
+        )
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, tf.Tensor)
@@ -519,7 +527,7 @@ class TestDecomposition:
             qml.IsingYY(new_phi, wires=[0, 1]),
         ] * num_steps
         assert len(dec) == len(expected_decomp)
-        for op1, op2 in zip(dec, expected_decomp):
+        for op1, op2 in zip(dec, expected_decomp, strict=True):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
@@ -568,7 +576,7 @@ class TestDecomposition:
         op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
         queue = op.decomposition()
 
-        for expected_gate, gate in zip(expected_queue, queue):
+        for expected_gate, gate in zip(expected_queue, queue, strict=True):
             prep = [gate.parameters, gate.wires]
             target = [expected_gate.parameters, expected_gate.wires]
 
@@ -660,7 +668,7 @@ class TestMiscMethods:
         """Test that the diagonalizing gates are the same as the base diagonalizing gates."""
         base = qml.PauliX(0)
         op = Exp(base, 1 + 2j)
-        for op1, op2 in zip(base.diagonalizing_gates(), op.diagonalizing_gates()):
+        for op1, op2 in zip(base.diagonalizing_gates(), op.diagonalizing_gates(), strict=True):
             qml.assert_equal(op1, op2)
 
     def test_pow(self):

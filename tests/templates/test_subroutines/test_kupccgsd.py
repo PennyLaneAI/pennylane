@@ -100,7 +100,7 @@ class TestDecomposition:
         assert isinstance(queue[0], qml.BasisEmbedding)
 
         # order of gates
-        for op1, op2 in zip(queue[1:], exp_unitary):
+        for op1, op2 in zip(queue[1:], exp_unitary, strict=True):
             assert isinstance(op1, op2)
 
         # gate parameter
@@ -120,7 +120,7 @@ class TestDecomposition:
             [np.concatenate(w) for w in pair_double_terms_wires] + gen_single_terms_wires
         ) * k
         res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
-        for wires1, wires2 in zip(exp_wires, res_wires):
+        for wires1, wires2 in zip(exp_wires, res_wires, strict=True):
             assert np.all(wires1 == wires2)
 
     def test_custom_wire_labels(self, tol):

@@ -230,7 +230,7 @@ def givens_decomposition(unitary):
         ):  # pragma: no cover
             raise ValueError("Failed to shift phase transposition.")
 
-        for diag_idx, diag_val in zip([(i, i), (j, j)], qml.math.diag(nphase_mat)):
+        for diag_idx, diag_val in zip([(i, i), (j, j)], qml.math.diag(nphase_mat), strict=True):
             unitary = _set_unitary_matrix(unitary, diag_idx, diag_val, like=interface)
         nleft_givens.append((qml.math.conj(givens_mat), (i, j)))
 

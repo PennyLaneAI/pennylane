@@ -358,9 +358,9 @@ class CountsMP(SampleMeasurement):
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
         results = [qml.math.unique(batch, return_counts=True) for batch in samples]
 
-        for result, outcome_dict in zip(results, outcome_dicts):
+        for result, outcome_dict in zip(results, outcome_dicts, strict=True):
             states, _counts = result
-            for state, count in zip(qml.math.unwrap(states), _counts):
+            for state, count in zip(qml.math.unwrap(states), _counts, strict=True):
                 outcome_dict[state] = count
 
         def outcome_to_eigval(outcome: str):
@@ -392,7 +392,7 @@ class CountsMP(SampleMeasurement):
         Returns:
             Dictionary where counts_to_map has been reordered according to wire_order
         """
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = dict(zip(wire_order, range(len(wire_order)), strict=True))
         mapped_wires = [wire_map[w] for w in self.wires]
 
         mapped_counts = {}

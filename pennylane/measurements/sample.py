@@ -250,7 +250,7 @@ class SampleMP(SampleMeasurement):
         shot_range: tuple[int, ...] = None,
         bin_size: int = None,
     ):
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = dict(zip(wire_order, range(len(wire_order)), strict=True))
         mapped_wires = [wire_map[w] for w in self.wires]
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:

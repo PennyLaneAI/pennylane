@@ -121,7 +121,9 @@ def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
 
         ops_matrices.append(op_matrix)
 
-    mat = sum(coeff * op_mat for coeff, op_mat in zip(hamiltonian.coeffs, ops_matrices))
+    mat = sum(
+        coeff * op_mat for coeff, op_mat in zip(hamiltonian.coeffs, ops_matrices, strict=True)
+    )
     return csc_matrix(mat)
 
 
@@ -440,7 +442,7 @@ def make_max_cut_test_cases():
 
     mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
 
-    return list(zip(GRAPHS, cost_hamiltonians, mixer_hamiltonians))
+    return list(zip(GRAPHS, cost_hamiltonians, mixer_hamiltonians, strict=True))
 
 
 CONSTRAINED = [
@@ -535,7 +537,7 @@ def make_max_independent_test_cases():
 
     mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
 
-    return list(zip(GRAPHS, CONSTRAINED, cost_hamiltonians, mixer_hamiltonians))
+    return list(zip(GRAPHS, CONSTRAINED, cost_hamiltonians, mixer_hamiltonians, strict=True))
 
 
 def make_min_vertex_cover_test_cases():
@@ -620,7 +622,7 @@ def make_min_vertex_cover_test_cases():
 
     mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
 
-    return list(zip(GRAPHS, CONSTRAINED, cost_hamiltonians, mixer_hamiltonians))
+    return list(zip(GRAPHS, CONSTRAINED, cost_hamiltonians, mixer_hamiltonians, strict=True))
 
 
 def make_max_clique_test_cases():
@@ -674,7 +676,7 @@ def make_max_clique_test_cases():
 
     mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
 
-    return list(zip(GRAPHS, CONSTRAINED, cost_hamiltonians, mixer_hamiltonians))
+    return list(zip(GRAPHS, CONSTRAINED, cost_hamiltonians, mixer_hamiltonians, strict=True))
 
 
 def make_edge_driver_cost_test_cases():
@@ -746,7 +748,7 @@ def make_edge_driver_cost_test_cases():
         ),
     ]
 
-    return zip(graphs, rewards, hamiltonians)
+    return zip(graphs, rewards, hamiltonians, strict=True)
 
 
 def make_max_weighted_cycle_test_cases():
@@ -906,7 +908,9 @@ def make_max_weighted_cycle_test_cases():
 
     mappings = [qaoa.cycle.wires_to_edges(digraph_complete)] * 2
 
-    return list(zip(digraphs, mwc_constrained, cost_hamiltonians, mixer_hamiltonians, mappings))
+    return list(
+        zip(digraphs, mwc_constrained, cost_hamiltonians, mixer_hamiltonians, mappings, strict=True)
+    )
 
 
 class TestCostHamiltonians:
@@ -1175,7 +1179,7 @@ class TestLayers:
         assert len(q) == 1
         decomp = out.decomposition()
 
-        for i, j in zip(decomp, gates):
+        for i, j in zip(decomp, gates, strict=True):
             qml.assert_equal(i, j)
 
     cost_layer_test_cases = [
@@ -1216,7 +1220,7 @@ class TestLayers:
         assert len(q) == 1
         decomp = out.decomposition()
 
-        for i, j in zip(decomp, gates):
+        for i, j in zip(decomp, gates, strict=True):
             qml.assert_equal(i, j)
 
 
@@ -1396,8 +1400,8 @@ class TestCycles:
         coeffs_expected = [0.25, 0.25, 0.25, -0.25, 0.25, 0.25, 0.25, -0.25]
 
         assert h.coeffs == coeffs_expected
-        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
-        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected, strict=True))
+        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected, strict=True))
 
     @pytest.mark.parametrize(
         "g",
@@ -1420,8 +1424,8 @@ class TestCycles:
         coeffs_expected = [0.25, 0.25, 0.25, -0.25]
 
         assert h.coeffs == coeffs_expected
-        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
-        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected, strict=True))
+        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected, strict=True))
 
     @pytest.mark.parametrize("g", [nx.complete_graph(4), rx.generators.mesh_graph(4, [0, 1, 2, 3])])
     def test_partial_cycle_mixer_error(self, g):
@@ -1644,8 +1648,8 @@ class TestCycles:
         expected_coeffs = [np.log(0.5), np.log(1), np.log(1.5), np.log(2), np.log(2.5), np.log(3)]
 
         assert np.allclose(expected_coeffs, h.coeffs)
-        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
-        assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops))
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops, strict=True))
+        assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops, strict=True))
 
     def test_loss_hamiltonian_error(self):
         """Test if the loss_hamiltonian function raises ValueError"""
@@ -1704,8 +1708,8 @@ class TestCycles:
         ]
 
         assert np.allclose(expected_coeffs, h.coeffs)
-        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
-        assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops))
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops, strict=True))
+        assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops, strict=True))
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
@@ -1799,7 +1803,7 @@ class TestCycles:
         assert squared_coeffs == expected_coeffs
         assert all(
             op1.name == op2.name and op1.wires == op2.wires
-            for op1, op2 in zip(expected_ops, squared_ops)
+            for op1, op2 in zip(expected_ops, squared_ops, strict=True)
         )
 
     @pytest.mark.parametrize(
@@ -1844,11 +1848,13 @@ class TestCycles:
         ]
         expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
         _, ops = h.terms()
-        non_zero_terms = [(coeff, op) for coeff, op in zip(h.coeffs, ops) if coeff != 0]
+        non_zero_terms = [
+            (coeff, op) for coeff, op in zip(h.coeffs, ops, strict=True) if coeff != 0
+        ]
         coeffs = [term[0] for term in non_zero_terms]
         assert qml.math.allclose(coeffs, expected_coeffs)
         non_zero_ops = [term[1] for term in non_zero_terms]
-        for op, expected_op in zip(non_zero_ops, expected_ops):
+        for op, expected_op in zip(non_zero_ops, expected_ops, strict=True):
             assert op.pauli_rep == expected_op.pauli_rep
 
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
@@ -1872,7 +1878,7 @@ class TestCycles:
 
         coeffs, ops = h.terms()
         assert qml.math.allclose(expected_coeffs, coeffs)
-        for op, expected_op in zip(ops, expected_ops):
+        for op, expected_op in zip(ops, expected_ops, strict=True):
             assert op.pauli_rep == expected_op.pauli_rep
 
     @pytest.mark.parametrize(
@@ -1896,7 +1902,7 @@ class TestCycles:
         expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
         coeffs, ops = h.terms()
         assert qml.math.allclose(coeffs, expected_coeffs)
-        for op, expected_op in zip(ops, expected_ops):
+        for op, expected_op in zip(ops, expected_ops, strict=True):
             assert op.pauli_rep == expected_op.pauli_rep
 
     def test_out_flow_constraint_raises(self):

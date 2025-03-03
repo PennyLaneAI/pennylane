@@ -434,7 +434,7 @@ class TestIntegerComparator:
                 op.queue()
             return qml.probs(wires=range(num_wires + num_workers))
 
-        for tape, geq in zip([tape1, tape2], [True, False]):
+        for tape, geq in zip([tape1, tape2], [True, False], strict=True):
             u = np.array(
                 [
                     f(np.array(b), tape, geq)

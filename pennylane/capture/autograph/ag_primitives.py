@@ -57,7 +57,7 @@ def _assert_results(results, var_names):
 
     assert len(results) == len(var_names)
 
-    for r, v in zip(results, var_names):
+    for r, v in zip(results, var_names, strict=True):
         if isinstance(r, Undefined):
             raise AutoGraphError(f"Some branches did not define a value for variable '{v}'")
 
@@ -148,7 +148,7 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
     variable was initialized with the wrong type.
     """
 
-    for i, (inp, out) in enumerate(zip(inputs, outputs)):
+    for i, (inp, out) in enumerate(zip(inputs, outputs, strict=True)):
         inp_t, out_t = jax.api_util.shaped_abstractify(inp), jax.api_util.shaped_abstractify(out)
         if inp_t.dtype != out_t.dtype or inp_t.shape != out_t.shape:
             raise AutoGraphError(

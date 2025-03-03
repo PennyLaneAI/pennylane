@@ -110,7 +110,7 @@ class TestHardwareHamiltonian:
 
         assert isinstance(sum_rm, HardwareHamiltonian)
         assert qml.math.allequal(sum_rm.coeffs, [1, 2, 2])
-        for op1, op2 in zip(sum_rm.ops, [qml.PauliX(4), qml.PauliZ(8), qml.PauliY(8)]):
+        for op1, op2 in zip(sum_rm.ops, [qml.PauliX(4), qml.PauliZ(8), qml.PauliY(8)], strict=True):
             qml.assert_equal(op1, op2)
         assert sum_rm.pulses == [
             HardwarePulse(1, 2, 3, [4, 8]),
@@ -149,7 +149,7 @@ class TestHardwareHamiltonian:
         assert isinstance(res1, HardwareHamiltonian)
         assert res1.coeffs_fixed == coeffs
         assert res1.coeffs_parametrized == []
-        for op1, op2 in zip(res1.ops_fixed, ops):
+        for op1, op2 in zip(res1.ops_fixed, ops, strict=True):
             qml.assert_equal(op1, op2)
         assert res1.ops_parametrized == []
         assert res1.wires == qml.wires.Wires(h_wires)
@@ -161,7 +161,7 @@ class TestHardwareHamiltonian:
         assert isinstance(res2, HardwareHamiltonian)
         assert res2.coeffs_fixed == coeffs
         assert res2.coeffs_parametrized == []
-        for op1, op2 in zip(res2.ops_fixed, ops):
+        for op1, op2 in zip(res2.ops_fixed, ops, strict=True):
             qml.assert_equal(op1, op2)
         assert res2.ops_parametrized == []
         assert res2.wires == qml.wires.Wires(h_wires)

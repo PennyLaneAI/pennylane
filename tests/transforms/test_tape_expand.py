@@ -185,9 +185,18 @@ class TestExpandNonunitaryGen:
         ]
 
         assert tape.operations[:2] == new_tape.operations[:2]
-        assert all(exp.name == new.name for exp, new in zip(expanded, new_tape.operations[2:5]))
-        assert all(exp.data == new.data for exp, new in zip(expanded, new_tape.operations[2:5]))
-        assert all(exp.wires == new.wires for exp, new in zip(expanded, new_tape.operations[2:5]))
+        assert all(
+            exp.name == new.name
+            for exp, new in zip(expanded, new_tape.operations[2:5], strict=True)
+        )
+        assert all(
+            exp.data == new.data
+            for exp, new in zip(expanded, new_tape.operations[2:5], strict=True)
+        )
+        assert all(
+            exp.wires == new.wires
+            for exp, new in zip(expanded, new_tape.operations[2:5], strict=True)
+        )
         assert tape.operations[3:] == new_tape.operations[5:]
 
     def test_expand_missing_generator(self):
@@ -462,7 +471,8 @@ class TestCreateCustomDecompExpandFn:
 
         assert np.isclose(original_res, decomp_res)
         assert [
-            orig_op.name == decomp_op.name for orig_op, decomp_op in zip(original_ops, decomp_ops)
+            orig_op.name == decomp_op.name
+            for orig_op, decomp_op in zip(original_ops, decomp_ops, strict=True)
         ]
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
@@ -488,7 +498,8 @@ class TestCreateCustomDecompExpandFn:
 
         assert np.isclose(original_res, decomp_res)
         assert [
-            orig_op.name == decomp_op.name for orig_op, decomp_op in zip(original_ops, decomp_ops)
+            orig_op.name == decomp_op.name
+            for orig_op, decomp_op in zip(original_ops, decomp_ops, strict=True)
         ]
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed", "lightning.qubit"])
@@ -545,7 +556,7 @@ class TestCreateCustomDecompExpandFn:
 
         expected_ops = ["Hadamard", "RZ", "PauliX", "RY", "PauliX", "RZ", "Hadamard"]
         decomp_ops = qml.workflow.construct_batch(decomp_qnode, level=None)(x)[0][0].operations
-        assert all(op.name == name for op, name in zip(decomp_ops, expected_ops))
+        assert all(op.name == name for op, name in zip(decomp_ops, expected_ops, strict=True))
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_nested_custom_decomp(self, device_name):
@@ -727,7 +738,10 @@ class TestCreateCustomDecompExpandFn:
             qml.assert_equal(op.base, qml.T(0))
 
         # check that new instances of the operator are not affected by the modifications made to get the decomposition
-        assert [op1 == op2 for op1, op2 in zip(CustomOp(0).decomposition(), original_decomp)]
+        assert [
+            op1 == op2
+            for op1, op2 in zip(CustomOp(0).decomposition(), original_decomp, strict=True)
+        ]
 
     def test_custom_decomp_in_separate_context_legacy_opmath(self):
         """Test that the set_decomposition context manager works."""

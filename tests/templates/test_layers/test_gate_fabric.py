@@ -81,7 +81,7 @@ class TestDecomposition:
         assert isinstance(queue[0], qml.BasisEmbedding)
 
         # order of gates
-        for op1, op2 in zip(queue[1:], exp_gates):
+        for op1, op2 in zip(queue[1:], exp_gates, strict=True):
             assert isinstance(op1, op2)
 
         # gate parameter

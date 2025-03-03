@@ -107,8 +107,8 @@ def rydberg_interaction(
 
     coeffs = []
     observables = []
-    for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
-        for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :]):
+    for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1], strict=True)):
+        for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :], strict=True):
             atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
             if atom_distance > max_distance:
                 continue

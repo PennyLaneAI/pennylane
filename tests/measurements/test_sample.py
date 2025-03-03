@@ -140,7 +140,7 @@ class TestSample:
             res = func(phi)
             if isinstance(shots, list):
                 assert len(res) == len(shots)
-                assert all(r.shape == (s,) for r, s in zip(res, shots))
+                assert all(r.shape == (s,) for r, s in zip(res, shots, strict=True))
             else:
                 assert res.shape == (shots,)
 
@@ -163,7 +163,7 @@ class TestSample:
             res = func(phi)
             if isinstance(shots, list):
                 assert len(res) == len(shots)
-                assert all(r.shape == (s,) for r, s in zip(res, shots))
+                assert all(r.shape == (s,) for r, s in zip(res, shots, strict=True))
             else:
                 assert res.shape == (shots,)
 
@@ -186,7 +186,7 @@ class TestSample:
             res = func(phi)
             if isinstance(shots, list):
                 assert len(res) == len(shots)
-                assert all(r.shape == (s, 2) for r, s in zip(res, shots))
+                assert all(r.shape == (s, 2) for r, s in zip(res, shots, strict=True))
             else:
                 assert res.shape == (shots, 2)
 
@@ -265,7 +265,7 @@ class TestSample:
 
         expected_shapes = [(num_wires,), (shots2, num_wires), (shots3, num_wires)]
         assert len(res) == len(expected_shapes)
-        assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
+        assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes, strict=True))
 
         # assert first wire is always the same as second
         # pylint: disable=unsubscriptable-object

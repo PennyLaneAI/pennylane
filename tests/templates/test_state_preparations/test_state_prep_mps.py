@@ -67,7 +67,7 @@ def test_access_to_param():
     ]
     op = qml.MPSPrep(mps, wires=[0, 1, 2])
 
-    for arr1, arr2 in zip(mps, op.mps):
+    for arr1, arr2 in zip(mps, op.mps, strict=True):
         assert np.allclose(arr1, arr2)
 
 

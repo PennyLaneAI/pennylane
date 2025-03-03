@@ -297,7 +297,7 @@ def find_and_place_cuts(
                 },  # kwargs has higher precedence for colliding keys
             )
             for cut_kwargs in cut_kwargs_probed
-            for trial_id, seed in zip(range(cut_strategy.trials_per_probe), seeds)
+            for trial_id, seed in zip(range(cut_strategy.trials_per_probe), seeds, strict=True)
         }
 
         valid_cut_edges = {}

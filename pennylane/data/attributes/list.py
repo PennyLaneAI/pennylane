@@ -84,7 +84,7 @@ class DatasetList(  # pylint: disable=too-many-ancestors
         if not len(self) == len(__value):
             return False
 
-        return all(x == y for x, y in zip(self, __value))
+        return all(x == y for x, y in zip(self, __value, strict=True))
 
     def __str__(self) -> str:
         return str(list(self))

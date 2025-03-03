@@ -409,7 +409,7 @@ class TestSpsaGradient:
         assert isinstance(result, tuple)
         assert len(result) == 2
 
-        for r, exp_shape in zip(result, [(3,), (4, 3)]):
+        for r, exp_shape in zip(result, [(3,), (4, 3)], strict=True):
             assert isinstance(r, np.ndarray)
             assert r.shape == exp_shape
             assert np.allclose(r, 0)
@@ -528,7 +528,7 @@ class TestSpsaGradient:
             (2, 4, 3),
         ]
 
-        assert all(t == q for t, q in zip(transform, expected))
+        assert all(t == q for t, q in zip(transform, expected, strict=True))
 
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a

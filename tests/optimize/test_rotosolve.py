@@ -30,7 +30,7 @@ def expand_num_freq(num_freq, param):
     if np.isscalar(num_freq):
         num_freq = [num_freq] * len(param)
     expanded = []
-    for _num_freq, par in zip(num_freq, param):
+    for _num_freq, par in zip(num_freq, param, strict=True):
         if np.isscalar(_num_freq) and np.isscalar(par):
             expanded.append(_num_freq)
         elif np.isscalar(_num_freq):
@@ -182,12 +182,13 @@ all_substep_kwargs = [
             classical_params,
             classical_nums_frequency,
             classical_expected_num_calls,
+            strict=True,
         )
     ),
 )
 @pytest.mark.parametrize(
     "substep_optimizer, substep_kwargs",
-    list(zip(substep_optimizers, all_substep_kwargs)),
+    list(zip(substep_optimizers, all_substep_kwargs, strict=True)),
 )
 class TestWithClassicalFunction:
     # pylint: disable=unused-argument
@@ -238,7 +239,9 @@ class TestWithClassicalFunction:
         if len(param) == 1:
             new_param_step = (new_param_step,)
 
-        assert all(np.allclose(p, new_p) for p, new_p in zip(param[1:], new_param_step[1:]))
+        assert all(
+            np.allclose(p, new_p) for p, new_p in zip(param[1:], new_param_step[1:], strict=True)
+        )
 
         # With trainable parameters, training should happen
         param = tuple(np.array(p, requires_grad=True) for p in param)
@@ -310,7 +313,15 @@ class TestWithClassicalFunction:
 
 @pytest.mark.parametrize(
     "fun, x_min, param, num_freq",
-    list(zip(classical_functions, classical_minima, classical_params, classical_nums_frequency)),
+    list(
+        zip(
+            classical_functions,
+            classical_minima,
+            classical_params,
+            classical_nums_frequency,
+            strict=True,
+        )
+    ),
 )
 def test_multiple_steps(fun, x_min, param, num_freq):
     """Tests that repeated steps execute as expected."""
@@ -367,6 +378,7 @@ classical_nums_frequency_deact = [
             classical_minima_deact,
             classical_params_deact,
             classical_nums_frequency_deact,
+            strict=True,
         )
     ),
 )
@@ -427,7 +439,7 @@ def scalar_qnode(x):
 
 @qml.qnode(dev)
 def array_qnode(x, y, z):
-    for _x, w in zip(x, dev.wires):
+    for _x, w in zip(x, dev.wires, strict=True):
         qml.RX(_x, wires=w)
 
     for i in range(num_wires):
@@ -479,11 +491,11 @@ qnode_spectra = [
 
 @pytest.mark.parametrize(
     "qnode, param, nums_frequency, spectra",
-    list(zip(qnodes, qnode_params, qnode_nums_frequency, qnode_spectra)),
+    list(zip(qnodes, qnode_params, qnode_nums_frequency, qnode_spectra, strict=True)),
 )
 @pytest.mark.parametrize(
     "substep_optimizer, substep_kwargs",
-    list(zip(substep_optimizers, all_substep_kwargs)),
+    list(zip(substep_optimizers, all_substep_kwargs, strict=True)),
 )
 class TestWithQNodes:
     def test_single_step(

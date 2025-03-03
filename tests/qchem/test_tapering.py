@@ -199,14 +199,14 @@ def test_kernel(binary_matrix, result):
 def test_generate_paulis(generators, num_qubits, result):
     r"""Test that generate_paulis returns the correct result."""
     pauli_ops = qml.paulix_ops(generators, num_qubits)
-    for p1, p2 in zip(pauli_ops, result):
+    for p1, p2 in zip(pauli_ops, result, strict=True):
         assert p1.compare(p2)
 
     # test arithmetic op compatibility:
     generators_as_ops = [pauli_sentence(g).operation() for g in generators]
     assert not any(isinstance(g, qml.Hamiltonian) for g in generators_as_ops)
 
-    for p1, p2 in zip(pauli_ops, result):
+    for p1, p2 in zip(pauli_ops, result, strict=True):
         qml.assert_equal(p1, p2)
 
 
@@ -230,7 +230,7 @@ def test_symmetry_generators(symbols, geometry, res_generators):
     mol = qml.qchem.Molecule(symbols, geometry)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)()
     generators = qml.symmetry_generators(hamiltonian)
-    for g1, g2 in zip(generators, res_generators):
+    for g1, g2 in zip(generators, res_generators, strict=True):
         assert pauli_sentence(g1) == pauli_sentence(g2)
 
 
@@ -299,10 +299,10 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
     h = qml.qchem.diff_hamiltonian(mol)()
     ham_calc = qml.taper(h, generator, paulixops, paulix_sector)
     # sort Hamiltonian terms and then compare with reference
-    sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1])))
-    hamref_terms = list(zip(*ham_ref.terms()))
+    sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1], strict=True)))
+    hamref_terms = list(zip(*ham_ref.terms(), strict=True))
 
-    for term, ref_term in zip(sorted_terms, hamref_terms):
+    for term, ref_term in zip(sorted_terms, hamref_terms, strict=True):
         assert np.allclose(term[0], ref_term[0])
         assert pauli_sentence(term[1]) == pauli_sentence(ref_term[1])
 
@@ -637,7 +637,7 @@ def test_taper_excitations(
         assert len(exc_tap[idx]) == num_commuting[idx]
 
     obs_all, obs_tap = exc_obs[0] + exc_obs[1], exc_tap[0] + exc_tap[1]
-    for op_all, op_tap in zip(obs_all, obs_tap):
+    for op_all, op_tap in zip(obs_all, obs_tap, strict=True):
         if op_tap:
             excited_state = np.matmul(qml.matrix(op_all, wire_order=range(len(hf_state))), state)
             ob_tap_mat = functools.reduce(
@@ -647,7 +647,7 @@ def test_taper_excitations(
             excited_state_tapered = np.matmul(ob_tap_mat, state_tapered)
             # check if tapered excitation gates remains spin and particle-number conserving,
             # and also evolves the tapered-state to have consistent energy values
-            for obs, tap_obs in zip(observables, tapered_obs):
+            for obs, tap_obs in zip(observables, tapered_obs, strict=True):
                 expec_val = (
                     scipy.sparse.coo_matrix(excited_state)
                     @ obs.sparse_matrix(wire_order=range(len(hf_state)))
@@ -752,7 +752,7 @@ def test_consistent_taper_ops(operation, op_gen):
     taper_op2 = taper_operation(
         operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen
     )
-    for op1, op2 in zip(taper_op1, taper_op2):
+    for op1, op2 in zip(taper_op1, taper_op2, strict=True):
         qml.assert_equal(op1.base, op2.base)
 
     with qml.queuing.AnnotatedQueue() as q_tape1:
@@ -766,9 +766,9 @@ def test_consistent_taper_ops(operation, op_gen):
 
     assert len(taper_op1) == len(taper_circuit1)
     assert len(taper_op2) == len(taper_circuit2)
-    for op1, op2 in zip(taper_circuit1, taper_op1):
+    for op1, op2 in zip(taper_circuit1, taper_op1, strict=True):
         qml.assert_equal(op1.base, op2.base)
-    for op1, op2 in zip(taper_circuit2, taper_op2):
+    for op1, op2 in zip(taper_circuit2, taper_op2, strict=True):
         qml.assert_equal(op1.base, op2.base)
 
     if taper_op1:
@@ -796,7 +796,7 @@ def test_consistent_taper_ops(operation, op_gen):
         )
         evolved_state_tapered = np.matmul(ob_tap_mat, state_tapered)
 
-        for obs, tap_obs in zip(observables, tapered_obs):
+        for obs, tap_obs in zip(observables, tapered_obs, strict=True):
             expec_val = (
                 scipy.sparse.coo_matrix(evolved_state)
                 @ scipy.sparse.coo_matrix(qml.matrix(obs, wire_order=range(len(hf_state))))
@@ -864,7 +864,7 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
             op_wires=op_wires,
             op_gen=op_gen,
         )
-        for op1, op2 in zip(taper_op_fn(params), taper_op):
+        for op1, op2 in zip(taper_op_fn(params), taper_op, strict=True):
             qml.assert_equal(op1.base, op2.base)
 
 
@@ -924,7 +924,7 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
             op_wires=op_wires,
             op_gen=functools.partial(op_gen, phi=params),
         )
-        for op1, op2 in zip(taper_op1(params), taper_op2):
+        for op1, op2 in zip(taper_op1(params), taper_op2, strict=True):
             qml.assert_equal(op1.base, op2.base)
 
 

@@ -381,7 +381,7 @@ class TestMeasureSamples:
         assert isinstance(result, tuple)
         assert len(result) == total_copies
 
-        for res, sh in zip(result, shots):
+        for res, sh in zip(result, shots, strict=True):
             assert isinstance(res, tuple)
             assert len(res) == 1
             res = res[0]
@@ -864,7 +864,7 @@ class TestBroadcasting:
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies
 
-        for s, r in zip(shots, res):
+        for s, r in zip(shots, res, strict=True):
             assert isinstance(r, tuple)
             assert len(r) == 1
             r = r[0]
@@ -1061,7 +1061,7 @@ class TestBroadcastingPRNG:
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies
 
-        for s, r in zip(shots, res):
+        for s, r in zip(shots, res, strict=True):
             assert isinstance(r, tuple)
             assert len(r) == 1
             r = r[0]

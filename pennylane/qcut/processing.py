@@ -112,7 +112,7 @@ def qcut_processing_fn_sample(
     samples = []
     for result in results:
         sample = []
-        for fragment_result, out_degree in zip(result, out_degrees):
+        for fragment_result, out_degree in zip(result, out_degrees, strict=True):
             sample.append(fragment_result[: -out_degree or None])
         samples.append(pnp.hstack(sample))
     return [qml.math.convert_like(pnp.array(samples), res0)]
@@ -158,11 +158,11 @@ def qcut_processing_fn_mc(
 
     evals = (0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
     expvals = []
-    for result, setting in zip(results, settings.T):
+    for result, setting in zip(results, settings.T, strict=True):
         sample_terminal = []
         sample_mid = []
 
-        for fragment_result, out_degree in zip(result, out_degrees):
+        for fragment_result, out_degree in zip(result, out_degrees, strict=True):
             sample_terminal.append(fragment_result[: -out_degree or None])
             sample_mid.append(fragment_result[-out_degree or len(fragment_result) :])
 
@@ -202,7 +202,7 @@ def _reshape_results(results: Sequence, shots: int) -> list[list]:
 
     results = [qml.math.flatten(r) for r in results]
     results = [results[i : i + shots] for i in range(0, len(results), shots)]
-    results = list(map(list, zip(*results)))  # calculate list-based transpose
+    results = list(map(list, zip(*results, strict=True)))  # calculate list-based transpose
 
     return results
 
@@ -323,7 +323,7 @@ def contract_tensors(
 
     meas_map = {}
 
-    for i, (node, prep) in enumerate(zip(communication_graph.nodes, prepare_nodes)):
+    for i, (node, prep) in enumerate(zip(communication_graph.nodes, prepare_nodes, strict=True)):
         predecessors = communication_graph.pred[node]
 
         for p in prep:
@@ -337,7 +337,7 @@ def contract_tensors(
                         tensor_indxs[i] += symb
                         meas_map[meas_op] = symb
 
-    for i, (node, meas) in enumerate(zip(communication_graph.nodes, measure_nodes)):
+    for i, (node, meas) in enumerate(zip(communication_graph.nodes, measure_nodes, strict=True)):
         successors = communication_graph.succ[node]
 
         for m in meas:
@@ -454,7 +454,7 @@ def _to_tensors(
     ctr = 0
     tensors = []
 
-    for p, m in zip(prepare_nodes, measure_nodes):
+    for p, m in zip(prepare_nodes, measure_nodes, strict=True):
         n_prep = len(p)
         n_meas = len(m)
         n = n_prep + n_meas

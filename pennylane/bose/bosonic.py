@@ -125,7 +125,9 @@ class BoseWord(dict):
             [
                 "b" + symbol_map[j] + "(" + i + ")"
                 for i, j in zip(
-                    [str(i[1]) for i in self.sorted_dic.keys()], self.sorted_dic.values()
+                    [str(i[1]) for i in self.sorted_dic.keys()],
+                    self.sorted_dic.values(),
+                    strict=True,
                 )
             ]
         )
@@ -178,7 +180,9 @@ class BoseWord(dict):
             return self_bs + BoseSentence({other: -1.0})
 
         if isinstance(other, BoseSentence):
-            other_bs = BoseSentence(dict(zip(other.keys(), [-v for v in other.values()])))
+            other_bs = BoseSentence(
+                dict(zip(other.keys(), [-v for v in other.values()], strict=True))
+            )
             return self_bs + other_bs
 
         if not isinstance(other, TensorLike):
@@ -228,9 +232,10 @@ class BoseWord(dict):
                 zip(
                     [(order_idx, other_wires[i]) for i, order_idx in enumerate(order_final)],
                     other.values(),
+                    strict=True,
                 )
             )
-            dict_self = dict(zip(self.keys(), self.values()))
+            dict_self = dict(zip(self.keys(), self.values(), strict=True))
 
             dict_self.update(dict_other)
 
@@ -504,7 +509,9 @@ class BoseSentence(dict):
             return self.__add__(other)
 
         if isinstance(other, BoseSentence):
-            other = BoseSentence(dict(zip(other.keys(), [-1 * v for v in other.values()])))
+            other = BoseSentence(
+                dict(zip(other.keys(), [-1 * v for v in other.values()], strict=True))
+            )
             return self.__add__(other)
 
         if not isinstance(other, TensorLike):
@@ -531,7 +538,7 @@ class BoseSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
 
-        self_bs = BoseSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
+        self_bs = BoseSentence(dict(zip(self.keys(), [-1 * v for v in self.values()], strict=True)))
         other_bs = BoseSentence({BoseWord({}): other})  # constant * I
         return self_bs + other_bs
 
@@ -563,7 +570,7 @@ class BoseSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
         vals = [i * other for i in self.values()]
-        return BoseSentence(dict(zip(self.keys(), vals)))
+        return BoseSentence(dict(zip(self.keys(), vals, strict=True)))
 
     def __rmul__(self, other):
         r"""Reverse multiply a BoseSentence
@@ -583,7 +590,7 @@ class BoseSentence(dict):
             )
 
         vals = [i * other for i in self.values()]
-        return BoseSentence(dict(zip(self.keys(), vals)))
+        return BoseSentence(dict(zip(self.keys(), vals, strict=True)))
 
     def __pow__(self, value):
         r"""Exponentiate a Bose sentence to an integer power."""

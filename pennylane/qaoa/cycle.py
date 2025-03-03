@@ -427,7 +427,7 @@ def _square_hamiltonian_terms(
         of the squared Hamiltonian.
     """
     squared_coeffs, squared_ops = [], []
-    pairs = [(coeff, op) for coeff, op in zip(coeffs, ops)]
+    pairs = [(coeff, op) for coeff, op in zip(coeffs, ops, strict=True)]
     products = itertools.product(pairs, repeat=2)
 
     for (coeff1, op1), (coeff2, op2) in products:

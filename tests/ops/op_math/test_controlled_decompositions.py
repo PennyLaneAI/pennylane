@@ -74,7 +74,7 @@ def equal_list(lhs, rhs):
         lhs = [lhs]
     if not isinstance(rhs, list):
         rhs = [rhs]
-    return len(lhs) == len(rhs) and all(qml.equal(l, r) for l, r in zip(lhs, rhs))
+    return len(lhs) == len(rhs) and all(qml.equal(l, r) for l, r in zip(lhs, rhs, strict=True))
 
 
 class TestControlledDecompositionZYZ:
@@ -219,7 +219,7 @@ class TestControlledDecompositionZYZ:
             qml.Toffoli(wires=control_wires[:-1] + [0]),
             qml.CRZ((0.789 - 0.123) / 2, wires=[3, 0]),
         ]
-        for decomp_op, expected_op in zip(decomps, expected_ops):
+        for decomp_op, expected_op in zip(decomps, expected_ops, strict=True):
             qml.assert_equal(decomp_op, expected_op)
         assert len(decomps) == 7
 
@@ -383,7 +383,7 @@ class TestControlledDecompositionZYZ:
         torch_decomp = ctrl_decomp_zyz(target_op1, 1)
         decomp = ctrl_decomp_zyz(target_op2, 1)
 
-        for op1, op2 in zip(torch_decomp, decomp):
+        for op1, op2 in zip(torch_decomp, decomp, strict=True):
             qml.assert_equal(op1, op2, check_interface=False)
 
 
@@ -763,7 +763,7 @@ class TestControlledBisectGeneral:
         expected = expected_circuit()
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
-    @pytest.mark.parametrize("op", zip(gen_ops, gen_ops_best))
+    @pytest.mark.parametrize("op", zip(gen_ops, gen_ops_best, strict=True))
     @pytest.mark.parametrize("control_wires", cw5)
     @pytest.mark.parametrize("all_the_way_from_ctrl", [False, True])
     def test_auto_select(self, op, control_wires, all_the_way_from_ctrl):

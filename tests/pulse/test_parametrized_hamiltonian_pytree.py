@@ -77,8 +77,8 @@ class TestParametrizedHamiltonianPytree:
         assert isinstance(H_pytree.mat_fixed, sparse.BCSR)
         assert isinstance(H_pytree.mats_parametrized, tuple)
         assert qml.math.allclose(
-            [c(p, 2) for c, p in zip(H_pytree.coeffs_parametrized, params)],
-            [c(p, 2) for c, p in zip(coeffs_callable, params)],
+            [c(p, 2) for c, p in zip(H_pytree.coeffs_parametrized, params, strict=True)],
+            [c(p, 2) for c, p in zip(coeffs_callable, params, strict=True)],
             atol=1e-7,
         )
         assert H_pytree.reorder_fn == fn

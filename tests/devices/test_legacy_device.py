@@ -500,10 +500,11 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         for op, expected_op in zip(
             expanded_tape.operations[expanded_tape.num_preps :],
             expanded_ops,
+            strict=True,
         ):
             qml.assert_equal(op, expected_op)
 
-        for mp, expected_mp in zip(expanded_tape.measurements, measurements):
+        for mp, expected_mp in zip(expanded_tape.measurements, measurements, strict=True):
             qml.assert_equal(mp, expected_mp)
 
     wires_to_try = [
@@ -591,6 +592,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
                     qml.CNOT(wires=[0, 1]),
                 ],
             ],
+            strict=True,
         ),
     )
     def test_default_expand_with_initial_state(self, op, decomp):
@@ -614,7 +616,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         true_decomposition.append(qml.PauliZ(wires=2))
 
         assert len(new_tape.operations) == len(true_decomposition)
-        for tape_op, true_op in zip(new_tape.operations, true_decomposition):
+        for tape_op, true_op in zip(new_tape.operations, true_decomposition, strict=True):
             qml.assert_equal(tape_op, true_op)
 
         assert new_tape.shots is tape.shots

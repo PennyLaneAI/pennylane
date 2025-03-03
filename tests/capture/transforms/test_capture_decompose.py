@@ -218,7 +218,7 @@ class TestDecomposeInterpreter:
             assert transformed_jaxpr.eqns[-2].primitive == qml.PauliY._primitive
             assert transformed_jaxpr.eqns[-1].primitive == qml.PauliX._primitive
         else:
-            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
+            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
                 assert orig_eqn.primitive == transformed_eqn.primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -250,7 +250,7 @@ class TestDecomposeInterpreter:
                 prim == exp_prim for prim, exp_prim in zip(op_prims, expected_prims, strict=True)
             )
         else:
-            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
+            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
                 assert orig_eqn.primitive == transformed_eqn.primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -274,7 +274,7 @@ class TestDecomposeInterpreter:
         if decompose:
             assert transformed_jaxpr.eqns[-1].primitive == qml.RX._primitive
         else:
-            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
+            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
                 assert orig_eqn.primitive == transformed_eqn.primitive
 
     def test_ctrl_higher_order_primitive_not_implemented(self):
@@ -356,7 +356,8 @@ class TestDecomposeInterpreter:
             qml.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
+            eqn.primitive == exp_prim
+            for eqn, exp_prim in zip(branch.eqns, expected_primitives, strict=True)
         )
 
         # Elif branch
@@ -369,7 +370,8 @@ class TestDecomposeInterpreter:
             qml.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
+            eqn.primitive == exp_prim
+            for eqn, exp_prim in zip(branch.eqns, expected_primitives, strict=True)
         )
 
         # Else branch
@@ -380,7 +382,8 @@ class TestDecomposeInterpreter:
             qml.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
+            eqn.primitive == exp_prim
+            for eqn, exp_prim in zip(branch.eqns, expected_primitives, strict=True)
         )
 
     def test_for_loop_higher_order_primitive(self):

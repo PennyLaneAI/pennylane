@@ -156,7 +156,7 @@ class TestPrepSelPrep:
     )
 
     @pytest.mark.parametrize(
-        "op, params, expected_res", zip(op_data, resource_params_data, resource_data)
+        "op, params, expected_res", zip(op_data, resource_params_data, resource_data, strict=True)
     )
     def test_resources(self, op, params, expected_res):
         """Test the resources method returns the correct dictionary"""
@@ -166,7 +166,7 @@ class TestPrepSelPrep:
         assert res_from_op == expected_res
         assert res_from_func == expected_res
 
-    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data))
+    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data, strict=True))
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
         assert op.resource_params() == expected_params
@@ -178,7 +178,9 @@ class TestPrepSelPrep:
         assert re.ResourcePrepSelPrep.resource_rep(**expected_params) == expected
 
     @pytest.mark.parametrize("z", [2, 3, 5])
-    @pytest.mark.parametrize("params, base_res", zip(resource_params_data, resource_data))
+    @pytest.mark.parametrize(
+        "params, base_res", zip(resource_params_data, resource_data, strict=True)
+    )
     def test_pow_resources(self, params, base_res, z):
         """Test the pow_resources method returns the correct dictionary"""
         pow_select = re.ResourcePow.resource_rep(re.ResourceSelect, base_params=params, z=z)

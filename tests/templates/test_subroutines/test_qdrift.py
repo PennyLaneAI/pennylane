@@ -125,7 +125,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_private_sample(self, coeffs, ops, time, seed, n):  # pylint: disable=too-many-arguments
         """Test the private function which samples the decomposition"""
-        ops_to_coeffs = dict(zip(ops, coeffs))
+        ops_to_coeffs = dict(zip(ops, coeffs, strict=True))
         normalization = qnp.sum(qnp.abs(coeffs))
 
         with qml.tape.QuantumTape() as tape:
@@ -341,7 +341,9 @@ class TestIntegration:
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circ(time):
-            hamiltonian = qml.sum(*(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)))
+            hamiltonian = qml.sum(
+                *(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops, strict=True))
+            )
             qml.QDrift(hamiltonian, time, n=2, seed=seed)
             return qml.state()
 

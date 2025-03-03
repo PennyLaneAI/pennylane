@@ -497,5 +497,5 @@ class TestGenerateMultishiftedTapes:
         res = generate_multishifted_tapes(tape, [1, 0], shifts, multipliers)
 
         assert len(res) == len(shifts)
-        for new_tape, exp in zip(res, expected):
+        for new_tape, exp in zip(res, expected, strict=True):
             assert new_tape.get_parameters(trainable_only=False) == exp

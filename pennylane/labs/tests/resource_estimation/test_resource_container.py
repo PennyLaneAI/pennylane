@@ -126,7 +126,9 @@ class TestCompressedResourceOp:
         assert CmprssedQSVT1 == CmprssedQSVT3  # compare swapped parameters
         assert CmprssedQSVT1 != Other
 
-    @pytest.mark.parametrize("args, repr", zip(compressed_ops_and_params_lst, compressed_op_reprs))
+    @pytest.mark.parametrize(
+        "args, repr", zip(compressed_ops_and_params_lst, compressed_op_reprs, strict=True)
+    )
     def test_repr(self, args, repr):
         """Test that the repr method behaves as expected."""
         _, op_type, parameters, name_param = args
@@ -152,7 +154,9 @@ class TestResources:
         (4, 2, defaultdict(int, {"Hadamard": 1, "CNOT": 1})),
     )
 
-    @pytest.mark.parametrize("r, attribute_tup", zip(resource_quantities, resource_parameters))
+    @pytest.mark.parametrize(
+        "r, attribute_tup", zip(resource_quantities, resource_parameters, strict=True)
+    )
     def test_init(self, r, attribute_tup):
         """Test that the Resource class is instantiated as expected."""
         num_wires, num_gates, gate_types = attribute_tup
@@ -172,7 +176,8 @@ class TestResources:
 
     @pytest.mark.parametrize("in_place", (False, True))
     @pytest.mark.parametrize(
-        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_series)
+        "resource_obj, expected_res_obj",
+        zip(resource_quantities, expected_results_add_series, strict=True),
     )
     def test_add_in_series(self, resource_obj, expected_res_obj, in_place):
         """Test the add_in_series function works with Resoruces"""
@@ -200,7 +205,8 @@ class TestResources:
 
     @pytest.mark.parametrize("in_place", (False, True))
     @pytest.mark.parametrize(
-        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_parallel)
+        "resource_obj, expected_res_obj",
+        zip(resource_quantities, expected_results_add_parallel, strict=True),
     )
     def test_add_in_parallel(self, resource_obj, expected_res_obj, in_place):
         """Test the add_in_parallel function works with Resoruces"""
@@ -242,7 +248,7 @@ class TestResources:
 
     @pytest.mark.parametrize("in_place", (False, True))
     @pytest.mark.parametrize(
-        "scalar, expected_res_obj", zip((1, 2, 3, 5), expected_results_mul_series)
+        "scalar, expected_res_obj", zip((1, 2, 3, 5), expected_results_mul_series, strict=True)
     )
     def test_mul_in_series(self, scalar, expected_res_obj, in_place):
         """Test the mul_in_series function works with Resoruces"""
@@ -284,7 +290,7 @@ class TestResources:
 
     @pytest.mark.parametrize("in_place", (False, True))
     @pytest.mark.parametrize(
-        "scalar, expected_res_obj", zip((1, 2, 3, 5), expected_results_mul_parallel)
+        "scalar, expected_res_obj", zip((1, 2, 3, 5), expected_results_mul_parallel, strict=True)
     )
     def test_mul_in_parallel(self, scalar, expected_res_obj, in_place):
         """Test the mul_in_parallel function works with Resoruces"""
@@ -308,12 +314,12 @@ class TestResources:
         ("wires: 4\n" + "gates: 2\n" + "gate_types:\n" + "{'Hadamard': 1, 'CNOT': 1}"),
     )
 
-    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
+    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data, strict=True))
     def test_str(self, r, rep):
         """Test the string representation of a Resources instance."""
         assert str(r) == rep
 
-    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
+    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data, strict=True))
     def test_ipython_display(self, r, rep, capsys):
         """Test that the ipython display prints the string representation of a Resources instance."""
         r._ipython_display_()  # pylint: disable=protected-access
@@ -334,7 +340,9 @@ class TestResources:
         ),
     )
 
-    @pytest.mark.parametrize("gate_name, expected_res_obj", zip(gate_names, expected_results_sub))
+    @pytest.mark.parametrize(
+        "gate_name, expected_res_obj", zip(gate_names, expected_results_sub, strict=True)
+    )
     def test_substitute(self, gate_name, expected_res_obj):
         """Test the substitute function"""
         resource_obj = Resources(

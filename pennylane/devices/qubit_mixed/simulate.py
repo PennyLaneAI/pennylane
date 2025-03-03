@@ -150,7 +150,7 @@ def measure_final_state(
     if len(circuit.measurements) == 1:
         return results[0]
     if circuit.shots.has_partitioned_shots:
-        return tuple(zip(*results))
+        return tuple(zip(*results, strict=True))
     return results
 
 

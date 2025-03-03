@@ -202,7 +202,7 @@ class TestBasicCircuit:
         assert math.all(
             [
                 math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
-                for one_obs_result, one_obs_expected in zip(result, expected)
+                for one_obs_result, one_obs_expected in zip(result, expected, strict=True)
             ]
         )
 
@@ -392,7 +392,7 @@ class TestSampleMeasurements:
         assert len(result) == len(list(shots))
 
         assert all(isinstance(res, np.ndarray) for res in result)
-        assert all(res.shape == (s, 2) for res, s in zip(result, shots))
+        assert all(res.shape == (s, 2) for res, s in zip(result, shots, strict=True))
 
     @pytest.mark.parametrize("x", [0.732, 0.488])
     @pytest.mark.parametrize("y", [0.732, 0.488])
@@ -418,7 +418,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 

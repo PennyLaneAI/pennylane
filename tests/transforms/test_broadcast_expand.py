@@ -89,7 +89,7 @@ class TestBroadcastExpand:
 
     # pylint: disable=too-many-arguments
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn, seed):
         """Test that the expansion works as expected."""
@@ -124,7 +124,7 @@ class TestBroadcastExpand:
 
         assert qml.math.allclose(result, expected)
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic, seed):
         """Test that expansion works as expected with shot vectors"""
@@ -145,7 +145,7 @@ class TestBroadcastExpand:
         for r in result:
             assert qml.math.allclose(r, expected, atol=tol_stochastic, rtol=0)
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize(
         "args, shapes",
         [
@@ -172,7 +172,7 @@ class TestBroadcastExpand:
             for i, _r in enumerate(r):
                 assert qml.math.shape(_r) == (size, shapes[i]) if size > 1 else (shapes[i],)
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize(
         "args, shapes",
         [
@@ -203,7 +203,7 @@ class TestBroadcastExpand:
                     else (shots[i], *shapes[j])
                 )
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize(
         "args",
         [
@@ -293,7 +293,7 @@ class TestBroadcastExpand:
         jac = qml.jacobian(cost)(*params)
         exp_jac = qml.jacobian(exp_fn)(*params)
 
-        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac, strict=True))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
@@ -327,10 +327,18 @@ class TestBroadcastExpand:
         exp_jac = jax.jacobian(exp_fn, argnums=[0, 1, 2])(*params)
 
         if len(obs) > 1:
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac[0]))
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[1], exp_jac[1]))
+            assert all(
+                qml.math.allclose(_jac, e_jac)
+                for _jac, e_jac in zip(jac[0], exp_jac[0], strict=True)
+            )
+            assert all(
+                qml.math.allclose(_jac, e_jac)
+                for _jac, e_jac in zip(jac[1], exp_jac[1], strict=True)
+            )
         else:
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac))
+            assert all(
+                qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac, strict=True)
+            )
 
     @pytest.mark.slow
     @pytest.mark.tf
@@ -355,7 +363,7 @@ class TestBroadcastExpand:
         jac = t.jacobian(out, params)
         exp_jac = t.jacobian(exp, params)
 
-        for _jac, e_jac in zip(jac, exp_jac):
+        for _jac, e_jac in zip(jac, exp_jac, strict=True):
             if e_jac is None:
                 assert qml.math.allclose(_jac, 0.0)
             else:
@@ -386,7 +394,7 @@ class TestBroadcastExpand:
         exp_jac = torch.autograd.functional.jacobian(exp_fn, torch_params)
 
         if len(obs) > 1:
-            assert all(qml.math.allclose(r, e) for r, e in zip(res, exp_fn(*params)))
+            assert all(qml.math.allclose(r, e) for r, e in zip(res, exp_fn(*params), strict=True))
             # Need to perform a transpose because the broadcast_expand transform pulls out the
             # broadcasting axis, which the `exp_fn` does not do.
             jac = tuple(
@@ -396,4 +404,4 @@ class TestBroadcastExpand:
             assert qml.math.allclose(res[0], exp_fn(*params))
             jac = jac[0]
 
-        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac, strict=True))

@@ -201,7 +201,7 @@ class TestAdder:
         op_list.append(qml.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]))
         op_list.append(qml.adjoint(qml.QFT)(work_wires[:1] + x_wires))
 
-        for op1, op2 in zip(adder_decomposition, op_list):
+        for op1, op2 in zip(adder_decomposition, op_list, strict=True):
             qml.assert_equal(op1, op2)
 
     def test_work_wires_added_correctly(self):

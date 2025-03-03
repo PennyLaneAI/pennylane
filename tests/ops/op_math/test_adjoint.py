@@ -465,7 +465,7 @@ class TestAdjointOperation:
         base_angles = base.single_qubit_rot_angles()
         angles = op.single_qubit_rot_angles()
 
-        for angle1, angle2 in zip(angles, reversed(base_angles)):
+        for angle1, angle2 in zip(angles, reversed(base_angles), strict=True):
             assert angle1 == -angle2
 
     @pytest.mark.parametrize(
@@ -697,7 +697,7 @@ class TestDecompositionExpand:
         base_decomp = base.decomposition()
         decomp = Adjoint(base).decomposition()
 
-        for adj_op, base_op in zip(decomp, reversed(base_decomp)):
+        for adj_op, base_op in zip(decomp, reversed(base_decomp), strict=True):
             assert isinstance(adj_op, Adjoint)
             assert adj_op.base.__class__ == base_op.__class__
             assert qml.math.allclose(adj_op.data, base_op.data)
@@ -709,7 +709,7 @@ class TestDecompositionExpand:
         base_tape = qml.tape.QuantumScript(base.decomposition())
         tape = qml.tape.QuantumScript(Adjoint(base).decomposition())
 
-        for base_op, adj_op in zip(reversed(base_tape), tape):
+        for base_op, adj_op in zip(reversed(base_tape), tape, strict=True):
             assert isinstance(adj_op, Adjoint)
             assert base_op.__class__ == adj_op.base.__class__
             assert qml.math.allclose(adj_op.data, base_op.data)

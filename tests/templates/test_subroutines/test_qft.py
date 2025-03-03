@@ -193,7 +193,7 @@ class TestDynamicDecomposition:
         [decomp_tape], _ = qml.transforms.decompose(
             tape, max_expansion=max_expansion, gate_set=gate_set
         )
-        for op1, op2 in zip(ops_list, decomp_tape.operations):
+        for op1, op2 in zip(ops_list, decomp_tape.operations, strict=True):
             assert qml.equal(op1, op2, check_interface=False)
 
     @pytest.mark.parametrize("autograph", [True, False])

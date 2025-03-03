@@ -83,7 +83,9 @@ class ParametrizedHamiltonianPytree:
 
         if self.reorder_fn:
             pars = self.reorder_fn(pars, self.coeffs_parametrized)
-        coeffs = coeffs + tuple(f(p, t) for f, p in zip(self.coeffs_parametrized, pars))
+        coeffs = coeffs + tuple(
+            f(p, t) for f, p in zip(self.coeffs_parametrized, pars, strict=True)
+        )
         return LazyDotPytree(coeffs, ops + self.mats_parametrized)
 
     def tree_flatten(self):
@@ -123,7 +125,7 @@ class LazyDotPytree:
 
     @jax.jit
     def __matmul__(self, other):
-        return sum(c * (m @ other) for c, m in zip(self.coeffs, self.mats))
+        return sum(c * (m @ other) for c, m in zip(self.coeffs, self.mats, strict=True))
 
     def __mul__(self, other):
         if jnp.array(other).ndim == 0:

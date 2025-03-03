@@ -65,7 +65,7 @@ def _sample_decomposition(coeffs, ops, time, n=1, seed=None):
     probs = qml.math.abs(coeffs) / normalization_factor
     exps = [
         qml.exp(base, (coeff / qml.math.abs(coeff)) * normalization_factor * time * 1j / n)
-        for base, coeff in zip(ops, coeffs)
+        for base, coeff in zip(ops, coeffs, strict=True)
     ]
 
     choice_rng = qml.math.random.default_rng(seed)

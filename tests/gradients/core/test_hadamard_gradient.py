@@ -1312,6 +1312,6 @@ class TestJaxArgnums:
             assert np.allclose(res, res_expected[0])
         else:
             # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]
-            for r, r_e in zip(res, res_expected):
-                for r_, r_e_ in zip(r, r_e):
+            for r, r_e in zip(res, res_expected, strict=True):
+                for r_, r_e_ in zip(r, r_e, strict=True):
                     assert np.allclose(r_, r_e_)

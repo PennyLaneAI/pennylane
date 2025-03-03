@@ -661,7 +661,7 @@ class MPLDrawer:
         else:
             if len(control_values) != len(wires_ctrl):
                 raise ValueError("`control_values` must be the same length as `wires`")
-            for wire, control_on in zip(wires_ctrl, control_values):
+            for wire, control_on in zip(wires_ctrl, control_values, strict=True):
                 if control_on:
                     self._ctrl_circ(layer, wire, options=options)
                 else:

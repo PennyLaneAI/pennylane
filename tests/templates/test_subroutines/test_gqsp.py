@@ -129,7 +129,7 @@ class TestGQSP:
             qml.PauliZ(wires=0),
         ]
 
-        for op1, op2 in zip(decomposition, expected):
+        for op1, op2 in zip(decomposition, expected, strict=True):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.jax

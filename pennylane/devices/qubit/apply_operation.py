@@ -88,7 +88,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     new_indices = alphabet[total_indices : total_indices + num_indices]
 
     new_state_indices = state_indices
-    for old, new in zip(affected_indices, new_indices):
+    for old, new in zip(affected_indices, new_indices, strict=True):
         new_state_indices = new_state_indices.replace(old, new)
 
     einsum_indices = (
@@ -521,7 +521,7 @@ def apply_multicontrolledx(
         return _apply_operation_default(op, state, is_state_batched, debugger)
     ctrl_wires = [w + is_state_batched for w in op.control_wires]
     # apply x on all control wires with control value 0
-    roll_axes = [w for val, w in zip(op.control_values, ctrl_wires) if val is False]
+    roll_axes = [w for val, w in zip(op.control_values, ctrl_wires, strict=True) if val is False]
     for ax in roll_axes:
         state = math.roll(state, 1, ax)
 

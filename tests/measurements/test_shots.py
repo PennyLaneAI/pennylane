@@ -36,7 +36,7 @@ class TestShotCopies:
         "10 shots x 100",
     )
 
-    @pytest.mark.parametrize("expected_str, sc", zip(str_data, sc_data))
+    @pytest.mark.parametrize("expected_str, sc", zip(str_data, sc_data, strict=True))
     def test_str(self, expected_str, sc):
         """Test the str method works well"""
         assert expected_str == str(sc)
@@ -48,7 +48,7 @@ class TestShotCopies:
         "ShotCopies(10 shots x 100)",
     )
 
-    @pytest.mark.parametrize("expected_str, sc", zip(repr_data, sc_data))
+    @pytest.mark.parametrize("expected_str, sc", zip(repr_data, sc_data, strict=True))
     def test_repr(self, expected_str, sc):
         """Test the repr method works well"""
         assert expected_str == repr(sc)
@@ -110,7 +110,7 @@ class TestShotsConstruction:
         "Shots(total=321, vector=[1 shots, 10 shots x 2, 100 shots x 3])",
     )
 
-    @pytest.mark.parametrize("expected_str, shots_obj", zip(str_data, shot_data))
+    @pytest.mark.parametrize("expected_str, shots_obj", zip(str_data, shot_data, strict=True))
     def test_str(self, expected_str, shots_obj):
         """Test that the string representation is correct."""
         assert expected_str == str(shots_obj)
@@ -124,7 +124,7 @@ class TestShotsConstruction:
         "ShotCopies(10 shots x 2), ShotCopies(100 shots x 3)))",
     )
 
-    @pytest.mark.parametrize("expected_str, shots_obj", zip(repr_data, shot_data))
+    @pytest.mark.parametrize("expected_str, shots_obj", zip(repr_data, shot_data, strict=True))
     def test_repr(self, expected_str, shots_obj):
         """Test that the repr is correct"""
         assert expected_str == repr(shots_obj)

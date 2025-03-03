@@ -61,7 +61,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         S = qml.dot(coeffs=c, ops=o)
         assert isinstance(S, Sum)
-        for summand, coeff in zip(S.operands, c):
+        for summand, coeff in zip(S.operands, c, strict=True):
             if coeff == 1:
                 assert isinstance(summand, qml.PauliX)
             else:
@@ -310,7 +310,7 @@ class TestDotPauliSentence:
         h = ps.operation()
         hcoeffs, hops = h.terms()
         assert qml.math.allequal(hcoeffs, coeffs0)
-        for _op1, _op2 in zip(hops, ops0):
+        for _op1, _op2 in zip(hops, ops0, strict=True):
             qml.assert_equal(_op1, _op2)
 
     def test_dot_simplifies_linear_combination(self):

@@ -891,7 +891,7 @@ class TestHighLevelIntegration:
         res = cost(x, y, interface="jax-jit", gradient_func=gradient_func)
         exp = cost(x_, y_, interface="numpy", gradient_func=gradient_func)
 
-        for r, e in zip(res, exp):
+        for r, e in zip(res, exp, strict=True):
             assert jnp.allclose(qml.math.array(r), qml.math.array(e), atol=1e-7)
 
 

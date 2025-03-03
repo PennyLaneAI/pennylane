@@ -161,7 +161,7 @@ class FABLE(Operation):
             op_list.append(qml.Hadamard(w))
 
         nots = {}
-        for theta, control_index in zip(thetas, control_wires):
+        for theta, control_index in zip(thetas, control_wires, strict=True):
             if qml.math.is_abstract(theta):
                 for c_wire in nots:
                     op_list.append(qml.CNOT(wires=[c_wire] + ancilla))
@@ -183,7 +183,7 @@ class FABLE(Operation):
         for c_wire in nots:
             op_list.append(qml.CNOT([c_wire] + ancilla))
 
-        for w_i, w_j in zip(wires_i, wires_j):
+        for w_i, w_j in zip(wires_i, wires_j, strict=True):
             op_list.append(qml.SWAP(wires=[w_i, w_j]))
 
         for w in wires_i:

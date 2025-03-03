@@ -238,7 +238,7 @@ class TestBasicCircuit:
         assert math.all(
             [
                 math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
-                for one_obs_result, one_obs_expected in zip(result, expected)
+                for one_obs_result, one_obs_expected in zip(result, expected, strict=True)
             ]
         )
 
@@ -483,7 +483,7 @@ class TestDebugger:
 
         results = f(phi)
         expected_values = expected_TRX_circ_expval_values(phi.detach().numpy(), subspace)
-        for result, expected in zip(results, expected_values):
+        for result, expected in zip(results, expected_values, strict=True):
             assert qml.math.allclose(result, expected)
 
         assert list(debugger.snapshots.keys()) == [0, "final_state"]
@@ -670,10 +670,10 @@ class TestSampleMeasurements:
 
         expected = self.sample_sum_of_TRY_circ(x, subspace)
         assert all(isinstance(res, np.ndarray) for res in result)
-        assert all(res.shape == (s, 2) for res, s in zip(result, shots))
+        assert all(res.shape == (s, 2) for res, s in zip(result, shots, strict=True))
         assert all(
             np.allclose(np.sum(res, axis=0).astype(np.float32) / s, expected, atol=0.1)
-            for res, s in zip(result, shots)
+            for res, s in zip(result, shots, strict=True)
         )
 
     @pytest.mark.parametrize("shots", shots_data)
@@ -699,7 +699,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 

@@ -168,7 +168,7 @@ class TestAdjointJacobian:
         params = np.array([np.pi, np.pi / 2, np.pi / 3])
 
         qs = QuantumScript(
-            [MyOp(p, w) for p, w in zip(params, [0, 1, 2])],
+            [MyOp(p, w) for p, w in zip(params, [0, 1, 2], strict=True)],
             [qml.expval(qml.PauliZ(idx)) for idx in range(3)],
         )
         qs_valid, _ = qml.devices.preprocess.decompose(qs, adjoint_ops)

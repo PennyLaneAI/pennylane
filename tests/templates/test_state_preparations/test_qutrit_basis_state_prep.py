@@ -175,7 +175,7 @@ class TestDecomposition:
             qml.TRZ(-(7 * state - 10) * state * np.pi, wires=wire, subspace=(0, 2)),
         ]
 
-        for op1, op2 in zip(decomp, op_list):
+        for op1, op2 in zip(decomp, op_list, strict=True):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.tf

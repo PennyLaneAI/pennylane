@@ -68,7 +68,7 @@ class TestAdagradOptimizer:
         univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
         grad_uni_fns = [np.cos, lambda x: np.exp(x / 10.0) / 10.0, lambda x: 2 * x]
 
-        for gradf, f in zip(grad_uni_fns, univariate_funcs):
+        for gradf, f in zip(grad_uni_fns, univariate_funcs, strict=True):
             adag_opt.reset()
 
             x_onestep = adag_opt.step(f, x_start)
@@ -109,7 +109,7 @@ class TestAdagradOptimizer:
 
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
-        for gradf, f in zip(grad_multi_funcs, multivariate_funcs):
+        for gradf, f in zip(grad_multi_funcs, multivariate_funcs, strict=True):
             for jdx in range(len(x_vals[:-1])):
                 adag_opt.reset()
 

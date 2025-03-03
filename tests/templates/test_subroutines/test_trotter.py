@@ -315,16 +315,18 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
     Trotter product for order and number of trotter steps."""
     decomp = []
     if order == 1:
-        decomp.extend(qml.exp(op, coeff * (time / n) * 1j) for coeff, op in zip(coeffs, ops))
+        decomp.extend(
+            qml.exp(op, coeff * (time / n) * 1j) for coeff, op in zip(coeffs, ops, strict=True)
+        )
 
-    coeffs_ops = zip(coeffs, ops)
+    coeffs_ops = zip(coeffs, ops, strict=True)
 
     if get_interface(coeffs) == "torch":
         import torch
 
-        coeffs_ops_reversed = zip(torch.flip(coeffs, dims=(0,)), ops[::-1])
+        coeffs_ops_reversed = zip(torch.flip(coeffs, dims=(0,)), ops[::-1], strict=True)
     else:
-        coeffs_ops_reversed = zip(coeffs[::-1], ops[::-1])
+        coeffs_ops_reversed = zip(coeffs[::-1], ops[::-1], strict=True)
 
     if order == 2:
         decomp.extend(qml.exp(op, coeff * (time / n) * 1j / 2) for coeff, op in coeffs_ops)
@@ -452,7 +454,7 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=True)
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
@@ -567,7 +569,9 @@ class TestPrivateFunctions:
         ],
     )
 
-    @pytest.mark.parametrize("order, expected_expansion", zip((1, 2, 4), expected_expansions))
+    @pytest.mark.parametrize(
+        "order, expected_expansion", zip((1, 2, 4), expected_expansions, strict=True)
+    )
     def test_recursive_expression_no_queue(self, order, expected_expansion):
         """Test the _recursive_expression function correctly generates the decomposition"""
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -576,7 +580,7 @@ class TestPrivateFunctions:
             decomp = _recursive_expression(1.23, order, ops)
 
         assert tape.operations == []  # No queuing!
-        for op1, op2 in zip(decomp, expected_expansion):
+        for op1, op2 in zip(decomp, expected_expansion, strict=True):
             qml.assert_equal(op1, op2)
 
 
@@ -773,7 +777,7 @@ class TestDecomposition:
         true_decomp = [
             qml.simplify(op) for op in test_decompositions[(hamiltonian_index, order)][::-1]
         ]
-        for op1, op2 in zip(decomp, true_decomp):
+        for op1, op2 in zip(decomp, true_decomp, strict=True):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("order", (1, 2))
@@ -800,7 +804,7 @@ class TestDecomposition:
 
         op = qml.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
         decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
-        for op1, op2 in zip(decomp, true_decomp):
+        for op1, op2 in zip(decomp, true_decomp, strict=True):
             qml.assert_equal(op1, op2)
 
 

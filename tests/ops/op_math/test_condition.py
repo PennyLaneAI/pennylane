@@ -545,7 +545,7 @@ class TestPythonFallback:
             elifs = [(x > -10, lambda y: y**3), (x >= -1, lambda y: y**2)]
             c = qml.cond(x > 1, np.sin, np.cos, elifs)
 
-            for i, j in zip(c.elifs, elifs):
+            for i, j in zip(c.elifs, elifs, strict=True):
                 assert i[0] is j[0]
                 assert i[1] is j[1]
 

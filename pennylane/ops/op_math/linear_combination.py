@@ -150,7 +150,7 @@ class LinearCombination(Sum):
         self._hyperparameters = {"ops": self._ops}
 
         with qml.QueuingManager.stop_recording():
-            operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
+            operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables, strict=True))
 
         super().__init__(
             *operands,
@@ -167,7 +167,7 @@ class LinearCombination(Sum):
 
         if all(pauli_reps := [op.pauli_rep for op in observables]):
             new_rep = qml.pauli.PauliSentence()
-            for c, ps in zip(coeffs, pauli_reps):
+            for c, ps in zip(coeffs, pauli_reps, strict=True):
                 for pw, coeff in ps.items():
                     new_rep[pw] += coeff * c
             return new_rep

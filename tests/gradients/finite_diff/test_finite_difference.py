@@ -347,7 +347,7 @@ class TestFiniteDiff:
 
         assert len(result) == 2
 
-        for r, exp_shape in zip(result, [(3,), (4, 3)]):
+        for r, exp_shape in zip(result, [(3,), (4, 3)], strict=True):
             assert isinstance(r, np.ndarray)
             assert r.shape == exp_shape
             assert np.allclose(r, 0)
@@ -455,7 +455,7 @@ class TestFiniteDiff:
             (1, 4, 3),
             (2, 4, 3),
         ]
-        assert all(t == q for t, q in zip(transform, expected_shapes))
+        assert all(t == q for t, q in zip(transform, expected_shapes, strict=True))
 
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
@@ -1188,6 +1188,6 @@ class TestJaxArgnums:
             assert np.allclose(res, res_expected[0], atol=tol)
         else:
             # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]
-            for r, r_e in zip(res, res_expected):
-                for r_, r_e_ in zip(r, r_e):
+            for r, r_e in zip(res, res_expected, strict=True):
+                for r_, r_e_ in zip(r, r_e, strict=True):
                     assert np.allclose(r_, r_e_, atol=tol)

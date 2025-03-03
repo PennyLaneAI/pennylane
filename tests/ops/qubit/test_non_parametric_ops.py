@@ -643,7 +643,7 @@ class TestMultiControlledX:
 
         assert len(decomp1) == len(decomp2)
 
-        for op1, op2 in zip(decomp1, decomp2):
+        for op1, op2 in zip(decomp1, decomp2, strict=True):
             assert op1.__class__ == op2.__class__
 
     @pytest.mark.parametrize(

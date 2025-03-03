@@ -163,7 +163,7 @@ class tensor(_np.ndarray):
         # construct a list of ufunc outputs to return
         ufunc_output = [
             (onp.asarray(result) if output is None else output)
-            for result, output in zip(res, outputs)
+            for result, output in zip(res, outputs, strict=True)
         ]
 
         # if any of the inputs were trainable, the output is also trainable

@@ -108,7 +108,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         final_batch_size = input_batch_size[0]
 
         # Merge all parameters and qubits into a single one.
-        for w, v, b in zip(input_wires[1:], input_vectors[1:], input_batch_size[1:]):
+        for w, v, b in zip(input_wires[1:], input_vectors[1:], input_batch_size[1:], strict=True):
             final_vector = final_vector[..., :, None] * v[..., None, :]
             final_batch_size = final_batch_size or b
             final_wires = final_wires + w

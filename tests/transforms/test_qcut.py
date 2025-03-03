@@ -219,10 +219,10 @@ frag_edge_data = [
 def compare_nodes(nodes, expected_wires, expected_names):
     """Helper function to compare nodes of directed multigraph"""
 
-    for node, exp_wire in zip(nodes, expected_wires):
+    for node, exp_wire in zip(nodes, expected_wires, strict=True):
         assert node.obj.wires.tolist() == exp_wire
 
-    for node, exp_name in zip(nodes, expected_names):
+    for node, exp_name in zip(nodes, expected_names, strict=True):
         assert get_name(node.obj) == exp_name
 
 
@@ -258,7 +258,7 @@ def compare_tapes(res_tape, expected_tape):
     assert set(res_tape.wires) == set(expected_tape.wires)
     assert res_tape.get_parameters() == expected_tape.get_parameters()
 
-    for op, exp_op in zip(res_tape.operations, expected_tape.operations):
+    for op, exp_op in zip(res_tape.operations, expected_tape.operations, strict=True):
         if (
             get_name(op) == "PrepareNode"
         ):  # The exact ordering of PrepareNodes w.r.t wires varies on each call
@@ -267,7 +267,7 @@ def compare_tapes(res_tape, expected_tape):
             assert get_name(op) == get_name(exp_op)
             assert op.wires.tolist() == exp_op.wires.tolist()
 
-    for meas, exp_meas in zip(res_tape.measurements, expected_tape.measurements):
+    for meas, exp_meas in zip(res_tape.measurements, expected_tape.measurements, strict=True):
         assert (meas._shortname) == (exp_meas._shortname)
         assert get_name(meas.obs) == get_name(exp_meas.obs)
         assert meas.wires.tolist() == exp_meas.wires.tolist()
@@ -347,7 +347,7 @@ class TestTapeToGraph:
         ops = no_cut_tape.operations
 
         assert len(nodes) == len(ops) + len(no_cut_tape.observables)
-        for op, node in zip(ops, nodes[:-1]):
+        for op, node in zip(ops, nodes[:-1], strict=True):
             assert op is node.obj
         assert no_cut_tape.observables[0] is nodes[-1].obj.obs
 
@@ -378,7 +378,7 @@ class TestTapeToGraph:
             ),
         ]
 
-        for edge, expected_edge in zip(edges, expected_edge_connections):
+        for edge, expected_edge in zip(edges, expected_edge_connections, strict=True):
             assert edge == expected_edge
 
     def test_node_order_attribute(self):
@@ -398,7 +398,7 @@ class TestTapeToGraph:
             {"order": 5},
         ]
 
-        for data, expected_order in zip(node_data, expected_node_order):
+        for data, expected_order in zip(node_data, expected_node_order, strict=True):
             assert data[-1] == expected_order
 
     def test_edge_wire_attribute(self):
@@ -419,7 +419,7 @@ class TestTapeToGraph:
             {"wire": 0},
         ]
 
-        for data, expected_wire in zip(edge_data, expected_edge_wires):
+        for data, expected_wire in zip(edge_data, expected_edge_wires, strict=True):
             assert data[-1] == expected_wire
 
     @pytest.mark.parametrize(
@@ -474,7 +474,7 @@ class TestTapeToGraph:
 
         node_observables = [node.obj for node in nodes if hasattr(node, "return_type")]
 
-        for node_obs, exp_obs in zip(node_observables, expected_obs):
+        for node_obs, exp_obs in zip(node_observables, expected_obs, strict=True):
             assert node_obs.wires == exp_obs.wires
             assert get_name(node_obs.obs) == get_name(exp_obs.obs)
 
@@ -539,7 +539,7 @@ class TestTapeToGraph:
 
         node_observables = [node for node in nodes if hasattr(node, "return_type")]
 
-        for node_obs, exp_obs in zip(node_observables, expected_obs):
+        for node_obs, exp_obs in zip(node_observables, expected_obs, strict=True):
             assert node_obs.wires == exp_obs.wires
             assert get_name(node_obs.obs) == get_name(exp_obs.obs)
 
@@ -571,7 +571,7 @@ class TestTapeToGraph:
             qml.sample(qml.Projector([1], wires=[2])),
         ]
 
-        for node, expected_node in zip(g.nodes, expected_nodes):
+        for node, expected_node in zip(g.nodes, expected_nodes, strict=True):
             assert get_name(node.obj) == get_name(expected_node)
             assert node.obj.wires == expected_node.wires
 
@@ -627,7 +627,7 @@ class TestTapeToGraph:
             qml.sample(qml.PauliZ(wires=[2])),
         ]
 
-        for node, expected_node in zip(g.nodes, expected_nodes):
+        for node, expected_node in zip(g.nodes, expected_nodes, strict=True):
             assert get_name(node.obj) == get_name(expected_node)
             assert node.obj.wires == expected_node.wires
 
@@ -956,10 +956,10 @@ class TestFragmentGraph:
             sub_3_expected_edges,
         ]
 
-        for subgraph, expected_n in zip(subgraphs, expected_nodes):
+        for subgraph, expected_n in zip(subgraphs, expected_nodes, strict=True):
             compare_fragment_nodes(list(subgraph.nodes(data=True)), expected_n)
 
-        for subgraph, expected_e in zip(subgraphs, expected_edges):
+        for subgraph, expected_e in zip(subgraphs, expected_edges, strict=True):
             compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
 
     def test_subgraphs_of_multi_wirecut_with_disconnected_components(self):
@@ -1009,10 +1009,10 @@ class TestFragmentGraph:
             sub_1_expected_edges,
         ]
 
-        for subgraph, expected_n in zip(subgraphs, expected_nodes):
+        for subgraph, expected_n in zip(subgraphs, expected_nodes, strict=True):
             compare_fragment_nodes(list(subgraph.nodes(data=True)), expected_n)
 
-        for subgraph, expected_e in zip(subgraphs, expected_edges):
+        for subgraph, expected_e in zip(subgraphs, expected_edges, strict=True):
             compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
 
     def test_communication_graph(self):
@@ -1033,11 +1033,11 @@ class TestFragmentGraph:
         ]
         edge_data = list(communication_graph.edges(data=True))
 
-        for edge, exp_edge in zip(edge_data, expected_edge_data):
+        for edge, exp_edge in zip(edge_data, expected_edge_data, strict=True):
             assert edge[0] == exp_edge[0]
             assert edge[1] == exp_edge[1]
 
-            for node, exp_node in zip(edge[2]["pair"], exp_edge[2]["pair"]):
+            for node, exp_node in zip(edge[2]["pair"], exp_edge[2]["pair"], strict=True):
                 assert get_name(node.obj) == get_name(exp_node)
                 assert node.obj.wires.tolist() == exp_node.wires.tolist()
 
@@ -1092,10 +1092,10 @@ class TestFragmentGraph:
             sub_3_expected_edges,
         ]
 
-        for subgraph, expected_n in zip(subgraphs, expected_nodes):
+        for subgraph, expected_n in zip(subgraphs, expected_nodes, strict=True):
             compare_fragment_nodes(list(subgraph.nodes(data=True)), expected_n)
 
-        for subgraph, expected_e in zip(subgraphs, expected_edges):
+        for subgraph, expected_e in zip(subgraphs, expected_edges, strict=True):
             compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
 
     def test_communication_graph_persistence(self):
@@ -1187,10 +1187,10 @@ class TestFragmentGraph:
             sub_1_expected_edges,
         ]
 
-        for fragment, expected_n in zip(fragments, expected_nodes):
+        for fragment, expected_n in zip(fragments, expected_nodes, strict=True):
             compare_fragment_nodes(list(fragment.nodes(data=True)), expected_n)
 
-        for fragment, expected_e in zip(fragments, expected_edges):
+        for fragment, expected_e in zip(fragments, expected_edges, strict=True):
             compare_fragment_edges(list(fragment.edges(data=True)), expected_e)
 
 
@@ -1256,7 +1256,7 @@ class TestGraphToTape:
 
         expected_tapes = list(map(qml.tape.QuantumScript.from_queue, [q0, q1, q2, q3, q4]))
 
-        for tape, expected_tape in zip(tapes, expected_tapes):
+        for tape, expected_tape in zip(tapes, expected_tapes, strict=True):
             compare_tapes(tape, expected_tape)
 
     def test_mid_circuit_measurement(self):
@@ -1323,7 +1323,7 @@ class TestGraphToTape:
         tape_1 = qml.tape.QuantumScript.from_queue(q1)
         expected_tapes = [tape_0, tape_1]
 
-        for tape, expected_tape in zip(tapes, expected_tapes):
+        for tape, expected_tape in zip(tapes, expected_tapes, strict=True):
             compare_tapes(tape, expected_tape)
 
     def test_multiple_conversions(self):
@@ -1348,7 +1348,7 @@ class TestGraphToTape:
 
         compare_tapes(copy_tape, mcm_tape)
 
-        for tape1, tape2 in zip(tapes1, tapes2):
+        for tape1, tape2 in zip(tapes1, tapes2, strict=True):
             compare_tapes(tape1, tape2)
 
     def test_identity(self):
@@ -1415,12 +1415,12 @@ class TestGraphToTape:
             qml.sample(qml.Projector([1], wires=[2])),
         ]
 
-        for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
+        for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas, strict=True):
             compare_measurements(meas, expected_meas)
 
         # For tapes with multiple measurements, the ordering varies
         # so we check the set of wires rather that the order
-        for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
+        for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas, strict=True):
             assert isinstance(meas, qml.measurements.SampleMP)
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(1), Wires(2)}
@@ -1462,12 +1462,12 @@ class TestGraphToTape:
         ]
         frag1_expected_meas = [qml.sample(qml.Projector([1], wires=[2]))]
 
-        for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
+        for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas, strict=True):
             assert isinstance(meas, qml.measurements.SampleMP)
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(0), Wires(3)}
 
-        for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
+        for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas, strict=True):
             compare_measurements(meas, expected_meas)
 
         # sample measurements should not exist on the same wire as MeasureNodes at this stage
@@ -1668,10 +1668,10 @@ class TestExpandFragmentTapes:
         tape_13 = qml.tape.QuantumScript.from_queue(q3)
         frag_prep_expected_tapes = [tape_10, tape_11, tape_12, tape_13]
 
-        for tape_meas, exp_tape_meas in zip(frag_tapes_meas, frag_meas_expected_tapes):
+        for tape_meas, exp_tape_meas in zip(frag_tapes_meas, frag_meas_expected_tapes, strict=True):
             compare_tapes(tape_meas, exp_tape_meas)
 
-        for tape_prep, exp_tape_1 in zip(frag_tapes_prep, frag_prep_expected_tapes):
+        for tape_prep, exp_tape_1 in zip(frag_tapes_prep, frag_prep_expected_tapes, strict=True):
             compare_tapes(tape_prep, exp_tape_1)
 
     def test_multi_qubit_expansion_measurements(self):
@@ -1746,7 +1746,7 @@ class TestExpandFragmentTapes:
         for exp_i, i in index_list:
             expected_group = all_expected_groups[exp_i]
             group = all_measurements[i]
-            for measurement, expected_measurement in zip(expected_group, group):
+            for measurement, expected_measurement in zip(expected_group, group, strict=True):
                 compare_measurements(measurement, expected_measurement)
 
     def test_multi_qubit_expansion_preparation(self):
@@ -1777,7 +1777,7 @@ class TestExpandFragmentTapes:
         prep_combos = list(product(prep_ops, prep_ops))
         expected_preps = [pc for pc in prep_combos for _ in range(9)]
 
-        for ep, tape in zip(expected_preps, frag_tapes):
+        for ep, tape in zip(expected_preps, frag_tapes, strict=True):
             wire2_ops = [op for op in tape.operations if op.wires == Wires(2)]
             wire3_ops = [op for op in tape.operations if op.wires == Wires(3)]
 
@@ -1787,10 +1787,10 @@ class TestExpandFragmentTapes:
             wire2_prep_ops = wire2_ops[: len(wire2_exp)]
             wire3_prep_ops = wire3_ops[: len(wire2_exp)]
 
-            for wire2_prep_op, wire2_exp_op in zip(wire2_prep_ops, wire2_exp):
+            for wire2_prep_op, wire2_exp_op in zip(wire2_prep_ops, wire2_exp, strict=True):
                 assert isinstance(wire2_prep_op, wire2_exp_op)
 
-            for wire3_prep_op, wire3_exp_op in zip(wire3_prep_ops, wire3_exp):
+            for wire3_prep_op, wire3_exp_op in zip(wire3_prep_ops, wire3_exp, strict=True):
                 assert isinstance(wire3_prep_op, wire3_exp_op)
 
     def test_no_measure_node_observables(self):
@@ -1848,7 +1848,7 @@ class TestExpandFragmentTapes:
         config4 = qml.tape.QuantumScript.from_queue(q4)
         expected_configs = [config1, config2, config3, config4]
 
-        for tape, config in zip(expanded_tapes, expected_configs):
+        for tape, config in zip(expanded_tapes, expected_configs, strict=True):
             compare_tapes(tape, config)
 
 
@@ -1920,7 +1920,7 @@ class TestExpandFragmentTapesMC:
             expected_tape = qml.tape.QuantumScript.from_queue(q_expected_tape)
             expected_tapes_0.append(expected_tape)
 
-        for tape, exp_tape in zip(fragment_configurations[0], expected_tapes_0):
+        for tape, exp_tape in zip(fragment_configurations[0], expected_tapes_0, strict=True):
             compare_tapes(tape, exp_tape)
 
         frag_1_expected_preps = [
@@ -1945,7 +1945,7 @@ class TestExpandFragmentTapesMC:
             expected_tape = qml.tape.QuantumScript.from_queue(q_expected_tape)
             expected_tapes_1.append(expected_tape)
 
-        for tape, exp_tape in zip(fragment_configurations[1], expected_tapes_1):
+        for tape, exp_tape in zip(fragment_configurations[1], expected_tapes_1, strict=True):
             compare_tapes(tape, exp_tape)
 
     def test_expand_multinode_frag(self, monkeypatch):
@@ -2014,7 +2014,7 @@ class TestExpandFragmentTapesMC:
         expected_configs = [config1, config2]
 
         # check first fragment configs only for brevity
-        for config, exp_config in zip(fragment_configurations[0], expected_configs):
+        for config, exp_config in zip(fragment_configurations[0], expected_configs, strict=True):
             compare_tapes(config, exp_config)
 
     def test_mc_measurements(self):
@@ -2044,7 +2044,7 @@ class TestExpandFragmentTapesMC:
 
         measurements = [tape.measurements[0] for tape in tapes]
 
-        for meas, exp_meas in zip(measurements, expected_measurements):
+        for meas, exp_meas in zip(measurements, expected_measurements, strict=True):
             compare_measurements(meas, exp_meas)
 
     def test_mc_state_prep(self):
@@ -2075,8 +2075,8 @@ class TestExpandFragmentTapesMC:
 
         operations = [tape.operations for tape in tapes]
 
-        for ops, expected_ops in zip(operations, expected_operations):
-            for op, exp_op in zip(ops, expected_ops):
+        for ops, expected_ops in zip(operations, expected_operations, strict=True):
+            for op, exp_op in zip(ops, expected_ops, strict=True):
                 assert get_name(op) == get_name(exp_op)
                 assert op.wires == exp_op.wires
 
@@ -2259,11 +2259,11 @@ class TestMCPostprocessing:
             [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
         ]
 
-        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args, strict=True):
             assert np.allclose(arg[0][0], expected_arg)
 
-        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
-            for arg, expected_arg in zip(args[0][0], expected_args):
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args, strict=True):
+            for arg, expected_arg in zip(args[0][0], expected_args, strict=True):
                 assert np.allclose(arg, expected_arg)
 
         assert np.isclose(postprocessed, expected)
@@ -2319,11 +2319,11 @@ class TestMCPostprocessing:
             [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
         ]
 
-        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args, strict=True):
             assert np.allclose(arg[0][0], expected_arg)
 
-        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
-            for arg, expected_arg in zip(args[0][0], expected_args):
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args, strict=True):
+            for arg, expected_arg in zip(args[0][0], expected_args, strict=True):
                 assert np.allclose(arg, expected_arg)
 
         assert np.isclose(postprocessed, expected)
@@ -2379,11 +2379,11 @@ class TestMCPostprocessing:
             [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
         ]
 
-        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args, strict=True):
             assert np.allclose(arg[0][0], expected_arg)
 
-        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
-            for arg, expected_arg in zip(args[0][0], expected_args):
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args, strict=True):
+            for arg, expected_arg in zip(args[0][0], expected_args, strict=True):
                 assert np.allclose(arg, expected_arg)
 
         assert np.isclose(postprocessed, expected)
@@ -2441,11 +2441,11 @@ class TestMCPostprocessing:
             [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
         ]
 
-        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args, strict=True):
             assert np.allclose(arg[0][0], expected_arg)
 
-        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
-            for arg, expected_arg in zip(args[0][0], expected_args):
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args, strict=True):
+            for arg, expected_arg in zip(args[0][0], expected_args, strict=True):
                 assert np.allclose(arg, expected_arg)
 
         assert np.isclose(postprocessed, expected)
@@ -2476,8 +2476,8 @@ class TestMCPostprocessing:
 
         reshaped = qcut._reshape_results(results, shots)
 
-        for resh, exp_resh in zip(reshaped, expected_reshaped):
-            for arr, exp_arr in zip(resh, exp_resh):
+        for resh, exp_resh in zip(reshaped, expected_reshaped, strict=True):
+            for arr, exp_arr in zip(resh, exp_resh, strict=True):
                 assert np.allclose(arr, exp_arr)
 
     def test_classical_processing_error(self):
@@ -3461,7 +3461,7 @@ class TestQCutProcessingFn:
             m.setattr(qcut.processing, "_process_tensor", mock_process_tensor)
             tensors_out = qcut._to_tensors(results, prepare_nodes, measure_nodes)
 
-        for t1, t2 in zip(tensors, tensors_out):
+        for t1, t2 in zip(tensors, tensors_out, strict=True):
             assert np.allclose(t1, t2)
 
     def test_to_tensors_raises(self):

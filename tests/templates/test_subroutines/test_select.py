@@ -202,9 +202,9 @@ class TestSelect:
         select_decomposition = op.decomposition()
         select_compute_decomposition = op.compute_decomposition(ops, control)
 
-        for op1, op2 in zip(select_decomposition, expected_gates):
+        for op1, op2 in zip(select_decomposition, expected_gates, strict=True):
             qml.assert_equal(op1, op2)
-        for op1, op2 in zip(select_compute_decomposition, expected_gates):
+        for op1, op2 in zip(select_compute_decomposition, expected_gates, strict=True):
             qml.assert_equal(op1, op2)
 
     def test_copy(self):

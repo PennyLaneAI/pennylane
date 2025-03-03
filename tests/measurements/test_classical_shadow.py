@@ -381,7 +381,7 @@ class TestClassicalShadow:
 
         assert isinstance(result, np.ndarray)
         assert qml.math.shape(result) == (len(params), 2, shots, wires)
-        for seq_res, res in zip(sequential_result, result):
+        for seq_res, res in zip(sequential_result, result, strict=True):
             assert qml.math.shape(seq_res) == qml.math.shape(res)
 
 
@@ -521,7 +521,7 @@ class TestExpvalMeasurement:
 
         assert isinstance(result, np.ndarray)
         assert qml.math.shape(result)[0] == len(params)
-        for seq_res, res in zip(sequential_result, result):
+        for seq_res, res in zip(sequential_result, result, strict=True):
             assert qml.math.shape(seq_res) == qml.math.shape(res)
 
 

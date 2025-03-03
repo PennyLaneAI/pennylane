@@ -171,7 +171,9 @@ def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
         r0 = [None] * num_measurements
     if res == ():
         res = tuple(() for _ in range(num_measurements))
-    return tuple(_single_meas_grad(r, coeffs, unshifted_coeff, r0_) for r, r0_ in zip(res, r0))
+    return tuple(
+        _single_meas_grad(r, coeffs, unshifted_coeff, r0_) for r, r0_ in zip(res, r0, strict=True)
+    )
 
 
 def _evaluate_gradient(tape_specs, res, data, r0, batch_size):
@@ -201,7 +203,10 @@ def _evaluate_gradient(tape_specs, res, data, r0, batch_size):
             # Move shots to first position
             res = _swap_first_two_axes(res, len(res), len_shot_vec, squeeze=False)
         # _single_meas_grad expects axis (parameters,), iterate over shot vector
-        return tuple(_single_meas_grad(r, coeffs, unshifted_coeff, r0_) for r, r0_ in zip(res, r0))
+        return tuple(
+            _single_meas_grad(r, coeffs, unshifted_coeff, r0_)
+            for r, r0_ in zip(res, r0, strict=True)
+        )
 
     if scalar_shots:
         # Res has axes (parameters, measurements) or with broadcasting (measurements, parameters)
@@ -224,7 +229,7 @@ def _evaluate_gradient(tape_specs, res, data, r0, batch_size):
     # _multi_meas_grad expects (measurements, parameters), so we iterate over shot vector
     return tuple(
         _multi_meas_grad(r, coeffs, r0_, unshifted_coeff, num_measurements)
-        for r, r0_ in zip(res, r0)
+        for r, r0_ in zip(res, r0, strict=True)
     )
 
 
@@ -1169,15 +1174,15 @@ def param_shift(
             multi_measure = len(tape.measurements) > 1
             if not multi_measure:
                 res = []
-                for i, j in zip(unsupported_grads, supported_grads):
+                for i, j in zip(unsupported_grads, supported_grads, strict=True):
                     component = qml.math.array(i + j)
                     res.append(component)
                 return tuple(res)
 
             combined_grad = []
-            for meas_res1, meas_res2 in zip(unsupported_grads, supported_grads):
+            for meas_res1, meas_res2 in zip(unsupported_grads, supported_grads, strict=True):
                 meas_grad = []
-                for param_res1, param_res2 in zip(meas_res1, meas_res2):
+                for param_res1, param_res2 in zip(meas_res1, meas_res2, strict=True):
                     component = qml.math.array(param_res1 + param_res2)
                     meas_grad.append(component)
 

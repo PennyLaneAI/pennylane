@@ -428,7 +428,7 @@ def test_taylor_bosonic(
         sorted_arr = sorted(taylor_bos.items(), key=lambda x: x[1].real)
     else:
         sorted_arr = sorted(taylor_bos.items(), key=lambda x: abs(x[1].real))
-    sorted_ops_arr, sorted_coeffs_arr = zip(*sorted_arr)
+    sorted_ops_arr, sorted_coeffs_arr = zip(*sorted_arr, strict=True)
 
     assert np.allclose(abs(np.array(sorted_coeffs_arr)), abs(np.array(reference_coeffs)), atol=1e-4)
     assert len(sorted_ops_arr) == len(reference_ops)

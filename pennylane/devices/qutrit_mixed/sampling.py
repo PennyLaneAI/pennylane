@@ -54,7 +54,7 @@ def _process_samples(
     wire_order,
 ):
     """Processes samples like SampleMP.process_samples, but fixed for qutrits"""
-    wire_map = dict(zip(wire_order, range(len(wire_order))))
+    wire_map = dict(zip(wire_order, range(len(wire_order)), strict=True))
     mapped_wires = [wire_map[w] for w in mp.wires]
 
     if mapped_wires:
@@ -79,7 +79,7 @@ def _process_counts_samples(processed_sample, mp_has_obs):
     observables, counts = math.unique(processed_sample, return_counts=True, axis=0)
     if not mp_has_obs:
         observables = ["".join(observable.astype("str")) for observable in observables]
-    return dict(zip(observables, counts))
+    return dict(zip(observables, counts, strict=True))
 
 
 def _process_expval_samples(processed_sample):
@@ -316,7 +316,7 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state
         samples = jnp.array(
             [
                 jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
-                for _key, prob in zip(keys, probs)
+                for _key, prob in zip(keys, probs, strict=True)
             ]
         )
     else:

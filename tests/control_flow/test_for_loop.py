@@ -66,4 +66,4 @@ def test_for_loop_python_fallback():
         qml.RX(0.7, wires=[2]),
     ]
 
-    _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
+    _ = [qml.assert_equal(i, j) for i, j in zip(res, expected, strict=True)]

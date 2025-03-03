@@ -283,7 +283,7 @@ class TestSpsaGradient:
         for res in all_result:
             assert isinstance(res, tuple)
             assert len(res) == 2
-            for r, exp_shape in zip(res, [(3,), (4, 3)]):
+            for r, exp_shape in zip(res, [(3,), (4, 3)], strict=True):
                 assert isinstance(r, np.ndarray)
                 assert r.shape == exp_shape
                 assert np.allclose(r, 0)
@@ -387,7 +387,7 @@ class TestSpsaGradient:
         assert isinstance(j2, tuple)
         assert len(j2) == len(default_shot_vector)
 
-        for _j1, _j2 in zip(j1, j2):
+        for _j1, _j2 in zip(j1, j2, strict=True):
             assert np.allclose(_j1, [exp, 0], atol=spsa_shot_vec_tol)
             assert np.allclose(_j2, [0, exp], atol=spsa_shot_vec_tol)
 
@@ -426,7 +426,7 @@ class TestSpsaGradient:
 
         expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 4, 3), (3, 1, 4, 3), (3, 2, 4, 3)]
 
-        assert all(t == q for t, q in zip(transform, expected))
+        assert all(t == q for t, q in zip(transform, expected, strict=True))
 
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
@@ -1215,7 +1215,9 @@ single_scalar_output_measurements = [
     var_non_involutory,
 ]
 
-single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
+single_meas_with_shape = list(
+    zip(single_scalar_output_measurements, [(), (4,), (), ()], strict=True)
+)
 
 
 @pytest.mark.parametrize(
@@ -1292,7 +1294,7 @@ class TestReturn:
 
         expected_shapes = [(), (4,), (), ()]
         for meas_res in all_res:
-            for res, shape in zip(meas_res, expected_shapes):
+            for res, shape in zip(meas_res, expected_shapes, strict=True):
                 assert isinstance(res, np.ndarray)
                 assert res.shape == shape
 

@@ -73,7 +73,7 @@ class TestStatePrep:
     )
 
     @pytest.mark.parametrize(
-        "op, params, expected_res", zip(op_data, resource_params_data, resource_data)
+        "op, params, expected_res", zip(op_data, resource_params_data, resource_data, strict=True)
     )
     def test_resources(self, op, params, expected_res):
         """Test the resources method returns the correct dictionary"""
@@ -83,7 +83,7 @@ class TestStatePrep:
         assert res_from_op == expected_res
         assert res_from_func == expected_res
 
-    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data))
+    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data, strict=True))
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
         assert op.resource_params() == expected_params
@@ -94,7 +94,9 @@ class TestStatePrep:
         expected = re.CompressedResourceOp(re.ResourceStatePrep, expected_params)
         assert re.ResourceStatePrep.resource_rep(**expected_params) == expected
 
-    @pytest.mark.parametrize("params, expected_name", zip(resource_params_data, name_data))
+    @pytest.mark.parametrize(
+        "params, expected_name", zip(resource_params_data, name_data, strict=True)
+    )
     def test_tracking_name(self, params, expected_name):
         """Test that the tracking name is correct."""
         assert re.ResourceStatePrep.tracking_name(**params) == expected_name

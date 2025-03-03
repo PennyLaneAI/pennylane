@@ -116,7 +116,7 @@ class CVNeuralNetLayers(Operation):
         # check second dimensions
         second_dims = [s[1] for s in shapes]
         expected = [n_if] * 2 + [n_wires] * 3 + [n_if] * 2 + [n_wires] * 4
-        if not all(e == d for e, d in zip(expected, second_dims)):
+        if not all(e == d for e, d in zip(expected, second_dims, strict=True)):
             raise ValueError("Got unexpected shape for one or more parameters.")
 
         self.n_layers = shapes[0][0]

@@ -54,7 +54,7 @@ def _process_samples(
     wire_order,
 ):
     """Processes samples like SampleMP.process_samples, but different in need of some special cases e.g. CountsMP"""
-    wire_map = dict(zip(wire_order, range(len(wire_order))))
+    wire_map = dict(zip(wire_order, range(len(wire_order)), strict=True))
     mapped_wires = [wire_map[w] for w in mp.wires]
 
     if mapped_wires:

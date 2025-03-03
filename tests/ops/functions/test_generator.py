@@ -68,7 +68,10 @@ class HamiltonianOp(CustomOp):
     obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
 
     def generator(self):
-        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        obs = [
+            reduce(matmul, [o(w) for o, w in zip(word, self.wires, strict=True)])
+            for word in self.obs
+        ]
         return qml.Hamiltonian(self.coeff, obs)
 
 
@@ -80,7 +83,10 @@ class HamiltonianOpSameCoeff(CustomOp):
     obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
 
     def generator(self):
-        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        obs = [
+            reduce(matmul, [o(w) for o, w in zip(word, self.wires, strict=True)])
+            for word in self.obs
+        ]
         return qml.Hamiltonian(self.coeff, obs)
 
 
@@ -92,7 +98,10 @@ class HamiltonianOpSameAbsCoeff(CustomOp):
     obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
 
     def generator(self):
-        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        obs = [
+            reduce(matmul, [o(w) for o, w in zip(word, self.wires, strict=True)])
+            for word in self.obs
+        ]
         return qml.Hamiltonian(self.coeff, obs)
 
 

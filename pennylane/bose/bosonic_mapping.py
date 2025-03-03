@@ -118,7 +118,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
     for (_, b_idx), sign in bose_operator.items():
         op = PauliSentence()
         sparse_coeffmat = np.nonzero(coeff_mat[sign])
-        for i, j in zip(*sparse_coeffmat):
+        for i, j in zip(*sparse_coeffmat, strict=True):
             coeff = coeff_mat[sign][i][j]
 
             binary_row = list(map(int, bin(i)[2:]))[::-1]
@@ -257,7 +257,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
 
         op = PauliSentence()
         sparse_coeffmat = np.nonzero(coeff_mat_prod)
-        for i, j in zip(*sparse_coeffmat):
+        for i, j in zip(*sparse_coeffmat, strict=True):
             coeff = coeff_mat_prod[i][j]
 
             row = np.zeros(n_states)

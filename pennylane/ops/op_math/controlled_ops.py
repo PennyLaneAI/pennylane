@@ -1342,11 +1342,11 @@ class MultiControlledX(ControlledOp):
 
         work_wires = work_wires or []
 
-        flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
+        flips1 = [qml.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
 
         decomp = decompose_mcx(control_wires, target_wire, work_wires)
 
-        flips2 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
+        flips2 = [qml.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
 
         return flips1 + decomp + flips2
 

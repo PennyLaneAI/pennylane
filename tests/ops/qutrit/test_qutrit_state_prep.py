@@ -75,7 +75,7 @@ class TestStateVector:
         basis_state = basis_op.state_vector(wire_order=list(range(device_wires)))
 
         one_index = [0] * device_wires
-        for op_wire, idx_value in zip(op_wires, state):
+        for op_wire, idx_value in zip(op_wires, state, strict=True):
             if idx_value == 1:
                 one_index[op_wire] = 1
         one_index = tuple(one_index)

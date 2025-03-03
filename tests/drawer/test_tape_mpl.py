@@ -101,7 +101,7 @@ class TestLabelling:
         """Test the labels produced under different settings. Check both text value and position."""
         _, ax = tape_mpl(tape1, **kwargs)
 
-        for wire, (text_obj, label) in enumerate(zip(ax.texts, labels)):
+        for wire, (text_obj, label) in enumerate(zip(ax.texts, labels, strict=True)):
             assert text_obj.get_text() == label
             assert text_obj.get_position() == (-1.5, wire)
 

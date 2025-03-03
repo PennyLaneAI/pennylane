@@ -277,7 +277,9 @@ class ScalarSymbolicOp(SymbolicOp):
         if scalar_size != 1:
             if scalar_size == self.base.batch_size:
                 # both base and scalar are broadcasted
-                mat = qml.math.stack([self._matrix(s, m) for s, m in zip(scalar, base_matrix)])
+                mat = qml.math.stack(
+                    [self._matrix(s, m) for s, m in zip(scalar, base_matrix, strict=True)]
+                )
             else:
                 # only scalar is broadcasted
                 mat = qml.math.stack([self._matrix(s, base_matrix) for s in scalar])

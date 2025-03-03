@@ -257,7 +257,7 @@ class TestBasicCircuit:
         assert math.all(
             [
                 math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
-                for one_obs_result, one_obs_expected in zip(result, expected)
+                for one_obs_result, one_obs_expected in zip(result, expected, strict=True)
             ]
         )
 
@@ -462,10 +462,10 @@ class TestSampleMeasurements:
 
         expected = self.sample_sum_of_TRY_circ(x, subspace)
         assert all(isinstance(res, np.ndarray) for res in result)
-        assert all(res.shape == (s, 2) for res, s in zip(result, shots))
+        assert all(res.shape == (s, 2) for res, s in zip(result, shots, strict=True))
         assert all(
             np.allclose(np.sum(res, axis=0).astype(np.float32) / s, expected, atol=0.1)
-            for res, s in zip(result, shots)
+            for res, s in zip(result, shots, strict=True)
         )
 
     @pytest.mark.parametrize("shots", shots_data)
@@ -493,7 +493,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
@@ -951,7 +951,7 @@ class TestRandomSeed:
         if len(measurements) == 1:
             result1, result2 = [result1], [result2]
 
-        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2, strict=True))
 
     @pytest.mark.slow
     def test_different_seed(self):
@@ -985,7 +985,7 @@ class TestRandomSeed:
         if len(measurements) == 1:
             result1, result2 = [result1], [result2]
 
-        assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2))
+        assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2, strict=True))
 
     @pytest.mark.parametrize("measurements", measurements)
     def test_global_seed_and_device_seed(self, measurements):
@@ -1007,7 +1007,7 @@ class TestRandomSeed:
         if len(measurements) == 1:
             result1, result2 = [result1], [result2]
 
-        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2, strict=True))
 
     def test_global_seed_no_device_seed_by_default(self):
         """Test that the global numpy seed initializes the rng if device seed is None."""
@@ -1326,7 +1326,7 @@ class TestReadoutError:
     ]
 
     @pytest.mark.parametrize(
-        "relax_and_misclass, expected", zip(relax_and_misclass, expected_probs)
+        "relax_and_misclass, expected", zip(relax_and_misclass, expected_probs, strict=True)
     )
     def test_probs_with_readout_error(self, num_wires, relax_and_misclass, expected):
         """Tests the measurement results for probs"""
@@ -1362,7 +1362,8 @@ class TestReadoutError:
     ]
 
     @pytest.mark.parametrize(
-        "relax_and_misclass, expected", zip(relax_and_misclass, expected_commuting_expvals)
+        "relax_and_misclass, expected",
+        zip(relax_and_misclass, expected_commuting_expvals, strict=True),
     )
     def test_readout_expval_commuting(self, num_wires, relax_and_misclass, expected):
         """Tests the measurement results for expval of diagonal GellMann observables (3 and 8)"""
@@ -1403,7 +1404,8 @@ class TestReadoutError:
     ]
 
     @pytest.mark.parametrize(
-        "relax_and_misclass, expected", zip(relax_and_misclass, expected_noncommuting_expvals)
+        "relax_and_misclass, expected",
+        zip(relax_and_misclass, expected_noncommuting_expvals, strict=True),
     )
     def test_readout_expval_non_commuting(self, num_wires, relax_and_misclass, expected):
         """Tests the measurement results for expval of GellMann 1 observables"""
@@ -1578,7 +1580,7 @@ class TestReadoutError:
         assert isinstance(res, dict)
         assert len(res) == 3
         cases = ["0", "1", "2"]
-        for case, expected_result in zip(cases, expected):
+        for case, expected_result in zip(cases, expected, strict=True):
             assert np.isclose(res[case] / num_shots, expected_result, atol=0.05)
 
     @pytest.mark.parametrize(
@@ -1744,7 +1746,7 @@ class TestReadoutError:
 
         jac = torch.autograd.functional.jacobian(diff_func, diff_variables)
         if isinstance(jac, tuple):
-            for j, expected_j in zip(jac, expected):
+            for j, expected_j in zip(jac, expected, strict=True):
                 np.allclose(j.detach().numpy(), expected_j)
         else:
             assert np.allclose(jac.detach().numpy(), expected)

@@ -228,7 +228,7 @@ def test_call_with_pytree_arguments():
         qml.Rot._primitive,
         qml.measurements.StateMP._wires_primitive,
     ]
-    assert all(eqn.primitive == ep for eqn, ep in zip(jaxpr.eqns, expected_primitives))
+    assert all(eqn.primitive == ep for eqn, ep in zip(jaxpr.eqns, expected_primitives, strict=True))
 
     assert jaxpr.eqns[0].invars[0:3] == jaxpr.jaxpr.invars[0:3]
     assert jaxpr.eqns[1].invars[0:3] == jaxpr.jaxpr.invars[3:]

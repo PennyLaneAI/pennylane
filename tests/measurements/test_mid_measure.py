@@ -584,7 +584,7 @@ class TestMeasurementValueItems:
         mv = MeasurementValue([MP0, MP1, MP2], func)
         items = list(mv.items())
         assert len(items) == len(branches3) == len(expected)
-        for item, branch, exp in zip(items, branches3, expected):
+        for item, branch, exp in zip(items, branches3, expected, strict=True):
             assert item == (branch, exp)
 
     @pytest.mark.parametrize("postselect", [None, 0, 1])
@@ -630,6 +630,6 @@ class TestMeasurementValueItems:
         mv = MeasurementValue([MP0, MP1, MP2], func)
         items = list(mv.postselected_items())
         assert len(items) == len(branches)
-        for item, branch in zip(items, branches):
+        for item, branch in zip(items, branches, strict=True):
             pruned_branch = tuple(b for i, b in enumerate(branch) if postselects[i] is None)
             assert item == (pruned_branch, expected[self.branches3.index(branch)])

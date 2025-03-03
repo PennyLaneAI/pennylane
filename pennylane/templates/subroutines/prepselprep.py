@@ -28,7 +28,7 @@ def _get_new_terms(lcu):
     angles = qml.math.angle(coeffs)
     new_ops = []
 
-    for angle, op in zip(angles, ops):
+    for angle, op in zip(angles, ops, strict=True):
         new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
         new_ops.append(new_op)
 

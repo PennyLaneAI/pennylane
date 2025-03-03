@@ -724,12 +724,12 @@ class TestSampleMeasurements:
         assert len(result) == len(list(shots))
 
         assert all(isinstance(res, np.ndarray) for res in result)
-        assert all(res.shape == (s, 2) for res, s in zip(result, shots))
+        assert all(res.shape == (s, 2) for res, s in zip(result, shots, strict=True))
         assert all(
             np.allclose(
                 np.sum(res, axis=0).astype(np.float32) / s, [np.sin(x / 2) ** 2, 0], atol=0.1
             )
-            for res, s in zip(result, shots)
+            for res, s in zip(result, shots, strict=True)
         )
 
     @pytest.mark.parametrize("shots", shots_data)
@@ -747,7 +747,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
@@ -1032,7 +1032,7 @@ class TestQInfoMeasurements:
         qs = qml.tape.QuantumScript([qml.IsingXX(phi, wires=(0, 1))], self.measurements)
 
         results = simulate(qs)
-        for val1, val2 in zip(results, self.expected_results(phi)):
+        for val1, val2 in zip(results, self.expected_results(phi), strict=True):
             assert qml.math.allclose(val1, val2)
 
     @pytest.mark.autograd
@@ -1046,7 +1046,7 @@ class TestQInfoMeasurements:
 
         results = f(phi)
         expected = self.expected_results(phi)
-        for val1, val2 in zip(results, expected):
+        for val1, val2 in zip(results, expected, strict=True):
             assert qml.math.allclose(val1, val2)
 
     @pytest.mark.autograd
@@ -1089,7 +1089,7 @@ class TestQInfoMeasurements:
         phi = jax.numpy.array(-0.792)
 
         results = f(phi)
-        for val1, val2 in zip(results, self.expected_results(phi)):
+        for val1, val2 in zip(results, self.expected_results(phi), strict=True):
             assert qml.math.allclose(val1, val2)
 
         def real_out(phi):
@@ -1101,7 +1101,7 @@ class TestQInfoMeasurements:
             return tuple(jax.numpy.imag(r) for r in f(phi))
 
         grad_imag = jax.jacobian(imag_out)(phi)
-        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag))
+        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag, strict=True))
         expected_grads = self.expected_grad(phi)
 
         # Writing this way makes it easier to figure out which is failing
@@ -1130,7 +1130,7 @@ class TestQInfoMeasurements:
             return simulate(qs)
 
         results = f(phi)
-        for val1, val2 in zip(results, self.expected_results(phi.detach().numpy())):
+        for val1, val2 in zip(results, self.expected_results(phi.detach().numpy()), strict=True):
             assert qml.math.allclose(val1, val2)
 
         def real_out(phi):
@@ -1142,7 +1142,7 @@ class TestQInfoMeasurements:
             return tuple(torch.imag(r) if torch.is_complex(r) else torch.tensor(0) for r in f(phi))
 
         grad_imag = torch.autograd.functional.jacobian(imag_out, phi)
-        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag))
+        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag, strict=True))
 
         expected_grads = self.expected_grad(phi.detach().numpy())
 
@@ -1175,7 +1175,7 @@ class TestQInfoMeasurements:
             result2_imag = tf.math.imag(results[2])
 
         expected = self.expected_results(phi)
-        for val1, val2 in zip(results, expected):
+        for val1, val2 in zip(results, expected, strict=True):
             assert qml.math.allclose(val1, val2)
 
         expected_grads = self.expected_grad(phi)
@@ -1243,7 +1243,7 @@ class TestTreeTraversalStack:
                 ).values()
             )
             assert tree_stack.probs[depth] == list(
-                counts_to_probs(dict(zip([0, 1], tree_stack.counts[depth]))).values()
+                counts_to_probs(dict(zip([0, 1], tree_stack.counts[depth], strict=True))).values()
             )
 
             state_vec = np.array(tree_stack.states[depth]).T
@@ -1416,12 +1416,12 @@ class TestMidMeasurements:
         if not isinstance(shots, list):
             res1, res2 = (res1,), (res2,)
 
-        for rs1, rs2 in zip(res1, res2):
+        for rs1, rs2 in zip(res1, res2, strict=True):
             prob_dist1, prob_dist2 = rs1, rs2
             if measure_f in (qml.sample,):
                 n_wires = rs1.shape[1]
                 prob_dist1, prob_dist2 = np.zeros(2**n_wires), np.zeros(2**n_wires)
-                for prob, rs in zip([prob_dist1, prob_dist2], [rs1, rs2]):
+                for prob, rs in zip([prob_dist1, prob_dist2], [rs1, rs2], strict=True):
                     index, count = np.unique(
                         np.packbits(rs, axis=1, bitorder="little").squeeze(), return_counts=True
                     )
@@ -1576,7 +1576,7 @@ class TestMidMeasurements:
             )
             for _ in range(n_shots)
         ]
-        terminal_results, mcm_results = zip(*results)
+        terminal_results, mcm_results = zip(*results, strict=True)
 
         if postselect_mode == "fill-shots":
             assert all(ms == 0 for ms in mcm_results)
@@ -1593,14 +1593,14 @@ class TestMidMeasurements:
             expected_result = simulate(equivalent_tape, rng=rng)
             fisher_exact_test(mcm_results, expected_result)
 
-            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
+            subset = [ts for ms, ts in zip(mcm_results, terminal_results, strict=True) if ms == 0]
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
             expected_sample = simulate(equivalent_tape, rng=rng)
             fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
 
-            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
+            subset = [ts for ms, ts in zip(mcm_results, terminal_results, strict=True) if ms == 1]
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )

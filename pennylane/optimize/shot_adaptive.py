@@ -237,7 +237,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         grads = []
 
-        for o, c, p, s in zip(observables, coeffs, prob_shots, shots_per_term):
+        for o, c, p, s in zip(observables, coeffs, prob_shots, shots_per_term, strict=True):
             # if the number of shots is 0, do nothing
             if s == 0:
                 continue
@@ -270,7 +270,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # because we are sampling one at a time.
             grads.append([(c * j / p) for j in jacs])
 
-        return [np.concatenate(i) for i in zip(*grads)]
+        return [np.concatenate(i) for i in zip(*grads, strict=True)]
 
     @staticmethod
     def check_device(dev):
@@ -426,12 +426,14 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             self.xi = [np.zeros_like(g, dtype=np.float64) for g in grads]
 
         # running average of the gradient
-        self.chi = [self.mu * c + (1 - self.mu) * g for c, g in zip(self.chi, grads)]
+        self.chi = [self.mu * c + (1 - self.mu) * g for c, g in zip(self.chi, grads, strict=True)]
 
         # running average of the gradient variance
-        self.xi = [self.mu * x + (1 - self.mu) * v for x, v in zip(self.xi, grad_variances)]
+        self.xi = [
+            self.mu * x + (1 - self.mu) * v for x, v in zip(self.xi, grad_variances, strict=True)
+        ]
 
-        for idx, (c, x) in enumerate(zip(self.chi, self.xi)):
+        for idx, (c, x) in enumerate(zip(self.chi, self.xi, strict=True)):
             xi = x / (1 - self.mu ** (self.k + 1))
             chi = c / (1 - self.mu ** (self.k + 1))
 

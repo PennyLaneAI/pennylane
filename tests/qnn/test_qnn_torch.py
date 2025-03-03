@@ -33,7 +33,7 @@ def indices_up_to(n_max):
     """Returns an iterator over the number of qubits and output dimension, up to value n_max.
     The output dimension never exceeds the number of qubits."""
     a, b = np.tril_indices(n_max)
-    return zip(*[a + 1, b + 1])
+    return zip(*[a + 1, b + 1], strict=True)
 
 
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
@@ -385,7 +385,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         if isinstance(shots, list):
 
             assert isinstance(layer_out, tuple)
-            for out, exp in zip(layer_out, circuit_out_raw):
+            for out, exp in zip(layer_out, circuit_out_raw, strict=True):
                 circuit_out = torch.hstack(exp)
                 assert out.shape == circuit_out.shape
 
@@ -560,7 +560,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
 
         g_circuit = [w.grad for w in weights]
 
-        for g1, g2 in zip(g_layer, g_circuit):
+        for g1, g2 in zip(g_layer, g_circuit, strict=True):
             assert torch.allclose(g1, g2)
         assert len(weights) == len(list(layer.parameters()))
 
@@ -677,7 +677,9 @@ class TestTorchLayerIntegration:
 
         params_after = [w.detach().clone() for w in module.parameters()]
 
-        params_similar = [torch.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)]
+        params_similar = [
+            torch.allclose(p1, p2) for p1, p2 in zip(params_before, params_after, strict=True)
+        ]
         assert not all(params_similar)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
@@ -825,7 +827,7 @@ def test_batch_input_single_measure(tol):
 
     assert res.shape == (10, 2)
 
-    for x_, r in zip(x, res):
+    for x_, r in zip(x, res, strict=True):
         assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
 
     # reset back to the old name
@@ -851,7 +853,7 @@ def test_batch_input_multi_measure(tol):
 
     assert res.shape == (10, 5)
 
-    for x_, r in zip(x, res):
+    for x_, r in zip(x, res, strict=True):
         exp = torch.hstack(circuit(x_, layer.qnode_weights["weights"]))
         assert qml.math.allclose(r, exp, atol=tol)
 

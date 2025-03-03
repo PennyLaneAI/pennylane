@@ -203,7 +203,9 @@ def test_expand(wires):
 
     assert len(decomp) == len(decomp_3wires) == len(expected_wires)
 
-    for actual_op, expected_class, expected_wire in zip(decomp, decomp_3wires, expected_wires):
+    for actual_op, expected_class, expected_wire in zip(
+        decomp, decomp_3wires, expected_wires, strict=True
+    ):
         assert isinstance(actual_op, expected_class)
         assert actual_op.wires == qml.wires.Wires(expected_wire)
 
@@ -346,7 +348,7 @@ class TestDynamicDecomposition:
         [decomp_tape], _ = qml.transforms.decompose(
             tape, max_expansion=max_expansion, gate_set=gate_set
         )
-        for op1, op2 in zip(ops_list, decomp_tape.operations):
+        for op1, op2 in zip(ops_list, decomp_tape.operations, strict=True):
             if op1.name == "GlobalPhase":
                 # GlobalPhase applied to single wire instead of all wires
                 assert op1.name == op2.name

@@ -423,7 +423,7 @@ class TestJaxExecuteIntegration:
                 assert np.allclose(jac[1][0 + offset], expected[1][0], atol=atol_for_shots(shots))
                 assert np.allclose(jac[1][1 + offset], expected[1][1], atol=atol_for_shots(shots))
         else:
-            for _j, _e in zip(jac, expected):
+            for _j, _e in zip(jac, expected, strict=True):
                 assert np.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
     def test_classical_processing(self, execute_kwargs, shots, device_name, seed):

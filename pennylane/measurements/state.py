@@ -242,7 +242,7 @@ class DensityMatrixMP(StateMP):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = dict(zip(wire_order, range(len(wire_order)), strict=True))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
         if not qml.math.is_abstract(state) and qml.math.any(qml.math.iscomplex(state)):
@@ -251,7 +251,7 @@ class DensityMatrixMP(StateMP):
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = dict(zip(wire_order, range(len(wire_order)), strict=True))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
         if not qml.math.is_abstract(density_matrix) and qml.math.any(

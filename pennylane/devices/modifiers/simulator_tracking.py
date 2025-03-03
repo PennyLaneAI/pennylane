@@ -35,7 +35,7 @@ def _track_execute(untracked_execute):
         if self.tracker.active:
             self.tracker.update(batches=1)
             self.tracker.record()
-            for r, c in zip(batch_results, batch):
+            for r, c in zip(batch_results, batch, strict=True):
                 qpu_executions, shots = get_num_shots_and_executions(c)
                 if c.shots:
                     self.tracker.update(

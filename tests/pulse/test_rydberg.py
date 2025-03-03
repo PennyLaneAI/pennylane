@@ -229,7 +229,7 @@ class TestRydbergDrive:
         assert Hd.settings is None
         assert all(isinstance(coeff, AmplitudeAndPhase) for coeff in Hd.coeffs)
         assert len(Hd.coeffs) == 2
-        for op, op_expected in zip(Hd.ops, ops_expected):
+        for op, op_expected in zip(Hd.ops, ops_expected, strict=True):
             qml.assert_equal(op, op_expected)
 
     def test_no_amplitude_no_detuning(self):

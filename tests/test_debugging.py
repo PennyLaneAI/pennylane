@@ -62,7 +62,7 @@ class TestSnapshotTape:
 
         assert len(tapes) == num_snapshots + 1
 
-        for out, expected in zip(tapes, expected_tapes):
+        for out, expected in zip(tapes, expected_tapes, strict=True):
             assert_equal(out, expected)
 
         tape_no_meas = qml.tape.QuantumTape(ops, shots=shots)
@@ -70,7 +70,7 @@ class TestSnapshotTape:
 
         assert len(tapes_no_meas) == num_snapshots
 
-        for out, expected in zip(tapes_no_meas, expected_tapes[:-1]):
+        for out, expected in zip(tapes_no_meas, expected_tapes[:-1], strict=True):
             assert_equal(out, expected)
 
     def test_snapshot_postprocessing_fn(self):
@@ -347,17 +347,17 @@ class TestSnapshotSupportedQNode:
             "execution_results": np.array(0.87758256),
         }
 
-        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys(), strict=True))
         assert np.allclose(result["execution_results"], expected["execution_results"])
         del result["execution_results"]
         del expected["execution_results"]
         assert all(
             np.allclose(v1["cov_matrix"], v2["cov_matrix"])
-            for v1, v2 in zip(result.values(), expected.values())
+            for v1, v2 in zip(result.values(), expected.values(), strict=True)
         )
         assert all(
             np.allclose(v1["means"], v2["means"])
-            for v1, v2 in zip(result.values(), expected.values())
+            for v1, v2 in zip(result.values(), expected.values(), strict=True)
         )
 
     # pylint: disable=protected-access
@@ -608,12 +608,16 @@ class TestSnapshotUnsupportedQNode:
             return qml.expval(qml.PauliX(1))
 
         # TODO: fallback to simple `np.allclose` tests once `setRandomSeed` is exposed from the lightning C++ code
-        counts, expvals = tuple(zip(*(qml.snapshots(circuit)().values() for _ in range(50))))
+        counts, expvals = tuple(
+            zip(*(qml.snapshots(circuit)().values() for _ in range(50)), strict=True)
+        )
         assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.75
         assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
         # Make sure shots are overridden correctly
-        counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
+        counts, _ = tuple(
+            zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50)), strict=True)
+        )
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
@@ -839,7 +843,7 @@ class TestPLDB:
         qnp.array([1 / qnp.sqrt(2), 0, 1 / qnp.sqrt(2), 0], dtype=complex),
     )
 
-    @pytest.mark.parametrize("tape, expected_result", zip(tapes, results))
+    @pytest.mark.parametrize("tape, expected_result", zip(tapes, results, strict=True))
     @pytest.mark.parametrize(
         "dev", (qml.device("default.qubit", wires=2), qml.device("lightning.qubit", wires=2))
     )

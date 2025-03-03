@@ -55,7 +55,9 @@ Heisenberg3_sum = qml.lie_closure(gens3)
 Heisenberg3_sum = [op.pauli_rep for op in Heisenberg3_sum]
 
 coeffs = np.random.random((len(XXZ3), len(XXZ3)))
-sum_XXZ3 = [qml.sum(*(c * op for c, op in zip(_coeffs, XXZ3))).pauli_rep for _coeffs in coeffs]
+sum_XXZ3 = [
+    qml.sum(*(c * op for c, op in zip(_coeffs, XXZ3, strict=True))).pauli_rep for _coeffs in coeffs
+]
 
 
 class TestAdjointRepr:
@@ -105,7 +107,9 @@ class TestAdjointRepr:
                 res.simplify()
                 assert set(comm_res) == set(res)  # Assert equal keys
                 if len(comm_res) > 0:
-                    assert np.allclose(*zip(*[(comm_res[key], res[key]) for key in res.keys()]))
+                    assert np.allclose(
+                        *zip(*[(comm_res[key], res[key]) for key in res.keys()], strict=True)
+                    )
 
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
     @pytest.mark.parametrize("use_orthonormal", [False, True])

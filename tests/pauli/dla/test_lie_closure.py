@@ -520,7 +520,7 @@ class TestLieClosure:
         genYY = [Y(i) @ Y(i + 1) for i in range(n - 1)]
         genZZ = [Z(i) @ Z(i + 1) for i in range(n - 1)]
 
-        generators = [qml.sum(XX + YY + ZZ) for XX, YY, ZZ in zip(genXX, genYY, genZZ)]
+        generators = [qml.sum(XX + YY + ZZ) for XX, YY, ZZ in zip(genXX, genYY, genZZ, strict=True)]
         g = qml.lie_closure(generators, matrix=matrix)
         assert len(g) == res
 

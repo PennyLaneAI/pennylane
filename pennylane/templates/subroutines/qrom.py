@@ -26,7 +26,7 @@ from pennylane.wires import WiresLike
 
 def _multi_swap(wires1, wires2):
     """Apply a series of SWAP gates between two sets of wires."""
-    for wire1, wire2 in zip(wires1, wires2):
+    for wire1, wire2 in zip(wires1, wires2, strict=True):
         qml.SWAP(wires=[wire1, wire2])
 
 

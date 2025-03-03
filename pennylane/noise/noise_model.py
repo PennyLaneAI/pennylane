@@ -139,7 +139,9 @@ class NoiseModel:
 
     def __eq__(self, other):
         for key in ["model_map", "meas_map"]:
-            for model1, model2 in zip(getattr(self, key).items(), getattr(other, key).items()):
+            for model1, model2 in zip(
+                getattr(self, key).items(), getattr(other, key).items(), strict=True
+            ):
                 (func1, noise1), (func2, noise2) = model1, model2
                 if getattr(func1, "condition", func1.fn) != getattr(func2, "condition", func2.fn):
                     return False

@@ -231,8 +231,8 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
 
         r_ops = ops[i]
 
-        assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
-        for o1, o2 in zip(d_ops, r_ops):
+        assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops, strict=True))
+        for o1, o2 in zip(d_ops, r_ops, strict=True):
             qml.assert_equal(o1, o2)
 
 

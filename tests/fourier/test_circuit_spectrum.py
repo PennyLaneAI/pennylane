@@ -139,7 +139,7 @@ class TestInterfaces:
         qnode = qml.QNode(circuit, dev)
 
         res = circuit_spectrum(qnode)(x, w)
-        for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
+        for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items(), strict=True):
             assert k1 == k2
             assert v1 == v2
 
@@ -158,7 +158,7 @@ class TestInterfaces:
 
         res = circuit_spectrum(qnode)(x, w)
         assert res
-        for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
+        for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items(), strict=True):
             assert k1 == k2
             assert v1 == v2
 
@@ -176,7 +176,7 @@ class TestInterfaces:
         res = circuit_spectrum(qnode)(x, w)
 
         assert res
-        for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
+        for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items(), strict=True):
             assert k1 == k2
             assert v1 == v2
 
@@ -195,6 +195,6 @@ class TestInterfaces:
         res = circuit_spectrum(qnode)(x, w)
 
         assert res
-        for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
+        for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items(), strict=True):
             assert k1 == k2
             assert v1 == v2

@@ -146,7 +146,7 @@ def _collect_recipes(tape, argnum, method_map, diagonal_shifts, off_diagonal_shi
     diag_recipes = []
     partial_offdiag_recipes = []
     diag_shifts_idx = offdiag_shifts_idx = 0
-    for i, (d, od) in enumerate(zip(diag_argnum, offdiag_argnum)):
+    for i, (d, od) in enumerate(zip(diag_argnum, offdiag_argnum, strict=True)):
         if not d or method_map[i] == "0":
             # hessian will be set to 0 for this row/column
             diag_recipes.append(None)

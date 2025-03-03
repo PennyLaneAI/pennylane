@@ -253,7 +253,7 @@ class TestPhaseAdder:
             op_list.append(qml.QFT(wires=x_wires))
             op_list.extend(_add_k_fourier(k, x_wires))
 
-        for op1, op2 in zip(phase_adder_decomposition, op_list):
+        for op1, op2 in zip(phase_adder_decomposition, op_list, strict=True):
             qml.assert_equal(op1, op2)
 
     def test_work_wires_added_correctly(self):

@@ -125,7 +125,9 @@ interfaces = ["auto", "autograd"]
 
 @pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-@pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))
+@pytest.mark.parametrize(
+    "circuit, args, expected_jac", zip(circuits, all_args, class_jacs, strict=True)
+)
 @pytest.mark.parametrize("interface", interfaces)
 def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Autograd."""
@@ -138,7 +140,7 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, inter
         assert np.allclose(jac, expected_jac[0])
     else:
         assert len(jac) == len(expected_jac)
-        for _jac, _expected_jac in zip(jac, expected_jac):
+        for _jac, _expected_jac in zip(jac, expected_jac, strict=True):
             assert np.allclose(_jac, _expected_jac)
 
 
@@ -159,7 +161,9 @@ def test_error_undefined_interface():
 
 @pytest.mark.tf
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-@pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))
+@pytest.mark.parametrize(
+    "circuit, args, expected_jac", zip(circuits, all_args, class_jacs, strict=True)
+)
 @pytest.mark.parametrize("interface", interfaces)
 def test_tf_without_argnum(circuit, args, expected_jac, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Tensorflow."""
@@ -171,7 +175,7 @@ def test_tf_without_argnum(circuit, args, expected_jac, diff_method, interface):
     jac = classical_jacobian(qnode)(*args)
 
     assert len(jac) == len(expected_jac)
-    for _jac, _expected_jac in zip(jac, expected_jac):
+    for _jac, _expected_jac in zip(jac, expected_jac, strict=True):
         assert np.allclose(_jac, _expected_jac)
 
 
@@ -180,7 +184,9 @@ interfaces = ["torch"]
 
 @pytest.mark.torch
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-@pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))
+@pytest.mark.parametrize(
+    "circuit, args, expected_jac", zip(circuits, all_args, class_jacs, strict=True)
+)
 @pytest.mark.parametrize("interface", interfaces)
 def test_torch_without_argnum(circuit, args, expected_jac, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Torch."""
@@ -192,7 +198,7 @@ def test_torch_without_argnum(circuit, args, expected_jac, diff_method, interfac
     jac = classical_jacobian(qnode)(*args)
 
     assert len(jac) == len(expected_jac)
-    for _jac, _expected_jac in zip(jac, expected_jac):
+    for _jac, _expected_jac in zip(jac, expected_jac, strict=True):
         assert np.allclose(_jac, _expected_jac)
 
     # also test with an untrainable argument
@@ -200,7 +206,7 @@ def test_torch_without_argnum(circuit, args, expected_jac, diff_method, interfac
     jac = classical_jacobian(qnode)(*args)
 
     assert len(jac) == len(expected_jac) - 1
-    for _jac, _expected_jac in zip(jac, expected_jac[1:]):
+    for _jac, _expected_jac in zip(jac, expected_jac[1:], strict=True):
         assert np.allclose(_jac, _expected_jac)
 
 
@@ -212,7 +218,8 @@ interfaces = ["auto", "autograd"]
 @pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
-    "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, scalar_argnum)
+    "circuit, args, expected_jac, argnum",
+    zip(circuits, all_args, class_jacs, scalar_argnum, strict=True),
 )
 @pytest.mark.parametrize("interface", interfaces)
 def test_autograd_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
@@ -232,7 +239,8 @@ interfaces = ["tf"]
 @pytest.mark.tf
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
-    "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, scalar_argnum)
+    "circuit, args, expected_jac, argnum",
+    zip(circuits, all_args, class_jacs, scalar_argnum, strict=True),
 )
 @pytest.mark.parametrize("interface", interfaces)
 def test_tf_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
@@ -253,7 +261,8 @@ interfaces = ["torch"]
 @pytest.mark.torch
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
-    "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, scalar_argnum)
+    "circuit, args, expected_jac, argnum",
+    zip(circuits, all_args, class_jacs, scalar_argnum, strict=True),
 )
 @pytest.mark.parametrize("interface", interfaces)
 def test_torch_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
@@ -276,7 +285,8 @@ interfaces = ["auto", "autograd"]
 @pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
-    "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, single_list_argnum)
+    "circuit, args, expected_jac, argnum",
+    zip(circuits, all_args, class_jacs, single_list_argnum, strict=True),
 )
 @pytest.mark.parametrize("interface", interfaces)
 def test_autograd_with_single_list_argnum(
@@ -298,7 +308,8 @@ interfaces = ["tf"]
 @pytest.mark.tf
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
-    "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, single_list_argnum)
+    "circuit, args, expected_jac, argnum",
+    zip(circuits, all_args, class_jacs, single_list_argnum, strict=True),
 )
 @pytest.mark.parametrize("interface", interfaces)
 def test_tf_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
@@ -320,7 +331,8 @@ interfaces = ["torch"]
 @pytest.mark.torch
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
-    "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, single_list_argnum)
+    "circuit, args, expected_jac, argnum",
+    zip(circuits, all_args, class_jacs, single_list_argnum, strict=True),
 )
 @pytest.mark.parametrize("interface", interfaces)
 def test_torch_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
@@ -344,7 +356,8 @@ interfaces = ["auto", "autograd"]
 @pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
-    "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, sequence_argnum)
+    "circuit, args, expected_jac, argnum",
+    zip(circuits, all_args, class_jacs, sequence_argnum, strict=True),
 )
 @pytest.mark.parametrize("interface", interfaces)
 def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
@@ -354,7 +367,7 @@ def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum, diff
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnum))
     assert len(jac) == len(expected_jac)
-    for _jac, _expected_jac in zip(jac, expected_jac):
+    for _jac, _expected_jac in zip(jac, expected_jac, strict=True):
         assert np.allclose(_jac, _expected_jac)
 
 
@@ -364,7 +377,8 @@ interfaces = ["tf"]
 @pytest.mark.tf
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
-    "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, sequence_argnum)
+    "circuit, args, expected_jac, argnum",
+    zip(circuits, all_args, class_jacs, sequence_argnum, strict=True),
 )
 @pytest.mark.parametrize("interface", interfaces)
 def test_tf_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
@@ -377,7 +391,7 @@ def test_tf_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_metho
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnum))
     assert len(jac) == len(expected_jac)
-    for _jac, _expected_jac in zip(jac, expected_jac):
+    for _jac, _expected_jac in zip(jac, expected_jac, strict=True):
         assert np.allclose(_jac, _expected_jac)
 
 
@@ -387,7 +401,8 @@ interfaces = ["torch"]
 @pytest.mark.torch
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
-    "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, sequence_argnum)
+    "circuit, args, expected_jac, argnum",
+    zip(circuits, all_args, class_jacs, sequence_argnum, strict=True),
 )
 @pytest.mark.parametrize("interface", interfaces)
 def test_torch_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
@@ -400,7 +415,7 @@ def test_torch_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_me
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnum))
     assert len(jac) == len(expected_jac)
-    for _jac, _expected_jac in zip(jac, expected_jac):
+    for _jac, _expected_jac in zip(jac, expected_jac, strict=True):
         assert np.allclose(_jac, _expected_jac)
 
 
@@ -539,7 +554,9 @@ class TestJax:
 
     interfaces = ["jax"]
 
-    @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))
+    @pytest.mark.parametrize(
+        "circuit, args, expected_jac", zip(circuits, all_args, class_jacs, strict=True)
+    )
     @pytest.mark.parametrize("interface", interfaces)
     def test_jax_without_argnum(self, circuit, args, expected_jac, diff_method, interface):
         r"""Test ``classical_jacobian`` with ``argnum=None`` and JAX."""
@@ -555,7 +572,7 @@ class TestJax:
 
     @pytest.mark.parametrize(
         "circuit, args, expected_jac, argnum",
-        zip(circuits, all_args, class_jacs, single_list_argnum),
+        zip(circuits, all_args, class_jacs, single_list_argnum, strict=True),
     )
     @pytest.mark.parametrize("interface", interfaces)
     def test_jax_with_single_list_argnum(
@@ -574,7 +591,8 @@ class TestJax:
         assert np.allclose(jac[0], expected_jac[0])
 
     @pytest.mark.parametrize(
-        "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, scalar_argnum)
+        "circuit, args, expected_jac, argnum",
+        zip(circuits, all_args, class_jacs, scalar_argnum, strict=True),
     )
     @pytest.mark.parametrize("interface", interfaces)
     def test_jax_with_scalar_argnum(
@@ -591,7 +609,8 @@ class TestJax:
         assert np.allclose(jac, expected_jac)
 
     @pytest.mark.parametrize(
-        "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, sequence_argnum)
+        "circuit, args, expected_jac, argnum",
+        zip(circuits, all_args, class_jacs, sequence_argnum, strict=True),
     )
     @pytest.mark.parametrize("interface", interfaces)
     def test_jax_with_sequence_argnum(
@@ -610,7 +629,7 @@ class TestJax:
         print(argnum)
         print(jac, expected_jac)
         assert len(jac) == len(expected_jac)
-        for _jac, _expected_jac in zip(jac, expected_jac):
+        for _jac, _expected_jac in zip(jac, expected_jac, strict=True):
             assert np.allclose(_jac, _expected_jac)
 
     @pytest.mark.parametrize("interface", interfaces)

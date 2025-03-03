@@ -33,7 +33,7 @@ def _read(env, var):
 
 def _operator_forward_pass(eqn, env, ket):
     """Apply an operator during the forward pass of the adjoint jvp."""
-    invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
+    invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars), strict=True))
     op = eqn.primitive.impl(*invals, **eqn.params)
     env[eqn.outvars[0]] = (op, ad.Zero(AbstractOperator()))
 
@@ -51,7 +51,7 @@ def _operator_forward_pass(eqn, env, ket):
 
 def _measurement_forward_pass(eqn, env, ket):
     """Perform a measurement during the forward pass of the adjoint jvp."""
-    invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
+    invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars), strict=True))
 
     if any(not isinstance(t, ad.Zero) for t in tangents):  # pragma: no cover
         # currently prevented by "no differentiable operator arithmetic."
@@ -73,7 +73,7 @@ def _other_prim_forward_pass(eqn: jax.core.JaxprEqn, env: dict) -> None:
 
     Maps outputs back to the environment
     """
-    invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
+    invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars), strict=True))
     if eqn.primitive not in ad.primitive_jvps:
         raise NotImplementedError(
             f"Primitive {eqn.primitive} does not have a jvp rule and is not supported.."

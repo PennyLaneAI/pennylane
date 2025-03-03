@@ -67,7 +67,7 @@ def _get_new_terms(lcu):
     new_coeffs = []
     new_ops = []
 
-    for coeff, op in zip(*lcu.terms()):
+    for coeff, op in zip(*lcu.terms(), strict=True):
 
         angle = qml.math.angle(coeff)
         new_coeffs.append(qml.math.abs(coeff))
@@ -254,7 +254,7 @@ class TestPrepSelPrep:
         for idx, val in enumerate(tape.expand().operations):
             assert val.name == results[idx].name
             assert len(val.parameters) == len(results[idx].parameters)
-            for a, b in zip(val.parameters, results[idx].parameters):
+            for a, b in zip(val.parameters, results[idx].parameters, strict=True):
                 assert (a == b).all()
 
     def test_copy(self):
@@ -291,15 +291,17 @@ class TestPrepSelPrep:
         assert hash(metadata)
 
         assert len(data[0]) == len(lcu)
-        assert all(coeff1 == coeff2 for coeff1, coeff2 in zip(lcu_coeffs, data_coeffs))
-        assert all(op1 == op2 for op1, op2 in zip(lcu_ops, data_ops))
+        assert all(coeff1 == coeff2 for coeff1, coeff2 in zip(lcu_coeffs, data_coeffs, strict=True))
+        assert all(op1 == op2 for op1, op2 in zip(lcu_ops, data_ops, strict=True))
 
         assert metadata[0] == op.control
 
         new_op = type(op)._unflatten(*op._flatten())
         assert op.lcu == new_op.lcu
-        assert all(coeff1 == coeff2 for coeff1, coeff2 in zip(op.coeffs, new_op.coeffs))
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))
+        assert all(
+            coeff1 == coeff2 for coeff1, coeff2 in zip(op.coeffs, new_op.coeffs, strict=True)
+        )
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops, strict=True))
         assert op.control == new_op.control
         assert op.wires == new_op.wires
         assert op.target_wires == new_op.target_wires

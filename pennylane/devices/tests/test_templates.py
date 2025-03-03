@@ -882,7 +882,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = circuit(state)
         order = np.argsort(np.argsort(res))
         tol = tol(dev.shots)
-        assert all(np.isclose(val, probs[i], atol=tol) for i, val in zip(order, res))
+        assert all(np.isclose(val, probs[i], atol=tol) for i, val in zip(order, res, strict=True))
 
 
 class TestMoleculeTemplates:

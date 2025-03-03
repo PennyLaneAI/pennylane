@@ -61,7 +61,7 @@ def _validate_computational_basis_sampling(tape):
         all_wires = []
         empty_wires = qml.wires.Wires([])
         for idx, (cb_obs, global_idx) in enumerate(
-            zip(comp_basis_sampling_obs, comp_basis_indices)
+            zip(comp_basis_sampling_obs, comp_basis_indices, strict=True)
         ):
             if global_idx < n_meas - n_mcms:
                 if cb_obs.wires == empty_wires:
@@ -116,7 +116,7 @@ def rotations_and_diagonal_measurements(tape):
 
         measurements = copy.copy(tape.measurements)
 
-        for o, i in zip(diag_obs, tape.obs_sharing_wires_id):
+        for o, i in zip(diag_obs, tape.obs_sharing_wires_id, strict=True):
             new_m = tape.measurements[i].__class__(obs=o)
             measurements[i] = new_m
 

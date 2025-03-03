@@ -332,7 +332,8 @@ def expand_fragment_tape(
                 group = []
 
             prepare_mapping = {
-                id(n): PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
+                id(n): PREPARE_SETTINGS[s]
+                for n, s in zip(prepare_nodes, prepare_settings, strict=True)
             }
 
             ops_list = []

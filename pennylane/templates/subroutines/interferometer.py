@@ -232,7 +232,9 @@ class Interferometer(CVOperation):
             if mesh == "rectangular":
                 # Apply the Clements beamsplitter array
                 # The array depth is N
-                for m, (k, (w1, w2)) in product(range(M), enumerate(zip(wires[:-1], wires[1:]))):
+                for m, (k, (w1, w2)) in product(
+                    range(M), enumerate(zip(wires[:-1], wires[1:], strict=True))
+                ):
                     # skip even or odd pairs depending on layer
                     if (m + k) % 2 != 1:
                         if beamsplitter == "clements":

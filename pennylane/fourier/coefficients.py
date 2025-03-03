@@ -254,7 +254,7 @@ def _coefficients_no_filter(f, degree, use_broadcasting):
         # iterate over the first axis of `spacing` and `nvec`.
         if use_broadcasting:
             nvec = (*nvec, n_ranges[-1])
-            sampling_point = [s * n for s, n in zip(spacing, nvec)]
+            sampling_point = [s * n for s, n in zip(spacing, nvec, strict=True)]
         else:
             # sampling_point = np.squeeze(spacing * np.array(nvec))
             sampling_point = spacing * np.array(nvec)

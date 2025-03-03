@@ -256,7 +256,7 @@ def _equal_circuit(
     # operations
     if len(op1.operations) != len(op2.operations):
         return False
-    for comparands in zip(op1.operations, op2.operations):
+    for comparands in zip(op1.operations, op2.operations, strict=True):
         if not qml.equal(
             comparands[0],
             comparands[1],
@@ -269,7 +269,7 @@ def _equal_circuit(
     # measurements
     if len(op1.measurements) != len(op2.measurements):
         return False
-    for comparands in zip(op1.measurements, op2.measurements):
+    for comparands in zip(op1.measurements, op2.measurements, strict=True):
         if not qml.equal(
             comparands[0],
             comparands[1],
@@ -330,12 +330,13 @@ def _equal_operators(
         # assume all tracers are independent
         return "Data contains a tracer. Abstract tracers are assumed to be unique."
     if not all(
-        qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
+        qml.math.allclose(d1, d2, rtol=rtol, atol=atol)
+        for d1, d2 in zip(op1.data, op2.data, strict=True)
     ):
         return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
-        for params1, params2 in zip(op1.data, op2.data):
+        for params1, params2 in zip(op1.data, op2.data, strict=True):
             params1_train = qml.math.requires_grad(params1)
             params2_train = qml.math.requires_grad(params2)
             if params1_train != params2_train:
@@ -345,7 +346,7 @@ def _equal_operators(
                 )
 
     if check_interface:
-        for params1, params2 in zip(op1.data, op2.data):
+        for params1, params2 in zip(op1.data, op2.data, strict=True):
             params1_interface = qml.math.get_interface(params1)
             params2_interface = qml.math.get_interface(params2)
             if params1_interface != params2_interface:
@@ -439,7 +440,7 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
 
-    for o1, o2 in zip(sorted_ops1, sorted_ops2):
+    for o1, o2 in zip(sorted_ops1, sorted_ops2, strict=True):
         op_check = _equal(o1, o2, **kwargs)
         if isinstance(op_check, str):
             return OPERANDS_MISMATCH_ERROR_MESSAGE + op_check
@@ -458,8 +459,8 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         return f"op1 and op2 have different work wires. Got {op1.work_wires} and {op2.work_wires}"
 
     # work wires and control_wire/control_value combinations compared here
-    op1_control_dict = dict(zip(op1.control_wires, op1.control_values))
-    op2_control_dict = dict(zip(op2.control_wires, op2.control_values))
+    op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))
+    op2_control_dict = dict(zip(op2.control_wires, op2.control_values, strict=True))
     if op1_control_dict != op2_control_dict:
         return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
 
@@ -558,7 +559,7 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
     )
 
     if check_interface:
-        for params1, params2 in zip(op1.data, op2.data):
+        for params1, params2 in zip(op1.data, op2.data, strict=True):
             params1_interface = qml.math.get_interface(params1)
             params2_interface = qml.math.get_interface(params2)
             if params1_interface != params2_interface:
@@ -568,7 +569,7 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
                 )
 
     if check_trainability:
-        for params1, params2 in zip(op1.data, op2.data):
+        for params1, params2 in zip(op1.data, op2.data, strict=True):
             params1_trainability = qml.math.requires_grad(params1)
             params2_trainability = qml.math.requires_grad(params2)
             if params1_trainability != params2_trainability:
@@ -599,7 +600,7 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     )
 
     if check_interface:
-        for params1, params2 in zip(op1.data, op2.data):
+        for params1, params2 in zip(op1.data, op2.data, strict=True):
             params1_interface = qml.math.get_interface(params1)
             params2_interface = qml.math.get_interface(params2)
             if params1_interface != params2_interface:
@@ -609,7 +610,7 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
                 )
 
     if check_trainability:
-        for params1, params2 in zip(op1.data, op2.data):
+        for params1, params2 in zip(op1.data, op2.data, strict=True):
             params1_train = qml.math.requires_grad(params1)
             params2_train = qml.math.requires_grad(params2)
             if params1_train != params2_train:
@@ -646,11 +647,11 @@ def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedE
         return False
 
     # check H.coeffs match
-    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs)):
+    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs, strict=True)):
         return False
 
     # check that all the base operators on op1.H and op2.H match
-    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops))
+    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops, strict=True))
 
 
 @_equal_dispatch.register
@@ -684,7 +685,10 @@ def _equal_measurements(
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
             if len(op1.mv) == len(op2.mv):
-                return all(mv1.measurements == mv2.measurements for mv1, mv2 in zip(op1.mv, op2.mv))
+                return all(
+                    mv1.measurements == mv2.measurements
+                    for mv1, mv2 in zip(op1.mv, op2.mv, strict=True)
+                )
 
         return False
 
@@ -740,7 +744,7 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
     if isinstance(op1.H, Operator) and isinstance(op2.H, Operator):
         H_match = equal(op1.H, op2.H)
     elif isinstance(op1.H, Iterable) and isinstance(op2.H, Iterable):
-        H_match = all(equal(o1, o2) for o1, o2 in zip(op1.H, op2.H))
+        H_match = all(equal(o1, o2) for o1, o2 in zip(op1.H, op2.H, strict=True))
     else:
         return False
 
@@ -764,17 +768,18 @@ def _equal_hilbert_schmidt(
     atol=1e-9,
 ):
     if not all(
-        qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
+        qml.math.allclose(d1, d2, rtol=rtol, atol=atol)
+        for d1, d2 in zip(op1.data, op2.data, strict=True)
     ):
         return False
 
     if check_trainability:
-        for params_1, params_2 in zip(op1.data, op2.data):
+        for params_1, params_2 in zip(op1.data, op2.data, strict=True):
             if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
                 return False
 
     if check_interface:
-        for params_1, params_2 in zip(op1.data, op2.data):
+        for params_1, params_2 in zip(op1.data, op2.data, strict=True):
             if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
 

@@ -644,7 +644,7 @@ class TestDiagonalizeMCMs:
         measurement = new_tape.operations[4]
 
         # conditional diagonalizing gate
-        for gate, expected_base in zip(diagonalizing_gates, base_diagonalizing_gates):
+        for gate, expected_base in zip(diagonalizing_gates, base_diagonalizing_gates, strict=True):
             assert isinstance(gate, qml.ops.Conditional)
             assert gate.base == expected_base
             assert gate.wires == original_tape.operations[2].wires

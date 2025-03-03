@@ -54,18 +54,27 @@ dev_ideal = qml.device("default.mixed", wires=2)
 
 def same_tape(tape1, tape2):
     """Raises an error if tapes are not identical"""
-    assert all(o1.name == o2.name for o1, o2 in zip(tape1.operations, tape2.operations))
-    assert all(o1.wires == o2.wires for o1, o2 in zip(tape1.operations, tape2.operations))
+    assert all(
+        o1.name == o2.name for o1, o2 in zip(tape1.operations, tape2.operations, strict=True)
+    )
+    assert all(
+        o1.wires == o2.wires for o1, o2 in zip(tape1.operations, tape2.operations, strict=True)
+    )
     assert all(
         np.allclose(o1.parameters, o2.parameters)
-        for o1, o2 in zip(tape1.operations, tape2.operations)
+        for o1, o2 in zip(tape1.operations, tape2.operations, strict=True)
     )
     assert len(tape1.measurements) == len(tape2.measurements)
     assert all(
-        m1._shortname == m2._shortname for m1, m2 in zip(tape1.measurements, tape2.measurements)
+        m1._shortname == m2._shortname
+        for m1, m2 in zip(tape1.measurements, tape2.measurements, strict=True)
     )
-    assert all(o1.name == o2.name for o1, o2 in zip(tape1.observables, tape2.observables))
-    assert all(o1.wires == o2.wires for o1, o2 in zip(tape1.observables, tape2.observables))
+    assert all(
+        o1.name == o2.name for o1, o2 in zip(tape1.observables, tape2.observables, strict=True)
+    )
+    assert all(
+        o1.wires == o2.wires for o1, o2 in zip(tape1.observables, tape2.observables, strict=True)
+    )
 
 
 class TestMitigateWithZNE:

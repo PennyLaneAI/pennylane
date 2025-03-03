@@ -204,14 +204,14 @@ class TestResourceTrotterProduct:
         },
     )
 
-    @pytest.mark.parametrize("op, expected_res", zip(op_data, resource_data))
+    @pytest.mark.parametrize("op, expected_res", zip(op_data, resource_data, strict=True))
     def test_resources(self, op, expected_res):
         """Test the resources method returns the correct dictionary"""
         op_rep = op.resource_rep_from_op()
         computed_res = op_rep.op_type.resources(**op_rep.params)
         assert computed_res == expected_res
 
-    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data))
+    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data, strict=True))
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
         assert op.resource_params() == expected_params
@@ -273,7 +273,9 @@ class TestResourceTrotterizedQfunc:
         },
     )
 
-    @pytest.mark.parametrize("op, expected_res", zip(trotterized_qfunc_op_data, resource_data))
+    @pytest.mark.parametrize(
+        "op, expected_res", zip(trotterized_qfunc_op_data, resource_data, strict=True)
+    )
     def test_resources(self, op, expected_res):
         """Test the resources method returns the correct dictionary"""
         op_rep = op.resource_rep_from_op()
@@ -281,7 +283,7 @@ class TestResourceTrotterizedQfunc:
         assert computed_res == expected_res
 
     @pytest.mark.parametrize(
-        "op, expected_params", zip(trotterized_qfunc_op_data, resource_params_data)
+        "op, expected_params", zip(trotterized_qfunc_op_data, resource_params_data, strict=True)
     )
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
@@ -309,6 +311,7 @@ class TestResourceTrotterizedQfunc:
             {"n": 10, "order": 4},
         ),
         trotterized_qfunc_op_data,
+        strict=True,
     ),
 )
 def test_resource_trotterize(qfunc, args_n_kwargs, hyperparams, expected_op):

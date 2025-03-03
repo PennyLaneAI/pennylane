@@ -154,7 +154,7 @@ class TestQubitization:
     )
 
     @pytest.mark.parametrize(
-        "op, params, expected_res", zip(op_data, resource_params_data, resource_data)
+        "op, params, expected_res", zip(op_data, resource_params_data, resource_data, strict=True)
     )
     def test_resources(self, op, params, expected_res):
         """Test the resources method returns the correct dictionary"""
@@ -164,7 +164,7 @@ class TestQubitization:
         assert res_from_op == expected_res
         assert res_from_func == expected_res
 
-    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data))
+    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data, strict=True))
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
         assert op.resource_params() == expected_params

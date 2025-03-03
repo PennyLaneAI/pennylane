@@ -20,7 +20,7 @@ from pennylane import Identity
 
 op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
 op_repr = ["I()", "I(0)", "I('a')", "I([0, 1])", "I(['a', 'b', 'c'])", "I([100, 'xasd', 12])"]
-op_params = tuple(zip(op_wires, op_repr))
+op_params = tuple(zip(op_wires, op_repr, strict=True))
 
 
 @pytest.mark.parametrize("wires", op_wires)

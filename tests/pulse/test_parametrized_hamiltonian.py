@@ -88,13 +88,15 @@ class TestInitialization:
     def test_H_fixed_lists(self):
         """Test that attributes H_fixed_ops and H_fixed_coeffs are as expected"""
         assert test_example.coeffs_fixed == [1, 2]
-        for op1, op2 in zip(test_example.ops_fixed, [qml.PauliX(0), qml.PauliY(1)]):
+        for op1, op2 in zip(test_example.ops_fixed, [qml.PauliX(0), qml.PauliY(1)], strict=True):
             qml.assert_equal(op1, op2)
 
     def test_H_parametrized_lists(self):
         """Test that attributes H_parametrized_ops and H_parametrized_coeffs are as expected"""
         assert test_example.coeffs_parametrized == [f1, f2]
-        for op1, op2 in zip(test_example.ops_parametrized, [qml.PauliZ(2), qml.Hadamard(3)]):
+        for op1, op2 in zip(
+            test_example.ops_parametrized, [qml.PauliZ(2), qml.Hadamard(3)], strict=True
+        ):
             qml.assert_equal(op1, op2)
 
     def test_H_fixed(self):
@@ -385,7 +387,9 @@ class TestProperties:
     def test_ops(self):
         """Test stored operator list"""
         ops = test_example.ops
-        for op1, op2 in zip(ops, [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)]):
+        for op1, op2 in zip(
+            ops, [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)], strict=True
+        ):
             qml.assert_equal(op1, op2)
 
     def test_coeffs(self):

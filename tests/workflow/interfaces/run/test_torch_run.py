@@ -153,7 +153,7 @@ class TestTorchRun:
             assert res[0].shape == (4,)
             assert res[1].shape == (4,)
 
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=True):
                 assert torch.allclose(_r[:2], _e, atol=atol_for_shots(shots))
                 assert torch.allclose(_r[2:], _e, atol=atol_for_shots(shots))
 
@@ -161,5 +161,5 @@ class TestTorchRun:
             assert res[0].shape == (2,)
             assert res[1].shape == (2,)
 
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=True):
                 assert torch.allclose(_r, _e, atol=atol_for_shots(shots))

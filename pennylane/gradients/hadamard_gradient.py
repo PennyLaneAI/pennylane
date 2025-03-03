@@ -374,7 +374,7 @@ def processing_fn(results: qml.typing.ResultBatch, tape, coeffs, generators_per_
     """Post processing function for computing a hadamard gradient."""
 
     final_res = []
-    for coeff, res in zip(coeffs, results):
+    for coeff, res in zip(coeffs, results, strict=True):
         if not isinstance(res, (tuple, list)):
             res = [res]  # add singleton dimension back in for one measurement
         final_res.append([qml.math.convert_like(2 * coeff * r, r) for r in res])
@@ -402,7 +402,7 @@ def processing_fn(results: qml.typing.ResultBatch, tape, coeffs, generators_per_
     results = iter(final_res)
     for num_generators in generators_per_parameter:
         if num_generators == 0:
-            for g_for_parameter, mp in zip(grads, mps):
+            for g_for_parameter, mp in zip(grads, mps, strict=True):
                 zeros_like_mp = np.zeros(
                     mp.shape(num_device_wires=len(tape.wires)), dtype=mp.numeric_type
                 )
@@ -410,7 +410,7 @@ def processing_fn(results: qml.typing.ResultBatch, tape, coeffs, generators_per_
         else:
             sub_results = islice(results, num_generators)  # take the next number of results
             # sum over batch, iterate over measurements
-            summed_sub_results = (sum(r) for r in zip(*sub_results))
+            summed_sub_results = (sum(r) for r in zip(*sub_results, strict=True))
 
             for g_for_parameter, r in zip(grads, summed_sub_results, strict=True):
                 g_for_parameter.append(r)

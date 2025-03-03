@@ -210,7 +210,7 @@ class TestPauliDecompose:
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 e = e.pauli_rep
                 e.simplify()
                 assert isinstance(_op, PauliSentence)
@@ -218,7 +218,7 @@ class TestPauliDecompose:
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 assert isinstance(_op, qml.operation.Operator)
                 assert qml.equal(_op, e)
 
@@ -278,7 +278,7 @@ class TestPauliDecompose:
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 e = e.pauli_rep
                 e.simplify()
                 assert isinstance(_op, PauliSentence)
@@ -286,7 +286,7 @@ class TestPauliDecompose:
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 assert isinstance(_op, qml.operation.Operator)
                 assert qml.equal(_op, e)
 
@@ -374,7 +374,9 @@ class TestChangeBasisAdRep:
         dla = [qml.X(0), qml.Y(0), qml.Z(0)]
         adj = qml.structure_constants(dla)
         coeffs = np.random.random((len(dla), len(dla)))
-        skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_dla = [
+            qml.sum(*(c * op for c, op in zip(_coeffs, dla, strict=True))) for _coeffs in coeffs
+        ]
         skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
 
         basis_change = op_to_adjvec(skewed_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
@@ -388,7 +390,9 @@ class TestChangeBasisAdRep:
 
         adj = qml.structure_constants(dla, is_orthogonal=False)
         coeffs = np.random.random((len(dla), len(dla)))
-        skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_dla = [
+            qml.sum(*(c * op for c, op in zip(_coeffs, dla, strict=True))) for _coeffs in coeffs
+        ]
         skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
 
         basis_change = op_to_adjvec(skewed_dla, ortho_dla) @ np.linalg.pinv(
@@ -403,7 +407,9 @@ class TestChangeBasisAdRep:
         dla = qml.lie_closure(ops)
         adj = qml.structure_constants(dla)
         coeffs = np.random.random((len(dla), len(dla)))
-        skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_dla = [
+            qml.sum(*(c * op for c, op in zip(_coeffs, dla, strict=True))) for _coeffs in coeffs
+        ]
         skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
 
         basis_change = op_to_adjvec(skewed_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
@@ -416,11 +422,16 @@ class TestChangeBasisAdRep:
         ortho_dla = qml.lie_closure(ops)  # only used to create adj rep.
 
         coeffs = np.random.random((len(ortho_dla), len(ortho_dla)))
-        dla = [qml.sum(*(c * op for c, op in zip(_coeffs, ortho_dla))) for _coeffs in coeffs]
+        dla = [
+            qml.sum(*(c * op for c, op in zip(_coeffs, ortho_dla, strict=True)))
+            for _coeffs in coeffs
+        ]
         adj = qml.structure_constants(dla, is_orthogonal=False)
 
         coeffs = np.random.random((len(dla), len(dla)))
-        skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_dla = [
+            qml.sum(*(c * op for c, op in zip(_coeffs, dla, strict=True))) for _coeffs in coeffs
+        ]
         skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
 
         basis_change = op_to_adjvec(skewed_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
@@ -500,14 +511,14 @@ class TestAdjvecToOp:
     def test_with_ps(self, adj_vecs, basis, expected, is_ortho):
         """Test ``adjvec_to_op`` with a basis of ``PauliSentence`` operators."""
         out = adjvec_to_op(adj_vecs, basis, is_orthogonal=False)
-        for out_op, exp_op in zip(out, expected):
+        for out_op, exp_op in zip(out, expected, strict=True):
             assert isinstance(out_op, PauliSentence)
             assert all(c.dtype == np.float64 for c in out_op.values())
             assert set(out_op) == set(exp_op)
             assert all(np.isclose(out_op[k], exp_op[k]) for k in out_op)
         if is_ortho:
             out = adjvec_to_op(adj_vecs, basis, is_orthogonal=True)
-            for out_op, exp_op in zip(out, expected):
+            for out_op, exp_op in zip(out, expected, strict=True):
                 assert isinstance(out_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in out_op.values())
                 assert set(out_op) == set(exp_op)
@@ -517,11 +528,11 @@ class TestAdjvecToOp:
     def test_with_op(self, adj_vecs, basis, expected, is_ortho):
         """Test ``adjvec_to_op`` with a basis of ``Operator`` operators."""
         out = adjvec_to_op(adj_vecs, basis, is_orthogonal=False)
-        for out_op, exp_op in zip(out, expected):
+        for out_op, exp_op in zip(out, expected, strict=True):
             assert qml.equal(out_op.simplify(), exp_op.simplify())
         if is_ortho:
             out = adjvec_to_op(adj_vecs, basis, is_orthogonal=True)
-            for out_op, exp_op in zip(out, expected):
+            for out_op, exp_op in zip(out, expected, strict=True):
                 assert qml.equal(out_op.simplify(), exp_op.simplify())
 
     @pytest.mark.parametrize("adj_vecs, basis, expected, is_ortho", dense_test_cases)

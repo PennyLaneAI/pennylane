@@ -244,7 +244,7 @@ class TestStateBackward:
         # support complex differentiation
         actual = qml.jacobian(lambda x: qml.math.real(qml.math.stack(shadow_circuit(x))))(x)
 
-        for act, w in zip(qml.math.unstack(actual), sub_wires):
+        for act, w in zip(qml.math.unstack(actual), sub_wires, strict=True):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "autograd")
             expected = qml.jacobian(lambda x: qml.math.real(exact_circuit(x)))(x)
 
@@ -265,7 +265,7 @@ class TestStateBackward:
         x = jnp.array(self.x)
         actual = jax.jacobian(lambda x: qml.math.real(qml.math.stack(shadow_circuit(x))))(x)
 
-        for act, w in zip(qml.math.unstack(actual), sub_wires):
+        for act, w in zip(qml.math.unstack(actual), sub_wires, strict=True):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "jax")
             expected = jax.jacobian(lambda x: qml.math.real(exact_circuit(x)))(x)
 
@@ -288,7 +288,7 @@ class TestStateBackward:
 
         actual = tape.jacobian(out, x)
 
-        for act, w in zip(qml.math.unstack(actual), sub_wires):
+        for act, w in zip(qml.math.unstack(actual), sub_wires, strict=True):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "tf")
 
             with tf.GradientTape() as tape2:
@@ -313,7 +313,7 @@ class TestStateBackward:
 
         actual = torch.autograd.functional.jacobian(lambda x: qml.math.stack(shadow_circuit(x)), x)
 
-        for act, w in zip(qml.math.unstack(actual), sub_wires):
+        for act, w in zip(qml.math.unstack(actual), sub_wires, strict=True):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "torch")
             expected = torch.autograd.functional.jacobian(exact_circuit, x)
 

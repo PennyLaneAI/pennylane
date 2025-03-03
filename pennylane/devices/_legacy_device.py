@@ -346,7 +346,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         consecutive_wires = Wires(range(self.num_wires))
 
-        wire_map = zip(wires, consecutive_wires)
+        wire_map = zip(wires, consecutive_wires, strict=True)
         return OrderedDict(wire_map)
 
     def order_wires(self, subset_wires):

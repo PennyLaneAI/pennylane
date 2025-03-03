@@ -505,5 +505,9 @@ class TestCliffordCompile:
             igrads.append([grad_numpy, grad_jax, grad_torch, grad_tflow])
 
         # Compare results
-        assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
-        assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads))
+        assert all(
+            qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres, strict=True)
+        )
+        assert all(
+            qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads, strict=True)
+        )

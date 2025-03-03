@@ -189,7 +189,7 @@ class OutMultiplier(Operation):
             wires_list.append(work_wires)
             wires_name.append("work_wires")
 
-        for name, wires in zip(wires_name, wires_list):
+        for name, wires in zip(wires_name, wires_list, strict=True):
             self.hyperparameters[name] = qml.wires.Wires(wires)
         self.hyperparameters["mod"] = mod
 

@@ -115,7 +115,9 @@ logger.addHandler(logging.NullHandler())
 
 def set_parameters_on_copy(tapes, params):
     """Copy a set of tapes with operations and set parameters"""
-    return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
+    return tuple(
+        t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params, strict=True)
+    )
 
 
 def _get_parameters_dtype(parameters):
