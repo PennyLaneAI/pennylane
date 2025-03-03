@@ -39,7 +39,6 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
         return None, None
 
     # pylint: disable=redefined-outer-name
-
     class CommuteControlledInterpreter(PlxprInterpreter):
         """Plxpr Interpreter for applying the ``commute_controlled`` transform to callables or jaxpr
         when program capture is enabled.
@@ -57,7 +56,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             current default value of the transform.
         """
 
-        def __init__(self, direction: Optional[str] = "right"):
+        def __init__(self, direction="right"):
             """Initialize the interpreter."""
 
             if direction not in ("left", "right"):
@@ -67,10 +66,6 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             self.op_deque = deque()
             self._env = {}
             self.current_index = 0
-
-        def setup(self) -> None:
-            """Initialize the instance before interpreting equations."""
-            self.op_deque.clear()
 
         def cleanup(self) -> None:
             """Clean up the instance after interpreting equations."""
@@ -90,7 +85,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             new_index = self.current_index
 
             while prev_gate_idx is not None:
-                prev_gate = self.op_deque[new_index - prev_gate_idx - 1]
+                prev_gate = self.op_deque[new_index - (prev_gate_idx + 1)]
 
                 if not _can_push_through(prev_gate):
                     break
