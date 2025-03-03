@@ -32,19 +32,19 @@ class TestIdentity:
     def test_resource_rep(self):
         """Test the compressed representation"""
         expected = re.CompressedResourceOp(re.ResourceIdentity, {})
-        assert re.ResourceIdentity.make_resource_rep() == expected
+        assert re.ResourceIdentity.resource_rep() == expected
 
     def test_resource_params(self):
         """Test the resource params are correct"""
         op = re.ResourceIdentity(0)
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
         op = re.ResourceIdentity()
         expected = {}
 
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -53,15 +53,13 @@ class TestIdentity:
         """Test that the adjoint resources are as expected"""
         op = re.ResourceIdentity(0)
         op2 = re.ResourceAdjoint(op)
-        assert op.adjoint_resource_decomp() == {re.ResourceIdentity.make_resource_rep(): 1}
-        assert op2.resources(**op2.resource_params()) == {
-            re.ResourceIdentity.make_resource_rep(): 1
-        }
+        assert op.adjoint_resource_decomp() == {re.ResourceIdentity.resource_rep(): 1}
+        assert op2.resources(**op2.resource_params) == {re.ResourceIdentity.resource_rep(): 1}
 
     identity_ctrl_data = (
-        ([1], [1], [], {re.ResourceIdentity.make_resource_rep(): 1}),
-        ([1, 2], [1, 1], ["w1"], {re.ResourceIdentity.make_resource_rep(): 1}),
-        ([1, 2, 3], [1, 0, 0], ["w1", "w2"], {re.ResourceIdentity.make_resource_rep(): 1}),
+        ([1], [1], [], {re.ResourceIdentity.resource_rep(): 1}),
+        ([1, 2], [1, 1], ["w1"], {re.ResourceIdentity.resource_rep(): 1}),
+        ([1, 2, 3], [1, 0, 0], ["w1", "w2"], {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize(
@@ -82,12 +80,12 @@ class TestIdentity:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     identity_pow_data = (
-        (1, {re.ResourceIdentity.make_resource_rep(): 1}),
-        (2, {re.ResourceIdentity.make_resource_rep(): 1}),
-        (5, {re.ResourceIdentity.make_resource_rep(): 1}),
+        (1, {re.ResourceIdentity.resource_rep(): 1}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
+        (5, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", identity_pow_data)
@@ -97,7 +95,7 @@ class TestIdentity:
         assert op.pow_resource_decomp(z) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestGlobalPhase:
@@ -111,19 +109,19 @@ class TestGlobalPhase:
     def test_resource_rep(self):
         """Test the compressed representation"""
         expected = re.CompressedResourceOp(re.ResourceGlobalPhase, {})
-        assert re.ResourceGlobalPhase.make_resource_rep() == expected
+        assert re.ResourceGlobalPhase.resource_rep() == expected
 
     def test_resource_params(self):
         """Test the resource params are correct"""
         op = re.ResourceGlobalPhase(0.1, wires=0)
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
         op = re.ResourceGlobalPhase(0.1, wires=0)
         expected = {}
 
-        op_compressed_rep = op.resource_rep()
+        op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
@@ -132,20 +130,18 @@ class TestGlobalPhase:
         """Test that the adjoint resources are as expected"""
         op = re.ResourceGlobalPhase(0.1, wires=0)
         op2 = re.ResourceAdjoint(op)
-        assert op.adjoint_resource_decomp() == {re.ResourceGlobalPhase.make_resource_rep(): 1}
-        assert op2.resources(**op2.resource_params()) == {
-            re.ResourceGlobalPhase.make_resource_rep(): 1
-        }
+        assert op.adjoint_resource_decomp() == {re.ResourceGlobalPhase.resource_rep(): 1}
+        assert op2.resources(**op2.resource_params) == {re.ResourceGlobalPhase.resource_rep(): 1}
 
     globalphase_ctrl_data = (
-        ([1], [1], [], {re.ResourcePhaseShift.make_resource_rep(): 1}),
+        ([1], [1], [], {re.ResourcePhaseShift.resource_rep(): 1}),
         (
             [1, 2],
             [1, 1],
             ["w1"],
             {
-                re.ResourcePhaseShift.make_resource_rep(): 1,
-                re.ResourceMultiControlledX.make_resource_rep(2, 0, 1): 2,
+                re.ResourcePhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
             },
         ),
         (
@@ -153,8 +149,8 @@ class TestGlobalPhase:
             [1, 0, 0],
             ["w1", "w2"],
             {
-                re.ResourcePhaseShift.make_resource_rep(): 1,
-                re.ResourceMultiControlledX.make_resource_rep(3, 2, 2): 2,
+                re.ResourcePhaseShift.resource_rep(): 1,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
             },
         ),
     )
@@ -177,12 +173,12 @@ class TestGlobalPhase:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     globalphase_pow_data = (
-        (1, {re.ResourceGlobalPhase.make_resource_rep(): 1}),
-        (2, {re.ResourceGlobalPhase.make_resource_rep(): 1}),
-        (5, {re.ResourceGlobalPhase.make_resource_rep(): 1}),
+        (1, {re.ResourceGlobalPhase.resource_rep(): 1}),
+        (2, {re.ResourceGlobalPhase.resource_rep(): 1}),
+        (5, {re.ResourceGlobalPhase.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", globalphase_pow_data)
@@ -192,4 +188,4 @@ class TestGlobalPhase:
         assert op.pow_resource_decomp(z) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res

@@ -33,14 +33,14 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        t_dag = re.ResourceAdjoint.make_resource_rep(re.ResourceT, {})
-        h = re.ResourceHadamard.make_resource_rep()
-        s = re.ResourceS.make_resource_rep()
-        s_dag = re.ResourceAdjoint.make_resource_rep(re.ResourceS, {})
-        cnot = re.ResourceCNOT.make_resource_rep()
-        rz = re.ResourceRZ.make_resource_rep()
-        ry = re.ResourceRY.make_resource_rep()
-        t = re.ResourceT.make_resource_rep()
+        t_dag = re.ResourceAdjoint.resource_rep(re.ResourceT, {})
+        h = re.ResourceHadamard.resource_rep()
+        s = re.ResourceS.resource_rep()
+        s_dag = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
+        cnot = re.ResourceCNOT.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
+        ry = re.ResourceRY.resource_rep()
+        t = re.ResourceT.resource_rep()
 
         gate_types = {}
         gate_types[t_dag] = 2
@@ -59,7 +59,7 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
         return {}
 
     @classmethod
-    def make_resource_rep(cls):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -86,10 +86,10 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        x = re.ResourceX.make_resource_rep()
-        ctrl_phase_shift = re.ResourceControlledPhaseShift.make_resource_rep()
-        cnot = re.ResourceCNOT.make_resource_rep()
-        cry = re.ResourceCRY.make_resource_rep()
+        x = re.ResourceX.resource_rep()
+        ctrl_phase_shift = re.ResourceControlledPhaseShift.resource_rep()
+        cnot = re.ResourceCNOT.resource_rep()
+        cry = re.ResourceCRY.resource_rep()
 
         gate_types = {}
         gate_types[x] = 4
@@ -104,7 +104,7 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
         return {}
 
     @classmethod
-    def make_resource_rep(cls):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -131,10 +131,10 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        x = re.ResourceX.make_resource_rep()
-        ctrl_phase_shift = re.ResourceControlledPhaseShift.make_resource_rep()
-        cnot = re.ResourceCNOT.make_resource_rep()
-        cry = re.ResourceCRY.make_resource_rep()
+        x = re.ResourceX.resource_rep()
+        ctrl_phase_shift = re.ResourceControlledPhaseShift.resource_rep()
+        cnot = re.ResourceCNOT.resource_rep()
+        cry = re.ResourceCRY.resource_rep()
 
         gate_types = {}
         gate_types[x] = 4
@@ -149,7 +149,7 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
         return {}
 
     @classmethod
-    def make_resource_rep(cls):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -179,9 +179,9 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        h = re.ResourceHadamard.make_resource_rep()
-        ry = re.ResourceRY.make_resource_rep()
-        cnot = re.ResourceCNOT.make_resource_rep()
+        h = re.ResourceHadamard.resource_rep()
+        ry = re.ResourceRY.resource_rep()
+        cnot = re.ResourceCNOT.resource_rep()
 
         gate_types = {}
         gate_types[h] = 6
@@ -195,7 +195,7 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
         return {}
 
     @classmethod
-    def make_resource_rep(cls):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -215,10 +215,10 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        phase = re.ResourceGlobalPhase.make_resource_rep()
-        double = re.ResourceDoubleExcitation.make_resource_rep()
-        ctrl_z = re.ResourceControlled.make_resource_rep(re.ResourceZ, {}, 3, 1, 0)
-        ctrl_phase = re.ResourceControlled.make_resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0)
+        phase = re.ResourceGlobalPhase.resource_rep()
+        double = re.ResourceDoubleExcitation.resource_rep()
+        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
+        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0)
 
         gate_types = {}
         gate_types[phase] = 1
@@ -233,7 +233,7 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
         return {}
 
     @classmethod
-    def make_resource_rep(cls):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -252,10 +252,10 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        phase = re.ResourceGlobalPhase.make_resource_rep()
-        double = re.ResourceDoubleExcitation.make_resource_rep()
-        ctrl_z = re.ResourceControlled.make_resource_rep(re.ResourceZ, {}, 3, 1, 0)
-        ctrl_phase = re.ResourceControlled.make_resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0)
+        phase = re.ResourceGlobalPhase.resource_rep()
+        double = re.ResourceDoubleExcitation.resource_rep()
+        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
+        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0)
 
         gate_types = {}
         gate_types[phase] = 1
@@ -270,7 +270,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
         return {}
 
     @classmethod
-    def make_resource_rep(cls):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -287,8 +287,8 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        fermionic_swap = re.ResourceFermionicSWAP.make_resource_rep()
-        single_excitation = re.ResourceSingleExcitation.make_resource_rep()
+        fermionic_swap = re.ResourceFermionicSWAP.resource_rep()
+        single_excitation = re.ResourceSingleExcitation.resource_rep()
 
         gate_types = {}
         gate_types[fermionic_swap] = 2
@@ -301,7 +301,7 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
         return {}
 
     @classmethod
-    def make_resource_rep(cls):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -328,11 +328,11 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        h = re.ResourceHadamard.make_resource_rep()
-        multi_rz = re.ResourceMultiRZ.make_resource_rep(num_wires=2)
-        rx = re.ResourceRX.make_resource_rep()
-        rz = re.ResourceRZ.make_resource_rep()
-        phase = re.ResourceGlobalPhase.make_resource_rep()
+        h = re.ResourceHadamard.resource_rep()
+        multi_rz = re.ResourceMultiRZ.resource_rep(num_wires=2)
+        rx = re.ResourceRX.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
+        phase = re.ResourceGlobalPhase.resource_rep()
 
         gate_types = {}
         gate_types[h] = 4
@@ -348,5 +348,5 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
         return {}
 
     @classmethod
-    def make_resource_rep(cls):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})

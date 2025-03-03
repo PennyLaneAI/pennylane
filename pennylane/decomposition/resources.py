@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+import pennylane as qml
+
 
 @dataclass(frozen=True)
 class Resources:
@@ -31,6 +33,11 @@ class Resources:
 
     num_gates: int = 0
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
+
+    def __post_init__(self):
+        """Verify that the gate counts and the number of gates are consistent."""
+        assert all(v > 0 for v in self.gate_counts.values())
+        assert self.num_gates == sum(self.gate_counts.values())
 
     def __add__(self, other: Resources):
         return Resources(
@@ -86,6 +93,10 @@ class CompressedResourceOp:
     """
 
     def __init__(self, op_type, params: dict = None):
+        if not isinstance(op_type, type):
+            raise TypeError(f"op_type must be a type, got {op_type}")
+        if not issubclass(op_type, qml.operation.Operator):
+            raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
@@ -106,3 +117,37 @@ class CompressedResourceOp:
 
 def _make_hashable(d) -> tuple:
     return tuple((k, _make_hashable(v)) for k, v in d.items()) if isinstance(d, dict) else d
+
+
+def resource_rep(op_type, **kwargs) -> CompressedResourceOp:
+    """Creates a ``CompressedResourceOp`` representation of an operator.
+
+    When defining the resource function associated with a decomposition rule. The keys of the
+    returned dictionary should be created using this function. The resource rep of an operator
+    is a lightweight data structure containing the minimal information needed to determine the
+    resource estimate of a decomposition.
+
+    Args:
+        op_type: the operator type
+        **kwargs: parameters that are relevant to the resource estimation of the operator's
+            decompositions. This should be consistent with ``op_type.resource_param_keys``.
+
+    """
+    if not issubclass(op_type, qml.operation.Operator):
+        raise TypeError(f"op_type must be a type of Operator, got {op_type}")
+    try:
+        missing_params = set(op_type.resource_param_keys) - set(kwargs.keys())
+        if missing_params:
+            raise TypeError(
+                f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
+                f"Expected: {op_type.resource_param_keys}"
+            )
+        invalid_params = set(kwargs.keys()) - set(op_type.resource_param_keys)
+        if invalid_params:
+            raise TypeError(
+                f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
+                f"Expected: {op_type.resource_param_keys}"
+            )
+    except NotImplementedError as e:
+        raise NotImplementedError(f"resource_param_keys undefined for {op_type.__name__}") from e
+    return CompressedResourceOp(op_type, kwargs)

@@ -181,7 +181,7 @@ class ControlledQubitUnitary(ControlledOp):
         if hasattr(base, "wires"):
             warnings.warn(
                 "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Instead, please use a full matrix as input.",
+                "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
                 qml.PennyLaneDeprecationWarning,
             )
             base = base.matrix()
@@ -881,6 +881,8 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CNOT"
 
     def _flatten(self):
@@ -925,6 +927,10 @@ class CNOT(ControlledOp):
             qml.DecompositionUndefinedError
         """
         raise qml.operation.DecompositionUndefinedError
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
