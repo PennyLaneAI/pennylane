@@ -143,13 +143,13 @@ class TestCommuteControlledInterpreter:
 
         @CommuteControlledInterpreter(direction="left")
         def circuit():
+            qml.CNOT(wires=[0, 2])
             qml.PauliX(wires=2)
             qml.RX(0.2, wires=2)
-            qml.CNOT(wires=[0, 2])
             qml.Toffoli(wires=[0, 1, 2])
+            qml.CRX(0.1, wires=[0, 1])
             qml.SX(wires=1)
             qml.PauliX(wires=1)
-            qml.CRX(0.1, wires=[0, 1])
 
         jaxpr = jax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 7
@@ -409,10 +409,9 @@ class TestCommuteControlledInterpreter:
             ),
         ],
     )
-    def test_push_mixed_with_matrix(self, direction, expected_ops):
+    def test_push_mixed(self, direction, expected_ops):
         """Test that arbitrary gates after controlled gates on controls *and*
         targets get properly pushed."""
-        # pylint:disable=too-many-function-args
 
         @CommuteControlledInterpreter(direction=direction)
         def circuit():
