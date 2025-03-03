@@ -145,7 +145,8 @@ class QubitUnitary(Operation):
             )
 
         # If the matrix is sparse, we need to convert it to a csr_matrix
-        if sp.sparse.issparse(U):
+        self._issparse = sp.sparse.issparse(U)
+        if self._issparse:
             U = U.tocsr()
 
         # Check for unitarity; due to variable precision across the different ML frameworks,
