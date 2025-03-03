@@ -682,7 +682,7 @@ class TestY:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     def test_adjoint_decomposition(self):
         """Test that the adjoint resources are correct."""
@@ -710,7 +710,7 @@ class TestY:
         assert op.pow_resource_decomp(z) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestZ:
@@ -726,7 +726,7 @@ class TestZ:
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = re.ResourceZ(0)
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
@@ -798,7 +798,7 @@ class TestZ:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     def test_adjoint_decomposition(self):
         """Test that the adjoint resources are correct."""
@@ -826,4 +826,4 @@ class TestZ:
         assert op.pow_resource_decomp(z) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res

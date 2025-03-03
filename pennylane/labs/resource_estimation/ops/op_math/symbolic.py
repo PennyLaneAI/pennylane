@@ -181,7 +181,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
-            "base_params": self.base.resource_params(),
+            "base_params": self.base.resource_params,
             "z": self.z,
         }
 
@@ -230,6 +230,7 @@ class ResourceExp(Exp, re.ResourceOperator):
 
         raise re.ResourcesNotDefined
 
+    @property
     def resource_params(self):
         return _extract_exp_params(self.base, self.scalar, self.num_steps)
 
@@ -281,6 +282,7 @@ class ResourceProd(Prod, re.ResourceOperator):
             res[factor] += 1
         return res
 
+    @property
     def resource_params(self) -> Dict:
         try:
             cmpr_factors = tuple(factor.resource_rep_from_op() for factor in self.operands)
@@ -306,7 +308,7 @@ def _extract_exp_params(base_op, scalar, num_steps):
         )
 
     base_class = type(base_op)
-    base_params = base_op.resource_params() if isinstance_resource_op else {}
+    base_params = base_op.resource_params if isinstance_resource_op else {}
 
     return {
         "base_class": base_class,
