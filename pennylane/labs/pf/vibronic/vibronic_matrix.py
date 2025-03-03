@@ -11,7 +11,7 @@ import scipy as sp
 
 from pennylane.labs.pf import Fragment
 from pennylane.labs.pf.realspace import RealspaceSum
-from pennylane.labs.pf.utils import _kron, _zeros, is_pow_2
+from pennylane.labs.pf.utils import _kron, _zeros, is_pow_2, next_pow_2
 from pennylane.labs.pf.wavefunctions import HOState, VibronicHO
 
 
@@ -65,17 +65,18 @@ class VibronicMatrix(Fragment):
         self, gridpoints: int, sparse: bool = False
     ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
         """Returns a sparse matrix representing the operator discretized on the given number of gridpoints"""
-        dim = self.states * gridpoints**self.modes
+        pow2 = next_pow_2(self.states)
+        dim = pow2 * gridpoints**self.modes
+        shape=(pow2, pow2)
         matrix = _zeros((dim, dim), sparse=sparse)
 
         for index, rs_sum in self._blocks.items():
             if sparse:
                 data = np.array([1])
                 indices = (np.array([index[0]]), np.array([index[1]]))
-                shape = (self.states, self.states)
                 indicator = sp.sparse.csr_matrix((data, indices), shape=shape)
             else:
-                indicator = np.zeros(shape=(self.states, self.states))
+                indicator = np.zeros(shape=shape)
                 indicator[index] = 1
 
             block = rs_sum.matrix(gridpoints, self.modes, basis="realspace", sparse=sparse)
