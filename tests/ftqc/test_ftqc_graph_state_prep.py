@@ -50,11 +50,12 @@ class TestGraphStatePrep:
         op = GraphStatePrep(qubit_graph=q)
         queue = op.decomposition()
         assert len(queue) == 20  # 8 ops for |0> -> |+> and 12 ops to entangle nearest qubits
-        for idx, op in enumerate(queue):
-            assert op.name == "Hadamard" if idx < len(lattice.nodes) else op.name == "CZ"
+        for op in queue[:8]:
+            assert isinstance(op, qml.H)
             assert isinstance(op.wires[0], QubitGraph)
-            if idx >= len(lattice.nodes):
-                assert isinstance(op.wires[1], QubitGraph)
+        for op in queue[8:]:
+            assert isinstance(op, qml.CZ)
+            assert all(isinstance(w, QubitGraph) for w in op.wires))
 
     def test_preprocess_decompose(self):
         """Test if pennylane.transforms.decompose work with the GraphStatePrep class."""
