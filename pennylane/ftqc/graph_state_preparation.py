@@ -30,26 +30,19 @@ class GraphStatePrep(Operation):
     2. Entangle every nearest qubit pair in the graph with `entanglement_ops` (`CZ` gate) operation.
 
     Args:
-        lattice (Lattice): Graph representation of qubits connectivity.
-        wires (QubitGraph): QubitGraph object mapping qubit to wires.
+        qubit_graph (QubitGraph): QubitGraph object mapping qubit to wires.
         qubit_ops (Operations): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
         entanglement_ops (Operations): Operator to entangle nearest qubits. Default as ``qml.CZ``.
     """
 
     def __init__(
         self,
-        lattice: Lattice,
-        wires: list[QubitGraph],
+        qubit_graph: QubitGraph,
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
     ):
-        if len(lattice.nodes) != len(wires):
-            raise ValueError(
-                f"The number of vertices in the lattice is : {len(lattice.get_nodes)} and does not match the number of wires {len(wires)}"
-            )
 
-        self.hyperparameters["lattice"] = lattice
-        self.hyperparameters["wires"] = wires
+        self.hyperparameters["qubit_graph"] = qubit_graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
 
@@ -63,8 +56,7 @@ class GraphStatePrep(Operation):
 
     @staticmethod
     def compute_decomposition(
-        lattice: Lattice,
-        wires: list[QubitGraph],
+        qubit_graph: QubitGraph,
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
     ):
@@ -77,8 +69,7 @@ class GraphStatePrep(Operation):
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
-            lattice (Lattice): An instance of Lattice represents the connectivity of qubits.
-            wires (list[QubitGraph]): QubitGraph object mapping qubit to wires.
+            qubit_graph (QubitGraph): QubitGraph object mapping qubit to wires.
             qubit_ops (Operations): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
             entanglement_ops (Operations): Operator to entangle nearest qubits. Default as ``qml.CZ``.
 
@@ -89,11 +80,11 @@ class GraphStatePrep(Operation):
         op_list = []
         # Add qubit_ops to the queue
         # traverse the nodes in the qubit graph
-        for v in lattice.graph:
-            op_list.append(qubit_ops(wires[v]))
+        for v in qubit_graph.graph:
+            op_list.append(qubit_ops(qubit_graph[v]))
 
         # Add entanglement_ops to the queue
         # traverse the edges in the qubit graph
-        for v0, v1 in lattice.edges:
-            op_list.append(entanglement_ops(wires[v0], wires[v1]))
+        for v0, v1 in qubit_graph.edges:
+            op_list.append(entanglement_ops(qubit_graph[v0], qubit_graph[v1]))
         return op_list

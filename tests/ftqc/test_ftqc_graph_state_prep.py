@@ -18,21 +18,21 @@ import networkx as nx
 import pytest
 
 import pennylane as qml
+from pennylane.ftqc import GraphStatePrep, Lattice, QubitGraph, generate_lattice
 
-from pennylane.ftqc import Lattice, generate_lattice, GraphStatePrep, QubitGraph
 
 class TestGraphStatePrep:
     """Test for graph state prep"""
 
     def test_circuit_accept_graph_state_prep(self):
-        lattice = generate_lattice([2,2], "square")
-        q = []
-        for i in range(len(lattice.nodes)):
-            q.append(QubitGraph(i))
+        lattice = generate_lattice([2, 2], "square")
+        q = QubitGraph("test", lattice.graph)
         dev = qml.device("default.qubit")
+
         @qml.qnode(dev)
         def circuit(lattice, q):
             GraphStatePrep(lattice, q)
             return qml.probs()
+
         circuit(lattice, q)
         assert True
