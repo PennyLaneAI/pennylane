@@ -10,7 +10,7 @@ botocore==1.34.46
 certifi==2023.11.17
 chardet==5.2.0
 click==8.1.6
-cloud-init==24.3.1
+cloud-init==24.4
 colorama==0.4.6
 command-not-found==0.3
 configobj==5.0.8
@@ -54,7 +54,7 @@ pyparsing==3.1.1
 pyparted==3.12.0
 pyrsistent==0.20.0
 pyserial==3.5
-python-apt==2.7.7+ubuntu3
+python-apt==2.7.7+ubuntu4
 python-dateutil==2.8.2
 python-debian==0.1.49+ubuntu2
 python-magic==0.4.27
