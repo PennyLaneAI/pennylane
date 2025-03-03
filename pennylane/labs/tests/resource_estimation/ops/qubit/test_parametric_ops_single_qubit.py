@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -117,14 +117,14 @@ class TestPauliRotation:
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
-    @pytest.mark.parametrize("z", list(range(10)))
+    @pytest.mark.parametrize("z", list(range(0, 10)))
     def test_pow_decomposition(self, resource_class, epsilon, z):
         """Test that the pow decompositions are correct."""
 
-        expected = {resource_class.resource_rep(): 1}
+        expected = {resource_class.resource_rep(): 1} if z else {}
         assert resource_class.pow_resource_decomp(z) == expected
 
-        op = resource_class(1.24, wires=0)
+        op = resource_class(1.24, wires=0) if z else re.ResourceIdentity(wires=0)
         dag = re.ResourcePow(op, z)
 
         label = "error_" + resource_class.__name__.replace("Resource", "").lower()
@@ -313,6 +313,7 @@ class TestRot:
         assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
+        (0, {}),
         (1, {re.ResourceRot.resource_rep(): 1}),
         (2, {re.ResourceRot.resource_rep(): 1}),
         (5, {re.ResourceRot.resource_rep(): 1}),
@@ -428,6 +429,7 @@ class TestPhaseShift:
         assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
+        (0, {}),
         (1, {re.ResourcePhaseShift.resource_rep(): 1}),
         (2, {re.ResourcePhaseShift.resource_rep(): 1}),
         (5, {re.ResourcePhaseShift.resource_rep(): 1}),
