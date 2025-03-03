@@ -37,6 +37,7 @@ class GraphStatePreparation(Operation):
     """
 
     def __init__(
+        self,
         lattice: Lattice,
         wires: QubitGraph,
         qubit_ops: Operation = qml.H,
