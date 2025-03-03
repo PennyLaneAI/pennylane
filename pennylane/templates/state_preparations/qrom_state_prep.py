@@ -145,7 +145,7 @@ class QROMStatePreparation(Operation):
         :title: Usage Details
 
         This operation implements the state preparation method described
-        in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`. It uses a QROM to store
+        in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_. It uses a QROM to store
         the binary representations of the amplitudes and phases of the target state, and then uses
         controlled rotations to apply these values to the target qubits.
 
