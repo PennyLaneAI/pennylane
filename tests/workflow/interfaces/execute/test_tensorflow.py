@@ -71,7 +71,7 @@ class TestCaching:
                     [tf.sin(2 * x) * tf.sin(2 * y), -2 * tf.cos(x) ** 2 * tf.cos(2 * y)],
                 ]
             )
-            assert np.allclose(expected, hess1)
+            assert np.allclose(hess1, expected)
 
         expected_runs = 1  # forward pass
 

@@ -847,7 +847,7 @@ class TestHighLevelIntegration:
         for x_indiv in x:
             expected.append(circuit(x_indiv))
 
-        assert np.allclose(expected, res)
+        assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("gradient_func", [qml.gradients.param_shift, "device", None])
     def test_tapes(self, gradient_func):

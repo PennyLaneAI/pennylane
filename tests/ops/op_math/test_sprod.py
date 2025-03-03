@@ -452,7 +452,7 @@ class TestMatrix:
 
         expected_mat = sprod_op.matrix()
         true_mat = scalar * mat
-        assert np.allclose(expected_mat, true_mat)
+        assert np.allclose(true_mat, expected_mat)
 
     def test_sprod_qchem_ops(self):
         """Test that we can scale qchem operations and the generated matrix is correct."""

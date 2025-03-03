@@ -663,8 +663,8 @@ class TestPassthruIntegration:
             [0, -torch.cos(x) * torch.sin(y) / 2, torch.cos(x) * torch.sin(y) / 2]
         )
 
-        assert torch.allclose(expected_x, qml.math.hstack([res_x[0], res_y[0]]), atol=tol, rtol=0)
-        assert torch.allclose(expected_y, qml.math.hstack([res_x[1], res_y[1]]), atol=tol, rtol=0)
+        assert torch.allclose(qml.math.hstack([res_x[0], res_y[0]]), expected_x, atol=tol, rtol=0)
+        assert torch.allclose(qml.math.hstack([res_x[1], res_y[1]]), expected_y, atol=tol, rtol=0)
 
     def test_batching(self, tol):
         """Tests that the gradient of the qnode is correct with batching parameters"""

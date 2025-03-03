@@ -134,7 +134,7 @@ class TestStateMP:
         expected = np.zeros((2, 2))
         expected[0, 1] = 1  # zero for wire order, 1 for wire 1
         expected = np.reshape(expected, (4,))
-        assert qml.math.allclose(expected, new_state)
+        assert qml.math.allclose(new_state, expected)
 
     @pytest.mark.parametrize(
         "dm",
@@ -589,7 +589,7 @@ class TestDensityMatrix:
 
         density_mat = func()
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
-        assert np.allclose(expected, density_mat)
+        assert np.allclose(density_mat, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
@@ -606,7 +606,7 @@ class TestDensityMatrix:
         density_mat = func()
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
 
-        assert np.allclose(expected, density_mat)
+        assert np.allclose(density_mat, expected)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
@@ -622,7 +622,7 @@ class TestDensityMatrix:
         density_mat = func()
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
 
-        assert np.allclose(expected, density_mat)
+        assert np.allclose(density_mat, expected)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
@@ -638,7 +638,7 @@ class TestDensityMatrix:
         density_mat, dev_state = func()
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
 
-        assert np.allclose(expected, density_mat)
+        assert np.allclose(density_mat, expected)
 
         assert np.allclose(
             expected,
@@ -660,7 +660,7 @@ class TestDensityMatrix:
         density_first = func()
         expected = np.array([[0.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]])
 
-        assert np.allclose(expected, density_first)
+        assert np.allclose(density_first, expected)
 
     def test_correct_density_matrix_product_state_first_default_qubit(self):
         """Test that the correct density matrix is returned when
@@ -677,7 +677,7 @@ class TestDensityMatrix:
         density_first, dev_state = func()
         expected = np.array([[0.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]])
 
-        assert np.allclose(expected, density_first)
+        assert np.allclose(density_first, expected)
         assert np.allclose(
             expected,
             qml.density_matrix(wires=0).process_state(state=dev_state, wire_order=dev.wires),
@@ -697,7 +697,7 @@ class TestDensityMatrix:
 
         density_second = func()
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
-        assert np.allclose(expected, density_second)
+        assert np.allclose(density_second, expected)
 
     def test_correct_density_matrix_product_state_second_default_qubit(self):
         """Test that the correct density matrix is returned when
@@ -713,7 +713,7 @@ class TestDensityMatrix:
 
         density_second, dev_state = func()
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
-        assert np.allclose(expected, density_second)
+        assert np.allclose(density_second, expected)
 
         assert np.allclose(
             expected,
@@ -738,7 +738,7 @@ class TestDensityMatrix:
         expected_statevector = np.kron(*[single_statevectors[w] for w in return_wire_order])
         expected = np.outer(expected_statevector.conj(), expected_statevector)
 
-        assert np.allclose(expected, density_both)
+        assert np.allclose(density_both, expected)
 
     @pytest.mark.parametrize("return_wire_order", ([0, 1], [1, 0]))
     def test_correct_density_matrix_product_state_both_default_qubit(self, return_wire_order):
@@ -758,7 +758,7 @@ class TestDensityMatrix:
         expected_statevector = np.kron(*[single_statevectors[w] for w in return_wire_order])
         expected = np.outer(expected_statevector.conj(), expected_statevector)
 
-        assert np.allclose(expected, density_both)
+        assert np.allclose(density_both, expected)
 
         assert np.allclose(
             expected,
@@ -788,7 +788,7 @@ class TestDensityMatrix:
                 [0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
             ]
         )
-        assert np.allclose(expected, density_full)
+        assert np.allclose(density_full, expected)
 
     def test_correct_density_matrix_three_wires_first_two_default_qubit(self):
         """Test that the correct density matrix is returned for an example with three wires,
@@ -811,7 +811,7 @@ class TestDensityMatrix:
                 [0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
             ]
         )
-        assert np.allclose(expected, density_full)
+        assert np.allclose(density_full, expected)
         assert np.allclose(
             expected,
             qml.density_matrix(wires=[0, 1]).process_state(state=dev_state, wire_order=dev.wires),
@@ -843,7 +843,7 @@ class TestDensityMatrix:
             ]
         )
 
-        assert np.allclose(expected, density)
+        assert np.allclose(density, expected)
 
     @pytest.mark.parametrize(
         "return_wire_order", ([0], [1], [2], [0, 1], [1, 0], [0, 2], [2, 0], [1, 2, 0], [2, 1, 0])
@@ -874,7 +874,7 @@ class TestDensityMatrix:
             exp_statevector = np.kron(np.kron(single_states[i], single_states[j]), single_states[k])
 
         expected = np.outer(exp_statevector.conj(), exp_statevector)
-        assert np.allclose(expected, density_full)
+        assert np.allclose(density_full, expected)
 
     @pytest.mark.parametrize(
         "return_wire_order", ([0], [1], [2], [0, 1], [1, 0], [0, 2], [2, 0], [1, 2, 0], [2, 1, 0])
@@ -905,7 +905,7 @@ class TestDensityMatrix:
             exp_statevector = np.kron(np.kron(single_states[i], single_states[j]), single_states[k])
 
         expected = np.outer(exp_statevector.conj(), exp_statevector)
-        assert np.allclose(expected, density_full)
+        assert np.allclose(density_full, expected)
 
         assert np.allclose(
             expected,
@@ -951,7 +951,7 @@ class TestDensityMatrix:
             ]
         )
 
-        assert np.allclose(expected, density)
+        assert np.allclose(density, expected)
 
     def test_correct_density_matrix_all_wires_default_qubit(self):
         """Test that the correct density matrix is returned when all wires are given"""
@@ -974,7 +974,7 @@ class TestDensityMatrix:
             ]
         )
 
-        assert np.allclose(expected, density)
+        assert np.allclose(density, expected)
         assert np.allclose(
             expected,
             qml.density_matrix(wires=[0, 1]).process_state(state=dev_state, wire_order=dev.wires),
@@ -1058,7 +1058,7 @@ class TestDensityMatrix:
         density = func()
         expected = np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]])
 
-        assert np.allclose(expected, density)
+        assert np.allclose(density, expected)
 
     @pytest.mark.parametrize("wires", [[3, 1], ["b", 1000]])
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])

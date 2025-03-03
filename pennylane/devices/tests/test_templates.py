@@ -575,7 +575,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         # GlobalPhase not supported
         global_phase = qml.math.sum(-1 * qml.math.angle(expected) / len(expected))
         global_phase = np.exp(-1j * global_phase)
-        assert np.allclose(expected / res, global_phase)
+        assert np.allclose(global_phase, expected / res)
 
     def test_Permute(self, device, tol):
         """Test the Permute template."""

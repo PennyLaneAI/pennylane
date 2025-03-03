@@ -201,7 +201,7 @@ class TestControlledDecompositionZYZ:
         res = qml.matrix(ctrl_decomp_zyz, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
 
-        assert np.allclose(expected, res, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_correct_decomp(self):
         """Test that the operations in the decomposition are correct."""

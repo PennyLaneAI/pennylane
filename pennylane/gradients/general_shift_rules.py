@@ -164,7 +164,8 @@ def _get_shift_rule(frequencies, shifts=None):
         if len(set(shifts)) != n_freqs:
             raise ValueError(f"Shift values must be unique, instead got {shifts}")
 
-        equ_shifts = np.allclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min))
+        expected = (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)
+        equ_shifts = np.allclose(shifts, expected)
 
     if len(set(np.round(np.diff(frequencies), 10))) <= 1 and equ_shifts:  # equidistant case
         coeffs = (

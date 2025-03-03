@@ -1643,7 +1643,7 @@ class TestCycles:
         ]
         expected_coeffs = [np.log(0.5), np.log(1), np.log(1.5), np.log(2), np.log(2.5), np.log(3)]
 
-        assert np.allclose(expected_coeffs, h.coeffs)
+        assert np.allclose(h.coeffs, expected_coeffs)
         assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
         assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops))
 
@@ -1703,7 +1703,7 @@ class TestCycles:
             np.log(7),
         ]
 
-        assert np.allclose(expected_coeffs, h.coeffs)
+        assert np.allclose(h.coeffs, expected_coeffs)
         assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
         assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops))
 
@@ -1871,7 +1871,7 @@ class TestCycles:
         expected_coeffs = [0, 0]
 
         coeffs, ops = h.terms()
-        assert qml.math.allclose(expected_coeffs, coeffs)
+        assert qml.math.allclose(coeffs, expected_coeffs)
         for op, expected_op in zip(ops, expected_ops):
             assert op.pauli_rep == expected_op.pauli_rep
 

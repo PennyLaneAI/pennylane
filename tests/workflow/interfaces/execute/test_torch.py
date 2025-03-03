@@ -96,7 +96,7 @@ class TestCaching:
                     ],
                 ]
             )
-            assert torch.allclose(expected, hess1)
+            assert torch.allclose(hess1, expected)
 
         expected_runs = 1  # forward pass
 
