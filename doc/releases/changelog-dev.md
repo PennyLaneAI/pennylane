@@ -365,8 +365,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* A `control_flow` module is created to contain `qml.for_loop` and `qml.while_loop`. They
-  previously existed in the `compiler` module.
+* `qml.for_loop` and `qml.while_loop` have been moved from the `compiler` module 
+  to a new `control_flow` module.
   [(#7017)](https://github.com/PennyLaneAI/pennylane/pull/7017)
 
 * `qml.capture.run_autograph` is now idempotent.
