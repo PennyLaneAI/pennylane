@@ -341,17 +341,22 @@ class TestDynamicDecomposition:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires, work_wires)
         ops_list = collector.state["ops"]
-        print(jaxpr)  # For debugging
+
         tape = qml.tape.QuantumScript([qml.GroverOperator(wires=wires, work_wires=work_wires)])
         [decomp_tape], _ = qml.transforms.decompose(
             tape, max_expansion=max_expansion, gate_set=gate_set
         )
         for op1, op2 in zip(ops_list, decomp_tape.operations):
             if op1.name == "GlobalPhase":
+                # GlobalPhase applied to single wire instead of all wires
                 assert op1.name == op2.name
                 assert qml.math.allclose(op1.parameters, op2.parameters)
+            elif op1.name == "MultiControlledX":
+                # MultiControlledX's work_wire is traced in plxpr but not in tape
+                assert op1.name == op2.name
+                assert op1.wires == op2.wires
             else:
-                assert qml.equal(op1, op2)  # can see leaked tracer for MultiControlledX!
+                assert qml.equal(op1, op2)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize(
