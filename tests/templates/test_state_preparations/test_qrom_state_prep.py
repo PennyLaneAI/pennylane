@@ -21,11 +21,10 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.templates.state_preparations.qrom_state_prep import (
-    _sum_by_prefix,
-    _get_basis_state_list,
     _func_to_binary,
+    _get_basis_state_list,
+    _sum_by_prefix,
 )
 
 
