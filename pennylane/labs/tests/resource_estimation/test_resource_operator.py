@@ -56,7 +56,7 @@ def test_abstract_resource_params():
             return
 
     with pytest.raises(NotImplementedError):
-        DummyClass().resource_params  # pylint: disable=pointless-statement
+        DummyClass().resource_params  # pylint: disable=pointless-statement,expression-not-assigned
 
 
 def test_abstract_resource_rep():
