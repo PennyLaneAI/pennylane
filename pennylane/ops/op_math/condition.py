@@ -27,14 +27,14 @@ from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
-def _all_output_shapes(f):
+def _add_abstract_shapes(f):
     """Add the shapes of all the returned variables before the returned variables."""
 
     def new_f(*args, **kwargs):
         out = f(*args, **kwargs)
         shapes = []
         for x in out:
-            shapes.extend(getattr(x, "shape", ()))
+            shapes.extend(s for s in getattr(x, "shape", ()) if qml.math.is_abstract(s))
         return *shapes, *out
 
     return new_f
@@ -258,7 +258,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             else:
                 f = FlatFn(functools.partial(fn, **kwargs))
                 if jax.config.jax_dynamic_shapes:
-                    f = _all_output_shapes(f)
+                    f = _add_abstract_shapes(f)
                 jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
                 jaxpr_branches.append(jaxpr.jaxpr)
                 consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
