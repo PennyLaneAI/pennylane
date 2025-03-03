@@ -69,7 +69,7 @@
   
   circuit()
   ```
-  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6921)
+  [(#6921)](https://github.com/PennyLaneAI/pennylane/pull/6921)
 
 <h3>Improvements 🛠</h3>
 
