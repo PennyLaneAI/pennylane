@@ -475,7 +475,7 @@ class TestHigherOrderPrimitiveIntegration:
         assert jaxpr.eqns[2].primitive == measure_prim
 
     @pytest.mark.xfail(
-        reason="The transform does not currently merge through higher order primitives."
+        reason="The transform does not currently merge through higher order primitives. See sc-85439."
     )
     def test_measure_prim_block(self):
         """Test that the transform works correctly when the merge is blocked by a MCM."""
