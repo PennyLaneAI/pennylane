@@ -175,27 +175,6 @@ class TestSampleState:
         ):
             sample_state(invalid_state, 10)
 
-    def test_measure_with_samples_not_implemented_error(self):
-        """Test that measure_with_samples raises NotImplementedError for unhandled measurement processes."""
-        from pennylane.measurements import SampleMeasurement
-
-        class CustomSampleMeasurement(SampleMeasurement):
-            """A custom measurement process for testing."""
-
-            def process_counts(self, counts, wire_order=None):
-                return counts
-
-            def process_samples(self, samples, wire_order=None, shot_range=None, bin_size=None):
-                return samples
-
-        # Prepare a simple state
-        state = np.array([[1, 0], [0, 0]], dtype=np.complex128)
-        shots = Shots(10)
-        mp = CustomSampleMeasurement()
-
-        with pytest.raises(NotImplementedError):
-            measure_with_samples(mp, state, shots)
-
 
 class TestMeasurements:
     """Test different measurement types"""
@@ -205,7 +184,7 @@ class TestMeasurements:
     def test_sample_measurement(self, num_shots, wires, two_qubit_pure_state):
         """Test sample measurements with different shots and wire configurations."""
         shots = Shots(num_shots)
-        result = measure_with_samples(qml.sample(wires=wires), two_qubit_pure_state, shots)
+        result = measure_with_samples([qml.sample(wires=wires)], two_qubit_pure_state, shots)[0]
         if len(wires) == 1:
             expected_shape = (num_shots,)
         else:
@@ -219,7 +198,7 @@ class TestMeasurements:
     def test_counts_measurement(self, num_shots, two_qubit_pure_state):
         """Test counts measurement."""
         shots = Shots(num_shots)
-        result = measure_with_samples(qml.counts(), two_qubit_pure_state, shots)
+        result = measure_with_samples([qml.counts()], two_qubit_pure_state, shots)[0]
         assert isinstance(result, dict), "Result is not a dictionary"
         total_counts = sum(result.values())
         assert (
@@ -235,7 +214,9 @@ class TestMeasurements:
     def test_counts_measurement_all_outcomes(self, num_shots, two_qubit_pure_state):
         """Test counts measurement with all_outcomes=True."""
         shots = Shots(num_shots)
-        result = measure_with_samples(qml.counts(all_outcomes=True), two_qubit_pure_state, shots)
+        result = measure_with_samples([qml.counts(all_outcomes=True)], two_qubit_pure_state, shots)[
+            0
+        ]
 
         assert isinstance(result, dict), "Result is not a dictionary"
         total_counts = sum(result.values())
@@ -269,8 +250,7 @@ class TestMeasurements:
     def test_observable_measurements(self, observable, measurement, two_qubit_pure_state):
         """Test different observables with expectation and variance."""
         shots = Shots(10000)
-        result = measure_with_samples(measurement(observable), two_qubit_pure_state, shots)
-        assert isinstance(result, (float, np.floating)), "Result is not a floating point number"
+        result = measure_with_samples([measurement(observable)], two_qubit_pure_state, shots)[0]
         if measurement is qml.expval:
             assert -1 <= result <= 1, f"Expectation value {result} out of bounds"
         else:
@@ -299,10 +279,10 @@ class TestMeasurements:
         shots = Shots(10000)
 
         result = measure_with_samples(
-            qml.expval(hamiltonian),
+            [qml.expval(hamiltonian)],
             state,
             shots,
-        )
+        )[0]
         assert isinstance(result, (float, np.floating)), "Result is not a floating point number"
 
     def test_measure_sum_with_samples_partitioned_shots(self):
@@ -321,7 +301,7 @@ class TestMeasurements:
 
         # Perform measurement
         result = measure_with_samples(
-            mp,
+            [mp],
             state,
             shots,
         )
@@ -329,10 +309,6 @@ class TestMeasurements:
         # Check that result is a tuple of results
         assert isinstance(result, tuple), "Result is not a tuple for partitioned shots"
         assert len(result) == 2, f"Result length {len(result)} does not match expected length 2"
-        # Each result should be a float
-        assert all(
-            isinstance(r, (float, np.floating)) for r in result
-        ), "Not all results are floating point numbers"
 
 
 class TestBatchedOperations:
@@ -359,12 +335,13 @@ class TestBatchedOperations:
             Shots(100),
             Shots((100, 200)),
             Shots((100, 200, 300)),
+            Shots((200, (100, 2))),
         ],
     )
     def test_batched_measurements_shots(self, shots, batched_two_qubit_pure_state):
         """Test measurements with different shot configurations."""
         result = measure_with_samples(
-            qml.sample(wires=[0, 1]), batched_two_qubit_pure_state, shots, is_state_batched=True
+            [qml.sample(wires=[0, 1])], batched_two_qubit_pure_state, shots, is_state_batched=True
         )
         batch_size = len(batched_two_qubit_pure_state)
         if shots.has_partitioned_shots:
@@ -373,13 +350,13 @@ class TestBatchedOperations:
                 len(result) == shots.num_copies
             ), f"Result length {len(result)} does not match number of shot copies {shots.num_copies}"
             for res, shot in zip(result, shots.shot_vector):
-                assert res.shape == (
+                assert res[0].shape == (
                     batch_size,
                     shot.shots,
                     2,
-                ), f"Result shape {res.shape} does not match expected shape"
+                ), f"Result shape {res[0].shape} does not match expected shape"
         else:
-            assert result.shape == (
+            assert result[0].shape == (
                 batch_size,
                 shots.total_shots,
                 2,
@@ -401,11 +378,11 @@ class TestBatchedOperations:
 
         # Perform measurement
         result = measure_with_samples(
-            qml.expval(obs),
+            [qml.expval(obs)],
             batched_states,
             shots,
             is_state_batched=True,
-        )
+        )[0]
 
         # Check the results
         assert isinstance(result, np.ndarray)
@@ -522,7 +499,7 @@ class TestJaxSampling:
 
         # Perform measurement
         shots = Shots(10)
-        result = measure_with_samples(mp, state, shots, prng_key=prng_key)
+        result = measure_with_samples([mp], state, shots, prng_key=prng_key)[0]
 
         # The result should be zeros
         assert result.shape == (10,)
@@ -546,7 +523,7 @@ class TestJaxSampling:
 
         # Perform measurement
         shots = Shots(1000)
-        result = measure_with_samples(mp, state, shots, prng_key=prng_key)
+        result = measure_with_samples([mp], state, shots, prng_key=prng_key)[0]
 
         # Samples should show that qubits are correlated
         # Count how many times qubits are equal
@@ -607,7 +584,9 @@ class TestJaxSampling:
 
         # Perform measurement
         shots = Shots(1000)
-        result = measure_with_samples(mp, states, shots, is_state_batched=True, prng_key=prng_key)
+        result = measure_with_samples(
+            [mp], states, shots, is_state_batched=True, prng_key=prng_key
+        )[0]
 
         # The first batch should have all +1 eigenvalues, the second all -1
         assert result.shape == (2, 1000)

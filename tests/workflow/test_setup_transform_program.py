@@ -152,7 +152,7 @@ def test_interface_data_not_supported():
 
 def test_interface_data_supported():
     """Test that convert_to_numpy_parameters transform is not added for these cases."""
-    config = ExecutionConfig(interface="autograd", gradient_method=None)
+    config = ExecutionConfig(interface="autograd", gradient_method="backprop")
 
     device = qml.device("default.mixed", wires=1)
 
