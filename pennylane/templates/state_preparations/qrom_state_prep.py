@@ -80,8 +80,7 @@ def _get_basis_state_list(n_wires, add_zero=False):
 
     if add_zero:
         return ["".join(map(str, bits)) + "0" for bits in itertools.product([0, 1], repeat=n_wires)]
-    else:
-        return ["".join(map(str, bits)) for bits in itertools.product([0, 1], repeat=n_wires)]
+    return ["".join(map(str, bits)) for bits in itertools.product([0, 1], repeat=n_wires)]
 
 
 def _func_to_binary(n_precision, x, func):
