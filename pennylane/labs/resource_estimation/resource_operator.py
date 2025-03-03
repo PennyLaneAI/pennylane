@@ -92,11 +92,11 @@ class ResourceOperator(ABC):
         """Set a custom resource method."""
         cls.resources = new_func
 
-    @abstractmethod
     @property
     def resource_params(self) -> dict:
         """Returns a dictionary containing the minimal information needed to
         compute a compressed representation"""
+        raise NotImplementedError
 
     @classmethod
     @abstractmethod
