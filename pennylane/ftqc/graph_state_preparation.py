@@ -41,7 +41,6 @@ class GraphStatePrep(Operation):
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
     ):
-
         self.hyperparameters["qubit_graph"] = qubit_graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
@@ -81,10 +80,10 @@ class GraphStatePrep(Operation):
         # Add qubit_ops to the queue
         # traverse the nodes in the qubit graph
         for v in qubit_graph.graph:
-            op_list.append(qubit_ops(qubit_graph[v]))
+            op_list.append(qubit_ops(wires=qubit_graph[v]))
 
         # Add entanglement_ops to the queue
         # traverse the edges in the qubit graph
         for v0, v1 in qubit_graph.edges:
-            op_list.append(entanglement_ops(qubit_graph[v0], qubit_graph[v1]))
+            op_list.append(entanglement_ops(wires=[qubit_graph[v0], qubit_graph[v1]]))
         return op_list
