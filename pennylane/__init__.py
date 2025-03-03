@@ -68,7 +68,8 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.tracker import Tracker
 from pennylane.registers import registers
-from pennylane.io import *
+from pennylane.io.io import *
+from pennylane.io.qualtran_io import FromBloq, get_bloq_registers_info
 from pennylane.measurements import (
     counts,
     density_matrix,
