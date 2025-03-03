@@ -26,7 +26,7 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 
 def register_resources(
     resources: Callable | dict, qfunc: Callable = None
-) -> DecompositionRule | Callable:
+) -> DecompositionRule | Callable[[Callable], DecompositionRule]:
     """Registers a resource function with a decomposition rule.
 
     Args:

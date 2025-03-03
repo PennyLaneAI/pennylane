@@ -25,7 +25,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.decomposition import decomposition
+from pennylane.decomposition import register_resources, add_decomposition
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -198,7 +198,7 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-@decomposition
+@register_resources({qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1})
 def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qml.RZ(np.pi / 2, wires=wires)
     qml.RX(np.pi / 2, wires=wires)
@@ -206,35 +206,17 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-@_hadamard_to_rz_rx.resources
-def _hadamard_to_rz_rx_resources(*_, **__):
-    return {
-        qml.RZ.make_resource_rep(): 2,
-        qml.RX.make_resource_rep(): 1,
-        qml.GlobalPhase.make_resource_rep(): 1,
-    }
+add_decomposition(Hadamard, _hadamard_to_rz_rx)
 
 
-Hadamard.add_decomposition(_hadamard_to_rz_rx)
-
-
-@decomposition
+@register_resources({qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1})
 def _hadamard_to_rz_ry(wires: WiresLike, **__):
     qml.RZ(np.pi, wires=wires)
     qml.RY(np.pi / 2, wires=wires)
     qml.GlobalPhase(-np.pi / 2)
 
 
-@_hadamard_to_rz_ry.resources
-def _hadamard_to_rz_ry_resources(*_, **__):
-    return {
-        qml.RZ.make_resource_rep(): 1,
-        qml.RY.make_resource_rep(): 1,
-        qml.GlobalPhase.make_resource_rep(): 1,
-    }
-
-
-Hadamard.add_decomposition(_hadamard_to_rz_ry)
+add_decomposition(Hadamard, _hadamard_to_rz_ry)
 
 H = Hadamard
 r"""H(wires)
@@ -1377,19 +1359,14 @@ class SWAP(Operation):
         return True
 
 
-@decomposition
+@register_resources({qml.CNOT: 3})
 def _swap_to_cnot(wires, **__):
     qml.CNOT(wires=[wires[0], wires[1]])
     qml.CNOT(wires=[wires[1], wires[0]])
     qml.CNOT(wires=[wires[0], wires[1]])
 
 
-@_swap_to_cnot.resources
-def _swap_to_cnot_resources(*_, **__):
-    return {qml.CNOT.make_resource_rep(): 3}
-
-
-SWAP.add_decomposition(_swap_to_cnot)
+add_decomposition(SWAP, _swap_to_cnot)
 
 
 class ECR(Operation):

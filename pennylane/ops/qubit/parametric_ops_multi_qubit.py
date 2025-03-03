@@ -292,6 +292,8 @@ class PauliRot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    resource_param_keys = ("pauli_word",)
+
     _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
@@ -560,7 +562,6 @@ class PauliRot(Operation):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
 
 
-@decomposition
 def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
     if set(pauli_word) == {"I"}:
         qml.GlobalPhase(theta / 2)
@@ -580,19 +581,19 @@ def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
             qml.RX(-np.pi / 2, wires=[wire])
 
 
-@_pauli_rot_decomposition.resources
 def _pauli_rot_resources(pauli_word):
     if set(pauli_word) == {"I"}:
-        return {qml.GlobalPhase.make_resource_rep(): 1}
+        return {qml.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
     return {
-        Hadamard.make_resource_rep(): 2 * pauli_word.count("X"),
-        RX.make_resource_rep(): 2 * pauli_word.count("Y"),
-        MultiRZ.make_resource_rep(num_wires=num_active_wires): 1,
+        qml.Hadamard: 2 * pauli_word.count("X"),
+        qml.RX: 2 * pauli_word.count("Y"),
+        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
     }
 
 
-PauliRot.add_decomposition(_pauli_rot_decomposition)
+pauli_rot_decomposition = qml.register_resources(_pauli_rot_resources, _pauli_rot_decomposition)
+add_decomposition(PauliRot, pauli_rot_decomposition)
 
 
 class PCPhase(Operation):
