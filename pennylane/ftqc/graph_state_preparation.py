@@ -17,7 +17,6 @@ r"""This module contains the GraphStatePreparation template."""
 import pennylane as qml
 from pennylane.operation import Operation
 
-from .lattice import Lattice
 from .qubit_graph import QubitGraph
 
 
