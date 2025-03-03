@@ -702,7 +702,7 @@ def _register_custom_staging_rule(cond_prim):
 
         env = {}  # branch var to new equation var
         out_tracers, returned_vars = tuple(
-            zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in true_outvars))
+            zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in true_outvars), strict=True)
         )
 
         invars = [jaxpr_trace.getvar(x) for x in tracers]
@@ -751,7 +751,9 @@ def _validate_abstract_values(
             if getattr(outval, "dtype", None) != getattr(expected_outval, "dtype", None):
                 _shape_error(branch_type, branch_index, i, outval, expected_outval)
 
-            for s1, s2 in zip(getattr(outval, "shape", ()), getattr(expected_outval, "shape", ())):
+            shape1 = getattr(outval, "shape", ())
+            shape2 = getattr(expected_outval, "shape", ())
+            for s1, s2 in zip(shape1, shape2, strict=True):
                 if isinstance(s1, jax.core.Var) != isinstance(s2, jax.core.Var):
                     _shape_error(branch_type, branch_index, i, outval, expected_outval)
                 elif isinstance(s1, int) and s1 != s2:
@@ -785,9 +787,8 @@ def _validate_jaxpr_returns(jaxpr_branches):
 def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
-    from pennylane.capture.custom_primitives import (  # pylint: disable=import-outside-toplevel
-        NonInterpPrimitive,
-    )
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     cond_prim = NonInterpPrimitive("cond")
     cond_prim.multiple_results = True
