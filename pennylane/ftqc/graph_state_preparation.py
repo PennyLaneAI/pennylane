@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""This module contains the GraphStatePreparation template."""
+r"""This module contains the GraphStatePrep template."""
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -79,13 +79,11 @@ class GraphStatePrep(Operation):
         """
 
         op_list = []
-        # Add qubit_ops to the queue
-        # traverse the nodes in the qubit graph
+        # Add qubit_ops for each qubit in the graph
         for qubit in qubit_graph.graph:
             op_list.append(qubit_ops(wires=qubit_graph[qubit]))
 
-        # Add entanglement_ops to the queue
-        # traverse the edges in the qubit graph
+        # Add entanglement_ops for each pair of nearest qubits in the graph
         for qubit0, qubit1 in qubit_graph.edges:
             op_list.append(entanglement_ops(wires=[qubit_graph[qubit0], qubit_graph[qubit1]]))
         return op_list

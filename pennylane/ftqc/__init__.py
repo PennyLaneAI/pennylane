@@ -41,6 +41,7 @@ from .graph_state_preparation import GraphStatePrep
 from .qubit_graph import QubitGraph
 
 __all__ = [
+    "GraphStatePrep",
     "Lattice",
     "ParametricMidMeasureMP",
     "XMidMeasureMP",
