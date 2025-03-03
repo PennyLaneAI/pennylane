@@ -764,23 +764,24 @@ def _validate_abstract_values(
 
 
 def _validate_jaxpr_returns(jaxpr_branches):
-    outvals_true = [out.aval for out in jaxpr_branches[0].outvars]
+    out_avals_true = [out.aval for out in jaxpr_branches[0].outvars]
     for idx, jaxpr_branch in enumerate(jaxpr_branches):
 
         if idx == 0:
             continue
 
         if jaxpr_branch is None:
-            if outvals_true:
+            if out_avals_true:
                 raise ValueError(
                     "The false branch must be provided if the true branch returns any variables"
                 )
             # this is tested, but coverage does not pick it up
             continue  # pragma: no cover
 
-        outvals_branch = [out.aval for out in jaxpr_branch.outvars]
+        out_avals_branch = [out.aval for out in jaxpr_branch.outvars]
         branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
-        _validate_abstract_values(outvals_branch, outvals_true, branch_type, idx - 1)
+        _validate_abstract_values(out_avals_branch, out_avals_true, branch_type, idx - 1)
+
 
 
 @functools.lru_cache
