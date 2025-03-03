@@ -50,7 +50,7 @@ class TestGraphStatePrep:
         op = GraphStatePrep(qubit_graph=q)
         queue = op.decomposition()
         assert len(queue) == 20  # 8 ops for |0> -> |+> and 12 ops to entangle nearest qubits
-        for i in range(len(queue)):
+        for i in range(len(queue)):  # pylint: disable=consider-using-enumerate
             assert queue[i].name == "Hadamard" if i < len(lattice.nodes) else queue[i].name == "CZ"
             assert isinstance(queue[i].wires[0], QubitGraph)
             if i >= len(lattice.nodes):
