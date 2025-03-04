@@ -509,7 +509,7 @@ class TestHigherOrderPrimitiveIntegration:
         @MergeAmplitudeEmbeddingInterpreter()
         def f():
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
-            qml.ctrl(ctrl_fn, [2, 3])()
+            qml.ctrl(ctrl_fn, [3, 4])()
             qml.RY(0, 1)
 
         jaxpr = jax.make_jaxpr(f)()
