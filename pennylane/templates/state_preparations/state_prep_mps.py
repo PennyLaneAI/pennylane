@@ -85,16 +85,14 @@ def right_canonicalize_mps(mps):
         List of tensors representing the MPS in right-canonical form.
 
 
-    A right-canonicalized MPS is a matrix product state where each tensor :math:`A^{(j)}` satisfies
-    the following orthonormality condition:
+    A right-canonicalized MPS is a matrix product state in which the constituent tensors, :math:`A^{(j)}`, satisfy
+    the following orthonormality condition [Eq. (21) of `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_]:
 
     .. math::
 
-        \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}}
+        \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}},
 
-    where :math:`d_{i,j}` denotes the :math:`j` dimension of the :math:`i` tensor And :math:`\delta` is a
-    function that takes the value :math:`1` if the two inputs are the same and :math:`0` otherwise.
-    The definition can be found in Eq. (21) of `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
+    where :math:`d_{i,j}` denotes the :math:`j` dimension of the :math:`i` tensor and :math:`\delta` is the Kronecker delta.
 
     .. seealso:: :class:`~.MPSPrep`.
 
@@ -110,7 +108,7 @@ def right_canonicalize_mps(mps):
 
         mps_rc = qml.right_canonicalize_mps(mps)
 
-        # We now check that the definition of right-canonical is fulfilled
+        # Check that the right-canonical definition is fulfilled
         for i in range(1, n_sites - 1):
             tensor = mps_rc[i]
             contraction_matrix = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
@@ -232,8 +230,8 @@ class MPSPrep(Operation):
         This operator is natively supported on the ``lightning.tensor`` device, which is designed to run MPS
         structures efficiently. For other devices, this operation prepares the state vector represented by the
         MPS using a gate-based decomposition from Eq. (23) in `arXiv:2310.18410
-        <https://arxiv.org/pdf/2310.18410>`_, which requires the right canonicalization of the MPS via
-        :func:`~.right_canonicalize_mps` and auxiliary qubits to be given via ``work_wires``.
+        <https://arxiv.org/pdf/2310.18410>`_, which requires the right canonicalization of the MPS using
+        the :func:`~.right_canonicalize_mps` function and defining auxiliary qubits with ``work_wires``.
 
     Args:
         mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
@@ -244,7 +242,7 @@ class MPSPrep(Operation):
             of the MPS tensors is :math:`2^k`, then :math:`k` ``work_wires`` will be needed. If no ``work_wires`` are given,
             this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
 
-        right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed to the MPS.
+        right_canonicalize (bool): indicates whether a conversion to right-canonical form should be performed to the MPS.
             Default is ``False``.
 
 
