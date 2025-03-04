@@ -53,6 +53,7 @@ class ResourceCH(qml.CH, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -105,6 +106,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -155,6 +157,7 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -215,6 +218,7 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -264,6 +268,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -302,6 +307,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -403,6 +409,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -486,6 +493,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         gate_types[cnot] = 36 * num_ctrl_wires - 111
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         num_control = len(self.hyperparameters["control_wires"])
         num_work_wires = len(self.hyperparameters["work_wires"])
@@ -572,6 +580,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -625,6 +634,7 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -678,6 +688,7 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -742,6 +753,7 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -792,6 +804,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 

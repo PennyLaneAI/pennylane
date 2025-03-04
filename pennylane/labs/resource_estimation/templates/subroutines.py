@@ -17,6 +17,7 @@ from collections import defaultdict
 from typing import Dict
 
 import pennylane as qml
+from pennylane import numpy as qnp
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
 
@@ -46,6 +47,7 @@ class ResourceQFT(qml.QFT, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
@@ -71,6 +73,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
             - 1
         }
 
+    @property
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
@@ -136,6 +139,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {
             "mod": self.hyperparameters["mod"],
@@ -193,6 +197,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {
             "mod": self.hyperparameters["mod"],
@@ -228,6 +233,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {
             "mod": self.hyperparameters["mod"],
@@ -254,8 +260,6 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperator):
     """Resource class for QPE"""
 
-    # TODO: Add a secondary resource decomp which falls back to op.pow_resource_decomp
-
     @staticmethod
     def _resource_decomp(
         base_class, base_params, num_estimation_wires, **kwargs
@@ -269,21 +273,23 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
         gate_types[hadamard] = num_estimation_wires
         gate_types[adj_qft] = 1
         gate_types[ctrl_op] = (2**num_estimation_wires) - 1
+
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         op = self.hyperparameters["unitary"]
         num_estimation_wires = len(self.hyperparameters["estimation_wires"])
 
         if not isinstance(op, re.ResourceOperator):
             raise TypeError(
-                f"Can't obtain QPE resources when the base unitary {op} is an instance"
+                f"Can't obtain QPE resources when the base unitary {op} isn't an instance"
                 " of ResourceOperator"
             )
 
         return {
             "base_class": type(op),
-            "base_params": op.resource_params(),
+            "base_params": op.resource_params,
             "num_estimation_wires": num_estimation_wires,
         }
 
@@ -326,6 +332,7 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
         gate_types[single_excitation] = se_count
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         unitary_matrix = self.parameters[0]
         return {"dim_N": qml.math.shape(unitary_matrix)[0]}
@@ -353,10 +360,10 @@ class ResourceSelect(qml.Select, ResourceOperator):
         x = re.ResourceX.resource_rep()
 
         num_ops = len(cmpr_ops)
-        num_ctrl_wires = int(math.ceil(math.log2(num_ops)))
+        num_ctrl_wires = int(qnp.ceil(qnp.log2(num_ops)))
         num_total_ctrl_possibilities = 2**num_ctrl_wires  # 2^n
 
-        num_zero_controls = (num_total_ctrl_possibilities * num_ctrl_wires) // 2
+        num_zero_controls = num_total_ctrl_possibilities // 2
         gate_types[x] = num_zero_controls * 2  # conjugate 0 controls
 
         for cmp_rep in cmpr_ops:
@@ -394,6 +401,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         ops = self.hyperparameters["ops"]
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -424,6 +432,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         gate_types[prep_dag] = 1
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         ops = self.hyperparameters["ops"]
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -480,6 +489,7 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         base_cmpr_rep = self.hyperparameters["base"].resource_rep_from_op()
         num_ref_wires = len(self.hyperparameters["reflection_wires"])
@@ -513,6 +523,7 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
         gate_types[psp] = 1
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         lcu = self.hyperparameters["hamiltonian"]
         _, ops = lcu.terms()
@@ -590,6 +601,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> Dict:
         bitstrings = self.hyperparameters["bitstrings"]
         num_bitstrings = len(bitstrings)

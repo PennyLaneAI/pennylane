@@ -33,6 +33,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         return {re.ResourceMottonenStatePreparation.resource_rep(num_wires): 1}
 
+    @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
@@ -68,6 +69,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
             gate_types[cnot] = cnot_count
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
@@ -130,6 +132,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> Dict:
         bases = self.hyperparameters["bases"]
         num_basis_states = len(bases)

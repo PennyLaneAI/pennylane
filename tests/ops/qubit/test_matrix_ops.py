@@ -32,12 +32,29 @@ from pennylane.wires import Wires
 class TestQubitUnitaryCSR:
     """Tests for using csr_matrix in QubitUnitary."""
 
+    def test_compute_matrix_blocked(self):
+        """Test that when csr_matrix is used, the compute_matrix method works correctly."""
+        U = csr_matrix(I)
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="U is sparse matrix",
+        ):
+            qml.QubitUnitary.compute_matrix(U)
+
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="U is sparse matrix",
+        ):
+            op = qml.QubitUnitary(U, wires=[0])
+            op.matrix()
+
     def test_compute_sparse_matrix(self):
         """Test that the compute_sparse_matrix method works correctly."""
         U = np.array([[0, 1], [1, 0]])
+        U = csr_matrix(U)
         op = qml.QubitUnitary.compute_sparse_matrix(U)
         assert isinstance(op, csr_matrix)
-        assert np.allclose(op.toarray(), U)
+        assert np.allclose(op.toarray(), U.toarray())
 
     def test_generic_sparse_convert_to_csr(self):
         """Test that other generic sparse matrices can be converted to csr_matrix."""
@@ -45,10 +62,10 @@ class TestQubitUnitaryCSR:
         dense = np.eye(4)
         sparse = coo_matrix(dense)
         op = qml.QubitUnitary(sparse, wires=[0, 1])
-        assert isinstance(op.matrix(), csr_matrix)
+        assert isinstance(op.sparse_matrix(), csr_matrix)
         sparse = csc_matrix(dense)
         op = qml.QubitUnitary(sparse, wires=[0, 1])
-        assert isinstance(op.matrix(), csr_matrix)
+        assert isinstance(op.sparse_matrix(), csr_matrix)
 
     @pytest.mark.parametrize(
         "dense",
@@ -59,8 +76,12 @@ class TestQubitUnitaryCSR:
         # 4x4 Identity as a csr_matrix
         sparse = csr_matrix(dense)
         op = qml.QubitUnitary(sparse, wires=[0])
-        assert isinstance(op.matrix(), csr_matrix)  # Should still be sparse
-        assert qml.math.allclose(op.matrix().toarray(), dense)
+        assert isinstance(op.sparse_matrix(), csr_matrix)  # Should still be sparse
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="U is sparse matrix",
+        ):
+            assert qml.math.allclose(op.matrix(), dense)
 
     def test_csr_matrix_shape_mismatch(self):
         """Test that shape mismatch with csr_matrix raises an error."""
@@ -86,9 +107,9 @@ class TestQubitUnitaryCSR:
 
         powered_op = powered_ops[0]
         assert isinstance(powered_op, qml.QubitUnitary)
-        assert isinstance(powered_op.matrix(), csr_matrix)
+        assert isinstance(powered_op.sparse_matrix(), csr_matrix)
         # The resulting matrix should still be the identity
-        final_mat = powered_op.matrix()
+        final_mat = powered_op.sparse_matrix()
         # If it's still sparse, compare .toarray()
         if isinstance(final_mat, csr_matrix):
             final_mat = final_mat.toarray()
@@ -110,9 +131,9 @@ class TestQubitUnitaryCSR:
         adj_op = op.adjoint()
 
         assert isinstance(adj_op, qml.QubitUnitary)
-        assert isinstance(adj_op.matrix(), csr_matrix)
+        assert isinstance(adj_op.sparse_matrix(), csr_matrix)
 
-        final_mat = adj_op.matrix()
+        final_mat = adj_op.sparse_matrix()
         # Compare with dense representation if still sparse
         if isinstance(final_mat, csr_matrix):
             final_mat = final_mat.toarray()
@@ -137,10 +158,10 @@ class TestQubitUnitaryCSR:
         adj_op = op.adjoint()
 
         assert isinstance(adj_op, qml.QubitUnitary)
-        assert isinstance(adj_op.matrix(), csr_matrix)
+        assert isinstance(adj_op.sparse_matrix(), csr_matrix)
 
         # The single element should remain 1 at [12345,12345] after conjugate transpose
-        final_mat = adj_op.matrix()
+        final_mat = adj_op.sparse_matrix()
         assert final_mat[12345, 12345] == 1.0
 
     def test_csr_matrix_decomposition(self):
