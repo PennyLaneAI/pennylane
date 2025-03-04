@@ -264,15 +264,26 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         while_loop_prim = _get_while_loop_qfunc_prim()
 
         abstracted_axes, abstract_shapes = determine_abstracted_axes(init_state)
-        print(abstracted_axes, abstract_shapes)
+
         flat_body_fn = FlatFn(self.body_fn)
         if jax.config.jax_dynamic_shapes and self.allow_array_resizing:
             new_body_fn = _add_abstract_shapes(flat_body_fn)
         else:
             new_body_fn = flat_body_fn
 
-        jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(*init_state)
-        jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn, abstracted_axes=abstracted_axes)(*init_state)
+        def dummy_val(val):
+            if hasattr(val, "shape"):
+                return jax.numpy.empty(val.shape, dtype=val.dtype)
+            return val
+
+        dummy_init_state = [dummy_val(v) for v in init_state]
+
+        jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
+            *dummy_init_state
+        )
+        jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn, abstracted_axes=abstracted_axes)(
+            *dummy_init_state
+        )
 
         flat_args, _ = jax.tree_util.tree_flatten(init_state)
 

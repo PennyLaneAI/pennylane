@@ -56,7 +56,7 @@ def _get_shape_for_array(x, abstract_shapes: list) -> dict:
             found = False
             # check if the shape tracer is one we have already encountered
             for previous_idx, previous_shape in enumerate(abstract_shapes):
-                if s is previous_shape:
+                if False:  # s is previous_shape:
                     abstract_axes[i] = _get_letter(previous_idx)
                     found = True
                     break
