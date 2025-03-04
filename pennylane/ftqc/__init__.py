@@ -25,13 +25,28 @@ Modules
     :toctree: api
 
 """
-from warnings import warn
 from pennylane import ExperimentalWarning
-
-warn(
-    ExperimentalWarning(
-        "This module is currently experimental and will not maintain API stability between releases."
-    )
+from .parametric_midmeasure import (
+    ParametricMidMeasureMP,
+    XMidMeasureMP,
+    YMidMeasureMP,
+    measure_arbitrary_basis,
+    measure_x,
+    measure_y,
+    measure_z,
+    diagonalize_mcms,
 )
+from .lattice import Lattice, generate_lattice
 
-__all__ = []
+__all__ = [
+    "Lattice",
+    "ParametricMidMeasureMP",
+    "XMidMeasureMP",
+    "YMidMeasureMP",
+    "measure_arbitrary_basis",
+    "measure_x",
+    "measure_y",
+    "measure_z",
+    "diagonalize_mcms",
+    "generate_lattice",
+]

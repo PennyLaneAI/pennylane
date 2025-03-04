@@ -1266,6 +1266,38 @@ class SWAP(Operation):
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
+    @lru_cache()
+    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
+        r"""Sparse Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SWAP.sparse_matrix`
+
+        Returns:
+            csr_matrix: matrix
+
+        **Example**
+
+        >>> print(qml.SWAP.compute_sparse_matrix())
+        <Compressed Sparse Row sparse matrix of dtype 'int64'
+                with 4 stored elements and shape (4, 4)>
+          Coords        Values
+          (0, 0)        1
+          (1, 2)        1
+          (2, 1)        1
+          (3, 3)        1
+        """
+        # The same as
+        # [[1 0 0 0]
+        #  [0 0 1 0]
+        #  [0 1 0 0]
+        #  [0 0 0 1]]
+        data, indices, indptr = [1, 1, 1, 1], [0, 2, 1, 3], [0, 1, 2, 3, 4]
+        return sparse.csr_matrix((data, indices, indptr))
+
+    @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
