@@ -12,6 +12,7 @@ import scipy as sp
 
 from pennylane.labs.pf.abstract import Fragment
 from pennylane.labs.pf.utils import _zeros, op_norm, string_to_matrix, tensor_with_identity
+from pennylane.labs.pf.wavefunctions import HOState
 
 from .tree import Node
 
@@ -230,3 +231,19 @@ class RealspaceSum(Fragment):
             norm += coeff_sum * term_op_norm
 
         return norm
+
+    def apply(self, state: HOState) -> HOState:
+        if not isinstance(state, HOState):
+            raise TypeError
+
+        mat = self.matrix(state.gridpoints, state.modes, basis="harmonic", sparse=True)
+
+        return HOState.from_scipy(
+            state.modes,
+            state.gridpoints,
+            mat @ state.vector,
+        )
+
+    def expectation(self, state_left: HOState, state_right: HOState) -> float:
+        """Compute expectation value"""
+        return state_left.dot(self.apply(state_right))
