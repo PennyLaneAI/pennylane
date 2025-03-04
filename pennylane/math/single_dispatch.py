@@ -103,7 +103,7 @@ def _generic_sparse_det(A):
     assert hasattr(A, "tocsc"), TypeError(f"Expected SciPy sparse, got {type(A)}")
 
     A_csc = A.tocsc()
-    lu = splu(A_csc)
+    lu = sp.sparse.linalg.splu(A_csc)
     U_diag = lu.U.diagonal()
     det_A = np.prod(U_diag)
     parity = _permutation_parity(lu.perm_r)
@@ -131,6 +131,8 @@ def _permutation_parity(perm):
 
 ar.register_function("scipy", "linalg.det", _det_sparse)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
+ar.register_function("")
+
 ar.register_function("scipy", "trace", lambda x: x.trace())
 ar.register_function("scipy", "reshape", lambda x, new_shape: x.reshape(new_shape))
 ar.register_function("scipy", "real", lambda x: x.real)
@@ -201,7 +203,7 @@ ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("autograd", "unstack", list)
-
+e
 
 def autograd_get_dtype_name(x):
     """A autograd version of get_dtype_name that can handle array boxes."""
