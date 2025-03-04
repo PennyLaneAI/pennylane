@@ -240,8 +240,8 @@ class MPSPrep(Operation):
             as a product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
-        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum bond dimension
-            of the MPS is :math:`2^k`, then :math:`k` ``work_wires`` will be needed. If no ``work_wires`` are given,
+        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
+            of the MPS tensors is :math:`2^k`, then :math:`k` ``work_wires`` will be needed. If no ``work_wires`` are given,
             this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
 
         right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed to the MPS.
@@ -404,8 +404,8 @@ class MPSPrep(Operation):
                 product of site matrices.
 
             wires (Sequence[int]): wires that the template acts on
-            work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum bond dimension
-                of the MPS is `2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
+            work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
+                of the MPS tensors is `2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
                 this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
 
             right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed
