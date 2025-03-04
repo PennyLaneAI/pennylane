@@ -29,13 +29,15 @@ def _add_abstract_shapes(f):
         out = f(*args, **kwargs)
         shapes = []
         for x in out:
-            shapes.extend(s for s in getattr(x, "shape", ()) if is_abstract(s))
+            for s in getattr(x, "shape", ()):
+                if is_abstract(s) and not any(s is var for var in out):
+                    shapes.append(s)
         return *shapes, *out
 
     return new_f
 
 
-def while_loop(cond_fn):
+def while_loop(cond_fn, allow_array_resizing: bool = False):
     """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
     used without :func:`~.qjit`, this function will fall back to a standard
     Python for loop.
@@ -109,8 +111,6 @@ def while_loop(cond_fn):
         ops_loader = compilers[active_jit]["ops"].load()
         return ops_loader.while_loop(cond_fn)
 
-    # if there is no active compiler, simply interpret the while loop
-    # via the Python interpretor.
     def _decorator(body_fn: Callable) -> Callable:
         """Transform that will call the input ``body_fn`` until the closure variable ``cond_fn`` is met.
 
@@ -123,7 +123,7 @@ def while_loop(cond_fn):
         Returns:
             Callable: a callable with the same signature as ``body_fn`` and ``cond_fn``.
         """
-        return WhileLoopCallable(cond_fn, body_fn)
+        return WhileLoopCallable(cond_fn, body_fn, allow_array_resizing=allow_array_resizing)
 
     return _decorator
 
@@ -194,8 +194,6 @@ def _get_while_loop_qfunc_prim():
     """Get the while_loop primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     while_loop_prim = NonInterpPrimitive("while_loop")
@@ -244,9 +242,10 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         body_fn (Callable): the function that is executed within the while loop
     """
 
-    def __init__(self, cond_fn, body_fn):
+    def __init__(self, cond_fn, body_fn, allow_array_resizing: bool = False):
         self.cond_fn = cond_fn
         self.body_fn = body_fn
+        self.allow_array_resizing: bool = allow_array_resizing
 
     def _call_capture_disabled(self, *init_state):
         args = init_state
@@ -265,21 +264,28 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         while_loop_prim = _get_while_loop_qfunc_prim()
 
         abstracted_axes, abstract_shapes = determine_abstracted_axes(init_state)
-
+        print(abstracted_axes, abstract_shapes)
         flat_body_fn = FlatFn(self.body_fn)
-        if jax.config.jax_dynamic_shapes:
+        if jax.config.jax_dynamic_shapes and self.allow_array_resizing:
             new_body_fn = _add_abstract_shapes(flat_body_fn)
         else:
             new_body_fn = flat_body_fn
+
         jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(*init_state)
         jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn, abstracted_axes=abstracted_axes)(*init_state)
 
+        flat_args, _ = jax.tree_util.tree_flatten(init_state)
+
         body_consts = slice(0, len(jaxpr_body_fn.consts))
         cond_consts = slice(body_consts.stop, body_consts.stop + len(jaxpr_cond_fn.consts))
-        abstract_shapes_slice = slice(cond_consts.stop, cond_consts.stop + len(abstract_shapes))
+        if self.allow_array_resizing:
+            abstract_shapes_slice = slice(cond_consts.stop, cond_consts.stop)
+            flat_args = abstract_shapes + flat_args
+            abstract_shapes = ()
+        else:
+            abstract_shapes_slice = slice(cond_consts.stop, cond_consts.stop + len(abstract_shapes))
         args_slice = slice(abstract_shapes_slice.stop, None)
 
-        flat_args, _ = jax.tree_util.tree_flatten(init_state)
         results = while_loop_prim.bind(
             *jaxpr_body_fn.consts,
             *jaxpr_cond_fn.consts,
