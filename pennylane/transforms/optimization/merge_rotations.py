@@ -48,7 +48,7 @@ def _get_plxpr_merge_rotations():
         transform when program capture is enabled."""
 
         def __init__(self, atol: Optional[float] = 1e-8, include_gates: Optional[list[str]] = None):
-            self._env = {}
+            super().__init__()
             self.atol = atol
             self.include_gates = include_gates
 
