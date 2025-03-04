@@ -210,6 +210,7 @@ ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("autograd", "unstack", list)
 
+
 def autograd_get_dtype_name(x):
     """A autograd version of get_dtype_name that can handle array boxes."""
     # this function seems to only get called with x is an arraybox.
