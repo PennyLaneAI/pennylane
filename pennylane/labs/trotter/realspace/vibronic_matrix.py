@@ -9,7 +9,7 @@ from typing import Dict, Tuple, Union
 import numpy as np
 import scipy as sp
 
-from pennylane.labs.trotter.fragments import Fragment
+from pennylane.labs.trotter import Fragment
 from pennylane.labs.trotter.realspace import RealspaceSum
 from pennylane.labs.trotter.utils import _kron, _zeros, is_pow_2, next_pow_2
 from pennylane.labs.trotter.realspace.ho_state import VibronicHO
