@@ -267,8 +267,3 @@ class VibronicMatrix(Fragment):
             gridpoints=state.gridpoints,
             ho_states=ho_states,
         )
-
-
-def commutator(a: VibronicMatrix, b: VibronicMatrix):
-    """Return the commutator [a, b] = ab - ba"""
-    return a @ b - b @ a
