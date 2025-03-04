@@ -244,8 +244,8 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
 
     @CancelInversesInterpreter.register_primitive(measure_prim)
     def _(_, *invals, **params):
-        _, params = measure_prim.get_bind_params(params)
-        return measure_prim.bind(*invals, **params)
+        subfuns, params = measure_prim.get_bind_params(params)
+        return measure_prim.bind(*subfuns, *invals, **params)
 
     def cancel_inverses_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args

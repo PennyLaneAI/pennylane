@@ -227,8 +227,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 
     @SingleQubitFusionInterpreter.register_primitive(measure_prim)
     def _(_, *invals, **params):
-        _, params = measure_prim.get_bind_params(params)
-        return measure_prim.bind(*invals, **params)
+        subfuns, params = measure_prim.get_bind_params(params)
+        return measure_prim.bind(*subfuns, *invals, **params)
 
     def single_qubit_fusion_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args
