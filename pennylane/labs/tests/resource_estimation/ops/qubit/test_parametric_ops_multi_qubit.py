@@ -27,7 +27,7 @@ class TestMultiRZ:
     def test_resource_params(self, num_wires):
         """Test that the resource params are correct."""
         op = re.ResourceMultiRZ(0.5, range(num_wires))
-        assert op.resource_params() == {"num_wires": num_wires}
+        assert op.resource_params == {"num_wires": num_wires}
 
     @pytest.mark.parametrize("num_wires", range(1, 10))
     def test_resource_rep(self, num_wires):
@@ -127,16 +127,16 @@ class TestMultiRZ:
         if num_ctrl_values != 0:
             with pytest.raises(re.ResourcesNotDefined):
                 op.controlled_resource_decomp(
-                    num_ctrl_wires, num_ctrl_values, num_work_wires, **op.resource_params()
+                    num_ctrl_wires, num_ctrl_values, num_work_wires, **op.resource_params
                 )
         else:
             assert (
                 op.controlled_resource_decomp(
-                    num_ctrl_wires, num_ctrl_values, num_work_wires, **op.resource_params()
+                    num_ctrl_wires, num_ctrl_values, num_work_wires, **op.resource_params
                 )
                 == expected_res
             )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, {re.ResourceMultiRZ.resource_rep(num_wires=4): 1}),
@@ -149,10 +149,10 @@ class TestMultiRZ:
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
         op = re.ResourceMultiRZ(1.23, wires=range(4))
-        assert op.pow_resource_decomp(z, **op.resource_params()) == expected_res
+        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestPauliRot:
@@ -164,7 +164,7 @@ class TestPauliRot:
     def test_resource_params(self, pauli_string):
         """Test that the resource params are correct."""
         op = re.ResourcePauliRot(theta=0.5, pauli_word=pauli_string, wires=range(len(pauli_string)))
-        assert op.resource_params() == {"pauli_string": pauli_string}
+        assert op.resource_params == {"pauli_string": pauli_string}
 
     @pytest.mark.parametrize("pauli_string", pauli_words)
     def test_resource_rep(self, pauli_string):
@@ -357,11 +357,11 @@ class TestPauliRot:
 
         assert (
             op.controlled_resource_decomp(
-                num_ctrl_wires, num_ctrl_values, num_work_wires, **op.resource_params()
+                num_ctrl_wires, num_ctrl_values, num_work_wires, **op.resource_params
             )
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     @pytest.mark.parametrize("z", range(1, 5))
     @pytest.mark.parametrize("pauli_word", pauli_words)
@@ -369,10 +369,10 @@ class TestPauliRot:
         """Test that the pow decomposition is correct."""
         op = re.ResourcePauliRot(theta=0.5, pauli_word=pauli_word, wires=range(len(pauli_word)))
         expected_res = {re.ResourcePauliRot.resource_rep(pauli_string=pauli_word): 1}
-        assert op.pow_resource_decomp(z, **op.resource_params()) == expected_res
+        assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestIsingXX:
@@ -381,7 +381,7 @@ class TestIsingXX:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceIsingXX(0.5, wires=[0, 1])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -415,7 +415,7 @@ class TestIsingXY:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceIsingXY(0.5, wires=[0, 1])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -453,7 +453,7 @@ class TestIsingYY:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceIsingYY(0.5, wires=[0, 1])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -487,7 +487,7 @@ class TestIsingZZ:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceIsingZZ(0.5, wires=[0, 1])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -521,7 +521,7 @@ class TestPSWAP:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourcePSWAP(0.5, wires=[0, 1])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""

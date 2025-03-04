@@ -76,7 +76,7 @@ class TestBasisRotation:
     )
     def test_resources(self, op, params, expected_res):
         """Test the resources method returns the correct dictionary"""
-        res_from_op = op.resources(**op.resource_params())
+        res_from_op = op.resources(**op.resource_params)
         res_from_func = re.ResourceBasisRotation.resources(**params)
 
         assert res_from_op == expected_res
@@ -85,7 +85,7 @@ class TestBasisRotation:
     @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data))
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
-        assert op.resource_params() == expected_params
+        assert op.resource_params == expected_params
 
     @pytest.mark.parametrize("expected_params", resource_params_data)
     def test_resource_rep(self, expected_params):
