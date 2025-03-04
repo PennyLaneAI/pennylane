@@ -61,8 +61,19 @@ class DecompositionGraph:
         self._op_node_indices: dict[CompressedResourceOp, int] = {}
         self._fixed_decomps = fixed_decomps or {}
         self._alt_decomps = alt_decomps or {}
-        self._construct_graph()
         self._visitor = None
+
+        # TODO(Ali): This is a temporary fix to make the resource_params property available
+        #  for arbitrary operators in the decomposition graph.
+        for op, _ in self._fixed_decomps.items():
+            op.resource_params = property(lambda self: {})
+            op.resource_param_keys = ()
+        for op, _ in self._alt_decomps.items():
+            op.resource_params = property(lambda self: {})
+            op.resource_param_keys = ()
+
+        # Construct the decomposition graph
+        self._construct_graph()
 
     def _get_decompositions(self, op_type) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""

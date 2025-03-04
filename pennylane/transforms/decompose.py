@@ -44,7 +44,7 @@ def _operator_decomposition_gen(
     """A generator that yields the next operation that is accepted."""
 
     max_depth_reached = False
-
+    decomp = []
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
 
@@ -67,14 +67,14 @@ def _operator_decomposition_gen(
         decomp = op.decomposition()
         current_depth += 1
 
-        for sub_op in decomp:
-            yield from _operator_decomposition_gen(
-                sub_op,
-                acceptance_function,
-                max_expansion=max_expansion,
-                current_depth=current_depth,
-                graph=graph,
-            )
+    for sub_op in decomp:
+        yield from _operator_decomposition_gen(
+            sub_op,
+            acceptance_function,
+            max_expansion=max_expansion,
+            current_depth=current_depth,
+            graph=graph,
+        )
 
 
 @lru_cache
@@ -95,12 +95,15 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         when program capture is enabled.
         """
 
-        def __init__(self, gate_set=None, max_expansion=None):
+        def __init__(self, gate_set=None, max_expansion=None, fixed_decomps=None, alt_decomps=None):
+
             self.max_expansion = max_expansion
             self._current_depth = 0
 
             self._graph_decomp = None
             self._target_gate_names = None
+            self._fixed_decomps = fixed_decomps
+            self._alt_decomps = alt_decomps
 
             # We use a ChainMap to store the environment frames,
             # which allows us to push and pop environments without copying
@@ -188,10 +191,16 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
                     if qml.decomposition.enabled_graph_debug():
                         print(
-                            f"[DEBUG] Constructing the graph with captured operations {operations}\n[DEBUG]     AND the target gate set {self._target_gate_names}"
+                            f"[DEBUG] Constructing the graph with captured operations {operations}\n"
+                            f"[DEBUG]     AND the target gate set {self._target_gate_names}"
                         )
 
-                    self._graph_decomp = DecompositionGraph(operations, self._target_gate_names)
+                    self._graph_decomp = DecompositionGraph(
+                        operations,
+                        self._target_gate_names,
+                        fixed_decomps=self._fixed_decomps,
+                        alt_decomps=self._alt_decomps,
+                    )
 
                     if qml.decomposition.enabled_graph_debug():
                         print(f"[DEBUG] Solving the decomposition graph")
@@ -273,7 +282,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 self._env_map[constvar] = const
 
             if qml.decomposition.enabled_graph():
-
                 operations = []
 
                 for eq in jaxpr.eqns:
@@ -284,10 +292,11 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                         if eq.outvars[0].__class__.__name__ == "DropVar":
                             operations.append(op)
 
-                if qml.decomposition.enabled_graph_debug():
-                    print(f"[DEBUG] PLxPR Captured operators {operations}")
+                if operations:
+                    if qml.decomposition.enabled_graph_debug():
+                        print(f"[DEBUG] PLxPR Captured operators {operations}")
 
-                self._create_decomp_graph(operations)
+                    self._create_decomp_graph(operations)
 
             for eq in jaxpr.eqns:
 
@@ -362,7 +371,10 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
     ):  # pylint: disable=unused-argument
         """Function from decomposing jaxpr."""
         decomposer = DecomposeInterpreter(
-            gate_set=tkwargs.pop("gate_set", None), max_expansion=tkwargs.pop("max_expansion", None)
+            gate_set=tkwargs.pop("gate_set", None),
+            max_expansion=tkwargs.pop("max_expansion", None),
+            fixed_decomps=tkwargs.pop("fixed_decomps", None),
+            alt_decomps=tkwargs.pop("alt_decomps", None),
         )
 
         def wrapper(*inner_args):
@@ -377,7 +389,9 @@ DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
 @partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
-def decompose(tape, gate_set=None, max_expansion=None):
+def decompose(
+    tape, gate_set=None, max_expansion=None, fixed_decomps: dict = None, alt_decomps: dict = None
+):
     """Decomposes a quantum circuit into a user-specified gate set.
 
     Args:
@@ -388,6 +402,11 @@ def decompose(tape, gate_set=None, max_expansion=None):
             case the gate set is considered to be all available :doc:`quantum operators </introduction/operations>`.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
+        fixed_decomps (dict, optional): A dictionary mapping operator types to their decomposition
+            rules. If an operator is found in the dictionary, the decomposition will be applied
+            directly without checking the gate set. Defaults to None.
+        alt_decomps (dict, optional): A dictionary mapping operator types to their decomposition
+            rules. Defaults to None.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -555,7 +574,12 @@ def decompose(tape, gate_set=None, max_expansion=None):
                     f"[DEBUG] Constructing the graph with tape operations {tape.operations}\n[DEBUG]     AND the target gate set {target_gate_names}"
                 )
 
-            decomp_graph = DecompositionGraph(tape.operations, target_gate_names)
+            decomp_graph = DecompositionGraph(
+                tape.operations,
+                target_gate_names,
+                fixed_decomps=fixed_decomps,
+                alt_decomps=alt_decomps,
+            )
 
             if qml.decomposition.enabled_graph_debug():
                 print(f"[DEBUG] Solving the decomposition graph")

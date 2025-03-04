@@ -1419,7 +1419,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         # For most operators, this should just be an empty dictionary, but a default
         # implementation is intentionally not provided so that each operator class is
         # forced to explicitly define its resource params.
-        raise NotImplementedError
+        # raise NotImplementedError
+        raise NotImplementedError(f"Operation {self.name} does not have a resource function")
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
