@@ -88,6 +88,7 @@ class DummyOp(re.ResourceOperator, Operation):
     def exp_resource_decomp(cls, coeff, num_steps, a, b):  # pylint: disable=unused-argument
         return cls.resources(a + 1, b + 1)
 
+    @property
     def resource_params(self) -> dict:
         return {"a": self.a, "b": self.b}
 
@@ -214,7 +215,7 @@ class TestResourceTrotterProduct:
     @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data))
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
-        assert op.resource_params() == expected_params
+        assert op.resource_params == expected_params
 
     @pytest.mark.parametrize("params", resource_params_data)
     def test_resource_rep(self, params):
@@ -285,7 +286,7 @@ class TestResourceTrotterizedQfunc:
     )
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
-        assert op.resource_params() == expected_params
+        assert op.resource_params == expected_params
 
     @pytest.mark.parametrize("params", resource_params_data)
     def test_resource_rep(self, params):

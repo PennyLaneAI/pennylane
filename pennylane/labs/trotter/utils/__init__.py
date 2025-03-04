@@ -13,7 +13,7 @@ from .matrix_ops import (
     tensor_with_identity,
 )
 
-from .utils import(
+from .utils import (
     coeffs,
     is_pow_2,
     next_pow_2,

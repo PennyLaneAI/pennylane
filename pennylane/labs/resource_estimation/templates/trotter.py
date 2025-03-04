@@ -86,6 +86,7 @@ class ResourceTrotterProduct(
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         n = self.hyperparameters["n"]
         base = self.hyperparameters["base"]
@@ -141,6 +142,7 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
             gate_types[cp_rep] += 2 * n * (5 ** (k - 1))
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         with qml.QueuingManager.stop_recording():
             with qml.queuing.AnnotatedQueue() as q:
@@ -179,7 +181,7 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
 
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
-        return self.__class__.resource_rep(**self.resource_params(), name=self._name)
+        return self.__class__.resource_rep(**self.resource_params, name=self._name)
 
 
 def resource_trotterize(qfunc, n=1, order=2, reverse=False):

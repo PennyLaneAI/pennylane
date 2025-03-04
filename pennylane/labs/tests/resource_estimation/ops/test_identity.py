@@ -37,7 +37,7 @@ class TestIdentity:
     def test_resource_params(self):
         """Test the resource params are correct"""
         op = re.ResourceIdentity(0)
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
@@ -54,7 +54,7 @@ class TestIdentity:
         op = re.ResourceIdentity(0)
         op2 = re.ResourceAdjoint(op)
         assert op.adjoint_resource_decomp() == {re.ResourceIdentity.resource_rep(): 1}
-        assert op2.resources(**op2.resource_params()) == {re.ResourceIdentity.resource_rep(): 1}
+        assert op2.resources(**op2.resource_params) == {re.ResourceIdentity.resource_rep(): 1}
 
     identity_ctrl_data = (
         ([1], [1], [], {re.ResourceIdentity.resource_rep(): 1}),
@@ -80,7 +80,7 @@ class TestIdentity:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     identity_pow_data = (
         (1, {re.ResourceIdentity.resource_rep(): 1}),
@@ -95,7 +95,7 @@ class TestIdentity:
         assert op.pow_resource_decomp(z) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestGlobalPhase:
@@ -114,7 +114,7 @@ class TestGlobalPhase:
     def test_resource_params(self):
         """Test the resource params are correct"""
         op = re.ResourceGlobalPhase(0.1, wires=0)
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
@@ -131,7 +131,7 @@ class TestGlobalPhase:
         op = re.ResourceGlobalPhase(0.1, wires=0)
         op2 = re.ResourceAdjoint(op)
         assert op.adjoint_resource_decomp() == {re.ResourceGlobalPhase.resource_rep(): 1}
-        assert op2.resources(**op2.resource_params()) == {re.ResourceGlobalPhase.resource_rep(): 1}
+        assert op2.resources(**op2.resource_params) == {re.ResourceGlobalPhase.resource_rep(): 1}
 
     globalphase_ctrl_data = (
         ([1], [1], [], {re.ResourcePhaseShift.resource_rep(): 1}),
@@ -173,7 +173,7 @@ class TestGlobalPhase:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     globalphase_pow_data = (
         (1, {re.ResourceGlobalPhase.resource_rep(): 1}),
@@ -188,4 +188,4 @@ class TestGlobalPhase:
         assert op.pow_resource_decomp(z) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
