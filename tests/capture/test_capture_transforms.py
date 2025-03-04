@@ -19,13 +19,14 @@ from functools import partial
 
 import pytest
 
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
+
+# pylint: disable=wrong-import-position
 import pennylane as qml
 from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.core import TransformError, transform
-
-jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
