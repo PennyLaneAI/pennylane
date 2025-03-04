@@ -1111,7 +1111,7 @@ class TestSqrtMatrix:
     illmats_info_pairs = [
         (
             np.array([[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-            RuntimeError,
+            ValueError,
             "Factor is exactly singular",
         )
     ]
@@ -1192,7 +1192,7 @@ class TestDenmanBeaversIterations:
         n = 4
         mat = csr_matrix(np.diag([0.0] + [1.0] * (n - 1)))
 
-        with pytest.raises(RuntimeError, match="Factor is exactly singular"):
+        with pytest.raises(ValueError, match="Factor is exactly singular"):
             _denman_beavers_iterations(mat)
 
     def test_overflow_matrix(self):
@@ -1200,7 +1200,7 @@ class TestDenmanBeaversIterations:
         n = 4
         mat = csr_matrix(np.eye(n) * 1e150)
 
-        with pytest.raises(UserWarning, match="Denman Beavers not converged"):
+        with pytest.warns(UserWarning, match="Denman Beavers not converged"):
             _denman_beavers_iterations(mat)
 
     def test_invalid_value_matrix(self):
@@ -1213,13 +1213,8 @@ class TestDenmanBeaversIterations:
 
     def test_non_convergent_matrix(self):
         """Test that non-convergent matrix raises appropriate error"""
-        n = 4
-        mat = np.eye(n)
-        mat[0, 1] = 1e10
-        mat[1, 0] = 1e-10
-        mat = csr_matrix(mat)
-
-        with pytest.raises(RuntimeError, match="Factor is exactly singular"):
+        mat = csr_matrix([[1, 1e-6], [1e-6, 1e-12 + 1e-25]])
+        with pytest.warns(UserWarning, match="Denman Beavers not converged"):
             _denman_beavers_iterations(mat)
 
     def test_unstable_matrix(self):
@@ -1227,7 +1222,7 @@ class TestDenmanBeaversIterations:
         n = 4
         mat = csr_matrix(np.diag([1e-200, 1e200] + [1.0] * (n - 2)))
 
-        with pytest.raises(UserWarning, match="Denman Beavers not converged"):
+        with pytest.warns(UserWarning, match="Denman Beavers not converged"):
             _denman_beavers_iterations(mat)
 
     @pytest.mark.parametrize("size", [2, 3, 4, 5])
@@ -1245,7 +1240,9 @@ class TestDenmanBeaversIterations:
 
     @pytest.mark.parametrize("trial", range(20))
     def test_hermitian_matrix(self, trial):  # pylint: disable=unused-argument
-        """Test that Hermitian matrices work correctly on Hermitians of positive det"""
+        """Test that Hermitian matrices work correctly on Hermitians of positive det.
+        Emulate random users' random input; the iteration should pass the simple branch determined by determinant, or it needs extra examine.
+        """
         n = 4
         A = np.random.random((n, n)) + 1j * np.random.random((n, n))
         mat = csr_matrix(np.eye(n) - 0.2 * (A @ A.T.conj()))
