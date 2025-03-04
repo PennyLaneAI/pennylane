@@ -88,8 +88,7 @@ def _get_plxpr_merge_rotations():
             """
 
             if self.include_gates is not None and op.name not in self.include_gates:
-                self.interpret_and_refresh_previous_ops(op)
-                return
+                return self.interpret_and_refresh_previous_ops(op)
 
             if op not in composable_rotations:
                 self.interpret_and_refresh_previous_ops(op)
