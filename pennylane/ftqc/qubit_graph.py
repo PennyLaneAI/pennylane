@@ -58,16 +58,20 @@ class QubitGraph:
         if id is None:
             raise TypeError("'None' is not a valid QubitGraph ID.")
 
-        self._id = id  # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
+        # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
+        self._id = id
 
         if graph is not None:
             self._check_graph_type_supported_and_raise_or_warn(graph)
 
-        self._graph_qubits = graph  # The qubits underlying (nested within) the current qubit
-        self._parent = None  # The parent QubitGraph object under which this QubitGraph is nested
+        # The graph structure of the qubits underlying (nested within) the current qubit
+        self._graph = graph
+
+        # The parent QubitGraph object under which this QubitGraph is nested
+        self._parent = None
 
         # Initialize each node in the graph to store an empty QubitGraph object
-        if self._graph_qubits is not None:
+        if self._graph is not None:
             self._initialize_all_nodes_as_qubit_graph()
 
     def __getitem__(self, key: Any) -> "QubitGraph":
@@ -87,10 +91,10 @@ class QubitGraph:
             return None
 
         if isinstance(key, slice):
-            start, stop, step = key.indices(len(self._graph_qubits.nodes))
-            return [self._graph_qubits.nodes[node]["qubits"] for node in range(start, stop, step)]
+            start, stop, step = key.indices(len(self._graph.nodes))
+            return [self._graph.nodes[node]["qubits"] for node in range(start, stop, step)]
 
-        return self._graph_qubits.nodes[key]["qubits"]
+        return self._graph.nodes[key]["qubits"]
 
     def __setitem__(self, key: Any, value: "QubitGraph"):
         """QubitGraph subscript operator for assignment.
@@ -142,7 +146,7 @@ class QubitGraph:
         value._id = key
         value._parent = self
 
-        self._graph_qubits.nodes[key]["qubits"] = value
+        self._graph.nodes[key]["qubits"] = value
 
     def __iter__(self):
         """Dummy QubitGraph iterator method that yields itself.
@@ -235,7 +239,7 @@ class QubitGraph:
     @property
     def graph(self):
         """Gets the underlying qubit graph."""
-        return self._graph_qubits
+        return self._graph
 
     @property
     def nodes(self):
@@ -249,11 +253,11 @@ class QubitGraph:
                 ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the networkx
                 documentation for more information.
         """
-        if self._graph_qubits is None:
+        if self._graph is None:
             self._warn_uninitialized()
             return None
 
-        return self._graph_qubits.nodes
+        return self._graph.nodes
 
     @property
     def edges(self):
@@ -266,11 +270,11 @@ class QubitGraph:
                 ``len(g.edges)``, ``e in g.edges``, ``g.edges & h.edges``, etc. See the networkx
                 documentation for more information.
         """
-        if self._graph_qubits is None:
+        if self._graph is None:
             self._warn_uninitialized()
             return None
 
-        return self._graph_qubits.edges
+        return self._graph.edges
 
     @property
     def is_initialized(self) -> bool:
@@ -283,7 +287,7 @@ class QubitGraph:
         Returns:
             bool: Returns True if the underlying qubits have been initialized, False otherwise.
         """
-        return self._graph_qubits is not None
+        return self._graph is not None
 
     @property
     def is_leaf(self) -> bool:
@@ -296,7 +300,7 @@ class QubitGraph:
         Returns:
             bool: Returns True if this QubitGraph object is a leaf node.
         """
-        return (self._graph_qubits is None) or (len(self.nodes) == 0)
+        return (self._graph is None) or (len(self.nodes) == 0)
 
     @property
     def parent(self) -> "QubitGraph":
@@ -320,7 +324,7 @@ class QubitGraph:
 
     def clear(self):
         """Clears the graph of underlying qubits."""
-        self._graph_qubits = None
+        self._graph = None
 
     def connected_qubits(self, node):
         """Returns an iterator over all of the qubits connected to the qubit with label ``node``.
@@ -336,7 +340,7 @@ class QubitGraph:
             self._warn_uninitialized()
             return
 
-        for neighbor in self._graph_qubits.neighbors(node):
+        for neighbor in self._graph.neighbors(node):
             yield self[neighbor]
 
     def has_cycle(self) -> bool:
@@ -384,7 +388,7 @@ class QubitGraph:
             self._warn_reinitialization()
             return
 
-        self._graph_qubits = graph
+        self._graph = graph
         self._initialize_all_nodes_as_qubit_graph()
 
     def init_graph_2d_grid(self, m: int, n: int):
@@ -412,7 +416,7 @@ class QubitGraph:
             self._warn_reinitialization()
             return
 
-        self._graph_qubits = nx.grid_2d_graph(m, n)
+        self._graph = nx.grid_2d_graph(m, n)
         self._initialize_all_nodes_as_qubit_graph()
 
     def init_graph_nd_grid(self, dim: Union[list[int], tuple[int]]):
@@ -448,7 +452,7 @@ class QubitGraph:
             self._warn_reinitialization()
             return
 
-        self._graph_qubits = nx.grid_graph(dim)
+        self._graph = nx.grid_graph(dim)
         self._initialize_all_nodes_as_qubit_graph()
 
     def init_graph_surface_code_17(self):
@@ -486,9 +490,9 @@ class QubitGraph:
         data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
         aux_qubits = [("aux", i) for i in range(9, 17)]  # 8 aux qubits, indexed 9, 10, ..., 16
 
-        self._graph_qubits = nx.Graph()
-        self._graph_qubits.add_nodes_from(data_qubits)
-        self._graph_qubits.add_nodes_from(aux_qubits)
+        self._graph = nx.Graph()
+        self._graph.add_nodes_from(data_qubits)
+        self._graph.add_nodes_from(aux_qubits)
 
         # Adjacency list showing the connectivity of each auxiliary qubit to its neighbouring data qubits
         aux_adjacency_list = {
@@ -504,7 +508,7 @@ class QubitGraph:
 
         for aux_node, data_nodes in aux_adjacency_list.items():
             for data_node in data_nodes:
-                self._graph_qubits.add_edge(("aux", aux_node), ("data", data_node))
+                self._graph.add_edge(("aux", aux_node), ("data", data_node))
 
         self._initialize_all_nodes_as_qubit_graph()
 
@@ -512,12 +516,12 @@ class QubitGraph:
         """Helper function to initialize all nodes in the underlying qubit graph as uninitialized
         QubitGraph objects. This function also sets the ``parent`` attribute appropriately.
         """
-        assert self._graph_qubits is not None, "Underlying qubit graph object must not be None"
+        assert self._graph is not None, "Underlying qubit graph object must not be None"
         assert hasattr(
-            self._graph_qubits, "nodes"
+            self._graph, "nodes"
         ), "Underlying qubit graph object must have 'nodes' attribute"
 
-        for node in self._graph_qubits.nodes:
+        for node in self._graph.nodes:
             q = QubitGraph(id=node)
             q._parent = self  # pylint: disable=protected-access
             self[node] = q
