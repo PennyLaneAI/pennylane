@@ -42,6 +42,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
+  following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
+  [(#6925)](https://github.com/PennyLaneAI/pennylane/pull/6925)
+  
 * `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
 
@@ -230,6 +234,14 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives
+  when using program capture to jaxpr.
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
+* Device-provided derivatives are integrated into the program capture pipeline.
+  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
 * The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
 
@@ -306,6 +318,9 @@
 
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
+* ``ResourceOperator.resource_params`` is changed to a property.
+  [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
 <h3>Breaking changes 💔</h3>
 
@@ -387,6 +402,10 @@
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
+
+* Quantum transform interpreters now perform argument validation and will no longer 
+  check if the equation in the `jaxpr` is a transform primitive.
+  [(#7023)](https://github.com/PennyLaneAI/pennylane/pull/7023)
 
 * `qml.for_loop` and `qml.while_loop` have been moved from the `compiler` module 
   to a new `control_flow` module.
