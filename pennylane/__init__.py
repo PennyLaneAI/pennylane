@@ -31,6 +31,7 @@ from pennylane.decomposition import (
     get_decompositions,
     has_decomposition,
     resource_rep,
+    controlled_resource_rep,
 )
 import pennylane.control_flow
 from pennylane.control_flow import for_loop, while_loop

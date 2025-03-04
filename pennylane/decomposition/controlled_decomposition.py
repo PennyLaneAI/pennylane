@@ -15,9 +15,11 @@
 """This module contains special logic of decomposing controlled operations."""
 
 import functools
+
 import pennylane as qml
+
 from .decomposition_rule import DecompositionRule
-from .resources import Resources, CompressedResourceOp
+from .resources import Resources, controlled_resource_rep, resource_rep
 
 
 class ControlledDecompositionRule(DecompositionRule):
@@ -32,20 +34,17 @@ class ControlledDecompositionRule(DecompositionRule):
     ) -> Resources:
         base_resource_decomp = self._base_decomposition.compute_resources(**base_params)
         controlled_resources = {
-            CompressedResourceOp(
-                qml.ops.Controlled,
-                {
-                    "base_class": base_op_compressed.op_type,
-                    "base_params": base_op_compressed.params,
-                    "num_control_wires": num_control_wires,
-                    "num_zero_control_values": 0,
-                    "num_work_wires": num_work_wires,
-                },
+            controlled_resource_rep(
+                base_op_type=base_op_rep.op_type,
+                base_op_params=base_op_rep.params,
+                num_control_wires=num_control_wires,
+                num_zero_control_values=0,
+                num_work_wires=num_work_wires,
             ): count
-            for base_op_compressed, count in base_resource_decomp.gate_counts.items()
+            for base_op_rep, count in base_resource_decomp.gate_counts.items()
             if count > 0
         }
-        controlled_resources[CompressedResourceOp(qml.X)] = num_zero_control_values * 2
+        controlled_resources[resource_rep(qml.X)] = num_zero_control_values * 2
         gate_count = sum(controlled_resources.values())
         return Resources(gate_count, controlled_resources)
 

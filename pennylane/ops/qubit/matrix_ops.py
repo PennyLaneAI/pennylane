@@ -122,6 +122,8 @@ class QubitUnitary(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ("num_wires",)
+
     grad_method = None
     """Gradient computation method."""
 
@@ -286,6 +288,10 @@ class QubitUnitary(Operation):
     @property
     def has_decomposition(self) -> bool:
         return len(self.wires) < 3
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     def adjoint(self) -> "QubitUnitary":
         if self.has_matrix:

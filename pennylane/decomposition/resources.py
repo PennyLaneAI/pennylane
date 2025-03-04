@@ -119,7 +119,31 @@ def _make_hashable(d) -> tuple:
     return tuple((k, _make_hashable(v)) for k, v in d.items()) if isinstance(d, dict) else d
 
 
-def resource_rep(op_type, **kwargs) -> CompressedResourceOp:
+def _validate_resource_rep(op_type, params):
+    """Validates the resource representation of an operator."""
+
+    if not issubclass(op_type, qml.operation.Operator):
+        raise TypeError(f"op_type must be a type of Operator, got {op_type}")
+
+    if op_type.resource_param_keys is None:
+        raise NotImplementedError(f"resource_param_keys undefined for {op_type.__name__}")
+
+    missing_params = set(op_type.resource_param_keys) - set(params.keys())
+    if missing_params:
+        raise TypeError(
+            f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
+            f"Expected: {op_type.resource_param_keys}"
+        )
+
+    invalid_params = set(params.keys()) - set(op_type.resource_param_keys)
+    if invalid_params:
+        raise TypeError(
+            f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
+            f"Expected: {op_type.resource_param_keys}"
+        )
+
+
+def resource_rep(op_type, **params) -> CompressedResourceOp:
     """Creates a ``CompressedResourceOp`` representation of an operator.
 
     When defining the resource function associated with a decomposition rule. The keys of the
@@ -129,29 +153,52 @@ def resource_rep(op_type, **kwargs) -> CompressedResourceOp:
 
     Args:
         op_type: the operator type
-        **kwargs: parameters that are relevant to the resource estimation of the operator's
+        **params: parameters that are relevant to the resource estimation of the operator's
             decompositions. This should be consistent with ``op_type.resource_param_keys``.
 
     """
+    _validate_resource_rep(op_type, params)
+    if issubclass(op_type, qml.ops.Controlled):
+        return controlled_resource_rep(op_type, **params)
+    return CompressedResourceOp(op_type, params)
 
-    if not issubclass(op_type, qml.operation.Operator):
-        raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
-    if op_type.resource_param_keys is None:
-        raise NotImplementedError(f"resource_param_keys undefined for {op_type.__name__}")
+def controlled_resource_rep(
+    base_op_type,
+    base_op_params: dict,
+    num_control_wires: int,
+    num_zero_control_values: int,
+    num_work_wires: int,
+):
+    """Creates a ``CompressedResourceOp`` representation of a controlled operator.
 
-    missing_params = set(op_type.resource_param_keys) - set(kwargs.keys())
-    if missing_params:
-        raise TypeError(
-            f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
-            f"Expected: {op_type.resource_param_keys}"
-        )
+    Args:
+        base_op_type: the base operator type
+        base_op_params (dict): the parameters of the base operator
+        num_control_wires (int): the number of control wires
+        num_zero_control_values (int): the number of control values that are 0
+        num_work_wires (int): the number of work wires
 
-    invalid_params = set(kwargs.keys()) - set(op_type.resource_param_keys)
-    if invalid_params:
-        raise TypeError(
-            f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
-            f"Expected: {op_type.resource_param_keys}"
-        )
+    """
 
-    return CompressedResourceOp(op_type, kwargs)
+    _validate_resource_rep(base_op_type, base_op_params)
+
+    # Flatten nested controlled operations
+    if issubclass(base_op_type, qml.ops.Controlled):
+        base_resource_rep = controlled_resource_rep(**base_op_params)
+        base_op_type = base_resource_rep.params["base_class"]
+        base_op_params = base_resource_rep.params["base_params"]
+        num_control_wires += base_resource_rep.params["num_control_wires"]
+        num_zero_control_values += base_resource_rep.params["num_zero_control_values"]
+        num_work_wires += base_resource_rep.params["num_work_wires"]
+
+    return CompressedResourceOp(
+        qml.ops.Controlled,
+        {
+            "base_class": base_op_type,
+            "base_params": base_op_params,
+            "num_control_wires": num_control_wires,
+            "num_zero_control_values": num_zero_control_values,
+            "num_work_wires": num_work_wires,
+        },
+    )

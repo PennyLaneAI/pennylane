@@ -75,10 +75,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._target_gate_set = target_gate_set
         self._original_ops_indices: set[int] = set()
         self._target_gate_indices: set[int] = set()
-        self._graph = rx.PyDiGraph()
         self._op_node_indices: dict[CompressedResourceOp, int] = {}
         self._fixed_decomps = fixed_decomps or {}
         self._alt_decomps = alt_decomps or {}
+        self._graph = rx.PyDiGraph()
         self._construct_graph()
         self._visitor = None
 
