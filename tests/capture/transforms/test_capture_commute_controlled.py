@@ -440,6 +440,28 @@ class TestCommuteControlledInterpreter:
         for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
             qml.assert_equal(op1, op2)
 
+    def test_returned_ops_not_pushed(self):
+        """Test that operations returned from a circuit are not pushed."""
+
+        @CommuteControlledInterpreter()
+        def circuit():
+            return qml.RX(0.1, wires=2), qml.CNOT(wires=[0, 2])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.jaxpr.eqns) == 2
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr_ops = collector.state["ops"]
+
+        expected_ops = [
+            qml.RX(0.1, wires=2),
+            qml.CNOT(wires=[0, 2]),
+        ]
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
+
 
 class TestCommuteControlledHigherOrderPrimitives:
     """Unit tests for the CommuteControlledInterpreter for higher order primitives."""
@@ -548,25 +570,20 @@ class TestCommuteControlledHigherOrderPrimitives:
         @CommuteControlledInterpreter()
         def circuit(x):
 
-            @qml.for_loop(0, 1)
+            @qml.for_loop(0, 2)
             # pylint: disable=unused-argument
             def loop(i, x):
                 qml.RX(x, wires=2)
                 qml.CNOT(wires=[0, 2])
                 qml.Toffoli(wires=[0, 1, 2])
-                return qml.H(0)
+                return x
 
-            qml.CNOT(wires=[0, 1])
             # pylint: disable=no-value-for-parameter
             loop(x)
-            qml.CNOT(wires=[0, 1])
 
         jaxpr = jax.make_jaxpr(circuit)(np.pi)
-        assert len(jaxpr.eqns) == 3
-
-        assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
-        assert jaxpr.eqns[1].primitive == for_loop_prim
-        assert jaxpr.eqns[2].primitive == qml.CNOT._primitive
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == for_loop_prim
 
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, np.pi)
@@ -574,12 +591,12 @@ class TestCommuteControlledHigherOrderPrimitives:
         assert len(jaxpr_ops) == 6
 
         expected_ops = [
-            qml.CNOT(wires=[0, 1]),
             qml.CNOT(wires=[0, 2]),
             qml.Toffoli(wires=[0, 1, 2]),
             qml.RX(np.pi, wires=[2]),
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=[0, 2]),
+            qml.Toffoli(wires=[0, 1, 2]),
+            qml.RX(np.pi, wires=[2]),
         ]
 
         for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
@@ -662,31 +679,47 @@ class TestCommuteControlledPLXPR:
             for eqn, cls in zip(transformed_jaxpr.eqns, expected_ops, strict=True)
         )
 
-    @pytest.mark.parametrize("direction", ["left", "right"])
-    def test_applying_plxpr_decorator(self, direction):
+    def test_applying_plxpr_decorator(self):
         """Test that the commute-controlled transformation works when applying the plxpr decorator."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(commute_controlled, direction=direction)
+        @partial(commute_controlled)
         def circuit():
-            qml.PauliX(wires=2)
-            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2])
-            qml.PauliX(wires=2)
-
-        # This circuit should be unchanged
+            qml.PauliX(wires=1)
+            qml.S(wires=0)
+            qml.CZ(wires=[0, 1])
+            qml.CNOT(wires=[1, 0])
+            qml.PauliY(wires=1)
+            qml.CRY(0.5, wires=[1, 0])
+            qml.PhaseShift(0.2, wires=0)
+            qml.PauliY(wires=1)
+            qml.T(wires=0)
+            qml.CRZ(-0.3, wires=[0, 1])
+            qml.RZ(0.2, wires=0)
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=1)
+            qml.CRY(0.2, wires=[1, 0])
 
         jaxpr = jax.make_jaxpr(circuit)()
-        assert len(jaxpr.jaxpr.eqns) == 3
-
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts)
-        jaxpr_ops = collector.state["ops"]
+        assert len(jaxpr.eqns) == 14
 
         expected_ops = [
-            qml.PauliX(wires=2),
-            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2]),
-            qml.PauliX(wires=2),
+            qml.X,
+            qml.CZ,
+            qml.S,
+            qml.CNOT,
+            qml.Y,
+            qml.CRY,
+            qml.Y,
+            qml.CRZ,
+            qml.PhaseShift,
+            qml.T,
+            qml.RZ,
+            qml.Z,
+            qml.X,
+            qml.CRY,
         ]
-
-        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
-            qml.assert_equal(op1, op2, check_interface=False)
+        assert all(
+            eqn.primitive == cls._primitive
+            for eqn, cls in zip(jaxpr.eqns, expected_ops, strict=True)
+        )
