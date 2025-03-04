@@ -66,7 +66,7 @@ def mock_plugin_converters_fixture(monkeypatch):
     mock_plugin_converter_dict = {
         entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
     }
-    monkeypatch.setattr(qml.io, "plugin_converters", mock_plugin_converter_dict)
+    monkeypatch.setattr(qml.io.io, "plugin_converters", mock_plugin_converter_dict)
 
     yield mock_plugin_converter_dict
 
@@ -113,7 +113,7 @@ class TestLoad:
         mock_plugin_converter.mock_loader.side_effect = ValueError("Some Other Error")
 
         mock_plugin_converter_dict = {entry_point_name: mock_plugin_converter}
-        monkeypatch.setattr(qml.io, "plugin_converters", mock_plugin_converter_dict)
+        monkeypatch.setattr(qml.io.io, "plugin_converters", mock_plugin_converter_dict)
 
         with pytest.raises(ValueError, match=r"Some Other Error"):
             method("Test")
