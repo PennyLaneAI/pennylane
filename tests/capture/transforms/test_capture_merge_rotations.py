@@ -116,7 +116,7 @@ class TestMergeRotationsInterpreter:
         assert meas == expected_meas
 
     def test_rot_gate(self):
-        """Test that a qml.Rot gate is correctly merged when using constant arguments."""
+        """Test that a qml.Rot gate is correctly merged if the angles are fixed."""
 
         @MergeRotationsInterpreter()
         def circuit():
