@@ -20,8 +20,6 @@ Experimental dynamical Lie algebra (DLA) functionality
 .. autosummary::
     :toctree: api
 
-    ~cartan_decomp
-    ~recursive_cartan_decomp
     ~cartan_subalgebra
     ~variational_kak_adj
 
@@ -40,8 +38,6 @@ Utility functions
     ~pauli_coefficients
     ~batched_pauli_decompose
     ~check_orthonormal
-    ~check_commutation
-    ~check_all_commuting
     ~check_cartan_decomp
     ~change_basis_ad_rep
     ~validate_kak
