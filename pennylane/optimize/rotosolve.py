@@ -17,8 +17,8 @@
 from inspect import signature
 
 import numpy as np
-from scipy.optimize import brute, shgo
-
+#from scipy.optimize import brute, shgo
+import scipy as sp
 import pennylane as qml
 
 
@@ -31,7 +31,7 @@ def _brute_optimizer(fun, num_steps, bounds=None, **kwargs):
     center = (bounds[0][1] + bounds[0][0]) / 2
     for _ in range(num_steps):
         range_ = (center - width / 2, center + width / 2)
-        center, y_min, *_ = brute(fun, ranges=(range_,), full_output=True, Ns=Ns, **kwargs)
+        center, y_min, *_ = sp.brute(fun, ranges=(range_,), full_output=True, Ns=Ns, **kwargs)
         # We only ever use this function for 1D optimization
         center = center[0]
         width /= Ns
@@ -43,7 +43,7 @@ def _shgo_optimizer(fun, **kwargs):
     r"""Wrapper for ``scipy.optimize.shgo`` (Simplicial Homology global optimizer).
     Signature is as expected by ``RotosolveOptimizer._min_numeric`` below, providing
     a scalar minimal position and the function value at that position."""
-    opt_res = shgo(fun, **kwargs)
+    opt_res = sp.shgo(fun, **kwargs)
     return opt_res.x[0], opt_res.fun
 
 
