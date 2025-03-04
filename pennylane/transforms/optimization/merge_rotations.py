@@ -101,7 +101,7 @@ def _get_plxpr_merge_rotations():
 
             wires_exactly_match = op.wires == previous_op.wires
             are_same_type = isinstance(op, type(previous_op))
-            can_merge = wires_exactly_match and are_same_type
+            can_merge = op.wires == previous_op.wires and type(op) == type(previous_op))
 
             if not can_merge:
                 return self.interpret_and_refresh_previous_ops(op)
