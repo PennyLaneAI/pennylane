@@ -12,7 +12,6 @@ import scipy as sp
 from pennylane.labs.pf import Fragment
 from pennylane.labs.pf.realspace import RealspaceSum
 from pennylane.labs.pf.utils import _kron, _zeros, is_pow_2, next_pow_2
-from pennylane.labs.pf.wavefunctions import HOState, VibronicHO
 
 
 class VibronicMatrix(Fragment):
@@ -240,35 +239,3 @@ class VibronicMatrix(Fragment):
                 bottom_right.set_block(x - half, y - half, word)
 
         return top_left, top_right, bottom_left, bottom_right
-
-    def apply(self, state: VibronicHO) -> VibronicHO:
-
-        if self.states != len(state.ho_states):
-            raise ValueError(
-                f"Cannot apply VibronicMatrix on {self.states} states to VibronicHO on {len(state.ho_states)} states."
-            )
-
-        if self.modes != state.modes:
-            raise ValueError(
-                f"Cannot apply VibronicMatrix on {self.modes} modes to VibronicHO on {state.modes} modes."
-            )
-
-        ho_states = []
-        for i in range(self.states):
-            ho = sum(
-                (self.block(i, j).apply(ho_state) for j, ho_state in enumerate(state.ho_states)),
-                HOState.zero_state(state.modes, state.gridpoints),
-            )
-            ho_states.append(ho)
-
-        return VibronicHO(
-            states=state.states,
-            modes=state.modes,
-            gridpoints=state.gridpoints,
-            ho_states=ho_states,
-        )
-
-
-def commutator(a: VibronicMatrix, b: VibronicMatrix):
-    """Return the commutator [a, b] = ab - ba"""
-    return a @ b - b @ a
