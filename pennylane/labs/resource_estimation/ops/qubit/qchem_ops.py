@@ -54,6 +54,7 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -98,6 +99,7 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -142,6 +144,7 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -187,6 +190,7 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -224,6 +228,7 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -260,6 +265,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -290,6 +296,7 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
@@ -336,6 +343,7 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self):
         return {}
 
