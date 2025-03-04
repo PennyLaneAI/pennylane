@@ -113,6 +113,8 @@ def _get_plxpr_merge_rotations():
                     qml.math.stack(previous_op.parameters),
                     qml.math.stack(op.parameters),
                 )
+                # For the Rot gate, the angles can cancel in a non-trivial way
+                # e.g. Rot(φ,0,-φ) = RZ(φ) RY(0) RZ(-φ) = RZ(0) = I.
                 test_angles = qml.math.stack(
                     [cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]
                 )
