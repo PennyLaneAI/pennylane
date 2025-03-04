@@ -42,6 +42,7 @@
 
 * Added new MCX gate decompositions utilising conditionally clean ancillae, improving circuit depth
 and efficiency.
+[(#7028)](https://github.com/PennyLaneAI/pennylane/pull/7028)
     * Implemented `_decompose_mcx_with_two_workers` and `_decompose_mcx_with_one_worker_kg24` for optimized
       MCX decomposition.
     * Introduction of `work_wire_type: Literal["clean", "dirty"]` to `decompose_mcx`.
