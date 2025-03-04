@@ -145,7 +145,8 @@ class QubitUnitary(Operation):
             )
 
         # If the matrix is sparse, we need to convert it to a csr_matrix
-        if sp.sparse.issparse(U):
+        self._issparse = sp.sparse.issparse(U)
+        if self._issparse:
             U = U.tocsr()
 
         # Check for unitarity; due to variable precision across the different ML frameworks,
@@ -193,6 +194,10 @@ class QubitUnitary(Operation):
         [[0.98877108+0.j, 0.-0.14943813j],
         [0.-0.14943813j, 0.98877108+0.j]]
         """
+        if sp.sparse.issparse(U):
+            raise qml.operation.MatrixUndefinedError(
+                "U is sparse matrix. Use sparse_matrix method instead."
+            )
         return U
 
     @staticmethod
@@ -212,8 +217,11 @@ class QubitUnitary(Operation):
         <2x2 sparse matrix of type '<class 'numpy.complex128'>'
             with 2 stored elements in Compressed Sparse Row format>
         """
-        U = qml.math.asarray(U, like="numpy")
-        return sp.sparse.csr_matrix(U)
+        if sp.sparse.issparse(U):
+            return U.tocsr()
+        raise qml.operation.SparseMatrixUndefinedError(
+            "U is a dense matrix. Use matrix method instead"
+        )
 
     @staticmethod
     def compute_decomposition(U: TensorLike, wires: WiresLike):
@@ -266,22 +274,35 @@ class QubitUnitary(Operation):
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    def has_sparse_matrix(self) -> bool:
+        return self._issparse
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self) -> bool:
+        return not self._issparse
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
     def has_decomposition(self) -> bool:
         return len(self.wires) < 3
 
     def adjoint(self) -> "QubitUnitary":
-        U = self.matrix()
-        if isinstance(U, csr_matrix):
-            adjoint_sp_mat = U.conjugate().transpose()
-            # Note: it is necessary to explicitly cast back to csr, or it will be come csc
-            return QubitUnitary(csr_matrix(adjoint_sp_mat), wires=self.wires)
-        return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
+        if self.has_matrix:
+            U = self.matrix()
+            return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
+        U = self.sparse_matrix()
+        adjoint_sp_mat = U.conjugate().transpose()
+        # Note: it is necessary to explicitly cast back to csr, or it will become csc.
+        return QubitUnitary(adjoint_sp_mat, wires=self.wires)
 
     def pow(self, z: Union[int, float]):
-        mat = self.matrix()
-        if isinstance(mat, csr_matrix):
+        if self.has_sparse_matrix:
+            mat = self.sparse_matrix()
             pow_mat = sp.sparse.linalg.matrix_power(mat, z)
             return [QubitUnitary(pow_mat, wires=self.wires)]
+
+        mat = self.matrix()
         if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             pow_mat = qml.math.linalg.matrix_power(mat, z)
         elif self.batch_size is not None or qml.math.shape(z) != ():
