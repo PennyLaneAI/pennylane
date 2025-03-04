@@ -19,9 +19,13 @@ import pytest
 
 import pennylane as qml
 
-qualtran = pytest.importorskip("qualtran")
+@pytest.fixture
+def skip_if_no_pl_qualtran_support():
+    """Fixture to skip if qualtran is not available"""
+    pytest.importorskip("qualtran")
 
-
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 class TestFromBloq:
     """Test that FromBloq accurately wraps around Bloqs."""
 
