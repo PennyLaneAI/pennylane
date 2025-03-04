@@ -40,9 +40,7 @@ class RealspaceOperator:
         for index in indices:
             var_dict = {f"idx{i}": j for i, j in enumerate(index)}
             coeff = eval(compiled, var_dict, local_vars)
-            matrix = coeff * tensor_with_identity(
-                modes, gridpoints, index, matrices, sparse=sparse
-            )
+            matrix = coeff * tensor_with_identity(modes, gridpoints, index, matrices, sparse=sparse)
             final_matrix = final_matrix + matrix
 
         return final_matrix

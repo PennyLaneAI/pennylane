@@ -31,6 +31,7 @@ def is_pow_2(k: int) -> bool:
     """Test if k is a power of two"""
     return (k & (k - 1) == 0) or k == 0
 
+
 def next_pow_2(k: int) -> int:
     """Return the smallest power of 2 greater than or equal to k"""
     return 2 ** (k - 1).bit_length()

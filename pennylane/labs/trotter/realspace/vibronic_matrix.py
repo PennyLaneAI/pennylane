@@ -20,7 +20,6 @@ class VibronicMatrix(Fragment):
     def __init__(
         self,
         states: int,
-        modes: int,
         blocks: Dict[Tuple[int, int], RealspaceSum] = None,
         sparse: bool = False,
     ) -> VibronicMatrix:
@@ -30,7 +29,6 @@ class VibronicMatrix(Fragment):
 
         self._blocks = blocks
         self.states = states
-        self.modes = modes
         self.sparse = sparse
 
     def block(self, row: int, col: int) -> RealspaceSum:
@@ -61,12 +59,12 @@ class VibronicMatrix(Fragment):
         self._blocks[(row, col)] = word
 
     def matrix(
-            self, gridpoints: int, sparse: bool = False, basis: str = "realspace"
+        self, modes: int, gridpoints: int, sparse: bool = False, basis: str = "realspace"
     ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
         """Returns a sparse matrix representing the operator discretized on the given number of gridpoints"""
         pow2 = next_pow_2(self.states)
-        dim = pow2 * gridpoints**self.modes
-        shape=(pow2, pow2)
+        dim = pow2 * gridpoints**modes
+        shape = (pow2, pow2)
         matrix = _zeros((dim, dim), sparse=sparse)
 
         for index, rs_sum in self._blocks.items():
@@ -78,12 +76,12 @@ class VibronicMatrix(Fragment):
                 indicator = np.zeros(shape=shape)
                 indicator[index] = 1
 
-            block = rs_sum.matrix(gridpoints, self.modes, basis=basis, sparse=sparse)
+            block = rs_sum.matrix(gridpoints, modes, basis=basis, sparse=sparse)
             matrix = matrix + _kron(indicator, block)
 
         return matrix
 
-    def norm(self, gridpoints: int) -> float:
+    def norm(self, modes: int, gridpoints: int) -> float:
         """Compute the spectral norm"""
 
         if not is_pow_2(gridpoints) or gridpoints <= 0:
@@ -91,17 +89,17 @@ class VibronicMatrix(Fragment):
                 f"Number of gridpoints must be a positive power of 2, got {gridpoints}."
             )
 
-        return self._norm(gridpoints)
+        return self._norm(modes, gridpoints)
 
-    def _norm(self, gridpoints: int) -> float:
+    def _norm(self, modes: int, gridpoints: int) -> float:
         # pylint: disable=protected-access
         if self.states == 1:
-            return self.block(0, 0).norm(gridpoints, self.modes, sparse=self.sparse)
+            return self.block(0, 0).norm(gridpoints, modes, sparse=self.sparse)
 
         top_left, top_right, bottom_left, bottom_right = self._partition_into_quadrants()
 
-        norm1 = max(top_left._norm(gridpoints), bottom_right._norm(gridpoints))
-        norm2 = math.sqrt(top_right._norm(gridpoints) * bottom_left._norm(gridpoints))
+        norm1 = max(top_left._norm(modes, gridpoints), bottom_right._norm(modes, gridpoints))
+        norm2 = math.sqrt(top_right._norm(modes, gridpoints) * bottom_left._norm(modes, gridpoints))
 
         return norm1 + norm2
 
@@ -109,11 +107,6 @@ class VibronicMatrix(Fragment):
         if self.states != other.states:
             raise ValueError(
                 f"Cannot add VibronicMatrix on {self.states} states with VibronicMatrix on {other.states} states."
-            )
-
-        if self.modes != other.modes:
-            raise ValueError(
-                f"Cannot add VibronicMatrix on {self.modes} modes with VibronicMatrix on {other.modes} modes."
             )
 
         new_blocks = {}
@@ -131,7 +124,6 @@ class VibronicMatrix(Fragment):
 
         return VibronicMatrix(
             self.states,
-            self.modes,
             new_blocks,
             sparse=(self.sparse and other.sparse),
         )
@@ -140,11 +132,6 @@ class VibronicMatrix(Fragment):
         if self.states != other.states:
             raise ValueError(
                 f"Cannot subtract VibronicMatrix on {self.states} states with VibronicMatrix on {other.states} states."
-            )
-
-        if self.modes != other.modes:
-            raise ValueError(
-                f"Cannot subtract VibronicMatrix on {self.modes} modes with VibronicMatrix on {other.modes} modes."
             )
 
         new_blocks = {}
@@ -163,7 +150,6 @@ class VibronicMatrix(Fragment):
 
         return VibronicMatrix(
             self.states,
-            self.modes,
             new_blocks,
             sparse=(self.sparse and other.sparse),
         )
@@ -173,7 +159,7 @@ class VibronicMatrix(Fragment):
         for key in self._blocks.keys():
             new_blocks[key] = scalar * self._blocks[key]
 
-        return VibronicMatrix(self.states, self.modes, new_blocks, sparse=self.sparse)
+        return VibronicMatrix(self.states, new_blocks, sparse=self.sparse)
 
     __rmul__ = __mul__
 
@@ -189,14 +175,7 @@ class VibronicMatrix(Fragment):
                 f"Cannot multiply VibronicMatrix on {self.states} states with VibronicMatrix on {other.states} states."
             )
 
-        if self.modes != other.modes:
-            raise ValueError(
-                f"Cannot multiply VibronicMatrix on {self.modes} states with VibronicMatrix on {other.modes} states."
-            )
-
-        product_matrix = VibronicMatrix(
-            self.states, self.modes, sparse=(self.sparse and other.sparse)
-        )
+        product_matrix = VibronicMatrix(self.states, sparse=(self.sparse and other.sparse))
 
         for i, j in product(range(self.states), repeat=2):
             block_products = [self.block(i, k) @ other.block(k, j) for k in range(self.states)]
@@ -209,9 +188,6 @@ class VibronicMatrix(Fragment):
         if self.states != other.states:
             return False
 
-        if self.modes != other.modes:
-            return False
-
         if self._blocks != other._blocks:
             return False
 
@@ -221,10 +197,10 @@ class VibronicMatrix(Fragment):
         # pylint: disable=chained-comparison
         half = self.states // 2
 
-        top_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
-        top_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
-        bottom_left = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
-        bottom_right = VibronicMatrix(half, self.modes, {}, sparse=self.sparse)
+        top_left = VibronicMatrix(half, {}, sparse=self.sparse)
+        top_right = VibronicMatrix(half, {}, sparse=self.sparse)
+        bottom_left = VibronicMatrix(half, {}, sparse=self.sparse)
+        bottom_right = VibronicMatrix(half, {}, sparse=self.sparse)
 
         for index, word in self._blocks.items():
             x, y = index
