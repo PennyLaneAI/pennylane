@@ -1,8 +1,5 @@
 """Module for realspace operators"""
 
-from .operator import (
-    RealspaceOperator,
-    RealspaceSum,
-)
-
+from .realspace_operator import RealspaceOperator, RealspaceSum
+from .vibronic_matrix import VibronicMatrix
 from .tree import Node
