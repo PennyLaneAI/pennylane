@@ -121,10 +121,10 @@ def check_commutation(ops1, ops2, vspace):
 
     **Example**
 
-    >>> from pennylane.labs.dla import check_commutation
-    >>> ops1 = [qml.X(0).pauli_rep]
-    >>> ops2 = [qml.Y(0).pauli_rep]
-    >>> vspace1 = qml.pauli.PauliVSpace([qml.X(0).pauli_rep, qml.Y(0).pauli_rep], dtype=complex)
+    >>> from pennylane.liealg import check_commutation
+    >>> ops1 = [qml.X(0)]
+    >>> ops2 = [qml.Y(0)]
+    >>> vspace1 = [qml.X(0), qml.Y(0)]
 
     Because :math:`[X_0, Y_0] = 2i Z_0`, the commutators do not map to the selected vector space.
 
@@ -133,10 +133,20 @@ def check_commutation(ops1, ops2, vspace):
 
     Instead, we need the full :math:`\mathfrak{su}(2)` space.
 
-    >>> vspace2 = qml.pauli.PauliVSpace([qml.X(0).pauli_rep, qml.Y(0).pauli_rep, qml.Z(0).pauli_rep], dtype=complex)
+    >>> vspace2 = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> check_commutation(ops1, ops2, vspace2)
     True
     """
+
+    if any(isinstance(op, Operator) for op in ops1):
+        ops1 = [op.pauli_rep for op in ops1]
+
+    if any(isinstance(op, Operator) for op in ops2):
+        ops2 = [op.pauli_rep for op in ops2]
+
+    if not isinstance(vspace, qml.pauli.PauliVSpace):
+        vspace = qml.pauli.PauliVSpace(vspace, dtype=complex)
+
     for o1 in ops1:
         for o2 in ops2:
             com = o1.commutator(o2)

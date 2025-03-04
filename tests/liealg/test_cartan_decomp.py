@@ -92,6 +92,18 @@ class TestCheckFunctions:
 
         assert check_cartan_decomp(k, m)
 
+    def test_check_commutation(self):
+        """Test that check_commutation returns false correctly"""
+        k = [Z(0) @ Y(1), Y(0) @ Z(1)]
+        m = [Z(0) @ Z(1), Y(0) @ Y(1), X(0), X(1)]
+
+        assert check_commutation(k, k, k)
+        assert not check_commutation(m, m, m)
+        assert check_commutation(k, m, m)
+        assert not check_commutation(k, m, k)
+        assert check_commutation(m, k, m)
+        assert not check_commutation(m, k, k)
+
 
 class TestInvolutions:
     """Test involutions"""
