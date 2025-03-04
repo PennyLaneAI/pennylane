@@ -1142,7 +1142,7 @@ class TestSqrtMatrix:
     def test_sqrt_matrix_inputs(self, matrix, tol):
         """Test sqrt_matrix function with various input matrices."""
 
-        # type M^T M
+        # type M^† M
         A = matrix.T.conj() @ matrix
         A = np.eye(A.shape[0]) - A
         A_sparse = csr_matrix(A)
@@ -1153,7 +1153,7 @@ class TestSqrtMatrix:
 
         assert np.allclose(result_2, A, atol=tol, rtol=0)
 
-        # type M M^T
+        # type M M^†
         A = matrix @ matrix.T.conj()
         A = np.eye(A.shape[0]) - A
         A_sparse = csr_matrix(A)

@@ -982,11 +982,14 @@ def sqrt_matrix_sparse(density_matrix):
         density_matrix (sparse): 2D sparse density matrix of the quantum system.
 
     Returns:
-        (sparse): Square root of the density matrix. Even though data type as `csr_matrix` or `csc_matrix`, the output matrix is not guaranteed to be sparse as well.
+       (sparse): Square root of the density matrix. Even for data types like `csr_matrix` or `csc_matrix`, the output matrix is not guaranteed to be sparse as well.
+
     """
     if not issparse(density_matrix):
         raise TypeError(
-            "Only use this method for sparse matrices, or there will be an inevitable performance hit and divergence risk."
+           f"sqrt_matrix_sparse only supports sparse matrices, but got {type(density_matrix)}. "
+           "There will be an inevitable performance hit and risk of divergence for non-sparse matrices."
+
         )
     if density_matrix.nnz == 0:
         return density_matrix
@@ -1001,7 +1004,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
     """Compute matrix square root using the Denman-Beavers iteration.
 
     Args:
-        mat (sparse): Input sparse matrix
+        mat (sparse): Sparse input matrix
         max_iter (int): Maximum number of iterations
         tol (float): Convergence tolerance
 
@@ -1024,10 +1027,10 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
         for iter_num in range(max_iter):
             # Compute next iteration
             if iter_num < 2:
-                Zinv = spla.inv(Z)
+                Zinv = spla.inv(Z) if iter_num > 0 else Z
                 Yinv = spla.inv(Y)
             else:
-                # Take newton step
+                # Take Newton step
                 Zinv = _inv_newton(Z, Zinv)
                 Yinv = _inv_newton(Y, Yinv)
 
@@ -1059,7 +1062,9 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
         numerical_error = np.linalg.norm((Y @ Y - mat).toarray())
         if (norm_diff and norm_diff > tol) or numerical_error > tol:
             raise ValueError(
-                f"Denman Beavers not converged until the end of {max_iter} loops, with last norm error {norm_diff} and compute error {numerical_error}"
+                f"Denman Beavers not converged until the end of {max_iter} loops, "
+                f"with last norm error {norm_diff} and compute error {numerical_error}"
+
             )
         return Y
     except (RuntimeWarning, RuntimeError) as e:
