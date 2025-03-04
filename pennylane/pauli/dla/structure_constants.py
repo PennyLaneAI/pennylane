@@ -190,9 +190,9 @@ def structure_constants(
     if matrix:
         return _structure_constants_matrix(g, is_orthogonal)
 
-    if any((op.pauli_rep is None) for op in g):
+    if any((getattr(op, "pauli_rep", None) is None) for op in g):
         raise ValueError(
-            f"Cannot compute adjoint representation of non-pauli operators. Received {g}."
+            f"Cannot compute adjoint representation of non-pauli operators. Received {g}. If you want to use matrices, use structure_constants(.., matrix=True)"
         )
 
     if not pauli:
