@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from pennylane.labs.pf import Fragment, nested_commutator
+from pennylane.labs.trotter import Fragment, nested_commutator
 
 fourth_order_coeffs_2_frags = {}
 fourth_order_coeffs_3_frags = {}
