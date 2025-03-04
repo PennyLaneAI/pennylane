@@ -746,7 +746,6 @@ class TestWorkflows:
         else:
             assert np.isclose(circ(), -np.sin(2.345))
 
-    @pytest.mark.xfail(reason="bug with all MidMeasureMPs in cond for both mcm_methods, ")
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_execution_in_cond(self, mcm_method, shots):
         """Test that we can execute a QNode with a ParametricMidMeasureMP applied in a conditional,
@@ -762,7 +761,7 @@ class TestWorkflows:
 
             qml.RX(2.345, 1)
             qml.cond(m == 1, measure_x, measure_y)(1)
-            return qml.expval(qml.Z(0))
+            return qml.expval(qml.Z(1))
 
         assert np.isclose(circ(), -np.sin(2.345))
 
@@ -799,3 +798,6 @@ class TestWorkflows:
             assert np.allclose(circ(), [np.cos(2.345), -1], atol=0.03)
         else:
             assert np.allclose(circ(), [np.cos(2.345), -1])
+
+    def test_cascading_conditional_measurements(self):
+        raise RuntimeError
