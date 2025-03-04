@@ -20,6 +20,7 @@ import os
 import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
+from functools import lru_cache
 from itertools import chain
 from typing import Optional, Type
 
@@ -196,7 +197,7 @@ def mid_circuit_measurements(
     if mcm_method is None:
         mcm_method = "one-shot" if tape.shots else "deferred"
 
-    if any(is_conditional_mcm(op) for op in tape.operations):
+    if _includes_conditional_mcms(tape):
         raise NotImplementedError(
             "Conditionally applied mid-circuit measurements are not supported"
         )
@@ -210,13 +211,18 @@ def mid_circuit_measurements(
     )
 
 
-def is_conditional_mcm(operation):
+def _is_conditional_mcm(operation):
     """Returns True if the operation is a mid-circuit measurement nested inside a Conditional,
     and False otherwise."""
     if isinstance(operation, qml.ops.Conditional):
         if isinstance(operation.base, qml.measurements.MidMeasureMP):
             return True
     return False
+
+
+@lru_cache()
+def _includes_conditional_mcms(tape: QuantumScript):
+    return any(_is_conditional_mcm(op) for op in tape.operations)
 
 
 @transform
