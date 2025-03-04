@@ -30,8 +30,37 @@ class GraphStatePrep(Operation):
 
     Args:
         qubit_graph (QubitGraph): QubitGraph object mapping qubit to wires.
-        qubit_ops (Operations): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
-        entanglement_ops (Operations): Operator to entangle nearest qubits. Default as ``qml.CZ``.
+        qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
+        entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
+
+    **Example:**
+        The graph state preparation layer can be customized by the user.
+
+        .. code-block:: python3
+
+            import pennylane as qml
+            from pennylane.ftqc import generate_lattice, GraphStatePrep, QubitGraph
+
+            dev = qml.device('default.qubit')
+
+            @qml.qnode(dev)
+            def circuit(q, qubit_ops, entangle_ops):
+                GraphStatePrep(qubit_graph=q, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
+                return qml.probs()
+
+            lattice = generate_lattice([2, 2], "square")
+            q = QubitGraph("square", lattice.graph)
+
+            qubit_ops = qml.Y
+            entangle_ops = qml.CNOT
+
+        The resulting circuit after applying the ``GraphStatePrep`` template is:
+
+        >>> print(qml.draw(circuit, level="device")(q, qubit_ops, entangle_ops))
+        QubitGraph<square, (0, 0)>: ──Y─╭●─╭●───────┤  Probs
+        QubitGraph<square, (0, 1)>: ──Y─│──╰X─╭●────┤  Probs
+        QubitGraph<square, (1, 0)>: ──Y─╰X────│──╭●─┤  Probs
+        QubitGraph<square, (1, 1)>: ──Y───────╰X─╰X─┤  Probs
     """
 
     def __init__(
@@ -43,9 +72,11 @@ class GraphStatePrep(Operation):
         self.hyperparameters["qubit_graph"] = qubit_graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
-        super().__init__(
-            None, wires=qubit_graph
-        )  # TODO: check if we have to store the qubit states with this operation object
+        super().__init__(wires=qubit_graph)
+
+    def __repr__(self):
+        """Method defining the string representation of this class."""
+        return f"Graph State Preparation with: Qubit Ops: {self.hyperparameters['qubit_ops']}, Entanglement Ops: {self.hyperparameters['entanglement_ops']}, Wires: {self.hyperparameters['qubit_graph']}"
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
@@ -71,8 +102,8 @@ class GraphStatePrep(Operation):
 
         Args:
             qubit_graph (QubitGraph): QubitGraph object mapping qubit to wires.
-            qubit_ops (Operations): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
-            entanglement_ops (Operations): Operator to entangle nearest qubits. Default as ``qml.CZ``.
+            qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
+            entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
 
         Returns:
             list[Operator]: decomposition of the operator
