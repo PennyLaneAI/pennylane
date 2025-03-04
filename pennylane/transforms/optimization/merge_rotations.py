@@ -91,8 +91,7 @@ def _get_plxpr_merge_rotations():
                 return self.interpret_and_refresh_previous_ops(op)
 
             if op not in composable_rotations:
-                self.interpret_and_refresh_previous_ops(op)
-                return
+                return self.interpret_and_refresh_previous_ops(op)
 
             previous_op = self.previous_ops.get(op.wires[0])
             if previous_op is None:
