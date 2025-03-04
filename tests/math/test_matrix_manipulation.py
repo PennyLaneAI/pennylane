@@ -1107,7 +1107,8 @@ class TestSqrtMatrix:
         # 4x4 matrix with negative eigenvalues
         np.array([[1, 2, 0, 1], [2, -2, 1, 0], [0, 1, -3, 2], [1, 0, 2, -1]]),
     ]
-    # Known problematic matrices
+    # Known problematic matrices with informative error message.
+    # NOTE: keep the entries here common. No fine-tuned corner cases.
     illmats_info_pairs = [
         (
             np.array([[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
