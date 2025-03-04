@@ -307,6 +307,9 @@
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* ``ResourceOperator.resource_params`` is changed to a property.
+  [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
