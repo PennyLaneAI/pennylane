@@ -55,6 +55,7 @@
   `qml.defer_measurements` can be executed on `default.qubit`.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
   [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
+  [(#6961)](https://github.com/PennyLaneAI/pennylane/pull/6961)
 
   Using `qml.defer_measurements` with program capture enables many new features, including:
   * Significantly richer variety of classical processing on mid-circuit measurement values.
