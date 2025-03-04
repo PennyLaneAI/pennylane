@@ -13,6 +13,8 @@
 # limitations under the License.
 """Utility functions"""
 
+from importlib import metadata
+
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as _np
@@ -21,6 +23,7 @@ import scipy as sp
 # pylint: disable=import-outside-toplevel
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
+from packaging.version import Version
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .interface_utils import get_interface
@@ -272,6 +275,9 @@ def is_abstract(tensor, like=None):
         import jax
         from jax.interpreters.partial_eval import DynamicJaxprTracer
 
+        # if Version(metadata.version("jax")) == Version("0.5.0"):
+        #     return isinstance(tensor, jax.core.Tracer)
+
         if isinstance(
             tensor,
             (
@@ -283,6 +289,8 @@ def is_abstract(tensor, like=None):
             # Tracer objects will be used when computing gradients or applying transforms.
             # If the value of the tracer is known, it will contain a ConcreteArray.
             # Otherwise, it will be abstract.
+            if Version(metadata.version("jax")) == Version("0.5.0"):
+                return not jax.core.is_concrete(tensor)
             return not isinstance(tensor.aval, jax.core.ConcreteArray)
 
         return isinstance(tensor, DynamicJaxprTracer)
