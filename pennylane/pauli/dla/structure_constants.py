@@ -35,7 +35,7 @@ def _all_commutators(ops):
 
 
 def structure_constants(
-    g: list[Union[Operator, PauliWord, PauliSentence]],
+    g: list[Union[Operator, PauliWord, PauliSentence, TensorLike]],
     pauli: bool = False,
     matrix: bool = False,
     is_orthogonal: bool = True,
