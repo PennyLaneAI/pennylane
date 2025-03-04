@@ -186,7 +186,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             args = (*op.parameters, *op.wires)
 
             jaxpr_decomp = qml.capture.make_plxpr(
-                partial(op.compute_plxpr_decomposition, **op.hyperparameters)
+                partial(op.compute_qfunc_decomposition, **op.hyperparameters)
             )(*args)
 
             self._current_depth += 1
@@ -282,16 +282,13 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
     def handle_ctrl_transform(*_, **__):
         raise NotImplementedError
 
-    def decompose_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
-        """Function from decomposing jaxpr."""
-        decomposer = DecomposeInterpreter(
-            gate_set=tkwargs.get("gate_set", None), max_expansion=tkwargs.get("max_expansion", None)
-        )
+    def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``decompose`` transform on plxpr."""
+
+        interpreter = DecomposeInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
-            return decomposer.eval(jaxpr, consts, *inner_args)
+            return interpreter.eval(jaxpr, consts, *inner_args)
 
         return jax.make_jaxpr(wrapper)(*args)
 
