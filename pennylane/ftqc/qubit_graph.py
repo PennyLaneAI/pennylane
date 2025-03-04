@@ -258,7 +258,7 @@ class QubitGraph:
             NodeView((0, 1))
 
         To access the underlying QubitGraph *objects*, rather than their labels, use
-        ``QubitGraph.nodes``.
+        ``QubitGraph.children``.
 
         Returns:
             networkx.NodeView: A view of the set of nodes, with native support for operations such
@@ -297,6 +297,29 @@ class QubitGraph:
             return None
 
         return self._graph.edges
+
+    @property
+    def children(self):
+        """Gets an iterator over the set of children QubitGraph objects.
+
+        To access the node labels of the underlying qubit graph, rather than the QubitGraph objects
+        themselves, use ``QubitGraph.node_labels``.
+
+        Example:
+
+            >>> g = nx.grid_graph((2,))
+            >>> q = QubitGraph(0, g)
+            >>> set(q.node_labels)
+            {0, 1}
+            >>> set(q.children)
+            {QubitGraph<0, 0>, QubitGraph<0, 1>}
+        """
+        if not self.is_initialized:
+            self._warn_uninitialized()
+            return
+
+        for node in self.node_labels:
+            yield self[node]
 
     @property
     def is_initialized(self) -> bool:
