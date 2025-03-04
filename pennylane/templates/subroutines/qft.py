@@ -243,6 +243,7 @@ def _qft_decomposition_resources(num_wires):
     }
 
 
+# pylint: disable=no-value-for-parameter
 @register_resources(_qft_decomposition_resources)
 def _qft_decomposition(wires: WiresLike, n_wires, **__):
 
