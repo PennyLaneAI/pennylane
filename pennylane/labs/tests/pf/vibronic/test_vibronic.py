@@ -63,7 +63,6 @@ class TestVibronic:
         for i in range(states):
             h = vham.fragment(i)
             for j, k in zip(range(states), range(states)):
-                print(vham.v_word(j, k))
                 if k == i ^ j:
                     assert h.block(j, k) == vham.v_word(j, k)
                 else:
@@ -157,9 +156,6 @@ class TestApply:
         for i, state1 in enumerate(states):
             for j, state2 in enumerate(states):
                 actual[i, j] = state1.dot(ham.apply(state2))
-
-        print(expected)
-        print(actual)
 
         assert np.allclose(actual, expected)
 

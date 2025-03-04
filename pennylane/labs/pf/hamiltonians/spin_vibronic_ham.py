@@ -23,7 +23,7 @@ def get_coeffs():
     n_states = len(Psis)
     n_modes = len(Qs)
 
-    n_blocks = int(pow(2, ceil(log2(n_states))))
+    n_blocks = n_states #int(pow(2, ceil(log2(n_states))))
 
     # frequencies (eV)
     omegas = np.array(

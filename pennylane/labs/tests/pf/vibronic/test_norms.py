@@ -10,7 +10,7 @@ def test_against_10_mode():
     """Test norm against precomputed value"""
     expected = 1.6621227513071748
 
-    vham = VibronicHamiltonian(8, 10, *ten_mode(), sparse=True)
+    vham = VibronicHamiltonian(6, 10, *ten_mode(), sparse=True)
     ep = vham.epsilon(1)
     actual = ep.norm(4)
 

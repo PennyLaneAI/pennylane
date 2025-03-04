@@ -37,8 +37,11 @@ class RealspaceOperator:
         else:
             indices = product(range(modes), repeat=len(self.ops))
 
+        compiled, local_vars = self.coeffs.compile()
         for index in indices:
-            matrix = self.coeffs.compute(index) * tensor_with_identity(
+            var_dict = {f"idx{i}": j for i, j in enumerate(index)}
+            coeff = eval(compiled, var_dict, local_vars)
+            matrix = coeff * tensor_with_identity(
                 modes, gridpoints, index, matrices, sparse=sparse
             )
             final_matrix = final_matrix + matrix

@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import List, Sequence
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
 from pennylane.labs.pf.realspace import Node, RealspaceOperator, RealspaceSum
+from pennylane.labs.pf.utils import next_pow_2
 
 from .vibronic_matrix import VibronicMatrix, commutator
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 
 
 class VibronicHamiltonian:
@@ -47,15 +48,20 @@ class VibronicHamiltonian:
     def fragment(self, index: int) -> VibronicMatrix:
         """Return the fragment at the given index"""
 
-        next_pow_2 = 2 ** (self.states - 1).bit_length()
+        pow2 = next_pow_2(self.states)
 
-        if index not in range(next_pow_2 + 1):
+        if index not in range(pow2 + 1):
             raise ValueError("Index out of range")
 
-        if index == next_pow_2:
+        if index == pow2:
             return self._p_fragment()
 
         return self._fragment(index)
+
+    def fragments(self) -> List[VibronicMatrix]:
+        """Return ordered list of fragments"""
+
+        return [self.fragment(i) for i in range(next_pow_2(self.states) + 1)]
 
     def v_word(self, i: int, j: int) -> RealspaceSum:
         """Get V_ij"""
@@ -80,17 +86,19 @@ class VibronicHamiltonian:
         return RealspaceSum(realspace_ops)
 
     def _p_fragment(self) -> VibronicMatrix:
+        pow2 = next_pow_2(self.states)
         term = RealspaceOperator(
             ("P", "P"),
             Node.tensor_node(np.diag(self.omegas) / 2, label=("omegas", np.diag(self.omegas) / 2)),
         )
         word = RealspaceSum((term,))
         blocks = {(i, i): word for i in range(self.states)}
-        return VibronicMatrix(self.states, self.modes, blocks, sparse=self.sparse)
+        return VibronicMatrix(pow2, self.modes, blocks, sparse=self.sparse)
 
     def _fragment(self, i: int) -> VibronicMatrix:
-        blocks = {(j, i ^ j): self.v_word(j, i ^ j) for j in range(self.states)}
-        return VibronicMatrix(self.states, self.modes, blocks, sparse=self.sparse)
+        pow2 = next_pow_2(self.states)
+        blocks = {(j, i ^ j): self.v_word(j, i ^ j) for j in range(pow2)}
+        return VibronicMatrix(pow2, self.modes, blocks, sparse=self.sparse)
 
     def block_operator(self) -> VibronicMatrix:
         """Return the block representation of the Hamiltonian"""
@@ -109,14 +117,13 @@ class VibronicHamiltonian:
         # pylint: disable=arguments-out-of-order
         """Compute the error matrix"""
         scalar = -(delta**2) / 24
-        epsilon = VibronicMatrix(self.states, self.modes, sparse=self.sparse)
+        pow2 = next_pow_2(self.states)
+        epsilon = VibronicMatrix(pow2, self.modes, sparse=self.sparse)
 
-        next_pow_2 = 2 ** (self.states - 1).bit_length()
-
-        for i in range(next_pow_2):
-            for j in range(i + 1, next_pow_2 + 1):
+        for i in range(pow2):
+            for j in range(i + 1, pow2 + 1):
                 epsilon += self._commute_fragments(i, i, j)
-                for k in range(i + 1, next_pow_2 + 1):
+                for k in range(i + 1, pow2 + 1):
                     epsilon += 2 * self._commute_fragments(k, i, j)
 
         epsilon *= scalar

@@ -62,7 +62,7 @@ class VibronicMatrix(Fragment):
         self._blocks[(row, col)] = word
 
     def matrix(
-        self, gridpoints: int, sparse: bool = False
+            self, gridpoints: int, sparse: bool = False, basis: str = "realspace"
     ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
         """Returns a sparse matrix representing the operator discretized on the given number of gridpoints"""
         pow2 = next_pow_2(self.states)
@@ -74,12 +74,12 @@ class VibronicMatrix(Fragment):
             if sparse:
                 data = np.array([1])
                 indices = (np.array([index[0]]), np.array([index[1]]))
-                indicator = sp.sparse.csr_matrix((data, indices), shape=shape)
+                indicator = sp.sparse.csr_array((data, indices), shape=shape)
             else:
                 indicator = np.zeros(shape=shape)
                 indicator[index] = 1
 
-            block = rs_sum.matrix(gridpoints, self.modes, basis="realspace", sparse=sparse)
+            block = rs_sum.matrix(gridpoints, self.modes, basis=basis, sparse=sparse)
             matrix = matrix + _kron(indicator, block)
 
         return matrix

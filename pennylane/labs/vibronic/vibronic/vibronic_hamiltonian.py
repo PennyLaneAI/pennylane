@@ -1,6 +1,7 @@
 """Base class for Vibronic Hamiltonian"""
 
 from __future__ import annotations
+from typing import List
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -61,6 +62,11 @@ class VibronicHamiltonian:
             return self._p_fragment()
 
         return self._fragment(index)
+
+    def fragments(self) -> List[VibronicMatrix]:
+        """Return an ordered list of fragments"""
+        return [self.fragment(i) for i in range(self.states + 1)]
+
 
     def v_word(self, i: int, j: int) -> VibronicWord:
         """Get V_ij"""
