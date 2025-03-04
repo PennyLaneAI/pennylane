@@ -121,18 +121,7 @@ def _check_sparse_matrix(op):
         l = 2 ** len(op.wires)
         failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
         assert qml.math.shape(mat) == (l, l), failure_comment
-    else:
-        failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
-        _assert_error_raised(
-            op.sparse_matrix,
-            qml.operation.SparseMatrixUndefinedError,
-            failure_comment=failure_comment,
-        )()
 
-
-def _check_sparse_matrix_formatting(op):
-    """Check that if the operation says it has a sparse matrix, it can be formatted as scipy sparse matrix."""
-    if op.has_sparse_matrix:
         assert isinstance(
             op.sparse_matrix(), scipy.sparse.csr_matrix
         ), "sparse matrix should default to csr format"
@@ -145,7 +134,6 @@ def _check_sparse_matrix_formatting(op):
         assert isinstance(
             op.sparse_matrix(format="coo"), scipy.sparse.coo_matrix
         ), "sparse matrix should be formatted as coo"
-
     else:
         failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
         _assert_error_raised(
