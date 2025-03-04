@@ -14,7 +14,6 @@
 """Unit tests for the Identity Operator."""
 import numpy as np
 import pytest
-import scipy as sp
 
 import pennylane as qml
 from pennylane import Identity
