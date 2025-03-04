@@ -55,7 +55,7 @@ class TestGraphStatePrep:
             assert isinstance(op.wires[0], QubitGraph)
         for op in queue[8:]:
             assert isinstance(op, qml.CZ)
-            assert all(isinstance(w, QubitGraph) for w in op.wires))
+            assert all(isinstance(w, QubitGraph) for w in op.wires)
 
     def test_preprocess_decompose(self):
         """Test if pennylane.transforms.decompose work with the GraphStatePrep class."""
