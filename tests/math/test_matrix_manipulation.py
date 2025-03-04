@@ -1201,7 +1201,7 @@ class TestDenmanBeaversIterations:
         n = 4
         mat = csr_matrix(np.eye(n) * 1e150)
 
-        with pytest.warns(UserWarning, match="Denman Beavers not converged"):
+        with pytest.raises(ValueError, match="Denman Beavers not converged"):
             _denman_beavers_iterations(mat)
 
     def test_invalid_value_matrix(self):
@@ -1215,7 +1215,7 @@ class TestDenmanBeaversIterations:
     def test_non_convergent_matrix(self):
         """Test that non-convergent matrix raises appropriate error"""
         mat = csr_matrix([[1, 1e-6], [1e-6, 1e-12 + 1e-25]])
-        with pytest.warns(UserWarning, match="Denman Beavers not converged"):
+        with pytest.raises(ValueError, match="Denman Beavers not converged"):
             _denman_beavers_iterations(mat)
 
     def test_unstable_matrix(self):
@@ -1223,7 +1223,7 @@ class TestDenmanBeaversIterations:
         n = 4
         mat = csr_matrix(np.diag([1e-200, 1e200] + [1.0] * (n - 2)))
 
-        with pytest.warns(UserWarning, match="Denman Beavers not converged"):
+        with pytest.raises(ValueError, match="Denman Beavers not converged"):
             _denman_beavers_iterations(mat)
 
     @pytest.mark.parametrize("size", [2, 3, 4, 5])

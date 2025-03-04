@@ -16,7 +16,6 @@ import functools
 
 # pylint: disable=import-outside-toplevel
 import itertools
-import warnings
 from string import ascii_letters as ABC
 
 import scipy as sp
@@ -1059,9 +1058,8 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
 
         numerical_error = np.linalg.norm((Y @ Y - mat).toarray())
         if (norm_diff and norm_diff > tol) or numerical_error > tol:
-            warnings.warn(
-                f"Denman Beavers not converged until the end of {max_iter} loops, with last norm error {norm_diff} and compute error {numerical_error}",
-                UserWarning,
+            raise ValueError(
+                f"Denman Beavers not converged until the end of {max_iter} loops, with last norm error {norm_diff} and compute error {numerical_error}"
             )
         return Y
     except (RuntimeWarning, RuntimeError) as e:
