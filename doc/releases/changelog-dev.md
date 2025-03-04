@@ -45,6 +45,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
+  [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
+
 * `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
   [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
   
@@ -72,6 +75,7 @@
 
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
+  [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
 
   ```pycon
   >>> import numpy as np
@@ -229,6 +233,14 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives
+  when using program capture to jaxpr.
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
+* Device-provided derivatives are integrated into the program capture pipeline.
+  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
 * The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
 
@@ -246,6 +258,7 @@
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
   [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
   [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
+  [(#6917)](https://github.com/PennyLaneAI/pennylane/pull/6917)
 
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
@@ -305,12 +318,12 @@
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
-<<<<<<< HEAD
 * ``pennylane.labs.dla.structure_constants_dense`` is removed and integrated into ``qml.structure_constants`` using the new ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
-=======
->>>>>>> deaf3901bf775eb18b92d358bb747b548f91a59a
+* ``ResourceOperator.resource_params`` is changed to a property.
+  [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
@@ -391,6 +404,14 @@
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
+
+* Quantum transform interpreters now perform argument validation and will no longer 
+  check if the equation in the `jaxpr` is a transform primitive.
+  [(#7023)](https://github.com/PennyLaneAI/pennylane/pull/7023)
+
+* `qml.for_loop` and `qml.while_loop` have been moved from the `compiler` module 
+  to a new `control_flow` module.
+  [(#7017)](https://github.com/PennyLaneAI/pennylane/pull/7017)
 
 * `qml.capture.run_autograph` is now idempotent.
   This means `run_autograph(fn) = run_autograph(run_autograph(fn))`.
@@ -514,6 +535,7 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Korbinian Kottmann,
 Christina Lee,
+Joseph Lee,
 Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
