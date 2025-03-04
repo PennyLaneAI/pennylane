@@ -22,7 +22,6 @@ import numpy as np
 import scipy as sp
 from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
-from scipy.sparse.linalg import splu
 
 from .interface_utils import get_deep_interface
 from .utils import is_abstract
@@ -130,8 +129,15 @@ def _permutation_parity(perm):
 
 
 ar.register_function("scipy", "linalg.det", _det_sparse)
+ar.register_function("scipy", "linalg.inv", sp.sparse.linalg.inv)
+ar.register_function("scipy", "linalg.expm", sp.sparse.linalg.expm)
+ar.register_function("scipy", "linalg.matrix_power", sp.sparse.linalg.matrix_power)
+ar.register_function("scipy", "linalg.norm", sp.sparse.linalg.norm)
+ar.register_function("scipy", "linalg.spsolve", sp.sparse.linalg.spsolve)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
-ar.register_function("")
+ar.register_function("scipy", "linalg.eigsh", sp.sparse.linalg.eigsh)
+ar.register_function("scipy", "linalg.svds", sp.sparse.linalg.svds)
+
 
 ar.register_function("scipy", "trace", lambda x: x.trace())
 ar.register_function("scipy", "reshape", lambda x, new_shape: x.reshape(new_shape))
