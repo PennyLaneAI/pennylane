@@ -210,7 +210,7 @@ def mid_circuit_measurements(
     )
 
 
-def is_conditional_mcm(operation):
+def is_conditional_mcm(operation: qml.operation.Operator) -> bool:
     """Returns True if the operation is a mid-circuit measurement nested inside a Conditional,
     and False otherwise."""
     if isinstance(operation, qml.ops.Conditional):
