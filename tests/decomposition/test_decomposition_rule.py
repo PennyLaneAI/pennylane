@@ -166,7 +166,7 @@ class TestDecompositionRule:
             },
         )
 
-        custom_decomp = qml.register_resources({CompressedResourceOp(DummyOp): 1})
+        custom_decomp = qml.register_resources({CompressedResourceOp(DummyOp): 1}, custom_decomp)
 
         assert custom_decomp.compute_resources() == Resources(
             num_gates=1,
