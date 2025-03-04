@@ -42,6 +42,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
+  following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
+  [(#6925)](https://github.com/PennyLaneAI/pennylane/pull/6925)
+  
+* `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
+  [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
+
 * `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
   [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
   
@@ -69,6 +76,7 @@
 
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
+  [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
 
   ```pycon
   >>> import numpy as np
@@ -226,8 +234,17 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives
+  when using program capture to jaxpr.
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
+* Device-provided derivatives are integrated into the program capture pipeline.
+  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
 * The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
+  [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
 
 * Added class `qml.capture.transforms.CommuteControlledInterpreter` that moves commuting gates past control 
   and target qubits of controlled operations when experimental program capture is enabled.
@@ -248,6 +265,7 @@
   [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
   [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
   [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
+  [(#6917)](https://github.com/PennyLaneAI/pennylane/pull/6917)
 
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
@@ -306,6 +324,9 @@
 
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
+* ``ResourceOperator.resource_params`` is changed to a property.
+  [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
 <h3>Breaking changes 💔</h3>
 
@@ -388,6 +409,17 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add `NotImplementedError`s for `grad` and `jacobian` in `CollectOpsandMeas`.
+  [(#7041)](https://github.com/PennyLaneAI/pennylane/pull/7041)
+
+* Quantum transform interpreters now perform argument validation and will no longer 
+  check if the equation in the `jaxpr` is a transform primitive.
+  [(#7023)](https://github.com/PennyLaneAI/pennylane/pull/7023)
+
+* `qml.for_loop` and `qml.while_loop` have been moved from the `compiler` module 
+  to a new `control_flow` module.
+  [(#7017)](https://github.com/PennyLaneAI/pennylane/pull/7017)
+
 * `qml.capture.run_autograph` is now idempotent.
   This means `run_autograph(fn) = run_autograph(run_autograph(fn))`.
   [(#7001)](https://github.com/PennyLaneAI/pennylane/pull/7001)
@@ -448,6 +480,10 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
+  when experimental program capture is enabled.
+  [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
 
 * `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
   of sparse matrices. 
@@ -510,6 +546,7 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Korbinian Kottmann,
 Christina Lee,
+Joseph Lee,
 Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,

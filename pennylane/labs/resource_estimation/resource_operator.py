@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ class ResourceOperator(ABC):
 
                     return gate_types
 
+                @property
                 def resource_params(self, num_wires) -> dict:
                     return {"num_wires": num_wires}
 
@@ -69,7 +70,7 @@ class ResourceOperator(ABC):
         .. code-block:: bash
 
             >>> op = ResourceQFT(range(3))
-            >>> op.resources(**op.resource_params())
+            >>> op.resources(**op.resource_params)
             {Hadamard(): 3, SWAP(): 1, ControlledPhaseShift(): 3}
 
     """
@@ -91,6 +92,7 @@ class ResourceOperator(ABC):
         """Set a custom resource method."""
         cls.resources = new_func
 
+    @property
     @abstractmethod
     def resource_params(self) -> dict:
         """Returns a dictionary containing the minimal information needed to
@@ -104,7 +106,7 @@ class ResourceOperator(ABC):
 
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
-        return self.__class__.resource_rep(**self.resource_params())
+        return self.__class__.resource_rep(**self.resource_params)
 
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -124,13 +126,20 @@ class ResourceOperator(ABC):
         raise ResourcesNotDefined
 
     @classmethod
+    def exp_resource_decomp(
+        cls, scalar, num_steps, *args, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation for the resources of the exponentiated operator"""
+        raise ResourcesNotDefined
+
+    @classmethod
     def tracking_name(cls, *args, **kwargs) -> str:
         """Returns a name used to track the operator during resource estimation."""
         return cls.__name__.replace("Resource", "")
 
     def tracking_name_from_op(self) -> str:
         """Returns the tracking name built with the operator's parameters."""
-        return self.__class__.tracking_name(**self.resource_params())
+        return self.__class__.tracking_name(**self.resource_params)
 
 
 class ResourcesNotDefined(Exception):
