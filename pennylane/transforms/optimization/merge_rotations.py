@@ -59,7 +59,9 @@ def _get_plxpr_merge_rotations():
             """Interpret the previous_ops dictionary and add the operator to the previous_ops dictionary."""
 
             # Use list(dict.fromkeys(...)) as opposed to a set to maintain deterministic order
-            previous_ops_on_wires = list(dict.fromkeys(self.previous_ops[w] for w in op.wires if w in self.previous_ops))
+            previous_ops_on_wires = list(
+                dict.fromkeys(self.previous_ops[w] for w in op.wires if w in self.previous_ops)
+            )
 
             # Refresh the previous_ops dictionary with the current operator
             for o in previous_ops_on_wires:
@@ -99,10 +101,9 @@ def _get_plxpr_merge_rotations():
                     self.previous_ops[w] = op
                 return
 
-            wires_exactly_match = op.wires == previous_op.wires
-            are_same_type = isinstance(op, type(previous_op))
-            can_merge = op.wires == previous_op.wires and type(op) == type(previous_op))
-
+            # pylint: disable = unidiomatic-typecheck
+            # Can't use `isinstance` since op could be a subclass of type(previous_op)
+            can_merge = (op.wires == previous_op.wires) and (type(op) == type(previous_op))
             if not can_merge:
                 return self.interpret_and_refresh_previous_ops(op)
 
