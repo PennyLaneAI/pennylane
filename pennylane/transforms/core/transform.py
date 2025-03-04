@@ -278,7 +278,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         If a transform that does not define a ``plxpr_transform`` is applied to a function,
         a fallback implementation of the transform is used. This fallback implementation converts
         the function into a :func:`~pennylane.tape.QuantumScript`, which is then transformed
-        as usual. However, because of the constraints of program capture, many transforms will not
+        as a traditional tape. However, because of the constraints of program capture, many transforms will not
         be compatible with this fallback implementation:
 
         * Transforms that return multiple tapes are not compatible.

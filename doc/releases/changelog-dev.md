@@ -4,15 +4,52 @@
 
 <h3>New features since last release</h3>
 
-* PennyLane transforms that return a single tape and null processing functions can now be used with
-  program capture enabled, even if a `plxpr_transform` is not provided.
+* Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
   [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
+  
+  As an example, here is a custom tape transform, working with capture enabled, that shifts every `qml.RX` gate to the end of the circuit:
+  
+  ```python
+  qml.capture.enable()
+  
+  @qml.transform
+  def shift_rx_to_end(tape):
+      """Transform that moves all RX gates to the end of the operations list."""
+      new_ops, rxs = [], []
 
-  The transform will fail if the transformed function contains control flow with dynamic parameters.
-  This includes:
-  * `qml.cond` with dynamic parameters as predicates.
-  * `qml.for_loop` with dynamic parameters for ``start``, ``stop``, or ``step``.
-  * `qml.while_loop` does not work.
+      for op in tape.operations:
+          if isinstance(op, qml.RX):
+              rxs.append(op)
+          else:
+                new_ops.append(op)
+ 
+      operations = new_ops + rxs
+      new_tape = qml.tape.QuantumScript(
+          operations, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+      )
+      return [new_tape], lambda res: res[0]
+
+  @qml.capture.expand_plxpr_transforms
+  @shift_rx_to_end
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit():
+      qml.RX(0.1, wires=0)
+      qml.H(wires=0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H──RX(0.10)─┤  State
+  ```
+  
+  There are some exceptions to getting tape transforms to work with capture enabled:
+  * Transforms that return multiple tapes cannot be converted
+  * Transforms that return and non-trivial postprocessing functions cannot be converted
+  * Transforms will fail if the transformed quantum function or QNode contains:
+    * `qml.cond` with dynamic parameters as predicates.
+    * `qml.for_loop` with dynamic parameters for ``start``, ``stop``, or ``step``.
+    * `qml.while_loop`.
 
 * `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
   `qml.defer_measurements` can be executed on `default.qubit`.
