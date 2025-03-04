@@ -230,8 +230,8 @@
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
 
 * Added class `qml.capture.transforms.CommuteControlledInterpreter` that moves commuting gates past control 
-  and target qubits of controlled operations following the same API as `qml.transforms.commute_controlled` 
-  when experimental program capture is enabled.
+  and target qubits of controlled operations when experimental program capture is enabled.
+  It follows the same API as `qml.transforms.commute_controlled`.
   [(#6946)](https://github.com/PennyLaneAI/pennylane/pull/6946)
 
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will

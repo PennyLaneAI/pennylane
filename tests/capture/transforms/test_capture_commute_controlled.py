@@ -329,7 +329,7 @@ class TestCommuteControlledInterpreter:
             qml.assert_equal(op1, op2)
 
     def test_push_z_gates_left(self):
-        """Test that Z-basis after before controlled-Z-type gates on controls *and*
+        """Test that Z-basis after controlled-Z-type gates on controls *and*
         targets get pushed behind."""
 
         @CommuteControlledInterpreter(direction="left")
@@ -553,7 +553,7 @@ class TestCommuteControlledHigherOrderPrimitives:
             qml.assert_equal(op1, op2)
 
     def test_for_loop(self):
-        """Test that for operators inside a for loop are correctly pushed."""
+        """Test that operators inside a for loop are correctly pushed."""
 
         @CommuteControlledInterpreter()
         def circuit(x):
@@ -628,7 +628,7 @@ class TestCommuteControlledPLXPR:
     """Unit tests for the commute-controlled transformation on PLXPRs."""
 
     def test_single_qubit_fusion_plxpr_to_plxpr(self):
-        """Test that the single-qubit fusion transformation works on a plxpr."""
+        """Test that the commute-controlled transformation works on a plxpr."""
 
         def circuit():
             qml.PauliX(wires=1)
@@ -651,24 +651,12 @@ class TestCommuteControlledPLXPR:
         assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
         assert len(transformed_jaxpr.eqns) == 14
 
-        assert transformed_jaxpr.eqns[0].primitive == qml.X._primitive
-        assert transformed_jaxpr.eqns[1].primitive == qml.CZ._primitive
-        assert transformed_jaxpr.eqns[2].primitive == qml.S._primitive
-        assert transformed_jaxpr.eqns[3].primitive == qml.CNOT._primitive
-        assert transformed_jaxpr.eqns[4].primitive == qml.Y._primitive
-        assert transformed_jaxpr.eqns[5].primitive == qml.CRY._primitive
-        assert transformed_jaxpr.eqns[6].primitive == qml.Y._primitive
-        assert transformed_jaxpr.eqns[7].primitive == qml.CRZ._primitive
-        assert transformed_jaxpr.eqns[8].primitive == qml.PhaseShift._primitive
-        assert transformed_jaxpr.eqns[9].primitive == qml.T._primitive
-        assert transformed_jaxpr.eqns[10].primitive == qml.RZ._primitive
-        assert transformed_jaxpr.eqns[11].primitive == qml.Z._primitive
-        assert transformed_jaxpr.eqns[12].primitive == qml.X._primitive
-        assert transformed_jaxpr.eqns[13].primitive == qml.CRY._primitive
+        expected_ops = [qml.X, qml.CZ, qml.S, qml.CNOT, qml.Y, qml.CRY, qml.Y, qml.CRZ, qml.PhaseShift, qml.T, qml.RZ, qml.Z, qml.X, qml.CRY]
+        assert all(eqn.primitive == cls._primitive for eqn, cls in zip(transformed_jaxpr.eqns, expected_ops, strict=True))
 
     @pytest.mark.parametrize("direction", ["left", "right"])
     def test_applying_plxpr_decorator(self, direction):
-        """Test that the single-qubit fusion transformation works when applying the plxpr decorator."""
+        """Test that the commute-controlled transformation works when applying the plxpr decorator."""
 
         @qml.capture.expand_plxpr_transforms
         @partial(commute_controlled, direction=direction)

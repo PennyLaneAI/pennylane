@@ -60,7 +60,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             """Initialize the interpreter."""
 
             if direction not in ("left", "right"):
-                raise ValueError("Direction for commute_controlled must be 'left' or 'right'.")
+                raise ValueError(f"Direction for commute_controlled must be 'left' or 'right'. Got {direction}")
 
             self.direction = direction
             self.op_deque = deque()
@@ -257,10 +257,10 @@ def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> Optional[
     return find_next_gate(wires, reversed(prevs_ops))
 
 
-def _shares_control_wires(op: Operator, gate: Operator) -> bool:
-    """Check if the operation shares wires with the control wires of the provided gate."""
+def _shares_control_wires(op: Operator, ctrl_gate: Operator) -> bool:
+    """Check if the operation shares wires with the control wires of the provided controlled gate."""
 
-    return len(Wires.shared_wires([Wires(op.wires), gate.control_wires])) > 0
+    return len(Wires.shared_wires([Wires(op.wires), ctrl_gate.control_wires])) > 0
 
 
 def _can_commute(op1: Operator, op2: Operator) -> bool:
@@ -280,7 +280,7 @@ def _can_push_through(op: Operator) -> bool:
 
     # Only go ahead if information is available.
     # If the gate does not have control_wires defined, it is not
-    # controlled so we can't push through.
+    # controlled so we won't push through.
     return hasattr(op, "basis") and len(op.control_wires) > 0
 
 
