@@ -233,6 +233,14 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives
+  when using program capture to jaxpr.
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
+* Device-provided derivatives are integrated into the program capture pipeline.
+  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
 * The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
 
@@ -309,6 +317,9 @@
 
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
+* ``ResourceOperator.resource_params`` is changed to a property.
+  [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
 <h3>Breaking changes 💔</h3>
 
