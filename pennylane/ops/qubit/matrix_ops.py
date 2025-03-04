@@ -201,7 +201,7 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(U: TensorLike, format="csr"):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -218,7 +218,7 @@ class QubitUnitary(Operation):
             with 2 stored elements in Compressed Sparse Row format>
         """
         if sp.sparse.issparse(U):
-            return U.tocsr()
+            return U.tocsr().asformat(format)
         raise qml.operation.SparseMatrixUndefinedError(
             "U is a dense matrix. Use matrix method instead"
         )

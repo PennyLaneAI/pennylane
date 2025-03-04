@@ -418,7 +418,6 @@ def assert_valid(
     if not skip_pickle:
         _check_pickle(op)
     _check_bind_new_parameters(op)
-
     _check_decomposition(op, skip_wire_mapping)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)

@@ -56,6 +56,16 @@ class TestQubitUnitaryCSR:
         assert isinstance(op, csr_matrix)
         assert np.allclose(op.toarray(), U.toarray())
 
+        """Test that the sparse matrix accepts the format parameter."""
+        from scipy.sparse import coo_matrix, csc_matrix, lil_matrix
+
+        op_csc = qml.QubitUnitary.compute_sparse_matrix(U, format="csc")
+        op_lil = qml.QubitUnitary.compute_sparse_matrix(U, format="lil")
+        op_coo = qml.QubitUnitary.compute_sparse_matrix(U, format="coo")
+        assert isinstance(op_csc, csc_matrix)
+        assert isinstance(op_lil, lil_matrix)
+        assert isinstance(op_coo, coo_matrix)
+
     def test_generic_sparse_convert_to_csr(self):
         """Test that other generic sparse matrices can be converted to csr_matrix."""
         # 4x4 Identity as a csr_matrix
