@@ -403,6 +403,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add `NotImplementedError`s for `grad` and `jacobian` in `CollectOpsandMeas`.
+  [(#7041)](https://github.com/PennyLaneAI/pennylane/pull/7041)
+
 * Quantum transform interpreters now perform argument validation and will no longer 
   check if the equation in the `jaxpr` is a transform primitive.
   [(#7023)](https://github.com/PennyLaneAI/pennylane/pull/7023)
