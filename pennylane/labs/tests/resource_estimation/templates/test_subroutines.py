@@ -126,37 +126,58 @@ class TestControlledSequence:
             "num_ctrl_wires": len(control),
         }
 
-    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4])
-    def test_resource_rep(self, num_wires):
+    @pytest.mark.parametrize(
+        "base_class, base_params, num_ctrl_wires",
+        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
+    )
+    def test_resource_rep(self, base_class, base_params, num_ctrl_wires):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
-        expected = re.CompressedResourceOp(re.ResourceQFT, {"num_wires": num_wires})
-        assert re.ResourceQFT.resource_rep(num_wires) == expected
+        expected = re.CompressedResourceOp(
+            re.ResourceControlledSequence,
+            {
+                "base_class": base_class,
+                "base_params": base_params,
+                "num_ctrl_wires": num_ctrl_wires,
+            },
+        )
+        assert expected == re.ResourceControlledSequence.resource_rep(
+            base_class, base_params, num_ctrl_wires
+        )
 
     @pytest.mark.parametrize(
-        "num_wires, num_hadamard, num_swap, num_ctrl_phase_shift",
-        [
-            (1, 1, 0, 0),
-            (2, 2, 1, 1),
-            (3, 3, 1, 3),
-            (4, 4, 2, 6),
-        ],
+        "base_class, base_params, num_ctrl_wires",
+        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
     )
-    def test_resources_from_rep(self, num_wires, num_hadamard, num_swap, num_ctrl_phase_shift):
+    def test_resources_from_rep(self, base_class, base_params, num_ctrl_wires):
         """Test that computing the resources from a compressed representation works"""
 
-        hadamard = re.CompressedResourceOp(re.ResourceHadamard, {})
-        swap = re.CompressedResourceOp(re.ResourceSWAP, {})
-        ctrl_phase_shift = re.CompressedResourceOp(re.ResourceControlledPhaseShift, {})
+        resource_controlled_sequence = re.CompressedResourceOp(
+            re.ResourceControlled,
+            {
+                "base_class": base_class,
+                "base_params": base_params,
+                "num_ctrl_wires": 1,
+                "num_ctrl_values": 0,
+                "num_work_wires": 0,
+            },
+        )
 
-        expected = {hadamard: num_hadamard, swap: num_swap, ctrl_phase_shift: num_ctrl_phase_shift}
+        expected = {resource_controlled_sequence: 2**num_ctrl_wires - 1}
 
-        rep = re.ResourceQFT.resource_rep(num_wires)
+        rep = re.ResourceControlledSequence.resource_rep(base_class, base_params, num_ctrl_wires)
         actual = rep.op_type.resources(**rep.params)
 
         assert actual == expected
 
-    @pytest.mark.parametrize("num_wires", range(10))
-    def test_tracking_name(self, num_wires):
+    @pytest.mark.parametrize(
+        "base_class, base_params, num_ctrl_wires",
+        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
+    )
+    def test_tracking_name(self, base_class, base_params, num_ctrl_wires):
         """Test that the tracking name is correct."""
-        assert re.ResourceQFT.tracking_name(num_wires + 1) == f"QFT({num_wires+1})"
+        base_name = base_class.tracking_name(**base_params)
+        assert (
+            re.ResourceControlledSequence.tracking_name(base_class, base_params, num_ctrl_wires)
+            == f"ControlledSequence({base_name}, {num_ctrl_wires})"
+        )
