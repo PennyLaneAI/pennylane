@@ -783,6 +783,27 @@ def test_defer_measurements_plxpr_to_plxpr_reduce_postselected_warning():
         defer_measurements_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
 
 
+def test_defer_measurements_plxpr_to_plxpr_allow_postselect_warning():
+    """Test that a warning is raised if ``allow_postselect=True``."""
+
+    def f(x):
+        m = qml.measure(0)
+
+        @qml.cond(m)
+        def true_fn(phi):
+            qml.RX(phi, 0)
+
+        true_fn(x)
+
+    args = (1.5,)
+    targs = ()
+    tkwargs = {"aux_wires": list(range(5, 10)), "allow_postselect": True}
+    jaxpr = jax.make_jaxpr(f)(*args)
+
+    with pytest.warns(UserWarning, match="Cannot set 'allow_postselect=True'"):
+        defer_measurements_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
+
+
 # The following tests should be moved elsewhere after transforms are integrated with execution
 class TestDeferMeasurementsDefaultQubit:
     """Tests for executing circuits that are transformed by qml.defer_measurements
