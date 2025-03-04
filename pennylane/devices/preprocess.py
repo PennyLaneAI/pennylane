@@ -211,7 +211,7 @@ def mid_circuit_measurements(
     )
 
 
-def _is_conditional_mcm(operation):
+def _is_conditional_mcm(operation: qml.operation.Operator) -> bool:
     """Returns True if the operation is a mid-circuit measurement nested inside a Conditional,
     and False otherwise."""
     if isinstance(operation, qml.ops.Conditional):
@@ -221,7 +221,7 @@ def _is_conditional_mcm(operation):
 
 
 @lru_cache()
-def _includes_conditional_mcms(tape: QuantumScript):
+def _includes_conditional_mcms(tape: QuantumScript) -> bool:
     return any(_is_conditional_mcm(op) for op in tape.operations)
 
 
