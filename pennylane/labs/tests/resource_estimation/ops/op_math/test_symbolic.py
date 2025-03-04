@@ -49,10 +49,7 @@ class DummyOp(re.ResourceOperator, Operation):
     def exp_resource_decomp(cls, coeff, num_steps, a, b):  # pylint: disable=unused-argument
         return cls.resources(a + 1, b + 1)
 
-<<<<<<< HEAD
-=======
     @property
->>>>>>> master
     def resource_params(self) -> dict:
         return {"a": self.a, "b": self.b}
 
@@ -439,11 +436,7 @@ class TestResourceProd:
     )
     def test_resources(self, op, params, expected_res):
         """Test the resources method returns the correct dictionary"""
-<<<<<<< HEAD
-        res_from_op = op.resources(**op.resource_params())
-=======
         res_from_op = op.resources(**op.resource_params)
->>>>>>> master
         res_from_func = re.ResourceProd.resources(**params)
 
         assert res_from_op == expected_res
@@ -452,11 +445,7 @@ class TestResourceProd:
     @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data))
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
-<<<<<<< HEAD
-        assert op.resource_params() == expected_params
-=======
         assert op.resource_params == expected_params
->>>>>>> master
 
     @pytest.mark.parametrize("expected_params", resource_params_data)
     def test_resource_rep(self, expected_params):
@@ -472,11 +461,7 @@ class TestResourceExp:
     def test_resource_params(self, op, expected):
         """Test that the resource_params method produces the expected parameters."""
         exp_op = re.ResourceExp(op, 1.2j, num_steps=3)
-<<<<<<< HEAD
-        extracted_params = exp_op.resource_params()
-=======
         extracted_params = exp_op.resource_params
->>>>>>> master
         assert extracted_params == expected
 
     @pytest.mark.parametrize("op, expected_params", exp_params_data)
@@ -512,11 +497,7 @@ class TestResourceExp:
     @pytest.mark.parametrize("op, expected_resources", exp_res_data)
     def test_resources_decomp(self, op, expected_resources):
         """Test that the _resources_decomp method works as expected."""
-<<<<<<< HEAD
-        computed_resources = op._resource_decomp(**op.resource_params())
-=======
         computed_resources = op._resource_decomp(**op.resource_params)
->>>>>>> master
         assert computed_resources == expected_resources
 
     @pytest.mark.parametrize(
@@ -556,11 +537,7 @@ class TestResourceExp:
     )
     def test_pow_resources(self, op, z, expected_resources):
         """Test that the pow resource decomp method works as expected."""
-<<<<<<< HEAD
-        params = op.resource_params()
-=======
         params = op.resource_params
->>>>>>> master
         computed_resources = op.pow_resource_decomp(z, **params)
         assert computed_resources == expected_resources
 

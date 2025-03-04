@@ -164,11 +164,7 @@ class TestPauliRot:
     def test_resource_params(self, pauli_string):
         """Test that the resource params are correct."""
         op = re.ResourcePauliRot(theta=0.5, pauli_word=pauli_string, wires=range(len(pauli_string)))
-<<<<<<< HEAD
-        assert op.resource_params() == {"pauli_string": pauli_string}
-=======
         assert op.resource_params == {"pauli_string": pauli_string}
->>>>>>> master
 
     @pytest.mark.parametrize("pauli_string", pauli_words)
     def test_resource_rep(self, pauli_string):
@@ -373,11 +369,7 @@ class TestPauliRot:
         """Test that the pow decomposition is correct."""
         op = re.ResourcePauliRot(theta=0.5, pauli_word=pauli_word, wires=range(len(pauli_word)))
         expected_res = {re.ResourcePauliRot.resource_rep(pauli_string=pauli_word): 1}
-<<<<<<< HEAD
-        assert op.pow_resource_decomp(z, **op.resource_params()) == expected_res
-=======
         assert op.pow_resource_decomp(z, **op.resource_params) == expected_res
->>>>>>> master
 
         op2 = re.ResourcePow(op, z)
         assert op2.resources(**op2.resource_params) == expected_res
