@@ -256,6 +256,7 @@ tested_modified_templates = [
     qml.Superposition,
     qml.MPSPrep,
     qml.GQSP,
+    qml.QROMStatePreparation,
 ]
 
 
@@ -730,6 +731,40 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROM(**kwargs))
+
+    def test_qrom_state_prep(self):
+        """Test the primitive bind call of QROMStatePreparation."""
+
+        kwargs = {
+            "state_vector": np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),
+            "precision_wires": [0, 1, 2, 3],
+            "work_wires": [4, 5, 6, 7],
+            "wires": [8, 9],
+        }
+
+        def qfunc():
+            qml.QROMStatePreparation(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.QROMStatePreparation._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.QROMStatePreparation(**kwargs))
 
     def test_phase_adder(self):
         """Test the primitive bind call of PhaseAdder."""
