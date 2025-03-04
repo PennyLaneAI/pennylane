@@ -57,9 +57,10 @@ class TestGraphStatePrep:
 
     @pytest.mark.parametrize(
         "qubit_ops, entangle_ops",
-        [(qml.H, qml.CZ),
-         (qml.X, qml.CNOT),
-         ]
+        [
+            (qml.H, qml.CZ),
+            (qml.X, qml.CNOT),
+        ],
     )
     def test_decompose(self, qubit_ops, entangle_ops):
         """Test the decomposition method of the GraphStatePrep class."""
