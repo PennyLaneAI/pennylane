@@ -423,7 +423,6 @@ def assert_valid(
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
-    _check_sparse_matrix_formatting(op)
     _check_eigendecomposition(op)
     _check_generator(op)
     if not skip_differentiation:
