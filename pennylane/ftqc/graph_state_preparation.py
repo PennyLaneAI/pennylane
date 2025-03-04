@@ -75,7 +75,9 @@ class GraphStatePrep(Operation):
         self.hyperparameters["entanglement_ops"] = entanglement_ops
         super().__init__(wires=[q for q in qubit_graph.graph])
 
-    def label(self, decimals: int = None, base_label: str = None, cache: dict = None):  # pylint: disable=unused-argument
+    def label(
+        self, decimals: int = None, base_label: str = None, cache: dict = None
+    ):  # pylint: disable=unused-argument
         r"""How the graph state preparation is represented in diagrams and drawings.
 
         Args:
