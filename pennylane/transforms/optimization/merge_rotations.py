@@ -63,9 +63,8 @@ def _get_plxpr_merge_rotations():
 
             # Refresh the previous_ops dictionary with the current operator
             for o in previous_ops_on_wires:
-                if o is not None:
-                    for w in o.wires:
-                        del self.previous_ops[w]
+                for w in o.wires:
+                    del self.previous_ops[w]
             for w in op.wires:
                 self.previous_ops[w] = op
 
