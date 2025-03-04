@@ -670,21 +670,25 @@ def _consolidate_conditional_measurements(ops):
             expr = MeasurementValue(mps, processing_fn=processing_fn)
 
             if isinstance(op.base, qml.measurements.MidMeasureMP):
-                conditional_group = [op]
+                # in core PennyLane with tapes, we can assume that a conditional has only a
+                # true_fn and false_fn, so we make that assumption in the PL tape transform
+                # for Catalyst and ProgramCapture, it is also possible to have additional elif functions
+                true_cond, false_cond = (op, ops[i + 1])
+                curr_idx += 1
 
-                while (
-                    curr_idx + 1 < len(ops)
-                    and is_conditional_mcm(ops[curr_idx + 1])
-                    and grouped_mcms(op, ops[curr_idx + 1])
-                ):
-                    conditional_group.append(ops[curr_idx + 1])
-                    curr_idx += 1
-
-                _validate_mcm_group(conditional_group)
+                # ToDo: we could actually make this error more helpful and specific (but its already pretty specific)
+                if not _false_cond_matches_true(true_cond, false_cond):
+                    raise ValueError(
+                        "Using `cond` to add mid-circuit measurements to a circuit must always "
+                        "result in application of a mid-circuit measurement. The `wire`, "
+                        "`postselect` and `reset` behaviour must also be consistent for all "
+                        "branches of the conditional. Only the basis of the measurement (defined "
+                        "by measurement type or by `plane` and `angle`) can vary."
+                    )
 
                 # add conditional diagonalizing gates + conditional MCM to the tape
                 with qml.QueuingManager.stop_recording():
-                    for op in conditional_group:
+                    for op in [true_cond, false_cond]:
                         diag_gates = [
                             qml.ops.Conditional(expr=expr, then_op=gate)
                             for gate in op.diagonalizing_gates()
@@ -714,11 +718,23 @@ def _consolidate_conditional_measurements(ops):
     return new_operations
 
 
-def _validate_mcm_group(mcms):
-    """takes a group of MCMs (grouped because they can be described with the same base MCM and they
-    all depend on the same measurements) and confirms that the group is complete, i.e. that each
-    input for the measurement values maps to one output"""
-    meas_vals = [m.meas_val for m in mcms]
+def _false_cond_matches_true(true_cond, false_cond):
+    """Takes a pair of Conditional MCMs (representing a true and false condition) and confirms that
+    the group is complete, i.e. that each input for the measurement values maps to one output"""
+
+    if not is_conditional_mcm(false_cond):
+        return False
+
+    if not (
+        true_cond.meas_val.measurements == false_cond.meas_val.measurements
+        and true_cond.base.reset == false_cond.base.reset
+        and true_cond.base.postselect == false_cond.base.postselect
+        and true_cond.base.wires == false_cond.base.wires
+    ):
+        return False
+
+    # ToDo: is this even relevant anymore since PL doesn't support elif? or can we just return True here?
+    meas_vals = [true_cond.meas_val, false_cond.meas_val]
 
     # get each conditionals outcomes for all combinations of inputs
     all_outcomes = [[outcome for branch, outcome in mv.items()] for mv in meas_vals]
@@ -727,23 +743,4 @@ def _validate_mcm_group(mcms):
     # (i.e. each input is true for one conditional, and false for all the others)
     all_branches_true_once = np.allclose(np.sum(all_outcomes, axis=0), 1)
 
-    if not all_branches_true_once:
-        raise ValueError(
-            "Using `cond` to add mid-circuit measurements to a circuit must always result in "
-            "application of a mid-circuit measurement. The `wire`, `postselect` and `reset` behaviour "
-            "must also be consistent for all branches of the conditional. Only the basis of "
-            "the measurement (defined by measurement type or by `plane` and `angle`) can vary."
-        )
-
-
-def grouped_mcms(m1, m2):
-    """Takes two conditional MCMs, and confirms that they may require different diagonalizing
-    gates, but are otherwise the same set of instructions"""
-    if (
-        m1.meas_val.measurements == m2.meas_val.measurements
-        and m1.base.reset == m2.base.reset
-        and m1.base.postselect == m2.base.postselect
-        and m1.base.wires == m2.base.wires
-    ):
-        return True
-    return False
+    return all_branches_true_once
