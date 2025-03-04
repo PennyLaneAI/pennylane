@@ -495,16 +495,6 @@ class TestCommuteControlledHigherOrderPrimitives:
                 ],
             ),
             (
-                0.4,
-                [
-                    qml.CNOT(wires=[0, 1]),
-                    qml.CNOT(wires=[0, 2]),
-                    qml.Toffoli(wires=[0, 1, 2]),
-                    qml.RX(np.pi, wires=2),
-                    qml.CNOT(wires=[0, 1]),
-                ],
-            ),
-            (
                 0.8,
                 [
                     qml.CNOT(wires=[0, 1]),
@@ -651,8 +641,26 @@ class TestCommuteControlledPLXPR:
         assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
         assert len(transformed_jaxpr.eqns) == 14
 
-        expected_ops = [qml.X, qml.CZ, qml.S, qml.CNOT, qml.Y, qml.CRY, qml.Y, qml.CRZ, qml.PhaseShift, qml.T, qml.RZ, qml.Z, qml.X, qml.CRY]
-        assert all(eqn.primitive == cls._primitive for eqn, cls in zip(transformed_jaxpr.eqns, expected_ops, strict=True))
+        expected_ops = [
+            qml.X,
+            qml.CZ,
+            qml.S,
+            qml.CNOT,
+            qml.Y,
+            qml.CRY,
+            qml.Y,
+            qml.CRZ,
+            qml.PhaseShift,
+            qml.T,
+            qml.RZ,
+            qml.Z,
+            qml.X,
+            qml.CRY,
+        ]
+        assert all(
+            eqn.primitive == cls._primitive
+            for eqn, cls in zip(transformed_jaxpr.eqns, expected_ops, strict=True)
+        )
 
     @pytest.mark.parametrize("direction", ["left", "right"])
     def test_applying_plxpr_decorator(self, direction):

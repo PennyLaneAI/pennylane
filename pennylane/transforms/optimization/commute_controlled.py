@@ -60,7 +60,9 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             """Initialize the interpreter."""
 
             if direction not in ("left", "right"):
-                raise ValueError(f"Direction for commute_controlled must be 'left' or 'right'. Got {direction}")
+                raise ValueError(
+                    f"Direction for commute_controlled must be 'left' or 'right'. Got {direction}"
+                )
 
             self.direction = direction
             self.op_deque = deque()
@@ -87,13 +89,10 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
             while prev_gate_idx is not None:
                 prev_gate = self.op_deque[new_index - (prev_gate_idx + 1)]
 
-                if not _can_push_through(prev_gate):
+                if not _can_push_through(prev_gate) or not _can_commute(op, prev_gate):
                     break
 
-                if _can_commute(op, prev_gate):
-                    new_index -= prev_gate_idx + 1
-                else:
-                    break
+                new_index -= prev_gate_idx + 1
 
                 prev_gate_idx = _find_previous_gate_on_wires(
                     op.wires, tuple(islice(self.op_deque, new_index))
@@ -127,13 +126,12 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 while next_gate_idx is not None:
                     next_gate = self.op_deque[new_index + next_gate_idx + 1]
 
-                    if not _can_push_through(next_gate):
+                    if not _can_push_through(next_gate) or not _can_commute(
+                        current_gate, next_gate
+                    ):
                         break
 
-                    if _can_commute(current_gate, next_gate):
-                        new_index += next_gate_idx + 1
-                    else:
-                        break
+                    new_index += next_gate_idx + 1
 
                     next_gate_idx = find_next_gate(
                         current_gate.wires,
@@ -264,7 +262,7 @@ def _shares_control_wires(op: Operator, ctrl_gate: Operator) -> bool:
 
 
 def _can_commute(op1: Operator, op2: Operator) -> bool:
-    """Helper that determines if op1 can commute with op2 based on their basis and control wires."""
+    """Helper that determines if op1 can commute with a single-qubit gate op2 based on their basis and control wires."""
 
     # Case 1: overlap is on the control wires. Only Z-type gates go through
     if _shares_control_wires(op1, op2):
@@ -324,13 +322,10 @@ def _commute_controlled_right(op_list):
         while next_gate_idx is not None:
             next_gate = op_list[new_location + next_gate_idx + 1]
 
-            if not _can_push_through(next_gate):
+            if not _can_push_through(next_gate) or not _can_commute(current_gate, next_gate):
                 break
 
-            if _can_commute(current_gate, next_gate):
-                new_location += next_gate_idx + 1
-            else:
-                break
+            new_location += next_gate_idx + 1
 
             next_gate_idx = find_next_gate(current_gate.wires, op_list[new_location + 1 :])
 
@@ -372,13 +367,10 @@ def _commute_controlled_left(op_list):
         while prev_gate_idx is not None:
             prev_gate = op_list[new_location - prev_gate_idx - 1]
 
-            if not _can_push_through(prev_gate):
+            if not _can_push_through(prev_gate) or not _can_commute(current_gate, prev_gate):
                 break
 
-            if _can_commute(current_gate, prev_gate):
-                new_location -= prev_gate_idx + 1
-            else:
-                break
+            new_location -= prev_gate_idx + 1
 
             prev_gate_idx = find_next_gate(current_gate.wires, op_list[:new_location][::-1])
 
