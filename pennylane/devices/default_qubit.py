@@ -969,7 +969,7 @@ class DefaultQubit(Device):
 
         tangents = tuple(map(_make_zero, tangents, args))
 
-        def backprop_eval(*inner_args):
+        def eval_wrapper(*inner_args):
             n_consts = len(jaxpr.constvars)
             consts = inner_args[:n_consts]
             non_const_args = inner_args[n_consts:]
@@ -977,7 +977,7 @@ class DefaultQubit(Device):
                 jaxpr, consts, *non_const_args, execution_config=execution_config
             )
 
-        return jax.jvp(backprop_eval, args, tangents)
+        return jax.jvp(eval_wrapper, args, tangents)
 
     # pylint :disable=import-outside-toplevel, unused-argument
     @debug_logger

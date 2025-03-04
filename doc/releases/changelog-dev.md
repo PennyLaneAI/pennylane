@@ -230,10 +230,12 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives.
+* `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives
+  when using program capture to jaxpr.
   [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
 
 * Device-provided derivatives are integrated into the program capture pipeline.
+  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
   [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
 
 * The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
