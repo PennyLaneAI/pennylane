@@ -75,6 +75,22 @@ class GraphStatePrep(Operation):
         self.hyperparameters["entanglement_ops"] = entanglement_ops
         super().__init__(wires=[q for q in qubit_graph.graph])
 
+    def label(self, decimals: int = None, base_label: str = None, cache: dict = None):  # pylint: disable=unused-argument
+        r"""How the graph state preparation is represented in diagrams and drawings.
+
+        Args:
+            decimals: If ``None``, no parameters are included. Else, how to round
+                the parameters. Required to match general call signature. Not used.
+            base_label: overwrite the non-parameter component of the label.
+                Required to match general call signature. Not used.
+            cache: dictionary that carries information between label calls in the
+                same drawing. Required to match general call signature. Not used.
+
+        Returns:
+            str: label to use in drawings
+        """
+        return f"GraphStatePrep({self.hyperparameters['qubit_ops'](wires=0).name}, entanglement_ops: {self.hyperparameters['entanglement_ops'].name})"
+
     def __repr__(self):
         """Method defining the string representation of this class."""
         return f"Graph State Preparation with: Qubit Ops: {self.hyperparameters['qubit_ops']}, Entanglement Ops: {self.hyperparameters['entanglement_ops']}, Wires: {self.hyperparameters['qubit_graph']}"
