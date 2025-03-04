@@ -135,8 +135,8 @@ class Hermitian(Observable):
         return A
 
     @staticmethod
-    def compute_sparse_matrix(A) -> csr_matrix:  # pylint: disable=arguments-differ
-        return csr_matrix(Hermitian.compute_matrix(A))
+    def compute_sparse_matrix(A, format="csr") -> csr_matrix:  # pylint: disable=arguments-differ
+        return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
 
     @property
     def eigendecomposition(self) -> dict[str, TensorLike]:
