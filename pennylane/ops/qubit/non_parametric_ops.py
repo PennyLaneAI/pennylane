@@ -1003,6 +1003,8 @@ class T(Operation):
 
     batch_size = None
 
+    resource_param_keys = ()
+
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -1020,6 +1022,10 @@ class T(Operation):
         if isinstance(wire, str):
             return f"T('{wire}')"
         return f"T({wire})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -1105,6 +1111,18 @@ class T(Operation):
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # T = RZ(\pi/4) RY(0) RZ(0)
         return [np.pi / 4, 0.0, 0.0]
+
+
+def _t_phaseshift_resources():
+    return {qml.PhaseShift: 1}
+
+
+@register_resources(_t_phaseshift_resources)
+def _t_phaseshift(wires, **__):
+    qml.PhaseShift(np.pi / 4, wires=wires)
+
+
+add_decomposition(T, _t_phaseshift)
 
 
 class SX(Operation):
