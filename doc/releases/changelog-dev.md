@@ -42,6 +42,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format, with the default being `'csr'`. [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
+
 * `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
 
