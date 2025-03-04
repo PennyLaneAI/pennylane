@@ -894,14 +894,12 @@ Args:
 
 
 def _pauliz_ps_rz_ps_resources():
-    return {qml.PhaseShift: 2, qml.RZ: 1}
+    return {qml.PhaseShift: 1}
 
 
 @register_resources(_pauliz_ps_rz_ps_resources)
 def _pauliz_to_ps_rz_ps(wires: WiresLike, **__):
-    qml.PhaseShift(np.pi / 2, wires=wires)
-    qml.RZ(np.pi, wires=wires)
-    qml.PhaseShift(np.pi / 2, wires=wires)
+    qml.PhaseShift(np.pi, wires=wires)
 
 
 add_decomposition(Z, _pauliz_to_ps_rz_ps)
