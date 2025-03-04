@@ -24,6 +24,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qml
+from pennylane.decomposition import add_decomposition, register_resources
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -436,9 +437,15 @@ class PhaseShift(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
@@ -574,6 +581,19 @@ class PhaseShift(Operation):
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
         return [self.data[0], 0.0, 0.0]
+
+
+def _phaseshift_rz_gp_resources():
+    return {qml.RZ: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_phaseshift_rz_gp_resources)
+def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
+    RZ(phi, wires=wires)
+    qml.GlobalPhase(-phi / 2)
+
+
+add_decomposition(qml.PhaseShift, _phaseshift_to_rz_gp)
 
 
 class Rot(Operation):
