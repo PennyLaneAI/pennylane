@@ -130,7 +130,8 @@ class TestFromBloq:
         assert CNOT().as_pl_op([0, 1]) == qml.CNOT([0, 1])
         assert Toffoli().as_pl_op([0, 1, 2]) == qml.Toffoli([0, 1, 2])
 
-        assert qml.FromBloq(Hadamard(), 0).has_matrix == True
+        assert qml.FromBloq(Hadamard(), 0).has_matrix is True
+        assert qml.FromBloq(Hadamard(), 0).decomposition() == []
 
         assert np.allclose(qml.FromBloq(Hadamard(), 0).matrix(), qml.Hadamard(0).matrix())
         assert np.allclose(qml.FromBloq(CNOT(), [0, 1]).matrix(), qml.CNOT([0, 1]).matrix())
