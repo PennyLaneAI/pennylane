@@ -21,9 +21,7 @@ import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
-_has_qualtran = True
 try:
-    import qualtran  # pylint:disable=unused-import
     from qualtran import (
         Bloq,
         CompositeBloq,
@@ -34,7 +32,7 @@ try:
         Soquet,
     )
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    _has_qualtran = False
+    pass
 
 
 def get_bloq_registers_info(bloq):
