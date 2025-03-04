@@ -1246,12 +1246,19 @@ class TestDenmanBeaversIterations:
         n = 4
         A = np.random.random((n, n)) + 1j * np.random.random((n, n))
         mat = np.eye(n) - 0.2 * (A @ A.T.conj())
-        flip_sign = np.array([-1, 1, 1, 1])
-        good_mat = mat if det_mat > 0 else mat * flip_sign
+
+        def _reverse_det_hermitian(mat):
+            eigvals, eigvecs = np.linalg.eigh(mat)
+            eigvals[0] *= -1
+            return eigvecs @ np.diag(eigvals) @ eigvecs.T.conj()
+
+        det_mat = np.real(np.linalg.det(mat))
+        good_mat = mat if det_mat > 0 else _reverse_det_hermitian(mat)
+
         result = _denman_beavers_iterations(csr_matrix(good_mat))
         result_dense = result.toarray()
         qml.math.allclose(result_dense @ result_dense, good_mat, atol=1e-7, rtol=1e-7)
 
-        bad_mat = mat if det_mat < 0 else mat * flip_sign
+        bad_mat = mat if det_mat < 0 else _reverse_det_hermitian(mat)
         with pytest.raises(ValueError, match="Invalid values encountered"):
-            _denman_beavers_iterations(csr_matrix(mat))
+            _denman_beavers_iterations(csr_matrix(bad_mat))
