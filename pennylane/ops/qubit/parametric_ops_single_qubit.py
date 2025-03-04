@@ -74,12 +74,17 @@ class RX(Operation):
     basis = "X"
     grad_method = "A"
     parameter_frequencies = [(1,)]
+    resource_param_keys = ()
 
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -118,8 +123,8 @@ class RX(Operation):
     def compute_sparse_matrix(theta):
         return sp.sparse.csr_matrix(
             [
-                [np.cos(theta / 2), -1j * np.sin(theta / 2)],
-                [-1j * np.sin(theta / 2), np.cos(theta / 2)],
+                [qml.math.cos(theta / 2), -1j * qml.math.sin(theta / 2)],
+                [-1j * qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
             ]
         )
 
@@ -179,12 +184,17 @@ class RY(Operation):
     basis = "Y"
     grad_method = "A"
     parameter_frequencies = [(1,)]
+    resource_param_keys = ()
 
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -222,7 +232,10 @@ class RY(Operation):
     @staticmethod
     def compute_sparse_matrix(theta):
         return sp.sparse.csr_matrix(
-            [[np.cos(theta / 2), -np.sin(theta / 2)], [np.sin(theta / 2), np.cos(theta / 2)]]
+            [
+                [qml.math.cos(theta / 2), -qml.math.sin(theta / 2)],
+                [qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
+            ]
         )
 
     def adjoint(self) -> "RY":
@@ -276,6 +289,8 @@ class RZ(Operation):
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_param_keys = ()
 
     basis = "Z"
     grad_method = "A"
@@ -367,6 +382,10 @@ class RZ(Operation):
 
     def adjoint(self) -> "RZ":
         return RZ(-self.data[0], wires=self.wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [RZ(self.data[0] * z, wires=self.wires)]

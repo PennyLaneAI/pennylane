@@ -24,7 +24,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import CompressedResourceOp, decomposition
+from pennylane.decomposition import add_decomposition, register_resources
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.typing import TensorLike
@@ -67,6 +67,8 @@ class MultiRZ(Operation):
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_param_keys = ("num_wires",)
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -198,6 +200,10 @@ class MultiRZ(Operation):
 
         return ops
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": self.hyperparameters["num_wires"]}
+
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
@@ -213,21 +219,27 @@ class MultiRZ(Operation):
         return MultiRZ(theta, wires=self.wires)
 
 
-@decomposition
+def _multi_rz_decomposition_resources(num_wires):
+    return {qml.RZ: 1, qml.CNOT: 2 * (num_wires - 1)}
+
+
+@register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta, wires, **__):
-    for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-        qml.CNOT(wires=(w0, w1))
+
+    @qml.for_loop(len(wires) - 1, 0, -1)
+    def _pre_cnot(i):
+        qml.CNOT(wires=(wires[i], wires[i - 1]))
+
+    @qml.for_loop(1, len(wires), 1)
+    def _post_cnot(i):
+        qml.CNOT(wires=(wires[i], wires[i - 1]))
+
+    _pre_cnot()  # pylint: disable=no-value-for-parameter
     qml.RZ(theta, wires=wires[0])
-    for w0, w1 in zip(wires[1:], wires[:-1]):
-        qml.CNOT(wires=(w0, w1))
+    _post_cnot()  # pylint: disable=no-value-for-parameter
 
 
-@_multi_rz_decomposition.resources
-def _multi_rz_resources(num_wires):
-    return {CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 2 * (num_wires - 1)}
-
-
-MultiRZ.add_decomposition(_multi_rz_decomposition)
+add_decomposition(MultiRZ, _multi_rz_decomposition)
 
 
 class PauliRot(Operation):
@@ -279,6 +291,8 @@ class PauliRot(Operation):
     do_check_domain = False
     grad_method = "A"
     parameter_frequencies = [(1,)]
+
+    resource_param_keys = ("pauli_word",)
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
@@ -548,7 +562,6 @@ class PauliRot(Operation):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
 
 
-@decomposition
 def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
     if set(pauli_word) == {"I"}:
         qml.GlobalPhase(theta / 2)
@@ -568,19 +581,19 @@ def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
             qml.RX(-np.pi / 2, wires=[wire])
 
 
-@_pauli_rot_decomposition.resources
 def _pauli_rot_resources(pauli_word):
     if set(pauli_word) == {"I"}:
-        return {CompressedResourceOp(qml.GlobalPhase): 1}
+        return {qml.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
     return {
-        CompressedResourceOp(Hadamard): 2 * pauli_word.count("X"),
-        CompressedResourceOp(RX): 2 * pauli_word.count("Y"),
-        CompressedResourceOp(MultiRZ, {"num_wires": num_active_wires}): 1,
+        qml.Hadamard: 2 * pauli_word.count("X"),
+        qml.RX: 2 * pauli_word.count("Y"),
+        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
     }
 
 
-PauliRot.add_decomposition(_pauli_rot_decomposition)
+pauli_rot_decomposition = qml.register_resources(_pauli_rot_resources, _pauli_rot_decomposition)
+add_decomposition(PauliRot, pauli_rot_decomposition)
 
 
 class PCPhase(Operation):

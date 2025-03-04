@@ -22,7 +22,7 @@ import warnings
 from collections.abc import Callable, Iterable, Sequence
 from typing import Literal, Optional, Union, get_args
 
-from cachetools import Cache
+from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
@@ -318,9 +318,11 @@ class QNode:
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
-        autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to convert Python control flow to native PennyLane
-            control flow. For more information, refer to :doc:`Autograph </development/autograph>`. Defaults to ``True``.
-
+        static_argnums (Union[int, Sequence[int]]): *Only applicable when the experimental capture mode is enabled.*
+            An ``int`` or collection of ``int``\ s that specify which positional arguments to treat as static.
+        autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to
+            convert Python control flow to native PennyLane control flow. For more information, refer to
+            :doc:`Autograph </development/autograph>`. Defaults to ``True``.
 
     **Example**
 
@@ -538,6 +540,7 @@ class QNode:
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         gradient_kwargs: Optional[dict] = None,
+        static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,
         **kwargs,
     ):
@@ -575,7 +578,8 @@ class QNode:
         if kwargs:
             if any(k in qml.gradients.SUPPORTED_GRADIENT_KWARGS for k in list(kwargs.keys())):
                 warnings.warn(
-                    f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please specify all arguments in the gradient_kwargs argument.",
+                    f"Specifying gradient keyword arguments {list(kwargs.keys())} as additional kwargs has been deprecated and will be removed in v0.42. \
+                    Instead, please specify these arguments through the `gradient_kwargs` dictionary argument.",
                     qml.PennyLaneDeprecationWarning,
                 )
             gradient_kwargs |= kwargs
@@ -603,6 +607,11 @@ class QNode:
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
         cache = (max_diff > 1) if cache == "auto" else cache
+
+        self.capture_cache = LRUCache(maxsize=1000)
+        if isinstance(static_argnums, int):
+            static_argnums = (static_argnums,)
+        self.static_argnums = sorted(static_argnums)
 
         # execution keyword arguments
         _validate_mcm_config(postselect_mode, mcm_method)
@@ -654,7 +663,7 @@ class QNode:
     @property
     def interface(self) -> str:
         """The interface used by the QNode"""
-        return self._interface.value
+        return "jax" if qml.capture.enabled() else self._interface.value
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):

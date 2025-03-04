@@ -24,7 +24,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.decomposition import CompressedResourceOp, decomposition
+from pennylane.decomposition import add_decomposition, register_resources
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.wires import WiresLike
@@ -181,7 +181,7 @@ class ControlledQubitUnitary(ControlledOp):
         if hasattr(base, "wires"):
             warnings.warn(
                 "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Instead, please use a full matrix as input.",
+                "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
                 qml.PennyLaneDeprecationWarning,
             )
             base = base.matrix()
@@ -881,6 +881,8 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CNOT"
 
     def _flatten(self):
@@ -926,6 +928,10 @@ class CNOT(ControlledOp):
         """
         raise qml.operation.DecompositionUndefinedError
 
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
 
@@ -957,22 +963,18 @@ class CNOT(ControlledOp):
         return qml.Toffoli(wires=wire + self.wires)
 
 
-@decomposition
+def _cnot_cz_h_resources():
+    return {qml.H: 2, qml.CZ: 1}
+
+
+@register_resources(_cnot_cz_h_resources)
 def _cnot_to_cz_h(wires, **__):
     qml.H(wires[1])
     qml.CZ(wires=wires)
     qml.H(wires[1])
 
 
-@_cnot_to_cz_h.resources
-def _cnot_to_cz_h_resources(*_, **__):
-    return {
-        CompressedResourceOp(qml.H): 2,
-        CompressedResourceOp(qml.CZ): 1,
-    }
-
-
-CNOT.add_decomposition(_cnot_to_cz_h)
+add_decomposition(CNOT, _cnot_to_cz_h)
 
 
 class Toffoli(ControlledOp):
@@ -2094,6 +2096,8 @@ class ControlledPhaseShift(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]
 
@@ -2116,6 +2120,10 @@ class ControlledPhaseShift(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -2234,7 +2242,11 @@ class ControlledPhaseShift(ControlledOp):
         ]
 
 
-@decomposition
+def _cphase_rz_resource():
+    return {qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1}
+
+
+@register_resources(_cphase_rz_resource)
 def _cphase_to_rz_cnot(phi, wires, **__):
     qml.RZ(phi / 2, wires=wires[0])
     qml.CNOT(wires=wires)
@@ -2244,15 +2256,6 @@ def _cphase_to_rz_cnot(phi, wires, **__):
     qml.GlobalPhase(-phi / 4)
 
 
-@_cphase_to_rz_cnot.resources
-def _cphase_to_rz_cnot_resources(*_, **__):
-    return {
-        CompressedResourceOp(qml.RZ): 3,
-        CompressedResourceOp(qml.CNOT): 2,
-        CompressedResourceOp(qml.GlobalPhase): 1,
-    }
-
-
-ControlledPhaseShift.add_decomposition(_cphase_to_rz_cnot)
+add_decomposition(ControlledPhaseShift, _cphase_to_rz_cnot)
 
 CPhase = ControlledPhaseShift

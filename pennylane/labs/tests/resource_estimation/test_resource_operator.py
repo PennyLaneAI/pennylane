@@ -27,6 +27,7 @@ def test_abstract_resource_decomp():
     class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
+        @property
         def resource_params(self):
             return
 
@@ -54,11 +55,8 @@ def test_abstract_resource_params():
         def resource_rep(self):
             return
 
-    with pytest.raises(
-        TypeError,
-        match="Can't instantiate abstract class DummyClass with abstract method resource_params",
-    ):
-        DummyClass()
+    with pytest.raises(NotImplementedError):
+        DummyClass().resource_params  # pylint: disable=pointless-statement,expression-not-assigned
 
 
 def test_abstract_resource_rep():
@@ -71,6 +69,7 @@ def test_abstract_resource_rep():
         def _resource_decomp():
             return
 
+        @property
         def resource_params(self):
             return
 
@@ -87,6 +86,7 @@ def test_set_resources():
     class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
+        @property
         def resource_params(self):
             return
 
@@ -113,6 +113,7 @@ def test_resource_rep_from_op():
         def _resource_decomp():
             return
 
+        @property
         def resource_params(self):
             return {"foo": 1, "bar": 2}
 
@@ -125,4 +126,4 @@ def test_resource_rep_from_op():
             return f"DummyClass({foo}, {bar})"
 
     op = DummyClass(wires=[1, 2, 3])
-    assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params())
+    assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params)

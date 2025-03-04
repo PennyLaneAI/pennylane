@@ -30,24 +30,9 @@ from dataclasses import dataclass
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
-from .decomposition_rule import DecompositionRule
-from .resources import CompressedResourceOp, Resources
-
-
-class DecompositionError(Exception):
-    """Base class for decomposition errors."""
-
-
-@dataclass(frozen=True)
-class _DecompositionNode:
-    """A node that represents a decomposition rule."""
-
-    rule: DecompositionRule
-    resource_decomp: Resources
-
-    def count(self, op: CompressedResourceOp):
-        """Find the number of occurrences of an operator in the decomposition."""
-        return self.resource_decomp.gate_counts.get(op, 0)
+from .decomposition_rule import DecompositionRule, get_decompositions
+from .resources import CompressedResourceOp, Resources, resource_rep
+from .utils import DecompositionError
 
 
 class DecompositionGraph:
@@ -56,23 +41,41 @@ class DecompositionGraph:
     Args:
         operations (list[Operator]): The list of operations to find decompositions for.
         target_gate_set (set[str]): The names of the gates in the target gate set.
+        fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
+        alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
 
     """
 
-    def __init__(self, operations, target_gate_set: set[str]):
+    def __init__(
+        self,
+        operations,
+        target_gate_set: set[str],
+        fixed_decomps: dict = None,
+        alt_decomps: dict = None,
+    ):
         self._original_ops = operations
         self._target_gate_set = target_gate_set
         self._original_ops_indices: set[int] = set()
         self._target_gate_indices: set[int] = set()
         self._graph = rx.PyDiGraph()
         self._op_node_indices: dict[CompressedResourceOp, int] = {}
+        self._fixed_decomps = fixed_decomps or {}
+        self._alt_decomps = alt_decomps or {}
         self._construct_graph()
         self._visitor = None
+
+    def _get_decompositions(self, op_type) -> list[DecompositionRule]:
+        """Helper function to get a list of decomposition rules."""
+        if op_type in self._fixed_decomps:
+            return self._fixed_decomps[op_type]
+        if op_type in self._alt_decomps:
+            return self._alt_decomps[op_type] + get_decompositions(op_type)
+        return get_decompositions(op_type)
 
     def _construct_graph(self):
         """Constructs the decomposition graph."""
         for op in self._original_ops:
-            op_node = CompressedResourceOp(type(op), op.resource_params)
+            op_node = resource_rep(type(op), **op.resource_params)
             idx = self._recursively_add_op_node(op_node)
             self._original_ops_indices.add(idx)
 
@@ -93,7 +96,7 @@ class DecompositionGraph:
             self._target_gate_indices.add(op_node_idx)
             return op_node_idx
 
-        for decomposition in getattr(op_node.op_type, "decompositions", []):
+        for decomposition in self._get_decompositions(op_node.op_type):
             d_node_idx = self._recursively_add_decomposition_node(decomposition, op_node.params)
             self._graph.add_edge(d_node_idx, op_node_idx, 0)
 
@@ -154,7 +157,11 @@ class DecompositionGraph:
             Resources: The resource estimates.
 
         """
-        op_node = CompressedResourceOp(type(op), op.resource_params)
+        op_node = resource_rep(type(op), **op.resource_params)
+
+        if op_node not in self._op_node_indices:
+            raise DecompositionError(f"Operator {op} not found in the decomposition graph.")
+
         op_node_idx = self._op_node_indices[op_node]
         return self._visitor.d[op_node_idx]
 
@@ -168,12 +175,16 @@ class DecompositionGraph:
             DecompositionRule: The optimal decomposition.
 
         """
-        op_node = CompressedResourceOp(type(op), op.resource_params)
+        op_node = resource_rep(type(op), **op.resource_params)
+
+        if op_node not in self._op_node_indices:
+            raise DecompositionError(f"Operator {op} not found in the decomposition graph.")
+
         op_node_idx = self._op_node_indices[op_node]
         d_node_idx = self._visitor.p[op_node_idx]
         return self._graph[d_node_idx].rule
 
-    def check_decomposition(self, op) -> bool:
+    def check_decomposition(self, op: Operator) -> bool:
         """Checks if an operation exists in the graph.
 
         Args:
@@ -182,7 +193,7 @@ class DecompositionGraph:
         Returns:
             bool: True if the operator exists in the graph, False otherwise.
         """
-        op_node = CompressedResourceOp(type(op), op.resource_params)
+        op_node = resource_rep(type(op), **op.resource_params)
         return op_node in self._op_node_indices
 
 
@@ -204,7 +215,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         op_node_idx, d_node_idx = edge_obj
         return self.d[d_node_idx].num_gates - self.d[op_node_idx].num_gates
 
-    def discover_vertex(self, v, score):
+    def discover_vertex(self, v, _):
         """Triggered when a vertex is about to be explored during the dijkstra search."""
         self.unsolved_op_indices.discard(v)
         if not self.unsolved_op_indices and self._lazy:
@@ -212,7 +223,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
     def examine_edge(self, edge):
         """Triggered when an edge is examined during the dijkstra search."""
-        src_idx, target_idx, obj = edge
+        src_idx, target_idx, _ = edge
         src_node = self._graph[src_idx]
         target_node = self._graph[target_idx]
         if not isinstance(target_node, _DecompositionNode):
@@ -228,10 +239,22 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
     def edge_relaxed(self, edge):
         """Triggered when an edge is relaxed during the dijkstra search."""
-        src_idx, target_idx, obj = edge
+        src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
         if self._graph[src_idx] == "dummy":
             self.d[target_idx] = Resources(1, {target_node: 1})
         elif isinstance(target_node, CompressedResourceOp):
             self.p[target_idx] = src_idx
             self.d[target_idx] = self.d[src_idx]
+
+
+@dataclass(frozen=True)
+class _DecompositionNode:
+    """A node that represents a decomposition rule."""
+
+    rule: DecompositionRule
+    resource_decomp: Resources
+
+    def count(self, op: CompressedResourceOp):
+        """Find the number of occurrences of an operator in the decomposition."""
+        return self.resource_decomp.gate_counts.get(op, 0)

@@ -18,9 +18,10 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=unnecessary-lambda-assignment
 
 import warnings
-from collections.abc import Callable, Generator, Iterable
+from collections import ChainMap
+from collections.abc import Generator, Iterable
 from functools import lru_cache, partial
-from typing import Optional
+from typing import Callable, Optional, Sequence
 
 import pennylane as qml
 from pennylane.transforms.core import transform
@@ -48,14 +49,21 @@ def _operator_decomposition_gen(
         max_depth_reached = True
 
     if acceptance_function(op) or max_depth_reached:
+        if qml.decomposition.enabled_graph_debug():
+            print(f"[DEBUG] {op} is found in gate_set")
         yield op
     elif graph is not None and graph.check_decomposition(op):
+        if qml.decomposition.enabled_graph_debug():
+            print(f"[DEBUG] Decomposing {op} using decomposition graph")
+            print(f"[DEBUG]     Estimated {graph.resource_estimates(op)}")
         op_rule = graph.decomposition(op)
         with qml.queuing.AnnotatedQueue() as decomposed_ops:
             op_rule.impl(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
         current_depth += 1
     else:
+        if qml.decomposition.enabled_graph_debug():
+            print(f"[DEBUG] Falling back to {op}.compute_decomposition")
         decomp = op.decomposition()
         current_depth += 1
 
@@ -70,12 +78,13 @@ def _operator_decomposition_gen(
 
 
 @lru_cache
-def _get_plxpr_decompose():  # pylint: disable=missing-docstring
+def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
+        import jax
 
         from pennylane.capture.primitives import ctrl_transform_prim
+
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -88,7 +97,17 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
 
         def __init__(self, gate_set=None, max_expansion=None):
             self.max_expansion = max_expansion
-            self.graph = None
+            self._current_depth = 0
+
+            self._graph_decomp = None
+            self._target_gate_names = None
+
+            # We use a ChainMap to store the environment frames,
+            # which allows us to push and pop environments without copying
+            # the interpreter instance when we evaluate a jaxpr of a dynamic decomposition.
+
+            # The name is different from the _env in the parent class (a dictionary) to avoid confusion.
+            self._env_map = ChainMap()
 
             if gate_set is None:
                 gate_set = set(qml.ops.__all__)
@@ -102,10 +121,38 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 self.gate_set = lambda op: (op.name in target_gate_names) or isinstance(
                     op, target_gate_types
                 )
+
+                if qml.decomposition.enabled_graph():
+                    # TODO(Ali): merge this with decompose
+                    self._target_gate_names = target_gate_names | set(
+                        [gate.name for gate in target_gate_types]
+                    )
+
             else:
                 self.gate_set = gate_set
 
-            super().__init__()
+                if qml.decomposition.enabled_graph():
+                    raise ValueError(
+                        "A Callable gate_set is not support with the enabled decomposition graph."
+                    )
+
+        def setup(self) -> None:
+            """Setup the environment for the interpreter by pushing a new environment frame."""
+
+            # This is the local environment for the jaxpr evaluation, on the top of the stack,
+            # from which the interpreter reads and writes variables.
+            # ChainMap writes to the first dictionary in the chain by default.
+            self._env_map = self._env_map.new_child()
+
+        def cleanup(self) -> None:
+            """Cleanup the environment by popping the top-most environment frame."""
+
+            # We delete the top-most environment frame after the evaluation is done.
+            self._env_map = self._env_map.parents
+
+        def read(self, var):
+            """Extract the value corresponding to a variable."""
+            return var.val if isinstance(var, jax.core.Literal) else self._env_map[var]
 
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether or not an operator needs to be decomposed or not.
@@ -117,6 +164,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 bool: Whether or not ``op`` is valid or needs to be decomposed. ``True`` means
                 that the operator does not need to be decomposed.
             """
+
             if not op.has_decomposition:
                 if not self.gate_set(op):
                     warnings.warn(
@@ -128,15 +176,37 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
                 return True
             return self.gate_set(op)
 
+        def _create_decomp_graph(self, operations):
+            """Create a DecompositionGraph instance to optimize the decomposition."""
+
+            # FIXME(Ali): remove this after the decomposition graph is fully implemented.
+            try:
+                # pylint: disable=import-outside-toplevel
+                from pennylane.decomposition import DecompositionGraph
+
+                if qml.decomposition.enabled_graph():
+
+                    if qml.decomposition.enabled_graph_debug():
+                        print(
+                            f"[DEBUG] Constructing the graph with captured operations {operations}\n[DEBUG]     AND the target gate set {self._target_gate_names}"
+                        )
+
+                    self._graph_decomp = DecompositionGraph(operations, self._target_gate_names)
+
+                    if qml.decomposition.enabled_graph_debug():
+                        print(f"[DEBUG] Solving the decomposition graph")
+
+                    self._graph_decomp.solve()
+
+            except ImportError:
+                return
+
         def decompose_operation(self, op: qml.operation.Operator):
             """Decompose a PennyLane operation instance if it does not satisfy the
             provided gate set.
 
             Args:
                 op (Operator): a pennylane operator instance
-
-            Returns:
-                Any
 
             This method is only called when the operator's output is a dropped variable,
             so the output will not affect later equations in the circuit.
@@ -146,17 +216,121 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             if self.gate_set(op):
                 return self.interpret_operation(op)
 
+            max_expansion = (
+                self.max_expansion - self._current_depth if self.max_expansion is not None else None
+            )
+
             with qml.capture.pause():
                 decomposition = list(
                     _operator_decomposition_gen(
-                        op, self.stopping_condition, max_expansion=self.max_expansion
+                        op,
+                        self.stopping_condition,
+                        max_expansion=max_expansion,
+                        graph=self._graph_decomp,
                     )
                 )
 
             return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
 
-        def interpret_operation_eqn(self, eqn):
+        def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator):
+            """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
+
+            if self.gate_set(op):
+                return self.interpret_operation(op)
+
+            if self.max_expansion is not None and self._current_depth >= self.max_expansion:
+                return self.interpret_operation(op)
+
+            args = (*op.parameters, *op.wires)
+
+            jaxpr_decomp = qml.capture.make_plxpr(
+                partial(op.compute_qfunc_decomposition, **op.hyperparameters)
+            )(*args)
+
+            self._current_depth += 1
+            # We don't need to copy the interpreter here, as the jaxpr of the decomposition
+            # is evaluated with a new environment frame placed on top of the stack.
+            out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
+            self._current_depth -= 1
+
+            return out
+
+        def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
+            """
+            Evaluates a jaxpr, which can also be generated by a dynamic decomposition.
+
+            Args:
+                jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate
+                consts (list[TensorLike]): the constant variables for the jaxpr
+                *args: the arguments to use in the evaluation
+            """
+
+            self.setup()
+
+            for arg, invar in zip(args, jaxpr.invars, strict=True):
+                self._env_map[invar] = arg
+            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+                self._env_map[constvar] = const
+
+            if qml.decomposition.enabled_graph():
+
+                operations = []
+
+                for eq in jaxpr.eqns:
+                    if getattr(eq.primitive, "prim_type", "") == "operator":
+                        invals = (self.read(invar) for invar in eq.invars)
+                        with qml.QueuingManager.stop_recording():
+                            op = eq.primitive.impl(*invals, **eq.params)
+                        if eq.outvars[0].__class__.__name__ == "DropVar":
+                            operations.append(op)
+
+                if qml.decomposition.enabled_graph_debug():
+                    print(f"[DEBUG] PLxPR Captured operators {operations}")
+
+                self._create_decomp_graph(operations)
+
+            for eq in jaxpr.eqns:
+
+                prim_type = getattr(eq.primitive, "prim_type", "")
+                custom_handler = self._primitive_registrations.get(eq.primitive, None)
+
+                if custom_handler:
+
+                    invals = [self.read(invar) for invar in eq.invars]
+                    outvals = custom_handler(self, *invals, **eq.params)
+
+                elif prim_type == "operator":
+                    outvals = self.interpret_operation_eqn(eq)
+                elif prim_type == "measurement":
+                    outvals = self.interpret_measurement_eqn(eq)
+                else:
+                    invals = [self.read(invar) for invar in eq.invars]
+                    subfuns, params = eq.primitive.get_bind_params(eq.params)
+                    outvals = eq.primitive.bind(*subfuns, *invals, **params)
+
+                if not eq.primitive.multiple_results:
+                    outvals = [outvals]
+
+                for outvar, outval in zip(eq.outvars, outvals, strict=True):
+                    self._env_map[outvar] = outval
+
+            outvals = []
+            for var in jaxpr.outvars:
+                outval = self.read(var)
+                if isinstance(outval, qml.operation.Operator):
+                    outvals.append(self.interpret_operation(outval))
+                else:
+                    outvals.append(outval)
+
+            self.cleanup()
+
+            return outvals
+
+        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
             """Interpret an equation corresponding to an operator.
+
+            If the operator has a dynamic decomposition defined, this method will
+            create and evaluate the jaxpr of the decomposition using the :meth:`~.eval` method.
 
             Args:
                 eqn (jax.core.JaxprEqn): a jax equation for an operator.
@@ -164,23 +338,19 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
             See also: :meth:`~.interpret_operation`.
 
             """
+
             invals = (self.read(invar) for invar in eqn.invars)
+
             with qml.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
-            if eqn.outvars[0].__class__.__name__ == "DropVar":
 
-                if op.has_plxpr_decomposition:
+            if not eqn.outvars[0].__class__.__name__ == "DropVar":
+                return op
 
-                    args = (*op.parameters, *op.wires)
-                    qml.capture.run_autograph(op.compute_plxpr_decomposition)(
-                        *args, **op.hyperparameters
-                    )
+            if not op.has_plxpr_decomposition:
+                return self.decompose_operation(op)
 
-                else:
-
-                    return self.decompose_operation(op)
-
-            return op
+            return self._evaluate_jaxpr_decomposition(op)
 
     # pylint: disable=unused-variable,missing-function-docstring
     @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
@@ -198,7 +368,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring
         def wrapper(*inner_args):
             return decomposer.eval(jaxpr, consts, *inner_args)
 
-        return make_jaxpr(wrapper)(*args)
+        return jax.make_jaxpr(wrapper)(*args)
 
     return DecomposeInterpreter, decompose_plxpr_to_plxpr
 
@@ -207,7 +377,7 @@ DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
 @partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
-def decompose(tape, gate_set=None, max_expansion=None, graph_optimization=False):
+def decompose(tape, gate_set=None, max_expansion=None):
     """Decomposes a quantum circuit into a user-specified gate set.
 
     Args:
@@ -218,8 +388,6 @@ def decompose(tape, gate_set=None, max_expansion=None, graph_optimization=False)
             case the gate set is considered to be all available :doc:`quantum operators </introduction/operations>`.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
-        graph_optimization (bool, optional): If True, the decomposition will be performed using
-            :class:`qml.decomposition.DecompositionGraph`. Defaults to False.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -371,30 +539,41 @@ def decompose(tape, gate_set=None, max_expansion=None, graph_optimization=False)
     if all(stopping_condition(op) for op in tape.operations):
         return (tape,), null_postprocessing
 
-    graph_opt = None
+    decomp_graph = None
 
-    if graph_optimization:
+    if qml.decomposition.enabled_graph():
+
+        # FIXME(Ali): remove this after the decomposition graph is fully implemented.
         try:
             # pylint: disable=import-outside-toplevel
             from pennylane.decomposition import DecompositionGraph
 
             target_gate_names = target_gate_names | set([gate.name for gate in target_gate_types])
-            graph_opt = DecompositionGraph(tape.operations, target_gate_names)
-            graph_opt.solve()
+
+            if qml.decomposition.enabled_graph_debug():
+                print(
+                    f"[DEBUG] Constructing the graph with tape operations {tape.operations}\n[DEBUG]     AND the target gate set {target_gate_names}"
+                )
+
+            decomp_graph = DecompositionGraph(tape.operations, target_gate_names)
+
+            if qml.decomposition.enabled_graph_debug():
+                print(f"[DEBUG] Solving the decomposition graph")
+            decomp_graph.solve()
 
         except qml.decomposition.DecompositionError as e:
-            print(e)
             warnings.warn(
-                "Decomposition graph optimization failed. Falling back to default decomposition.",
+                f"Decomposition graph optimization failed: {e}"
+                "\nFalling back to default decomposition.",
                 UserWarning,
             )
-            graph_opt = None
+            decomp_graph = None
     try:
         new_ops = [
             final_op
             for op in tape.operations
             for final_op in _operator_decomposition_gen(
-                op, stopping_condition, max_expansion=max_expansion, graph=graph_opt
+                op, stopping_condition, max_expansion=max_expansion, graph=decomp_graph
             )
         ]
     except RecursionError as e:
