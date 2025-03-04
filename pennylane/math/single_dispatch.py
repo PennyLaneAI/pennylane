@@ -209,7 +209,6 @@ ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("autograd", "unstack", list)
-e
 
 def autograd_get_dtype_name(x):
     """A autograd version of get_dtype_name that can handle array boxes."""
