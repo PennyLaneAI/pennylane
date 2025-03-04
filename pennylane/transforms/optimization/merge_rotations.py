@@ -59,7 +59,7 @@ def _get_plxpr_merge_rotations():
             """Interpret the previous_ops dictionary and add the operator to the previous_ops dictionary."""
 
             # Use list(dict.fromkeys(...)) as opposed to a set to maintain deterministic order
-            previous_ops_on_wires = list(dict.fromkeys(self.previous_ops.get(w) for w in op.wires))
+            previous_ops_on_wires = list(dict.fromkeys(self.previous_ops[w] for w in op.wires if w in self.previous_ops))
 
             # Refresh the previous_ops dictionary with the current operator
             for o in previous_ops_on_wires:
