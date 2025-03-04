@@ -673,7 +673,7 @@ def _consolidate_conditional_measurements(ops):
                 # in core PennyLane with tapes, we can assume that a conditional has only a
                 # true_fn and false_fn, so we make that assumption in the PL tape transform
                 # for Catalyst and ProgramCapture, it is also possible to have additional elif functions
-                true_cond, false_cond = (op, ops[i + 1])
+                true_cond, false_cond = (op, ops[i + 1] if i < len(ops) else None)
                 curr_idx += 1
 
                 # ToDo: we could actually make this error more helpful and specific (but its already pretty specific)
