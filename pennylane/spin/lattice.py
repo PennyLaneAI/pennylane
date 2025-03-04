@@ -241,7 +241,7 @@ class Lattice:
         based on the neighbour_order. This function uses KDTree to identify neighbours, which
         follows depth-first search traversal."""
 
-        tree = sp.KDTree(self.lattice_points)
+        tree = sp.spatial.KDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)
         unique_pairs = set()
         edges = {}
