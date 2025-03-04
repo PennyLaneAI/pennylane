@@ -21,7 +21,8 @@ from .tree import Node
 class RealspaceOperator:
     """The RealspaceOperator class"""
 
-    def __init__(self, ops: Tuple[str], coeffs: Node) -> RealspaceOperator:
+    def __init__(self, modes: int, ops: Tuple[str], coeffs: Node) -> RealspaceOperator:
+        self.modes = modes
         self.ops = ops
         self.coeffs = coeffs
 
@@ -57,7 +58,10 @@ class RealspaceOperator:
         if self.ops != other.ops:
             raise ValueError(f"Cannot add term {self.ops} with term {other.ops}.")
 
-        return RealspaceOperator(self.ops, Node.sum_node(self.coeffs, other.coeffs))
+        if self.modes != other.modes:
+            raise ValueError(f"Cannot add RealspaceOperator on {self.modes} with RealspaceOperator on {other.modes}.")
+
+        return RealspaceOperator(self.modes, self.ops, Node.sum_node(self.coeffs, other.coeffs))
 
     def __sub__(self, other: RealspaceOperator) -> RealspaceOperator:
         if self.is_zero:
@@ -69,15 +73,18 @@ class RealspaceOperator:
         if self.ops != other.ops:
             raise ValueError(f"Cannot subtract term {self.ops} with term {other.ops}.")
 
+        if self.modes != other.modes:
+            raise ValueError(f"Cannot subtract RealspaceOperator on {self.modes} with RealspaceOperator on {other.modes}.")
+
         return RealspaceOperator(
-            self.ops, Node.sum_node(self.coeffs, Node.scalar_node(-1, other.coeffs))
+            self.modes, self.ops, Node.sum_node(self.coeffs, Node.scalar_node(-1, other.coeffs))
         )
 
     def __mul__(self, scalar: float) -> RealspaceOperator:
         if np.isclose(scalar, 0):
             return RealspaceOperator.zero_term()
 
-        return RealspaceOperator(self.ops, Node.scalar_node(scalar, self.coeffs))
+        return RealspaceOperator(self.modes, self.ops, Node.scalar_node(scalar, self.coeffs))
 
     __rmul__ = __mul__
 
@@ -92,7 +99,10 @@ class RealspaceOperator:
         if other.is_zero:
             return self
 
-        return RealspaceOperator(self.ops + other.ops, Node.outer_node(self.coeffs, other.coeffs))
+        if self.modes != other.modes:
+            raise ValueError(f"Cannot multiply RealspaceOperator on {self.modes} with RealspaceOperator on {other.modes}.")
+
+        return RealspaceOperator(self.modes, self.ops + other.ops, Node.outer_node(self.coeffs, other.coeffs))
 
     def __repr__(self) -> str:
         return f"({self.ops.__repr__()}, {self.coeffs.__repr__()})"
@@ -111,14 +121,17 @@ class RealspaceOperator:
     @classmethod
     def zero_term(cls) -> RealspaceOperator:
         """Returns a RealspaceOperator representing 0"""
-        return RealspaceOperator(tuple(), Node.tensor_node(np.array(0)))
+        return RealspaceOperator(0, tuple(), Node.tensor_node(np.array(0)))
 
 
 class RealspaceSum(Fragment):
     """The RealspaceSum class"""
 
-    def __init__(self, ops: Sequence[RealspaceOperator]) -> RealspaceSum:
+    def __init__(self, modes: int, ops: Sequence[RealspaceOperator]):
         # pylint: disable=unnecessary-lambda
+        for op in ops:
+            if op.modes != modes:
+                raise ValueError(f"RealspaceSum on {modes} modes can only contain RealspaceOperators on {modes}. Found a RealspaceOperator on {op.modes} modes.")
 
         ops = tuple(filter(lambda op: not op.is_zero, ops))
         self.is_zero = len(ops) == 0
@@ -129,8 +142,12 @@ class RealspaceSum(Fragment):
             self._lookup[op.ops] += op
 
         self.ops = tuple(self._lookup.values())
+        self.modes = modes
 
     def __add__(self, other: RealspaceSum) -> RealspaceSum:
+        if self.modes != other.modes:
+            raise ValueError(f"Cannot add RealspaceSum on {self.modes} with RealspaceSum on {other.modes}.")
+
         l_ops = {term.ops for term in self.ops}
         r_ops = {term.ops for term in other.ops}
 
@@ -145,9 +162,12 @@ class RealspaceSum(Fragment):
         for op in r_ops.difference(l_ops):
             new_ops.append(other._lookup[op])
 
-        return RealspaceSum(new_ops)
+        return RealspaceSum(self.modes, new_ops)
 
     def __sub__(self, other: RealspaceSum) -> RealspaceSum:
+        if self.modes != other.modes:
+            raise ValueError(f"Cannot subtract RealspaceSum on {self.modes} with RealspaceSum on {other.modes}.")
+
         l_ops = {term.ops for term in self.ops}
         r_ops = {term.ops for term in other.ops}
 
@@ -162,10 +182,10 @@ class RealspaceSum(Fragment):
         for op in r_ops.difference(l_ops):
             new_terms.append((-1) * other._lookup[op])
 
-        return RealspaceSum(new_terms)
+        return RealspaceSum(self.modes, new_terms)
 
     def __mul__(self, scalar: float) -> RealspaceSum:
-        return RealspaceSum([scalar * term for term in self.ops])
+        return RealspaceSum(self.modes, [scalar * term for term in self.ops])
 
     __rmul__ = __mul__
 
@@ -176,9 +196,9 @@ class RealspaceSum(Fragment):
         return self
 
     def __matmul__(self, other: RealspaceSum) -> RealspaceSum:
-        return RealspaceSum(
+        return RealspaceSum(self.modes,
             [
-                RealspaceOperator(l_term.ops + r_term.ops, l_term.coeffs @ r_term.coeffs)
+                RealspaceOperator(self.modes, l_term.ops + r_term.ops, l_term.coeffs @ r_term.coeffs)
                 for l_term, r_term in product(self.ops, other.ops)
             ]
         )
@@ -192,7 +212,7 @@ class RealspaceSum(Fragment):
     @classmethod
     def zero(cls) -> RealspaceSum:
         """Return a RealspaceSum representing 0"""
-        return RealspaceSum([RealspaceOperator.zero_term()])
+        return RealspaceSum(0, [RealspaceOperator.zero_term()])
 
     def matrix(self, gridpoints: int, modes: int, basis: str = "realspace", sparse: bool = False):
         """Return a matrix representation of the RealspaceSum"""
