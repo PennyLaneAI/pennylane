@@ -1251,7 +1251,7 @@ class TestDenmanBeaversIterations:
         result = _denman_beavers_iterations(csr_matrix(good_mat))
         result_dense = result.toarray()
         qml.math.allclose(result_dense @ result_dense, good_mat, atol=1e-7, rtol=1e-7)
-        
+
         bad_mat = mat if det_mat < 0 else mat * flip_sign
         with pytest.raises(ValueError, match="Invalid values encountered"):
             _denman_beavers_iterations(csr_matrix(mat))

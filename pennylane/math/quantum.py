@@ -987,9 +987,8 @@ def sqrt_matrix_sparse(density_matrix):
     """
     if not issparse(density_matrix):
         raise TypeError(
-           f"sqrt_matrix_sparse only supports sparse matrices, but got {type(density_matrix)}. "
-           "There will be an inevitable performance hit and risk of divergence for non-sparse matrices."
-
+            f"sqrt_matrix_sparse only supports sparse matrices, but got {type(density_matrix)}. "
+            "There will be an inevitable performance hit and risk of divergence for non-sparse matrices."
         )
     if density_matrix.nnz == 0:
         return density_matrix
@@ -1059,7 +1058,6 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
             raise ValueError(
                 f"Denman Beavers not converged until the end of {max_iter} loops, "
                 f"with last norm error {norm_diff} and compute error {numerical_error}"
-
             )
         return Y
     except (RuntimeWarning, RuntimeError) as e:
