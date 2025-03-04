@@ -545,7 +545,20 @@ class DefaultQubit(Device):
             if option == "max_workers" and value is not None:
                 raise qml.DeviceError("Cannot set 'max_workers' if program capture is enabled.")
 
+        mcm_config = execution_config.mcm_config
+        if (mcm_method := mcm_config.mcm_method) not in (
+            "deferred",
+            "single-branch-statistics",
+            None,
+        ):
+            raise qml.DeviceError(
+                f"mcm_method='{mcm_method}' is not supported with default.qubit "
+                "when program capture is enabled."
+            )
+
         transform_program = TransformProgram()
+        if mcm_method in ("deferred", None):
+            transform_program.add_transform(qml.defer_measurements, num_wires=len(self.wires))
         transform_program.add_transform(qml.transforms.decompose, gate_set=stopping_condition)
         return transform_program, execution_config
 

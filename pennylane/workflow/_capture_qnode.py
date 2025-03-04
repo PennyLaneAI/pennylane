@@ -403,7 +403,22 @@ def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
     return hash(serialized)
 
 
-def _process_qfunc(qnode, all_args, kwargs, abstracted_axes):
+def _process_qfunc(qnode, all_args, kwargs, abstracted_axes, config):
+    """_summary_
+
+    Args:
+        qnode (_type_): _description_
+        all_args (_type_): _description_
+        kwargs (_type_): _description_
+        abstracted_axes (_type_): _description_
+        config (_type_): _description_
+
+    Raises:
+        CaptureError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     # pylint: disable=protected-access
     qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
@@ -438,11 +453,11 @@ def _process_qfunc(qnode, all_args, kwargs, abstracted_axes):
             qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *non_const_args
         )
 
-    preprocess_program, _ = qnode.device.preprocess()
+    preprocess_program, new_config = qnode.device.preprocess(execution_config=config)
     if preprocess_program:
         qfunc_jaxpr = preprocess_program(qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *non_const_args)
 
-    return flat_fn, qfunc_jaxpr
+    return flat_fn, qfunc_jaxpr, new_config
 
 
 def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
@@ -533,21 +548,22 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     cached_value = qnode.capture_cache.get(cache_key, None)
 
     if cached_value:
-        qfunc_jaxpr, out_tree = cached_value
+        qfunc_jaxpr, config, out_tree = cached_value
         flat_fn = None  # To suppress pylint
     else:
+        config = construct_execution_config(
+            qnode, resolve=False
+        )()  # no need for args and kwargs as not resolving
+
         if abstracted_axes:
             # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
             # as the original dynamic arguments
             abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
 
         all_args = (args, abstract_shapes, flat_dynamic_args)
-        flat_fn, qfunc_jaxpr = _process_qfunc(qnode, all_args, kwargs, abstracted_axes)
-
-    config = construct_execution_config(
-        qnode, resolve=False
-    )()  # no need for args and kwargs as not resolving
-    config = qnode.device.setup_execution_config(config)
+        flat_fn, qfunc_jaxpr, config = _process_qfunc(
+            qnode, all_args, kwargs, abstracted_axes, config
+        )
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
@@ -564,6 +580,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not cached_value:
         assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
         out_tree = flat_fn.out_tree
-        qnode.capture_cache[cache_key] = (qfunc_jaxpr, out_tree)
+        qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
 
     return jax.tree_util.tree_unflatten(out_tree, res)
