@@ -25,7 +25,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.decomposition import decomposition
+from pennylane.decomposition import add_decomposition, register_resources
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -56,6 +56,8 @@ class Hadamard(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_param_keys = ()
+
     _queue_category = "_ops"
 
     def __init__(self, wires: WiresLike, id: Optional[str] = None):
@@ -79,6 +81,10 @@ class Hadamard(Observable, Operation):
     @property
     def name(self) -> str:
         return "Hadamard"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -198,7 +204,11 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-@decomposition
+def _hadamard_rz_rx_resources():
+    return {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_hadamard_rz_rx_resources)
 def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qml.RZ(np.pi / 2, wires=wires)
     qml.RX(np.pi / 2, wires=wires)
@@ -206,35 +216,21 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-@_hadamard_to_rz_rx.resources
-def _hadamard_to_rz_rx_resources(*_, **__):
-    return {
-        qml.RZ.make_resource_rep(): 2,
-        qml.RX.make_resource_rep(): 1,
-        qml.GlobalPhase.make_resource_rep(): 1,
-    }
+add_decomposition(Hadamard, _hadamard_to_rz_rx)
 
 
-Hadamard.add_decomposition(_hadamard_to_rz_rx)
+def _hadamard_rz_ry_resources():
+    return {qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1}
 
 
-@decomposition
+@register_resources(_hadamard_rz_ry_resources)
 def _hadamard_to_rz_ry(wires: WiresLike, **__):
     qml.RZ(np.pi, wires=wires)
     qml.RY(np.pi / 2, wires=wires)
     qml.GlobalPhase(-np.pi / 2)
 
 
-@_hadamard_to_rz_ry.resources
-def _hadamard_to_rz_ry_resources(*_, **__):
-    return {
-        qml.RZ.make_resource_rep(): 1,
-        qml.RY.make_resource_rep(): 1,
-        qml.GlobalPhase.make_resource_rep(): 1,
-    }
-
-
-Hadamard.add_decomposition(_hadamard_to_rz_ry)
+add_decomposition(Hadamard, _hadamard_to_rz_ry)
 
 H = Hadamard
 r"""H(wires)
@@ -1266,6 +1262,7 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_param_keys = ()
     batch_size = None
 
     @property
@@ -1363,6 +1360,10 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
 
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
@@ -1377,19 +1378,18 @@ class SWAP(Operation):
         return True
 
 
-@decomposition
+def _swap_to_cnot_resources():
+    return {qml.CNOT: 3}
+
+
+@register_resources(_swap_to_cnot_resources)
 def _swap_to_cnot(wires, **__):
     qml.CNOT(wires=[wires[0], wires[1]])
     qml.CNOT(wires=[wires[1], wires[0]])
     qml.CNOT(wires=[wires[0], wires[1]])
 
 
-@_swap_to_cnot.resources
-def _swap_to_cnot_resources(*_, **__):
-    return {qml.CNOT.make_resource_rep(): 3}
-
-
-SWAP.add_decomposition(_swap_to_cnot)
+add_decomposition(SWAP, _swap_to_cnot)
 
 
 class ECR(Operation):

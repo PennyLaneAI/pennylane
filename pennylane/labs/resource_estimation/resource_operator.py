@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,9 +46,9 @@ class ResourceOperator(ABC):
                 def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
                     gate_types = {}
 
-                    hadamard = ResourceHadamard.resource_rep
-                    swap = ResourceSWAP.resource_rep
-                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep
+                    hadamard = ResourceHadamard.resource_rep()
+                    swap = ResourceSWAP.resource_rep()
+                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
 
                     gate_types[hadamard] = num_wires
                     gate_types[swap] = num_wires // 2
@@ -57,11 +57,11 @@ class ResourceOperator(ABC):
                     return gate_types
 
                 @property
-                def resource_params(self) -> dict:
+                def resource_params(self, num_wires) -> dict:
                     return {"num_wires": num_wires}
 
                 @classmethod
-                def make_resource_rep(cls, num_wires) -> CompressedResourceOp:
+                def resource_rep(cls, num_wires) -> CompressedResourceOp:
                     params = {"num_wires": num_wires}
                     return CompressedResourceOp(cls, params)
 
@@ -93,21 +93,20 @@ class ResourceOperator(ABC):
         cls.resources = new_func
 
     @property
+    @abstractmethod
     def resource_params(self) -> dict:
         """Returns a dictionary containing the minimal information needed to
         compute a compressed representation"""
-        raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def make_resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
+    def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-    @property
-    def resource_rep(self) -> CompressedResourceOp:
+    def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
-        return self.__class__.make_resource_rep(**self.resource_params)
+        return self.__class__.resource_rep(**self.resource_params)
 
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -124,6 +123,13 @@ class ResourceOperator(ABC):
     @classmethod
     def pow_resource_decomp(cls, z, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
         """Returns a compressed representation of the operator raised to a power"""
+        raise ResourcesNotDefined
+
+    @classmethod
+    def exp_resource_decomp(
+        cls, scalar, num_steps, *args, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation for the resources of the exponentiated operator"""
         raise ResourcesNotDefined
 
     @classmethod

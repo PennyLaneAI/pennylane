@@ -29,7 +29,7 @@ import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
-from pennylane.ops.op_math.condition import Conditional
+from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
@@ -71,6 +71,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         (isinstance(op, Conditional) and stopping_condition(op.base))
         or isinstance(op, MidMeasureMP)
         or op.has_matrix
+        or op.has_sparse_matrix
     )
 
 
@@ -935,9 +936,9 @@ class DefaultQubit(Device):
 
         return tuple(zip(*results))
 
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel, unused-argument
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args
+        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 

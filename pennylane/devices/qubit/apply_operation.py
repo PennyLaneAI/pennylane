@@ -18,6 +18,7 @@ from functools import singledispatch
 from string import ascii_letters as alphabet
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -231,9 +232,25 @@ def apply_operation(
     return _apply_operation_default(op, state, is_state_batched, debugger)
 
 
+def apply_operation_csr_matrix(op, state, is_state_batched: bool = False):
+    """The csr_matrix specialized version apply operation."""
+    # State is numpy array, should have been stored in tensor version
+    # remember the initial shape and recover in the end
+    if sp.sparse.issparse(state):
+        raise TypeError("State should not be sparse in default qubit pipeline")
+    original_shape = math.shape(state)
+    num_wires = len(original_shape) - int(is_state_batched)
+    full_state = math.reshape(state, [-1, 2**num_wires])  # expected: [batch_size, 2**num_wires]
+    state_opT = full_state @ op.sparse_matrix(wire_order=range(num_wires)).T
+    state_reshaped = math.reshape(state_opT, original_shape)
+    return state_reshaped
+
+
 def _apply_operation_default(op, state, is_state_batched, debugger):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches."""
+    if op.has_sparse_matrix and not op.has_matrix:
+        return apply_operation_csr_matrix(op, state, is_state_batched=is_state_batched)
     if (
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD

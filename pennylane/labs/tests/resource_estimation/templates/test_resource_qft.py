@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,14 +47,14 @@ class TestQFT:
     def test_resource_params(self, wires):
         """Test that the resource params are correct"""
         op = re.ResourceQFT(wires)
-        assert op.resource_params() == {"num_wires": len(wires)}
+        assert op.resource_params == {"num_wires": len(wires)}
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4])
     def test_resource_rep(self, num_wires):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = re.CompressedResourceOp(re.ResourceQFT, {"num_wires": num_wires})
-        assert re.ResourceQFT.make_resource_rep(num_wires) == expected
+        assert re.ResourceQFT.resource_rep(num_wires) == expected
 
     @pytest.mark.parametrize(
         "num_wires, num_hadamard, num_swap, num_ctrl_phase_shift",
@@ -74,7 +74,7 @@ class TestQFT:
 
         expected = {hadamard: num_hadamard, swap: num_swap, ctrl_phase_shift: num_ctrl_phase_shift}
 
-        rep = re.ResourceQFT.make_resource_rep(num_wires)
+        rep = re.ResourceQFT.resource_rep(num_wires)
         actual = rep.op_type.resources(**rep.params)
 
         assert actual == expected
@@ -82,4 +82,4 @@ class TestQFT:
     @pytest.mark.parametrize("num_wires", range(10))
     def test_tracking_name(self, num_wires):
         """Test that the tracking name is correct."""
-        assert re.ResourceQFT.tracking_name(num_wires + 1) == "QFT"
+        assert re.ResourceQFT.tracking_name(num_wires + 1) == f"QFT({num_wires+1})"

@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ from .resource_operator import ResourceOperator
 
 # user-friendly gateset for visual checks and initial compilation
 _StandardGateSet = {
-    "PauliX",
-    "PauliY",
-    "PauliZ",
+    "X",
+    "Y",
+    "Z",
     "Hadamard",
     "SWAP",
     "CNOT",
@@ -160,7 +160,7 @@ def resources_from_operation(
     """Get resources from an operation"""
 
     if isinstance(obj, ResourceOperator):
-        cp_rep = obj.resource_rep
+        cp_rep = obj.resource_rep_from_op()
 
         gate_counts_dict = defaultdict(int)
         _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
@@ -306,11 +306,11 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
     cmp_rep_ops = []
     for op in ops:
         if isinstance(op, ResourceOperator):
-            cmp_rep_ops.append(op.resource_rep)
+            cmp_rep_ops.append(op.resource_rep_from_op())
 
         else:
             try:
-                cmp_rep_ops.append(_temp_map_func(op).resource_rep)
+                cmp_rep_ops.append(_temp_map_func(op).resource_rep_from_op())
 
             except NotImplementedError:
                 decomp = op.decomposition()
