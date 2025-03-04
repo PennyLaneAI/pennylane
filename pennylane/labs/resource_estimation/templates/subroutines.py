@@ -77,7 +77,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
-            "base_params": self.base.resource_params(),
+            "base_params": self.base.resource_params,
             "num_ctrl_wires": len(self.control_wires),
         }
 
