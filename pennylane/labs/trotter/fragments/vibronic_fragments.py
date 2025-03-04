@@ -5,189 +5,75 @@ from __future__ import annotations
 from typing import List, Sequence
 
 import numpy as np
-from scipy.sparse import csr_matrix
 
-from pennylane.labs.pf.realspace import Node, RealspaceOperator, RealspaceSum
-from pennylane.labs.pf.utils import next_pow_2
-
-from .vibronic_matrix import VibronicMatrix, commutator
-
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+from pennylane.labs.trotter.realspace import Node, RealspaceOperator, RealspaceSum, VibronicMatrix
+from pennylane.labs.trotter.utils import next_pow_2
 
 
-class VibronicHamiltonian:
-    """Base class for Vibronic Hamiltonians"""
+def vibronic_hamiltonian(states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> VibronicMatrix:
+    """Return a VibronicMatrix representation of a vibronic Hamiltonian"""
+    _validate_input(states, modes, omegas, phis)
 
-    def __init__(
-        self,
-        states: int,
-        modes: int,
-        omegas: np.ndarray,
-        phis: Sequence[np.ndarray],
-        sparse: bool = False,
-    ):
+    ham = _momentum_fragment(states, modes, omegas)
+    for i in range(states):
+        ham += _position_fragment(i, states, modes, omegas, phis)
 
-        for i, phi in enumerate(phis):
-            shape = (states, states) + (modes,) * i
+    return ham
 
-            if phi.shape != shape:
-                raise ValueError(
-                    f"{i}th order coefficient tensor must have shape {shape}, got shape {phi.shape}"
-                )
+def fragments(states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> List[VibronicMatrix]:
+    """Return a list of VibronicMatrix fragments that sum to the vibronic Hamiltonian"""
+    _validate_input(states, modes, omegas, phis)
 
-        if omegas.shape != (modes,):
-            raise TypeError(f"Omegas must have shape {(modes,)}, got shape {omegas.shape}.")
+    frags = [_position_fragment(i, states, modes, omegas, phis) for i in range(next_pow_2(states))]
+    frags.append(_momentum_fragment(states, modes, omegas))
 
-        self.states = states
-        self.modes = modes
-        self.phis = phis
-        self.omegas = omegas
-        self.sparse = sparse
-        self.order = len(phis) - 1
+    return frags
 
-    def fragment(self, index: int) -> VibronicMatrix:
-        """Return the fragment at the given index"""
+def _position_fragment(i: int, states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> VibronicMatrix:
+    pow2 = next_pow_2(states)
+    blocks = {(j, i ^ j): _realspace_sum(j, i ^ j, states, omegas, phis) for j in range(pow2)}
+    return VibronicMatrix(pow2, modes, blocks)
 
-        pow2 = next_pow_2(self.states)
+def _momentum_fragment(states: int, modes: int, omegas: np.ndarray) -> VibronicMatrix:
+    pow2 = next_pow_2(states)
+    term = RealspaceOperator(
+        ("P", "P"),
+        Node.tensor_node(np.diag(omegas) / 2, label=("omegas", np.diag(omegas) / 2)),
+    )
+    word = RealspaceSum((term,))
+    blocks = {(i, i): word for i in range(states)}
 
-        if index not in range(pow2 + 1):
-            raise ValueError("Index out of range")
+    return VibronicMatrix(pow2, modes, blocks)
 
-        if index == pow2:
-            return self._p_fragment()
+def _realspace_sum(i: int, j: int, states: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
+    if i > states - 1 or j > states - 1:
+        return RealspaceSum.zero()
 
-        return self._fragment(index)
-
-    def fragments(self) -> List[VibronicMatrix]:
-        """Return ordered list of fragments"""
-
-        return [self.fragment(i) for i in range(next_pow_2(self.states) + 1)]
-
-    def v_word(self, i: int, j: int) -> RealspaceSum:
-        """Get V_ij"""
-        if i > self.states - 1 or j > self.states - 1:
-            return RealspaceSum.zero()
-
-        realspace_ops = []
-        for k, phi in enumerate(self.phis):
-            op = ("Q",) * k
-            realspace_op = RealspaceOperator(
-                op, Node.tensor_node(phi[i, j], label=(f"phis[{k}][{i}, {j}]", self.phis))
-            )
-            realspace_ops.append(realspace_op)
-
-        if i == j:
-            op = ("Q", "Q")
-            coeffs = Node.tensor_node(
-                np.diag(self.omegas) / 2, label=("omegas", np.diag(self.omegas) / 2)
-            )
-            realspace_ops.append(RealspaceOperator(op, coeffs))
-
-        return RealspaceSum(realspace_ops)
-
-    def _p_fragment(self) -> VibronicMatrix:
-        pow2 = next_pow_2(self.states)
-        term = RealspaceOperator(
-            ("P", "P"),
-            Node.tensor_node(np.diag(self.omegas) / 2, label=("omegas", np.diag(self.omegas) / 2)),
+    realspace_ops = []
+    for k, phi in enumerate(phis):
+        op = ("Q",) * k
+        realspace_op = RealspaceOperator(
+            op, Node.tensor_node(phi[i, j], label=(f"phis[{k}][{i}, {j}]", phis))
         )
-        word = RealspaceSum((term,))
-        blocks = {(i, i): word for i in range(self.states)}
-        return VibronicMatrix(pow2, self.modes, blocks, sparse=self.sparse)
+        realspace_ops.append(realspace_op)
 
-    def _fragment(self, i: int) -> VibronicMatrix:
-        pow2 = next_pow_2(self.states)
-        blocks = {(j, i ^ j): self.v_word(j, i ^ j) for j in range(pow2)}
-        return VibronicMatrix(pow2, self.modes, blocks, sparse=self.sparse)
-
-    def block_operator(self) -> VibronicMatrix:
-        """Return the block representation of the Hamiltonian"""
-
-        operator = self._p_fragment()
-        for i in range(self.states):
-            operator += self._fragment(i)
-
-        return operator
-
-    def matrix(self, gridpoints: int) -> csr_matrix:
-        """Return a csr matrix representation of the Hamiltonian"""
-        return self.block_operator().matrix(gridpoints)
-
-    def epsilon(self, delta: float) -> VibronicMatrix:
-        # pylint: disable=arguments-out-of-order
-        """Compute the error matrix"""
-        scalar = -(delta**2) / 24
-        pow2 = next_pow_2(self.states)
-        epsilon = VibronicMatrix(pow2, self.modes, sparse=self.sparse)
-
-        for i in range(pow2):
-            for j in range(i + 1, pow2 + 1):
-                epsilon += self._commute_fragments(i, i, j)
-                for k in range(i + 1, pow2 + 1):
-                    epsilon += 2 * self._commute_fragments(k, i, j)
-
-        epsilon *= scalar
-        return epsilon
-
-    def _commute_fragments(self, i: int, j: int, k: int) -> VibronicMatrix:
-        # if i == self.states and j < self.states and k == self.states:
-        #    return self._commute_hN_hm_hN(j)
-
-        return commutator(self.fragment(i), commutator(self.fragment(j), self.fragment(k)))
-
-    def _commute_hN_hm_hN(self, m: int) -> VibronicMatrix:
-        blocks = {}
-        for j in range(self.states):
-            node = Node.scalar_node(
-                2,
-                Node.hadamard_node(
-                    Node.tensor_node(
-                        self.betas[j, m ^ j], label=(f"betas[{j},{m ^ j}]", self.betas)
-                    ),
-                    Node.outer_node(
-                        Node.tensor_node(self.omegas, label=("omegas", np.diag(self.omegas) / 2)),
-                        Node.tensor_node(self.omegas, label=("omegas", np.diag(self.omegas) / 2)),
-                    ),
-                ),
-            )
-
-            term = RealspaceOperator(("P", "P"), node)
-            blocks[(j, m ^ j)] = RealspaceSum((term,))
-
-        return VibronicMatrix(self.states, self.modes, blocks, sparse=self.sparse)
-
-    def __add__(self, other: VibronicHamiltonian) -> VibronicHamiltonian:
-        if not isinstance(other, VibronicHamiltonian):
-            raise TypeError(f"Cannot add VibronicHamiltonian with type {type(other)}.")
-
-        if self.states != other.states:
-            raise ValueError(
-                f"Cannot add VibronicHamiltonian on {self.states} with VibronicHamiltonian on {other.states}."
-            )
-
-        if self.modes != other.modes:
-            raise ValueError(
-                f"Cannot add VibronicHamiltonian on {self.modes} with VibronicHamiltonian on {other.modes}."
-            )
-
-        if self.order != other.order:
-            raise ValueError(
-                f"Cannot add VibronicHamiltonian of order {self.order} with VibronicHamiltonian of order {other.order}."
-            )
-
-        return VibronicHamiltonian(
-            self.states,
-            self.modes,
-            self.omegas + other.omegas,
-            [x + y for x, y in zip(self.phis, other.phis)],
+    if i == j:
+        op = ("Q", "Q")
+        coeffs = Node.tensor_node(
+            np.diag(omegas) / 2, label=("omegas", np.diag(omegas) / 2)
         )
+        realspace_ops.append(RealspaceOperator(op, coeffs))
 
-    def __mul__(self, scalar) -> VibronicHamiltonian:
-        return VibronicHamiltonian(
-            self.states,
-            self.modes,
-            scalar * self.omegas,
-            [scalar * phi for phi in self.phis],
-        )
+    return RealspaceSum(realspace_ops)
 
-    __rmul__ = __mul__
+def _validate_input(states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> None:
+    for i, phi in enumerate(phis):
+        shape = (states, states) + (modes,) * i
+
+        if phi.shape != shape:
+            raise ValueError(
+                f"{i}th order coefficient tensor must have shape {shape}, got shape {phi.shape}"
+            )
+
+    if omegas.shape != (modes,):
+        raise TypeError(f"Omegas must have shape {(modes,)}, got shape {omegas.shape}.")
