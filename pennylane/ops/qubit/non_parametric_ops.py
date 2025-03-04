@@ -25,7 +25,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.decomposition import register_resources, add_decomposition
+from pennylane.decomposition import add_decomposition, register_resources
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike

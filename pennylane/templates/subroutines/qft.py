@@ -21,7 +21,7 @@ import functools
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import register_resources, add_decomposition
+from pennylane.decomposition import add_decomposition, register_resources
 from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -243,6 +243,7 @@ def _qft_decomposition_resources(num_wires):
     }
 
 
+# pylint: disable=no-value-for-parameter
 @register_resources(_qft_decomposition_resources)
 def _qft_decomposition(wires: WiresLike, n_wires, **__):
 

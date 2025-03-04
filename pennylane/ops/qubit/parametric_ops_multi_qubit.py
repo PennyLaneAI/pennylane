@@ -200,10 +200,6 @@ class MultiRZ(Operation):
 
         return ops
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": self.hyperparameters["num_wires"]}
-
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
