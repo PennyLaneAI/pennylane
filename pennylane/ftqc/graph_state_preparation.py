@@ -68,11 +68,12 @@ class GraphStatePrep(Operation):
         qubit_graph: QubitGraph,
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
+        wires=None,
     ):
         self.hyperparameters["qubit_graph"] = qubit_graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
-        super().__init__(wires=qubit_graph)
+        super().__init__(wires=[q for q in qubit_graph.graph])
 
     def __repr__(self):
         """Method defining the string representation of this class."""
