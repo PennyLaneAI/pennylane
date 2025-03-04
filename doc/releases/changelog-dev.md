@@ -451,6 +451,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add support to `CollectOpsandMeas` for handling `qnode` primitives.
+  [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
+
 * Add `NotImplementedError`s for `grad` and `jacobian` in `CollectOpsandMeas`.
   [(#7041)](https://github.com/PennyLaneAI/pennylane/pull/7041)
 
