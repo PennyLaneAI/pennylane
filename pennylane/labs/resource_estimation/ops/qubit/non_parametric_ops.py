@@ -21,28 +21,73 @@ import pennylane.labs.resource_estimation as re
 
 
 class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
-    """Resource class for the Hadamard gate."""
+    r"""Resource class for the Hadamard gate.
+    
+    Resources:
+        The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed 
+        further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+    .. seealso::  :class:`~.Hadamard`
+
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The 
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed 
+            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+        """
         raise re.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            The resources of this operation don't depend on any additional parameters.
+        
+        Returns:
+            dict: Empty dictionary.
+        """
         return {}
 
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation."""
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+
+        Resources:
+            This operation is self-adjoint, so the resources of the adjoint operation results
+            in the original operation.
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+                values are the counts.
+        """
         return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""_summary_
+
+        Args:
+            num_ctrl_wires (_type_): _description_
+            num_ctrl_values (_type_): _description_
+            num_work_wires (_type_): _description_
+
+        Returns:
+            Dict[re.CompressedResourceOp, int]: _description_
+        """
         if num_ctrl_wires == 1:
             gate_types = {re.ResourceCH.resource_rep(): 1}
 
@@ -61,6 +106,14 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        r"""_summary_
+
+        Args:
+            z (_type_): _description_
+
+        Returns:
+            Dict[re.CompressedResourceOp, int]: _description_
+        """
         if z % 2 == 0:
             return {}
         return {cls.resource_rep(): 1}
