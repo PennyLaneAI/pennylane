@@ -244,6 +244,7 @@
 
 * The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
+  [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
 
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
   be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
@@ -474,6 +475,10 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
+  when experimental program capture is enabled.
+  [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
 
 * `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
   of sparse matrices. 
