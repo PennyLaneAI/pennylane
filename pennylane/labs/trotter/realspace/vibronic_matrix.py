@@ -42,7 +42,7 @@ class VibronicMatrix(Fragment):
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
 
-        return self._blocks.get((row, col), RealspaceSum.zero())
+        return self._blocks.get((row, col), RealspaceSum.zero(self.modes))
 
     def set_block(self, row: int, col: int, word: RealspaceSum) -> None:
         """Set the value of the block indexed at (row, col)"""
