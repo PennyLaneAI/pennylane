@@ -55,25 +55,30 @@ def _get_plxpr_merge_rotations():
             # dict[wire (int), op (Operator)]
             self.previous_ops = {}
 
-        def interpret_and_refresh_previous_ops(self, op: Operator):
-            """Interpret the previous_ops dictionary and add the operator to the previous_ops dictionary."""
+        def _get_previous_ops_on_wires(self, wires) -> list[Operator]:
+            """Helper function to get previous operations on the wires of the given operator."""
 
             # Use list(dict.fromkeys(...)) as opposed to a set to maintain deterministic order
-            previous_ops_on_wires = list(
-                dict.fromkeys(self.previous_ops[w] for w in op.wires if w in self.previous_ops)
+            return list(
+                dict.fromkeys(self.previous_ops[w] for w in wires if w in self.previous_ops)
             )
 
-            # Refresh the previous_ops dictionary with the current operator
+        def _update_previous_ops(self, op: Operator) -> None:
+            """Update the previous_ops dictionary with the current operator."""
+
+            previous_ops_on_wires = self._get_previous_ops_on_wires(op.wires)
             for o in previous_ops_on_wires:
                 for w in o.wires:
                     del self.previous_ops[w]
             for w in op.wires:
                 self.previous_ops[w] = op
 
-            results = []
+        def _interpret_all_previous_ops_on_wires(self, wires) -> None:
+            """Interpret the previous_ops dictionary and add the operator to the previous_ops dictionary."""
+
+            previous_ops_on_wires = self._get_previous_ops_on_wires(wires)
             for prev_op in previous_ops_on_wires:
-                results.append(super().interpret_operation(prev_op))
-            return results
+                super().interpret_operation(prev_op)
 
         # pylint: disable=inconsistent-return-statements
         def interpret_operation(self, op: Operator):
@@ -90,10 +95,12 @@ def _get_plxpr_merge_rotations():
             """
 
             if self.include_gates is not None and op.name not in self.include_gates:
-                return self.interpret_and_refresh_previous_ops(op)
+                self._interpret_all_previous_ops_on_wires(op.wires)
+                return self._update_previous_ops(op)
 
             if op not in composable_rotations:
-                return self.interpret_and_refresh_previous_ops(op)
+                self._interpret_all_previous_ops_on_wires(op.wires)
+                return self._update_previous_ops(op)
 
             previous_op = self.previous_ops.get(op.wires[0])
             if previous_op is None:
@@ -105,7 +112,8 @@ def _get_plxpr_merge_rotations():
             # Can't use `isinstance` since op could be a subclass of type(previous_op)
             can_merge = (op.wires == previous_op.wires) and (type(op) == type(previous_op))
             if not can_merge:
-                return self.interpret_and_refresh_previous_ops(op)
+                self._interpret_all_previous_ops_on_wires(op.wires)
+                return self._update_previous_ops(op)
 
             if isinstance(op, qml.Rot):
                 # Order of arguments matter for the Rot gate!
@@ -139,7 +147,7 @@ def _get_plxpr_merge_rotations():
                 for w in op.wires:
                     del self.previous_ops[w]
 
-        def interpret_and_clear_previous_ops(self) -> None:
+        def _interpret_remaining_ops(self) -> None:
             """Interpret all the previously seen operations and then clear."""
 
             # Use list(dict(...)) as opposed to a set to maintain deterministic order
@@ -174,13 +182,13 @@ def _get_plxpr_merge_rotations():
 
                 custom_handler = self._primitive_registrations.get(eqn.primitive, None)
                 if custom_handler:
-                    self.interpret_and_clear_previous_ops()
+                    self._interpret_remaining_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     outvals = custom_handler(self, *invals, **eqn.params)
                 elif getattr(eqn.primitive, "prim_type", "") == "operator":
                     outvals = self.interpret_operation_eqn(eqn)
                 elif getattr(eqn.primitive, "prim_type", "") == "measurement":
-                    self.interpret_and_clear_previous_ops()
+                    self._interpret_remaining_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
                     invals = [self.read(invar) for invar in eqn.invars]
@@ -195,7 +203,7 @@ def _get_plxpr_merge_rotations():
             # The following is needed because any operations inside self.previous_ops have not yet
             # been applied. At this point, we **know** that any operations that should be merged
             # have been merged, and operations left inside self.previous_ops should be applied
-            self.interpret_and_clear_previous_ops()
+            self._interpret_remaining_ops()
 
             # Read the final result of the Jaxpr from the environment
             outvals = []
