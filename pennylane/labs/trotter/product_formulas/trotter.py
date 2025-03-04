@@ -45,21 +45,3 @@ def _second_order(fragments: Sequence[Fragment], delta: float) -> Fragment:
 
 def _fourth_order(fragments: Sequence[Fragment], delta: float) -> Fragment:
     pass
-
-
-#def epsilon(self, delta: float) -> VibronicMatrix:
-#   # pylint: disable=arguments-out-of-order
-#   """Compute the error matrix"""
-#   scalar = -(delta**2) / 24
-#   epsilon = VibronicMatrix(self.states, self.modes, sparse=self.sparse)
-#
-#   next_pow_2 = 2 ** (self.states - 1).bit_length()
-#
-#   for i in range(next_pow_2):
-#       for j in range(i + 1, next_pow_2 + 1):
-#           epsilon += self._commute_fragments(i, i, j)
-#           for k in range(i + 1, next_pow_2 + 1):
-#               epsilon += 2 * self._commute_fragments(k, i, j)
-#
-#   epsilon *= scalar
-#   return epsilon
