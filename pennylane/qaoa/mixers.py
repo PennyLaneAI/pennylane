@@ -21,16 +21,7 @@ import itertools
 from collections.abc import Iterable
 from typing import Union
 
-
-#import networkx as nx
-import sys
-from importlib.util import LazyLoader, find_spec, module_from_spec
-spec = find_spec("networkx")
-module = module_from_spec(spec)
-sys.modules["networkx"] = module
-loader = LazyLoader(spec.loader)
-loader.exec_module(module)
-nx = module
+import networkx as nx
 import rustworkx as rx
 
 import pennylane as qml
@@ -78,7 +69,7 @@ def x_mixer(wires: Union[Iterable, Wires]):
     return H
 
 
-def xy_mixer(graph):
+def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
     r"""Creates a generalized SWAP/XY mixer Hamiltonian.
 
     This mixer Hamiltonian is defined as:
@@ -146,7 +137,7 @@ def xy_mixer(graph):
     return qml.Hamiltonian(coeffs, obs)
 
 
-def bit_flip_mixer(graph, b: int):
+def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     r"""Creates a bit-flip mixer Hamiltonian.
 
     This mixer is defined as:

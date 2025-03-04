@@ -16,6 +16,16 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
+import importlib as _importlib
+
+#submodules = [
+#    'templates'
+#]
+
+#def __getattr__(name):
+#    if name in submodules:
+#        return _importlib.import_module("pennylane."+name)
+#    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
@@ -94,24 +104,24 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane import qaoa
+#from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute
-from pennylane.transforms import (
-    transform,
-    batch_params,
-    batch_input,
-    batch_partial,
-    compile,
-    defer_measurements,
-    dynamic_one_shot,
-    quantum_monte_carlo,
-    apply_controlled_Q,
-    commutation_dag,
-    pattern_matching,
-    pattern_matching_optimization,
-    clifford_t_decomposition,
-    add_noise,
-)
+#from pennylane.transforms import (
+#    transform,
+#    batch_params,
+#    batch_input,
+#    batch_partial,
+#    compile,
+#    defer_measurements,
+#    dynamic_one_shot,
+#    quantum_monte_carlo,
+#    apply_controlled_Q,
+#    commutation_dag,
+#    pattern_matching,
+#    pattern_matching_optimization,
+#    clifford_t_decomposition,
+#    add_noise,
+#)
 from pennylane.ops.functions import (
     dot,
     eigvals,
