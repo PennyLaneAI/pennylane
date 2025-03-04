@@ -212,10 +212,6 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                     self.interpret_all_previous_ops()
                     outvals = self.interpret_measurement_eqn(eqn)
                 else:
-                    # Transform primitives don't have custom handlers, so we check for them here
-                    # to purge the stored ops in self.previous_ops
-                    if getattr(eqn.primitive, "prim_type", "") == "transform":
-                        self.interpret_all_previous_ops()
                     invals = [self.read(invar) for invar in eqn.invars]
                     subfuns, params = eqn.primitive.get_bind_params(eqn.params)
                     outvals = eqn.primitive.bind(*subfuns, *invals, **params)
@@ -242,15 +238,10 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             self._env = {}
             return outvals
 
-    @CancelInversesInterpreter.register_primitive(measure_prim)
-    def _(_, *invals, **params):
-        subfuns, params = measure_prim.get_bind_params(params)
-        return measure_prim.bind(*subfuns, *invals, **params)
+    def cancel_inverses_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``cancel_inverses`` transform on plxpr."""
 
-    def cancel_inverses_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
-        interpreter = CancelInversesInterpreter()
+        interpreter = CancelInversesInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
