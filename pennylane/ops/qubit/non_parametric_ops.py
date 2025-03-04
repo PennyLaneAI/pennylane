@@ -277,6 +277,8 @@ class PauliX(Observable, Operation):
 
     batch_size = None
 
+    resource_param_keys = ()
+
     _queue_category = "_ops"
 
     @property
@@ -308,6 +310,10 @@ class PauliX(Observable, Operation):
     @property
     def name(self) -> str:
         return "PauliX"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -449,6 +455,20 @@ Args:
 """
 
 
+def _paulix_ps_rx_ps_resources():
+    return {qml.PhaseShift: 2, qml.RX: 1}
+
+
+@register_resources(_paulix_ps_rx_ps_resources)
+def _paulix_to_ps_rx_ps(wires: WiresLike, **__):
+    qml.PhaseShift(np.pi / 2, wires=wires)
+    qml.RX(np.pi, wires=wires)
+    qml.PhaseShift(np.pi / 2, wires=wires)
+
+
+add_decomposition(X, _paulix_to_ps_rx_ps)
+
+
 class PauliY(Observable, Operation):
     r"""
     The Pauli Y operator
@@ -471,6 +491,8 @@ class PauliY(Observable, Operation):
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    resource_param_keys = ()
 
     basis = "Y"
 
@@ -507,6 +529,10 @@ class PauliY(Observable, Operation):
     @property
     def name(self) -> str:
         return "PauliY"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -647,6 +673,20 @@ Args:
 """
 
 
+def _pauliy_ps_ry_ps_resources():
+    return {qml.PhaseShift: 2, qml.RY: 1}
+
+
+@register_resources(_pauliy_ps_ry_ps_resources)
+def _pauliy_to_ps_ry_ps(wires: WiresLike, **__):
+    qml.PhaseShift(np.pi / 2, wires=wires)
+    qml.RY(np.pi, wires=wires)
+    qml.PhaseShift(np.pi / 2, wires=wires)
+
+
+add_decomposition(Y, _pauliy_to_ps_ry_ps)
+
+
 class PauliZ(Observable, Operation):
     r"""
     The Pauli Z operator
@@ -667,6 +707,8 @@ class PauliZ(Observable, Operation):
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    resource_param_keys = ()
 
     basis = "Z"
 
@@ -703,6 +745,10 @@ class PauliZ(Observable, Operation):
     @property
     def name(self) -> str:
         return "PauliZ"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -845,6 +891,20 @@ r"""The Pauli Z operator
 Args:
     wires (Sequence[int] or int): the wire the operation acts on
 """
+
+
+def _pauliz_ps_rz_ps_resources():
+    return {qml.PhaseShift: 2, qml.RY: 1}
+
+
+@register_resources(_pauliz_ps_rz_ps_resources)
+def _pauliz_to_ps_rz_ps(wires: WiresLike, **__):
+    qml.PhaseShift(np.pi / 2, wires=wires)
+    qml.RZ(np.pi, wires=wires)
+    qml.PhaseShift(np.pi / 2, wires=wires)
+
+
+add_decomposition(Z, _pauliz_to_ps_rz_ps)
 
 
 class S(Operation):
