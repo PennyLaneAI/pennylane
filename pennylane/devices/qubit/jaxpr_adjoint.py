@@ -76,7 +76,7 @@ def _other_prim_forward_pass(eqn: jax.core.JaxprEqn, env: dict) -> None:
     invals, tangents = tuple(zip(*(_read(env, var) for var in eqn.invars)))
     if eqn.primitive not in ad.primitive_jvps:
         raise NotImplementedError(
-            f"Primitive {eqn.primitive} does not have a jvp rule and is not supported.."
+            f"Primitive {eqn.primitive} does not have a jvp rule and is not supported."
         )
     outvals, doutvals = ad.primitive_jvps[eqn.primitive](invals, tangents, **eqn.params)
     if not eqn.primitive.multiple_results:
