@@ -10,9 +10,8 @@ from typing import Sequence, Tuple, Union
 import numpy as np
 import scipy as sp
 
-from pennylane.labs.pf.abstract import Fragment
-from pennylane.labs.pf.utils import _zeros, op_norm, string_to_matrix, tensor_with_identity
-from pennylane.labs.pf.wavefunctions import HOState
+from pennylane.labs.trotter.fragments import Fragment
+from pennylane.labs.trotter.utils import _zeros, op_norm, string_to_matrix, tensor_with_identity
 
 from .tree import Node
 
