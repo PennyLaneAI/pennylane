@@ -1038,12 +1038,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
             Z = 0.5 * (Z + Yinv)
 
             # Check for NaN or infinite values
-            if (
-                np.any(np.isnan(Y.data))
-                or np.any(np.isnan(Z.data))
-                or np.any(np.isinf(Y.data))
-                or np.any(np.isinf(Z.data))
-            ):
+            if not (np.all(np.isfinite(Y.data)) and np.all(np.isfinite(Z.data))):
                 raise ValueError(
                     "Invalid values encountered during computation: nan or inf"
                     f"Input matrix: {mat.toarray()}"
