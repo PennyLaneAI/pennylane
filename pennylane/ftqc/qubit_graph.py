@@ -242,15 +242,27 @@ class QubitGraph:
         return self._graph
 
     @property
-    def nodes(self):
-        """Gets the set of nodes in the underlying qubit graph.
+    def node_labels(self):
+        """Gets the set of nodes labels in the underlying qubit graph.
 
-        If the underlying qubit graph has not been initialized, emit a ``UserWarning`` and return
-        None.
+        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
+
+        Accessing ``QubitGraph.node_labels`` is equivalent to accessing the ``nodes`` attribute of
+        the networkx graph:
+
+            >>> g = nx.grid_graph((2,))
+            >>> g.nodes
+            NodeView((0, 1))
+            >>> q = QubitGraph(0, g)
+            >>> q.node_labels
+            NodeView((0, 1))
+
+        To access the underlying QubitGraph *objects*, rather than their labels, use
+        ``QubitGraph.nodes``.
 
         Returns:
-            networkx.NodeView: The set of nodes, with native support for operations such as
-                ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the networkx
+            networkx.NodeView: A view of the set of nodes, with native support for operations such
+                as ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the networkx
                 documentation for more information.
         """
         if self._graph is None:
@@ -260,10 +272,20 @@ class QubitGraph:
         return self._graph.nodes
 
     @property
-    def edges(self):
-        """Gets the set of edges in the underlying qubit graph.
+    def edge_labels(self):
+        """Gets the set of edge labels in the underlying qubit graph.
 
         If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
+
+        Accessing ``QubitGraph.edges_labels`` is equivalent to accessing the ``edges`` attribute of
+        the networkx graph:
+
+            >>> g = nx.grid_graph((2,))
+            >>> g.edges
+            EdgeView([(0, 1)])
+            >>> q = QubitGraph(0, g)
+            >>> q.edge_labels
+            EdgeView([(0, 1)])
 
         Returns:
             networkx.EdgeView: The set of edges, with native support for operations such as
@@ -300,7 +322,7 @@ class QubitGraph:
         Returns:
             bool: Returns True if this QubitGraph object is a leaf node.
         """
-        return (self._graph is None) or (len(self.nodes) == 0)
+        return (self._graph is None) or (len(self._graph.nodes) == 0)
 
     @property
     def parent(self) -> "QubitGraph":
