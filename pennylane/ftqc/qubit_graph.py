@@ -46,6 +46,34 @@ class QubitGraph:
             expects a "flat" (unnested) graph, and any graph-like objects nested within the graph
             structure used as input are ignored.
 
+    Examples:
+
+        Create a QubitGraph (with id=0) using a 2x2 Cartesian grid to define the structure of its
+        underlying qubits:
+
+        >>> import networkx as nx
+        >>> from pennylane.ftqc import QubitGraph
+        >>> g = nx.grid_graph((2,2))
+        >>> q = QubitGraph(0, g)
+        >>> q
+        QubitGraph<0>
+        >>> for child in q.children:
+        ...     print(child)
+        QubitGraph<0, (0, 0)>
+        QubitGraph<0, (0, 1)>
+        QubitGraph<0, (1, 0)>
+        QubitGraph<0, (1, 1)>
+
+        Using the QubitGraph object defined above as a starting point, it's possible to nest other
+        QubitGraph objects in any of the nodes of its underlying qubit graph:
+
+        >>> g00 = nx.grid_graph((2,))
+        >>> q[(0,0)] = QubitGraph((0, 0), g00)
+        >>> for child in q[(0,0)].children:
+        ...     print(child)
+        QubitGraph<0, (0, 0), 0>
+        QubitGraph<0, (0, 0), 1>
+
     ..  TODO:
 
         - How to represent operations on qubits?
