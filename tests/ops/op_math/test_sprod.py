@@ -160,7 +160,7 @@ class TestInitialization:
         coeff, op2 = sprod_op.terms()
 
         assert coeff == [scalar]
-        for op1, op2 in zip(op2, [op]):
+        for op1, op2 in zip(op2, [op], strict=True):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
@@ -178,7 +178,7 @@ class TestInitialization:
         """Tests that SProd.terms() flattens a nested structure."""
         coeffs, ops_actual = sprod_op.terms()
         assert coeffs == coeffs_exp
-        for op1, op2 in zip(ops_actual, ops_exp):
+        for op1, op2 in zip(ops_actual, ops_exp, strict=True):
             qml.assert_equal(op1, op2)
 
     def test_decomposition_raises_error(self):
@@ -235,7 +235,9 @@ class TestMscMethods:
         true_res = "0.5 * (X('a') + X(1))"
         assert repr(res) == true_res
 
-    @pytest.mark.parametrize("op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
+    @pytest.mark.parametrize(
+        "op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep, strict=True))
+    )
     def test_repr(self, op_scalar_tup, op_rep):
         """Test the repr dunder method."""
         scalar, op = op_scalar_tup
@@ -345,7 +347,9 @@ class TestMatrix:
         y = np.array([1, 2, 3])
         op = qml.s_prod(y, qml.RX(x, 0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        true_mat = qml.math.stack(
+            [qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y, strict=True)]
+        )
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
@@ -358,7 +362,9 @@ class TestMatrix:
         y = jnp.array([1, 2, 3])
         op = qml.s_prod(y, qml.RX(x, 0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        true_mat = qml.math.stack(
+            [qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y, strict=True)]
+        )
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, jnp.ndarray)
@@ -372,7 +378,9 @@ class TestMatrix:
         y = torch.tensor([1, 2, 3])
         op = qml.s_prod(y, qml.RX(x, 0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        true_mat = qml.math.stack(
+            [qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y, strict=True)]
+        )
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, torch.Tensor)
@@ -386,7 +394,9 @@ class TestMatrix:
         y = tf.constant([1.0, 2.0, 3.0])
         op = qml.s_prod(y, qml.RX(x, 0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        true_mat = qml.math.stack(
+            [qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y, strict=True)]
+        )
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, tf.Tensor)
@@ -723,7 +733,7 @@ class TestProperties:
         coeffs = (tf.Variable(1.23), tf.Variable(1.23 + 1.2j))
         true_hermitian_states = (True, False)
 
-        for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
+        for scalar, hermitian_state in zip(coeffs, true_hermitian_states, strict=True):
             op = s_prod(scalar, qml.PauliX(wires=0))
             assert op.is_hermitian == hermitian_state
 
@@ -742,7 +752,7 @@ class TestProperties:
         coeffs = (jnp.array(1.23), jnp.array(1.23 + 1.2j))
         true_hermitian_states = (True, False)
 
-        for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
+        for scalar, hermitian_state in zip(coeffs, true_hermitian_states, strict=True):
             op = s_prod(scalar, qml.PauliX(wires=0))
             assert op.is_hermitian == hermitian_state
 
@@ -754,7 +764,7 @@ class TestProperties:
         coeffs = (torch.tensor(1.23), torch.tensor(1.23 + 1.2j))
         true_hermitian_states = (True, False)
 
-        for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
+        for scalar, hermitian_state in zip(coeffs, true_hermitian_states, strict=True):
             op = s_prod(scalar, qml.PauliX(wires=0))
             assert op.is_hermitian == hermitian_state
 

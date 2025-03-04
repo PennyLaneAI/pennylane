@@ -72,7 +72,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
 
     assert all(
         check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
-        for curr_obtained_mat, curr_U in zip(obtained_mat, qml.math.unwrap(U))
+        for curr_obtained_mat, curr_U in zip(obtained_mat, qml.math.unwrap(U), strict=True)
     )
 
 

@@ -175,7 +175,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         The nodes are the observables (can only be accessed through their integer index).
         """
         # Use upper triangle since adjacency matrix is symmetric and we have an undirected graph
-        edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))
+        edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1)), strict=True))
         # Create complement graph
         if new_rx:
             # node/edge hinting was introduced on version 0.15

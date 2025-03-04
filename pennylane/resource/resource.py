@@ -192,7 +192,7 @@ class Resources:
     def __str__(self):
         keys = ["num_wires", "num_gates", "depth"]
         vals = [self.num_wires, self.num_gates, self.depth]
-        items = "\n".join([str(i) for i in zip(keys, vals)])
+        items = "\n".join([str(i) for i in zip(keys, vals, strict=True)])
         items = items.replace("('", "")
         items = items.replace("',", ":")
         items = items.replace(")", "")

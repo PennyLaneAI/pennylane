@@ -106,7 +106,7 @@ def _prune_approximate_set(
         dists, indxs = tree.query(approx_set_qat, workers=-1, k=10)
 
         prune_ixs = []
-        for dist, indx in zip(dists, indxs):
+        for dist, indx in zip(dists, indxs, strict=True):
             eq_idx = qml.math.sort(indx[qml.math.where(dist.round(8) == 0.0)])
             prune_ixs.extend(eq_idx[qml.math.argsort(tsum[eq_idx])][1:])
 
@@ -185,7 +185,7 @@ def _approximate_set(basis_gates, max_length=10):
         # Add the local containers for extending the trie to the next depth while traversing current one.
         ltrie_id, ltrie_mt, ltrie_gp, ltrie_sm, ltrie_qt = [], [], [], [], []
         for node, su2m, gphase, tgsum in zip(
-            gtrie_ids[depth], gtrie_mat[depth], gtrie_gph[depth], gtrie_sum[depth]
+            gtrie_ids[depth], gtrie_mat[depth], gtrie_gph[depth], gtrie_sum[depth], strict=True
         ):
             # Get the last operation in the current node
             last_op = qml.adjoint(node[-1], lazy=False) if node else None

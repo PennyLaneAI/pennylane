@@ -200,9 +200,9 @@ def _generalized_pauli_decompose(
             continue
 
         observables = (
-            [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
+            [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True) if o != I]
             if hide_identity and not all(t == I for t in pauli_rep)
-            else [(o, w) for w, o in zip(wire_order, pauli_rep)]
+            else [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True)]
         )
         if observables:
             coeffs.append(coefficient)
@@ -325,7 +325,7 @@ def pauli_decompose(
         return PauliSentence(
             {
                 PauliWord({w: o for o, w in obs_n_wires}): coeff
-                for coeff, obs_n_wires in zip(coeffs, obs)
+                for coeff, obs_n_wires in zip(coeffs, obs, strict=True)
             }
         )
 

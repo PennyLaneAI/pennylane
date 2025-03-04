@@ -839,7 +839,7 @@ class TestCatalystMCMs:
             def fname(x):
                 return format(x, f"0{len(meas_obj)}b") if isinstance(meas_obj, list) else x
 
-            results1 = {fname(int(state)): count for state, count in zip(*results1)}
+            results1 = {fname(int(state)): count for state, count in zip(*results1, strict=True)}
         if measure_f is qml.sample:
             results0 = results0[results0 != fill_in_value]
             results1 = results1[results1 != fill_in_value]

@@ -671,7 +671,9 @@ def are_pauli_words_qwc(lst_pauli_words):
         op_names = [op.name] if not isinstance(op.name, list) else op.name
         op_wires = op.wires.tolist()
 
-        for op_name, wire in zip(op_names, op_wires):  # iterate over wires of the observable,
+        for op_name, wire in zip(
+            op_names, op_wires, strict=True
+        ):  # iterate over wires of the observable,
             latest_op_name = latest_op_name_per_wire.get(wire, "Identity")
             if latest_op_name != op_name and (
                 op_name != "Identity" and latest_op_name != "Identity"

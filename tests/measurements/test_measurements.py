@@ -525,7 +525,7 @@ class TestDiagonalizingGates:
         assert len(res) == 3
 
         expected_classes = [qml.PauliZ, qml.S, qml.Hadamard]
-        for op, c in zip(res, expected_classes):
+        for op, c in zip(res, expected_classes, strict=True):
             assert isinstance(op, c)
 
 

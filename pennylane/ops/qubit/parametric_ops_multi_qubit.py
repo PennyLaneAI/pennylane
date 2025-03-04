@@ -187,9 +187,11 @@ class MultiRZ(Operation):
         [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
 
         """
-        ops = [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
+        ops = [
+            qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1], strict=True)
+        ]
         ops.append(RZ(theta, wires=wires[0]))
-        ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
+        ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0], strict=True)]
 
         return ops
 
@@ -392,7 +394,7 @@ class PauliRot(Operation):
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
         non_identity_wires, non_identity_gates = zip(
-            *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
+            *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"], strict=True
         )
 
         multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, len(non_identity_gates))
@@ -496,11 +498,12 @@ class PauliRot(Operation):
             return [qml.GlobalPhase(phi=theta / 2)]
 
         active_wires, active_gates = zip(
-            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+            *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
+            strict=True,
         )
 
         ops = []
-        for wire, gate in zip(active_wires, active_gates):
+        for wire, gate in zip(active_wires, active_gates, strict=True):
             if gate == "X":
                 ops.append(Hadamard(wires=[wire]))
             elif gate == "Y":
@@ -508,7 +511,7 @@ class PauliRot(Operation):
 
         ops.append(MultiRZ(theta, wires=list(active_wires)))
 
-        for wire, gate in zip(active_wires, active_gates):
+        for wire, gate in zip(active_wires, active_gates, strict=True):
             if gate == "X":
                 ops.append(Hadamard(wires=[wire]))
             elif gate == "Y":

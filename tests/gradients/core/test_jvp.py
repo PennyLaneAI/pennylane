@@ -130,7 +130,7 @@ tests_compute_jvp_single = [
     ),
 ]
 
-jacs, tangs, expects = list(zip(*tests_compute_jvp_single))
+jacs, tangs, expects = list(zip(*tests_compute_jvp_single, strict=True))
 tests_compute_jvp_multi = [
     (tuple(jacs[:3]), tangs[0], tuple(expects[:3])),  # scalar return types, scalar parameter
     (tuple(jacs[:3]), tangs[1], tuple(expects[:3])),  # scalar return types, scalar parameter
@@ -219,7 +219,7 @@ class TestComputeJVPSingle:
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
         assert isinstance(jvp, tuple)
         assert all(isinstance(_jvp, np.ndarray) for _jvp in jvp)
-        assert all(np.array_equal(_jvp, _exp) for _jvp, _exp in zip(jvp, exp))
+        assert all(np.array_equal(_jvp, _exp) for _jvp, _exp in zip(jvp, exp, strict=True))
 
     def test_jacobian_is_none_single(self):
         """A None Jacobian returns a None JVP"""

@@ -176,7 +176,7 @@ class TestGradientDescentOptimizer:
 
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
-        for gradf, f in zip(grad_mvar_mdim_funcs, mvar_mdim_funcs):
+        for gradf, f in zip(grad_mvar_mdim_funcs, mvar_mdim_funcs, strict=True):
             for jdx in range(len(x_vals[:-3])):
                 x_vec = x_vals[jdx : jdx + 4]
                 x_vec_multidim = np.reshape(x_vec, (2, 2))

@@ -185,7 +185,7 @@ class TestOutPoly:
             polynomial_function, input_registers=[[0, 1], [2]], output_wires=[3]
         ).decomposition()
 
-        for op1, op2 in zip(expected_decomposition, ops):
+        for op1, op2 in zip(expected_decomposition, ops, strict=True):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.jax

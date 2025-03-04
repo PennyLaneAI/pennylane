@@ -240,7 +240,7 @@ def finite_diff_jvp(
                 continue
 
             ti_over_h = ti / h
-            for coeff, shift in zip(coeffs, shifts):
+            for coeff, shift in zip(coeffs, shifts, strict=True):
                 if shift == 0:
                     res = flat_initial_res
                 else:

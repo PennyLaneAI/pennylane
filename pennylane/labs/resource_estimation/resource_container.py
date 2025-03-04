@@ -144,7 +144,7 @@ class Resources:
         """String representation of the Resources object."""
         keys = ["wires", "gates"]
         vals = [self.num_wires, self.num_gates]
-        items = "\n".join([str(i) for i in zip(keys, vals)])
+        items = "\n".join([str(i) for i in zip(keys, vals, strict=True)])
         items = items.replace("('", "")
         items = items.replace("',", ":")
         items = items.replace(")", "")

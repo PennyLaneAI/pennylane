@@ -377,7 +377,7 @@ class TestDecomposeTransformations:
         expanded_tape = expanded_tapes[0]
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
-        for op, exp in zip(expanded_tape.circuit, expected + measurements):
+        for op, exp in zip(expanded_tape.circuit, expected + measurements, strict=True):
             qml.assert_equal(op, exp)
 
         assert tape.shots == expanded_tape.shots
@@ -390,7 +390,7 @@ class TestDecomposeTransformations:
         expanded_tapes, _ = decompose(tape, lambda obj: obj.has_matrix)
         expanded_tape = expanded_tapes[0]
 
-        for op, exp in zip(expanded_tape.circuit, ops + measurements):
+        for op, exp in zip(expanded_tape.circuit, ops + measurements, strict=True):
             qml.assert_equal(op, exp)
 
     @pytest.mark.parametrize("validation_transform", (validate_measurements, validate_observables))

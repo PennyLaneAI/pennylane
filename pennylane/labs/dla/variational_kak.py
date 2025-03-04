@@ -303,7 +303,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     # Compute the ansatz K_c = K(theta_c) = K_1(theta_1) .. K_|k|(theta_|k|)
     Km = jnp.eye(2**n)
     assert len(theta_opt) == len(k)
-    for th, op in zip(theta_opt, k):
+    for th, op in zip(theta_opt, k, strict=True):
         opm = qml.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
         Km @= jax.scipy.linalg.expm(1j * th * opm)
 

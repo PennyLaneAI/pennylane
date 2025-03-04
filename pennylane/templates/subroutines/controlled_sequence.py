@@ -189,7 +189,7 @@ class ControlledSequence(SymbolicOp, Operation):
         powers_of_two = [2**i for i in range(len(control_wires))]
         ops = []
 
-        for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
+        for z, ctrl_wire in zip(powers_of_two[::-1], control_wires, strict=True):
             ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops

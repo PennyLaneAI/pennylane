@@ -280,7 +280,7 @@ class QuantumPhaseEstimation(ErrorOperation):
 
         op_list = [qml.Hadamard(w) for w in estimation_wires]
         pow_ops = (qml.pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
-        op_list.extend(qml.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires))
+        op_list.extend(qml.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires, strict=True))
         op_list.append(qml.adjoint(qml.templates.QFT(wires=estimation_wires)))
 
         return op_list

@@ -126,7 +126,7 @@ class TestOneParameterGenerators:
         # A Hamiltonian with commuting terms and constant pulse envelopes yields
         # a product of rotation gates about its terms, with the effective rotation parameters
         # given by the duration of the constant pulse.
-        for gen, term in zip(gens, terms):
+        for gen, term in zip(gens, terms, strict=True):
             # The effective generator should have the shape of the pulse
             assert gen.shape == (dim, dim)
             expected = -1j * T * expand_matrix(term.matrix(), term.wires, H.wires)
@@ -152,7 +152,7 @@ class TestOneParameterGenerators:
             """Compute the matrix of a constant pulse with non-commuting Hamiltonian terms."""
             summands = [
                 p * expand_matrix(term.matrix(), term.wires, H.wires)
-                for p, term in zip(params, terms)
+                for p, term in zip(params, terms, strict=True)
             ]
             exp = jnp.sum(
                 jnp.array(summands),
@@ -178,7 +178,7 @@ class TestOneParameterGenerators:
         # effective generator. Omega = U* @ dU
         U = manual_matrix(params)
         expected = [U.conj().T @ j for j in jax.jacobian(manual_matrix, holomorphic=True)(params)]
-        for gen, expec in zip(gens, expected):
+        for gen, expec in zip(gens, expected, strict=True):
             # The effective generator should have the shape of the pulse
             assert gen.shape == (dim, dim)
             assert qml.math.allclose(gen, expec)
@@ -252,7 +252,7 @@ class TestOneParameterGenerators:
         assert isinstance(gens, tuple)
         assert len(gens) == num_terms
         dim = 2 ** len(H.wires)
-        for gen, term, p, jac in zip(gens, terms, params, par_fn_jac):
+        for gen, term, p, jac in zip(gens, terms, params, par_fn_jac, strict=True):
             # The effective generator should have the shape of the parameters and the pulse
             # together. Here, the parameters are one-dimensional, so we get (num_params, dim, dim)
             assert gen.shape == (len(p), dim, dim)
@@ -293,7 +293,10 @@ class TestOneParameterGenerators:
         def manual_matrix(params):
             def apply_mat(y, t):
                 H = jnp.sum(
-                    jnp.array([jnp.polyval(p, t) * mat for p, mat in zip(params, mats)]), axis=0
+                    jnp.array(
+                        [jnp.polyval(p, t) * mat for p, mat in zip(params, mats, strict=True)]
+                    ),
+                    axis=0,
                 )
                 return (-1j * H) @ y
 
@@ -319,7 +322,7 @@ class TestOneParameterGenerators:
             jnp.transpose(jnp.tensordot(U.conj().T, j, 1), (2, 0, 1))
             for j in jax.jacobian(manual_matrix, holomorphic=True)(params)
         ]
-        for gen, expec, p in zip(gens, expected, params):
+        for gen, expec, p in zip(gens, expected, params, strict=True):
             # Each effective generator should have the shape of the pulse, and there should be
             # as many as values in the respective parameter
             assert gen.shape == (len(p), dim, dim)
@@ -350,7 +353,10 @@ class TestOneParameterPauliRotCoeffs:
         coeffs = _one_parameter_paulirot_coeffs(gens, num_wires)
         assert isinstance(coeffs, tuple)
         assert len(coeffs) == len(pardims)
-        assert all(c.shape == (4**num_wires - 1, *pardim) for c, pardim in zip(coeffs, pardims))
+        assert all(
+            c.shape == (4**num_wires - 1, *pardim)
+            for c, pardim in zip(coeffs, pardims, strict=True)
+        )
         assert all(c.dtype == r_dtype for c in coeffs)
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3])
@@ -395,10 +401,10 @@ class TestNonzeroCoeffsAndWords:
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
 
         # The coefficients should not have changed and all words should be returned
-        assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, coeffs))
+        assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, coeffs, strict=True))
         assert len(words) == 4**num_wires - 1
         # Also check that the order of the words is consistent.
-        assert all(w == exp for w, exp in zip(words, pauli_basis_strings(num_wires)))
+        assert all(w == exp for w, exp in zip(words, pauli_basis_strings(num_wires), strict=True))
 
     @pytest.mark.parametrize(
         "num_wires, remove_ids", [(1, [0]), (1, [2]), (2, [0, 3]), (2, [0, 1, 2, 3]), (2, [10])]
@@ -415,19 +421,19 @@ class TestNonzeroCoeffsAndWords:
         mask[remove_ids] = 0
         # Filter the coefficients and Pauli words for non-zero components
         exp_coeffs = tuple(c[mask] for c in coeffs)
-        exp_words = [w for i, w in zip(mask, pauli_basis_strings(num_wires)) if i]
-        assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, exp_coeffs))
+        exp_words = [w for i, w in zip(mask, pauli_basis_strings(num_wires), strict=True) if i]
+        assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, exp_coeffs, strict=True))
         assert len(words) == 4**num_wires - 1 - len(remove_ids)
-        assert all(w == exp for w, exp in zip(words, exp_words))
+        assert all(w == exp for w, exp in zip(words, exp_words, strict=True))
 
         # Remove entries in np.eye(...) coefficients tuple altogether, effectively doing
         # the same as setting rows of coefficients to zero.
         coeffs = tuple(e for i, e in enumerate(np.eye(dim)) if i not in remove_ids)
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
         exp_coeffs = tuple(c[mask] for c in coeffs)
-        assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, exp_coeffs))
+        assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, exp_coeffs, strict=True))
         assert len(words) == 4**num_wires - 1 - len(remove_ids)
-        assert all(w == exp for w, exp in zip(words, exp_words))
+        assert all(w == exp for w, exp in zip(words, exp_words, strict=True))
 
     def test_atol(self):
         """Test that the precision keyword argument atol is used correctly."""
@@ -479,11 +485,11 @@ class TestInsertOp:
         tape = qml.tape.QuantumScript(operations, measurements)
         new_tapes = _insert_op(tape, ops, op_idx)
         assert isinstance(new_tapes, list) and len(new_tapes) == len(ops)
-        for t, op in zip(new_tapes, ops):
-            for o0, o1 in zip(t[:op_idx], tape[:op_idx]):
+        for t, op in zip(new_tapes, ops, strict=True):
+            for o0, o1 in zip(t[:op_idx], tape[:op_idx], strict=True):
                 qml.assert_equal(o0, o1)
             qml.assert_equal(t[op_idx], op)
-            for o0, o1 in zip(t[op_idx + 1 :], tape[op_idx:]):
+            for o0, o1 in zip(t[op_idx + 1 :], tape[op_idx:], strict=True):
                 qml.assert_equal(o0, o1)
 
 
@@ -496,7 +502,7 @@ class TestGenerateTapesAndCoeffs:
 
     def make_tape(self, all_H, all_params):
         """Make a tape with parametrized evolutions."""
-        ops = [qml.evolve(H)(p, self.T) for H, p in zip(all_H, all_params)]
+        ops = [qml.evolve(H)(p, self.T) for H, p in zip(all_H, all_params, strict=True)]
         return qml.tape.QuantumScript(ops, [qml.expval(Z(0))])
 
     def check_cache_equality(self, cache, expected):
@@ -516,7 +522,7 @@ class TestGenerateTapesAndCoeffs:
             assert v[:2] == expected_value[:2]
             # last entry is a tuple of coefficients, so we iterate over the outer-most axis
             # (the tuple axis) and compare the tensors one after the other
-            for _v, e in zip(v[2], expected_value[2]):
+            for _v, e in zip(v[2], expected_value[2], strict=True):
                 assert qml.math.allclose(_v, e, atol=self.atol)
 
     def check_tapes_and_coeffs_equality(self, grad_tapes, tup, expected):
@@ -526,11 +532,11 @@ class TestGenerateTapesAndCoeffs:
         start, end, num_tapes, words, wires, old_tape, insert_idx, exp_coeffs = expected
         assert len(grad_tapes) == num_tapes
         for t_idx, word in enumerate(words):
-            for sign, t in zip([1, -1], grad_tapes[2 * t_idx : 2 * (t_idx + 1)]):
+            for sign, t in zip([1, -1], grad_tapes[2 * t_idx : 2 * (t_idx + 1)], strict=True):
                 assert len(t.operations) == len(old_tape.operations) + 1
                 expected_ops = copy.copy(old_tape.operations)
                 expected_ops.insert(insert_idx, qml.PauliRot(sign * np.pi / 2, word, wires))
-                for op, old_op in zip(t.operations, expected_ops):
+                for op, old_op in zip(t.operations, expected_ops, strict=True):
                     qml.assert_equal(op, old_op)
         assert tup[:2] == (start, end)
 
@@ -1070,10 +1076,14 @@ class TestPulseOdegenTape:
             assert isinstance(grad, tuple) and len(grad) == len(shots)
             for _grad in grad:
                 assert isinstance(_grad, tuple) and len(_grad) == 2
-                assert all(qml.math.allclose(g, e, atol=tol) for g, e in zip(_grad, exp_grad))
+                assert all(
+                    qml.math.allclose(g, e, atol=tol) for g, e in zip(_grad, exp_grad, strict=True)
+                )
         else:
             assert isinstance(grad, tuple) and len(grad) == 2
-            assert all(qml.math.allclose(g, e, atol=tol) for g, e in zip(grad, exp_grad))
+            assert all(
+                qml.math.allclose(g, e, atol=tol) for g, e in zip(grad, exp_grad, strict=True)
+            )
 
     @pytest.mark.parametrize("argnum", (0, [0], 1, [1]))
     def test_single_pulse_multi_term_argnum(self, argnum):
@@ -1153,10 +1163,14 @@ class TestPulseOdegenTape:
             assert isinstance(grad, tuple) and len(grad) == len(shots)
             for _grad in grad:
                 assert isinstance(_grad, tuple) and len(_grad) == 3
-                assert all(qml.math.allclose(g, e, atol=tol) for g, e in zip(_grad, exp_grad))
+                assert all(
+                    qml.math.allclose(g, e, atol=tol) for g, e in zip(_grad, exp_grad, strict=True)
+                )
         else:
             assert isinstance(grad, tuple) and len(grad) == 3
-            assert all(qml.math.allclose(g, e, atol=tol) for g, e in zip(grad, exp_grad))
+            assert all(
+                qml.math.allclose(g, e, atol=tol) for g, e in zip(grad, exp_grad, strict=True)
+            )
 
 
 @pytest.mark.jax
@@ -1235,7 +1249,7 @@ class TestPulseOdegenQNode:
             jnp.outer(jnp.array([-1, 1]), jnp.sin(2 * p) * p_jac),
             -2 * jnp.sin(2 * p) * p_jac,
         )
-        for j, e in zip(jac, exp_jac):
+        for j, e in zip(jac, exp_jac, strict=True):
             assert qml.math.allclose(j, e)
 
     @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
@@ -1273,8 +1287,8 @@ class TestPulseOdegenQNode:
             ),
             (-2 * jnp.sin(2 * p) * p0_jac, -2 * jnp.sin(2 * p) * p1_jac),
         )
-        for j, e in zip(jac, exp_jac):
-            for _j, _e in zip(j, e):
+        for j, e in zip(jac, exp_jac, strict=True):
+            for _j, _e in zip(j, e, strict=True):
                 assert qml.math.allclose(_j, _e)
 
 
@@ -1378,7 +1392,7 @@ class TestPulseOdegenIntegration:
             jnp.outer(jnp.array([-1, 1]), jnp.sin(2 * p) * p_jac),
             -2 * jnp.sin(2 * p) * p_jac,
         )
-        for j, e in zip(jac, exp_jac):
+        for j, e in zip(jac, exp_jac, strict=True):
             assert qml.math.allclose(j[0], e)
 
     @pytest.mark.xfail
@@ -1438,7 +1452,8 @@ class TestPulseOdegenIntegration:
         grad_backprop = jax.grad(qnode_backprop)(params)
 
         assert all(
-            qml.math.allclose(r, e, atol=1e-7) for r, e in zip(grad_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, atol=1e-7)
+            for r, e in zip(grad_pulse_grad, grad_backprop, strict=True)
         )
 
     @pytest.mark.parametrize("argnums", [[0, 1], 0, 1])

@@ -167,7 +167,7 @@ class TestCommutationDAG:
 
         wires = [3, 0, 4, 2, 1]
         consecutive_wires = Wires(range(len(wires)))
-        wires_map = OrderedDict(zip(wires, consecutive_wires))
+        wires_map = OrderedDict(zip(wires, consecutive_wires, strict=True))
 
         nodes = list(op(wires=[wires_map[w] for w in ws]) for op, ws in op_wires)
 

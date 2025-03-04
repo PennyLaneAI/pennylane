@@ -84,11 +84,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -115,11 +120,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -145,11 +155,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -184,11 +199,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -213,11 +233,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -240,11 +265,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -269,11 +299,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -302,11 +337,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -333,11 +373,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -368,11 +413,16 @@ class TestInsert:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -454,11 +504,15 @@ def test_insert_dev(dev_name):
         qml.expval(qml.PauliZ(0))
 
     tape_exp = QuantumScript.from_queue(q_tape_exp)
-    assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-    assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+    assert all(
+        o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+    )
+    assert all(
+        o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+    )
     assert all(
         np.allclose(o1.parameters, o2.parameters)
-        for o1, o2 in zip(tape.operations, tape_exp.operations)
+        for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
     )
     assert len(tape.measurements) == 2
     assert tape.observables[0].name == "Prod"

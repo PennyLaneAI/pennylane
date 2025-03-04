@@ -176,7 +176,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
 
         for key, val in preprocess.items():
             unstacked_args = (qml.math.unstack(arg) for arg in args)
-            val = qml.math.stack([val(*a) for a in zip(*unstacked_args)])
+            val = qml.math.stack([val(*a) for a in zip(*unstacked_args, strict=True)])
             kwargs[key] = val
 
         for key, val in partial_kwargs.items():

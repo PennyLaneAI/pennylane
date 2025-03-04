@@ -218,7 +218,7 @@ class TestQNode:
         assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the measurements
-        for op1, op2 in zip(tape1.measurements, tape2.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements, strict=True):
             assert isinstance(op1, type(op2))
 
     def test_reuse_wire_after_measurement(self):
@@ -360,7 +360,7 @@ class TestQNode:
 
         tape1 = qml.workflow.construct_tape(circ1)(phi, shots=shots)
         assert len(tape1) == len(expected_circuit)
-        for op, expected_op in zip(tape1, expected_circuit):
+        for op, expected_op in zip(tape1, expected_circuit, strict=True):
             qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
@@ -407,7 +407,7 @@ class TestQNode:
 
         tape1 = qml.workflow.construct_tape(circ1)(phi, shots=shots)
         assert len(tape1) == len(expected_circuit)
-        for op, expected_op in zip(tape1, expected_circuit):
+        for op, expected_op in zip(tape1, expected_circuit, strict=True):
             qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
@@ -489,7 +489,7 @@ class TestQNode:
 
         tape1 = qml.workflow.construct_tape(circ1)(phi, theta, shots=shots)
         assert len(tape1) == len(expected_circuit)
-        for op, expected_op in zip(tape1, expected_circuit):
+        for op, expected_op in zip(tape1, expected_circuit, strict=True):
             qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
@@ -575,13 +575,17 @@ class TestQNode:
 
         params = [1.5, 2.5]
         if isinstance(shots, list):
-            for out1, out2 in zip(circ1(*params, shots=shots), circ2(*params, shots=shots)):
-                for o1, o2 in zip(out1, out2):
+            for out1, out2 in zip(
+                circ1(*params, shots=shots), circ2(*params, shots=shots), strict=True
+            ):
+                for o1, o2 in zip(out1, out2, strict=True):
                     assert np.allclose(o1, o2)
         else:
             assert all(
                 np.allclose(out1, out2)
-                for out1, out2 in zip(circ1(*params, shots=shots), circ2(*params, shots=shots))
+                for out1, out2 in zip(
+                    circ1(*params, shots=shots), circ2(*params, shots=shots), strict=True
+                )
             )
 
     def test_measure_between_ops(self):
@@ -617,12 +621,12 @@ class TestQNode:
         assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the operations
-        for op1, op2 in zip(tape1.operations, tape2.operations):
+        for op1, op2 in zip(tape1.operations, tape2.operations, strict=True):
             assert isinstance(op1, type(op2))
             assert op1.data == op2.data
 
         # Check the measurements
-        for op1, op2 in zip(tape1.measurements, tape2.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements, strict=True):
             assert isinstance(op1, type(op2))
 
     @pytest.mark.parametrize("mid_measure_wire, tp_wires", [(0, [1, 2, 3]), (0, [3, 1, 2])])
@@ -1385,12 +1389,12 @@ class TestTemplates:
         assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the operations
-        for op1, op2 in zip(tape1.operations, tape2.operations):
+        for op1, op2 in zip(tape1.operations, tape2.operations, strict=True):
             assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
         # Check the measurements
-        for op1, op2 in zip(tape1.measurements, tape2.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements, strict=True):
             assert isinstance(op1, type(op2))
 
     @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
@@ -1424,12 +1428,12 @@ class TestTemplates:
         assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the operations
-        for op1, op2 in zip(tape1.operations, tape2.operations):
+        for op1, op2 in zip(tape1.operations, tape2.operations, strict=True):
             assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
         # Check the measurements
-        for op1, op2 in zip(tape1.measurements, tape2.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements, strict=True):
             assert isinstance(op1, type(op2))
 
 
@@ -1494,7 +1498,7 @@ class TestQubitReuseAndReset:
 
         tape2 = qml.workflow.construct_tape(qnode2)(0.123)
         assert len(tape2.circuit) == len(expected_circuit)
-        for actual, expected in zip(tape2.circuit, expected_circuit):
+        for actual, expected in zip(tape2.circuit, expected_circuit, strict=True):
             qml.assert_equal(actual, expected)
 
     def test_measurements_add_new_qubits(self):
@@ -1581,7 +1585,7 @@ class TestQubitReuseAndReset:
         deferred_tapes, _ = qml.defer_measurements(tape)
         deferred_tape = deferred_tapes[0]
         assert len(deferred_tape.circuit) == len(expected_circuit)
-        for actual, expected in zip(deferred_tape.circuit, expected_circuit):
+        for actual, expected in zip(deferred_tape.circuit, expected_circuit, strict=True):
             qml.assert_equal(actual, expected)
 
 

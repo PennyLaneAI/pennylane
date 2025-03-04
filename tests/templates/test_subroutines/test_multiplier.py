@@ -183,12 +183,12 @@ class TestMultiplier:
             wires_aux = work_wires[:3]
             wires_aux_swap = wires_aux
         op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
-        for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
+        for x_wire, aux_wire in zip(x_wires, wires_aux_swap, strict=True):
             op_list.append(qml.SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
         op_list.extend(qml.adjoint(_mul_out_k_mod)(inv_k, x_wires, mod, work_wire_aux, wires_aux))
 
-        for op1, op2 in zip(multiplier_decomposition, op_list):
+        for op1, op2 in zip(multiplier_decomposition, op_list, strict=True):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.jax

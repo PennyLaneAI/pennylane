@@ -1639,7 +1639,7 @@ class TestPassthruIntegrationJax:
             ]
         )
         expected = (expected[0], jnp.diag(expected[1]))
-        assert all(jnp.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        assert all(jnp.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected, strict=True))
 
 
 # TENSORFLOW integration tests

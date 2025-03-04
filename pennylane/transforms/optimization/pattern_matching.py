@@ -199,7 +199,7 @@ def pattern_matching_optimization(
     """
     # pylint: disable=too-many-branches
     consecutive_wires = Wires(range(len(tape.wires)))
-    inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
+    inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires, strict=True))
     original_tape_meas = tape.measurements
 
     for pattern in pattern_tapes:
@@ -270,7 +270,9 @@ def pattern_matching_optimization(
                             node = group.template_dag.get_node(index)
                             inst = copy.deepcopy(node.op)
 
-                            inst = qml.map_wires(inst, wire_map=dict(zip(inst.wires, wires)))
+                            inst = qml.map_wires(
+                                inst, wire_map=dict(zip(inst.wires, wires, strict=True))
+                            )
                             adjoint(qml.apply, lazy=False)(inst)
 
                     # Add the unmatched gates.
@@ -1453,7 +1455,7 @@ def _gate_indices(circuit_matched, circuit_blocked):
     """
     gate_indices = []
 
-    for i, (matched, blocked) in enumerate(zip(circuit_matched, circuit_blocked)):
+    for i, (matched, blocked) in enumerate(zip(circuit_matched, circuit_blocked, strict=True)):
         if (not matched) and (not blocked):
             gate_indices.append(i)
     gate_indices.reverse()

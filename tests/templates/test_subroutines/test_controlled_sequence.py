@@ -136,7 +136,7 @@ class TestMethods:
             assert isinstance(op, qml.ops.Pow)
             assert op.z == 2 ** (len(control_wires) - i - 1)
 
-        for op, w in zip(decomp, control_wires):
+        for op, w in zip(decomp, control_wires, strict=True):
             assert op.base.control_wires == Wires(w)
 
     def test_compute_decomposition_not_lazy(self):
@@ -150,7 +150,7 @@ class TestMethods:
             qml.CRX(0.25 * 1, wires=["blue", 3]),
         ]
 
-        for op1, op2 in zip(decomp, expected_decomp):
+        for op1, op2 in zip(decomp, expected_decomp, strict=True):
             assert op1 == op2
 
     def test_decomposition(self):
@@ -163,7 +163,7 @@ class TestMethods:
             qml.CRX(0.25 * 1, wires=["blue", 3]),
         ]
 
-        for op1, op2 in zip(decomp, expected_decomp):
+        for op1, op2 in zip(decomp, expected_decomp, strict=True):
             assert op1 == op2
 
 

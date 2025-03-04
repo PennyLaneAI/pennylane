@@ -181,7 +181,7 @@ class TestUnits:
             ),
             qml.tape.QuantumScript([qml.RY(0.5, 0)], [qml.expval(qml.Z(0)), qml.expval(qml.Y(0))]),
         ]
-        for actual_tape, expected_tape in zip(tapes, expected_tapes):
+        for actual_tape, expected_tape in zip(tapes, expected_tapes, strict=True):
             qml.assert_equal(actual_tape, expected_tape)
 
         result = ([0.1, 0.2, 0.3], [0.4, 0.2])

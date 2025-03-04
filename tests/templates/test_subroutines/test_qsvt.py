@@ -157,7 +157,7 @@ class TestQSVT:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        for expected, val in zip(results, tape.expand().operations):
+        for expected, val in zip(results, tape.expand().operations, strict=True):
             qml.assert_equal(expected, val)
 
     def test_decomposition_queues_its_contents(self):
@@ -168,7 +168,7 @@ class TestQSVT:
             decomp = op.decomposition()
 
         ops, _ = qml.queuing.process_queue(q)
-        for op1, op2 in zip(ops, decomp):
+        for op1, op2 in zip(ops, decomp, strict=True):
             qml.assert_equal(op1, op2)
 
     def test_wire_order(self):
@@ -396,7 +396,7 @@ class TestQSVT:
 
         orig_projectors = orig_op.hyperparameters["projectors"]
         copy_projectors = copy_op.hyperparameters["projectors"]
-        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
+        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors, strict=True))
 
 
 phase_angle_data = (

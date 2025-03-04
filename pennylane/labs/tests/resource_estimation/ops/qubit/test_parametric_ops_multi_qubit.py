@@ -174,7 +174,7 @@ class TestPauliRot:
 
     expected_h_count = (0, 4, 6, 6, 0)
     expected_s_count = (0, 1, 0, 1, 0)
-    params = zip(pauli_words, expected_h_count, expected_s_count)
+    params = zip(pauli_words, expected_h_count, expected_s_count, strict=True)
 
     @pytest.mark.parametrize("pauli_string, expected_h_count, expected_s_count", params)
     def test_resources(self, pauli_string, expected_h_count, expected_s_count):

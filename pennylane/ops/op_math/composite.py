@@ -350,7 +350,7 @@ class CompositeOp(Operator):
                     "Composite operator labels require ``base_label`` keyword to be same length as operands."
                 )
             return self._op_symbol.join(
-                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label)
+                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label, strict=True)
             )
 
         return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)

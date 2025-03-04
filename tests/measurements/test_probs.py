@@ -546,7 +546,9 @@ class TestProbs:
         assert all(_r.shape == (2**2,) for _r in res_A)
 
         # Check that they agree up to numeric tolerance
-        assert all(np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A))
+        assert all(
+            np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A, strict=True)
+        )
 
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
     def test_prob_generalize_param_one_qubit(self, hermitian, tol):

@@ -948,7 +948,7 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
         if isinstance(rjac, tuple):
             out = []
-            for rc, ic in zip(rjac, ijac):
+            for rc, ic in zip(rjac, ijac, strict=True):
                 c = rc + 1j * ic
                 psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
                 out.append(
@@ -973,7 +973,7 @@ class TestFullMetricTensor:
     num_wires = 3
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params, strict=True))
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_autograd(self, dev_name, ansatz, params, interface):
@@ -990,12 +990,12 @@ class TestFullMetricTensor:
         mt = qml.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params, strict=True))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     @pytest.mark.parametrize("use_jit", [False, True])
@@ -1029,12 +1029,12 @@ class TestFullMetricTensor:
         mt = mt_fn(*params)
 
         if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params, strict=True))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_jax_argnum_error(self, dev_name, ansatz, params, interface):
@@ -1057,7 +1057,7 @@ class TestFullMetricTensor:
             qml.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params, strict=True))
     @pytest.mark.parametrize("interface", ["auto", "torch"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_torch(self, dev_name, ansatz, params, interface):
@@ -1077,12 +1077,12 @@ class TestFullMetricTensor:
         mt = qml.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params, strict=True))
     @pytest.mark.parametrize("interface", ["auto", "tf"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_tf(self, dev_name, ansatz, params, interface):
@@ -1104,7 +1104,7 @@ class TestFullMetricTensor:
             mt = qml.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qml.math.allclose(mt, expected)
 
@@ -1223,7 +1223,7 @@ class TestDifferentiabilityDiag:
         if isinstance(jac, tuple):
             assert all(
                 qml.math.allclose(j, e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_diag_jac(*weights))
+                for j, e in zip(jac, expected_diag_jac(*weights), strict=True)
             )
         else:
             assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
@@ -1291,7 +1291,7 @@ class TestDifferentiabilityDiag:
         if isinstance(jac, tuple) and len(jac) != 1:
             assert all(
                 qml.math.allclose(j.detach().numpy(), e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_diag_jac(*weights))
+                for j, e in zip(jac, expected_diag_jac(*weights), strict=True)
             )
         else:
             if isinstance(jac, tuple) and len(jac) == 1:
@@ -1339,7 +1339,8 @@ class TestDifferentiability:
         _c = _cost_full(*weights)
         c = cost_full(*weights)
         assert all(
-            qml.math.allclose(_sub_c, sub_c, atol=tol, rtol=0) for _sub_c, sub_c in zip(_c, c)
+            qml.math.allclose(_sub_c, sub_c, atol=tol, rtol=0)
+            for _sub_c, sub_c in zip(_c, c, strict=True)
         )
         for argnum in range(len(weights)):
             expected_full = qml.jacobian(_cost_full, argnum=argnum)(*weights)
@@ -1407,7 +1408,7 @@ class TestDifferentiability:
         if isinstance(jac, tuple) and len(jac) != 1:
             assert all(
                 qml.math.allclose(j.detach().numpy(), e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_full)
+                for j, e in zip(jac, expected_full, strict=True)
             )
         else:
             if isinstance(jac, tuple) and len(jac) == 1:

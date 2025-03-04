@@ -385,7 +385,7 @@ class LegacyDeviceFacade(Device):
         batched_res = tuple(
             self.execute_and_compute_derivatives((c,), execution_config) for c in circuits
         )
-        return tuple(zip(*batched_res))
+        return tuple(zip(*batched_res, strict=True))
 
     def compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
         first_shot = circuits[0].shots

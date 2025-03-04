@@ -52,7 +52,9 @@ def test_flatten_unflatten_standard_checks(op_type):
     assert qml.math.allclose(op.data, new_op.data)
     assert op.hyperparameters["v_function"] == new_op.hyperparameters["v_function"]
     assert op.hyperparameters["v_wires"] == new_op.hyperparameters["v_wires"]
-    for op1, op2 in zip(op.hyperparameters["u_tape"], new_op.hyperparameters["u_tape"]):
+    for op1, op2 in zip(
+        op.hyperparameters["u_tape"], new_op.hyperparameters["u_tape"], strict=True
+    ):
         qml.assert_equal(op1, op2)
     assert new_op is not op
 
@@ -239,7 +241,7 @@ class TestHilbertSchmidt:
             qml.CNOT(wires=[0, 1]),
             qml.H(0),
         ]
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=True):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qml.math.allclose(i.data, j.data)
@@ -276,7 +278,7 @@ class TestHilbertSchmidt:
             qml.Hadamard(wires=[1]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=True):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qml.math.allclose(i.data, j.data)
@@ -316,10 +318,10 @@ class TestHilbertSchmidt:
             qml.Hadamard(wires=["b"]),
         ]
 
-        for op1, op2 in zip(tape_dec.operations, expected_operations):
+        for op1, op2 in zip(tape_dec.operations, expected_operations, strict=True):
             qml.assert_equal(op1, op2)
 
-        for op1, op2 in zip(decomp, expected_operations):
+        for op1, op2 in zip(decomp, expected_operations, strict=True):
             qml.assert_equal(op1, op2)
 
     def test_v_not_quantum_function(self):
@@ -483,9 +485,9 @@ class TestLocalHilbertSchmidt:
 
         tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
 
-        for o1, o2 in zip(decomp, tape_dec):
+        for o1, o2 in zip(decomp, tape_dec, strict=True):
             qml.assert_equal(o1, o2)
-        for o1, o2 in zip(decomp, unqueued_decomp):
+        for o1, o2 in zip(decomp, unqueued_decomp, strict=True):
             qml.assert_equal(o1, o2)
 
         expected_operations = [
@@ -497,7 +499,7 @@ class TestLocalHilbertSchmidt:
             qml.Hadamard(wires=[0]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=True):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qml.math.allclose(i.data, j.data)
@@ -527,7 +529,7 @@ class TestLocalHilbertSchmidt:
             qml.Hadamard(wires=["a"]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=True):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qml.math.allclose(i.data, j.data)

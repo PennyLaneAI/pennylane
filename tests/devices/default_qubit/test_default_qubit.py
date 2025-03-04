@@ -493,12 +493,12 @@ class TestSampleMeasurements:
         assert len(result) == len(list(shots))
 
         assert all(isinstance(res, (float, np.ndarray)) for res in result)
-        assert all(res.shape == (s, 2) for res, s in zip(result, shots))
+        assert all(res.shape == (s, 2) for res, s in zip(result, shots, strict=True))
         assert all(
             np.allclose(
                 np.sum(res, axis=0).astype(np.float32) / s, [np.sin(x / 2) ** 2, 0], atol=0.1
             )
-            for res, s in zip(result, shots)
+            for res, s in zip(result, shots, strict=True)
         )
 
     @pytest.mark.parametrize("shots", shots_data)
@@ -519,7 +519,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
@@ -1229,7 +1229,7 @@ class TestRandomSeed:
         if len(measurements) == 1:
             result1, result2 = [result1], [result2]
 
-        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2, strict=True))
 
     @pytest.mark.slow
     @pytest.mark.parametrize("max_workers", max_workers_list)
@@ -1273,7 +1273,7 @@ class TestRandomSeed:
         if len(measurements) == 1:
             result1, result2 = [result1], [result2]
 
-        assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2))
+        assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2, strict=True))
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     @pytest.mark.parametrize(
@@ -1304,7 +1304,7 @@ class TestRandomSeed:
         if len(measurements) == 1:
             result1, result2 = [result1], [result2]
 
-        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2, strict=True))
 
     def test_global_seed_no_device_seed_by_default(self):
         """Test that the global numpy seed initializes the rng if device seed is none."""
@@ -1397,7 +1397,7 @@ class TestPRNGKeySeed:
             result2 = dev2.execute([qs] * 10, config)
 
             assert len(result1) == len(result2)
-            for r1, r2 in zip(result1, result2):
+            for r1, r2 in zip(result1, result2, strict=True):
                 assert np.all(r1 == r2)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
@@ -1772,7 +1772,7 @@ class TestClassicalShadows:
         assert isinstance(res, tuple)
         assert len(res) == len(list(shots))
 
-        for r, s in zip(res, shots):
+        for r, s in zip(res, shots, strict=True):
             assert r.shape == (2, s, n_qubits)
             assert r.dtype == np.int8
 
@@ -1911,7 +1911,7 @@ class TestPostselection:
 
         else:
             assert isinstance(res, tuple)
-            for r, e in zip(res, expected):
+            for r, e in zip(res, expected, strict=True):
                 assert qml.math.allclose(r, e, atol=0.1, rtol=0)
                 assert qml.math.get_interface(r) == qml.math.get_interface(e)
 

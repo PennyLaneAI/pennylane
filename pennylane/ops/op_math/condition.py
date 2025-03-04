@@ -150,7 +150,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             self.otherwise_fn = lambda *args, **kwargs: None
 
         if elifs and not qml.capture.enabled():
-            elif_preds, elif_fns = list(zip(*elifs))
+            elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
 
@@ -201,11 +201,11 @@ class CondCallable:  # pylint:disable=too-few-public-methods
     @property
     def elifs(self):
         """(List(Tuple(bool, callable))): a list of (bool, elif_fn) clauses"""
-        return list(zip(self.preds[1:], self.branch_fns[1:]))
+        return list(zip(self.preds[1:], self.branch_fns[1:], strict=True))
 
     def __call_capture_disabled(self, *args, **kwargs):
         # python fallback
-        for pred, branch_fn in zip(self.preds, self.branch_fns):
+        for pred, branch_fn in zip(self.preds, self.branch_fns, strict=True):
             if pred:
                 return branch_fn(*args, **kwargs)
 
@@ -659,7 +659,7 @@ def _validate_abstract_values(
             f"{len(outvals)} vs {len(expected_outvals)}"
         )
 
-    for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
+    for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals, strict=True)):
         if outval != expected_outval:
             raise ValueError(
                 f"Mismatch in output abstract values in {branch_type} branch"
@@ -700,7 +700,7 @@ def _get_cond_qfunc_prim():
                 )
             conditions = get_mcm_predicates(mcm_conditions)
 
-        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
             consts = all_args[const_slice]
             if jaxpr is None:
                 continue

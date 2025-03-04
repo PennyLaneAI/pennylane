@@ -454,7 +454,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 else:
                     # Array-valued argument
                     # Extract indices of parameters contributing to the current operation
-                    par_ids = zip(*[map(int, _ids) for _ids in np.where(jac_of_op)])
+                    par_ids = zip(*[map(int, _ids) for _ids in np.where(jac_of_op)], strict=True)
                     # Exclude contributing parameters that were not requested
                     par_ids = set(par_ids).intersection(requested_par_ids)
                     if len(par_ids) == 0:

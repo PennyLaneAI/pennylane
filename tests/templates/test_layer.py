@@ -112,7 +112,7 @@ KWARGS = [
     {"wires": range(2), "var2": True},
 ]
 
-REPEAT = zip(UNITARIES, DEPTH, ARGS, KWARGS, GATES)
+REPEAT = zip(UNITARIES, DEPTH, ARGS, KWARGS, GATES, strict=True)
 
 ########################
 

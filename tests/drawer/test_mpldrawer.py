@@ -152,7 +152,7 @@ class TestLabels:
 
         drawn_labels = drawer.ax.texts
 
-        for wire, expected_label, actual_label in zip(range(3), labels, drawn_labels):
+        for wire, expected_label, actual_label in zip(range(3), labels, drawn_labels, strict=True):
             assert actual_label.get_text() == expected_label
 
             assert actual_label.get_position() == (-1.5, wire)
@@ -269,7 +269,7 @@ class TestBoxGate:
         ys = [-0.125, -0.125, 1.875, 1.875]
 
         # first patch is big box
-        for x, y, notch in zip(xs, ys, drawer.ax.patches[1:]):
+        for x, y, notch in zip(xs, ys, drawer.ax.patches[1:], strict=True):
             assert notch.get_x() == x
             assert notch.get_y() == y
             assert notch.get_width() == drawer._notch_width
@@ -318,7 +318,7 @@ class TestBoxGate:
         assert text.get_position() == (0, 1.0)
 
         xs = [-0.615, 0.575, -0.615, 0.575]
-        for x, notch in zip(xs, drawer.ax.patches[1:]):
+        for x, notch in zip(xs, drawer.ax.patches[1:], strict=True):
             assert notch.get_x() == x
 
         plt.close()
@@ -395,7 +395,7 @@ class TestCTRL:
 
         assert len(circles) == 2
 
-        for wire, circle in zip(ctrl_wires, circles):
+        for wire, circle in zip(ctrl_wires, circles, strict=True):
             assert circle.width == 0.2
             assert circle.center == (0, wire)
         plt.close()

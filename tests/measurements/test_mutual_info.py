@@ -204,7 +204,9 @@ class TestIntegration:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
+    @pytest.mark.parametrize(
+        "params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8), strict=True)
+    )
     def test_qnode_mutual_info(self, device, interface, params):
         """Test that the measurement process for mutual information works for QNodes
         by comparing against the mutual information transform"""
@@ -261,7 +263,9 @@ class TestIntegration:
         assert np.allclose(actual, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
+    @pytest.mark.parametrize(
+        "params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8), strict=True)
+    )
     @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_qnode_mutual_info_jax_jit(self, params, interface):
         """Test that the measurement process for mutual information works for QNodes

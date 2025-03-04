@@ -192,7 +192,7 @@ def test_allequal(t1, t2):
     if isinstance(t2, tf.Variable):
         t2 = tf.convert_to_tensor(t2)
 
-    expected = all(float(x) == float(y) for x, y in zip(t1, t2))
+    expected = all(float(x) == float(y) for x, y in zip(t1, t2, strict=True))
     assert res == expected
 
 
@@ -249,7 +249,7 @@ def test_allclose(t1, t2):
     if isinstance(t2, tf.Variable):
         t2 = tf.convert_to_tensor(t2)
 
-    expected = all(float(x) == float(y) for x, y in zip(t1, t2))
+    expected = all(float(x) == float(y) for x, y in zip(t1, t2, strict=True))
     assert res == expected
 
 
@@ -1707,7 +1707,7 @@ def test_where(t):
         [0, 0, 1, 1, 2, 0, 0, 2, 2],
         [0, 1, 0, 1, 1, 0, 1, 0, 1],
     )
-    assert all(fn.allclose(_res, _exp) for _res, _exp in zip(res, expected))
+    assert all(fn.allclose(_res, _exp) for _res, _exp in zip(res, expected, strict=True))
 
 
 squeeze_data = [
@@ -2440,7 +2440,7 @@ class TestUnwrap:
         ]
         res = qml.math.unwrap(values)
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(res, expected))
+        assert all(np.allclose(a, b) for a, b in zip(res, expected, strict=True))
 
     def test_torch_unwrapping(self):
         """Test that a sequence of Torch values is properly unwrapped"""
@@ -2451,7 +2451,7 @@ class TestUnwrap:
         ]
         res = qml.math.unwrap(values)
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(res, expected))
+        assert all(np.allclose(a, b) for a, b in zip(res, expected, strict=True))
 
     def test_autograd_unwrapping_forward(self):
         """Test that a sequence of Autograd values is properly unwrapped
@@ -2468,7 +2468,7 @@ class TestUnwrap:
         cost_fn(values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected, strict=True))
         assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
 
     def test_autograd_unwrapping_backward(self):
@@ -2490,7 +2490,7 @@ class TestUnwrap:
         _ = qml.grad(cost_fn, argnum=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected, strict=True))
         assert not any(isinstance(a, ArrayBox) for a in unwrapped_params)
 
     def test_autograd_unwrapping_backward_nested(self):
@@ -2531,7 +2531,7 @@ class TestUnwrap:
         cost_fn(values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected, strict=True))
         assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
 
 

@@ -378,7 +378,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
                 # to satisfy the case of jax interface, as jax arrays do not support str.
                 samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
             states, counts = np.unique(samples, return_counts=True)
-            return dict(zip(states, counts))
+            return dict(zip(states, counts, strict=True))
 
         # TODO: Add special cases for any observables that require them once list of
         # observables is updated.

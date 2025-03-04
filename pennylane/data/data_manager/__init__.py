@@ -194,13 +194,13 @@ def _download_datasets(  # pylint: disable=too-many-arguments
 
         pbar_tasks = [
             pbar.add_task(str(dest_path.relative_to(folder_path)), total=file_size)
-            for dest_path, file_size in zip(dest_paths, file_sizes)
+            for dest_path, file_size in zip(dest_paths, file_sizes, strict=True)
         ]
     else:
         pbar_tasks = (None for _ in dest_paths)
 
     with futures.ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
-        for url, dest_path, pbar_task in zip(dataset_urls, dest_paths, pbar_tasks):
+        for url, dest_path, pbar_task in zip(dataset_urls, dest_paths, pbar_tasks, strict=True):
             futs = [
                 pool.submit(
                     _download_dataset,

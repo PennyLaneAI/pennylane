@@ -197,7 +197,7 @@ class DefaultQutrit(QutritDevice):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
-        wire_map = zip(wires, consecutive_wires)
+        wire_map = zip(wires, consecutive_wires, strict=True)
         return dict(wire_map)
 
     @debug_logger

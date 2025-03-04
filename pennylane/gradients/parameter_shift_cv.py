@@ -453,7 +453,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             results = [np.array(0.0)]
 
         interface = qml.math.get_interface(results[0])
-        iterator = enumerate(zip(shapes, gradient_values, obs_indices))
+        iterator = enumerate(zip(shapes, gradient_values, obs_indices, strict=True))
 
         for i, (shape, grad_value, obs_ind) in iterator:
             if shape == 0:
@@ -796,7 +796,7 @@ def param_shift_cv(
         start = 0
         grads = []
 
-        for s, f in zip(shapes, fns):
+        for s, f in zip(shapes, fns, strict=True):
             grads.append(f(results[start : start + s]))
             start += s
 

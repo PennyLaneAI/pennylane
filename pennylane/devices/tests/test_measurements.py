@@ -496,7 +496,7 @@ class TestTensorExpval:
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
-        list(zip(obs_lst, obs_permuted_lst)),
+        list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
     def test_wire_order_in_tensor_prod_observables(
         self, device, base_obs, permuted_obs, tol, skip_if
@@ -1447,7 +1447,7 @@ class TestTensorVar:
 
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
-        list(zip(obs_lst, obs_permuted_lst)),
+        list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
     def test_wire_order_in_tensor_prod_observables(
         self, device, base_obs, permuted_obs, tol, skip_if

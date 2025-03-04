@@ -38,7 +38,7 @@ def ansatz(a, b, c):
 
 # pylint: disable=too-many-arguments
 @pytest.mark.parametrize("shots", [None, int(1e6)])
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=True)))
 class TestTensorExpval:
     """Test tensor expectation values"""
 
@@ -249,7 +249,7 @@ class TestTensorExpval:
 
 
 @pytest.mark.parametrize("shots", [None, int(1e6)])
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=True)))
 class TestTensorVar:
     """Tests for variance of tensor observables"""
 
@@ -357,7 +357,7 @@ def tensor_product(observables):
     return functools.reduce(np.kron, observables)
 
 
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=True)))
 class TestTensorSample:
     """Tests for samples of tensor observables"""
 

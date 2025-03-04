@@ -635,7 +635,7 @@ class TestBatchVJP:
         # Returned VJPs will be appended to a list, one vjp per tape
         assert len(res) == 2
         assert all(isinstance(r, np.ndarray) for r in res)
-        assert all(len(r) == len(t.trainable_params) for t, r in zip(tapes, res))
+        assert all(len(r) == len(t.trainable_params) for t, r in zip(tapes, res, strict=True))
 
     def test_reduction_extend(self):
         """Test the 'extend' reduction strategy"""

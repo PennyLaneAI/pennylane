@@ -1119,7 +1119,7 @@ def filter_fn(member: Any) -> bool:
     return inspect.isclass(member) and member.__module__.startswith("pennylane.templates")
 
 
-_, all_templates = zip(*inspect.getmembers(qml.templates, filter_fn))
+_, all_templates = zip(*inspect.getmembers(qml.templates, filter_fn), strict=True)
 
 unmodified_templates = [template for template, *_ in unmodified_templates_cases]
 unsupported_templates = [

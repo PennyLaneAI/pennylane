@@ -194,7 +194,11 @@ class TestQNodeCircuitHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_symbolic(self, x, y):
         """Tests that the circuit hash of identical circuits containing only symbolic parameters are equal"""
@@ -224,7 +228,11 @@ class TestQNodeCircuitHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_numeric_and_symbolic(self, x, y):
         """Tests that the circuit hash of identical circuits containing numeric and symbolic parameters are equal"""
@@ -256,7 +264,11 @@ class TestQNodeCircuitHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_numeric_and_symbolic_tensor_return(self, x, y):
         """Tests that the circuit hashes of identical circuits having a tensor product in the return
@@ -289,7 +301,11 @@ class TestQNodeCircuitHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_same_operation_has_numeric_and_symbolic(self, x, y):
         """Tests that the circuit hashes of identical circuits where one operation has both numeric
@@ -318,7 +334,11 @@ class TestQNodeCircuitHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_numeric_and_symbolic_return_type_does_matter(self, x, y):
         """Tests that the circuit hashes of identical circuits only differing on their return types are not equal"""
@@ -346,7 +366,11 @@ class TestQNodeCircuitHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_hermitian(self, x, y):
         """Tests that the circuit hashes of identical circuits containing a Hermitian observable are equal"""
@@ -435,7 +459,11 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_numeric_and_symbolic_operation_differs(self, x, y):
         """Tests that the circuit hashes of identical circuits that have numeric and symbolic arguments
@@ -468,7 +496,11 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_different_return_observable_vs_tensor(self, x, y):
         """Tests that the circuit hashes of identical circuits except for the return statement are different"""
@@ -502,7 +534,11 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_same_operation_has_numeric_and_symbolic_different_order(
         self, x, y
@@ -533,7 +569,11 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_same_operation_has_numeric_and_symbolic_different_argument(
         self, x, y
@@ -564,7 +604,11 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 2), np.linspace(-2 * np.pi, 2 * np.pi, 2) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 2),
+            np.linspace(-2 * np.pi, 2 * np.pi, 2) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_same_operation_has_numeric_and_symbolic_different_wires(
         self, x, y
@@ -595,7 +639,11 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 2), np.linspace(-2 * np.pi, 2 * np.pi, 2) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 2),
+            np.linspace(-2 * np.pi, 2 * np.pi, 2) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_same_operation_has_numeric_and_symbolic_different_wires_in_return(
         self, x, y
@@ -626,7 +674,11 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 7),
+            np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_numeric_and_symbolic_different_parameter(self, x, y):
         """Tests that the circuit hashes of identical circuits except for the numeric argument of a signle operation
@@ -659,7 +711,11 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
     @pytest.mark.parametrize(
         "x,y",
-        zip(np.linspace(-2 * np.pi, 2 * np.pi, 2), np.linspace(-2 * np.pi, 2 * np.pi, 2) ** 2 / 11),
+        zip(
+            np.linspace(-2 * np.pi, 2 * np.pi, 2),
+            np.linspace(-2 * np.pi, 2 * np.pi, 2) ** 2 / 11,
+            strict=True,
+        ),
     )
     def test_evaluate_circuit_hash_hermitian_different_matrices(self, x, y):
         """Tests that the circuit hashes of identical circuits except for the matrix argument of the Hermitian observable

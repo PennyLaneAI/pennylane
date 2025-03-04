@@ -191,13 +191,15 @@ def _get_measured_wires(measurements, wires) -> set:
 
 
 def _add_classical_wires(drawer, layers, wires):
-    for cwire, (cwire_layers, layer_wires) in enumerate(zip(layers, wires), start=drawer.n_wires):
+    for cwire, (cwire_layers, layer_wires) in enumerate(
+        zip(layers, wires, strict=True), start=drawer.n_wires
+    ):
         xs, ys = [], []
 
         len_diff = len(cwire_layers) - len(layer_wires)
         if len_diff > 0:
             layer_wires += [cwire] * len_diff
-        for l, w in zip(cwire_layers, layer_wires):
+        for l, w in zip(cwire_layers, layer_wires, strict=True):
             xs.extend([l, l, l])
             ys.extend([cwire, w, cwire])
 

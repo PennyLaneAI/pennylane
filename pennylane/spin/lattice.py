@@ -220,7 +220,7 @@ class Lattice:
                 raise ValueError(
                     "custom_edges cannot be specified if neighbour_order argument is set to a value other than 1."
                 )
-            lattice_map = dict(zip(lattice_map, self.lattice_points))
+            lattice_map = dict(zip(lattice_map, self.lattice_points, strict=True))
             self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]

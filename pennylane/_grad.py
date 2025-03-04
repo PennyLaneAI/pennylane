@@ -45,7 +45,7 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
 
     @wraps(func)
     def new_func(*args, **kwargs):
-        flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
+        flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args), strict=True)
         full_in_tree = treedef_tuple(in_trees)
 
         # Create a new input tree that only takes inputs marked by argnum into account

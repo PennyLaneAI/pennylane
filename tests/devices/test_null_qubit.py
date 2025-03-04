@@ -404,7 +404,9 @@ class TestSampleMeasurements:
 
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
-        assert all(np.array_equal(res, np.zeros((s, 2))) for res, s in zip(result, shots))
+        assert all(
+            np.array_equal(res, np.zeros((s, 2))) for res, s in zip(result, shots, strict=True)
+        )
 
     @pytest.mark.parametrize("shots", shots_data)
     def test_multi_measurement_shot_vector(self, shots):
@@ -424,7 +426,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
             assert np.array_equal(shot_res[0], 0.0)
@@ -1019,7 +1021,7 @@ class TestClassicalShadows:
         assert isinstance(res, tuple)
         assert len(res) == len(list(shots))
 
-        for r, s in zip(res, shots):
+        for r, s in zip(res, shots, strict=True):
             assert np.array_equal(r, np.zeros((2, s, n_qubits)))
             assert r.dtype == np.int8
 

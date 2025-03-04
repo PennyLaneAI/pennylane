@@ -309,7 +309,7 @@ class Exp(ScalarSymbolicOp, Operation):
             if op_class not in {qml.PauliRot, qml.PCPhase}:
                 g, c = qml.generator(op_class)(coeff, base.wires)
                 # Some generators are not wire-ordered (e.g. OrbitalRotation)
-                mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
+                mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires, strict=True)))
 
                 if qml.equal(mapped_wires_g, base):
                     # Cancel the coefficients added by the generator
@@ -373,7 +373,7 @@ class Exp(ScalarSymbolicOp, Operation):
             List[Operator]: a list of operators containing the decomposition
         """
         op_list = []
-        for c, op in zip(coeffs, ops):
+        for c, op in zip(coeffs, ops, strict=True):
             c /= self.num_steps  # divide by trotter number
             if isinstance(op, SProd):
                 c *= op.scalar

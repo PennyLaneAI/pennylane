@@ -100,7 +100,7 @@ class TestGetResources:
     def test_operations_to_compressed_reps(self, ops_lst, compressed_reps):
         """Test that we can transform a list of operations into compressed reps"""
         computed_compressed_reps = _operations_to_compressed_reps(ops_lst)
-        for computed_cr, expected_cr in zip(computed_compressed_reps, compressed_reps):
+        for computed_cr, expected_cr in zip(computed_compressed_reps, compressed_reps, strict=True):
             assert computed_cr == expected_cr
 
     compressed_rep_counts = (

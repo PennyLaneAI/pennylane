@@ -61,7 +61,7 @@ def _check_decomposition(op, skip_wire_mapping):
             decomp_op.__class__ for decomp_op in decomp
         ], "an operator should not be included in its own decomposition"
 
-        for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue):
+        for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue, strict=True):
             assert o1 == o2, "decomposition must match compute_decomposition"
             assert o1 == o3, "decomposition must match queued operations"
             assert isinstance(o1, qml.operation.Operator), "decomposition must contain operators"
@@ -78,7 +78,7 @@ def _check_decomposition(op, skip_wire_mapping):
         if mapped_op.has_decomposition:
             mapped_decomp = mapped_op.decomposition()
             orig_decomp = op.decomposition()
-            for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
+            for mapped_op, orig_op in zip(mapped_decomp, orig_decomp, strict=True):
                 assert (
                     mapped_op.wires == qml.map_wires(orig_op, wire_map).wires
                 ), "Operators in decomposition of wire-mapped operator must have mapped wires."
@@ -154,7 +154,7 @@ def _check_eigendecomposition(op):
             # compute_diagonalizing_gates might also have a different call signature
             compute_dg = dg
 
-        for op1, op2 in zip(dg, compute_dg):
+        for op1, op2 in zip(dg, compute_dg, strict=True):
             assert op1 == op2, "diagonalizing_gates and compute_diagonalizing_gates must match"
     else:
         failure_comment = "If has_diagonalizing_gates is False, diagonalizing_gates must raise a DiagGatesUndefinedError"
@@ -244,7 +244,7 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    for d1, d2 in zip(op.data, leaves):
+    for d1, d2 in zip(op.data, leaves, strict=True):
         assert qml.math.allclose(
             d1, d2
         ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
@@ -291,7 +291,7 @@ def _check_bind_new_parameters(op):
     new_data = [d * 0.0 for d in op.data]
     new_data_op = qml.ops.functions.bind_new_parameters(op, new_data)
     failure_comment = "bind_new_parameters must be able to update the operator with new data."
-    for d1, d2 in zip(new_data_op.data, new_data):
+    for d1, d2 in zip(new_data_op.data, new_data, strict=True):
         assert qml.math.allclose(d1, d2), failure_comment
 
 
@@ -322,7 +322,7 @@ def _check_differentiation(op):
     )
 
     if isinstance(ps, tuple):
-        for actual, expected in zip(ps, expected_bp):
+        for actual, expected in zip(ps, expected_bp, strict=True):
             assert qml.math.allclose(actual, expected), error_msg
     else:
         assert qml.math.allclose(ps, expected_bp), error_msg
@@ -394,7 +394,7 @@ def assert_valid(
 
     assert isinstance(op.data, tuple), "op.data must be a tuple"
     assert isinstance(op.parameters, list), "op.parameters must be a list"
-    for d, p in zip(op.data, op.parameters):
+    for d, p in zip(op.data, op.parameters, strict=True):
         assert isinstance(d, qml.typing.TensorLike), "each data element must be tensorlike"
         assert qml.math.allclose(d, p), "data and parameters must match."
 

@@ -395,7 +395,7 @@ class TestIteration:
         qs_list = list(qs)
 
         expected = ops + meas
-        for op, exp_op in zip(qs_list, expected):
+        for op, exp_op in zip(qs_list, expected, strict=True):
             assert op is exp_op
 
         assert len(qs_list) == len(expected)
@@ -422,7 +422,7 @@ class TestIteration:
         assert qs.circuit == circuit
         assert list(qs) == circuit
         # Iterate over the tape
-        for op, expected in zip(qs, circuit):
+        for op, expected in zip(qs, circuit, strict=True):
             assert op is expected
 
         # Check that the underlying circuit is still as expected
@@ -526,9 +526,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are simply references
-        assert all(o1 is o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
-        assert all(o1 is o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
-        assert all(m1 is m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.operations, qs.operations, strict=True))
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.observables, qs.observables, strict=True))
+        assert all(m1 is m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements, strict=True))
 
         # operation data is also a reference
         assert copied_qs.operations[0].wires is qs.operations[0].wires
@@ -558,9 +558,13 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references; they are unique objects
-        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
-        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
-        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations, strict=True))
+        assert all(
+            o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables, strict=True)
+        )
+        assert all(
+            m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements, strict=True)
+        )
 
         # however, the underlying operation data *is still shared*
         assert copied_qs.operations[0].wires is qs.operations[0].wires
@@ -584,9 +588,13 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references
-        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
-        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
-        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations, strict=True))
+        assert all(
+            o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables, strict=True)
+        )
+        assert all(
+            m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements, strict=True)
+        )
         assert copied_qs.shots is qs.shots
 
         # The underlying operation data has also been copied
@@ -819,7 +827,7 @@ def test_adjoint():
 
     # assumes lazy=False
     expected_ops = [qml.adjoint(qml.T(1)), qml.CNOT((0, 1)), qml.adjoint(qml.S(0)), qml.RX(-1.2, 0)]
-    for op, expected in zip(adj_qs.operations[1:], expected_ops):
+    for op, expected in zip(adj_qs.operations[1:], expected_ops, strict=True):
         # update this one qml.equal works with adjoint
         assert isinstance(op, type(expected))
         assert op.wires == expected.wires
@@ -1352,7 +1360,7 @@ class TestOutputShape:
         expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         actual = tape.shape(dev)
 
-        for exp, act in zip(expected, actual):
+        for exp, act in zip(expected, actual, strict=True):
             assert exp.shape == act
 
     @pytest.mark.autograd
@@ -1620,15 +1628,15 @@ def test_flatten_unflatten(qscript_type):
     tape.trainable_params = {0}
 
     data, metadata = tape._flatten()
-    assert all(o1 is o2 for o1, o2 in zip(ops, data[0]))
-    assert all(o1 is o2 for o1, o2 in zip(mps, data[1]))
+    assert all(o1 is o2 for o1, o2 in zip(ops, data[0], strict=True))
+    assert all(o1 is o2 for o1, o2 in zip(mps, data[1], strict=True))
     assert metadata[0] == qml.measurements.Shots(100)
     assert metadata[1] == (0,)
     assert hash(metadata)
 
     new_tape = qscript_type._unflatten(data, metadata)
-    assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations))
-    assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements))
+    assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations, strict=True))
+    assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements, strict=True))
     assert new_tape.shots == qml.measurements.Shots(100)
     assert new_tape.trainable_params == (0,)
 

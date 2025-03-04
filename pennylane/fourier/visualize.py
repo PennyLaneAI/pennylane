@@ -196,7 +196,7 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     # Get the labels and data
     nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
-    for data_type, axis in zip(["real", "imag"], ax):
+    for data_type, axis in zip(["real", "imag"], ax, strict=True):
         violinplt = axis.violinplot(data[data_type], showextrema=False)
         for bd in violinplt["bodies"]:
             bd.set_color(colour_dict[data_type])
@@ -303,7 +303,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
     # Get the labels and data
     nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
-    for data_type, axis in zip(["real", "imag"], ax):
+    for data_type, axis in zip(["real", "imag"], ax, strict=True):
         data_colour = colour_dict[data_type]
         axis.boxplot(
             data[data_type],
@@ -417,7 +417,7 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     nvecs_formatted, data = _extract_data_and_labels(np.array([coeffs]))
     data_len = len(data["real"][0])
 
-    for data_type, axis in zip(["real", "imag"], ax):
+    for data_type, axis in zip(["real", "imag"], ax, strict=True):
         axis.bar(np.arange(data_len), data[data_type][0], color=colour_dict[data_type], alpha=0.7)
         axis.set_ylabel(data_type)
         axis.xaxis.set_ticks(np.arange(data_len))
@@ -673,7 +673,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
     nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
     # Set up the violin plots
-    for data_type, a in zip(["real", "imag"], ax):
+    for data_type, a in zip(["real", "imag"], ax, strict=True):
         data_colour = colour_dict[data_type]
 
         a.boxplot(
@@ -702,7 +702,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
     # https://stackoverflow.com/questions/46719340/how-to-rotate-tick-labels-in-polar-matplotlib-plot
     for a in ax:
         if show_freqs:
-            for label, angle in zip(a.get_xticklabels(), angles):
+            for label, angle in zip(a.get_xticklabels(), angles, strict=True):
                 x, y = label.get_position()
                 lab = a.text(
                     x,

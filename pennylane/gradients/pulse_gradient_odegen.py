@@ -103,7 +103,7 @@ def _one_parameter_generators(op):
     moveax = partial(qml.math.moveaxis, source=(0, 1), destination=(-2, -1))
     return tuple(
         moveax(qml.math.tensordot(U_dagger, j_r + 1j * j_i, axes=[[0], [0]]))
-        for j_r, j_i in zip(jac_real, jac_imag)
+        for j_r, j_i in zip(jac_real, jac_imag, strict=True)
     )
 
 
@@ -150,11 +150,11 @@ def _nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8):
     words = pauli_basis_strings(num_wires)
     new_coefficients = [[] for _ in coefficients]
     new_words = []
-    for word, *coeffs in zip(words, *coefficients):
+    for word, *coeffs in zip(words, *coefficients, strict=True):
         if all(qml.math.allclose(c, 0.0, atol=atol, rtol=0.0) for c in coeffs):
             continue
         new_words.append(word)
-        for new_coeffs, c in zip(new_coefficients, coeffs):
+        for new_coeffs, c in zip(new_coefficients, coeffs, strict=True):
             new_coeffs.append(c)
     return new_coefficients, new_words
 
@@ -272,12 +272,15 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry):
     if single_measure or single_shot_entry:
         # single measurement or single shot entry, but not both
         return tuple(
-            _parshift_and_contract_single(r, qml.math.stack(coeffs)) for r in zip(*results)
+            _parshift_and_contract_single(r, qml.math.stack(coeffs))
+            for r in zip(*results, strict=True)
         )
 
     return tuple(
-        tuple(_parshift_and_contract_single(_r, qml.math.stack(coeffs)) for _r in zip(*r))
-        for r in zip(*results)
+        tuple(
+            _parshift_and_contract_single(_r, qml.math.stack(coeffs)) for _r in zip(*r, strict=True)
+        )
+        for r in zip(*results, strict=True)
     )
 
 

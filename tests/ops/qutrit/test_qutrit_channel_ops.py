@@ -59,7 +59,7 @@ class TestQutritDepolarizingChannel:
         p = 0.1
         kraus_matrices = qml.QutritDepolarizingChannel(p, wires=0).kraus_matrices()
         expected_matrices = self.get_expected_kraus_matrices(p)
-        for kraus_matrix, expected_matrix in zip(kraus_matrices, expected_matrices):
+        for kraus_matrix, expected_matrix in zip(kraus_matrices, expected_matrices, strict=True):
             assert np.allclose(kraus_matrix, expected_matrix, atol=tol, rtol=0)
 
     def test_p_invalid_parameter(self):
@@ -260,7 +260,7 @@ class TestQutritAmplitudeDamping:
             gamma_10.detach().numpy(), gamma_20.detach().numpy(), gamma_21.detach().numpy()
         )
 
-        for res_partial, exp_partial in zip(jac, expected):
+        for res_partial, exp_partial in zip(jac, expected, strict=True):
             assert math.allclose(res_partial.detach().numpy(), exp_partial)
 
     @pytest.mark.tf
@@ -309,7 +309,7 @@ class TestTritFlip:
             [[1, 0, 0], [0, 0, 1], [0, 1, 0]],
         ]
 
-        for p, K, res in zip(ps, Ks, kraus_mats[1:]):
+        for p, K, res in zip(ps, Ks, kraus_mats[1:], strict=True):
             expected_K = np.sqrt(p) * np.array(K)
             assert np.allclose(res, expected_K, atol=tol, rtol=0)
 
@@ -365,7 +365,7 @@ class TestTritFlip:
 
         jac = torch.autograd.functional.jacobian(self.kraus_fn, (p_01, p_02, p_12))
         expected_jac = self.expected_jac_fn(*ps)
-        for j, exp in zip(jac, expected_jac):
+        for j, exp in zip(jac, expected_jac, strict=True):
             assert qml.math.allclose(j.detach().numpy(), exp)
 
     @pytest.mark.tf

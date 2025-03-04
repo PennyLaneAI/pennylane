@@ -350,7 +350,7 @@ class TestSingleShotGradientIntegration:
         assert len(grad) == 2
         assert len(grad_variance) == 2
 
-        for p, s in zip(range(2), opt.s):
+        for p, s in zip(range(2), opt.s, strict=True):
             assert np.allclose(grad[p], np.mean(single_shot_grads[p][:s]))
             assert np.allclose(grad_variance[p], np.var(single_shot_grads[p][:s], ddof=1))
 

@@ -119,7 +119,9 @@ def _split_evol_ops(op, ob, tau):
                     "ignore", ".*the eigenvalues will be computed numerically.*"
                 )
             eigvals = qml.eigvals(ob)
-        coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
+        coeffs, shifts = zip(
+            *generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))), strict=True
+        )
         insert_ops = [qml.exp(qml.dot([-1j * shift], [ob])) for shift in shifts]
 
     # Create Pauli rotations to be inserted at tau
@@ -234,7 +236,7 @@ def _parshift_and_integrate(
             # and include the rescaling factor from the Monte Carlo integral and from global
             # prefactors of Pauli word generators.
             diff_per_term = jnp.array(
-                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)]
+                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs, strict=True)]
             )
             return qml.math.sum(diff_per_term, axis=0) * int_prefactor
 
@@ -267,13 +269,14 @@ def _parshift_and_integrate(
 
     nesting_layers = (not single_measure) + has_partitioned_shots
     if nesting_layers == 1:
-        return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
+        return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results, strict=True))
     if nesting_layers == 0:
         # Single measurement without shot vector
         return _psr_and_contract(results, cjacs, int_prefactor)
 
     return tuple(
-        tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
+        tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r, strict=True))
+        for r in zip(*results, strict=True)
     )
 
 

@@ -64,7 +64,9 @@ def _shadow_state_diffable(tape, wires):
         # Create all combinations of possible Pauli products P_i P_j P_k.... for w wires
         for obs in product(*[[qml.Identity, qml.X, qml.Y, qml.Z] for _ in range(len(w))]):
             # Perform tensor product (((P_i @ P_j) @ P_k ) @ ....)
-            observables.append(reduce(lambda a, b: a @ b, [ob(wire) for ob, wire in zip(obs, w)]))
+            observables.append(
+                reduce(lambda a, b: a @ b, [ob(wire) for ob, wire in zip(obs, w, strict=True)])
+            )
         all_observables.extend(observables)
 
     tapes, _ = _replace_obs(tape, qml.shadow_expval, all_observables)

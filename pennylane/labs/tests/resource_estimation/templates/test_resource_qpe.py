@@ -117,7 +117,7 @@ class TestQuantumPhaseEstimation:
         assert re.ResourceQFT.resources(num_wires) == expected
 
     @pytest.mark.parametrize(
-        "unitary_and_wires, expected_params", zip(input_data, resource_params_data)
+        "unitary_and_wires, expected_params", zip(input_data, resource_params_data, strict=True)
     )
     def test_resource_params(self, unitary_and_wires, expected_params):
         """Test that the resource params are correct"""
@@ -137,7 +137,9 @@ class TestQuantumPhaseEstimation:
         expected = re.CompressedResourceOp(re.ResourceQuantumPhaseEstimation, expected_params)
         assert re.ResourceQuantumPhaseEstimation.resource_rep(**expected_params) == expected
 
-    @pytest.mark.parametrize("params, expected_name", zip(resource_params_data, name_data))
+    @pytest.mark.parametrize(
+        "params, expected_name", zip(resource_params_data, name_data, strict=True)
+    )
     def test_tracking_name(self, params, expected_name):
         """Test that the tracking name is correct."""
         assert re.ResourceQuantumPhaseEstimation.tracking_name(**params) == expected_name

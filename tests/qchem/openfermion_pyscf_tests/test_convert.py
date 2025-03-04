@@ -672,7 +672,7 @@ def test_integration_observable_to_vqe_cost(
 
     @qml.qnode(dev)
     def dummy_cost(params):
-        for phi, w in zip(params, dev.wires):
+        for phi, w in zip(params, dev.wires, strict=True):
             qml.RX(phi, wires=w)
         return qml.expval(vqe_observable)
 
@@ -780,7 +780,7 @@ def test_integration_mol_file_to_vqe_cost(
 
     @qml.qnode(dev)
     def dummy_cost(params):
-        for phi, w in zip(params, dev.wires):
+        for phi, w in zip(params, dev.wires, strict=True):
             qml.RX(phi, wires=w)
         return qml.expval(vqe_hamiltonian)
 

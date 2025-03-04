@@ -100,7 +100,7 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:5]):
+        for expected, actual in zip(log_records_expected, caplog.records[:5], strict=True):
             assert expected[0] in actual.name
             for msg in expected[1]:
                 assert msg in actual.getMessage()
@@ -144,7 +144,7 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:1]):
+        for expected, actual in zip(log_records_expected, caplog.records[:1], strict=True):
             assert expected[0] in actual.name
             for exp_msg in expected[1]:
                 assert exp_msg in actual.getMessage()
@@ -187,6 +187,6 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:2]):
+        for expected, actual in zip(log_records_expected, caplog.records[:2], strict=True):
             assert expected[0] in actual.name
             assert all(msg in actual.getMessage() for msg in expected[1])

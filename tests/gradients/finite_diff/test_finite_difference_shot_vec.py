@@ -254,7 +254,7 @@ class TestFiniteDiff:
         for res in all_result:
             assert isinstance(res, tuple)
             assert len(res) == 2
-            for r, exp_shape in zip(res, [(3,), (4, 3)]):
+            for r, exp_shape in zip(res, [(3,), (4, 3)], strict=True):
                 assert isinstance(r, np.ndarray)
                 assert r.shape == exp_shape
                 assert np.allclose(r, 0)
@@ -323,7 +323,7 @@ class TestFiniteDiff:
         assert isinstance(j2, tuple)
         assert len(j2) == len(many_shots_shot_vector)
 
-        for _j1, _j2 in zip(j1, j2):
+        for _j1, _j2 in zip(j1, j2, strict=True):
             assert np.allclose(_j1, [exp, 0], atol=0.07)
             assert np.allclose(_j2, [0, exp], atol=0.07)
 
@@ -360,7 +360,7 @@ class TestFiniteDiff:
 
         transform = [qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x)) for c in circuits]
         expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 4, 3), (3, 1, 4, 3), (3, 2, 4, 3)]
-        assert all(t == q for t, q in zip(transform, expected))
+        assert all(t == q for t, q in zip(transform, expected, strict=True))
 
     def test_output_shape_matches_qnode_two_args(self):
         """Test that the transform output shape matches that of a QNode with multiple args."""
@@ -384,7 +384,7 @@ class TestFiniteDiff:
             (3, 3, 2),  # shot vector, params, param shape
             (3, 2, 3, 4, 2),  # shot vector, measurements, params, measurement shape, param shape
         ]
-        assert all(t == q for t, q in zip(transform, expected))
+        assert all(t == q for t, q in zip(transform, expected, strict=True))
 
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
@@ -1101,7 +1101,9 @@ single_scalar_output_measurements = [
     var_non_involutory,
 ]
 
-single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
+single_meas_with_shape = list(
+    zip(single_scalar_output_measurements, [(), (4,), (), ()], strict=True)
+)
 
 
 @pytest.mark.parametrize(
@@ -1178,7 +1180,7 @@ class TestReturn:
 
         expected_shapes = [(), (4,), (), ()]
         for meas_res in all_res:
-            for res, shape in zip(meas_res, expected_shapes):
+            for res, shape in zip(meas_res, expected_shapes, strict=True):
                 assert isinstance(res, np.ndarray)
                 assert res.shape == shape
 

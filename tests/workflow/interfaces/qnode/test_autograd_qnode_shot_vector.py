@@ -590,7 +590,7 @@ class TestReturnShotVectorIntegration:
         expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
         tol = TOLS[diff_method]
 
-        for res, exp in zip(all_res, expected):
+        for res, exp in zip(all_res, expected, strict=True):
             assert isinstance(res, np.ndarray)
             assert res.shape == (num_copies,)
             assert np.allclose(res, exp, atol=tol, rtol=0)
@@ -641,7 +641,7 @@ class TestReturnShotVectorIntegration:
 
         tol = TOLS[diff_method]
 
-        for res, exp in zip(all_res, expected):
+        for res, exp in zip(all_res, expected, strict=True):
             assert isinstance(res, np.ndarray)
             assert res.shape == (num_copies, 5)
             assert np.allclose(res, exp, atol=tol, rtol=0)

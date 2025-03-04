@@ -287,7 +287,7 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
         ) * (shots // 2)
         rest = (qml.math.array(1, like=interface),) * shots
         # Raw results for each shot are (sample_for_first_measurement, sample for 1st MCM, sample for 2nd MCM)
-        raw_results = tuple(zip(obs_res, postselect_res, rest))
+        raw_results = tuple(zip(obs_res, postselect_res, rest, strict=True))
 
     # Wrap in 1-tuple as there is a single transformed tape unless broadcasting
     return (raw_results,)
@@ -395,7 +395,7 @@ class TestInterfaces:
 
         if isinstance(shots, list):
             assert len(processed_results) == len(shots)
-            for r, e1, e2 in zip(processed_results, expected1, expected2):
+            for r, e1, e2 in zip(processed_results, expected1, expected2, strict=True):
                 # Expected result is 2-list since we have two measurements in the tape
                 assert qml.math.allclose(r, [e1, e2])
         else:
@@ -477,7 +477,7 @@ class TestInterfaces:
 
         if isinstance(shots, list):
             assert len(processed_results) == len(shots)
-            for r, e1, e2 in zip(processed_results, expected1, expected2):
+            for r, e1, e2 in zip(processed_results, expected1, expected2, strict=True):
                 # Expected result is 2-list since we have two measurements in the tape
                 assert qml.math.allclose(r, [e1, e2])
         else:

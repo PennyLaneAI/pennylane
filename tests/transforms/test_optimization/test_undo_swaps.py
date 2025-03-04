@@ -49,7 +49,7 @@ class TestUndoSwaps:
 
         assert fn(["a"]) == "a"
 
-        for op1, expected in zip(batch[0].operations, expected_ops):
+        for op1, expected in zip(batch[0].operations, expected_ops, strict=True):
             assert op1 == expected
 
     def test_one_qubit_gates_transform(self):

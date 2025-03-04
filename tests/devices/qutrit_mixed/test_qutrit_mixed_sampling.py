@@ -487,7 +487,7 @@ class TestBroadcasting:
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies
 
-        for s, r in zip(shots, res):
+        for s, r in zip(shots, res, strict=True):
             assert r.shape == (3, s, 2)
             assert r.dtype == np.int64
 
@@ -590,7 +590,7 @@ class TestBroadcastingPRNG:
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies
 
-        for s, r in zip(shots, res):
+        for s, r in zip(shots, res, strict=True):
             assert r.shape == (3, s, 2)
             assert res[0][0].dtype == np.int64
 

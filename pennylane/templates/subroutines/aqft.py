@@ -172,7 +172,7 @@ class AQFT(Operation):
             decomp_ops.append(qml.Hadamard(wire))
             counter = 0
 
-            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
+            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :], strict=True):
                 if counter >= order:
                     break
 
@@ -183,7 +183,7 @@ class AQFT(Operation):
         first_half_wires = wires[: n_wires // 2]
         last_half_wires = wires[-(n_wires // 2) :]
 
-        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires), strict=True):
             swap = qml.SWAP(wires=[wire1, wire2])
             decomp_ops.append(swap)
 

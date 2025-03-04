@@ -2309,7 +2309,7 @@ class TestIntegrationShotVectors:
         ]
 
         assert len(res) == len(all_shot_copies)
-        for r, shots in zip(res, all_shot_copies):
+        for r, shots in zip(res, all_shot_copies, strict=True):
             if shots == 1:
                 # Scalar tensors
                 assert r.shape == ()
@@ -2449,7 +2449,7 @@ class TestIntegrationSameMeasurementShotVector:
         ]
 
         assert len(res) == len(all_shot_copies)
-        for r, shots in zip(res, all_shot_copies):
+        for r, shots in zip(res, all_shot_copies, strict=True):
             shape = () if shots == 1 else (shots,)
             assert all(res_item.shape == shape for res_item in r)
 

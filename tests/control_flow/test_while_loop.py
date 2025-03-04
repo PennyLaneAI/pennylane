@@ -56,4 +56,4 @@ def test_fallback_while_loop_qnode():
 
     tape = qml.workflow.construct_tape(circuit)(1)
     expected = [qml.PauliX(0) for i in range(4)]
-    _ = [qml.assert_equal(i, j) for i, j in zip(tape.operations, expected)]
+    _ = [qml.assert_equal(i, j) for i, j in zip(tape.operations, expected, strict=True)]

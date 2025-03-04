@@ -101,7 +101,7 @@ def test_christiansen_bosonic():
     christiansen_bos_op = christiansen_bosonic(one=H1, two=H2, three=H3)
     christiansen_bos_op.simplify()
 
-    ops, coeffs = zip(*list(christiansen_bos_op.items()))
+    ops, coeffs = zip(*list(christiansen_bos_op.items()), strict=True)
 
     for i, ele in enumerate(cform_ops_ref):
         cform_ops_ref[i] = BoseWord(ele)

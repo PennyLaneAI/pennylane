@@ -80,7 +80,7 @@ def indices_up_to(n_max):
     The output dimension never exceeds the number of qubits."""
 
     a, b = np.tril_indices(n_max)
-    return zip(*[a + 1, b + 1])
+    return zip(*[a + 1, b + 1], strict=True)
 
 
 def indices_up_to_dm(n_max):
@@ -93,7 +93,7 @@ def indices_up_to_dm(n_max):
     # [(1, (2, 2)), (2, (2, 2)), (2, (4, 4)), (3, (2, 2)), (3, (4, 4)), (3, (8, 8))]
 
     a, b = np.tril_indices(n_max)
-    return zip(*[a + 1], zip(*[2 ** (b + 1), 2 ** (b + 1)]))
+    return zip(*[a + 1], zip(*[2 ** (b + 1), 2 ** (b + 1)], strict=True), strict=True)
 
 
 # pylint: disable=too-many-public-methods
@@ -226,7 +226,7 @@ class TestKerasLayer:
         assert np.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits", [1])
-    @pytest.mark.parametrize("output_dim", zip(*[[[1], (1,), 1], [1, 1, 1]]))
+    @pytest.mark.parametrize("output_dim", zip(*[[[1], (1,), 1], [1, 1, 1]], strict=True))
     def test_output_dim(self, get_circuit, output_dim):  # pylint: disable=no-self-use
         """Test if the output_dim is correctly processed, i.e., that an iterable is mapped to
         its first element while an int is left unchanged."""
@@ -653,19 +653,19 @@ class TestKerasLayerIntegration:
         new_weights = new_model.get_weights()
 
         assert len(weights) == len(new_weights)
-        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights, strict=True))
 
         # assert that the new model's weights are different
-        assert all(tf.math.reduce_any(w != nw) for w, nw in zip(weights, new_weights))
+        assert all(tf.math.reduce_any(w != nw) for w, nw in zip(weights, new_weights, strict=True))
 
         new_model.load_weights(file)
         new_weights = new_model.get_weights()
 
         assert len(weights) == len(new_weights)
-        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights, strict=True))
 
         # assert that the new model's weights are now the same
-        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights))
+        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights, strict=True))
 
         # assert that the results are the same
         x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
@@ -691,8 +691,8 @@ class TestKerasLayerIntegration:
         new_weights = new_model.get_weights()
 
         assert len(weights) == len(new_weights)
-        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
-        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights))
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights, strict=True))
+        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights, strict=True))
 
         # assert that the results are the same
         x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
@@ -760,19 +760,19 @@ class TestKerasLayerIntegrationDM:
         new_weights = new_model.get_weights()
 
         assert len(weights) == len(new_weights)
-        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights, strict=True))
 
         # assert that the new model's weights are different
-        assert all(tf.math.reduce_any(w != nw) for w, nw in zip(weights, new_weights))
+        assert all(tf.math.reduce_any(w != nw) for w, nw in zip(weights, new_weights, strict=True))
 
         new_model.load_weights(file)
         new_weights = new_model.get_weights()
 
         assert len(weights) == len(new_weights)
-        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights, strict=True))
 
         # assert that the new model's weights are now the same
-        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights))
+        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights, strict=True))
 
         # assert that the results are the same
         x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
@@ -797,7 +797,7 @@ class TestKerasLayerIntegrationDM:
         new_model_dm = tf.keras.models.load_model(file)
         new_weights = new_model_dm.get_weights()
 
-        for w, nw in zip(weights, new_weights):
+        for w, nw in zip(weights, new_weights, strict=True):
             assert np.allclose(w, nw)
 
         # assert that the results are the same
@@ -835,7 +835,7 @@ def test_batch_input_single_measure(tol):
 
     assert res.shape == (10, 2)
 
-    for x_, r in zip(x, res):
+    for x_, r in zip(x, res, strict=True):
         assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
 
     # reset back to the old name
@@ -863,7 +863,7 @@ def test_batch_input_multi_measure(tol):
 
     assert res.shape == (10, 5)
 
-    for x_, r in zip(x, res):
+    for x_, r in zip(x, res, strict=True):
         exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
         assert qml.math.allclose(r, exp, atol=tol)
 

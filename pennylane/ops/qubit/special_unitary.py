@@ -486,7 +486,9 @@ class SpecialUnitary(Operation):
             matrices = product(_pauli_matrices, repeat=num_wires)
             # Drop the identity from the generator of matrices
             _ = next(matrices)
-            A = sum(t * reduce(np.kron, letters) for t, letters in zip(theta, matrices))
+            A = sum(
+                t * reduce(np.kron, letters) for t, letters in zip(theta, matrices, strict=True)
+            )
         else:
             A = qml.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
         if interface == "jax" and qml.math.ndim(theta) > 1:
@@ -681,7 +683,7 @@ class SpecialUnitary(Operation):
             # Apply Pauli rotations that yield the Pauli basis derivatives
             paulirots = [
                 TmpPauliRot(zero, word, wires=self.wires, id="SU(N) byproduct")
-                for zero, word in zip(zeros, words)
+                for zero, word in zip(zeros, words, strict=True)
             ]
             return paulirots + [SpecialUnitary(detached_theta, wires=self.wires)]
 

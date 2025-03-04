@@ -79,14 +79,14 @@ class TestHelpers:
     @pytest.mark.parametrize("n,k,expected_code", GRAY_CODE_TEST_DATA)
     def test_n_k_gray_code(self, n, k, expected_code):
         """Test that _n_k_gray_code produces the Gray code correctly."""
-        for expected_word, word in zip(expected_code, _n_k_gray_code(n, k)):
+        for expected_word, word in zip(expected_code, _n_k_gray_code(n, k), strict=True):
             assert expected_word == word
 
     @pytest.mark.parametrize("num_wires,expected_pauli_words", PAULI_WORD_TEST_DATA)
     def test_all_pauli_words_but_identity(self, num_wires, expected_pauli_words):
         """Test that the correct Pauli words are returned."""
         for expected_pauli_word, pauli_word in zip(
-            expected_pauli_words, _all_pauli_words_but_identity(num_wires)
+            expected_pauli_words, _all_pauli_words_but_identity(num_wires), strict=True
         ):
             assert expected_pauli_word == pauli_word
 

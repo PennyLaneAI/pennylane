@@ -107,7 +107,7 @@ class TestResourceAdjoint:
         },
     ]
 
-    @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_params))
+    @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_params, strict=True))
     def test_resource_params(self, op, expected):
         """Test that the resources are correct"""
         assert op.resource_params == expected
@@ -118,7 +118,7 @@ class TestResourceAdjoint:
         "Adjoint(Pow(X, 5))",
     ]
 
-    @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_names))
+    @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_names, strict=True))
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
         name = op.tracking_name_from_op()
@@ -167,7 +167,7 @@ class TestResourceAdjoint:
         re.Resources(gate_types={"Adjoint(Pow(X, 5))": 1}, num_gates=1, num_wires=1),
     ]
 
-    @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_resources))
+    @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_resources, strict=True))
     def test_tracking(self, op, expected):
         """Test that adjoints can be tracked."""
         tracking_name = op.tracking_name_from_op()
@@ -230,7 +230,7 @@ class TestResourceControlled:
         },
     ]
 
-    @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_params))
+    @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_params, strict=True))
     def test_resource_params(self, op, expected):
         """Test that the resources are correct"""
         assert op.resource_params == expected
@@ -242,7 +242,7 @@ class TestResourceControlled:
         "C(Adjoint(QFT(2)),2,1,1)",
     ]
 
-    @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_names))
+    @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_names, strict=True))
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
         name = op.tracking_name_from_op()
@@ -278,7 +278,7 @@ class TestResourceControlled:
         ),  # PL does not count work wires for controlled operators
     ]
 
-    @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_resources))
+    @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_resources, strict=True))
     def test_tracking(self, op, expected):
         """Test that adjoints can be tracked."""
         tracking_name = op.tracking_name_from_op()
@@ -310,7 +310,7 @@ class TestResourcePow:
         },
     ]
 
-    @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_params))
+    @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_params, strict=True))
     def test_resource_params(self, op, expected):
         """Test that the resources are correct"""
         assert op.resource_params == expected
@@ -321,7 +321,7 @@ class TestResourcePow:
         "Pow(Pow(QFT(2), 2), 3)",
     ]
 
-    @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_names))
+    @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_names, strict=True))
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
         rep = op.resource_rep_from_op()
@@ -334,7 +334,7 @@ class TestResourcePow:
         re.Resources(gate_types={"Pow(Pow(QFT(2), 2), 3)": 1}, num_gates=1, num_wires=2),
     ]
 
-    @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_resources))
+    @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_resources, strict=True))
     def test_tracking(self, op, expected):
         """Test that adjoints can be tracked."""
         tracking_name = op.tracking_name_from_op()
@@ -432,7 +432,7 @@ class TestResourceProd:
     )
 
     @pytest.mark.parametrize(
-        "op, params, expected_res", zip(op_data, resource_params_data, resource_data)
+        "op, params, expected_res", zip(op_data, resource_params_data, resource_data, strict=True)
     )
     def test_resources(self, op, params, expected_res):
         """Test the resources method returns the correct dictionary"""
@@ -442,7 +442,7 @@ class TestResourceProd:
         assert res_from_op == expected_res
         assert res_from_func == expected_res
 
-    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data))
+    @pytest.mark.parametrize("op, expected_params", zip(op_data, resource_params_data, strict=True))
     def test_resource_params(self, op, expected_params):
         """Test that the resource params are correct"""
         assert op.resource_params == expected_params

@@ -382,7 +382,9 @@ class TestParametricPow:
 
         assert len(pow_op) == 1
         assert pow_op[0].__class__ is op.__class__
-        assert all((qml.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data)))
+        assert all(
+            (qml.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data, strict=True))
+        )
 
     @pytest.mark.parametrize("op", pow_parametric_ops)
     @pytest.mark.parametrize("n", (3, -2))

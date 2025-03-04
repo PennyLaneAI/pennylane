@@ -166,13 +166,15 @@ class TestPauliGroupingStrategy:
         # the indices rustworkx assigns to each observable
         standard_indices = list(range(len(observables)))
         # map between custom and standard indices
-        map_indices = dict(zip(custom_indices, standard_indices))
+        map_indices = dict(zip(custom_indices, standard_indices, strict=True))
 
         # compute observable and custom indices partitions
         observables_partitioned = groupper.partition_observables()
         # pylint: disable=protected-access
         indices_partitioned = groupper.idx_partitions_from_graph(observables_indices=custom_indices)
-        for group_obs, group_custom_indices in zip(observables_partitioned, indices_partitioned):
+        for group_obs, group_custom_indices in zip(
+            observables_partitioned, indices_partitioned, strict=True
+        ):
             for i, custom_idx in enumerate(group_custom_indices):
                 standard_idx = map_indices[custom_idx]
                 # observable corresponding to the custom index
@@ -358,9 +360,9 @@ anticommuting_sols = [
     [[PauliX([(0, 0)]), PauliZ([(0, 0)])]],
 ]
 
-com_tuples = list(zip(observables_list, commuting_sols))
+com_tuples = list(zip(observables_list, commuting_sols, strict=True))
 
-anticom_tuples = list(zip(observables_list, anticommuting_sols))
+anticom_tuples = list(zip(observables_list, anticommuting_sols, strict=True))
 
 
 def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
@@ -387,7 +389,7 @@ class TestGroupObservables:
     Tests for ``group_observables`` function using QWC, commuting, and anticommuting partitioning.
     """
 
-    qwc_tuples = list(zip(observables_list, qwc_sols))
+    qwc_tuples = list(zip(observables_list, qwc_sols, strict=True))
 
     @pytest.mark.parametrize("observables,qwc_partitions_sol", qwc_tuples)
     def test_qwc_partitioning(self, observables, qwc_partitions_sol):

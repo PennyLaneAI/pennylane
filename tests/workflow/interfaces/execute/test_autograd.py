@@ -275,7 +275,7 @@ class TestAutogradExecuteIntegration:
             assert res[1].shape == (4,)
 
             expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=True):
                 assert np.allclose(_r[:2], _e, atol=atol_for_shots(shots))
                 assert np.allclose(_r[2:], _e, atol=atol_for_shots(shots))
         else:
@@ -283,7 +283,7 @@ class TestAutogradExecuteIntegration:
             assert res[1].shape == (2,)
 
             expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=True):
                 assert np.allclose(_r, _e, atol=atol_for_shots(shots))
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
@@ -459,7 +459,7 @@ class TestAutogradExecuteIntegration:
             [0, -np.cos(2 * a) * np.cos(b)],
         )
         assert isinstance(jac, tuple) and len(jac) == 2
-        for _j, _e in zip(jac, expected):
+        for _j, _e in zip(jac, expected, strict=True):
             assert np.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
     def test_classical_processing(self, execute_kwargs, device_name, seed, shots):

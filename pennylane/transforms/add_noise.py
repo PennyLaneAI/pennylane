@@ -197,7 +197,7 @@ def add_noise(tape, noise_model, level=None):
     new_operations = []
     for operation in tape.operations:
         curr_ops = [operation]
-        for condition, noise in zip(conditions, noises):
+        for condition, noise in zip(conditions, noises, strict=True):
             if condition(operation):
                 noise_ops = noise(operation, **metadata).operations
                 if operation in noise_ops and _check_queue_op(operation, noise, metadata):
@@ -219,7 +219,7 @@ def add_noise(tape, noise_model, level=None):
     split_operations, split_measurements = [], [[] for idx in tape.measurements]
     for midx, measurement in enumerate(tape.measurements):
         readout_operations = new_operations.copy()
-        for condition, noise in zip(meas_conds, meas_funcs):
+        for condition, noise in zip(meas_conds, meas_funcs, strict=True):
             if condition(measurement):
                 noise_ops = noise(measurement, **metadata).operations
                 readout_operations.extend(noise_ops)
@@ -234,7 +234,7 @@ def add_noise(tape, noise_model, level=None):
 
     new_tapes = [
         tape.copy(operations=operations, measurements=[meas[1] for meas in measurements])
-        for operations, measurements in zip(split_operations, split_measurements)
+        for operations, measurements in zip(split_operations, split_measurements, strict=True)
     ]
 
     def post_processing_fn(results):

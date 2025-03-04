@@ -98,23 +98,44 @@ class TestEvaluateGradient:
     exp_probs = (p2 * Z, 2 * p * Z)
     test_cases_single_shots_multi_meas = [
         # Expectation values
-        (X, None, None, tuple(zip(-X, -2 * X)), None, (Z, 2 * Z)),
+        (X, None, None, tuple(zip(-X, -2 * X, strict=True)), None, (Z, 2 * Z)),
         (X, None, 4, (-X, -2 * X), None, (Z, 2 * Z)),
-        (X[:-1], X[-1], None, tuple(zip(-X[:-1], -2 * X[:-1])), (-X[-1], -2 * X[-1]), (Z, 2 * Z)),
+        (
+            X[:-1],
+            X[-1],
+            None,
+            tuple(zip(-X[:-1], -2 * X[:-1], strict=True)),
+            (-X[-1], -2 * X[-1]),
+            (Z, 2 * Z),
+        ),
         (X[:-1], X[-1], 4, (-X[:-1], -2 * X[:-1]), (-X[-1], -2 * X[-1]), (Z, 2 * Z)),
         (np.ones(0), w, None, (), (-w, -2 * w), (Z, 2 * Z)),
         (np.ones(0), w, 4, (), (-w, -2 * w), (Z, 2 * Z)),
         # Expval and Probability
-        (X, None, None, tuple(zip(-X, -2 * P)), None, (Z, 2 * p * Z)),
+        (X, None, None, tuple(zip(-X, -2 * P, strict=True)), None, (Z, 2 * p * Z)),
         (X, None, 4, (-X, -2 * P), None, (Z, 2 * p * Z)),
-        (X[:-1], X[-1], None, tuple(zip(-X, -2 * P))[:-1], (-X[-1], -2 * P[-1]), (Z, 2 * p * Z)),
+        (
+            X[:-1],
+            X[-1],
+            None,
+            tuple(zip(-X, -2 * P, strict=True))[:-1],
+            (-X[-1], -2 * P[-1]),
+            (Z, 2 * p * Z),
+        ),
         (X[:-1], X[-1], 4, (-X[:-1], -2 * P[:-1]), (-X[-1], -2 * P[-1]), (Z, 2 * p * Z)),
         (np.ones(0), w, None, (), (-w, -2 * v), (Z, 2 * p * Z)),
         (np.ones(0), w, 4, (), (-w, -2 * v), (Z, 2 * p * Z)),
         # Probabilities
-        (X, None, None, tuple(zip(-P2, -2 * P)), None, exp_probs),
+        (X, None, None, tuple(zip(-P2, -2 * P, strict=True)), None, exp_probs),
         (X, None, 4, (-P2, -2 * P), None, exp_probs),
-        (X[:-1], X[-1], None, tuple(zip(-P2, -2 * P))[:-1], (-P2[-1], -2 * P[-1]), exp_probs),
+        (
+            X[:-1],
+            X[-1],
+            None,
+            tuple(zip(-P2, -2 * P, strict=True))[:-1],
+            (-P2[-1], -2 * P[-1]),
+            exp_probs,
+        ),
         (X[:-1], X[-1], 4, (-P2[:-1], -2 * P[:-1]), (-P2[-1], -2 * P[-1]), exp_probs),
         (np.ones(0), w, None, (), (-v2, -2 * v), exp_probs),
         (np.ones(0), w, 4, (), (-v2, -2 * v), exp_probs),
@@ -133,12 +154,12 @@ class TestEvaluateGradient:
         grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
 
         assert isinstance(grad, tuple) and len(grad) == 2
-        for g, e in zip(grad, expected):
+        for g, e in zip(grad, expected, strict=True):
             assert isinstance(g, np.ndarray) and g.shape == e.shape
             assert np.allclose(g, e)
 
-    shot_vec_X = tuple(zip(*(-c * X for c in shv)))
-    shot_vec_P = tuple(zip(*(-c * P for c in shv)))
+    shot_vec_X = tuple(zip(*(-c * X for c in shv), strict=True))
+    shot_vec_P = tuple(zip(*(-c * P for c in shv), strict=True))
     shot_vec_P_partial = tuple(-c * P[:-1] for c in shv)
 
     exp_shot_vec_prob = np.outer(shv, p) * Z
@@ -172,7 +193,7 @@ class TestEvaluateGradient:
         grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
 
         assert isinstance(grad, tuple) and len(grad) == 3
-        for g, e in zip(grad, expected):
+        for g, e in zip(grad, expected, strict=True):
             assert isinstance(g, np.ndarray) and g.shape == e.shape
             assert np.allclose(g, e)
 
@@ -181,12 +202,14 @@ class TestEvaluateGradient:
     partial_multi_X = tuple((-c * X[:-1], -2 * c * X[:-1]) for c in shv)
     expvals_r0 = tuple((-c * w, -2 * c * w) for c in shv)
 
-    multi_X_P = tuple(tuple((-c * _p, -2 * c * x) for c in shv) for x, _p in zip(X, P))
+    multi_X_P = tuple(tuple((-c * _p, -2 * c * x) for c in shv) for x, _p in zip(X, P, strict=True))
     batched_multi_X_P = tuple((-c * P, -2 * c * X) for c in shv)
     partial_multi_X_P = tuple((-c * P[:-1], -2 * c * X[:-1]) for c in shv)
     prob_expval_r0 = tuple((-c * v, -2 * c * w) for c in shv)
 
-    multi_P_P = tuple(tuple((-c * _p, -2 * c * _q) for c in shv) for _q, _p in zip(P2, P))
+    multi_P_P = tuple(
+        tuple((-c * _p, -2 * c * _q) for c in shv) for _q, _p in zip(P2, P, strict=True)
+    )
     batched_multi_P_P = tuple((-c * P, -2 * c * P2) for c in shv)
     partial_multi_P_P = tuple((-c * P[:-1], -2 * c * P2[:-1]) for c in shv)
     probs_r0 = tuple((-c * v, -2 * c * v2) for c in shv)
@@ -230,9 +253,9 @@ class TestEvaluateGradient:
         grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
 
         assert isinstance(grad, tuple) and len(grad) == 3
-        for g, e in zip(grad, expected):
+        for g, e in zip(grad, expected, strict=True):
             assert isinstance(g, tuple) and len(g) == 2
-            for _g, _e in zip(g, e):
+            for _g, _e in zip(g, e, strict=True):
                 assert isinstance(_g, np.ndarray) and _g.shape == _e.shape
                 assert np.allclose(_g, _e)
 
@@ -282,7 +305,7 @@ class TestGetOperationRecipe:
     def test_custom_recipe_first_order(self, orig_op, frequencies, shifts):
         """Test that a custom recipe is returned correctly for first-order derivatives."""
         c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts).T
-        recipe = list(zip(c, np.ones_like(c), s))
+        recipe = list(zip(c, np.ones_like(c), s, strict=True))
 
         # pylint: disable=too-few-public-methods
         class DummyOp(orig_op):
@@ -339,7 +362,7 @@ class TestGetOperationRecipe:
     def test_custom_recipe_second_order(self, orig_op, frequencies, shifts):
         """Test that a custom recipe is returned correctly for second-order derivatives."""
         c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts).T
-        recipe = list(zip(c, np.ones_like(c), s))
+        recipe = list(zip(c, np.ones_like(c), s, strict=True))
 
         # pylint: disable=too-few-public-methods
         class DummyOp(orig_op):
@@ -388,7 +411,7 @@ class TestMakeZeroRep:
         """Test the zero-gradient representative with a single measurement and a shot vector."""
         rep = _make_zero_rep(g, single_measure=True, has_partitioned_shots=True)
         assert isinstance(rep, tuple) and len(rep) == len(g)
-        for r, _g in zip(rep, g):
+        for r, _g in zip(rep, g, strict=True):
             assert isinstance(r, np.ndarray) and r.shape == _g.shape
             assert qml.math.allclose(r, 0.0)
 
@@ -406,7 +429,7 @@ class TestMakeZeroRep:
         rep = _make_zero_rep(g, single_measure=False, has_partitioned_shots=False)
 
         assert isinstance(rep, tuple) and len(rep) == len(g)
-        for r, _g in zip(rep, g):
+        for r, _g in zip(rep, g, strict=True):
             assert isinstance(r, np.ndarray) and r.shape == _g.shape
             assert qml.math.allclose(r, 0.0)
 
@@ -424,9 +447,9 @@ class TestMakeZeroRep:
         rep = _make_zero_rep(g, single_measure=False, has_partitioned_shots=True)
 
         assert isinstance(rep, tuple) and len(rep) == len(g)
-        for _rep, _g in zip(rep, g):
+        for _rep, _g in zip(rep, g, strict=True):
             assert isinstance(_rep, tuple) and len(_rep) == len(_g)
-            for r, __g in zip(_rep, _g):
+            for r, __g in zip(_rep, _g, strict=True):
                 assert isinstance(r, np.ndarray) and r.shape == __g.shape
                 assert qml.math.allclose(r, 0.0)
 
@@ -463,7 +486,7 @@ class TestMakeZeroRep:
             g, single_measure=True, has_partitioned_shots=True, par_shapes=par_shapes
         )
         assert isinstance(rep, tuple) and len(rep) == len(g)
-        for r, _g in zip(rep, g):
+        for r, _g in zip(rep, g, strict=True):
             exp_shape = new_shape + _g.shape[len(old_shape) :]
             assert isinstance(r, np.ndarray) and r.shape == exp_shape
             assert qml.math.allclose(r, 0.0)
@@ -489,7 +512,7 @@ class TestMakeZeroRep:
         )
 
         assert isinstance(rep, tuple) and len(rep) == len(g)
-        for r, _g in zip(rep, g):
+        for r, _g in zip(rep, g, strict=True):
             exp_shape = new_shape + _g.shape[len(old_shape) :]
             assert isinstance(r, np.ndarray) and r.shape == exp_shape
             assert qml.math.allclose(r, 0.0)
@@ -515,9 +538,9 @@ class TestMakeZeroRep:
         )
 
         assert isinstance(rep, tuple) and len(rep) == len(g)
-        for _rep, _g in zip(rep, g):
+        for _rep, _g in zip(rep, g, strict=True):
             assert isinstance(_rep, tuple) and len(_rep) == len(_g)
-            for r, __g in zip(_rep, _g):
+            for r, __g in zip(_rep, _g, strict=True):
                 exp_shape = new_shape + __g.shape[len(old_shape) :]
                 assert isinstance(r, np.ndarray) and r.shape == exp_shape
                 assert qml.math.allclose(r, 0.0)
@@ -962,7 +985,7 @@ class TestParamShift:
         # They are not batched together because we trust operation recipes to be condensed already
         expected_shifts = [[0, 0], [s, 0], [-s, 0], [0, s], [0, -s]]
         assert len(tapes) == 5
-        for tape, expected in zip(tapes, expected_shifts):
+        for tape, expected in zip(tapes, expected_shifts, strict=True):
             assert tape.operations[0].data[0] == x[0] + expected[0]
             assert tape.operations[1].data[0] == x[1] + expected[1]
 
@@ -972,7 +995,7 @@ class TestParamShift:
         for (
             a,
             b,
-        ) in zip(grad, exp):
+        ) in zip(grad, exp, strict=True):
             assert np.allclose(a, b)
 
     def test_independent_parameters_analytic(self):
@@ -1233,6 +1256,7 @@ class TestParamShiftUsingBroadcasting:
             for p, exp in zip(
                 tapes[0].get_parameters(trainable_only=False),
                 [[m * x + s for _, m, s in gradient_recipes[0]], z0, y, z1],
+                strict=True,
             )
         )
         assert all(
@@ -1240,6 +1264,7 @@ class TestParamShiftUsingBroadcasting:
             for p, exp in zip(
                 tapes[1].get_parameters(trainable_only=False),
                 [x, z0, [m * y + s for _, m, s in gradient_recipes[1]], z1],
+                strict=True,
             )
         )
 
@@ -1411,13 +1436,13 @@ class TestParameterShiftRule:
 
         assert len(autograd_val) == len(manualgrad_val)
 
-        for a_val, m_val in zip(autograd_val, manualgrad_val):
+        for a_val, m_val in zip(autograd_val, manualgrad_val, strict=True):
             assert np.allclose(a_val, m_val, atol=tol, rtol=0)
             assert spy.call_args[1]["shifts"] == (shift,)
 
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.execute(tapes))
-        for a_val, n_val in zip(autograd_val, numeric_val):
+        for a_val, n_val in zip(autograd_val, numeric_val, strict=True):
             assert np.allclose(a_val, n_val, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
@@ -1854,7 +1879,7 @@ class TestParameterShiftRule:
 
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
 
-        for a, e in zip(res, expected):
+        for a, e in zip(res, expected, strict=True):
             assert np.allclose(np.squeeze(np.stack(a)), e, atol=tol, rtol=0)
 
     def test_prob_expectation_values(self):
@@ -2325,7 +2350,7 @@ class TestParameterShiftRule:
 
         expected = np.array([2 * np.cos(a) * np.sin(a), -np.cos(b) * np.sin(a), 0])
         assert isinstance(gradA, tuple)
-        for a_comp, e_comp in zip(gradA, expected):
+        for a_comp, e_comp in zip(gradA, expected, strict=True):
             assert isinstance(a_comp, np.ndarray)
             assert a_comp.shape == ()
             assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
@@ -2382,8 +2407,8 @@ class TestParameterShiftRule:
             ]
         ).T
         assert isinstance(gradA, tuple)
-        for a, e in zip(gradA, expected):
-            for a_comp, e_comp in zip(a, e):
+        for a, e in zip(gradA, expected, strict=True):
+            for a_comp, e_comp in zip(a, e, strict=True):
                 assert isinstance(a_comp, np.ndarray)
                 assert a_comp.shape == ()
                 assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
@@ -2752,7 +2777,7 @@ class TestParameterShiftRuleBroadcast:
         numeric_val = fn(dev.execute(tapes))
 
         assert len(autograd_val) == len(numeric_val)
-        for a, n in zip(autograd_val, numeric_val):
+        for a, n in zip(autograd_val, numeric_val, strict=True):
             assert np.allclose(a, n, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
@@ -2813,7 +2838,7 @@ class TestParameterShiftRuleBroadcast:
             ]
         )
         assert len(grad) == len(expected)
-        for g, e in zip(grad, expected):
+        for g, e in zip(grad, expected, strict=True):
             assert np.allclose(g, e, atol=tol, rtol=0)
 
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -2982,7 +3007,7 @@ class TestParameterShiftRuleBroadcast:
 
         expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
         assert len(res) == len(expected)
-        for r, e in zip(res, expected):
+        for r, e in zip(res, expected, strict=True):
             assert np.allclose(r, e, atol=tol, rtol=0)
 
     def test_multiple_expectation_values(self, tol):
@@ -3228,7 +3253,7 @@ class TestParameterShiftRuleBroadcast:
             ]
         )
         assert len(gradA) == len(expected)
-        for a, e in zip(gradA, expected):
+        for a, e in zip(gradA, expected, strict=True):
             assert np.allclose(a, e, atol=tol, rtol=0)
 
         assert gradF == pytest.approx(expected, abs=tol)
@@ -3273,7 +3298,7 @@ class TestParameterShiftRuleBroadcast:
         ] + [qml.QNode(cost, dev) for cost in (cost3, cost6)]
         expected_shapes = [(3,), (1, 3), (4, 3), (1, 4, 3), (2, 3), (2, 4, 3)]
 
-        for c, exp_shape in zip(single_measure_circuits, expected_shapes):
+        for c, exp_shape in zip(single_measure_circuits, expected_shapes, strict=True):
             grad = qml.gradients.param_shift(c, broadcast=True)(x)
             assert qml.math.shape(grad) == exp_shape
 
@@ -4679,6 +4704,6 @@ class TestJaxArgnums:
             assert np.allclose(res, res_expected[0])
         else:
             # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]
-            for r, r_e in zip(res, res_expected):
-                for r_, r_e_ in zip(r, r_e):
+            for r, r_e in zip(res, res_expected, strict=True):
+                for r_, r_e_ in zip(r, r_e, strict=True):
                     assert np.allclose(r_, r_e_)

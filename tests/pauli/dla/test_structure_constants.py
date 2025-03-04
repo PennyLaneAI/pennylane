@@ -67,7 +67,7 @@ class TestAdjointRepr:
         if change_norms:
             # Sample some random new coefficients between 0.5 and 1.5
             coeffs = np.random.random(d) + 0.5
-            dla = [c * op for c, op in zip(coeffs, dla)]
+            dla = [c * op for c, op in zip(coeffs, dla, strict=True)]
         ad_rep = structure_constants(dla, pauli=True, is_orthogonal=assume_orthogonal)
         for alpha in range(d):
             for beta in range(d):
@@ -87,7 +87,7 @@ class TestAdjointRepr:
         d = len(ortho_dla)
 
         coeffs = np.random.random((d, d)) + 0.5
-        dla = [sum(c * op for c, op in zip(_coeffs, ortho_dla)) for _coeffs in coeffs]
+        dla = [sum(c * op for c, op in zip(_coeffs, ortho_dla, strict=True)) for _coeffs in coeffs]
         ad_rep = structure_constants(dla, pauli=True, is_orthogonal=False)
         for alpha in range(d):
             for beta in range(d):

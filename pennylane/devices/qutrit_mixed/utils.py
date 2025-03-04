@@ -113,6 +113,6 @@ def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
     """
     return functools.reduce(
         lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-        zip(old_indices, new_indices),
+        zip(old_indices, new_indices, strict=True),
         state_indices,
     )

@@ -448,7 +448,7 @@ class DefaultMixed(QubitDevice):
         # new state indices replace row and column indices with new ones
         new_state_indices = functools.reduce(
             lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-            zip(col_indices + row_indices, new_col_indices + new_row_indices),
+            zip(col_indices + row_indices, new_col_indices + new_row_indices, strict=True),
             state_indices,
         )
 

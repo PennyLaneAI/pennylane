@@ -104,7 +104,7 @@ class TestSuperposition:
             qml.Toffoli(wires=[0, 1, 2]),
         ]
 
-        for op1, op2 in zip(decomposition, expected):
+        for op1, op2 in zip(decomposition, expected, strict=True):
             assert qml.equal(op1, op2)
 
     @pytest.mark.parametrize(

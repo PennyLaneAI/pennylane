@@ -350,7 +350,7 @@ class TestOptimize:
             theta_new = (x, y)
             grad = gradient(theta)
             dtheta *= rho
-            dtheta += tuple(eta * g / e[0, 0] for e, g in zip(exp, grad))
+            dtheta += tuple(eta * g / e[0, 0] for e, g in zip(exp, grad, strict=True))
             assert np.allclose(dtheta, theta - theta_new)
 
         # check final cost

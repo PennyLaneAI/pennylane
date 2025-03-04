@@ -227,7 +227,7 @@ QUEUES = [
     ],
 ]
 
-add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
+add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES, strict=True)
 
 #####################################################
 # Tests
@@ -237,7 +237,7 @@ class TestVQE:
     """Test the core functionality of the VQE module"""
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES)))
+    @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES, strict=True)))
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
         hamiltonian = qml.Hamiltonian(coeffs, observables)
@@ -734,7 +734,7 @@ class TestNewVQE:
 
             res_expected.append(separate_circuit())
 
-        res_expected = np.sum([c * r for c, r in zip(coeffs, res_expected)])
+        res_expected = np.sum([c * r for c, r in zip(coeffs, res_expected, strict=True)])
 
         assert np.isclose(res, res_expected, atol=tol)
 

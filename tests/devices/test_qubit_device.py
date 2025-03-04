@@ -1504,7 +1504,8 @@ class TestResourcesTracker:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
-        "qs_shots_wires, expected_resource", zip(qs_shots_wires_data, expected_resources)
+        "qs_shots_wires, expected_resource",
+        zip(qs_shots_wires_data, expected_resources, strict=True),
     )
     def test_tracker_single_execution(self, qs_shots_wires, expected_resource):
         """Test that the tracker accurately tracks resources in a single execution"""
@@ -1538,7 +1539,7 @@ class TestResourcesTracker:
         assert len(tracker.history["resources"]) == 3  # 1 per qscript execution
 
         for tracked_r, expected_r in zip(
-            tracker.history["resources"], [exp_res1, exp_res1, exp_res2]
+            tracker.history["resources"], [exp_res1, exp_res1, exp_res2], strict=True
         ):
             assert tracked_r == expected_r
 

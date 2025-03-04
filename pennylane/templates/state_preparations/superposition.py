@@ -84,7 +84,7 @@ def _assign_states(basis_list):
         value for value in smallest_basis_lists if tuple(value) not in used_smallest
     ]
 
-    for key, value in zip(remaining_keys, remaining_values):
+    for key, value in zip(remaining_keys, remaining_values, strict=True):
         binary_dict[tuple(key)] = value
         used_smallest.add(tuple(value))
 
@@ -292,7 +292,7 @@ class Superposition(Operation):
 
         """
 
-        dic_state = dict(zip(bases, coeffs))
+        dic_state = dict(zip(bases, coeffs, strict=True))
         perms = _assign_states(bases)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 

@@ -60,7 +60,7 @@ def execute(device, tape):
     return results
 
 
-@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
+@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI, strict=True)))
 class TestVar:
     """Tests for the variance"""
 
@@ -307,7 +307,7 @@ class TestOperatorArithmetic:
         assert np.allclose(calculated_val, reference_val, tol)
 
 
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=True)))
 class TestTensorVar:
     """Test tensor variances"""
 
@@ -367,7 +367,7 @@ class TestTensorVar:
         assert np.allclose(calculated_val, reference_val, tol)
 
 
-@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
+@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI, strict=True)))
 @pytest.mark.parametrize("method", ["mps", "tn"])
 def test_multi_qubit_gates(theta, phi, method):
     """Tests a simple circuit with multi-qubit gates."""

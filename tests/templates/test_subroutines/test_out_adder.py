@@ -201,7 +201,7 @@ class TestOutAdder:
         )
         op_list.append(qml.adjoint(qml.QFT)(wires=qft_new_output_wires))
 
-        for op1, op2 in zip(adder_decomposition, op_list):
+        for op1, op2 in zip(adder_decomposition, op_list, strict=True):
             qml.assert_equal(op1, op2)
 
     def test_work_wires_added_correctly(self):

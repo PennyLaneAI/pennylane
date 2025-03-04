@@ -504,7 +504,7 @@ class TestJaxExecuteIntegration:
         cost = jax.jit(cost)
 
         results = jax.grad(cost)(params, cache=None)
-        for r, e in zip(results, expected_results):
+        for r, e in zip(results, expected_results, strict=True):
             assert jax.numpy.allclose(r, e, atol=1e-7)
 
     def test_classical_processing_single_tape(self, execute_kwargs):
@@ -886,7 +886,7 @@ class TestVectorValuedJIT:
 
         exp = cost(x_, y_, dev, interface="autograd", ek=execute_kwargs)
 
-        for r, e in zip(res, exp):
+        for r, e in zip(res, exp, strict=True):
             assert jax.numpy.allclose(r, e, atol=1e-7)
 
 

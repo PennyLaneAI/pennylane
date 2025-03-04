@@ -223,7 +223,7 @@ class TestDensityMatrixFromStateVectors:
 
     @pytest.mark.parametrize("c_dtype", c_dtypes)
     @pytest.mark.parametrize("array_func", array_funcs)
-    @pytest.mark.parametrize("state_vector", list(zip(*state_vectors))[0])
+    @pytest.mark.parametrize("state_vector", list(zip(*state_vectors, strict=True))[0])
     @pytest.mark.parametrize("wires", single_wires_list)
     def test_density_matrix_c_dtype(self, array_func, state_vector, wires, c_dtype):
         """Test different complex dtype."""
@@ -288,7 +288,7 @@ class TestDensityMatrixFromMatrix:
         density_matrix = fn.reduce_dm(density_matrix, indices=wires)
         assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
 
-    @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices))[0])
+    @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices, strict=True))[0])
     @pytest.mark.parametrize("wires", multiple_wires_list)
     def test_reduced_dm_with_matrix_full_wires(self, density_matrix, wires):
         """Test the reduced_dm with matrix for full wires."""
@@ -298,7 +298,7 @@ class TestDensityMatrixFromMatrix:
             expected = permute_two_qubit_dm(expected)
         assert np.allclose(returned_density_matrix, expected)
 
-    @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices))[0])
+    @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices, strict=True))[0])
     @pytest.mark.parametrize("wires", multiple_wires_list)
     def test_reduce_dm_check(self, density_matrix, wires):
         """Test the density matrix from matrices for single wires with state checking"""
@@ -387,7 +387,7 @@ class TestDensityMatrixFromMatrix:
         assert np.allclose(density_matrix, [[1, 0], [0, 0]])
 
     @pytest.mark.parametrize("c_dtype", c_dtypes)
-    @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices))[0])
+    @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices, strict=True))[0])
     @pytest.mark.parametrize("wires", single_wires_list)
     def test_density_matrix_c_dtype(self, density_matrix, wires, c_dtype):
         """Test different complex dtype."""

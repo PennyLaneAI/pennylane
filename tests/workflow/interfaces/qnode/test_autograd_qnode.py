@@ -488,7 +488,8 @@ class TestShotsIntegration:
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert all(
-            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
+            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0)
+            for r, e in zip(res, expected, strict=True)
         )
 
     def test_update_diff_method(self):
@@ -558,7 +559,7 @@ class TestQubitIntegration:
             np.array([-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2]),
             np.array([-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected, strict=True))
 
     def test_multiple_probability_differentiation(
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
@@ -625,7 +626,7 @@ class TestQubitIntegration:
                 ]
             ),
         )
-        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected, strict=True))
 
     def test_ragged_differentiation(
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
@@ -1212,7 +1213,7 @@ class TestQubitIntegration:
         if diff_method in {"finite-diff"}:
             tol = 10e-2
 
-        for hess, exp_hess in zip([hess_a, hess_b], [exp_hess_a, exp_hess_b]):
+        for hess, exp_hess in zip([hess_a, hess_b], [exp_hess_a, exp_hess_b], strict=True):
             assert np.allclose(hess[0], exp_hess[0], atol=tol, rtol=0)
             assert np.allclose(hess[1], exp_hess[1], atol=tol, rtol=0)
 

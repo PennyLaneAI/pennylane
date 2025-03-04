@@ -109,7 +109,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
         for item in fermi_operator.items():
             (_, wire), sign = item
 
-            z_string = dict(zip(range(wire), ["Z"] * wire))
+            z_string = dict(zip(range(wire), ["Z"] * wire, strict=True))
             qubit_operator @= PauliSentence(
                 {
                     PauliWord({**z_string, **{wire: "X"}}): 0.5,
@@ -253,7 +253,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
                 f"Can't create or annihilate a particle on qubit number {wire} for a system with only {n} qubits"
             )
 
-        x_string = dict(zip(range(wire + 1, n), ["X"] * (n - wire)))
+        x_string = dict(zip(range(wire + 1, n), ["X"] * (n - wire), strict=True))
 
         pw1 = (
             PauliWord({**{wire: "X"}, **x_string})
@@ -509,10 +509,10 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
             )
 
         u_set = _update_set(wire, bin_range, n)
-        update_string = dict(zip(u_set, ["X"] * len(u_set)))
+        update_string = dict(zip(u_set, ["X"] * len(u_set), strict=True))
 
         p_set = _parity_set(wire, bin_range)
-        parity_string = dict(zip(p_set, ["Z"] * len(p_set)))
+        parity_string = dict(zip(p_set, ["Z"] * len(p_set), strict=True))
 
         if wire % 2 == 0:
             qubit_operator @= PauliSentence(
@@ -525,7 +525,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
             f_set = _flip_set(wire, bin_range)
 
             r_set = np.setdiff1d(p_set, f_set)
-            remainder_string = dict(zip(r_set, ["Z"] * len(r_set)))
+            remainder_string = dict(zip(r_set, ["Z"] * len(r_set), strict=True))
 
             qubit_operator @= PauliSentence(
                 {

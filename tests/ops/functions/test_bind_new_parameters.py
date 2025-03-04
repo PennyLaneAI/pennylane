@@ -88,7 +88,7 @@ def test_composite_ops(op, new_params, expected_op):
 
     qml.assert_equal(new_op, expected_op)
     assert new_op is not op
-    assert all(no is not o for no, o in zip(new_op.operands, op.operands))
+    assert all(no is not o for no, o in zip(new_op.operands, op.operands, strict=True))
 
 
 @pytest.mark.parametrize(
@@ -326,9 +326,13 @@ def test_evolution_template_ops(op, new_params, expected_op):
     # `qml.equal` fails.
     assert isinstance(new_op, type(op))
     assert new_op.arithmetic_depth == expected_op.arithmetic_depth
-    assert all(qml.math.allclose(d1, d2) for d1, d2 in zip(new_op.data, expected_op.data))
+    assert all(
+        qml.math.allclose(d1, d2) for d1, d2 in zip(new_op.data, expected_op.data, strict=True)
+    )
     assert new_op.wires == op.wires
-    for val1, val2 in zip(new_op.hyperparameters.values(), expected_op.hyperparameters.values()):
+    for val1, val2 in zip(
+        new_op.hyperparameters.values(), expected_op.hyperparameters.values(), strict=True
+    ):
         if isinstance(val1, qml.Hamiltonian):
             qml.assert_equal(val1, val2)
         else:

@@ -41,7 +41,7 @@ def shot_vector_support(initial_postprocessing: PostprocessingFn) -> Postprocess
 
     @wraps(initial_postprocessing)
     def shot_vector_postprocessing(results):
-        return tuple(initial_postprocessing(r) for r in zip(*results))
+        return tuple(initial_postprocessing(r) for r in zip(*results, strict=True))
 
     return shot_vector_postprocessing
 
@@ -550,7 +550,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         offset = 0
         if isinstance(mp, ExpectationMP) and isinstance(obs, (Sum, Prod, SProd)):
             # Break the observable into terms, and construct an ExpectationMP with each term.
-            for c, o in zip(*obs.terms()):
+            for c, o in zip(*obs.terms(), strict=True):
                 # If the observable is an identity, track it with a constant offset
                 if isinstance(o, qml.Identity):
                     offset += c
@@ -608,7 +608,7 @@ def _processing_fn_no_grouping(
     coeffs_for_each_mp = [[] for _ in offsets]
 
     for smp_idx, (_, (mp_indices, coeffs)) in enumerate(single_term_obs_mps.items()):
-        for mp_idx, coeff in zip(mp_indices, coeffs):
+        for mp_idx, coeff in zip(mp_indices, coeffs, strict=True):
             res_batch_for_each_mp[mp_idx].append(res[smp_idx])
             coeffs_for_each_mp[mp_idx].append(coeff)
 
@@ -617,7 +617,9 @@ def _processing_fn_no_grouping(
 
     res_for_each_mp = [
         _sum_terms(_sub_res, coeffs, offset, result_shape)
-        for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
+        for _sub_res, coeffs, offset in zip(
+            res_batch_for_each_mp, coeffs_for_each_mp, offsets, strict=True
+        )
     ]
     # res_for_each_mp should have shape (n_mps, [,n_shots] [,batch_size])
     if len(res_for_each_mp) == 1:
@@ -666,7 +668,7 @@ def _processing_fn_with_grouping(
         sub_res = res_group if group_size == 1 else res_group[mp_idx_in_group]
 
         # Add this result to the result batch for the corresponding original measurement
-        for mp_idx, coeff in zip(mp_indices, coeffs):
+        for mp_idx, coeff in zip(mp_indices, coeffs, strict=True):
             res_batch_for_each_mp[mp_idx].append(sub_res)
             coeffs_for_each_mp[mp_idx].append(coeff)
 
@@ -675,7 +677,9 @@ def _processing_fn_with_grouping(
     # Sum up the results for each original measurement
     res_for_each_mp = [
         _sum_terms(_sub_res, coeffs, offset, result_shape)
-        for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
+        for _sub_res, coeffs, offset in zip(
+            res_batch_for_each_mp, coeffs_for_each_mp, offsets, strict=True
+        )
     ]
 
     # res_for_each_mp should have shape (n_mps, [,n_shots] [,batch_size])
@@ -703,7 +707,7 @@ def _sum_terms(
 
     # The shape of res at this point is (n_terms, [,n_shots] [,batch_size])
     dot_products = []
-    for c, r in zip(coeffs, res):
+    for c, r in zip(coeffs, res, strict=True):
         if qml.math.get_interface(r) == "autograd":
             r = qml.math.array(r)
         if isinstance(r, (list, tuple)):

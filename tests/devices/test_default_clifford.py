@@ -337,7 +337,7 @@ def test_meas_counts(shots, ops, seed):
 
     assert list(counts_clfrd.keys()) == list(counts_qubit.keys())
 
-    for k1, k2 in zip(counts_clfrd, counts_clfrd):
+    for k1, k2 in zip(counts_clfrd, counts_clfrd, strict=True):
         assert qml.math.abs(counts_clfrd[k1] - counts_qubit[k2]) / shots < 0.1  # 10% threshold
 
 
@@ -465,7 +465,7 @@ def test_snapshot_supported(measurement, tag):
     snaps_clifford = qml.snapshots(qnode_clifford)()
 
     assert len(snaps_qubit) == len(snaps_clifford)
-    for key1, key2 in zip(snaps_qubit, snaps_clifford):
+    for key1, key2 in zip(snaps_qubit, snaps_clifford, strict=True):
         assert key1 == key2
         assert qml.math.allclose(snaps_qubit[key1], snaps_clifford[key2])
 
@@ -582,8 +582,10 @@ def test_debugger():
         "execution_results": [qml.math.array(1.0), qml.math.array(0.0)],
     }
 
-    assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
-    assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+    assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys(), strict=True))
+    assert all(
+        np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values(), strict=True)
+    )
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])

@@ -179,7 +179,9 @@ def center(
             return []
 
     # Construct operators from numerical output and convert to desired format
-    res = [sum(c * x for c, x in zip(c_coeffs, g)) for c_coeffs in kernel_intersection.T]
+    res = [
+        sum(c * x for c, x in zip(c_coeffs, g, strict=True)) for c_coeffs in kernel_intersection.T
+    ]
 
     have_paulis = all(isinstance(x, (PauliWord, PauliSentence)) for x in res)
     if pauli or have_paulis:

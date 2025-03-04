@@ -69,7 +69,9 @@ class TestResources:
         (4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(100)),
     )
 
-    @pytest.mark.parametrize("r, attribute_tup", zip(resource_quantities, resource_parameters))
+    @pytest.mark.parametrize(
+        "r, attribute_tup", zip(resource_quantities, resource_parameters, strict=True)
+    )
     def test_init(self, r, attribute_tup):
         """Test that the Resource class is instantiated as expected."""
         num_wires, num_gates, gate_types, gate_sizes, depth, shots = attribute_tup
@@ -133,7 +135,7 @@ class TestResources:
         ),
     )
 
-    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
+    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data, strict=True))
     def test_str(self, r, rep):
         """Test the string representation of a Resources instance."""
         assert str(r) == rep
@@ -150,7 +152,7 @@ class TestResources:
         "gate_sizes={1: 1, 2: 1}, depth=2, shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),)))",
     )
 
-    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_rep_data))
+    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_rep_data, strict=True))
     def test_repr(self, r, rep):
         """Test the repr method of a Resources instance looks as expected."""
         assert repr(r) == rep
@@ -185,7 +187,7 @@ class TestResources:
         assert not r1.__eq__(r8)
         assert not r1.__eq__(r9)
 
-    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
+    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data, strict=True))
     def test_ipython_display(self, r, rep, capsys):
         """Test that the ipython display prints the string representation of a Resources instance."""
         r._ipython_display_()  # pylint: disable=protected-access
@@ -228,7 +230,8 @@ class TestResources:
     )
 
     @pytest.mark.parametrize(
-        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_series)
+        "resource_obj, expected_res_obj",
+        zip(resource_quantities, expected_results_add_series, strict=True),
     )
     def test_add_in_series(self, resource_obj, expected_res_obj):
         """Test the add_in_series function works with Resoruces"""
@@ -245,7 +248,8 @@ class TestResources:
         assert resultant_obj == expected_res_obj
 
     @pytest.mark.parametrize(
-        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_series)
+        "resource_obj, expected_res_obj",
+        zip(resource_quantities, expected_results_add_series, strict=True),
     )
     def test_dunder_add(self, resource_obj, expected_res_obj):
         """Test the __add__ function"""
@@ -297,7 +301,8 @@ class TestResources:
     )
 
     @pytest.mark.parametrize(
-        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_parallel)
+        "resource_obj, expected_res_obj",
+        zip(resource_quantities, expected_results_add_parallel, strict=True),
     )
     def test_add_in_parallel(self, resource_obj, expected_res_obj):
         """Test the add_in_parallel function works with Resoruces"""
@@ -349,7 +354,7 @@ class TestResources:
     )
 
     @pytest.mark.parametrize(
-        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_series)
+        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_series, strict=True)
     )
     def test_mul_in_series(self, scalar, expected_res_obj):
         """Test the mul_in_series function works with Resoruces"""
@@ -366,7 +371,7 @@ class TestResources:
         assert resultant_obj == expected_res_obj
 
     @pytest.mark.parametrize(
-        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_series)
+        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_series, strict=True)
     )
     def test_dunder_mul(self, scalar, expected_res_obj):
         """Test the __mul__ function"""
@@ -418,7 +423,7 @@ class TestResources:
     )
 
     @pytest.mark.parametrize(
-        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_parallel)
+        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_parallel, strict=True)
     )
     def test_mul_in_parallel(self, scalar, expected_res_obj):
         """Test the mul_in_parallel function works with Resoruces"""
@@ -491,7 +496,8 @@ class TestResources:
     )
 
     @pytest.mark.parametrize(
-        "gate_info, sub_obj, expected_res_obj", zip(gate_info, sub_obj, expected_results_sub)
+        "gate_info, sub_obj, expected_res_obj",
+        zip(gate_info, sub_obj, expected_results_sub, strict=True),
     )
     def test_substitute(self, gate_info, sub_obj, expected_res_obj):
         """Test the substitute function"""
@@ -666,7 +672,7 @@ resources_data = (
 
 
 @pytest.mark.parametrize(
-    "ops_and_shots, expected_resources", zip(lst_ops_and_shots, resources_data)
+    "ops_and_shots, expected_resources", zip(lst_ops_and_shots, resources_data, strict=True)
 )
 def test_count_resources(ops_and_shots, expected_resources):
     """Test the count resources method."""

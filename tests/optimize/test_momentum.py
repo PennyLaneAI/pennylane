@@ -68,7 +68,7 @@ class TestMomentumOptimizer:
             lambda x: (2 * x,),
         ]
 
-        for gradf, f in zip(grad_uni_fns, univariate_funcs):
+        for gradf, f in zip(grad_uni_fns, univariate_funcs, strict=True):
             mom_opt.reset()
 
             x_onestep = mom_opt.step(f, x_start)
@@ -106,7 +106,7 @@ class TestMomentumOptimizer:
 
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
-        for gradf, f in zip(grad_multi_funcs, multivariate_funcs):
+        for gradf, f in zip(grad_multi_funcs, multivariate_funcs, strict=True):
             for jdx in range(len(x_vals[:-1])):
                 mom_opt.reset()
 

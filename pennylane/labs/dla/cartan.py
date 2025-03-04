@@ -324,7 +324,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     names, basis_changes = _check_chain(chain, num_wires)
 
     decompositions = {}
-    for i, (phi, name, bc) in enumerate(zip(chain, names, basis_changes)):
+    for i, (phi, name, bc) in enumerate(zip(chain, names, basis_changes, strict=True)):
         try:
             k, m = cartan_decomp(g, phi)
         except ValueError as e:

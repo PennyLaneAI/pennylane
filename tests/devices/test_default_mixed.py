@@ -944,7 +944,7 @@ class TestApplyOperation:
         snaps_qubit = qml.snapshots(qnode_qubit)()
         snaps_mixed = qml.snapshots(qnode_mixed)()
 
-        for key1, key2 in zip(snaps_qubit, snaps_mixed):
+        for key1, key2 in zip(snaps_qubit, snaps_mixed, strict=True):
             assert key1 == key2
             assert qml.math.allclose(snaps_qubit[key1], snaps_mixed[key2])
 

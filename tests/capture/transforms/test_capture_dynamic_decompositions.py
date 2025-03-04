@@ -36,7 +36,7 @@ def check_jaxpr_eqns(qfunc_jaxpr_eqns, operations):
 
     assert len(qfunc_jaxpr_eqns) == len(operations)
 
-    for eqn, op in zip(qfunc_jaxpr_eqns, operations):
+    for eqn, op in zip(qfunc_jaxpr_eqns, operations, strict=True):
         assert eqn.primitive == op._primitive
 
 
@@ -576,7 +576,7 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         comparison_result = circuit_comparison(0.5, wires)
-        for res, comp in zip(result, comparison_result):
+        for res, comp in zip(result, comparison_result, strict=True):
             assert qml.math.allclose(res, comp)
 
     @pytest.mark.parametrize("autograph", [True, False])
@@ -611,7 +611,7 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(0)), qml.probs(wires=1), qml.var(qml.Z(2)), qml.state()
 
         comparison_result = circuit_comparison(x, wires)
-        for res, comp in zip(result, comparison_result):
+        for res, comp in zip(result, comparison_result, strict=True):
             assert qml.math.allclose(res, comp)
 
     @pytest.mark.parametrize("autograph", [True, False])

@@ -142,7 +142,7 @@ def _add_op(op, layer_str, config):
     control_wires, control_values = unwrap_controls(op)
 
     if control_values:
-        for w, val in zip(control_wires, control_values):
+        for w, val in zip(control_wires, control_values, strict=True):
             layer_str[config.wire_map[w]] += "●" if val else "○"
     else:
         for w in control_wires:
@@ -544,9 +544,13 @@ def tape_text(
         # Join current layer with lines for previous layers
         ###################################################
         # Joining is done by adding a filler at the end of the previous layer
-        wire_totals = [w_filler.join([t, s]) for t, s in zip(wire_totals, layer_str[:n_wires])]
+        wire_totals = [
+            w_filler.join([t, s]) for t, s in zip(wire_totals, layer_str[:n_wires], strict=True)
+        ]
 
-        for j, (bt, s) in enumerate(zip(bit_totals, layer_str[n_wires : n_wires + n_bits])):
+        for j, (bt, s) in enumerate(
+            zip(bit_totals, layer_str[n_wires : n_wires + n_bits], strict=True)
+        ):
             cur_b_filler = b_filler if cwire_layers[j][0] < i <= cwire_layers[j][-1] else " "
             bit_totals[j] = cur_b_filler.join([bt, s])
 

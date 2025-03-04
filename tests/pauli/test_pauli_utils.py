@@ -588,7 +588,10 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1))
-        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
+        assert all(
+            expected.compare(obtained)
+            for expected, obtained in zip(expected_pg_1, pg_1, strict=True)
+        )
 
     def test_one_qubit_pauli_group_valid_float_input(self):
         """Test that the single-qubit Pauli group is constructed correctly when a float
@@ -596,7 +599,10 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1.0))
-        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
+        assert all(
+            expected.compare(obtained)
+            for expected, obtained in zip(expected_pg_1, pg_1, strict=True)
+        )
 
     def test_one_qubit_pauli_group_string_wire_map(self):
         """Test that the single-qubit Pauli group is constructed correctly with a wire
@@ -610,7 +616,7 @@ class TestPauliGroup:
             PauliY("qubit"),
         ]
         pg_1_wires = list(pauli_group(1, wire_map=wire_map))
-        assert all(exp.compare(ob) for exp, ob in zip(expected_pg_1_wires, pg_1_wires))
+        assert all(exp.compare(ob) for exp, ob in zip(expected_pg_1_wires, pg_1_wires, strict=True))
 
     def test_two_qubit_pauli_group(self):
         """Test that the two-qubit Pauli group is constructed correctly."""
@@ -637,7 +643,7 @@ class TestPauliGroup:
         ]
 
         pg_2 = list(pauli_group(2, wire_map=wire_map))
-        for expected, obtained in zip(expected_pg_2, pg_2):
+        for expected, obtained in zip(expected_pg_2, pg_2, strict=True):
             qml.assert_equal(obtained, expected)
 
     @pytest.mark.parametrize(
@@ -932,7 +938,7 @@ class TestMeasurementTransformations:
             self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
             for i in range(len(qwc_rot))
         )
-        for diag_op, expected in zip(diag_qwc_grouping, diag_qwc_grouping_sol):
+        for diag_op, expected in zip(diag_qwc_grouping, diag_qwc_grouping_sol, strict=True):
             qml.assert_equal(diag_op, expected)
 
     not_qwc_groupings = [

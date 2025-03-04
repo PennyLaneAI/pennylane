@@ -172,7 +172,7 @@ class TestOperations:
         import jax
 
         leaves = jax.tree_util.tree_leaves(op)
-        for d1, d2 in zip(leaves, op.data):
+        for d1, d2 in zip(leaves, op.data, strict=True):
             assert d1 is d2
 
         leaves, tree_def = jax.tree_util.tree_flatten(op)
@@ -180,7 +180,7 @@ class TestOperations:
         qml.assert_equal(op_unflattened, op)
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
-        for d1, d2 in zip(new_op.data, op.data):
+        for d1, d2 in zip(new_op.data, op.data, strict=True):
             assert qml.math.allclose(d1, d2 + 1.0)
 
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
@@ -302,7 +302,7 @@ class TestDecompositions:
         params = [[phi], [theta], [omega]]
 
         for ops in [ops1, ops2]:
-            for c, p, op in zip(classes, params, ops):
+            for c, p, op in zip(classes, params, ops, strict=True):
                 assert isinstance(op, c)
                 assert op.parameters == p
 
@@ -321,7 +321,7 @@ class TestDecompositions:
         params = [[phi], [theta], [omega]]
 
         for ops in [ops1, ops2]:
-            for c, p, op in zip(classes, params, ops):
+            for c, p, op in zip(classes, params, ops, strict=True):
                 assert isinstance(op, c)
                 assert op.parameters == p
 
@@ -358,7 +358,7 @@ class TestDecompositions:
         params = [[lam, np.ones_like(lam) * np.pi / 2, -lam], [lam], [phi]]
 
         for ops in [ops1, ops2]:
-            for op, c, p in zip(ops, classes, params):
+            for op, c, p in zip(ops, classes, params, strict=True):
                 assert isinstance(op, c)
                 assert op.parameters == p
 
@@ -374,7 +374,7 @@ class TestDecompositions:
         params = [[lam, np.ones_like(lam) * np.pi / 2, -lam], [lam], [phi]]
 
         for ops in [ops1, ops2]:
-            for op, c, p in zip(ops, classes, params):
+            for op, c, p in zip(ops, classes, params, strict=True):
                 assert isinstance(op, c)
                 assert np.allclose(op.parameters, p)
 
@@ -391,7 +391,7 @@ class TestDecompositions:
         params = [[lam, theta, -lam], [lam], [phi]]
 
         for ops in [ops1, ops2]:
-            for op, c, p in zip(ops, classes, params):
+            for op, c, p in zip(ops, classes, params, strict=True):
                 assert isinstance(op, c)
                 assert op.parameters == p
 
@@ -408,7 +408,7 @@ class TestDecompositions:
         params = [[lam, theta, -lam], [lam], [phi]]
 
         for ops in [ops1, ops2]:
-            for op, c, p in zip(ops, classes, params):
+            for op, c, p in zip(ops, classes, params, strict=True):
                 assert isinstance(op, c)
                 assert np.allclose(op.parameters, p)
 
@@ -674,7 +674,7 @@ class TestDecompositions:
         expected_mats = qml.matrix(op)
         decomp_mats = qml.matrix(decomp_op)
 
-        for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
+        for expected_mat, decomp_mat in zip(expected_mats, decomp_mats, strict=True):
             assert np.allclose(expected_mat, decomp_mat)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
@@ -1360,7 +1360,9 @@ class TestMatrix:
         def get_expected(theta):
             neg_imag = np.exp(-1j * theta / 2)
             plus_imag = np.exp(1j * theta / 2)
-            expected = np.array([np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag)])
+            expected = np.array(
+                [np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag, strict=True)]
+            )
             return expected
 
         param = np.array([np.pi / 2, np.pi])
@@ -1405,7 +1407,9 @@ class TestMatrix:
         def get_expected(theta):
             neg_imag = np.exp(-1j * theta / 2)
             plus_imag = np.exp(1j * theta / 2)
-            expected = np.array([np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag)])
+            expected = np.array(
+                [np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag, strict=True)]
+            )
             return expected
 
         param = np.array([np.pi, 0.1242])
@@ -1460,7 +1464,7 @@ class TestMatrix:
                         [np.exp(-0.5j * (_x + _z)) * _c, -np.exp(0.5j * (_x - _z)) * _s],
                         [np.exp(-0.5j * (_x - _z)) * _s, np.exp(0.5j * (_x + _z)) * _c],
                     ]
-                    for _x, _z, _c, _s in zip(x, z, c, s)
+                    for _x, _z, _c, _s in zip(x, z, c, s, strict=True)
                 ]
             )
 
@@ -3947,7 +3951,9 @@ class TestParametricPow:
 
         assert len(pow_op) == 1
         assert pow_op[0].__class__ is op.__class__
-        assert all((qml.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data)))
+        assert all(
+            (qml.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data, strict=True))
+        )
 
     @pytest.mark.parametrize("op", pow_parametric_ops)
     @pytest.mark.parametrize("n", (3, -2))

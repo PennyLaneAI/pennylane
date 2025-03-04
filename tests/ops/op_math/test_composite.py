@@ -279,7 +279,9 @@ def _is_method_with_no_argument(method):
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
 
-    @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
+    @pytest.mark.parametrize(
+        "ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep, strict=True))
+    )
     def test_repr(self, ops_lst, op_rep):
         """Test __repr__ method."""
         op = ValidOp(*ops_lst)
@@ -318,7 +320,7 @@ class TestMscMethods:
         assert op.data == copied_op.data
         assert op.wires == copied_op.wires
 
-        for o1, o2 in zip(op.operands, copied_op.operands):
+        for o1, o2 in zip(op.operands, copied_op.operands, strict=True):
             qml.assert_equal(o1, o2)
             assert o1 is not o2
 
@@ -332,7 +334,7 @@ class TestMscMethods:
     def test_iter(self, ops_lst):
         """Test __iter__ method."""
         op = ValidOp(*ops_lst)
-        for i, j in zip(op, ops_lst):
+        for i, j in zip(op, ops_lst, strict=True):
             assert i == j
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -347,7 +349,7 @@ class TestMscMethods:
         """Test _flatten and _unflatten."""
         op = ValidOp(*ops_lst)
         data, metadata = op._flatten()
-        for data_op, input_op in zip(data, ops_lst):
+        for data_op, input_op in zip(data, ops_lst, strict=True):
             assert data_op is input_op
 
         assert metadata == tuple()
@@ -408,8 +410,8 @@ class TestProperties:
                 qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
             ],
         ]
-        for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
-            for op1, op2 in zip(list_op1, list_op2):
+        for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops, strict=True):
+            for op1, op2 in zip(list_op1, list_op2, strict=True):
                 qml.assert_equal(op1, op2)
 
     def test_overlapping_ops_private_attribute(self):
