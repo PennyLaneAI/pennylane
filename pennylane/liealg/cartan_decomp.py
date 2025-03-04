@@ -15,11 +15,10 @@
 # pylint: disable= missing-function-docstring
 from typing import List, Tuple, Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
+from pennylane.typing import TensorLike
 
 
 def cartan_decomp(
@@ -211,9 +210,10 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     True
 
     """
-    if any(isinstance(op, np.ndarray) for op in k):
+    # TODO: implement proper matrix implementation
+    if any(isinstance(op, TensorLike) for op in k):
         k = [qml.pauli_decompose(op).pauli_rep for op in k]
-    if any(isinstance(op, np.ndarray) for op in m):
+    if any(isinstance(op, TensorLike) for op in m):
         m = [qml.pauli_decompose(op).pauli_rep for op in m]
 
     if any(isinstance(op, Operator) for op in k):

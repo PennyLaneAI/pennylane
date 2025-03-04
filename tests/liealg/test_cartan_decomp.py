@@ -81,28 +81,35 @@ involution_ops = [
     Y(0) @ X(1),
 ]
 
+k0 = [Z(0) @ Y(1), Y(0) @ Z(1)]
+m0 = [Z(0) @ Z(1), Y(0) @ Y(1), X(0), X(1)]
+
 
 class TestCheckFunctions:
     """Test check functions for cartan decompositions"""
 
     def test_check_cartan_decomp(self):
         """Test that check_cartan_decomp correctly checks Ising cartan decomp from fdhs paper (https://arxiv.org/abs/2104.00728)"""
-        k = [Z(0) @ Y(1), Y(0) @ Z(1)]
-        m = [Z(0) @ Z(1), Y(0) @ Y(1), X(0), X(1)]
 
-        assert check_cartan_decomp(k, m)
+        assert check_cartan_decomp(k0, m0)
+
+    def test_check_cartan_decomp_arrays(self):
+        """Test that check_cartan_decomp correctly checks Ising cartan decomp from fdhs paper (https://arxiv.org/abs/2104.00728)"""
+
+        k0_m = [qml.matrix(op, wire_order=range(2)) for op in k0]
+        m0_m = [qml.matrix(op, wire_order=range(2)) for op in m0]
+
+        assert check_cartan_decomp(k0_m, m0_m)
 
     def test_check_commutation(self):
         """Test that check_commutation returns false correctly"""
-        k = [Z(0) @ Y(1), Y(0) @ Z(1)]
-        m = [Z(0) @ Z(1), Y(0) @ Y(1), X(0), X(1)]
 
-        assert check_commutation(k, k, k)
-        assert not check_commutation(m, m, m)
-        assert check_commutation(k, m, m)
-        assert not check_commutation(k, m, k)
-        assert check_commutation(m, k, m)
-        assert not check_commutation(m, k, k)
+        assert check_commutation(k0, k0, k0)
+        assert not check_commutation(m0, m0, m0)
+        assert check_commutation(k0, m0, m0)
+        assert not check_commutation(k0, m0, k0)
+        assert check_commutation(m0, k0, m0)
+        assert not check_commutation(m0, k0, k0)
 
 
 class TestInvolutions:
