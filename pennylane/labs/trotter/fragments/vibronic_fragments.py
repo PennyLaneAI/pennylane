@@ -31,21 +31,23 @@ def vibronic_fragments(states: int, modes: int, omegas: np.ndarray, phis: Sequen
 
 def _position_fragment(i: int, states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> VibronicMatrix:
     pow2 = next_pow_2(states)
-    blocks = {(j, i ^ j): _realspace_sum(j, i ^ j, states, omegas, phis) for j in range(pow2)}
+    blocks = {(j, i ^ j): _realspace_sum(j, i ^ j, states, modes, omegas, phis) for j in range(pow2)}
     return VibronicMatrix(pow2, modes, blocks)
 
 def _momentum_fragment(states: int, modes: int, omegas: np.ndarray) -> VibronicMatrix:
     pow2 = next_pow_2(states)
     term = RealspaceOperator(
+        modes,
         ("P", "P"),
         Node.tensor_node(np.diag(omegas) / 2, label=("omegas", np.diag(omegas) / 2)),
     )
-    word = RealspaceSum((term,))
+    word = RealspaceSum(modes, (term,))
     blocks = {(i, i): word for i in range(states)}
 
     return VibronicMatrix(pow2, modes, blocks)
 
-def _realspace_sum(i: int, j: int, states: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
+#pylint: disable=too-many-arguments,too-many-positional-arguments
+def _realspace_sum(i: int, j: int, states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
     if i > states - 1 or j > states - 1:
         return RealspaceSum.zero()
 
@@ -53,7 +55,7 @@ def _realspace_sum(i: int, j: int, states: int, omegas: np.ndarray, phis: Sequen
     for k, phi in enumerate(phis):
         op = ("Q",) * k
         realspace_op = RealspaceOperator(
-            op, Node.tensor_node(phi[i, j], label=(f"phis[{k}][{i}, {j}]", phis))
+            modes, op, Node.tensor_node(phi[i, j], label=(f"phis[{k}][{i}, {j}]", phis))
         )
         realspace_ops.append(realspace_op)
 
@@ -62,9 +64,9 @@ def _realspace_sum(i: int, j: int, states: int, omegas: np.ndarray, phis: Sequen
         coeffs = Node.tensor_node(
             np.diag(omegas) / 2, label=("omegas", np.diag(omegas) / 2)
         )
-        realspace_ops.append(RealspaceOperator(op, coeffs))
+        realspace_ops.append(RealspaceOperator(modes, op, coeffs))
 
-    return RealspaceSum(realspace_ops)
+    return RealspaceSum(modes, realspace_ops)
 
 def _validate_input(states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> None:
     for i, phi in enumerate(phis):
