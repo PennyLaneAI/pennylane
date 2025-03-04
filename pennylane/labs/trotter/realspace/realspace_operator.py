@@ -80,7 +80,7 @@ class RealspaceOperator:
 
     def __mul__(self, scalar: float) -> RealspaceOperator:
         if np.isclose(scalar, 0):
-            return RealspaceOperator.zero_term()
+            return RealspaceOperator.zero_term(self.modes)
 
         return RealspaceOperator(self.modes, self.ops, Node.scalar_node(scalar, self.coeffs))
 
@@ -88,7 +88,7 @@ class RealspaceOperator:
 
     def __imul__(self, scalar: float) -> RealspaceOperator:
         if np.isclose(scalar, 0):
-            return RealspaceOperator.zero_term()
+            return RealspaceOperator.zero_term(self.modes)
 
         self.coeffs = Node.scalar_node(scalar, self.coeffs)
         return self
@@ -117,9 +117,9 @@ class RealspaceOperator:
         return self.coeffs.is_zero
 
     @classmethod
-    def zero_term(cls) -> RealspaceOperator:
+    def zero_term(cls, modes) -> RealspaceOperator:
         """Returns a RealspaceOperator representing 0"""
-        return RealspaceOperator(0, tuple(), Node.tensor_node(np.array(0)))
+        return RealspaceOperator(modes, tuple(), Node.tensor_node(np.array(0)))
 
 
 class RealspaceSum(Fragment):
@@ -134,7 +134,7 @@ class RealspaceSum(Fragment):
         ops = tuple(filter(lambda op: not op.is_zero, ops))
         self.is_zero = len(ops) == 0
 
-        self._lookup = defaultdict(lambda: RealspaceOperator.zero_term())
+        self._lookup = defaultdict(lambda: RealspaceOperator.zero_term(self.modes))
 
         for op in ops:
             self._lookup[op.ops] += op
@@ -210,7 +210,7 @@ class RealspaceSum(Fragment):
     @classmethod
     def zero(cls, modes: int) -> RealspaceSum:
         """Return a RealspaceSum representing 0"""
-        return RealspaceSum(modes, [RealspaceOperator.zero_term()])
+        return RealspaceSum(modes, [RealspaceOperator.zero_term(modes)])
 
     def matrix(self, gridpoints: int, modes: int, basis: str = "realspace", sparse: bool = False):
         """Return a matrix representation of the RealspaceSum"""
