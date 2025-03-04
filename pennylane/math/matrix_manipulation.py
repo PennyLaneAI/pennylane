@@ -19,8 +19,7 @@ from collections.abc import Callable, Generator, Iterable
 from functools import reduce
 
 import numpy as np
-import scipy as sp
-#from scipy.sparse import csr_matrix, eye, kron
+from scipy.sparse import csr_matrix, eye, kron
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -126,12 +125,12 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
 
     def eye_interface(dim):
         if interface == "scipy":
-            return sp.eye(qudit_dim**dim, format="coo")
+            return eye(qudit_dim**dim, format="coo")
         return qml.math.cast_like(qml.math.eye(qudit_dim**dim, like=interface), mat)
 
     def kron_interface(mat1, mat2):
         if interface == "scipy":
-            res = sp.kron(mat1, mat2, format="coo")
+            res = kron(mat1, mat2, format="coo")
             res.eliminate_zeros()
             return res
         if interface == "torch":
@@ -266,10 +265,10 @@ def _sparse_swap_mat(qubit_i, qubit_j, n):
     index_j = [
         swap_qubits(idx, qubit_i, qubit_j) for idx in index_i
     ]  # kets (we swap qubits i and j): |10> --> |01>
-    return sp.csr_matrix((data, (index_i, index_j)))
+    return csr_matrix((data, (index_i, index_j)))
 
 
-def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable):
+def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -> csr_matrix:
     """Helper function which generates a permutation matrix in sparse format that swaps the wires
     in ``expanded_wires`` to match the order given by the ``wire_order`` argument.
 
@@ -285,7 +284,7 @@ def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable):
     for i in range(n_total_wires):
         if expanded_wires[i] != wire_order[i]:
             if U is None:
-                U = sp.eye(2**n_total_wires, format="csr")
+                U = eye(2**n_total_wires, format="csr")
             j = expanded_wires.index(wire_order[i])  # location of correct wire
             U = U @ _sparse_swap_mat(i, j, n_total_wires)  # swap incorrect wire for correct wire
             U.eliminate_zeros()

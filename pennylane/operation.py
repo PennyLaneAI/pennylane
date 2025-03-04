@@ -228,8 +228,7 @@ from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
-
-
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
@@ -825,7 +824,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_sparse_matrix(
         *params: TensorLike, **hyperparams: dict[str, Any]
-    ):  # pylint:disable=unused-argument
+    ) -> csr_matrix:  # pylint:disable=unused-argument
         r"""Representation of the operator as a sparse matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -855,7 +854,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             or cls.sparse_matrix != Operator.sparse_matrix
         )
 
-    def sparse_matrix(self, wire_order: Optional[WiresLike] = None):
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the

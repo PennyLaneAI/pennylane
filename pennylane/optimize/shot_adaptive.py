@@ -16,7 +16,6 @@
 from copy import copy
 
 import numpy as np
-#from scipy.stats import multinomial
 import scipy as sp
 
 import pennylane as qml

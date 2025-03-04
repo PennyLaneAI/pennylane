@@ -17,7 +17,6 @@
 from inspect import signature
 
 import numpy as np
-#from scipy.optimize import brute, shgo
 import scipy as sp
 import pennylane as qml
 
