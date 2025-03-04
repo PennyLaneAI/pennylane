@@ -11,6 +11,7 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter import Fragment
+from pennylane.labs.trotter.realspace.ho_state import HOState
 from pennylane.labs.trotter.utils import _zeros, op_norm, string_to_matrix, tensor_with_identity
 from pennylane.labs.trotter.realspace.ho_state import HOState
 
