@@ -4,7 +4,7 @@ from typing import List, Sequence
 
 import numpy as np
 
-from pennylane.labs.pf.realspace import Node, RealspaceOperator, RealspaceSum
+from pennylane.labs.trotter.realspace import Node, RealspaceOperator, RealspaceSum
 
 def vibrational_hamiltonian(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
     """Return a RealspaceSum representing the vibrational Hamiltonian."""
@@ -12,7 +12,7 @@ def vibrational_hamiltonian(modes: int, omegas: np.ndarray, phis: Sequence[np.nd
 
     return harmonic_fragment(modes, omegas) + anharmonic_fragment(modes, phis)
 
-def fragments(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray], frags="harmonic") -> List[RealspaceSum]:
+def vibrational_fragments(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray], frags="harmonic") -> List[RealspaceSum]:
     """Return a list of fragments"""
 
     if frags == "harmonic":

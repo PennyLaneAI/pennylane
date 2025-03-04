@@ -20,7 +20,7 @@ def vibronic_hamiltonian(states: int, modes: int, omegas: np.ndarray, phis: Sequ
 
     return ham
 
-def fragments(states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> List[VibronicMatrix]:
+def vibronic_fragments(states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> List[VibronicMatrix]:
     """Return a list of VibronicMatrix fragments that sum to the vibronic Hamiltonian"""
     _validate_input(states, modes, omegas, phis)
 
