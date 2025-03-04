@@ -187,14 +187,18 @@ class TestQubitGraphsInitialization:
         g.add_nodes_from([0, 1])
         g.add_edge(0, 1, None)
 
-        qubit = QubitGraph(0, g)
+        with pytest.warns(
+            UserWarning,
+            match="QubitGraph expects an input graph of type 'networkx.Graph', but got 'PyGraph'",
+        ):
+            qubit = QubitGraph(0, g)
 
-        assert set(qubit.nodes) == set(g.nodes())
-        assert set(qubit.edges) == set(g.edges())
+            assert set(qubit.nodes) == set(g.nodes())
+            assert set(qubit.edges) == set(g.edges())
 
-        for node in qubit.nodes:
-            assert isinstance(qubit[node], QubitGraph)
-            assert qubit[node].parent is qubit
+            for node in qubit.nodes:
+                assert isinstance(qubit[node], QubitGraph)
+                assert qubit[node].parent is qubit
 
     def test_initialization_with_invalid_id(self):
         """Test that attempting to initialize a QubitGraph with an invalid ID raises the appropriate
