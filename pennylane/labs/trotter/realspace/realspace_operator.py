@@ -134,13 +134,13 @@ class RealspaceSum(Fragment):
         ops = tuple(filter(lambda op: not op.is_zero, ops))
         self.is_zero = len(ops) == 0
 
+        self.modes = modes
         self._lookup = defaultdict(lambda: RealspaceOperator.zero_term(self.modes))
 
         for op in ops:
             self._lookup[op.ops] += op
 
         self.ops = tuple(self._lookup.values())
-        self.modes = modes
 
     def __add__(self, other: RealspaceSum) -> RealspaceSum:
         if self.modes != other.modes:
