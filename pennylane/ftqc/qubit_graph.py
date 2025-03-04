@@ -272,6 +272,52 @@ class QubitGraph:
         return self._graph
 
     @property
+    def parent(self) -> "QubitGraph":
+        """Gets the parent QubitGraph of this QubitGraph object.
+
+        Returns:
+            QubitGraph: The parent QubitGraph object.
+        """
+        return self._parent
+
+    @property
+    def is_initialized(self) -> bool:
+        """Checks if the underlying qubits have been initialized.
+
+        The underlying qubit graph is considered uninitialized if and only if it is NoneType. A
+        QubitGraph consisting of a null graph (one with zero nodes) is considered initialized. A
+        QubitGraph may be uninitialized if it is a leaf node in the hierarchical graph structure.
+
+        Returns:
+            bool: Returns True if the underlying qubits have been initialized, False otherwise.
+        """
+        return self._graph is not None
+
+    @property
+    def is_leaf(self) -> bool:
+        """Checks if this QubitGraph object is a leaf node in the hierarchical graph structure.
+
+        A QubitGraph node is a leaf when it has no underlying qubit graph, either if the underlying
+        qubit graph has not been initialized (i.e. it is NoneType) or if the underlying qubits graph
+        has been initialized but is a null graph (one with zero nodes).
+
+        Returns:
+            bool: Returns True if this QubitGraph object is a leaf node.
+        """
+        return (not self.is_initialized) or (len(self._graph.nodes) == 0)
+
+    @property
+    def is_root(self) -> bool:
+        """Checks if this QubitGraph object is a root node in the hierarchical graph structure.
+
+        A QubitGraph node is a root when it has no parent QubitGraph object.
+
+        Returns:
+            bool: Returns True if this QubitGraph object is a root node.
+        """
+        return self._parent is None
+
+    @property
     def node_labels(self):
         """Gets the set of nodes labels in the underlying qubit graph.
 
@@ -295,7 +341,7 @@ class QubitGraph:
                 as ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the networkx
                 documentation for more information.
         """
-        if self._graph is None:
+        if not self.is_initialized:
             self._warn_uninitialized()
             return None
 
@@ -322,7 +368,7 @@ class QubitGraph:
                 ``len(g.edges)``, ``e in g.edges``, ``g.edges & h.edges``, etc. See the networkx
                 documentation for more information.
         """
-        if self._graph is None:
+        if not self.is_initialized:
             self._warn_uninitialized()
             return None
 
@@ -350,52 +396,6 @@ class QubitGraph:
 
         for node in self.node_labels:
             yield self[node]
-
-    @property
-    def is_initialized(self) -> bool:
-        """Checks if the underlying qubits have been initialized.
-
-        The underlying qubit graph is considered uninitialized if and only if it is NoneType. A
-        QubitGraph consisting of a null graph (one with zero nodes) is considered initialized. A
-        QubitGraph may be uninitialized if it is a leaf node in the hierarchical graph structure.
-
-        Returns:
-            bool: Returns True if the underlying qubits have been initialized, False otherwise.
-        """
-        return self._graph is not None
-
-    @property
-    def is_leaf(self) -> bool:
-        """Checks if this QubitGraph object is a leaf node in the hierarchical graph structure.
-
-        A QubitGraph node is a leaf when it has no underlying qubit graph, either if the underlying
-        qubit graph has not been initialized (i.e. it is NoneType) or if the underlying qubits graph
-        has been initialized but is a null graph (one with zero nodes).
-
-        Returns:
-            bool: Returns True if this QubitGraph object is a leaf node.
-        """
-        return (self._graph is None) or (len(self._graph.nodes) == 0)
-
-    @property
-    def parent(self) -> "QubitGraph":
-        """Gets the parent QubitGraph of this QubitGraph object.
-
-        Returns:
-            QubitGraph: The parent QubitGraph object.
-        """
-        return self._parent
-
-    @property
-    def is_root(self) -> bool:
-        """Checks if this QubitGraph object is a root node in the hierarchical graph structure.
-
-        A QubitGraph node is a root when it has no parent QubitGraph object.
-
-        Returns:
-            bool: Returns True if this QubitGraph object is a root node.
-        """
-        return self._parent is None
 
     def clear(self):
         """Clears the graph of underlying qubits."""
