@@ -105,8 +105,7 @@ def _get_plxpr_merge_rotations():
             can_merge = wires_exactly_match and are_same_type
 
             if not can_merge:
-                self.interpret_and_refresh_previous_ops(op)
-                return
+                return self.interpret_and_refresh_previous_ops(op)
 
             if isinstance(op, qml.Rot):
                 # Order of arguments matter for the Rot gate!
