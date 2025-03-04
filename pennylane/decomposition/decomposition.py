@@ -50,7 +50,7 @@ class _DecompositionNode:
         return self.resource_decomp.gate_counts.get(op, 0)
 
 
-class DecompositionGraph:
+class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     """A graph that models a decomposition problem.
 
     Args:
