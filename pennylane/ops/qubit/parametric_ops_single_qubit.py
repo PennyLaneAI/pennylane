@@ -24,6 +24,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qml
+from pennylane.decomposition import add_decomposition, register_resources
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -440,11 +441,17 @@ class PhaseShift(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    resource_param_keys = ()
+
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def label(
         self,
@@ -574,6 +581,19 @@ class PhaseShift(Operation):
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
         return [self.data[0], 0.0, 0.0]
+
+
+def _phaseshift_rz_globph_resources():
+    return {qml.RZ: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_phaseshift_rz_globph_resources)
+def _phaseshift_rz_globph(phi, wires, **__):
+    RZ(phi, wires=wires)
+    qml.GlobalPhase(-phi / 2)
+
+
+add_decomposition(PhaseShift, _phaseshift_rz_globph)
 
 
 class Rot(Operation):
