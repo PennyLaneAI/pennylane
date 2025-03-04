@@ -9,9 +9,9 @@ from typing import Dict, Tuple, Union
 import numpy as np
 import scipy as sp
 
-from pennylane.labs.pf import Fragment
-from pennylane.labs.pf.realspace import RealspaceSum
-from pennylane.labs.pf.utils import _kron, _zeros, is_pow_2, next_pow_2
+from pennylane.labs.trotter.fragments import Fragment
+from pennylane.labs.trotter.realspace import RealspaceSum
+from pennylane.labs.trotter.utils import _kron, _zeros, is_pow_2, next_pow_2
 
 
 class VibronicMatrix(Fragment):
