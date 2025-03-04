@@ -129,6 +129,22 @@ def _check_sparse_matrix(op):
             failure_comment=failure_comment,
         )()
 
+def _check_sparse_matrix_formatting(op):
+    """Check that if the operation says it has a sparse matrix, it can be formatted as scipy sparse matrix."""
+    if op.has_sparse_matrix:
+        assert isinstance(op.sparse_matrix(), scipy.sparse.csr_matrix), "sparse matrix should default to csr format"
+        assert isinstance(op.sparse_matrix(format="csc"), scipy.sparse.csc_matrix), "sparse matrix should be formatted as csc"
+        assert isinstance(op.sparse_matrix(format="lil"), scipy.sparse.lil_matrix), "sparse matrix should be formatted as lil"
+        assert isinstance(op.sparse_matrix(format="coo"), scipy.sparse.coo_matrix), "sparse matrix should be formatted as coo"
+
+       
+    else:
+        failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
+        _assert_error_raised(
+            op.sparse_matrix,
+            qml.operation.SparseMatrixUndefinedError,
+            failure_comment=failure_comment,
+        )()
 
 def _check_matrix_matches_decomp(op):
     """Check that if both the matrix and decomposition are defined, they match."""
@@ -410,6 +426,7 @@ def assert_valid(
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
+    _check_sparse_matrix_formatting(op)
     _check_eigendecomposition(op)
     _check_generator(op)
     if not skip_differentiation:
