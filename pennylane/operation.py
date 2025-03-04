@@ -1352,19 +1352,24 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @classproperty
     def has_plxpr_decomposition(cls) -> bool:
         """Whether or not the Operator returns a defined plxpr decomposition."""
-        return cls.compute_plxpr_decomposition != Operator.compute_plxpr_decomposition
+        return cls.compute_qfunc_decomposition != Operator.compute_qfunc_decomposition
 
     @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters) -> None:
+    def compute_qfunc_decomposition(*args, **hyperparameters) -> None:
         r"""Experimental method to compute the dynamic decomposition of the operator with program capture enabled.
 
         When the program capture feature is enabled with ``qml.capture.enable()``, the decomposition of the operator
         is computed with this method if it is defined. Otherwise, the :meth:`~.Operator.compute_decomposition` method is used.
 
-        If this method is defined, the control flow operations within the method are recorded in the JAX representation
-        of the operator's decomposition.
+        The exception to this rule is when the operator is returned from the :meth:`~.Operator.compute_decomposition` method
+        of another operator, in which case the decomposition is performed with :meth:`~.Operator.compute_decomposition`
+        (even if this method is defined), and not with this method.
 
-        This method is experimental and subject to change.
+        When ``compute_qfunc_decomposition`` is defined for an operator, the control flow operations within the method
+        (specifying the decomposition of the operator) are recorded in the JAX representation.
+
+        .. note::
+          This method is experimental and subject to change.
 
         .. seealso:: :meth:`~.Operator.compute_decomposition`.
 
@@ -1445,7 +1450,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return cls.generator != Operator.generator
 
-    def generator(self):  # pylint: disable=no-self-use
+    def generator(self) -> "Operator":  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1462,8 +1467,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
 
-        The default value to return is ``None``, indicating that the operation has
-        no defined generator.
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
