@@ -894,7 +894,7 @@ Args:
 
 
 def _pauliz_ps_rz_ps_resources():
-    return {qml.PhaseShift: 2, qml.RY: 1}
+    return {qml.PhaseShift: 2, qml.RZ: 1}
 
 
 @register_resources(_pauliz_ps_rz_ps_resources)
