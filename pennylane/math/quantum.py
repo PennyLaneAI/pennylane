@@ -1048,12 +1048,12 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
                 if Y_prev is not None:
                     # Compute Frobenius norm of difference
                     diff = Y - Y_prev
-                    norm_diff = sp.linalg.norm(diff)
+                    norm_diff = spla.norm(diff)
                     if norm_diff < tol:
                         break
                 Y_prev = Y.copy()
 
-        numerical_error = sp.linalg.norm((Y @ Y - mat))
+        numerical_error = spla.norm((Y @ Y - mat))
         if (norm_diff and norm_diff > tol) or numerical_error > tol:
             raise ValueError(
                 f"Denman Beavers not converged until the end of {max_iter} loops, "
