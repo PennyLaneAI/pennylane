@@ -18,6 +18,7 @@ from inspect import signature
 
 import numpy as np
 import scipy as sp
+
 import pennylane as qml
 
 
@@ -30,7 +31,9 @@ def _brute_optimizer(fun, num_steps, bounds=None, **kwargs):
     center = (bounds[0][1] + bounds[0][0]) / 2
     for _ in range(num_steps):
         range_ = (center - width / 2, center + width / 2)
-        center, y_min, *_ = sp.optimize.brute(fun, ranges=(range_,), full_output=True, Ns=Ns, **kwargs)
+        center, y_min, *_ = sp.optimize.brute(
+            fun, ranges=(range_,), full_output=True, Ns=Ns, **kwargs
+        )
         # We only ever use this function for 1D optimization
         center = center[0]
         width /= Ns

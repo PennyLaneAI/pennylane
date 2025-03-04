@@ -17,6 +17,7 @@ import warnings
 from functools import lru_cache
 
 import scipy as sp
+
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 
