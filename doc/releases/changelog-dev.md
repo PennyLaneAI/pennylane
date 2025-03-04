@@ -40,6 +40,13 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Added new MCX gate decompositions utilising conditionally clean ancillae, improving circuit depth
+and efficiency.
+    * Implemented `_decompose_mcx_with_two_workers` and `_decompose_mcx_with_one_worker_kg24` for optimized
+      MCX decomposition.
+    * Introduction of `work_wire_type: Literal["clean", "dirty"]` to `decompose_mcx`.
+    * Updated `decompose_mcx` to select decomposition strategy based on available work wires.
+
 <h3>Improvements 🛠</h3>
 
 * `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
@@ -516,6 +523,7 @@ Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
 Mudit Pandey,
+Vyom Patel,
 Andrija Paurevic,
 Shuli Shu,
 David Wierichs
