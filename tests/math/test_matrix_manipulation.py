@@ -1239,20 +1239,19 @@ class TestDenmanBeaversIterations:
         original_dense = mat.toarray()
         qml.math.allclose(result_dense @ result_dense, original_dense, atol=1e-7, rtol=1e-7)
 
-    @pytest.mark.parametrize("trial", range(20))
-    def test_hermitian_matrix(self, trial):  # pylint: disable=unused-argument
+    def test_hermitian_matrix(self):
         """Test that Hermitian matrices work correctly on Hermitians of positive det.
         Emulate random users' random input; the iteration should pass the simple branch determined by determinant, or it needs extra examine.
         """
         n = 4
         A = np.random.random((n, n)) + 1j * np.random.random((n, n))
-        mat = csr_matrix(np.eye(n) - 0.2 * (A @ A.T.conj()))
-        det_mat = np.linalg.det(mat.toarray())
-        if det_mat > 0:
-            result = _denman_beavers_iterations(mat)
-            result_dense = result.toarray()
-            original_dense = mat.toarray()
-            qml.math.allclose(result_dense @ result_dense, original_dense, atol=1e-7, rtol=1e-7)
-        else:
-            with pytest.raises(ValueError, match="Invalid values encountered"):
-                _denman_beavers_iterations(mat)
+        mat = np.eye(n) - 0.2 * (A @ A.T.conj())
+        flip_sign = np.array([-1, 1, 1, 1])
+        good_mat = mat if det_mat > 0 else mat * flip_sign
+        result = _denman_beavers_iterations(csr_matrix(good_mat))
+        result_dense = result.toarray()
+        qml.math.allclose(result_dense @ result_dense, good_mat, atol=1e-7, rtol=1e-7)
+        
+        bad_mat = mat if det_mat < 0 else mat * flip_sign
+        with pytest.raises(ValueError, match="Invalid values encountered"):
+            _denman_beavers_iterations(csr_matrix(mat))
