@@ -20,6 +20,7 @@ Experimental dynamical Lie algebra (DLA) functionality
 .. autosummary::
     :toctree: api
 
+    ~recursive_cartan_decomp
     ~cartan_subalgebra
     ~variational_kak_adj
 
