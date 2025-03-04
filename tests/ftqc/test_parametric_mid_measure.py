@@ -624,43 +624,6 @@ class TestDiagonalizeMCMs:
         assert isinstance(new_tape.operations[-1], MidMeasureMP)
         assert new_tape.operations[-1].reset == reset
 
-    def test_diagonalize_mcm_in_cond(self):
-        """Test that the diagonalize_mcm transform works as expected on a tape
-        containing a conditional with a ParametricMidMeasureMP"""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(1.2, 0)
-            m = qml.measure(0)
-            qml.cond(m == 1, partial(ParametricMidMeasureMP, angle=1.2))(wires=2, plane="XY")
-
-        original_tape = qml.tape.QuantumScript.from_queue(q)
-        base_diagonalizing_gates = ParametricMidMeasureMP(
-            Wires([2]), angle=1.2, plane="XY"
-        ).diagonalizing_gates()
-
-        (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
-        assert len(new_tape.operations) == 5
-        diagonalizing_gates = new_tape.operations[2:4]
-        measurement = new_tape.operations[4]
-
-        # conditional diagonalizing gate
-        for gate, expected_base in zip(diagonalizing_gates, base_diagonalizing_gates):
-            assert isinstance(gate, qml.ops.Conditional)
-            assert gate.base == expected_base
-            assert gate.wires == original_tape.operations[2].wires
-
-        # conditional diagonalized ParametricMidMeasureMP
-        assert isinstance(measurement, qml.ops.Conditional)
-        assert measurement.wires == original_tape.operations[2].wires
-        assert isinstance(measurement.base, MidMeasureMP)
-        assert not isinstance(measurement.base, ParametricMidMeasureMP)
-
-        # cond(diagonalizing gate) and cond(mcm) rely on same measurement in the same way
-        assert (
-            diagonalizing_gates[0].meas_val.measurements[0] == measurement.meas_val.measurements[0]
-        )
-        assert diagonalizing_gates[0].meas_val.processing_fn == measurement.meas_val.processing_fn
-
     def test_diagonalize_mcm_cond_two_outcomes(self):
         """Test that the diagonalize_mcm transform works as expected on a tape
         containing a conditional with two ParametricMidMeasureMPs as the true
@@ -672,50 +635,29 @@ class TestDiagonalizeMCMs:
             qml.cond(
                 m == 1,
                 partial(ParametricMidMeasureMP, angle=1.2),
-                partial(ParametricMidMeasureMP, angle=2.4),
-            )(wires=2, plane="ZX")
+                partial(ParametricMidMeasureMP, angle=-1.2),
+            )(wires=2, plane="XY")
+
         original_tape = qml.tape.QuantumScript.from_queue(q)
-        true_diag_gate = ParametricMidMeasureMP(2, angle=1.2, plane="ZX").diagonalizing_gates()[0]
-        false_diag_gate = ParametricMidMeasureMP(2, angle=2.4, plane="ZX").diagonalizing_gates()[0]
+        base_diagonalizing_gates = (
+            ParametricMidMeasureMP(Wires([2]), angle=1.2, plane="XY").diagonalizing_gates()
+            + ParametricMidMeasureMP(Wires([2]), angle=-1.2, plane="XY").diagonalizing_gates()
+        )
 
         (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
-        assert len(new_tape.operations) == 6
+        assert len(new_tape.operations) == 7
+        diagonalizing_gates = new_tape.operations[2:6]
+        measurement = new_tape.operations[6]
 
-        for idx1, idx2, base_diagonalizing_gate in [
-            (2, 3, true_diag_gate),
-            (4, 5, false_diag_gate),
-        ]:
-            diagonalizing_gate = new_tape.operations[idx1]
-            measurement = new_tape.operations[idx2]
+        # conditional diagonalizing gate
+        for gate, expected_base in zip(diagonalizing_gates, base_diagonalizing_gates):
+            assert isinstance(gate, qml.ops.Conditional)
+            assert gate.base == expected_base
+            assert gate.wires == original_tape.operations[2].wires
 
-            # conditional diagonalizing gate
-            assert isinstance(diagonalizing_gate, qml.ops.Conditional)
-            assert diagonalizing_gate.base == base_diagonalizing_gate
-            assert diagonalizing_gate.wires == original_tape.operations[2].wires
-
-            # conditional diagonalized ParametricMidMeasureMP
-            assert isinstance(measurement, qml.ops.Conditional)
-            assert measurement.wires == original_tape.operations[2].wires
-            assert isinstance(measurement.base, MidMeasureMP)
-            assert not isinstance(measurement.base, ParametricMidMeasureMP)
-
-        # all 4 conditionals rely on the same measurement value
-        for gate in new_tape.operations[3:]:
-            assert gate.meas_val.measurements[0] == new_tape.operations[2].meas_val.measurements[0]
-
-        # diagonalized gates each have processing functions matching their respective cond(mcm)
-        assert (
-            new_tape.operations[2].meas_val.processing_fn
-            == new_tape.operations[3].meas_val.processing_fn
-        )
-        assert (
-            new_tape.operations[4].meas_val.processing_fn
-            == new_tape.operations[5].meas_val.processing_fn
-        )
-        assert (
-            new_tape.operations[2].meas_val.processing_fn
-            != new_tape.operations[4].meas_val.processing_fn
-        )
+        # diagonalized ParametricMidMeasureMP
+        assert isinstance(measurement, MidMeasureMP)
+        assert not isinstance(measurement, ParametricMidMeasureMP)
 
     def test_diagonalizing_measurements_cond_and_op(self):
         """Test that when calling diagonalize_mcms, references to previously
@@ -728,15 +670,15 @@ class TestDiagonalizeMCMs:
             qml.RX(1.2, 0)
             mp = ParametricMidMeasureMP(0, angle=1.2, plane="YZ")
             mv = MeasurementValue([mp], processing_fn=lambda v: v)
-            qml.cond(mv == 0, partial(ParametricMidMeasureMP, angle=1.2))(wires=2, plane="XY")
+            qml.cond(mv == 0, XMidMeasureMP, YMidMeasureMP)(2)
 
         original_tape = qml.tape.QuantumScript.from_queue(q)
         old_mp = original_tape.operations[1]
         assert isinstance(old_mp, ParametricMidMeasureMP)
 
         (new_tape,), _ = diagonalize_mcms(original_tape)
-        assert len(new_tape.operations) == 6
-        for op in new_tape.operations[3:]:
+        assert len(new_tape.operations) == 7
+        for op in new_tape.operations[3:6]:
             assert isinstance(op, qml.ops.Conditional)
 
         new_mp = new_tape.operations[2]
@@ -745,7 +687,7 @@ class TestDiagonalizeMCMs:
 
         assert new_tape.operations[3].meas_val.measurements == [new_mp]
 
-    def test_diagonalizing_measurements_cond(self):
+    def test_diagonalizing_measurement_condition(self):
         """Test that when calling diagonalize_mcms, references to previously
         diagonalized measurements that are stored in conditions on Conditional
         operators are updated to track the measurement on the tape following
