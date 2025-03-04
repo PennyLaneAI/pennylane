@@ -36,13 +36,15 @@ class QubitGraph:
 
     Args:
         id (Any): An identifier for this QubitGraph object.
-        graph (graph-like, optional): The graph to use as the QubitGraph's underlying qubits.
-            Inputting None (the default), leaves the underlying qubit graph in an uninitialized
-            state, in which case one of the graph-initialization methods may be used to define the
-            structure of the underlying qubit graph. QubitGraph expects an undirected graph as
-            input, specifically an instance of the ``networkx.Graph`` class, although other networkx
-            graphs and graph-like types are also permitted. An object is considered "graph-like" if
-            it has both a 'nodes' and an 'edges' attribute.
+        graph (graph-like, optional): The graph structure to use for the QubitGraph's underlying
+            qubits. Inputting None (the default), leaves the underlying qubit graph in an
+            uninitialized state, in which case one of the graph-initialization methods may be used
+            to define the structure of the underlying qubit graph. QubitGraph expects an undirected
+            graph as input, specifically an instance of the ``networkx.Graph`` class, although other
+            networkx graphs and graph-like types are also permitted. An object is considered
+            "graph-like" if it has both a 'nodes' and an 'edges' attribute. Furthermore, QubitGraph
+            expects a "flat" (unnested) graph, and any graph-like objects nested within the graph
+            structure used as input are ignored.
 
     ..  TODO:
 
