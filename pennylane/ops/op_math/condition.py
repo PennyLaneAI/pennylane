@@ -16,7 +16,7 @@ Contains the condition transform.
 """
 import functools
 from functools import wraps
-from typing import Callable, Optional, Sequence, Type
+from typing import Callable, Optional, Sequence, Type, Union
 
 import pennylane as qml
 from pennylane import QueuingManager
@@ -28,7 +28,31 @@ from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
 def _add_abstract_shapes(f):
-    """Add the shapes of all the returned variables before the returned variables."""
+    """Add the shapes of all the returned variables before the returned variables.
+
+    Dynamic shape support currently has a lot of dragons. This function is subject to change
+    at any moment. Use duplicate code till reliable abstractions are found.
+
+    >>> @qml.capture.FlatFn
+    ... def f(x):
+    ...     return x + 1
+    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))
+    { lambda ; a:i32[] b:f32[a]. let
+        c:f32[a] = broadcast_in_dim[broadcast_dimensions=() shape=(None,)] 1.0 a
+        d:f32[a] = add b c
+    in (d,) }
+    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))
+    { lambda ; a:i32[] b:f32[a]. let
+        c:f32[a] = broadcast_in_dim[broadcast_dimensions=() shape=(None,)] 1.0 a
+        d:f32[a] = add b c
+    in (a, d) }
+
+    Now both the dimension of the array and the array are getting returned, rather than
+    just the array.
+
+    Note that we assume that ``f`` returns a sequence of tensorlikes, like ``FlatFn`` would.
+
+    """
 
     def new_f(*args, **kwargs):
         out = f(*args, **kwargs)
@@ -289,7 +313,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
 
 
 def cond(
-    condition,
+    condition: Union[MeasurementValue, bool],
     true_fn: Optional[Callable] = None,
     false_fn: Optional[Callable] = None,
     elifs: Sequence = (),
@@ -698,7 +722,7 @@ def _register_custom_staging_rule(cond_prim):
 
     def custom_staging_rule(
         jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
-    ) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
+    ) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
         """
         Add new jaxpr equation to the jaxpr_trace and return new tracers.
         """
@@ -726,7 +750,7 @@ def _register_custom_staging_rule(cond_prim):
     pe.custom_staging_rules[cond_prim] = custom_staging_rule
 
 
-def _shape_error(branch_type, branch_index, i, outval, expected_outval):
+def _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval):
     raise ValueError(
         f"Mismatch in output abstract values in {branch_type} branch "
         f"#{branch_index} at position {i}: "
@@ -754,20 +778,20 @@ def _validate_abstract_values(
         if jax.config.jax_dynamic_shapes:
             # we need to be a bit more manual with the comparison.
             if type(outval) != type(expected_outval):  # pylint: disable=unidiomatic-typecheck
-                _shape_error(branch_type, branch_index, i, outval, expected_outval)
+                _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
             if getattr(outval, "dtype", None) != getattr(expected_outval, "dtype", None):
-                _shape_error(branch_type, branch_index, i, outval, expected_outval)
+                _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
             shape1 = getattr(outval, "shape", ())
             shape2 = getattr(expected_outval, "shape", ())
             for s1, s2 in zip(shape1, shape2, strict=True):
                 if isinstance(s1, jax.core.Var) != isinstance(s2, jax.core.Var):
-                    _shape_error(branch_type, branch_index, i, outval, expected_outval)
+                    _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
                 elif isinstance(s1, int) and s1 != s2:
-                    _shape_error(branch_type, branch_index, i, outval, expected_outval)
+                    _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
         elif outval != expected_outval:
-            _shape_error(branch_type, branch_index, i, outval, expected_outval)
+            _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
 
 def _validate_jaxpr_returns(jaxpr_branches):
@@ -801,6 +825,10 @@ def _get_cond_qfunc_prim():
     cond_prim.multiple_results = True
     cond_prim.prim_type = "higher_order"
     _register_custom_staging_rule(cond_prim)
+
+    @cond_prim.def_abstract_eval
+    def _(*_, jaxpr_branches, **__):
+        return [out.aval for out in jaxpr_branches[0].outvars]
 
     @cond_prim.def_impl
     def _(*all_args, jaxpr_branches, consts_slices, args_slice):
@@ -840,9 +868,5 @@ def _get_cond_qfunc_prim():
                 return qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
 
         return ()
-
-    @cond_prim.def_abstract_eval
-    def _(*_, jaxpr_branches, **__):
-        return [out.aval for out in jaxpr_branches[0].outvars]
 
     return cond_prim
