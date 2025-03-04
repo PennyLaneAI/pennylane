@@ -1181,7 +1181,7 @@ class TestSqrtMatrix:
     def test_sqrt_matrix_sparse_input_valid(self):
         """Test that if dense input errors raised"""
         A = np.array([[1, 0], [0, 1]])
-        with pytest.raises(TypeError, match="Only use this method for sparse matrices"):
+        with pytest.raises(TypeError, match="only supports sparse matrices"):
             sqrt_matrix_sparse(A)
 
 
