@@ -34,7 +34,6 @@ class TestGraphStatePrep:
             return qml.probs()
 
         circuit(q)
-        assert True
 
     def test_compute_decompose(self):
         """Test the compute_decomposition method of the GraphStatePrep class."""
