@@ -57,10 +57,7 @@ def get_bloq_registers_info(bloq):
     >>> qml.get_bloq_registers_info(Swap(3))
     {'x': Wires([0, 1, 2]), 'y': Wires([3, 4, 5])}
     """
-    if not _has_qualtran:
-        raise ImportError(
-            "Qualtran is required for get_bloq_registers_info. Please install it with `pip install qualtran`"
-        )
+    assert isinstance(bloq, Bloq)
     cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
 
     temp_register_dict = {reg.name: reg.bitsize for reg in cbloq.signature.rights()}
