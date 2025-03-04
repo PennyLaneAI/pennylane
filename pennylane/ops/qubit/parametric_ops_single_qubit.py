@@ -593,7 +593,7 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 2)
 
 
-add_decomposition(qml.PhaseShift, _phaseshift_to_rz_gp)
+add_decomposition(PhaseShift, _phaseshift_to_rz_gp)
 
 
 class Rot(Operation):
