@@ -399,6 +399,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Quantum transform interpreters now perform argument validation and will no longer 
+  check if the equation in the `jaxpr` is a transform primitive.
+  [(#7023)](https://github.com/PennyLaneAI/pennylane/pull/7023)
+
 * `qml.for_loop` and `qml.while_loop` have been moved from the `compiler` module 
   to a new `control_flow` module.
   [(#7017)](https://github.com/PennyLaneAI/pennylane/pull/7017)

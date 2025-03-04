@@ -404,11 +404,10 @@ def _get_plxpr_defer_measurements():
 
         return []
 
-    def defer_measurements_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
+    def defer_measurements_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``defer_measurements`` transform on plxpr."""
 
-        if (aux_wires := tkwargs.get("aux_wires", None)) is None:
+        if not tkwargs.get("aux_wires", None):
             raise ValueError(
                 "'aux_wires' argument for qml.defer_measurements must be provided "
                 "when qml.capture.enabled() is True."
@@ -419,8 +418,14 @@ def _get_plxpr_defer_measurements():
                 "when using qml.defer_measurements. Argument will be ignored.",
                 UserWarning,
             )
+        if tkwargs.pop("allow_postselect", False):
+            warn(
+                "Cannot set 'allow_postselect=True' with qml.capture.enabled() "
+                "when using qml.defer_measurements. Argument will be ignored.",
+                UserWarning,
+            )
 
-        interpreter = DeferMeasurementsInterpreter(aux_wires=aux_wires)
+        interpreter = DeferMeasurementsInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
