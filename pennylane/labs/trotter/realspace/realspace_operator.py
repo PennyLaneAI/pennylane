@@ -58,7 +58,9 @@ class RealspaceOperator:
             raise ValueError(f"Cannot add term {self.ops} with term {other.ops}.")
 
         if self.modes != other.modes:
-            raise ValueError(f"Cannot add RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes.")
+            raise ValueError(
+                f"Cannot add RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
+            )
 
         return RealspaceOperator(self.modes, self.ops, Node.sum_node(self.coeffs, other.coeffs))
 
@@ -73,7 +75,9 @@ class RealspaceOperator:
             raise ValueError(f"Cannot subtract term {self.ops} with term {other.ops}.")
 
         if self.modes != other.modes:
-            raise ValueError(f"Cannot subtract RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes.")
+            raise ValueError(
+                f"Cannot subtract RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
+            )
 
         return RealspaceOperator(
             self.modes, self.ops, Node.sum_node(self.coeffs, Node.scalar_node(-1, other.coeffs))
@@ -99,9 +103,13 @@ class RealspaceOperator:
             return self
 
         if self.modes != other.modes:
-            raise ValueError(f"Cannot multiply RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes.")
+            raise ValueError(
+                f"Cannot multiply RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
+            )
 
-        return RealspaceOperator(self.modes, self.ops + other.ops, Node.outer_node(self.coeffs, other.coeffs))
+        return RealspaceOperator(
+            self.modes, self.ops + other.ops, Node.outer_node(self.coeffs, other.coeffs)
+        )
 
     def __repr__(self) -> str:
         return f"({self.ops.__repr__()}, {self.coeffs.__repr__()})"
@@ -130,7 +138,9 @@ class RealspaceSum(Fragment):
         # pylint: disable=unnecessary-lambda
         for op in ops:
             if op.modes != modes:
-                raise ValueError(f"RealspaceSum on {modes} modes can only contain RealspaceOperators on {modes}. Found a RealspaceOperator on {op.modes} modes.")
+                raise ValueError(
+                    f"RealspaceSum on {modes} modes can only contain RealspaceOperators on {modes}. Found a RealspaceOperator on {op.modes} modes."
+                )
 
         ops = tuple(filter(lambda op: not op.is_zero, ops))
         self.is_zero = len(ops) == 0
@@ -145,7 +155,9 @@ class RealspaceSum(Fragment):
 
     def __add__(self, other: RealspaceSum) -> RealspaceSum:
         if self.modes != other.modes:
-            raise ValueError(f"Cannot add RealspaceSum on {self.modes} modes with RealspaceSum on {other.modes} modes.")
+            raise ValueError(
+                f"Cannot add RealspaceSum on {self.modes} modes with RealspaceSum on {other.modes} modes."
+            )
 
         l_ops = {term.ops for term in self.ops}
         r_ops = {term.ops for term in other.ops}
@@ -165,7 +177,9 @@ class RealspaceSum(Fragment):
 
     def __sub__(self, other: RealspaceSum) -> RealspaceSum:
         if self.modes != other.modes:
-            raise ValueError(f"Cannot subtract RealspaceSum on {self.modes} modes with RealspaceSum on {other.modes} modes.")
+            raise ValueError(
+                f"Cannot subtract RealspaceSum on {self.modes} modes with RealspaceSum on {other.modes} modes."
+            )
 
         l_ops = {term.ops for term in self.ops}
         r_ops = {term.ops for term in other.ops}
@@ -195,11 +209,14 @@ class RealspaceSum(Fragment):
         return self
 
     def __matmul__(self, other: RealspaceSum) -> RealspaceSum:
-        return RealspaceSum(self.modes,
+        return RealspaceSum(
+            self.modes,
             [
-                RealspaceOperator(self.modes, l_term.ops + r_term.ops, l_term.coeffs @ r_term.coeffs)
+                RealspaceOperator(
+                    self.modes, l_term.ops + r_term.ops, l_term.coeffs @ r_term.coeffs
+                )
                 for l_term, r_term in product(self.ops, other.ops)
-            ]
+            ],
         )
 
     def __repr__(self) -> str:

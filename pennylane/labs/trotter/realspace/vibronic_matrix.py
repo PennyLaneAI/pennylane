@@ -194,7 +194,9 @@ class VibronicMatrix(Fragment):
                 f"Cannot multiply VibronicMatrix on {self.states} states with VibronicMatrix on {other.states} states."
             )
 
-        product_matrix = VibronicMatrix(self.states, self.modes, sparse=(self.sparse and other.sparse))
+        product_matrix = VibronicMatrix(
+            self.states, self.modes, sparse=(self.sparse and other.sparse)
+        )
 
         for i, j in product(range(self.states), repeat=2):
             block_products = [self.block(i, k) @ other.block(k, j) for k in range(self.states)]
