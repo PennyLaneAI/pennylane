@@ -624,10 +624,10 @@ class TestDiagonalizeMCMs:
         assert isinstance(new_tape.operations[-1], MidMeasureMP)
         assert new_tape.operations[-1].reset == reset
 
-    def test_diagonalize_mcm_cond_two_outcomes(self):
+    def test_diagonalize_mcm_applied_in_cond(self):
         """Test that the diagonalize_mcm transform works as expected on a tape
-        containing a conditional with two ParametricMidMeasureMPs as the true
-        and false condition respectively"""
+        conditionally applying two ParametricMidMeasureMPs as the true and false
+        condition respectively"""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)
@@ -659,7 +659,7 @@ class TestDiagonalizeMCMs:
         assert isinstance(measurement, MidMeasureMP)
         assert not isinstance(measurement, ParametricMidMeasureMP)
 
-    def test_diagonalizing_measurements_cond_and_op(self):
+    def test_diagonalizing_mcm_used_as_cond_and_op(self):
         """Test that when calling diagonalize_mcms, references to previously
         diagonalized measurements that are stored in conditions on Conditional
         operators are updated to track the measurement on the tape following
@@ -687,7 +687,7 @@ class TestDiagonalizeMCMs:
 
         assert new_tape.operations[3].meas_val.measurements == [new_mp]
 
-    def test_diagonalizing_measurement_condition(self):
+    def test_diagonalizing_mcm_used_as_cond(self):
         """Test that when calling diagonalize_mcms, references to previously
         diagonalized measurements that are stored in conditions on Conditional
         operators are updated to track the measurement on the tape following
@@ -714,6 +714,31 @@ class TestDiagonalizeMCMs:
         assert isinstance(new_mp, MidMeasureMP)
 
         assert new_tape.operations[3].meas_val.measurements == [new_mp]
+
+    def test_diagonalizing_cascading_conditional_mcms(self):
+        """Test that when calling diagonalize_mcms, the MCMs returned by
+        conditionals and used subsequently in another conditional are tracked correctly"""
+
+        # with qml.queuing.AnnotatedQueue() as q:
+        #     qml.RX(1.2, 0)
+        #     m = measure_arbitrary_basis(0, angle=1.2, plane="YZ")
+        #     m = qml.cond(mv == 0, measure_x, measure_y)(wires=2)
+        #     qml.cond()
+        #
+        # original_tape = qml.tape.QuantumScript.from_queue(q)
+        # old_mp = original_tape.operations[1]
+        # assert isinstance(old_mp, ParametricMidMeasureMP)
+        #
+        # (new_tape,), _ = diagonalize_mcms(original_tape)
+        # assert len(new_tape.operations) == 4
+        # for op in new_tape.operations[3:]:
+        #     assert isinstance(op, qml.ops.Conditional)
+        #
+        # new_mp = new_tape.operations[2]
+        # assert not isinstance(new_mp, ParametricMidMeasureMP)
+        # assert isinstance(new_mp, MidMeasureMP)
+        #
+        # assert new_tape.operations[3].meas_val.measurements == [new_mp]
 
 
 class TestWorkflows:

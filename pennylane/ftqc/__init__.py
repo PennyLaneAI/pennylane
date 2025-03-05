@@ -36,6 +36,7 @@ from .parametric_midmeasure import (
     measure_z,
     diagonalize_mcms,
 )
+from .conditional_measure import cond_meas
 from .lattice import Lattice, generate_lattice
 
 __all__ = [
@@ -43,6 +44,7 @@ __all__ = [
     "ParametricMidMeasureMP",
     "XMidMeasureMP",
     "YMidMeasureMP",
+    "cond_meas",
     "measure_arbitrary_basis",
     "measure_x",
     "measure_y",
