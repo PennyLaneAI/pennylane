@@ -991,6 +991,10 @@ def sqrt_matrix_sparse(density_matrix):
         )
     if density_matrix.nnz == 0:
         return density_matrix
+    # NOTE: the following steps should be re-visited in the future to establish 
+    # better understanding and control over the heuristics we chose
+    # 1. choice of max iteration and tolerance for denman beavers, sc-85713
+    # 2. different methods for sparse matrix square root, sc-85710
     return _denman_beavers_iterations(density_matrix, max_iter=100, tol=1e-10)
 
 
