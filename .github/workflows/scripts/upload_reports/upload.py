@@ -9,11 +9,10 @@ class PLOSSSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="PENNYLANE_OSS_SERVER_")
 
-    #TODO: Remove _dev suffixes before merging
-    endpoint_url_dev: str
+    endpoint_url: str
     """URL of the PennyLane OSS Service."""
 
-    api_key_dev: str
+    api_key: str
     """API key to be supplied to the PennyLane OSS Service."""
 
 
@@ -45,12 +44,12 @@ def upload_reports(report_contents: dict):
     settings = PLOSSSettings()
 
     payload = json.dumps(report_contents)
-    headers = {"Authorization": f"Bearer {settings.api_key_dev}"}
+    headers = {"Authorization": f"Bearer {settings.api_key}"}
 
     try:
-        print(f"Attempting to upload reports to {settings.endpoint_url_dev}")
+        print(f"Attempting to upload reports to {settings.endpoint_url}")
         response = requests.post(
-            settings.endpoint_url_dev,
+            settings.endpoint_url,
             headers=headers,
             json=payload,
         )
