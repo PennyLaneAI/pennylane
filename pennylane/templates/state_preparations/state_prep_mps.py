@@ -250,7 +250,7 @@ class MPSPrep(Operation):
 
     **Example**
 
-    Example using the `lightning.tensor` device:
+    Example using the ``lightning.tensor`` device:
 
     .. code-block::
 
@@ -277,7 +277,7 @@ class MPSPrep(Operation):
         [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
         0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
 
-    Example using the `default.qubit` device:
+    Example using the ``default.qubit`` device:
 
     .. code-block::
 
