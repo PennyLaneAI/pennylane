@@ -28,6 +28,9 @@ Functions
     ~lie_closure
     ~structure_constants
     ~center
+    ~cartan_decomp
+    ~check_cartan_decomp
+    ~check_commutation
 
 Involutions
 ~~~~~~~~~~~
@@ -47,7 +50,6 @@ two isomorphic simple components (``ClassB``), see `here <https://en.wikipedia.o
 
     ~even_odd_involution
     ~concurrence_involution
-    ~khaneja_glaser_involution
     ~AI
     ~AII
     ~AIII
