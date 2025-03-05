@@ -195,7 +195,6 @@ def specs(
         for tape in batch:
 
             info = copy(tape.specs)
-            print(info, type(info))
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
             info["device_name"] = qnode.device.name
