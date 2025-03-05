@@ -220,6 +220,14 @@ jobs:
           path: ${{ inputs.pytest_durations_file_path }}
           include-hidden-files: true
 
+      - name: Upload Test Report as artifact
+        if: inputs.pytest_xml_file_path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ inputs.job_name }}
+          path: ${{ inputs.pytest_xml_file_path }}
+          include-hidden-files: true
+
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
