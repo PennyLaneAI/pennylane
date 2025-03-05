@@ -4,39 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
-  `qml.defer_measurements` can be executed on `default.qubit`.
-  [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
-  [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
-  [(#6961)](https://github.com/PennyLaneAI/pennylane/pull/6961)
-
-  Using `qml.defer_measurements` with program capture enables many new features, including:
-  * Significantly richer variety of classical processing on mid-circuit measurement values.
-  * Using mid-circuit measurement values as gate parameters.
-
-  Functions such as the following can now be captured:
-
-  ```python
-  import jax.numpy as jnp
-
-  qml.capture.enable()
-
-  def f(x):
-      m0 = qml.measure(0)
-      m1 = qml.measure(0)
-      a = jnp.sin(0.5 * jnp.pi * m0)
-      phi = a - (m1 + 1) ** 4
-
-      qml.s_prod(x, qml.RZ(phi, 0))
-
-      return qml.expval(qml.Z(0))
-  ```
-
-* Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
-  following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
-  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
-  [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
-
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
@@ -238,6 +205,67 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Transforms can now be applied to executable workflows without using `qml.capture.expand_plxpr_transforms`.
+  when using program capture.
+  [(#6914)](https://github.com/PennyLaneAI/pennylane/pull/6914/)
+
+  ```python
+  qml.capture.enable()
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.transforms.cancel_inverses
+  @qml.qnode(dev)
+  def f():
+      qml.X(0)
+      qml.Hadamard(1)
+      qml.X(0)
+      qml.Hadamard(1)
+      qml.Hadamard(1)
+      return qml.expval(qml.Z(0)), qml.expval(qml.X(1))
+  ```
+
+  ```pycon
+  >>> f()
+  (Array(1., dtype=float64), Array(1., dtype=float64))
+  ```
+
+* `QNode` now supports using the `mcm_method` and `postselect_mode` arguments with program capture enabled.
+  [(#6914)](https://github.com/PennyLaneAI/pennylane/pull/6914/)
+
+* `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
+  `qml.defer_measurements` can be executed on `default.qubit`.
+  [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
+  [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
+  [(#6961)](https://github.com/PennyLaneAI/pennylane/pull/6961)
+
+  Using `qml.defer_measurements` with program capture enables many new features, including:
+  * Significantly richer variety of classical processing on mid-circuit measurement values.
+  * Using mid-circuit measurement values as gate parameters.
+
+  Functions such as the following can now be captured:
+
+  ```python
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  def f(x):
+      m0 = qml.measure(0)
+      m1 = qml.measure(0)
+      a = jnp.sin(0.5 * jnp.pi * m0)
+      phi = a - (m1 + 1) ** 4
+
+      qml.s_prod(x, qml.RZ(phi, 0))
+
+      return qml.expval(qml.Z(0))
+  ```
+
+* Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators 
+  following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
+  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
+  [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
+
 * `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives
   when using program capture to jaxpr.
   [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
@@ -415,6 +443,13 @@
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
+
+* `TransformProgram.__call__` can now take `jax.core.Jaxpr` as input and return new `jax.core.ClosedJaxpr`
+  to which all transforms in the program are applied.
+  [(#6914)](https://github.com/PennyLaneAI/pennylane/pull/6914/)
+
+* `TransformDispatcher` no longer binds a transform primitive when transforming `QNode`s with program capture.
+  [(#6914)](https://github.com/PennyLaneAI/pennylane/pull/6914/)
 
 * Add `NotImplementedError`s for `grad` and `jacobian` in `CollectOpsandMeas`.
   [(#7041)](https://github.com/PennyLaneAI/pennylane/pull/7041)
