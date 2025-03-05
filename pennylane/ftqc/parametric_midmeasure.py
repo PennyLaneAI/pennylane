@@ -674,17 +674,8 @@ def _consolidate_conditional_measurements(ops):
                 # true_fn and false_fn, so we make that assumption in the PL tape transform
                 # for Catalyst and ProgramCapture, it is also possible to have additional elif functions
                 true_cond, false_cond = (op, ops[i + 1] if i < len(ops) else None)
+                _validate_false_cond(true_cond, false_cond)
                 curr_idx += 1
-
-                # ToDo: we could actually make this error more helpful and specific (but its already pretty specific)
-                if not _false_cond_matches_true(true_cond, false_cond):
-                    raise ValueError(
-                        "Using `cond` to add mid-circuit measurements to a circuit must always "
-                        "result in application of a mid-circuit measurement. The `wire`, "
-                        "`postselect` and `reset` behaviour must also be consistent for all "
-                        "branches of the conditional. Only the basis of the measurement (defined "
-                        "by measurement type or by `plane` and `angle`) can vary."
-                    )
 
                 # add conditional diagonalizing gates + conditional MCM to the tape
                 with qml.QueuingManager.stop_recording():
@@ -718,20 +709,34 @@ def _consolidate_conditional_measurements(ops):
     return new_operations
 
 
-def _false_cond_matches_true(true_cond, false_cond):
+def _validate_false_cond(true_cond, false_cond):
     """Takes a pair of Conditional MCMs (representing a true and false condition) and confirms that
     the group is complete, i.e. that each input for the measurement values maps to one output"""
 
-    if not is_conditional_mcm(false_cond):
-        return False
+    # if the 2nd op isn't a conditional MCM dependent on the same measurement values,
+    # then a `false_fn` wasn't provided
+    if (
+        not is_conditional_mcm(false_cond)
+        or true_cond.meas_val.measurements != false_cond.meas_val.measurements
+    ):
+        raise ValueError(
+            "Using `cond` to add mid-circuit measurements to a circuit must always "
+            "result in application of a mid-circuit measurement. Make sure any "
+            "instances of `qml.cond` that apply a measurement for their `true_fn` "
+            "also apply a measurement for their `false_fn`"
+        )
 
     if not (
-        true_cond.meas_val.measurements == false_cond.meas_val.measurements
+        true_cond.base.wires == false_cond.base.wires
         and true_cond.base.reset == false_cond.base.reset
         and true_cond.base.postselect == false_cond.base.postselect
-        and true_cond.base.wires == false_cond.base.wires
     ):
-        return False
+        raise ValueError(
+            "When applying a mid-circuit measurement in `cond`, the `wire`, "
+            "`postselect` and `reset` behaviour must be consistent for all "
+            "branches of the conditional. Only the basis of the measurement (defined "
+            "by measurement type or by `plane` and `angle`) can vary."
+        )
 
     # ToDo: is this even relevant anymore since PL doesn't support elif? or can we just return True here?
     meas_vals = [true_cond.meas_val, false_cond.meas_val]
@@ -743,4 +748,5 @@ def _false_cond_matches_true(true_cond, false_cond):
     # (i.e. each input is true for one conditional, and false for all the others)
     all_branches_true_once = np.allclose(np.sum(all_outcomes, axis=0), 1)
 
-    return all_branches_true_once
+    if not all_branches_true_once:
+        raise ValueError("can I even make it raise this error or is this part redundant?")
