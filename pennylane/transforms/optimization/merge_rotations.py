@@ -73,7 +73,7 @@ def _get_plxpr_merge_rotations():
             for w in op.wires:
                 self.previous_ops[w] = op
 
-        def _interpret_all_previous_ops_on_wires(self, wires) -> None:
+        def _interpret_previous_ops_on_wires(self, wires) -> None:
             """Interpret all operators that are detected to be on a set of wires."""
 
             previous_ops_on_wires = self._get_previous_ops_on_wires(wires)
