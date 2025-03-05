@@ -198,3 +198,10 @@ class TestCaptureTransforms:
 
         assert qfunc_jaxpr.eqns[1].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+class TestTransformProgram:
+    """Unit tests for using TransformProgram with program capture."""
+
+    def test_call_program_capture(self):
+        """Test that calling a TransformProgram with jaxpr as input works correctly."""
