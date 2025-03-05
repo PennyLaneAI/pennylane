@@ -200,6 +200,7 @@ class TestCaptureTransforms:
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
+# pylint: disable=too-few-public-methods
 class TestTransformProgram:
     """Unit tests for using TransformProgram with program capture."""
 

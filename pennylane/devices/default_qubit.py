@@ -528,8 +528,23 @@ class DefaultQubit(Device):
     ) -> tuple[TransformProgram, ExecutionConfig]:
         updated_values = {}
 
+        gradient_method = execution_config.gradient_method
         if execution_config.gradient_method == "best":
-            updated_values["gradient_method"] = "backprop"
+            no_max_workers = (
+                execution_config.device_options.get("max_workers", self._max_workers) is None
+            )
+            gradient_method = "backprop" if no_max_workers else "adjoint"
+            updated_values["gradient_method"] = gradient_method
+
+        if execution_config.use_device_gradient is None:
+            updated_values["use_device_gradient"] = gradient_method in {
+                "adjoint",
+                "backprop",
+            }
+        if execution_config.use_device_jacobian_product is None:
+            updated_values["use_device_jacobian_product"] = gradient_method == "adjoint"
+        if execution_config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = gradient_method == "adjoint"
 
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
         for option in self._device_options:
