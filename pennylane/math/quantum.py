@@ -20,7 +20,7 @@ from string import ascii_letters as ABC
 
 from autoray import numpy as np
 from numpy import float64  # pylint:disable=wrong-import-order
-from scipy.sparse import issparse
+import scipy as sp
 
 import pennylane as qml
 
@@ -957,6 +957,8 @@ def sqrt_matrix(density_matrix):
     Returns:
         (tensor_like): Square root of the density matrix.
     """
+    if sp.sparse.issparse(density_matrix):
+        return sp.sparse.csr_matrix(sp.linalg.sqrtm(density_matrix.toarray()))
     evs, vecs = qml.math.linalg.eigh(density_matrix)
     evs = qml.math.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
