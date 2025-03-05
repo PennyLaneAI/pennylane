@@ -33,6 +33,8 @@ def cartan_decomp(
 
     The ``involution`` argument can be any function that maps the operators in the provided ``g`` to a boolean output.
     ``True`` for operators that go into :math:`\mathfrak{k}` and ``False`` for operators in :math:`\mathfrak{m}`.
+    It is assumed that all operators in the input ``g`` belong to either :math:`\mathfrak{k}` or
+    :math:`\mathfrak{m}`.
 
     The resulting subspaces fulfill the Cartan commutation relations
 

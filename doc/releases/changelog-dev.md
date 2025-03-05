@@ -39,20 +39,21 @@
 
 * Created a new ``qml.liealg`` module for Lie algebra functionality.
 
-  ``pennylane.liealg.cartan_decomp`` allows to perform Cartan decompositions using _involution_ functions that return a boolean value.
+  ``qml.liealg.cartan_decomp`` allows to perform Cartan decompositions using _involution_ functions that return a boolean value.
   A variety of typically encountered involution functions are included in the module, in particular the following:
 
   ```
   even_odd_involution
   concurrence_involution
+  A
   AI
   AII
   AIII
+  BD
   BDI
+  DIII
   CI
   CII
-  DIII
-  ClassB
   ```
 
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)

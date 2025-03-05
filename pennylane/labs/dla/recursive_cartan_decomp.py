@@ -34,34 +34,34 @@ _basis_change_constructors = {
     ("AI", "DIII"): IDENTITY,
     ("AII", "CI"): IDENTITY,
     ("AII", "CII"): IDENTITY,
-    ("AIII", "ClassB"): IDENTITY,
-    ("BDI", "ClassB"): IDENTITY,
+    ("AIII", "A"): IDENTITY,
+    ("BDI", "BD"): IDENTITY,
     ("CI", "AI"): pauli_y_eigenbasis,
     ("CI", "AII"): pauli_y_eigenbasis,
     ("CI", "AIII"): IDENTITY,
-    ("CII", "ClassB"): IDENTITY,
+    ("CII", "C"): IDENTITY,
     ("DIII", "AI"): pauli_y_eigenbasis,
     ("DIII", "AII"): pauli_y_eigenbasis,
     ("DIII", "AIII"): pauli_y_eigenbasis,
-    ("ClassB", "AI"): IDENTITY,
-    ("ClassB", "AII"): IDENTITY,
-    ("ClassB", "AIII"): IDENTITY,
-    ("ClassB", "BDI"): IDENTITY,
-    ("ClassB", "DIII"): IDENTITY,
-    ("ClassB", "CI"): IDENTITY,
-    ("ClassB", "CII"): IDENTITY,
+    ("A", "AI"): IDENTITY,
+    ("A", "AII"): IDENTITY,
+    ("A", "AIII"): IDENTITY,
+    ("BD", "BDI"): IDENTITY,
+    ("BD", "DIII"): IDENTITY,
+    ("C", "CI"): IDENTITY,
+    ("C", "CII"): IDENTITY,
 }
 
 
-def _check_classb_sequence(before, after):
-    if before == "AIII" and after.startswith("A"):
+def _check_abcd_sequence(before, current, after):
+    if before == "AIII" and current == "A" and after in ("AI", "AII", "AIII"):
         return
-    if before == "BDI" and after in ("BDI", "DIII"):
+    if before == "BDI" and current == "BD" and after in ("BDI", "DIII"):
         return
-    if before == "CII" and after.startswith("C"):
+    if before == "CII" and current == "C" and after in ("CI", "CII"):
         return
     raise ValueError(
-        f"The 3-sequence ({before}, ClassB, {after}) of involutions is not a valid sequence."
+        f"The 3-sequence ({before}, {current}, {after}) of involutions is not a valid sequence."
     )
 
 
@@ -80,9 +80,9 @@ def _check_chain(chain, num_wires):
                 f"The specified chain contains the pair {'-->'.join(invol_pair)}, "
                 "which is not a valid pair."
             )
-        # Run specific check for sequence of three involutions where ClassB is the middle one
-        if name == "ClassB" and i > 0:
-            _check_classb_sequence(names[i - 1], names[i + 1])
+        # Run specific check for sequence of three involutions where A, BD or C is the middle one
+        if name in ("A", "BD", "C") and i > 0:
+            _check_abcd_sequence(names[i - 1], name, names[i + 1])
         bc_constructor = _basis_change_constructors[invol_pair]
         if bc_constructor is IDENTITY:
             bc = bc_constructor
@@ -118,14 +118,16 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
         g (tensor_like): Basis of the algebra to be decomposed.
         chain (Iterable[Callable]): Sequence of involutions. Each callable should be
             one of
-            :func:`~.pennylane.labs.dla.AI`,
-            :func:`~.pennylane.labs.dla.AII`,
-            :func:`~.pennylane.labs.dla.AIII`,
-            :func:`~.pennylane.labs.dla.BDI`,
-            :func:`~.pennylane.labs.dla.CI
-            :func:`~.pennylane.labs.dla.CII`,
-            :func:`~.pennylane.labs.dla.DIII`, or
-            :func:`~.pennylane.labs.dla.ClassB`,
+            :func:`~.pennylane.liealg.A`,
+            :func:`~.pennylane.liealg.AI`,
+            :func:`~.pennylane.liealg.AII`,
+            :func:`~.pennylane.liealg.AIII`,
+            :func:`~.pennylane.liealg.BD`,
+            :func:`~.pennylane.liealg.BDI`,
+            :func:`~.pennylane.liealg.DIII`,
+            :func:`~.pennylane.liealg.C`,
+            :func:`~.pennylane.liealg.CI`,
+            :func:`~.pennylane.liealg.CII`,
             or a partial evolution thereof.
         validate (bool): Whether or not to verify that the involutions return a subalgebra.
         verbose (bool): Whether or not to print status updates during the computation.
@@ -166,24 +168,24 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     explicitly above, we leave it in the algebra here, and see that it does not cause problems.
     We discuss the ``wire`` keyword argument below.
 
-    >>> from pennylane.labs.dla import AII, CI, BDI, ClassB
+    >>> from pennylane.labs.dla import AII, CI, BD, BDI
     >>> from functools import partial
     >>> chain = [
     ...     AII,
     ...     CI,
     ...     AI,
     ...     partial(BDI, wire=1),
-    ...     partial(ClassB, wire=1),
+    ...     partial(BD, wire=1),
     ...     partial(DIII, wire=2),
     ... ]
     >>> g = [qml.matrix(op, wire_order=range(4)) for op in qml.pauli.pauli_group(4)] # u(16)
     >>> decompositions = recursive_cartan_decomp(g, chain)
-    Iteration 0:  256 ----AII---->  136, 120
-    Iteration 1:  136 -----CI---->   64,  72
-    Iteration 2:   64 -----AI---->   28,  36
-    Iteration 3:   28 ----BDI---->   12,  16
-    Iteration 4:   12 ---ClassB-->    6,   6
-    Iteration 5:    6 ----DIII--->    4,   2
+    Iteration 0:  256 ---AII--->  136, 120
+    Iteration 1:  136 ----CI--->   64,  72
+    Iteration 2:   64 ----AI--->   28,  36
+    Iteration 3:   28 ---BDI--->   12,  16
+    Iteration 4:   12 ----BD--->    6,   6
+    Iteration 5:    6 ---DIII-->    4,   2
 
     The obtained chain of algebras is
 
@@ -248,7 +250,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
         if validate:
             check_cartan_decomp(k, m, verbose=verbose)
         if verbose:
-            print(f"Iteration {i}: {len(g):>4} -{name:-^10}> {len(k):>4},{len(m):>4}")
+            print(f"Iteration {i}: {len(g):>4} -{name:-^8}> {len(k):>4},{len(m):>4}")
         decompositions[i] = (k, m)
         if not bc is IDENTITY:
             k = _apply_basis_change(bc, k)

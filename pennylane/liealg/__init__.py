@@ -36,12 +36,16 @@ Involutions
 ~~~~~~~~~~~
 
 A map :math:`\theta: \mathfrak{g} \rightarrow \mathfrak{g}` from the Lie algebra :math:`\mathfrak{g}` to itself is called an involution
-when it fulfills :math:`\theta(\theta(g)) = g \ \forall g \in \mathfrak{g}` and is compatible with commutators,
+if it fulfills :math:`\theta(\theta(g)) = g \ \forall g \in \mathfrak{g}` and is compatible with commutators,
 :math:`[\theta(g), \theta(g')]=\theta([g, g']).` Involutions are used to construct a :func:`~cartan_decomp`. There are seven canonical
-Cartan involutions of real simple Lie algebras (``AI, AII, AIII, BDI, CI, CII, DIII``),
-see `Wikipedia <https://en.wikipedia.org/wiki/Symmetric_space#Classification_result>`__.
-In addition, there is a canonical Cartan involution for real semisimple algebras that consist of
-two isomorphic simple components (``ClassB``), see `here <https://en.wikipedia.org/wiki/Symmetric_space#Classification_scheme>`__.
+Cartan involutions of classical real simple Lie algebras (``AI, AII, AIII, BDI, DIII, CI, CII``)
+and one canonical involution for each real semisimple Lie algebra made up of two isomorphic
+classical simple components (``A, BD, C``).
+See, for example, Tab. 4 in `Edelman and Jeong <https://arxiv.org/abs/2104.08669>`__
+Note that the functions implemented here do not represent the mathematical involutions directly,
+but return a boolean value that indicates whether or not the input is in the :math:`+1` eigenspace
+of :math:`\theta`. When using them, it is usually assumed that we apply them to operators in the
+eigenbasis of the underlying involution :math:`\theta`.
 
 .. currentmodule:: pennylane.liealg
 
@@ -50,14 +54,16 @@ two isomorphic simple components (``ClassB``), see `here <https://en.wikipedia.o
 
     ~even_odd_involution
     ~concurrence_involution
+    ~A
     ~AI
     ~AII
     ~AIII
+    ~BD
     ~BDI
+    ~DIII
+    ~C
     ~CI
     ~CII
-    ~DIII
-    ~ClassB
 
 
 Relevant demos
@@ -83,12 +89,14 @@ from .cartan_decomp import cartan_decomp, check_cartan_decomp, check_commutation
 from .involutions import (
     even_odd_involution,
     concurrence_involution,
+    A,
     AI,
     AII,
     AIII,
+    BD,
     BDI,
+    DIII,
+    C,
     CI,
     CII,
-    DIII,
-    ClassB,
 )
