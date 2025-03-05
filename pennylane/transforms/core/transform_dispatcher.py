@@ -158,7 +158,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if isinstance(obj, qml.QNode):
             if qml.capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
+                return self._capture_qnode_transform(obj, targs, tkwargs)
             return self._qnode_transform(obj, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
@@ -173,7 +173,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if callable(obj):
             if qml.capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
+                return self._capture_qfunc_transform(obj, targs, tkwargs)
             return self._qfunc_transform(obj, targs, tkwargs)
 
         if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
@@ -286,7 +286,12 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         )
         return qnode
 
-    def _capture_callable_transform(self, qfunc, targs, tkwargs):
+    def _capture_qnode_transform(self, qnode, targs, tkwargs):
+        # This does the same thing as `default_qnode_transform`, but a new method
+        # is still added so that we can change it if we want to in the future.
+        return self.default_qnode_transform(qnode, targs, tkwargs)
+
+    def _capture_qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function when program capture is enabled"""
 
         @functools.wraps(qfunc)
@@ -540,6 +545,8 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
 def _create_transform_primitive(name):
     try:
         # pylint: disable=import-outside-toplevel
+        import jax
+
         from pennylane.capture.custom_primitives import NonInterpPrimitive
     except ImportError:
         return None
@@ -552,7 +559,12 @@ def _create_transform_primitive(name):
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
-        raise NotImplementedError
+        # Transform primitives effectively have a dummy implementation. We don't want to
+        # apply transforms when a function is called, but rather internally inside our
+        # execution pipeline.
+        consts = all_args[consts_slice]
+        args = all_args[args_slice]
+        return jax.core.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
     def _(*_, inner_jaxpr, **__):
