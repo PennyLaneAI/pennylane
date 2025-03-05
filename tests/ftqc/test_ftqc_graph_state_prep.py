@@ -14,10 +14,13 @@
 # pylint: disable=no-name-in-module, no-self-use, protected-access
 """Unit tests for the GraphStatePrep module"""
 
+import copy
+
 import pytest
 
 import pennylane as qml
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
+from pennylane.ops.functions import assert_valid
 from pennylane.transforms.decompose import decompose
 
 
@@ -36,6 +39,7 @@ class TestGraphStatePrep:
             return qml.probs()
 
         circuit(q)
+        assert_valid(GraphStatePrep(qubit_graph=q))
 
     @pytest.mark.parametrize(
         "dims, shape, expected",
