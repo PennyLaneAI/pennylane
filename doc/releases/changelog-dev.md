@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a class `qml.capture.transforms.MergeRotationsInterpreter` that merges rotation operators
+  following the same API as `qml.transforms.optimization.merge_rotations` when experimental program capture is enabled.
+  [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
+
 * `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
   `qml.defer_measurements` can be executed on `default.qubit`.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
@@ -41,7 +45,14 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
+  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
+
 <h3>Improvements 🛠</h3>
+
+* Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
+  handle sparse matrices.
+  [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
 
 * Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
   following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
@@ -292,6 +303,11 @@
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
   [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
 
+* Added class `qml.capture.transforms.CommuteControlledInterpreter` that moves commuting gates past control 
+  and target qubits of controlled operations when experimental program capture is enabled.
+  It follows the same API as `qml.transforms.commute_controlled`.
+  [(#6946)](https://github.com/PennyLaneAI/pennylane/pull/6946)
+
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
   be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
   same shapes and data types will be able to use this cached plxpr instead of capturing the program again.
@@ -365,6 +381,9 @@
 
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
+* ``pennylane.labs.dla.structure_constants_dense`` is removed and integrated into ``qml.structure_constants`` using the new ``matrix`` keyword.
+  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
@@ -574,6 +593,11 @@
 
 * The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
   [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
+
+* Processing mid-circuit measurements inside conditionals is not supported and previously resulted in 
+  unclear error messages or incorrect results. It is now explicitly not allowed, and raises an error when 
+  processing the tape.
+  [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)
 
 <h3>Contributors ✍️</h3>
 
