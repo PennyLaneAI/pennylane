@@ -979,7 +979,7 @@ def sqrt_matrix_sparse(sparse_matrix):
     r"""Compute the square root matrix of a positive-definite Hermitian matrix where :math:`\rho = \sqrt{\rho} \times \sqrt{\rho}`
 
     Args:
-        density_matrix (sparse): 2D sparse density matrix of the quantum system.
+        sparse_matrix (sparse): 2D sparse density matrix of the quantum system.
 
     Returns:
        (sparse): Square root of the density matrix. Even for data types like `csr_matrix` or `csc_matrix`, the output matrix is not guaranteed to be sparse as well.
