@@ -317,6 +317,7 @@ def decompose(
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
     ] = None,
     name: str = "device",
+    gate_set: set = None,
     fixed_decomps: dict = None,
     alt_decomps: dict = None,
     error: Optional[Type[Exception]] = None,
@@ -422,12 +423,13 @@ def decompose(
 
     if qml.decomposition.enabled_graph():
 
-        # FIXME(Ali): remove this after the decomposition graph is fully implemented.
+        # TODO(Ali): remove it after merging this with qml.transforms.decompose
         try:
             # pylint: disable=import-outside-toplevel
             from pennylane.decomposition import DecompositionGraph
 
-            target_gate_names = target_gate_names | set([gate.name for gate in target_gate_types])
+            # TODO(Ali): remove this when the decomposition graph works stopping_condition
+            target_gate_names = gate_set
 
             if qml.decomposition.enabled_graph_debug():
                 print(
