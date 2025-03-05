@@ -11,8 +11,67 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-A module for creating and handling Lie algebras
+r"""
+Overview
+--------
+
+This module contains Lie algebra functionality.
+
+Functions
+^^^^^^^^^
+
+.. currentmodule:: pennylane.liealg
+
+.. autosummary::
+    :toctree: api
+
+    ~lie_closure
+    ~structure_constants
+    ~center
+
+Involutions
+~~~~~~~~~~~
+
+A map :math:`\theta: \mathfrak{g} \rightarrow \mathfrak{g}` from the Lie algebra :math:`\mathfrak{g}` to itself is called an involution
+when it fulfills :math:`\theta(\theta(g)) = g \ \forall g \in \mathfrak{g}` and is compatible with commutators,
+:math:`[\theta(g), \theta(g')]=\theta([g, g']).` Involutions are used to construct a :func:`~cartan_decomp`. There are seven canonical
+Cartan involutions of real simple Lie algebras (``AI, AII, AIII, BDI, CI, CII, DIII``),
+see `Wikipedia <https://en.wikipedia.org/wiki/Symmetric_space#Classification_result>`__.
+In addition, there is a canonical Cartan involution for real semisimple algebras that consist of
+two isomorphic simple components (``ClassB``), see `here <https://en.wikipedia.org/wiki/Symmetric_space#Classification_scheme>`__.
+
+.. currentmodule:: pennylane.liealg
+
+.. autosummary::
+    :toctree: api
+
+    ~even_odd_involution
+    ~concurrence_involution
+    ~khaneja_glaser_involution
+    ~AI
+    ~AII
+    ~AIII
+    ~BDI
+    ~CI
+    ~CII
+    ~DIII
+    ~ClassB
+
+
+Relevant demos
+--------------
+
+Lie algebra functionality in PennyLane.
+Relevant demos to check out:
+
+* :doc:`Introducing (dynamical) Lie algebras for quantum practitioners <demos/tutorial_liealgebra>`
+* :doc:`g-sim: Lie-algebraic classical simulations for variational quantum computing <demos/tutorial_liesim>`
+* :doc:`(g + P)-sim: Extending g-sim by non-DLA observables and gates <demos/tutorial_liesim_extension>`
+* :doc:`Fixed depth Hamiltonian simulation via Cartan decomposition <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`
+* :doc:`The KAK decomposition <demos/tutorial_kak_decomposition>`
+
+
+
 """
 
 from .structure_constants import structure_constants
