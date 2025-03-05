@@ -21,7 +21,7 @@ import functools
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import add_decomposition, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -269,4 +269,4 @@ def _qft_decomposition(wires: WiresLike, n_wires, **__):
     swaps()
 
 
-add_decomposition(QFT, _qft_decomposition)
+add_decomps(QFT, _qft_decomposition)

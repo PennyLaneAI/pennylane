@@ -589,7 +589,7 @@ def _pauli_rot_resources(pauli_word):
 
 
 pauli_rot_decomposition = qml.register_resources(_pauli_rot_resources, _pauli_rot_decomposition)
-add_decomposition(PauliRot, pauli_rot_decomposition)
+add_decomps(PauliRot, pauli_rot_decomposition)
 
 
 class PCPhase(Operation):
