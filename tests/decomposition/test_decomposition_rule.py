@@ -126,7 +126,7 @@ class TestDecompositionRule:
         class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             pass
 
-        assert not qml.has_decomposition(CustomOp)
+        assert not qml.has_decomp(CustomOp)
 
         @qml.register_resources({qml.RZ: 2, qml.CNOT: 1})
         def custom_decomp(theta, wires, **__):
@@ -140,11 +140,25 @@ class TestDecompositionRule:
             qml.CZ(wires=[wires[0], wires[1]])
             qml.RX(theta, wires=wires[0])
 
-        qml.add_decomposition(CustomOp, custom_decomp)
-        qml.add_decomposition(CustomOp, custom_decomp2)
+        @qml.register_resources({qml.RY: 2, qml.CNOT: 1})
+        def custom_decomp3(theta, wires, **__):
+            qml.RY(theta, wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RY(theta, wires=wires[0])
 
-        assert qml.has_decomposition(CustomOp)
-        assert qml.get_decompositions(CustomOp) == [custom_decomp, custom_decomp2]
+        qml.add_decomps(CustomOp, custom_decomp)
+        qml.add_decomps(CustomOp, [custom_decomp2, custom_decomp3])
+
+        assert qml.has_decomp(CustomOp)
+        assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
+
+        def custom_decomp4(theta, wires, **__):
+            qml.RZ(theta, wires=wires[0])
+            qml.CZ(wires=[wires[0], wires[1]])
+            qml.RZ(theta, wires=wires[0])
+
+        with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
+            qml.add_decomps(CustomOp, custom_decomp4)
 
         _decompositions.pop(CustomOp)  # cleanup
 

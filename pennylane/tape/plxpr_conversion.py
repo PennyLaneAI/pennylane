@@ -22,6 +22,8 @@ from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
+    grad_prim,
+    jacobian_prim,
     measure_prim,
 )
 from pennylane.measurements import MeasurementValue, get_mcm_predicates
@@ -94,9 +96,7 @@ class CollectOpsandMeas(PlxprInterpreter):
 
 
 # pylint: disable=protected-access
-CollectOpsandMeas._primitive_registrations.update(
-    FlattenedHigherOrderPrimitives
-)  # pylint: disable=protected-access
+CollectOpsandMeas._primitive_registrations.update(FlattenedHigherOrderPrimitives)
 
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
@@ -178,6 +178,18 @@ def _(self, wires, reset, postselect):
     m0 = qml.measure(wires, reset=reset, postselect=postselect)
     self.state["ops"].extend(m0.measurements)
     return m0
+
+
+# pylint: disable=unused-argument
+@CollectOpsandMeas.register_primitive(grad_prim)
+def _(self, *invals, jaxpr, n_consts, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the grad primitive")
+
+
+# pylint: disable=unused-argument
+@CollectOpsandMeas.register_primitive(jacobian_prim)
+def _(self, *invals, jaxpr, n_consts, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
 
 
 def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:

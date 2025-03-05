@@ -25,7 +25,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.decomposition import add_decomposition, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -216,9 +216,6 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-add_decomposition(Hadamard, _hadamard_to_rz_rx)
-
-
 def _hadamard_rz_ry_resources():
     return {qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1}
 
@@ -230,7 +227,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
     qml.GlobalPhase(-np.pi / 2)
 
 
-add_decomposition(Hadamard, _hadamard_to_rz_ry)
+add_decomps(Hadamard, [_hadamard_to_rz_rx, _hadamard_to_rz_ry])
 
 H = Hadamard
 r"""H(wires)
@@ -1389,7 +1386,7 @@ def _swap_to_cnot(wires, **__):
     qml.CNOT(wires=[wires[0], wires[1]])
 
 
-add_decomposition(SWAP, _swap_to_cnot)
+add_decomps(SWAP, _swap_to_cnot)
 
 
 class ECR(Operation):

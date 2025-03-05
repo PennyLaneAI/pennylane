@@ -102,7 +102,7 @@ def _check_decomposition_new(op):
     """Checks involving the new system of decompositions."""
 
     if type(op).resource_params is qml.operation.Operator.resource_params:
-        assert not qml.has_decomposition(
+        assert not qml.has_decomp(
             type(op)
         ), "resource_params must be defined for operators with decompositions"
         return
@@ -111,7 +111,7 @@ def _check_decomposition_new(op):
         type(op).resource_param_keys
     ), "resource_params must have the same keys as specified by resource_param_keys"
 
-    for rule in qml.get_decompositions(type(op)):
+    for rule in qml.list_decomps(type(op)):
         _test_decomposition_rule(op, rule)
 
 
