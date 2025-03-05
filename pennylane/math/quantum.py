@@ -995,6 +995,16 @@ def sqrt_matrix_sparse(density_matrix):
 
 
 def _inv_newton(M, guess):
+    """
+    Compute the inverse of a matrix using Newton's method.
+
+    Args:
+        M (array-like): The matrix to be inverted.
+        guess (array-like): An initial guess for the inverse of the matrix.
+
+    Returns:
+        array-like: An improved estimate of the inverse of the matrix.
+    """
     return 2 * guess - guess @ M @ guess
 
 
