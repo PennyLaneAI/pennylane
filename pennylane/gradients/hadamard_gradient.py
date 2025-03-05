@@ -279,7 +279,7 @@ def hadamard_grad(
         "standard": ("Hadamard test", _hadamard_test),
         "reversed": ("Reversed hadamard test", _reversed_hadamard_test),
         "direct": ("Direct hadamard test", _direct_hadamard_test),
-        # "reversed_direct": ("Reversed direct hadamard test", _reversed_direct_hadamard_test),
+        "reversed_direct": ("Reversed direct hadamard test", _reversed_direct_hadamard_test),
     }
     try:
         transform_name, gradient_method = modes[mode]
@@ -414,6 +414,45 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
         new_batch.append(new_tape)
     return new_batch, coeffs
 
+def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+
+    trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
+
+    ops_before_trainable_op = tape.operations[:]
+    ops_after_trainable_op = [qml.adjoint(op) for op in reversed(tape.operations[idx + 1:])]
+
+    sub_coeffs, generators = _get_pauli_generators(trainable_op)
+
+    # Create measurement with gate generators
+    measurements = [
+        qml.expval(
+            qml.Hamiltonian(
+                coeffs=sub_coeffs,
+                observables=generators,
+                # grouping_type="commuting",
+            )
+        )
+    ]
+
+    # Get the observable from tape measurement
+    # Assume there's only one observable in the tape ################ processing function aggregation
+    coeffs, observables = _get_pauli_terms(tape.measurements[0].obs)
+
+    new_batch = []
+    new_coeffs = []
+    for idx, obs in enumerate(observables):
+        pos_rot = [qml.evolve(obs, np.pi/4)]
+        neg_rot = [qml.evolve(obs, -np.pi/4)]
+        pos_ops = ops_before_trainable_op + pos_rot + ops_after_trainable_op
+        neg_ops = ops_before_trainable_op + neg_rot + ops_after_trainable_op
+
+        pos_tape = qml.tape.QuantumScript(pos_ops, measurements, shots=tape.shots)
+        neg_tape = qml.tape.QuantumScript(neg_ops, measurements, shots=tape.shots)
+        new_batch.append(pos_tape)
+        new_batch.append(neg_tape)
+        new_coeffs.append(1/2 * coeffs[idx])
+        new_coeffs.append(-1/2 * coeffs[idx])
+    return new_batch, new_coeffs
 
 def _new_measurement(mp, aux_wire, all_wires: qml.wires.Wires):
     obs = mp.obs or qml.prod(*(qml.Z(w) for w in mp.wires or all_wires))
