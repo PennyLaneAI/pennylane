@@ -1017,7 +1017,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
         tol (float): Convergence tolerance (absolute tolerance). Measured using the Frobenius norm of the difference between input mat and the square of the output.
 
     Returns:
-        scipy.sparse.csc_matrix: Square root of the input matrix
+        scipy.sparse.spmatrix: Square root of the input matrix
 
     Raises:
         LinAlgError: If matrix inversion fails
