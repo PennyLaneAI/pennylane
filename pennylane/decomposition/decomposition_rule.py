@@ -26,7 +26,7 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 
 def register_resources(
     resources: Callable | dict, qfunc: Callable = None
-) -> DecompositionRule | Callable:
+) -> DecompositionRule | Callable[[Callable], DecompositionRule]:
     """Registers a resource function with a decomposition rule.
 
     Args:
@@ -225,16 +225,24 @@ def _auto_wrap(op_type):
 _decompositions = defaultdict(list)
 
 
-def add_decomposition(op_type, decomposition_rule: DecompositionRule) -> None:
-    """Register a decomposition rule with an operator class."""
-    _decompositions[op_type].append(decomposition_rule)
+def add_decomps(op_type, decomps: DecompositionRule | list[DecompositionRule]) -> None:
+    """Register a list of decomposition rules with an operator class."""
+    if isinstance(decomps, list) and all(isinstance(d, DecompositionRule) for d in decomps):
+        _decompositions[op_type].extend(decomps)
+    elif isinstance(decomps, DecompositionRule):
+        _decompositions[op_type].append(decomps)
+    else:
+        raise TypeError(
+            "A decomposition rule must be a qfunc with a resource estimate "
+            "registered using qml.register_resources"
+        )
 
 
-def get_decompositions(op_type) -> list[DecompositionRule]:
-    """Get all known decomposition rules for an operator class."""
+def list_decomps(op_type) -> list[DecompositionRule]:
+    """Lists all known decomposition rules for an operator class."""
     return _decompositions[op_type][:]
 
 
-def has_decomposition(op_type) -> bool:
+def has_decomp(op_type) -> bool:
     """Check whether an operator has decomposition rules defined."""
     return op_type in _decompositions and len(_decompositions[op_type]) > 0

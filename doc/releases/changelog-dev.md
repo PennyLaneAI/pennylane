@@ -44,6 +44,9 @@
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
+* Added a new infrastructure for gate-set targeted decompositions.
+  [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
+
 <h3>Improvements 🛠</h3>
 
 * Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
@@ -544,6 +547,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
+Astral Cai,
 Henry Chang,
 Yushao Chen,
 Isaac De Vlugt,

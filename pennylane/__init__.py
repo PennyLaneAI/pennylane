@@ -27,9 +27,9 @@ import pennylane.capture
 import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
-    add_decomposition,
-    get_decompositions,
-    has_decomposition,
+    add_decomps,
+    list_decomps,
+    has_decomp,
     resource_rep,
 )
 import pennylane.control_flow
