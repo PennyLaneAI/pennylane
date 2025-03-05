@@ -975,7 +975,7 @@ def sqrt_matrix(density_matrix):
     return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
 
 
-def sqrt_matrix_sparse(density_matrix):
+def sqrt_matrix_sparse(sparse_matrix):
     r"""Compute the square root matrix of a positive-definite Hermitian matrix where :math:`\rho = \sqrt{\rho} \times \sqrt{\rho}`
 
     Args:
@@ -985,17 +985,17 @@ def sqrt_matrix_sparse(density_matrix):
        (sparse): Square root of the density matrix. Even for data types like `csr_matrix` or `csc_matrix`, the output matrix is not guaranteed to be sparse as well.
 
     """
-    if not issparse(density_matrix):
+    if not issparse(sparse_matrix):
         raise TypeError(
-            f"sqrt_matrix_sparse currently only supports scipy.sparse matrices, but received {type(density_matrix)}. "
+            f"sqrt_matrix_sparse currently only supports scipy.sparse matrices, but received {type(sparse_matrix)}. "
         )
-    if density_matrix.nnz == 0:
-        return density_matrix
+    if sparse_matrix.nnz == 0:
+        return sparse_matrix
     # NOTE: the following steps should be re-visited in the future to establish
     # better understanding and control over the heuristics we chose
     # 1. choice of max iteration and tolerance for denman beavers, sc-85713
     # 2. different methods for sparse matrix square root, sc-85710
-    return _denman_beavers_iterations(density_matrix, max_iter=100, tol=1e-10)
+    return _denman_beavers_iterations(sparse_matrix, max_iter=100, tol=1e-10)
 
 
 def _inv_newton(M, guess):
