@@ -383,12 +383,14 @@ class QubitGraph:
 
         Example:
 
-            >>> g = nx.grid_graph((2,))
-            >>> q = QubitGraph(0, g)
+            >>> q = QubitGraph(0, nx.grid_graph((2,)))
             >>> set(q.node_labels)
             {0, 1}
             >>> set(q.children)
             {QubitGraph<0, 0>, QubitGraph<0, 1>}
+
+        Yields:
+            QubitGraph: The next QubitGraph object in the set of children QubitGraphs.
         """
         if not self.is_initialized:
             self._warn_uninitialized()
@@ -403,7 +405,13 @@ class QubitGraph:
         *neighbors*).
 
         A QubitGraph does not have to be initialized for it to have neighbors. Similarly, a
-        root-level QubitGraph does not have any connected qubits, by construction.
+        root-level QubitGraph does not have any neighboring qubits, by construction.
+
+        Example:
+
+            >>> q = QubitGraph(0, nx.grid_graph((2, 2)))
+            >>> set(q[(0,0)].neighbors)
+            {QubitGraph<0, (0, 1)>, QubitGraph<0, (1, 0)>}
 
         Yields:
             QubitGraph: The next QubitGraph object in the set of neighboring QubitGraphs.
