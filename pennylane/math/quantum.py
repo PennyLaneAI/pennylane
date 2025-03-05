@@ -976,7 +976,7 @@ def sqrt_matrix(density_matrix):
 
 
 def sqrt_matrix_sparse(density_matrix):
-    r"""Compute the square root matrix of a sparse density matrix where :math:`\rho = \sqrt{\rho} \times \sqrt{\rho}`
+    r"""Compute the square root matrix of a positive-definite Hermitian matrix where :math:`\rho = \sqrt{\rho} \times \sqrt{\rho}`
 
     Args:
         density_matrix (sparse): 2D sparse density matrix of the quantum system.
@@ -987,8 +987,7 @@ def sqrt_matrix_sparse(density_matrix):
     """
     if not issparse(density_matrix):
         raise TypeError(
-            f"sqrt_matrix_sparse only supports sparse matrices, but got {type(density_matrix)}. "
-            "There will be an inevitable performance hit and risk of divergence for non-sparse matrices."
+            f"sqrt_matrix_sparse currently only supports scipy.sparse matrices, but received {type(density_matrix)}. "
         )
     if density_matrix.nnz == 0:
         return density_matrix
@@ -1017,7 +1016,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
     try:
         mat = csc_matrix(mat)
         Y = mat
-        Z = sp.sparse.eye(mat.shape[0]).tocsc()
+        Z = sp.sparse.eye(mat.shape[0], format="csc")
 
         # Keep track of previous iteration for convergence check
         Y_prev = None
@@ -1056,8 +1055,8 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
         numerical_error = spla.norm((Y @ Y - mat))
         if (norm_diff and norm_diff > tol) or numerical_error > tol:
             raise ValueError(
-                f"Denman Beavers not converged until the end of {max_iter} loops, "
-                f"with last norm error {norm_diff} and compute error {numerical_error}"
+                f"Convergence threshold not reached after {max_iter} iterations, "
+                f"with final norm error {norm_diff} and numerical error {numerical_error}"
             )
         return Y
     except (RuntimeWarning, RuntimeError) as e:
