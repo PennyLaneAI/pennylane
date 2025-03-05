@@ -181,3 +181,127 @@ class TestControlledSequence:
             re.ResourceControlledSequence.tracking_name(base_class, base_params, num_ctrl_wires)
             == f"ControlledSequence({base_name}, {num_ctrl_wires})"
         )
+
+
+class TestPhaseAdder:
+    """Test the ResourcePhaseAdder class"""
+
+    @pytest.mark.parametrize(
+        "mod, num_x_wires",
+        [(8, 3), (7, 3)],
+    )
+    def test_resources(self, mod, num_x_wires):
+        """Test the resources method returns the correct dictionary"""
+        if mod == 2**num_x_wires:
+            resource_phase_shift = re.CompressedResourceOp(re.ResourcePhaseShift, {})
+            expected = {resource_phase_shift: num_x_wires}
+            assert re.ResourcePhaseAdder.resources(mod, num_x_wires) == expected
+            return
+
+        qft = re.CompressedResourceOp(re.ResourceQFT, {"num_wires": num_x_wires})
+        qft_dag = re.CompressedResourceOp(
+            re.ResourceAdjoint,
+            {"base_class": re.ResourceQFT, "base_params": {"num_wires": num_x_wires}},
+        )
+
+        phase_shift = re.CompressedResourceOp(re.ResourcePhaseShift, {})
+        phase_shift_dag = re.CompressedResourceOp(
+            re.ResourceAdjoint, {"base_class": re.ResourcePhaseShift, "base_params": {}}
+        )
+        ctrl_phase_shift = re.CompressedResourceOp(
+            re.ResourceControlled,
+            {
+                "base_class": re.ResourcePhaseShift,
+                "base_params": {},
+                "num_ctrl_wires": 1,
+                "num_ctrl_values": 0,
+                "num_work_wires": 0,
+            },
+        )
+
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+        multix = re.CompressedResourceOp(
+            re.ResourceMultiControlledX,
+            {"num_ctrl_wires": 1, "num_ctrl_values": 0, "num_work_wires": 1},
+        )
+
+        gate_types = {}
+        gate_types[qft] = 2
+        gate_types[qft_dag] = 2
+        gate_types[phase_shift] = 2 * num_x_wires
+        gate_types[phase_shift_dag] = 2 * num_x_wires
+        gate_types[ctrl_phase_shift] = num_x_wires
+        gate_types[cnot] = 1
+        gate_types[multix] = 1
+
+        assert re.ResourcePhaseAdder.resources(mod, num_x_wires) == gate_types
+
+    @pytest.mark.parametrize(
+        "base, control",
+        [(re.ResourceHadamard(3), [0, 1, 2]), (re.ResourceRX(0.25, 2), [0, 1])],
+    )
+    def test_resource_params(self, base, control):
+        """Test that the resource params are correct"""
+        op = re.ResourceControlledSequence(base=base, control=control)
+
+        assert op.resource_params == {
+            "base_class": type(base),
+            "base_params": base.resource_params,
+            "num_ctrl_wires": len(control),
+        }
+
+    @pytest.mark.parametrize(
+        "base_class, base_params, num_ctrl_wires",
+        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
+    )
+    def test_resource_rep(self, base_class, base_params, num_ctrl_wires):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = re.CompressedResourceOp(
+            re.ResourceControlledSequence,
+            {
+                "base_class": base_class,
+                "base_params": base_params,
+                "num_ctrl_wires": num_ctrl_wires,
+            },
+        )
+        assert expected == re.ResourceControlledSequence.resource_rep(
+            base_class, base_params, num_ctrl_wires
+        )
+
+    @pytest.mark.parametrize(
+        "base_class, base_params, num_ctrl_wires",
+        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
+    )
+    def test_resources_from_rep(self, base_class, base_params, num_ctrl_wires):
+        """Test that computing the resources from a compressed representation works"""
+
+        resource_controlled_sequence = re.CompressedResourceOp(
+            re.ResourceControlled,
+            {
+                "base_class": base_class,
+                "base_params": base_params,
+                "num_ctrl_wires": 1,
+                "num_ctrl_values": 0,
+                "num_work_wires": 0,
+            },
+        )
+
+        expected = {resource_controlled_sequence: 2**num_ctrl_wires - 1}
+
+        rep = re.ResourceControlledSequence.resource_rep(base_class, base_params, num_ctrl_wires)
+        actual = rep.op_type.resources(**rep.params)
+
+        assert actual == expected
+
+    @pytest.mark.parametrize(
+        "base_class, base_params, num_ctrl_wires",
+        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
+    )
+    def test_tracking_name(self, base_class, base_params, num_ctrl_wires):
+        """Test that the tracking name is correct."""
+        base_name = base_class.tracking_name(**base_params)
+        assert (
+            re.ResourceControlledSequence.tracking_name(base_class, base_params, num_ctrl_wires)
+            == f"ControlledSequence({base_name}, {num_ctrl_wires})"
+        )
