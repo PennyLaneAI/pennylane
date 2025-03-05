@@ -1,15 +1,13 @@
 """Functions for transforming a VibronicMatrix into a scipy csr matrix"""
 
 from __future__ import annotations
-
-from itertools import product
 from typing import TYPE_CHECKING, Tuple, Union
 
 import numpy as np
 import scipy as sp
 
 if TYPE_CHECKING:
-    from pennylane.labs.pf.realspace import RealspaceOperator, RealspaceSum
+    from pennylane.labs.realspace import RealspaceOperator, RealspaceSum
 
 
 def position_operator(
