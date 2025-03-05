@@ -173,9 +173,8 @@ def cartan_subalgebra(
         all remaining operators from ``m``.
 
         >>> import numpy as np
-        >>> from pennylane.labs.dla import structure_constants_dense
         >>> g = np.vstack([k, m]) # re-order g to separate k and m operators
-        >>> adj = structure_constants_dense(g) # compute adjoint representation of g
+        >>> adj = qml.structure_constants(g, matrix=True) # compute adjoint representation of g
 
         Finally, we can compute a Cartan subalgebra :math:`\mathfrak{a}`, a maximal Abelian subalgebra of :math:`\mathfrak{m}`.
 
