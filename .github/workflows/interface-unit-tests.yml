@@ -210,6 +210,9 @@ jobs:
             echo 'jobs_to_skip=[]' >> $GITHUB_OUTPUT
           fi
 
+      - name: Create test reports directory
+        run: mkdir -p .github/test-reports
+
     outputs:
       matrix-max-parallel: ${{ steps.max_parallel.outputs.matrix_max_parallel }}
       python-version: ${{ steps.python_versions.outputs.python_versions }}
@@ -755,6 +758,9 @@ jobs:
       - gradients-tests
       - data-tests
       - device-tests
+
+    # Run this even if any of the above jobs failed or were cancelled
+    if: ${{ always() }}
 
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
