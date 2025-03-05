@@ -220,7 +220,7 @@ def _is_conditional_mcm(operation: qml.operation.Operator) -> bool:
     return False
 
 
-@lru_cache()
+@lru_cache(maxsize=2)
 def _includes_conditional_mcms(tape: QuantumScript) -> bool:
     return any(_is_conditional_mcm(op) for op in tape.operations)
 
