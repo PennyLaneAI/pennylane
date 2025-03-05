@@ -1059,7 +1059,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
                 f"with final norm error {norm_diff} and numerical error {numerical_error}"
             )
         return Y
-    except (RuntimeWarning, RuntimeError) as e:
+    except RuntimeError as e:
         raise ValueError(
             "Invalid values encountered during matrix multiplication: "
             f"Input matrix: {mat.toarray()}"
