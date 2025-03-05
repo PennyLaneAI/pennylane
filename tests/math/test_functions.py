@@ -1022,12 +1022,59 @@ def test_get_interface(t, interface):
     assert res == interface
 
 
-def test_get_interface_scipy():
-    """Test that the interface of a scipy sparse matrix is correctly returned."""
-    matrix = sci.sparse.csr_matrix([[0, 1], [1, 0]])
+class TestScipySparse:
+    """Test the scipy.sparse objects get correctly dispatched"""
 
-    assert fn.get_interface(matrix) == "scipy"
-    assert fn.get_interface(matrix, matrix) == "scipy"
+    matrix = [sci.sparse.csr_matrix([[0, 1], [1, 0]])]
+
+    matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
+
+    dispatched_linalg_methods = [
+        fn.linalg.det,
+        fn.linalg.expm,
+        fn.linalg.inv,
+        fn.linalg.norm,
+    ]
+
+    dispatched_linalg_methods_factorization = [
+        fn.linalg.eigs,
+        fn.linalg.eigsh,
+        fn.linalg.svds,
+    ]
+
+    dispatched_linalg_methods_linear_solver = [
+        fn.linalg.spsolve,
+    ]
+
+    @pytest.mark.parametrize("matrix", matrix)
+    def test_get_interface_scipy(self, matrix):
+        """Test that the interface of a scipy sparse matrix is correctly returned."""
+
+        assert fn.get_interface(matrix) == "scipy"
+        assert fn.get_interface(matrix, matrix) == "scipy"
+
+    @pytest.mark.parametrize("matrix", matrix)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods)
+    def test_dispatched_linalg_methods_single(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_factorization)
+    def test_dispatched_linalg_methods_factorization(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, 1)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_linear_solver)
+    def test_dispatched_linalg_methods_linear_solver(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, sci.sparse.eye(matrix.shape[0]))
+
+    @pytest.mark.parametrize("matrix", matrix + matrix_4)
+    def test_dispatched_linalg_methods_matrix_power(self, matrix):
+        """Test that the matrix power method dispatched"""
+        fn.linalg.matrix_power(matrix, 2)
 
 
 # pylint: disable=too-few-public-methods
