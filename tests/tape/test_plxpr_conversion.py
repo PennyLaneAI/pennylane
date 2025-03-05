@@ -238,6 +238,28 @@ class TestCollectOpsandMeas:
         with pytest.raises(ValueError, match="Conditional branches of mid circuit measurements"):
             collector(f)()
 
+    @pytest.mark.parametrize("fn", [qml.grad, qml.jacobian])
+    def test_grad_not_implemented_error(self, fn):
+        """Test that an error is raised if user tries to collect the gradient of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        collector = CollectOpsandMeas()
+        grad_fn = fn(g)
+        with pytest.raises(
+            NotImplementedError,
+            match=f"CollectOpsandMeas cannot handle the {fn.__name__} primitive",
+        ):
+            collector(grad_fn)(0.5)
+
 
 class TestPlxprToTape:
     """Tests for the plxpr_to_tape function."""

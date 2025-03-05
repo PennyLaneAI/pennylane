@@ -24,7 +24,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.decomposition import add_decomposition, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.wires import WiresLike
@@ -980,7 +980,7 @@ def _cnot_to_cz_h(wires, **__):
     qml.H(wires[1])
 
 
-add_decomposition(CNOT, _cnot_to_cz_h)
+add_decomps(CNOT, _cnot_to_cz_h)
 
 
 class Toffoli(ControlledOp):
@@ -2262,6 +2262,6 @@ def _cphase_to_rz_cnot(phi, wires, **__):
     qml.GlobalPhase(-phi / 4)
 
 
-add_decomposition(ControlledPhaseShift, _cphase_to_rz_cnot)
+add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot)
 
 CPhase = ControlledPhaseShift
