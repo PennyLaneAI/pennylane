@@ -43,7 +43,7 @@
 <h3>Improvements 🛠</h3>
 
 * Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
-  handle the sparse matrices.
+  handle sparse matrices.
   [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
 
 * Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
