@@ -744,6 +744,19 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - torch-tests
+      - autograd-tests
+      - tf-tests
+      - jax-tests
+      - core-tests
+      - all-interfaces-tests
+      - external-libraries-tests
+      - qcut-tests
+      - qchem-tests
+      - gradients-tests
+      - data-tests
+      - device-tests
+
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
       - name: Checkout repository
