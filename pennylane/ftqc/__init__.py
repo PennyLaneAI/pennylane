@@ -43,6 +43,7 @@ from .qubit_graph import QubitGraph
 __all__ = [
     "GraphStatePrep",
     "Lattice",
+    "QubitGraph",
     "ParametricMidMeasureMP",
     "XMidMeasureMP",
     "YMidMeasureMP",
@@ -52,5 +53,4 @@ __all__ = [
     "measure_z",
     "diagonalize_mcms",
     "generate_lattice",
-    "QubitGraph",
 ]

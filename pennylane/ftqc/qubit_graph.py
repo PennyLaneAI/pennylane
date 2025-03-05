@@ -36,13 +36,41 @@ class QubitGraph:
 
     Args:
         id (Any): An identifier for this QubitGraph object.
-        graph (graph-like, optional): The graph to use as the QubitGraph's underlying qubits.
-            Inputting None (the default), leaves the underlying qubit graph in an uninitialized
-            state, in which case one of the graph-initialization methods may be used to define the
-            structure of the underlying qubit graph. QubitGraph expects an undirected graph as
-            input, specifically an instance of the ``networkx.Graph`` class, although other networkx
-            graphs and graph-like types are also permitted. An object is considered "graph-like" if
-            it has both a 'nodes' and an 'edges' attribute.
+        graph (graph-like, optional): The graph structure to use for the QubitGraph's underlying
+            qubits. Inputting None (the default), leaves the underlying qubit graph in an
+            uninitialized state, in which case one of the graph-initialization methods may be used
+            to define the structure of the underlying qubit graph. QubitGraph expects an undirected
+            graph as input, specifically an instance of the ``networkx.Graph`` class, although other
+            networkx graphs and graph-like types are also permitted. An object is considered
+            "graph-like" if it has both a 'nodes' and an 'edges' attribute. Furthermore, QubitGraph
+            expects a "flat" (unnested) graph, and any graph-like objects nested within the graph
+            structure used as input are ignored.
+
+    **Examples**
+
+        Create a QubitGraph (with id=0) using a 2x2 Cartesian grid to define the structure of its
+        underlying qubits:
+
+        >>> import networkx as nx
+        >>> from pennylane.ftqc import QubitGraph
+        >>> q = QubitGraph(0, nx.grid_graph((2,2)))
+        >>> q
+        QubitGraph<0>
+        >>> for child in q.children:
+        ...     print(child)
+        QubitGraph<0, (0, 0)>
+        QubitGraph<0, (0, 1)>
+        QubitGraph<0, (1, 0)>
+        QubitGraph<0, (1, 1)>
+
+        Using the QubitGraph object defined above as a starting point, it's possible to nest other
+        QubitGraph objects in any of the nodes of its underlying qubit graph:
+
+        >>> q[(0,0)] = QubitGraph((0, 0), nx.grid_graph((2,)))
+        >>> for child in q[(0,0)].children:
+        ...     print(child)
+        QubitGraph<0, (0, 0), 0>
+        QubitGraph<0, (0, 0), 1>
 
     ..  TODO:
 
@@ -58,16 +86,26 @@ class QubitGraph:
         if id is None:
             raise TypeError("'None' is not a valid QubitGraph ID.")
 
-        self._id = id  # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
+        # Attempting to construct a QubitGraph object by passing a single graph-like object results
+        # in it being interpreted as the `id`. This is likely not what the user intended, therefore
+        # emit a warning.
+        if self._is_graph_like(id) and graph is None:
+            self._warn_id_is_graph_like(id)
+
+        # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
+        self._id = id
 
         if graph is not None:
             self._check_graph_type_supported_and_raise_or_warn(graph)
 
-        self._graph_qubits = graph  # The qubits underlying (nested within) the current qubit
-        self._parent = None  # The parent QubitGraph object under which this QubitGraph is nested
+        # The graph structure of the qubits underlying (nested within) the current qubit
+        self._graph = graph
+
+        # The parent QubitGraph object under which this QubitGraph is nested
+        self._parent = None
 
         # Initialize each node in the graph to store an empty QubitGraph object
-        if self._graph_qubits is not None:
+        if self._graph is not None:
             self._initialize_all_nodes_as_qubit_graph()
 
     def __getitem__(self, key: Any) -> "QubitGraph":
@@ -87,10 +125,10 @@ class QubitGraph:
             return None
 
         if isinstance(key, slice):
-            start, stop, step = key.indices(len(self._graph_qubits.nodes))
-            return [self._graph_qubits.nodes[node]["qubits"] for node in range(start, stop, step)]
+            start, stop, step = key.indices(len(self._graph.nodes))
+            return [self._graph.nodes[node]["qubits"] for node in range(start, stop, step)]
 
-        return self._graph_qubits.nodes[key]["qubits"]
+        return self._graph.nodes[key]["qubits"]
 
     def __setitem__(self, key: Any, value: "QubitGraph"):
         """QubitGraph subscript operator for assignment.
@@ -109,7 +147,7 @@ class QubitGraph:
             key (Any): Node label in the underlying qubit graph.
             value (QubitGraph): The QubitGraph object to assign to the node with the given key.
 
-        Example:
+        **Example**
 
             >>> graph = nx.Graph()
             >>> graph.add_node(0)
@@ -142,7 +180,7 @@ class QubitGraph:
         value._id = key
         value._parent = self
 
-        self._graph_qubits.nodes[key]["qubits"] = value
+        self._graph.nodes[key]["qubits"] = value
 
     def __iter__(self):
         """Dummy QubitGraph iterator method that yields itself.
@@ -178,7 +216,7 @@ class QubitGraph:
 
         This representation displays the full index hierarchy of a nested QubitGraph object.
 
-        Examples:
+        **Examples**
 
             >>> QubitGraph(0)
             QubitGraph<0>
@@ -235,42 +273,16 @@ class QubitGraph:
     @property
     def graph(self):
         """Gets the underlying qubit graph."""
-        return self._graph_qubits
+        return self._graph
 
     @property
-    def nodes(self):
-        """Gets the set of nodes in the underlying qubit graph.
-
-        If the underlying qubit graph has not been initialized, emit a ``UserWarning`` and return
-        None.
+    def parent(self) -> "QubitGraph":
+        """Gets the parent QubitGraph of this QubitGraph object.
 
         Returns:
-            networkx.NodeView: The set of nodes, with native support for operations such as
-                ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the networkx
-                documentation for more information.
+            QubitGraph: The parent QubitGraph object.
         """
-        if self._graph_qubits is None:
-            self._warn_uninitialized()
-            return None
-
-        return self._graph_qubits.nodes
-
-    @property
-    def edges(self):
-        """Gets the set of edges in the underlying qubit graph.
-
-        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
-
-        Returns:
-            networkx.EdgeView: The set of edges, with native support for operations such as
-                ``len(g.edges)``, ``e in g.edges``, ``g.edges & h.edges``, etc. See the networkx
-                documentation for more information.
-        """
-        if self._graph_qubits is None:
-            self._warn_uninitialized()
-            return None
-
-        return self._graph_qubits.edges
+        return self._parent
 
     @property
     def is_initialized(self) -> bool:
@@ -283,7 +295,7 @@ class QubitGraph:
         Returns:
             bool: Returns True if the underlying qubits have been initialized, False otherwise.
         """
-        return self._graph_qubits is not None
+        return self._graph is not None
 
     @property
     def is_leaf(self) -> bool:
@@ -296,16 +308,7 @@ class QubitGraph:
         Returns:
             bool: Returns True if this QubitGraph object is a leaf node.
         """
-        return (self._graph_qubits is None) or (len(self.nodes) == 0)
-
-    @property
-    def parent(self) -> "QubitGraph":
-        """Gets the parent QubitGraph of this QubitGraph object.
-
-        Returns:
-            QubitGraph: The parent QubitGraph object.
-        """
-        return self._parent
+        return (not self.is_initialized) or (len(self._graph.nodes) == 0)
 
     @property
     def is_root(self) -> bool:
@@ -318,26 +321,114 @@ class QubitGraph:
         """
         return self._parent is None
 
-    def clear(self):
-        """Clears the graph of underlying qubits."""
-        self._graph_qubits = None
+    @property
+    def node_labels(self):
+        """Gets the set of nodes labels in the underlying qubit graph.
 
-    def connected_qubits(self, node):
-        """Returns an iterator over all of the qubits connected to the qubit with label ``node``.
+        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
 
-        Args:
-            node (node-like): The label of a node in the qubit graph.
+        Accessing ``QubitGraph.node_labels`` is equivalent to accessing the ``nodes`` attribute of
+        the networkx graph:
+
+            >>> g = nx.grid_graph((2,))
+            >>> g.nodes
+            NodeView((0, 1))
+            >>> q = QubitGraph(0, g)
+            >>> q.node_labels
+            NodeView((0, 1))
+
+        To access the underlying QubitGraph *objects*, rather than their labels, use
+        ``QubitGraph.children``.
 
         Returns:
-            iterator: An iterator over all QubitGraph objects connected to the qubit with label
-                ``node``.
+            networkx.NodeView: A view of the set of nodes, with native support for operations such
+            as ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the networkx
+            documentation for more information.
+        """
+        if not self.is_initialized:
+            self._warn_uninitialized()
+            return None
+
+        return self._graph.nodes
+
+    @property
+    def edge_labels(self):
+        """Gets the set of edge labels in the underlying qubit graph.
+
+        If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
+
+        Accessing ``QubitGraph.edges_labels`` is equivalent to accessing the ``edges`` attribute of
+        the networkx graph:
+
+            >>> g = nx.grid_graph((2,))
+            >>> g.edges
+            EdgeView([(0, 1)])
+            >>> q = QubitGraph(0, g)
+            >>> q.edge_labels
+            EdgeView([(0, 1)])
+
+        Returns:
+            networkx.EdgeView: The set of edges, with native support for operations such as
+            ``len(g.edges)``, ``e in g.edges``, ``g.edges & h.edges``, etc. See the networkx
+            documentation for more information.
+        """
+        if not self.is_initialized:
+            self._warn_uninitialized()
+            return None
+
+        return self._graph.edges
+
+    @property
+    def children(self):
+        """Gets an iterator over the set of children QubitGraph objects.
+
+        To access the node labels of the underlying qubit graph, rather than the QubitGraph objects
+        themselves, use ``QubitGraph.node_labels``.
+
+        Yields:
+            QubitGraph: The next QubitGraph object in the set of children QubitGraphs.
+
+        **Example**
+
+            >>> q = QubitGraph(0, nx.grid_graph((2,)))
+            >>> set(q.node_labels)
+            {0, 1}
+            >>> set(q.children)
+            {QubitGraph<0, 0>, QubitGraph<0, 1>}
         """
         if not self.is_initialized:
             self._warn_uninitialized()
             return
 
-        for neighbor in self._graph_qubits.neighbors(node):
-            yield self[neighbor]
+        for node in self.node_labels:
+            yield self[node]
+
+    @property
+    def neighbors(self):
+        """Gets an iterator over all of the QubitGraph objects connected to this QubitGraph (its
+        *neighbors*).
+
+        A QubitGraph does not have to be initialized for it to have neighbors. Similarly, a
+        root-level QubitGraph does not have any neighboring qubits, by construction.
+
+        Yields:
+            QubitGraph: The next QubitGraph object in the set of neighboring QubitGraphs.
+
+        **Example**
+
+            >>> q = QubitGraph(0, nx.grid_graph((2, 2)))
+            >>> set(q[(0,0)].neighbors)
+            {QubitGraph<0, (0, 1)>, QubitGraph<0, (1, 0)>}
+        """
+        if self.is_root:
+            return
+
+        for neighbor_id in self._parent.graph.neighbors(self._id):
+            yield self._parent[neighbor_id]
+
+    def clear(self):
+        """Clears the graph of underlying qubits."""
+        self._graph = None
 
     def has_cycle(self) -> bool:
         """Checks if the QubitGraph contains a cycle in its nesting structure.
@@ -370,10 +461,18 @@ class QubitGraph:
             graph (networkx.Graph): The undirected graph to use as the QubitGraph's underlying
                 qubits. This object must not be None.
 
-        Example:
+        **Example**
 
-            >>> graph = networkx.hexagonal_lattice_graph(3, 2)
-            >>> q = QubitGraph(0, graph)
+            This example creates a networkx graph with two nodes, labelled 0 and 1, and one edge
+            between them, and uses this graph to initialize the graph structure of a QubitGraph:
+
+            >>> import networkx as nx
+            >>> graph = nx.Graph()
+            >>> graph.add_edge(0, 1)
+            >>> q = QubitGraph(0)
+            >>> q.init_graph(graph)
+            >>> list(q.children)
+            [QubitGraph<0, 0>, QubitGraph<0, 1>]
         """
         if graph is None:
             raise TypeError("QubitGraph requires a graph-like input, got NoneType.")
@@ -384,7 +483,7 @@ class QubitGraph:
             self._warn_reinitialization()
             return
 
-        self._graph_qubits = graph
+        self._graph = graph
         self._initialize_all_nodes_as_qubit_graph()
 
     def init_graph_2d_grid(self, m: int, n: int):
@@ -394,10 +493,7 @@ class QubitGraph:
         Args:
             m, n (int): The number of rows, m, and columns, n, in the grid.
 
-        Example:
-
-            >>> q = QubitGraph(0)
-            >>> q.init_graph_2d_grid(2, 3)
+        **Example**
 
             This example initializes the underlying qubits as a 2x3 2-dimensional Cartesian grid
             with graph structure and qubit indexing below:
@@ -407,12 +503,18 @@ class QubitGraph:
                 (0,0) --- (0,1) --- (0,2)
                   |         |         |
                 (1,0) --- (1,1) --- (1,2)
+
+            >>> q = QubitGraph(0)
+            >>> q.init_graph_2d_grid(2, 3)
+            >>> list(q.children)
+            [QubitGraph<0, (0, 0)>, QubitGraph<0, (0, 1)>, QubitGraph<0, (0, 2)>,
+            QubitGraph<0, (1, 0)>, QubitGraph<0, (1, 1)>, QubitGraph<0, (1, 2)>]
         """
         if self.is_initialized:
             self._warn_reinitialization()
             return
 
-        self._graph_qubits = nx.grid_2d_graph(m, n)
+        self._graph = nx.grid_2d_graph(m, n)
         self._initialize_all_nodes_as_qubit_graph()
 
     def init_graph_nd_grid(self, dim: Union[list[int], tuple[int]]):
@@ -422,10 +524,7 @@ class QubitGraph:
         Args:
             dim (list or tuple of ints): The size of each dimension.
 
-        Example:
-
-            >>> q = QubitGraph(0)
-            >>> q.init_graph_2d_grid(2, 2, 3)
+        **Example**
 
             This example initializes the underlying qubits as a 2x2x3 3-dimensional Cartesian grid
             with graph structure and qubit indexing below:
@@ -443,19 +542,27 @@ class QubitGraph:
                 |  (1,1,0) -----------|- (1,1,1)
                 | /                   | /
                 (0,1,0) ------------- (0,1,1)
+
+            >>> q = QubitGraph(0)
+            >>> q.init_graph_nd_grid((2, 2, 3))
+            >>> list(q.children)
+            [QubitGraph<0, (0, 0, 0)>, QubitGraph<0, (0, 0, 1)>, QubitGraph<0, (0, 1, 0)>,
+            QubitGraph<0, (0, 1, 1)>, QubitGraph<0, (1, 0, 0)>, QubitGraph<0, (1, 0, 1)>,
+            QubitGraph<0, (1, 1, 0)>, QubitGraph<0, (1, 1, 1)>, QubitGraph<0, (2, 0, 0)>,
+            QubitGraph<0, (2, 0, 1)>, QubitGraph<0, (2, 1, 0)>, QubitGraph<0, (2, 1, 1)>]
         """
         if self.is_initialized:
             self._warn_reinitialization()
             return
 
-        self._graph_qubits = nx.grid_graph(dim)
+        self._graph = nx.grid_graph(dim)
         self._initialize_all_nodes_as_qubit_graph()
 
     def init_graph_surface_code_17(self):
         r"""Initialize the QubitGraph's underlying qubits as the 17-qubit surface code graph from
 
-        Y. Tomita & K. Svore, 2014, *Low-distance Surface Codes under Realistic Quantum Noise*.
-        `arXiv:1404.3747 <https://arxiv.org/abs/1404.3747>`_.
+            Y. Tomita & K. Svore, 2014, *Low-distance Surface Codes under Realistic Quantum Noise*.
+            `arXiv:1404.3747 <https://arxiv.org/abs/1404.3747>`_.
 
         This graph structure is commonly referred to as the "ninja star" surface code given its
         shape.
@@ -486,9 +593,9 @@ class QubitGraph:
         data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
         aux_qubits = [("aux", i) for i in range(9, 17)]  # 8 aux qubits, indexed 9, 10, ..., 16
 
-        self._graph_qubits = nx.Graph()
-        self._graph_qubits.add_nodes_from(data_qubits)
-        self._graph_qubits.add_nodes_from(aux_qubits)
+        self._graph = nx.Graph()
+        self._graph.add_nodes_from(data_qubits)
+        self._graph.add_nodes_from(aux_qubits)
 
         # Adjacency list showing the connectivity of each auxiliary qubit to its neighbouring data qubits
         aux_adjacency_list = {
@@ -504,7 +611,7 @@ class QubitGraph:
 
         for aux_node, data_nodes in aux_adjacency_list.items():
             for data_node in data_nodes:
-                self._graph_qubits.add_edge(("aux", aux_node), ("data", data_node))
+                self._graph.add_edge(("aux", aux_node), ("data", data_node))
 
         self._initialize_all_nodes_as_qubit_graph()
 
@@ -512,12 +619,12 @@ class QubitGraph:
         """Helper function to initialize all nodes in the underlying qubit graph as uninitialized
         QubitGraph objects. This function also sets the ``parent`` attribute appropriately.
         """
-        assert self._graph_qubits is not None, "Underlying qubit graph object must not be None"
+        assert self._graph is not None, "Underlying qubit graph object must not be None"
         assert hasattr(
-            self._graph_qubits, "nodes"
+            self._graph, "nodes"
         ), "Underlying qubit graph object must have 'nodes' attribute"
 
-        for node in self._graph_qubits.nodes:
+        for node in self._graph.nodes:
             q = QubitGraph(id=node)
             q._parent = self  # pylint: disable=protected-access
             self[node] = q
@@ -535,6 +642,24 @@ class QubitGraph:
             "qubits with a new graph structure, you must first call QubitGraph.clear() and then "
             "call the initialization method.",
             UserWarning,
+        )
+
+    @staticmethod
+    def _warn_id_is_graph_like(id: Any):
+        """Emit a UserWarning when attempting to instantiate a QubitGraph by passing a single
+        argument that is a graph-like object to its constructor. This single argument is interpreted
+        as the ``id`` parameter, and the underlying qubit graph is left uninitialized, which is
+        likely not what the user intended.
+
+        Args:
+            id (Any): The graph-like object interpreted as the QubitGraph ID.
+        """
+        warnings.warn(
+            f"Attempting to pass an object of type '{type(id).__name__}' as the QubitGraph ID. "
+            f"Constructing a QubitGraph with a single graph-like object as input results in this "
+            f"object being interpreted as the QubitGraph's ID and leaves the QubitGraph in an "
+            f"uninitialized state. If you wish to use this graph-like object to initialize the "
+            f"QubitGraph, you must also supply an ID parameter."
         )
 
     @staticmethod
@@ -564,12 +689,13 @@ class QubitGraph:
             UserWarning,
         )
 
-    @staticmethod
-    def _check_graph_type_supported_and_raise_or_warn(graph):
+    @classmethod
+    def _check_graph_type_supported_and_raise_or_warn(cls, candidate: Any):
         """Check that the input type is graph-like and raise a TypeError if not, and then check that
         the graph type is one that is supported and emit a UserWarning if not.
 
-        The input is considered "graph-like" if it has both a 'nodes' and an 'edges' attribute.
+        The input is considered "graph-like" according to the definition in the
+        ``QubitGraph._is_graph_like()`` method.
 
         Currently, QubitGraph only supports networkx graphs; specifically, graph objects that are
         instances of the `networkx.Graph
@@ -582,20 +708,35 @@ class QubitGraph:
         by QubitGraph.
 
         Args:
-            graph: The graph object used for type-checking. This object must not be None.
+            candidate: The candidate graph object used for type-checking. This object must not be
+                None.
         """
-        assert graph is not None, "Graph object used for type-checking must not be None"
+        assert candidate is not None, "Graph object used for type-checking must not be None"
 
-        if not hasattr(graph, "nodes") or not hasattr(graph, "edges"):
+        if not cls._is_graph_like(candidate):
             raise TypeError(
                 "QubitGraph requires a graph-like input, i.e. an object having both a 'nodes' and "
                 "an 'edges' attribute."
             )
 
-        if not isinstance(graph, nx.Graph):
+        if not isinstance(candidate, nx.Graph):
             warnings.warn(
                 f"QubitGraph expects an input graph of type 'networkx.Graph', but got "
-                f"'{type(graph).__name__}'. Using a graph of another type may result in unexpected "
-                f"behaviour.",
+                f"'{type(candidate).__name__}'. Using a graph of another type may result in "
+                f"unexpected behaviour.",
                 UserWarning,
             )
+
+    @classmethod
+    def _is_graph_like(cls, candidate: Any) -> bool:
+        """Check if the input is a graph-like object.
+
+        An object is considered "graph-like" if it has both a 'nodes' and an 'edges' attribute.
+
+        Args:
+            candidate: The candidate graph object used for type-checking. This object must not be
+                None.
+        """
+        assert candidate is not None, "Graph object used for type-checking must not be None"
+
+        return hasattr(candidate, "nodes") and hasattr(candidate, "edges")
