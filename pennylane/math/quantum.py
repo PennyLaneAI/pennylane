@@ -957,10 +957,6 @@ def sqrt_matrix(density_matrix):
     Returns:
         (tensor_like): Square root of the density matrix.
     """
-    sparse_type = None
-    if issparse(density_matrix):
-        sparse_type = type(density_matrix)
-        density_matrix = density_matrix.toarray()
     evs, vecs = qml.math.linalg.eigh(density_matrix)
     evs = qml.math.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
@@ -974,10 +970,7 @@ def sqrt_matrix(density_matrix):
         sqrt_evs = qml.math.expand_dims(qml.math.sqrt(evs), 1) * i
         return vecs @ sqrt_evs @ qml.math.conj(qml.math.transpose(vecs, (0, 2, 1)))
 
-    res = vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
-    if sparse_type:
-        return sparse_type(res)
-    return res
+    return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
