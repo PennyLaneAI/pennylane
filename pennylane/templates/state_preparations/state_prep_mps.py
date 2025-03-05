@@ -82,7 +82,7 @@ def right_canonicalize_mps(mps):
         mps (list[TensorLike]): List of tensors representing the MPS.
 
     Returns:
-        List of tensors representing the MPS in right-canonical form.
+        List of tensors representing the MPS in right-canonical form with the same dimensions as the initial MPS.
 
 
     A right-canonicalized MPS is a matrix product state in which the constituent tensors, :math:`A^{(j)}`, satisfy
@@ -250,6 +250,8 @@ class MPSPrep(Operation):
 
     **Example**
 
+    Example using the `lightning.tensor` device:
+
     .. code-block::
 
         mps = [
@@ -272,6 +274,22 @@ class MPSPrep(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
+        [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
+        0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
+
+    Example using the `default.qubit` device:
+
+    .. code-block::
+
+        dev = qml.device("default.qubit", wires=4)
+        @qml.qnode(dev)
+        def circuit():
+            qml.MPSPrep(mps, wires = [1,2,3], work_wires = [0])
+            return qml.state()
+
+    .. code-block:: pycon
+
+        >>> print(circuit()[:8])
         [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
         0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
 
