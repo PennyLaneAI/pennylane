@@ -73,7 +73,7 @@ class GraphStatePrep(Operation):
         self.hyperparameters["qubit_graph"] = qubit_graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
-        super().__init__(wires=[q for q in qubit_graph.graph])
+        super().__init__(wires=wires if wires is not None else [q for q in qubit_graph.graph])
 
     def label(
         self, decimals: int = None, base_label: str = None, cache: dict = None
@@ -91,11 +91,11 @@ class GraphStatePrep(Operation):
         Returns:
             str: label to use in drawings
         """
-        return f"GraphStatePrep({self.hyperparameters['qubit_ops'](wires=0).name}, entanglement_ops: {self.hyperparameters['entanglement_ops'].name})"
+        return f"GraphStatePrep({self.hyperparameters['qubit_ops'](wires=0).name}, {self.hyperparameters['entanglement_ops'].name})"
 
     def __repr__(self):
         """Method defining the string representation of this class."""
-        return f"Graph State Preparation with: Qubit Ops: {self.hyperparameters['qubit_ops']}, Entanglement Ops: {self.hyperparameters['entanglement_ops']}, Wires: {self.hyperparameters['qubit_graph']}"
+        return f"GraphStatePrep({self.hyperparameters['qubit_ops'](wires=0).name}, {self.hyperparameters['entanglement_ops'].name})"
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
