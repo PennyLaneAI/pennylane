@@ -55,18 +55,13 @@ def _get_plxpr_merge_rotations():
             # dict[wire (int), op (Operator)]
             self.previous_ops = {}
 
-        def _get_previous_ops_on_wires(self, wires) -> list[Operator]:
-            """Helper function to get previous operations on the wires of the given operator."""
-
-            # Use list(dict.fromkeys(...)) as opposed to a set to maintain deterministic order
-            return list(
-                dict.fromkeys(self.previous_ops[w] for w in wires if w in self.previous_ops)
-            )
-
         def _update_previous_ops(self, op: Operator) -> None:
             """Update the previous_ops dictionary with the current operator."""
 
-            previous_ops_on_wires = self._get_previous_ops_on_wires(op.wires)
+            # Use list(dict.fromkeys(...)) as opposed to a set to maintain deterministic order
+            previous_ops_on_wires = list(
+                dict.fromkeys(self.previous_ops[w] for w in op.wires if w in self.previous_ops)
+            )
             for o in previous_ops_on_wires:
                 for w in o.wires:
                     del self.previous_ops[w]
@@ -76,7 +71,10 @@ def _get_plxpr_merge_rotations():
         def _interpret_previous_ops_on_wires(self, wires) -> None:
             """Interpret all operators that are detected to be on a set of wires."""
 
-            previous_ops_on_wires = self._get_previous_ops_on_wires(wires)
+            # Use list(dict.fromkeys(...)) as opposed to a set to maintain deterministic order
+            previous_ops_on_wires = list(
+                dict.fromkeys(self.previous_ops[w] for w in wires if w in self.previous_ops)
+            )
             for prev_op in previous_ops_on_wires:
                 super().interpret_operation(prev_op)
 
@@ -95,11 +93,11 @@ def _get_plxpr_merge_rotations():
             """
 
             if self.include_gates is not None and op.name not in self.include_gates:
-                self._interpret_all_previous_ops_on_wires(op.wires)
+                self._interpret_previous_ops_on_wires(op.wires)
                 return self._update_previous_ops(op)
 
             if op not in composable_rotations:
-                self._interpret_all_previous_ops_on_wires(op.wires)
+                self._interpret_previous_ops_on_wires(op.wires)
                 return self._update_previous_ops(op)
 
             previous_op = self.previous_ops.get(op.wires[0])
@@ -112,7 +110,7 @@ def _get_plxpr_merge_rotations():
             # Can't use `isinstance` since op could be a subclass of type(previous_op)
             can_merge = (op.wires == previous_op.wires) and (type(op) == type(previous_op))
             if not can_merge:
-                self._interpret_all_previous_ops_on_wires(op.wires)
+                self._interpret_previous_ops_on_wires(op.wires)
                 return self._update_previous_ops(op)
 
             if isinstance(op, qml.Rot):
