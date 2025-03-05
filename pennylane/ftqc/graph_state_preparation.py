@@ -16,7 +16,9 @@ r"""This module contains the GraphStatePrep template."""
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import Wires
 
+from .lattice import Lattice
 from .qubit_graph import QubitGraph
 
 
@@ -65,15 +67,26 @@ class GraphStatePrep(Operation):
 
     def __init__(
         self,
-        qubit_graph: QubitGraph,
+        wires: Wires = None,
+        lattice: Lattice = None,
+        qubit_graph: QubitGraph = None,
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
-        wires=None,
     ):
-        self.hyperparameters["qubit_graph"] = qubit_graph
+        if wires is not None and lattice is not None:
+            if set(wires) != set(lattice.nodes):
+                raise ValueError("Please ensure that labels in the lattice are the same with wires")
+            self.hyperparameters["wires"] = wires
+            self.hyperparameters["lattice"] = lattice
+            super().__init__(wires=wires)
+        elif qubit_graph is not None and [wires, lattice] == [None]*2:
+            self.hyperparameters["qubit_graph"] = qubit_graph
+            super().__init__(wires=[q for q in qubit_graph.graph])
+        else:
+            raise ValueError("Please specify either the wires and lattice arg or the qubit_graph arg")
+    
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
-        super().__init__(wires=wires if wires is not None else [q for q in qubit_graph.graph])
 
     def label(
         self, decimals: int = None, base_label: str = None, cache: dict = None
@@ -134,6 +147,6 @@ class GraphStatePrep(Operation):
             op_list.append(qubit_ops(wires=qubit_graph[qubit]))
 
         # Add entanglement_ops for each pair of nearest qubits in the graph
-        for qubit0, qubit1 in qubit_graph.edges:
+        for qubit0, qubit1 in qubit_graph.graph.edges:
             op_list.append(entanglement_ops(wires=[qubit_graph[qubit0], qubit_graph[qubit1]]))
         return op_list
