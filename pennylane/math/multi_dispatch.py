@@ -21,7 +21,6 @@ import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
-from scipy.sparse import issparse
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .interface_utils import get_interface
@@ -38,8 +37,6 @@ def array(*args, like=None, **kwargs):
     Returns:
         tensor_like: the tensor_like object of the framework
     """
-    if issparse(args[0]):  # Don't alter sparse matrices
-        return args[0]
     res = np.array(*args, like=like, **kwargs)
     if like is not None and get_interface(like) == "torch":
         res = res.to(device=like.device)
@@ -370,11 +367,6 @@ def dot(tensor1, tensor2, like=None):
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
-
-    import scipy  # pylint: disable=import-outside-toplevel
-
-    if scipy.sparse.issparse(x):
-        return x.dot(y)
 
     return np.dot(x, y, like=like)
 
@@ -880,9 +872,6 @@ def norm(tensor, like=None, **kwargs):
         like == "autograd" and kwargs.get("ord", None) is None and kwargs.get("axis", None) is None
     ):
         norm = _flat_autograd_norm
-
-    elif issparse(tensor):
-        from scipy.sparse.linalg import norm
 
     else:
         from scipy.linalg import norm
