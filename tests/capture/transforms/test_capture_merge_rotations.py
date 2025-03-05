@@ -17,12 +17,10 @@
 
 import pytest
 
-import pennylane as qml
-from pennylane.transforms.optimization.optimization_utils import fuse_rot_angles
-
 jax = pytest.importorskip("jax")
+import jax.numpy as jnp
 
-
+import pennylane as qml
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
@@ -39,6 +37,7 @@ from pennylane.transforms.optimization.merge_rotations import (
     MergeRotationsInterpreter,
     merge_rotations_plxpr_to_plxpr,
 )
+from pennylane.transforms.optimization.optimization_utils import fuse_rot_angles
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -65,10 +64,10 @@ class TestMergeRotationsInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
         expected_ops = [
-            qml.RX(jax.numpy.array(a + b), wires=[0]),
+            qml.RX(jnp.array(a + b), wires=[0]),
             qml.RY(a, wires=[2]),
             # Two rotation gates merge to: RZ(c) RY(0) RZ(c)
-            qml.Rot(jax.numpy.array(c), jax.numpy.array(0), jax.numpy.array(c), wires=[1]),
+            qml.Rot(jnp.array(c), jnp.array(0), jnp.array(c), wires=[1]),
         ]
 
         ops = collector.state["ops"]
@@ -99,9 +98,9 @@ class TestMergeRotationsInterpreter:
         expected_angles = fuse_rot_angles(angles1, angles2)
         expected_ops = [
             qml.Rot(
-                jax.numpy.array(expected_angles[0]),
-                jax.numpy.array(expected_angles[1]),
-                jax.numpy.array(expected_angles[2]),
+                jnp.array(expected_angles[0]),
+                jnp.array(expected_angles[1]),
+                jnp.array(expected_angles[2]),
                 wires=[1],
             ),
         ]
@@ -165,7 +164,7 @@ class TestMergeRotationsInterpreter:
         # Since arguments are traced, operator will still show up
         # even if the angle is 0.0.
         expected_ops = [
-            qml.RX(jax.numpy.array(theta1 + theta2), wires=[0]),
+            qml.RX(jnp.array(theta1 + theta2), wires=[0]),
         ]
 
         ops = collector.state["ops"]
@@ -435,7 +434,7 @@ def test_merge_rotations_plxpr_to_plxpr_transform(theta1, theta2):
 
     # Order is slightly different, but remains correct.
     expected_ops = [
-        qml.RX(jax.numpy.array(theta1 + theta2), wires=[0]),
+        qml.RX(jnp.array(theta1 + theta2), wires=[0]),
     ]
 
     ops = collector.state["ops"]
