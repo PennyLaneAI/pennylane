@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass, field
 
 import pennylane as qml
@@ -158,7 +159,7 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
 
     """
     _validate_resource_rep(op_type, params)
-    if issubclass(op_type, qml.ops.Controlled):
+    if op_type is qml.ops.Controlled or op_type is qml.ops.ControlledOp:
         return controlled_resource_rep(op_type, **params)
     return CompressedResourceOp(op_type, params)
 
@@ -170,7 +171,7 @@ def controlled_resource_rep(
     num_zero_control_values: int,
     num_work_wires: int,
 ):
-    """Creates a ``CompressedResourceOp`` representation of a controlled operator.
+    """Creates a ``CompressedResourceOp`` representation of a general controlled operator.
 
     Args:
         base_op_type: the base operator type
@@ -184,13 +185,17 @@ def controlled_resource_rep(
     _validate_resource_rep(base_op_type, base_op_params)
 
     # Flatten nested controlled operations
-    if issubclass(base_op_type, qml.ops.Controlled):
-        base_resource_rep = controlled_resource_rep(**base_op_params)
+    if base_op_type is qml.ops.Controlled or base_op_type is qml.ops.ControlledOp:
+        base_resource_rep = controlled_resource_rep(base_op_type, **base_op_params)
         base_op_type = base_resource_rep.params["base_class"]
         base_op_params = base_resource_rep.params["base_params"]
         num_control_wires += base_resource_rep.params["num_control_wires"]
         num_zero_control_values += base_resource_rep.params["num_zero_control_values"]
         num_work_wires += base_resource_rep.params["num_work_wires"]
+
+    elif base_op_type in custom_ctrl_op_to_base():
+        base_op_type = custom_ctrl_op_to_base()[base_op_type]
+        num_control_wires += base_op_type.num_wires - 1
 
     return CompressedResourceOp(
         qml.ops.Controlled,
@@ -202,3 +207,41 @@ def controlled_resource_rep(
             "num_work_wires": num_work_wires,
         },
     )
+
+
+@functools.lru_cache()
+def base_to_custom_ctrl_op():
+    """A dictionary mapping base op types to their custom controlled versions."""
+
+    ops_with_custom_ctrl_ops = {
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliZ, 2): qml.CCZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.CZ, 1): qml.CCZ,
+        (qml.SWAP, 1): qml.CSWAP,
+        (qml.Hadamard, 1): qml.CH,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
+    }
+    return ops_with_custom_ctrl_ops
+
+
+@functools.lru_cache()
+def custom_ctrl_op_to_base():
+    """The set of custom controlled operations."""
+
+    return {
+        qml.CZ: qml.Z,
+        qml.CCZ: qml.Z,
+        qml.CY: qml.Y,
+        qml.CSWAP: qml.SWAP,
+        qml.CH: qml.H,
+        qml.CRX: qml.RX,
+        qml.CRY: qml.RY,
+        qml.CRZ: qml.RZ,
+        qml.CRot: qml.Rot,
+        qml.ControlledPhaseShift: qml.PhaseShift,
+    }
