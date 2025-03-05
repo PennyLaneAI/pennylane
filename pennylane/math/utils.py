@@ -57,12 +57,32 @@ def allequal(tensor1, tensor2, **kwargs):
     return np.all(t1 == t2, **kwargs)
 
 
+def _allclose_sparse(a, b, rtol=1e-05, atol=1e-08):
+    """Compare two sparse matrices for approximate equality.
+
+    Args:
+        a, b: scipy sparse matrices to compare
+        rtol (float): relative tolerance
+        atol (float): absolute tolerance
+
+    Returns:
+        bool: True if matrices are approximately equal
+    """
+    if (a != b).nnz == 0:
+        return True
+
+    diff = abs(a - b)
+    return diff.max() <= atol + rtol * abs(b).max()
+
+
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
     try:
         # Some frameworks may provide their own allclose implementation.
         # Try and use it if available.
+        if sp.sparse.issparse(a) and sp.sparse.issparse(b):
+            return _allclose_sparse(a, b, rtol=rtol, atol=atol)
         if sp.sparse.issparse(a):
             a = a.toarray()
         if sp.sparse.issparse(b):
