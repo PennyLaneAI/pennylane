@@ -550,19 +550,6 @@ class TransformProgram:
             return [qml.math.get_trainable_indices(param) for param in params]
         return None
 
-    @overload
-    def __call__(
-        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.core.ClosedJaxpr": ...
-    @overload
-    def __call__(
-        self, tapes: QuantumScriptBatch
-    ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
-    def __call__(self, *args, **kwargs):
-        if isinstance(args[0], Sequence):
-            return self.__call_tapes(args[0])
-        return self.__call_jaxpr(*args, **kwargs)
-
     def __call_jaxpr(
         self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
     ) -> "jax.core.ClosedJaxpr":
@@ -646,3 +633,16 @@ class TransformProgram:
 
         # Reset classical jacobians
         return tuple(tapes), postprocessing_fn
+
+    @overload
+    def __call__(
+        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.core.ClosedJaxpr": ...
+    @overload
+    def __call__(
+        self, tapes: QuantumScriptBatch
+    ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
+    def __call__(self, *args, **kwargs):
+        if isinstance(args[0], (Sequence, qml.tape.QuantumScript)):
+            return self.__call_tapes(args[0])
+        return self.__call_jaxpr(*args, **kwargs)
