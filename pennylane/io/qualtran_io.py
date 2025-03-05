@@ -76,7 +76,7 @@ class FromBloq(Operation):
     A shim for using bloqs as a PennyLane :class:`~.Operation`.
 
     Args:
-        bloq (Bloq): the bloq to wrap
+        bloq (qualtran.Bloq): the bloq to wrap
         wires (WiresLike): the wires to act on
 
     **Example**
