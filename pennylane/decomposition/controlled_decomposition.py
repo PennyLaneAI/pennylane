@@ -138,3 +138,30 @@ def controlled_global_phase_decomp(*_, control_wires, control_values, work_wires
     for w, val in zip(control_wires, control_values):
         if not val:
             qml.PauliX(w)
+
+
+def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_work_wires):
+    if num_control_wires == 1 and num_zero_control_values == 0:
+        return {resource_rep(qml.CNOT): 1}
+    if num_control_wires == 2 and num_zero_control_values == 0:
+        return {resource_rep(qml.Toffoli): 1}
+    return {
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_x_resource)
+def controlled_x_decomp(*_, control_wires, control_values, work_wires, base, **__):
+    """The decomposition rule for a controlled PauliX."""
+
+    qml.ctrl(
+        qml.PauliX(base.wires),
+        control=control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+    )

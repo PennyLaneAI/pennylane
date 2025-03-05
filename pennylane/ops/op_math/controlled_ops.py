@@ -1208,6 +1208,8 @@ class MultiControlledX(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ("num_control_wires", "num_zero_control_values", "num_work_wires")
+
     name = "MultiControlledX"
 
     def _flatten(self):
@@ -1277,6 +1279,14 @@ class MultiControlledX(ControlledOp):
         return (
             f"MultiControlledX(wires={self.wires.tolist()}, control_values={self.control_values})"
         )
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_control_wires": len(self.control_wires),
+            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_work_wires": len(self.work_wires),
+        }
 
     @property
     def wires(self):
