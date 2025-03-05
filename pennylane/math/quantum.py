@@ -959,8 +959,6 @@ def sqrt_matrix(density_matrix):
     Returns:
         (tensor_like): Square root of the density matrix.
     """
-    if sp.sparse.issparse(density_matrix):
-        return sp.sparse.csr_matrix(sp.linalg.sqrtm(density_matrix.toarray()))
     evs, vecs = qml.math.linalg.eigh(density_matrix)
     evs = qml.math.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
