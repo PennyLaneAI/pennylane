@@ -18,7 +18,7 @@ from .resources import Resources, CompressedResourceOp, resource_rep
 from .decomposition_rule import (
     register_resources,
     DecompositionRule,
-    add_decomposition,
-    get_decompositions,
-    has_decomposition,
+    add_decomps,
+    list_decomps,
+    has_decomp,
 )
