@@ -86,6 +86,12 @@ class QubitGraph:
         if id is None:
             raise TypeError("'None' is not a valid QubitGraph ID.")
 
+        # Attempting to construct a QubitGraph object by passing a single graph-like object results
+        # in it being interpreted as the `id`. This is likely not what the user intended, therefore
+        # emit a warning.
+        if self._is_graph_like(id) and graph is None:
+            self._warn_id_is_graph_like(id)
+
         # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
         self._id = id
 
@@ -639,6 +645,24 @@ class QubitGraph:
         )
 
     @staticmethod
+    def _warn_id_is_graph_like(id: Any):
+        """Emit a UserWarning when attempting to instantiate a QubitGraph by passing a single
+        argument that is a graph-like object to its constructor. This single argument is interpreted
+        as the ``id`` parameter, and the underlying qubit graph is left uninitialized, which is
+        likely not what the user intended.
+
+        Args:
+            id (Any): The graph-like object interpreted as the QubitGraph ID.
+        """
+        warnings.warn(
+            f"Attempting to pass an object of type '{type(id).__name__}' as the QubitGraph ID. "
+            f"Constructing a QubitGraph with a single graph-like object as input results in this "
+            f"object being interpreted as the QubitGraph's ID and leaves the QubitGraph in an "
+            f"uninitialized state. If you wish to use this graph-like object to initialize the "
+            f"QubitGraph, you must also supply an ID parameter."
+        )
+
+    @staticmethod
     def _warn_max_traversal_depth_reached(algo_name: str):
         """Emit a UserWarning when an algorithm traversing through the layers of a nested QubitGraph
         surpasses the maximum traversal depth.
@@ -665,12 +689,13 @@ class QubitGraph:
             UserWarning,
         )
 
-    @staticmethod
-    def _check_graph_type_supported_and_raise_or_warn(graph):
+    @classmethod
+    def _check_graph_type_supported_and_raise_or_warn(cls, candidate: Any):
         """Check that the input type is graph-like and raise a TypeError if not, and then check that
         the graph type is one that is supported and emit a UserWarning if not.
 
-        The input is considered "graph-like" if it has both a 'nodes' and an 'edges' attribute.
+        The input is considered "graph-like" according to the definition in the
+        ``QubitGraph._is_graph_like()`` method.
 
         Currently, QubitGraph only supports networkx graphs; specifically, graph objects that are
         instances of the `networkx.Graph
@@ -683,20 +708,35 @@ class QubitGraph:
         by QubitGraph.
 
         Args:
-            graph: The graph object used for type-checking. This object must not be None.
+            candidate: The candidate graph object used for type-checking. This object must not be
+                None.
         """
-        assert graph is not None, "Graph object used for type-checking must not be None"
+        assert candidate is not None, "Graph object used for type-checking must not be None"
 
-        if not hasattr(graph, "nodes") or not hasattr(graph, "edges"):
+        if not cls._is_graph_like(candidate):
             raise TypeError(
                 "QubitGraph requires a graph-like input, i.e. an object having both a 'nodes' and "
                 "an 'edges' attribute."
             )
 
-        if not isinstance(graph, nx.Graph):
+        if not isinstance(candidate, nx.Graph):
             warnings.warn(
                 f"QubitGraph expects an input graph of type 'networkx.Graph', but got "
-                f"'{type(graph).__name__}'. Using a graph of another type may result in unexpected "
-                f"behaviour.",
+                f"'{type(candidate).__name__}'. Using a graph of another type may result in "
+                f"unexpected behaviour.",
                 UserWarning,
             )
+
+    @classmethod
+    def _is_graph_like(cls, candidate: Any) -> bool:
+        """Check if the input is a graph-like object.
+
+        An object is considered "graph-like" if it has both a 'nodes' and an 'edges' attribute.
+
+        Args:
+            candidate: The candidate graph object used for type-checking. This object must not be
+                None.
+        """
+        assert candidate is not None, "Graph object used for type-checking must not be None"
+
+        return hasattr(candidate, "nodes") and hasattr(candidate, "edges")

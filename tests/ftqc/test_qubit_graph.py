@@ -715,3 +715,12 @@ class TestQubitGraphsWarnings:
             UserWarning, match="QubitGraph expects an input graph of type 'networkx.Graph'"
         ):
             q.init_graph(g)
+
+    def test_single_graph_like_input_warning(self):
+        """Test that initializing a QubitGraph with a single graph-like object as input (without
+        supplying an ID parameter) emits a UserWarning.
+        """
+        with pytest.warns(
+            UserWarning, match="Constructing a QubitGraph with a single graph-like object"
+        ):
+            _ = QubitGraph(nx.Graph())
