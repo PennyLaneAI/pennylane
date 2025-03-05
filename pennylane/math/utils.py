@@ -75,6 +75,36 @@ def _allclose_sparse(a, b, rtol=1e-05, atol=1e-08):
     return diff.max() <= atol + rtol * abs(b).max()
 
 
+def _allclose_dense_sparse(a, b, rtol=1e-05, atol=1e-08):
+    """Compare a dense and sparse matrix for approximate equality.
+
+    Args:
+        a: dense matrix
+        b: sparse matrix
+        rtol (float): relative tolerance
+        atol (float): absolute tolerance
+
+    Returns:
+        bool: True if matrices are approximately equal
+    """
+    if b.nnz == 0:
+        return np.allclose(a, 0, rtol=rtol, atol=atol)
+
+    if a.shape != b.shape:
+        return False
+
+    # Size threshold for when to convert the sparse matrix to dense
+    SIZE_THRESHOLD = 10000
+    if np.prod(a.shape) < SIZE_THRESHOLD:
+        return np.allclose(a, b.toarray(), rtol=rtol, atol=atol)
+
+    # If the size of the sparse matrix is large, we try extracting
+    # the non-zero elements and comparing them
+    if not np.array_equal(a.nonzero(), b.nonzero()):
+        return False
+    return np.allclose(a[a != 0], b.data, rtol=rtol, atol=atol)
+
+
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
@@ -84,9 +114,9 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
         if sp.sparse.issparse(a) and sp.sparse.issparse(b):
             return _allclose_sparse(a, b, rtol=rtol, atol=atol)
         if sp.sparse.issparse(a):
-            a = a.toarray()
+            return _allclose_dense_sparse(b, a, rtol=rtol, atol=atol)
         if sp.sparse.issparse(b):
-            b = b.toarray()
+            return _allclose_dense_sparse(a, b, rtol=rtol, atol=atol)
         res = np.allclose(a, b, rtol=rtol, atol=atol, **kwargs)
     except (TypeError, AttributeError, ImportError, RuntimeError):
         # Otherwise, convert the input to NumPy arrays.
