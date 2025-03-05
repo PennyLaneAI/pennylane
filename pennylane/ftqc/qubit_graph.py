@@ -46,15 +46,14 @@ class QubitGraph:
             expects a "flat" (unnested) graph, and any graph-like objects nested within the graph
             structure used as input are ignored.
 
-    Examples:
+    **Examples**
 
         Create a QubitGraph (with id=0) using a 2x2 Cartesian grid to define the structure of its
         underlying qubits:
 
         >>> import networkx as nx
         >>> from pennylane.ftqc import QubitGraph
-        >>> g = nx.grid_graph((2,2))
-        >>> q = QubitGraph(0, g)
+        >>> q = QubitGraph(0, nx.grid_graph((2,2)))
         >>> q
         QubitGraph<0>
         >>> for child in q.children:
@@ -67,8 +66,7 @@ class QubitGraph:
         Using the QubitGraph object defined above as a starting point, it's possible to nest other
         QubitGraph objects in any of the nodes of its underlying qubit graph:
 
-        >>> g00 = nx.grid_graph((2,))
-        >>> q[(0,0)] = QubitGraph((0, 0), g00)
+        >>> q[(0,0)] = QubitGraph((0, 0), nx.grid_graph((2,)))
         >>> for child in q[(0,0)].children:
         ...     print(child)
         QubitGraph<0, (0, 0), 0>
@@ -143,7 +141,7 @@ class QubitGraph:
             key (Any): Node label in the underlying qubit graph.
             value (QubitGraph): The QubitGraph object to assign to the node with the given key.
 
-        Example:
+        **Example**
 
             >>> graph = nx.Graph()
             >>> graph.add_node(0)
@@ -212,7 +210,7 @@ class QubitGraph:
 
         This representation displays the full index hierarchy of a nested QubitGraph object.
 
-        Examples:
+        **Examples**
 
             >>> QubitGraph(0)
             QubitGraph<0>
@@ -384,7 +382,7 @@ class QubitGraph:
         Yields:
             QubitGraph: The next QubitGraph object in the set of children QubitGraphs.
 
-        Example:
+        **Example**
 
             >>> q = QubitGraph(0, nx.grid_graph((2,)))
             >>> set(q.node_labels)
@@ -410,7 +408,7 @@ class QubitGraph:
         Yields:
             QubitGraph: The next QubitGraph object in the set of neighboring QubitGraphs.
 
-        Example:
+        **Example**
 
             >>> q = QubitGraph(0, nx.grid_graph((2, 2)))
             >>> set(q[(0,0)].neighbors)
@@ -457,13 +455,18 @@ class QubitGraph:
             graph (networkx.Graph): The undirected graph to use as the QubitGraph's underlying
                 qubits. This object must not be None.
 
-        Example:
+        **Example**
+
+            This example creates a networkx graph with two nodes, labelled 0 and 1, and one edge
+            between them, and uses this graph to initialize the graph structure of a QubitGraph:
 
             >>> import networkx as nx
+            >>> graph = nx.Graph()
+            >>> graph.add_edge(0, 1)
             >>> q = QubitGraph(0)
-            >>> q.init_graph(nx.grid_graph((3, 1)))
+            >>> q.init_graph(graph)
             >>> list(q.children)
-            [QubitGraph<0, (0, 0)>, QubitGraph<0, (0, 1)>, QubitGraph<0, (0, 2)>]
+            [QubitGraph<0, 0>, QubitGraph<0, 1>]
         """
         if graph is None:
             raise TypeError("QubitGraph requires a graph-like input, got NoneType.")
@@ -484,13 +487,7 @@ class QubitGraph:
         Args:
             m, n (int): The number of rows, m, and columns, n, in the grid.
 
-        Example:
-
-            >>> q = QubitGraph(0)
-            >>> q.init_graph_2d_grid(2, 3)
-            >>> list(q.children)
-            [QubitGraph<0, (0, 0)>, QubitGraph<0, (0, 1)>, QubitGraph<0, (0, 2)>,
-            QubitGraph<0, (1, 0)>, QubitGraph<0, (1, 1)>, QubitGraph<0, (1, 2)>]
+        **Example**
 
             This example initializes the underlying qubits as a 2x3 2-dimensional Cartesian grid
             with graph structure and qubit indexing below:
@@ -500,6 +497,12 @@ class QubitGraph:
                 (0,0) --- (0,1) --- (0,2)
                   |         |         |
                 (1,0) --- (1,1) --- (1,2)
+
+            >>> q = QubitGraph(0)
+            >>> q.init_graph_2d_grid(2, 3)
+            >>> list(q.children)
+            [QubitGraph<0, (0, 0)>, QubitGraph<0, (0, 1)>, QubitGraph<0, (0, 2)>,
+            QubitGraph<0, (1, 0)>, QubitGraph<0, (1, 1)>, QubitGraph<0, (1, 2)>]
         """
         if self.is_initialized:
             self._warn_reinitialization()
@@ -515,15 +518,7 @@ class QubitGraph:
         Args:
             dim (list or tuple of ints): The size of each dimension.
 
-        Examples:
-
-            >>> q = QubitGraph(0)
-            >>> q.init_graph_nd_grid((2, 2, 3))
-            >>> list(q.children)
-            [QubitGraph<0, (0, 0, 0)>, QubitGraph<0, (0, 0, 1)>, QubitGraph<0, (0, 1, 0)>,
-            QubitGraph<0, (0, 1, 1)>, QubitGraph<0, (1, 0, 0)>, QubitGraph<0, (1, 0, 1)>,
-            QubitGraph<0, (1, 1, 0)>, QubitGraph<0, (1, 1, 1)>, QubitGraph<0, (2, 0, 0)>,
-            QubitGraph<0, (2, 0, 1)>, QubitGraph<0, (2, 1, 0)>, QubitGraph<0, (2, 1, 1)>]
+        **Example**
 
             This example initializes the underlying qubits as a 2x2x3 3-dimensional Cartesian grid
             with graph structure and qubit indexing below:
@@ -541,6 +536,14 @@ class QubitGraph:
                 |  (1,1,0) -----------|- (1,1,1)
                 | /                   | /
                 (0,1,0) ------------- (0,1,1)
+
+            >>> q = QubitGraph(0)
+            >>> q.init_graph_nd_grid((2, 2, 3))
+            >>> list(q.children)
+            [QubitGraph<0, (0, 0, 0)>, QubitGraph<0, (0, 0, 1)>, QubitGraph<0, (0, 1, 0)>,
+            QubitGraph<0, (0, 1, 1)>, QubitGraph<0, (1, 0, 0)>, QubitGraph<0, (1, 0, 1)>,
+            QubitGraph<0, (1, 1, 0)>, QubitGraph<0, (1, 1, 1)>, QubitGraph<0, (2, 0, 0)>,
+            QubitGraph<0, (2, 0, 1)>, QubitGraph<0, (2, 1, 0)>, QubitGraph<0, (2, 1, 1)>]
         """
         if self.is_initialized:
             self._warn_reinitialization()
