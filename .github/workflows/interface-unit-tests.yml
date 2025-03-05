@@ -741,6 +741,8 @@ jobs:
 
   upload-reports:
     needs:
+      - setup-ci-load
+      - determine_runner
       - torch-tests
       - autograd-tests
       - tf-tests
