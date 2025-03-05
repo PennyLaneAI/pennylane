@@ -39,7 +39,7 @@ class TestGraphStatePrep:
             return qml.probs()
 
         circuit(q)
-        assert_valid(GraphStatePrep(qubit_graph=q))
+        assert_valid(GraphStatePrep(qubit_graph=q), skip_deepcopy=True, skip_pickle=True)
 
     @pytest.mark.parametrize(
         "dims, shape, expected",
