@@ -317,14 +317,6 @@ class TestPhaseAdder:
 
         assert actual == gate_types
 
-    @pytest.mark.parametrize(
-        "base_class, base_params, num_ctrl_wires",
-        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
-    )
-    def test_tracking_name(self, base_class, base_params, num_ctrl_wires):
+    def test_tracking_name(self):
         """Test that the tracking name is correct."""
-        base_name = base_class.tracking_name(**base_params)
-        assert (
-            re.ResourceControlledSequence.tracking_name(base_class, base_params, num_ctrl_wires)
-            == f"ControlledSequence({base_name}, {num_ctrl_wires})"
-        )
+        assert re.ResourcePhaseAdder.tracking_name() == f"PhaseAdder"
