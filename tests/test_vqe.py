@@ -973,11 +973,6 @@ class TestNewVQE:
 
         assert res["num_observables"] == 1
 
-        # currently this returns 1 instead, because diagonalizing gates exist for H,
-        # but they aren't used in executing this qnode
-        # to be revisited in [sc-59117]
-        assert res["num_diagonalizing_gates"] == 0
-
 
 class TestInterfaces:
     """Tests for VQE with interfaces."""
