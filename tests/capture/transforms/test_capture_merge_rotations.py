@@ -612,16 +612,27 @@ class TestHigherOrderPrimitiveIntegration:
 
             return qml.grad(circuit)(a, b)
 
-        jaxpr = jax.make_jaxpr(f)(1.0, 2.0)
+        args = (1.0, 2.0)
+        jaxpr = jax.make_jaxpr(f)(*args)
 
         assert jaxpr.eqns[0].primitive == grad_prim
 
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[-4].primitive != qml.RX._primitive
-        assert qfunc_jaxpr.eqns[-3].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+        collector = CollectOpsandMeas()
+        collector.eval(qfunc_jaxpr, jaxpr.consts, *args)
+        expected_ops = [
+            qml.RX(jnp.array(3.0), wires=[0]),
+        ]
+
+        ops = collector.state["ops"]
+        assert ops == expected_ops
+
+        expected_meas = [
+            qml.expval(qml.PauliZ(0)),
+        ]
+        meas = collector.state["measurements"]
+        assert meas == expected_meas
 
     def test_jac_higher_order_primitive(self):
         """Test that the jacobian primitive works correctly"""
@@ -637,16 +648,27 @@ class TestHigherOrderPrimitiveIntegration:
 
             return qml.jacobian(circuit)(a, b)
 
-        jaxpr = jax.make_jaxpr(f)(1.0, 2.0)
+        args = (1.0, 2.0)
+        jaxpr = jax.make_jaxpr(f)(*args)
 
         assert jaxpr.eqns[0].primitive == jacobian_prim
 
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[-4].primitive != qml.RX._primitive
-        assert qfunc_jaxpr.eqns[-3].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+        collector = CollectOpsandMeas()
+        collector.eval(qfunc_jaxpr, jaxpr.consts, *args)
+        expected_ops = [
+            qml.RX(jnp.array(3.0), wires=[0]),
+        ]
+
+        ops = collector.state["ops"]
+        assert ops == expected_ops
+
+        expected_meas = [
+            qml.expval(qml.PauliZ(0)),
+        ]
+        meas = collector.state["measurements"]
+        assert meas == expected_meas
 
     def test_qnode_higher_order_primitive(self):
         """Test that the qnode primitive is correctly interpreted"""
@@ -659,14 +681,25 @@ class TestHigherOrderPrimitiveIntegration:
             qml.RX(b, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.0, 2.0)
+        args = (1.0, 2.0)
+        jaxpr = jax.make_jaxpr(f)(*args)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[-4].primitive != qml.RX._primitive
-        assert qfunc_jaxpr.eqns[-3].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
+        collector = CollectOpsandMeas()
+        collector.eval(qfunc_jaxpr, jaxpr.consts, *args)
+        expected_ops = [
+            qml.RX(jnp.array(3.0), wires=[0]),
+        ]
+
+        ops = collector.state["ops"]
+        assert ops == expected_ops
+
+        expected_meas = [
+            qml.expval(qml.PauliZ(0)),
+        ]
+        meas = collector.state["measurements"]
+        assert meas == expected_meas
 
     def test_mid_circuit_measurement_prim(self):
         """Test that mid-circuit measurements are correctly handled."""
