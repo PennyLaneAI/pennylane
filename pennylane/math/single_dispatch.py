@@ -65,6 +65,7 @@ ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
 ar.register_function("scipy", "coerce", lambda x: x)
+ar.register_function("scipy", "array", lambda x: x)
 ar.register_function("scipy", "shape", np.shape)
 ar.register_function("scipy", "dot", np.dot)
 ar.register_function("scipy", "conj", np.conj)
