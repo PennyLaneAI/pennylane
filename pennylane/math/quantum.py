@@ -1014,7 +1014,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
     Args:
         mat (sparse): Sparse input matrix
         max_iter (int): Maximum number of iterations
-        tol (float): Convergence tolerance
+        tol (float): Convergence tolerance (absolute tolerance). Measured using the Frobenius norm of the difference between input mat and the square of the output.
 
     Returns:
         scipy.sparse.csc_matrix: Square root of the input matrix
