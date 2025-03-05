@@ -746,6 +746,11 @@ jobs:
       - default-dependency-versions
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
       - name: Upload Reports
         env:
           #TODO: Remove _dev suffixes before merging
