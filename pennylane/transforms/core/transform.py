@@ -282,7 +282,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         be compatible with this fallback implementation:
 
         * Transforms that return multiple tapes are not compatible.
-        * Transforms that require non-trivial postprocessing of results are not compatible.
+        * Transforms that require non-trivial post-processing of results are not compatible.
         * Dynamically shaped arrays are not compatible.
         * Functions that are being transformed that contain control flow dependent on dynamic
           parameters are not compatible. This includes:

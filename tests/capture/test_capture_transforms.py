@@ -31,31 +31,13 @@ from pennylane.transforms.core import TransformError, transform
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
-def z_to_hadamard_plxpr(jaxpr, consts, targs, tkwargs, *args):  # pylint: disable=unused-argument
-
-    class ZToH(qml.capture.PlxprInterpreter):  # pylint: disable=too-few-public-methods
-        """z_to_hadamard plxpr implementation."""
-
-        def interpret_operation(self, op):
-            """Interpret op"""
-            if isinstance(op, qml.PauliZ):
-                return qml.Hadamard(op.wires)
-
-            return super().interpret_operation(op)
-
-    def wrapper(*inner_args):
-        return ZToH().eval(jaxpr, consts, *inner_args)
-
-    return jax.make_jaxpr(wrapper)(*args)
-
-
-@partial(transform, plxpr_transform=z_to_hadamard_plxpr)
+@transform
 def z_to_hadamard(
     tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
 ):  # pylint: disable=unused-argument
-    """Transform that converts Z gates to H gates. This transform works natively with plxpr"""
+    """Transform that converts Z gates to H gates."""
     new_ops = [qml.H(wires=op.wires) if isinstance(op, qml.Z) else op for op in tape.operations]
-    return [qml.tape.QuantumScript(new_ops, tape.measurements)], lambda res: res[0]
+    return [tape.copy(operations=new_ops)], lambda res: res[0]
 
 
 @transform
@@ -70,17 +52,38 @@ def shift_rx_to_end(tape):
             new_ops.append(op)
 
     operations = new_ops + rxs
-    new_tape = qml.tape.QuantumScript(
-        operations, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
-    )
+    new_tape = tape.copy(operations=operations)
     return [new_tape], lambda res: res[0]
 
 
-@transform
+def expval_z_obs_to_x_obs_plxpr(
+    jaxpr, consts, targs, tkwargs, *args
+):  # pylint: disable=unused-argument
+
+    class ExpvalZToX(qml.capture.PlxprInterpreter):  # pylint: disable=too-few-public-methods
+        """Expval Z to X plxpr implementation."""
+
+        def interpret_measurement(self, meas):
+            """Interpret measurement."""
+            if isinstance(meas, qml.measurements.ExpectationMP) and isinstance(
+                meas.obs, qml.PauliZ
+            ):
+                return qml.expval(qml.X(meas.wires))
+
+            return super().interpret_measurement(meas)
+
+    def wrapper(*inner_args):
+        return ExpvalZToX().eval(jaxpr, consts, *inner_args)
+
+    return jax.make_jaxpr(wrapper)(*args)
+
+
+@partial(transform, plxpr_transform=expval_z_obs_to_x_obs_plxpr)
 def expval_z_obs_to_x_obs(
     tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
 ):  # pylint: disable=unused-argument
-    """Transform that converts Z observables for expectation values to X observables."""
+    """Transform that converts Z observables for expectation values to X observables.
+    This transform works natively with plxpr."""
     new_measurements = [
         (
             qml.expval(qml.X(mp.wires))
@@ -89,7 +92,7 @@ def expval_z_obs_to_x_obs(
         )
         for mp in tape.measurements
     ]
-    return [qml.tape.QuantumScript(tape.operations, new_measurements)], lambda res: res[0]
+    return [tape.copy(measurements=new_measurements)], lambda res: res[0]
 
 
 @transform
@@ -287,13 +290,13 @@ class TestTapeTransformFallback:
 
         jaxpr = jax.make_jaxpr(f)(1.5)
         dummy_targs = (0, 0)
-        transformed_jaxpr = expval_z_obs_to_x_obs.plxpr_transform(
+        transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}, 1.5
         )
 
         # Manually checking jaxpr equations to verify correct order of equations
         expected_primitives = (
-            qml.PauliZ._primitive,
+            qml.Hadamard._primitive,
             qml.RX._primitive,
             qml.Hadamard._primitive,
             qml.PauliZ._primitive,
@@ -301,24 +304,22 @@ class TestTapeTransformFallback:
             qml.measurements.StateMP._wires_primitive,
             qml.measurements.ProbabilityMP._wires_primitive,
         )
-        assert all(
-            eqn.primitive == primitive
-            for eqn, primitive in zip(jaxpr.eqns, expected_primitives, strict=True)
-        )
+        actual_primitives = tuple(eqn.primitive for eqn in transformed_jaxpr.eqns)
+        assert actual_primitives == expected_primitives
 
         collector = CollectOpsandMeas()
         collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, 1.5)
 
         ops = collector.state["ops"]
-        assert ops == [qml.Z(0), qml.RX(1.5, 0), qml.Hadamard(0)]
+        assert ops == [qml.Hadamard(0), qml.RX(1.5, 0), qml.Hadamard(0)]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(0)), qml.state(), qml.probs(wires=0)]
+        assert meas == [qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)]
 
     def test_tape_transform_integration(self):
         """Test that using tape transforms as decorators works correctly."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(expval_z_obs_to_x_obs, dummy_arg1=0, dummy_arg2=0)
+        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
@@ -330,9 +331,9 @@ class TestTapeTransformFallback:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.5)
 
         ops = collector.state["ops"]
-        assert ops == [qml.Z(0), qml.RX(1.5, 0), qml.Hadamard(0)]
+        assert ops == [qml.Hadamard(0), qml.RX(1.5, 0), qml.Hadamard(0)]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(0)), qml.state(), qml.probs(wires=0)]
+        assert meas == [qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)]
 
     def test_tape_transform_consts(self):
         """Test that using fallback transforms with constants works correctly."""
@@ -348,38 +349,38 @@ class TestTapeTransformFallback:
         assert jaxpr.consts == [jnp.array(1.5)]
 
         dummy_targs = (0, 0)
-        transformed_jaxpr = expval_z_obs_to_x_obs.plxpr_transform(
+        transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
         collector = CollectOpsandMeas()
         collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts)
 
         ops = collector.state["ops"]
-        assert ops == [qml.Z(0), qml.RX(jnp.array(1.5), 0), qml.Hadamard(0)]
+        assert ops == [qml.Hadamard(0), qml.RX(jnp.array(1.5), 0), qml.Hadamard(0)]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(0)), qml.state(), qml.probs(wires=0)]
+        assert meas == [qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)]
 
     def test_tape_transform_dynamic_wires(self):
         """Test that using fallback transforms with dynamic wires works correctly."""
 
         def f(x, w):
-            qml.Z(0)
-            qml.RX(x, w)
+            qml.Z(w)
+            qml.RX(x, 0)
             qml.Hadamard(0)
             return qml.expval(qml.Z(w)), qml.state(), qml.probs(wires=0)
 
         jaxpr = jax.make_jaxpr(f)(1.5, 1)
         dummy_targs = (0, 0)
-        transformed_jaxpr = expval_z_obs_to_x_obs.plxpr_transform(
+        transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}, 1.5, 1
         )
         collector = CollectOpsandMeas()
         collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, 1.5, 1)
 
         ops = collector.state["ops"]
-        assert ops == [qml.Z(0), qml.RX(1.5, 1), qml.Hadamard(0)]
+        assert ops == [qml.Hadamard(1), qml.RX(1.5, 0), qml.Hadamard(0)]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(1)), qml.state(), qml.probs(wires=0)]
+        assert meas == [qml.expval(qml.Z(1)), qml.state(), qml.probs(wires=0)]
 
     @pytest.mark.xfail(reason="dynamic shape support to be added to same PR. get help")
     def test_tape_transform_dynamic_shapes(
@@ -397,7 +398,7 @@ class TestTapeTransformFallback:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jnp.eye(2))
         dummy_targs = (0, 0)
-        transformed_jaxpr = expval_z_obs_to_x_obs.plxpr_transform(
+        transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}, jnp.eye(2)
         )
         collector = CollectOpsandMeas()
@@ -413,7 +414,7 @@ class TestTapeTransformFallback:
 
             @qml.for_loop(3)
             def loop_fn(i):
-                qml.Hadamard(i)
+                qml.Z(i)
 
             loop_fn()
 
@@ -422,7 +423,7 @@ class TestTapeTransformFallback:
         jaxpr = jax.make_jaxpr(f)(1.5)
         assert jaxpr.eqns[2].primitive == for_loop_prim
         dummy_targs = (0, 0)
-        transformed_jaxpr = expval_z_obs_to_x_obs.plxpr_transform(
+        transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}, 1.5
         )
         assert all(eqn.primitive != for_loop_prim for eqn in transformed_jaxpr.eqns)
@@ -430,9 +431,15 @@ class TestTapeTransformFallback:
         collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, 1.5)
 
         ops = collector.state["ops"]
-        assert ops == [qml.Z(0), qml.RX(1.5, 0), qml.Hadamard(0), qml.Hadamard(1), qml.Hadamard(2)]
+        assert ops == [
+            qml.Hadamard(0),
+            qml.RX(1.5, 0),
+            qml.Hadamard(0),
+            qml.Hadamard(1),
+            qml.Hadamard(2),
+        ]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(0)), qml.state(), qml.probs(wires=0)]
+        assert meas == [qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)]
 
     @pytest.mark.xfail(
         reason="While loops are currently unsupported. Not sure if they ever will be"
@@ -448,7 +455,7 @@ class TestTapeTransformFallback:
 
             @qml.while_loop(lambda i: i < n)
             def loop_fn(i):
-                qml.Hadamard(i)
+                qml.Z(i)
                 return i + 1
 
             loop_fn(w)
@@ -466,9 +473,15 @@ class TestTapeTransformFallback:
         collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, 1.5, 3)
 
         ops = collector.state["ops"]
-        assert ops == [qml.Z(0), qml.RX(1.5, 0), qml.Hadamard(0), qml.Hadamard(1), qml.Hadamard(2)]
+        assert ops == [
+            qml.Hadamard(0),
+            qml.RX(1.5, 0),
+            qml.Hadamard(0),
+            qml.Hadamard(1),
+            qml.Hadamard(2),
+        ]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(0)), qml.state(), qml.probs(wires=0)]
+        assert meas == [qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)]
 
     def test_tape_transform_cond(self):
         """Test that transforming jaxpr with cond flattens the conditional and applies the
@@ -478,14 +491,17 @@ class TestTapeTransformFallback:
 
             @qml.cond(x > 3)
             def cond_fn():
-                qml.Hadamard(0)
+                qml.Z(0)
+                qml.X(0)
 
             @cond_fn.else_if(x > 2)
             def _():
+                qml.Z(0)
                 qml.Y(0)
 
             @cond_fn.otherwise
             def _():
+                qml.Z(0)
                 qml.T(0)
 
             cond_fn()
@@ -497,51 +513,51 @@ class TestTapeTransformFallback:
         # True branch
         jaxpr = jax.make_jaxpr(f, static_argnums=0)(3.5)
         assert jaxpr.eqns[0].primitive == cond_prim
-        transformed_jaxpr = expval_z_obs_to_x_obs.plxpr_transform(
+        transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
         assert all(eqn.primitive != cond_prim for eqn in transformed_jaxpr.eqns)
         collector = CollectOpsandMeas()
         collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts)
         ops = collector.state["ops"]
-        assert ops == [qml.Hadamard(0)]
+        assert ops == [qml.Hadamard(0), qml.X(0)]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(0)), qml.state()]
+        assert meas == [qml.expval(qml.Z(0)), qml.state()]
 
         # Else if branch
         jaxpr = jax.make_jaxpr(f, static_argnums=0)(2.5)
         assert jaxpr.eqns[0].primitive == cond_prim
-        transformed_jaxpr = expval_z_obs_to_x_obs.plxpr_transform(
+        transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
         assert all(eqn.primitive != cond_prim for eqn in transformed_jaxpr.eqns)
         collector = CollectOpsandMeas()
         collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts)
         ops = collector.state["ops"]
-        assert ops == [qml.Y(0)]
+        assert ops == [qml.Hadamard(0), qml.Y(0)]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(0)), qml.state()]
+        assert meas == [qml.expval(qml.Z(0)), qml.state()]
 
         # Else branch
         jaxpr = jax.make_jaxpr(f, static_argnums=0)(1.5)
         assert jaxpr.eqns[0].primitive == cond_prim
-        transformed_jaxpr = expval_z_obs_to_x_obs.plxpr_transform(
+        transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
         assert all(eqn.primitive != cond_prim for eqn in transformed_jaxpr.eqns)
         collector = CollectOpsandMeas()
         collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts)
         ops = collector.state["ops"]
-        assert ops == [qml.T(0)]
+        assert ops == [qml.Hadamard(0), qml.T(0)]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(0)), qml.state()]
+        assert meas == [qml.expval(qml.Z(0)), qml.state()]
 
     def test_tape_transform_multiple_transforms(self):
         """Test that multiple fallback transforms are applied correctly."""
 
         @qml.capture.expand_plxpr_transforms
         @shift_rx_to_end
-        @partial(expval_z_obs_to_x_obs, dummy_arg1=0, dummy_arg2=0)
+        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
@@ -553,16 +569,16 @@ class TestTapeTransformFallback:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.5)
 
         ops = collector.state["ops"]
-        assert ops == [qml.Z(0), qml.Hadamard(0), qml.RX(1.5, 0)]
+        assert ops == [qml.Hadamard(0), qml.Hadamard(0), qml.RX(1.5, 0)]
         meas = collector.state["measurements"]
-        assert meas == [qml.expval(qml.X(0)), qml.state(), qml.probs(wires=0)]
+        assert meas == [qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)]
 
     def test_tape_transform_first_plxpr_transform_last(self):
         """Test that applying a plxpr transform after a fallback transform works as expected."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
         @partial(expval_z_obs_to_x_obs, dummy_arg1=0, dummy_arg2=0)
+        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
@@ -582,8 +598,8 @@ class TestTapeTransformFallback:
         """Test that applying a fallback transform after a plxpr transform works as expected."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(expval_z_obs_to_x_obs, dummy_arg1=0, dummy_arg2=0)
         @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
+        @partial(expval_z_obs_to_x_obs, dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
