@@ -397,26 +397,26 @@ class QubitGraph:
         for node in self.node_labels:
             yield self[node]
 
+    @property
+    def neighbors(self):
+        """Gets an iterator over all of the QubitGraph objects connected to this QubitGraph (its
+        *neighbors*).
+
+        A QubitGraph does not have to be initialized for it to have neighbors. Similarly, a
+        root-level QubitGraph does not have any connected qubits, by construction.
+
+        Yields:
+            QubitGraph: The next QubitGraph object in the set of neighboring QubitGraphs.
+        """
+        if self.is_root:
+            return
+
+        for neighbor_id in self._parent.graph.neighbors(self._id):
+            yield self._parent[neighbor_id]
+
     def clear(self):
         """Clears the graph of underlying qubits."""
         self._graph = None
-
-    def connected_qubits(self, node):
-        """Returns an iterator over all of the qubits connected to the qubit with label ``node``.
-
-        Args:
-            node (node-like): The label of a node in the qubit graph.
-
-        Returns:
-            iterator: An iterator over all QubitGraph objects connected to the qubit with label
-                ``node``.
-        """
-        if not self.is_initialized:
-            self._warn_uninitialized()
-            return
-
-        for neighbor in self._graph.neighbors(node):
-            yield self[neighbor]
 
     def has_cycle(self) -> bool:
         """Checks if the QubitGraph contains a cycle in its nesting structure.

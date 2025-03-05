@@ -255,6 +255,23 @@ class TestQubitGraphsInitialization:
             q.init_graph(None)
 
 
+class TestQubitGraphConnectivityAttributes:
+    """Test for QubitGraph attributes relating to their connectivity across a single layer in the
+    nesting hierarchy.
+    """
+
+    def test_neighbors(self):
+        """Test basic usage of the ``QubitGraph.neighbors`` attribute."""
+        q = QubitGraph(0, nx.grid_2d_graph(2, 2))
+
+        assert set(q.neighbors) == set()
+
+        assert set(q[(0, 0)].neighbors) == set([q[(0, 1)], q[(1, 0)]])
+        assert set(q[(0, 1)].neighbors) == set([q[(0, 0)], q[(1, 1)]])
+        assert set(q[(1, 0)].neighbors) == set([q[(0, 0)], q[(1, 1)]])
+        assert set(q[(1, 1)].neighbors) == set([q[(0, 1)], q[(1, 0)]])
+
+
 class TestQubitGraphOperations:
     """Tests for operations on a QubitGraph."""
 
@@ -268,16 +285,6 @@ class TestQubitGraphOperations:
 
         q.clear()
         assert q.graph is None
-
-    def test_connected_qubits(self):
-        """Test basic usage of the ``QubitGraph.connected_qubits`` method."""
-        q = QubitGraph(0)
-        q.init_graph(nx.grid_2d_graph(2, 2))
-
-        assert set(q.connected_qubits((0, 0))) == set([q[(0, 1)], q[(1, 0)]])
-        assert set(q.connected_qubits((0, 1))) == set([q[(0, 0)], q[(1, 1)]])
-        assert set(q.connected_qubits((1, 0))) == set([q[(0, 0)], q[(1, 1)]])
-        assert set(q.connected_qubits((1, 1))) == set([q[(0, 1)], q[(1, 0)]])
 
     def test_has_cycle(self):
         """Test basic usage of the ``QubitGraph.has_cycle`` method to detect cyclically nested
@@ -648,15 +655,6 @@ class TestQubitGraphsWarnings:
         with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
             for child in q.children:
                 _ = child
-
-    def test_access_uninitialized_connected_qubits_warning(self):
-        """Test that accessing the connected qubits of a qubit with an uninitialized graph emits a
-        UserWarning.
-        """
-        q = QubitGraph(0)
-        with pytest.warns(UserWarning, match="Attempting to access an uninitialized QubitGraph"):
-            for connected_q in q.connected_qubits(0):
-                _ = connected_q
 
     def test_access_uninitialized_subscript_warning(self):
         """Test that accessing an element of a qubit with the subscript operator with an
