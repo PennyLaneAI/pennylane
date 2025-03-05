@@ -41,6 +41,9 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
+  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
+
 <h3>Improvements 🛠</h3>
 
 * Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
@@ -325,6 +328,9 @@
 
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
+* ``pennylane.labs.dla.structure_constants_dense`` is removed and integrated into ``qml.structure_constants`` using the new ``matrix`` keyword.
+  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
