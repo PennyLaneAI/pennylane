@@ -13,6 +13,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
+  handle sparse matrices.
+  [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
+
 * Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
   following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
   [(#6925)](https://github.com/PennyLaneAI/pennylane/pull/6925)
@@ -232,6 +236,10 @@
 
 * `QNode` now supports using the `mcm_method` and `postselect_mode` arguments with program capture enabled.
   [(#6914)](https://github.com/PennyLaneAI/pennylane/pull/6914/)
+
+* Added a class `qml.capture.transforms.MergeRotationsInterpreter` that merges rotation operators
+  following the same API as `qml.transforms.optimization.merge_rotations` when experimental program capture is enabled.
+  [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
 
 * `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
   `qml.defer_measurements` can be executed on `default.qubit`.
@@ -572,6 +580,11 @@
 
 * The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
   [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
+
+* Processing mid-circuit measurements inside conditionals is not supported and previously resulted in 
+  unclear error messages or incorrect results. It is now explicitly not allowed, and raises an error when 
+  processing the tape.
+  [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)
 
 <h3>Contributors ✍️</h3>
 
