@@ -51,8 +51,9 @@ class TestAdjointRepr:
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
     @pytest.mark.parametrize("assume_orthogonal", [True, False])
     @pytest.mark.parametrize("change_norms", [False, True])
+    @pytest.mark.parametrize("matrix", [False, True])
     def test_structure_constants_elements_with_orthogonal_basis(
-        self, dla, assume_orthogonal, change_norms
+        self, dla, assume_orthogonal, change_norms, matrix
     ):
         r"""Test relation :math:`[i G_α, i G_β] = \sum_{γ=0}^{d-1} f^γ_{α,β} iG_γ_` with orthogonal
         bases.
@@ -68,7 +69,9 @@ class TestAdjointRepr:
             # Sample some random new coefficients between 0.5 and 1.5
             coeffs = np.random.random(d) + 0.5
             dla = [c * op for c, op in zip(coeffs, dla)]
-        ad_rep = structure_constants(dla, pauli=True, is_orthogonal=assume_orthogonal)
+        ad_rep = structure_constants(
+            dla, pauli=True, matrix=matrix, is_orthogonal=assume_orthogonal
+        )
         for alpha in range(d):
             for beta in range(d):
 
@@ -80,7 +83,8 @@ class TestAdjointRepr:
                 assert all(np.isclose(comm_res[k], res[k]) for k in res)
 
     @pytest.mark.parametrize("ortho_dla", [Ising3, XXZ3])
-    def test_structure_constants_elements_with_non_orthogonal(self, ortho_dla):
+    @pytest.mark.parametrize("matrix", [False, True])
+    def test_structure_constants_elements_with_non_orthogonal(self, ortho_dla, matrix):
         r"""Test relation :math:`[i G_α, i G_β] = \sum_{γ=0}^{d-1} f^γ_{α,β} iG_γ_` with
         non-orthogonal bases.
         """
@@ -88,7 +92,7 @@ class TestAdjointRepr:
 
         coeffs = np.random.random((d, d)) + 0.5
         dla = [sum(c * op for c, op in zip(_coeffs, ortho_dla)) for _coeffs in coeffs]
-        ad_rep = structure_constants(dla, pauli=True, is_orthogonal=False)
+        ad_rep = structure_constants(dla, pauli=True, matrix=matrix, is_orthogonal=False)
         for alpha in range(d):
             for beta in range(d):
 
@@ -110,13 +114,23 @@ class TestAdjointRepr:
         assert np.allclose(transf_ortho_ad_rep, ad_rep)
 
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
-    def test_use_operators(self, dla):
+    @pytest.mark.parametrize("matrix", [False, True])
+    def test_use_operators(self, dla, matrix):
         """Test that operators can be passed and lead to the same result"""
-        ad_rep_true = structure_constants(dla, pauli=True)
+        ad_rep_true = structure_constants(dla, pauli=True, matrix=matrix)
 
         ops = [op.operation() for op in dla]
-        ad_rep = structure_constants(ops, pauli=False)
+        ad_rep = structure_constants(ops, pauli=False, matrix=matrix)
         assert qml.math.allclose(ad_rep, ad_rep_true)
+
+    @pytest.mark.parametrize("dla", [Ising3, XXZ3])
+    def test_matrix_input(self, dla):
+        """Test structure constants work as expected for matrix inputs"""
+        dla_m = [qml.matrix(op, wire_order=range(3)) for op in dla]
+        adj = qml.structure_constants(dla, matrix=True, is_orthogonal=False)
+        adj_m = qml.structure_constants(dla_m, matrix=True, is_orthogonal=False)
+
+        assert np.allclose(adj, adj_m)
 
     def test_raise_error_for_non_paulis(self):
         """Test that an error is raised when passing operators that do not have a pauli_rep"""
@@ -125,3 +139,47 @@ class TestAdjointRepr:
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
             qml.pauli.structure_constants(generators)
+
+
+dla0 = qml.lie_closure([qml.X(0) @ qml.X(1), qml.Z(0), qml.Z(1)], matrix=True)
+adj0 = qml.structure_constants(dla0, matrix=True)
+
+
+class TestInterfacesStructureConstants:
+    """Test interfaces jax, torch and tensorflow with structure constants"""
+
+    @pytest.mark.jax
+    def test_jax_structure_constants(self):
+        """Test jax interface for structure constants"""
+
+        import jax.numpy as jnp
+
+        dla_jax = jnp.array(dla0)
+        adj_jax = qml.structure_constants(dla_jax, matrix=True)
+
+        assert qml.math.allclose(adj_jax, adj0)
+        assert qml.math.get_interface(adj_jax) == "jax"
+
+    @pytest.mark.torch
+    def test_torch_structure_constants(self):
+        """Test torch interface for structure constants"""
+
+        import torch
+
+        dla_torch = torch.tensor(dla0)
+        adj_torch = qml.structure_constants(dla_torch, matrix=True)
+
+        assert qml.math.allclose(adj_torch, adj0)
+        assert qml.math.get_interface(adj_torch) == "torch"
+
+    @pytest.mark.tf
+    def test_tf_structure_constants(self):
+        """Test tf interface for structure constants"""
+
+        import tensorflow as tf
+
+        dla_tf = tf.constant(dla0)
+        adj_tf = qml.structure_constants(dla_tf, matrix=True)
+
+        assert qml.math.allclose(adj_tf, adj0)
+        assert qml.math.get_interface(adj_tf) == "tensorflow"

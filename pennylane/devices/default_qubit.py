@@ -955,7 +955,10 @@ class DefaultQubit(Device):
             key = jax.random.PRNGKey(self._rng.integers(100000))
 
         interpreter = DefaultQubitInterpreter(
-            num_wires=len(self.wires), shots=self.shots.total_shots, key=key
+            num_wires=len(self.wires),
+            shots=self.shots.total_shots,
+            key=key,
+            execution_config=execution_config,
         )
         return interpreter.eval(jaxpr, consts, *args)
 
