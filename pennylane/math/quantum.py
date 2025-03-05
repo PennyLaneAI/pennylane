@@ -1015,6 +1015,12 @@ def _inv_newton(M, guess):
 def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
     """Compute matrix square root using the Denman-Beavers iteration.
 
+    The Denman–Beavers iteration was introduced by E. D. Denman and A. N. Beavers in 1976
+    and stems from Newton-type methods originally used to compute the matrix sign function.
+    In this adaptation for matrix square roots, two matrices (Y and Z) are refined in each
+    step until convergence. This technique is often effective for sparse or structured
+    matrices, particularly those that are positive semidefinite or invertible.
+
     Args:
         mat (sparse): Sparse input matrix
         max_iter (int): Maximum number of iterations
