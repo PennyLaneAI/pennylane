@@ -1053,7 +1053,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
                 )
 
             # Check convergence every 10 iterations
-            if iter_num % 10 == 0:
+            if iter_num % 10 == 0 and iter_num > 0:
                 if Y_prev is not None:
                     # Compute Frobenius norm of difference
                     diff = Y - Y_prev
