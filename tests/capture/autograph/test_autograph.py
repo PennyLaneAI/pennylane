@@ -82,8 +82,6 @@ class TestPennyLaneTransformer:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_transform_on_qnode(self, autograph):
         """Test the transform method on a QNode updates the qnode.func"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
         transformer = PennyLaneTransformer()
         user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
@@ -137,6 +135,18 @@ class TestPennyLaneTransformer:
 
 class TestIntegration:
     """Test that the autograph transformations trigger correctly in different settings."""
+
+    def test_run_autograph_on_converted_function(self):
+        """Test that running run_autograph on a function that has already been converted
+        does not trigger the transformation again."""
+
+        def fn(x):
+            return x**2
+
+        ag_fn = run_autograph(fn)
+        ag_ag_fn = run_autograph(ag_fn)
+        assert ag_ag_fn is ag_fn
+        assert ag_ag_fn(4) == 16
 
     def test_unsupported_object(self):
         """Check the error produced when attempting to convert an unsupported object (neither of
@@ -207,8 +217,6 @@ class TestIntegration:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_qnode(self, autograph):
         """Test autograph on a QNode."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def circ(x: float):
@@ -266,8 +274,6 @@ class TestIntegration:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_adjoint_op(self, autograph):
         """Test that the adjoint of an operator successfully passes through autograph"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
         def circ():
@@ -280,8 +286,6 @@ class TestIntegration:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_ctrl_op(self, autograph):
         """Test that controlled operators successfully pass through autograph"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
         def circ():
@@ -292,15 +296,9 @@ class TestIntegration:
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
-    @pytest.mark.xfail(
-        raises=NotImplementedError,
-        reason="adjoint_transform_prim not implemented on DefaultQubitInterpreter",
-    )
     @pytest.mark.parametrize("autograph", [True, False])
     def test_adjoint_wrapper(self, autograph):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         def inner(x):
             qml.RY(x, wires=0)
@@ -320,14 +318,11 @@ class TestIntegration:
         assert check_cache(inner)
 
     @pytest.mark.xfail(
-        raises=NotImplementedError,
-        reason="ctrl_transform_prim not implemented on DefaultQubitInterpreter",
+        reason="ctrl_transform_prim not working with autograph. See sc-84934",
     )
     @pytest.mark.parametrize("autograph", [True, False])
     def test_ctrl_wrapper(self, autograph):
         """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         def inner(x):
             qml.RY(x, wires=0)
@@ -380,30 +375,29 @@ class TestIntegration:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_tape_transform(self, autograph):
         """Test if tape transform is applied when autograph is on."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
-        dev = dev = qml.device("default.qubit", wires=1)
+
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.transform
         def my_quantum_transform(tape):
             raise NotImplementedError
 
-        def fn(x):
-            @my_quantum_transform
-            @qml.qnode(dev, autograph=autograph)
-            def circuit(x):
-                qml.RY(x, wires=0)
-                qml.RX(x, wires=0)
-                return qml.expval(qml.PauliZ(0))
+        @my_quantum_transform
+        @qml.qnode(dev, autograph=autograph)
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
 
-            return circuit(x)
-
-        ag_fn = run_autograph(fn)
+        ag_fn = run_autograph(circuit)
 
         with pytest.raises(NotImplementedError):
             ag_fn(0.5)
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail(
+        strict=False,
+        reason="MCM one shot not currently supported with program capture. See sc-83580.",
+    )
     def test_mcm_one_shot(self, seed):
         """Test if mcm one-shot miss transforms."""
         dev = qml.device("default.qubit", wires=5, shots=20, seed=seed)
@@ -420,6 +414,21 @@ class TestIntegration:
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
+
+    def test_custom_operation(self):
+        """Test that autograph can be applied to circuits with custom operations."""
+
+        class MyOperation(qml.operation.Operation):
+            pass
+
+        def f(x):
+            MyOperation(x, wires=0)
+
+        ag_fn = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_fn)(0.5)
+        # pylint: disable=protected-access
+        assert jaxpr.jaxpr.eqns[0].primitive == MyOperation._primitive
+        assert len(jaxpr.jaxpr.eqns) == 1
 
 
 class TestCodePrinting:

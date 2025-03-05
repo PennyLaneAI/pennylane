@@ -17,6 +17,7 @@ This module contains the qml.map_wires function.
 from collections.abc import Callable
 from functools import lru_cache, partial
 from typing import Union, overload
+from warnings import warn
 
 import pennylane as qml
 from pennylane import transform
@@ -69,9 +70,9 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
 
         def __init__(self, wire_map: dict) -> None:
             """Initialize the interpreter."""
+            super().__init__()
             self.wire_map = wire_map
             self._check_wire_map()
-            super().__init__()
 
         def _check_wire_map(self) -> None:
             """Check that the wire map is valid and does not contain dynamic values."""
@@ -82,24 +83,33 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
 
         def interpret_operation(self, op: "qml.operation.Operation"):
             """Interpret an operation."""
-            qml.capture.disable()
-            op = op.map_wires(self.wire_map)
-            qml.capture.enable()
+            with qml.capture.pause():
+                op = op.map_wires(self.wire_map)
             return super().interpret_operation(op)
 
         def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
             """Interpret a measurement operation."""
-            qml.capture.disable()
-            measurement = measurement.map_wires(self.wire_map)
-            qml.capture.enable()
+            with qml.capture.pause():
+                measurement = measurement.map_wires(self.wire_map)
             return super().interpret_measurement(measurement)
 
-    def map_wires_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
-        """Function for mapping wires in plxpr"""
-        wire_map = tkwargs.pop("wire_map")
-        interpreter = MapWiresInterpreter(wire_map)
+    def map_wires_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``map_wires`` transform on plxpr."""
+
+        if tkwargs.pop("queue", False):
+            warn(
+                "Cannot set 'queue=True' with qml.capture.enabled() "
+                "when using qml.map_wires. Argument will be ignored.",
+                UserWarning,
+            )
+        if tkwargs.pop("replace", False):
+            warn(
+                "Cannot set 'replace=True' with qml.capture.enabled() "
+                "when using qml.map_wires. Argument will be ignored.",
+                UserWarning,
+            )
+
+        interpreter = MapWiresInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)

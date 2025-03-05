@@ -20,8 +20,6 @@ Experimental dynamical Lie algebra (DLA) functionality
 .. autosummary::
     :toctree: api
 
-    ~lie_closure_dense
-    ~structure_constants_dense
     ~cartan_decomp
     ~recursive_cartan_decomp
     ~cartan_subalgebra
@@ -38,7 +36,6 @@ Utility functions
 
     ~adjvec_to_op
     ~op_to_adjvec
-    ~trace_inner_product
     ~orthonormalize
     ~pauli_coefficients
     ~batched_pauli_decompose
@@ -82,8 +79,6 @@ two isomorphic simple components (``ClassB``), see `here <https://en.wikipedia.o
 
 """
 
-from .lie_closure_dense import lie_closure_dense
-from .structure_constants_dense import structure_constants_dense
 from .cartan import (
     cartan_decomp,
     recursive_cartan_decomp,
@@ -97,7 +92,6 @@ from .dense_util import (
     check_orthonormal,
     pauli_coefficients,
     batched_pauli_decompose,
-    trace_inner_product,
     op_to_adjvec,
     orthonormalize,
 )
