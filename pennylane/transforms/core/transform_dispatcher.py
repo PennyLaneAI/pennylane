@@ -190,9 +190,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             return transformed_tapes, processing_fn
 
         if isinstance(obj, qml.QNode):
+            qnode = self._qnode_transform(obj, targs, tkwargs)
             if qml.capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
-            return self._qnode_transform(obj, targs, tkwargs)
+                return self._qfunc_transform(qnode, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)
@@ -205,8 +205,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
 
         if callable(obj):
-            if qml.capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
             return self._qfunc_transform(obj, targs, tkwargs)
 
         if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
@@ -319,54 +317,56 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         )
         return qnode
 
-    def _capture_callable_transform(self, qfunc, targs, tkwargs):
-        """Apply the transform on a quantum function when program capture is enabled"""
-
-        @functools.wraps(qfunc)
-        def qfunc_transformed(*args, **kwargs):
-            import jax  # pylint: disable=import-outside-toplevel
-
-            flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
-            jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
-
-            n_args = len(args)
-            n_consts = len(jaxpr.consts)
-            args_slice = slice(0, n_args)
-            consts_slice = slice(n_args, n_args + n_consts)
-            targs_slice = slice(n_args + n_consts, None)
-
-            results = self._primitive.bind(
-                *args,
-                *jaxpr.consts,
-                *targs,
-                inner_jaxpr=jaxpr.jaxpr,
-                args_slice=args_slice,
-                consts_slice=consts_slice,
-                targs_slice=targs_slice,
-                tkwargs=tkwargs,
-            )
-
-            assert flat_qfunc.out_tree is not None
-            return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
-
-        return qfunc_transformed
-
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
 
         @functools.wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
+            if qml.capture.enabled():
+                import jax  # pylint: disable=import-outside-toplevel
+
+                # raise ValueError
+                print("capture enabled branch")
+                flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
+                jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+
+                n_args = len(args)
+                n_consts = len(jaxpr.consts)
+                args_slice = slice(0, n_args)
+                consts_slice = slice(n_args, n_args + n_consts)
+                targs_slice = slice(n_args + n_consts, None)
+
+                results = self._primitive.bind(
+                    *args,
+                    *jaxpr.consts,
+                    *targs,
+                    inner_jaxpr=jaxpr.jaxpr,
+                    args_slice=args_slice,
+                    consts_slice=consts_slice,
+                    targs_slice=targs_slice,
+                    tkwargs=tkwargs,
+                )
+
+                assert flat_qfunc.out_tree is not None
+                return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
+
             with qml.queuing.AnnotatedQueue() as q:
                 qfunc_output = qfunc(*args, **kwargs)
 
             tape = qml.tape.QuantumScript.from_queue(q)
+            print(type(tape))
+            print(tape.circuit)
             with qml.QueuingManager.stop_recording():
                 transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
+            print(type(transformed_tapes))
+            print(self._transform)
+            print(transformed_tapes)
+            print(len(transformed_tapes))
 
             if len(transformed_tapes) != 1:
                 raise TransformError(
                     "Impossible to dispatch your transform on quantum function, because more than "
-                    "one tape is returned"
+                    f"one tape is returned. Expected 1 tape, got {len(transformed_tapes)}."
                 )
 
             transformed_tape = transformed_tapes[0]
