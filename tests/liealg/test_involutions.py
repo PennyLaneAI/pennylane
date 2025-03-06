@@ -112,6 +112,27 @@ class TestInvolutionExceptions:
                 with pytest.raises(ValueError, match="please specify p and q"):
                     invol(X(0) @ Y(1), p=p, q=q, wire=0)
 
+    @pytest.mark.parametrize(
+        "inv_func",
+        [
+            AI,
+            AII,
+            partial(AIII, q=2, p=2),
+            BD,
+            partial(BDI, p=2, q=2),
+            CI,
+            partial(CII, q=2, p=2),
+            DIII,
+            A,
+            C,
+        ],
+    )
+    def test_NotImplemented(self, inv_func):
+        """Test NotImplementedErrors in involutions"""
+        op = [qml.Hadamard(0) @ qml.Hadamard(1)]
+        with pytest.raises(NotImplementedError, match="Involution not implemented"):
+            _ = inv_func(op)
+
 
 AI_cases = [
     (X(0) @ Y(1) @ Z(2), True),

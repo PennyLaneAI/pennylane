@@ -135,9 +135,27 @@ class TestCheckFunctions:
         assert check_commutation(m0, k0, m0)
         assert not check_commutation(m0, k0, k0)
 
+    def test_check_commutation_matrix(self):
+        """Test that check_commutation returns false correctly when using matrix inputs"""
+
+        assert check_commutation(k0_m, k0_m, k0_m)
+        assert not check_commutation(m0_m, m0_m, m0_m)
+        assert check_commutation(k0_m, m0_m, m0_m)
+        assert not check_commutation(k0_m, m0_m, k0_m)
+        assert check_commutation(m0_m, k0_m, m0_m)
+        assert not check_commutation(m0_m, k0_m, k0_m)
+
     def test_check_cartan_decomp_verbose(self, capsys):
         """Test the verbose output of check_cartan_decomp"""
         _ = check_cartan_decomp(k=m0, m=m0, verbose=True)
+        captured = capsys.readouterr()
+        assert "[k, k] sub k not fulfilled" in captured.out
+        assert "[k, m] sub m not fulfilled" in captured.out
+        assert "[m, m] sub k not fulfilled" in captured.out
+
+    def test_check_cartan_decomp_verbose_matrix(self, capsys):
+        """Test the verbose output of check_cartan_decomp"""
+        _ = check_cartan_decomp(k=m0_m, m=m0_m, verbose=True)
         captured = capsys.readouterr()
         assert "[k, k] sub k not fulfilled" in captured.out
         assert "[k, m] sub m not fulfilled" in captured.out
