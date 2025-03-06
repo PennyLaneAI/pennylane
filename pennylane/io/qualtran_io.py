@@ -59,7 +59,8 @@ def get_bloq_registers_info(bloq):
     >>> qml.get_bloq_registers_info(Swap(3))
     {'x': Wires([0, 1, 2]), 'y': Wires([3, 4, 5])}
     """
-    assert isinstance(bloq, Bloq)
+    if not isinstance(bloq, Bloq):
+        raise TypeError(f"bloq must be an instance of {Bloq}.")
     cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
 
     temp_register_dict = {reg.name: reg.bitsize for reg in cbloq.signature.rights()}
