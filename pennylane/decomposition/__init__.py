@@ -14,9 +14,8 @@
 
 """The decomposition module."""
 
-from .controlled_decomposition import GeneralControlledDecomposition
-from .resources import Resources, CompressedResourceOp, resource_rep, controlled_resource_rep
 from .decomposition_graph import DecompositionGraph
+from .resources import Resources, CompressedResourceOp, resource_rep, controlled_resource_rep
 from .decomposition_rule import (
     register_resources,
     DecompositionRule,

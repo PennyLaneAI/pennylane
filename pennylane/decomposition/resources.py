@@ -165,8 +165,8 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
 
 
 def controlled_resource_rep(
-    base_op_type,
-    base_op_params: dict,
+    base_class,
+    base_params: dict,
     num_control_wires: int,
     num_zero_control_values: int,
     num_work_wires: int,
@@ -174,40 +174,73 @@ def controlled_resource_rep(
     """Creates a ``CompressedResourceOp`` representation of a general controlled operator.
 
     Args:
-        base_op_type: the base operator type
-        base_op_params (dict): the parameters of the base operator
+        base_class: the base operator type
+        base_params (dict): the resource params of the base operator
         num_control_wires (int): the number of control wires
         num_zero_control_values (int): the number of control values that are 0
         num_work_wires (int): the number of work wires
 
     """
 
-    _validate_resource_rep(base_op_type, base_op_params)
+    _validate_resource_rep(base_class, base_params)
 
     # Flatten nested controlled operations
-    if base_op_type is qml.ops.Controlled or base_op_type is qml.ops.ControlledOp:
-        base_resource_rep = controlled_resource_rep(base_op_type, **base_op_params)
-        base_op_type = base_resource_rep.params["base_class"]
-        base_op_params = base_resource_rep.params["base_params"]
+    if base_class is qml.ops.Controlled or base_class is qml.ops.ControlledOp:
+        base_resource_rep = controlled_resource_rep(**base_params)
+        base_class = base_resource_rep.params["base_class"]
+        base_params = base_resource_rep.params["base_params"]
         num_control_wires += base_resource_rep.params["num_control_wires"]
         num_zero_control_values += base_resource_rep.params["num_zero_control_values"]
         num_work_wires += base_resource_rep.params["num_work_wires"]
 
-    elif base_op_type in custom_ctrl_op_to_base():
-        base_op_type = custom_ctrl_op_to_base()[base_op_type]
-        num_control_wires += base_op_type.num_wires - 1
+    elif base_class in custom_ctrl_op_to_base():
+        base_class = custom_ctrl_op_to_base()[base_class]
+        num_control_wires += base_class.num_wires - 1
+
+    elif base_class is qml.MultiControlledX:
+        base_class = qml.X
+        num_control_wires += base_params["num_control_wires"]
+        num_zero_control_values += base_params["num_zero_control_values"]
+        num_work_wires += base_params["num_work_wires"]
+        base_params = {}
+
+    elif base_class is qml.ControlledQubitUnitary:
+        base_class = qml.QubitUnitary
+        num_control_wires += base_params["num_control_wires"]
+        num_zero_control_values += base_params["num_zero_control_values"]
+        num_work_wires += base_params["num_work_wires"]
+        base_params = base_params["base"].resource_params
 
     return CompressedResourceOp(
         qml.ops.Controlled,
         {
-            "base_class": base_op_type,
-            "base_params": base_op_params,
+            "base_class": base_class,
+            "base_params": base_params,
             "num_control_wires": num_control_wires,
             "num_zero_control_values": num_zero_control_values,
             "num_work_wires": num_work_wires,
         },
     )
 
+
+@functools.lru_cache()
+def custom_ctrl_op_to_base():
+    """The set of custom controlled operations."""
+
+    return {
+        qml.CNOT: qml.X,
+        qml.Toffoli: qml.X,
+        qml.CZ: qml.Z,
+        qml.CCZ: qml.Z,
+        qml.CY: qml.Y,
+        qml.CSWAP: qml.SWAP,
+        qml.CH: qml.H,
+        qml.CRX: qml.RX,
+        qml.CRY: qml.RY,
+        qml.CRZ: qml.RZ,
+        qml.CRot: qml.Rot,
+        qml.ControlledPhaseShift: qml.PhaseShift,
+    }
 
 @functools.lru_cache()
 def base_to_custom_ctrl_op():
@@ -227,21 +260,3 @@ def base_to_custom_ctrl_op():
         (qml.PhaseShift, 1): qml.ControlledPhaseShift,
     }
     return ops_with_custom_ctrl_ops
-
-
-@functools.lru_cache()
-def custom_ctrl_op_to_base():
-    """The set of custom controlled operations."""
-
-    return {
-        qml.CZ: qml.Z,
-        qml.CCZ: qml.Z,
-        qml.CY: qml.Y,
-        qml.CSWAP: qml.SWAP,
-        qml.CH: qml.H,
-        qml.CRX: qml.RX,
-        qml.CRY: qml.RY,
-        qml.CRZ: qml.RZ,
-        qml.CRot: qml.Rot,
-        qml.ControlledPhaseShift: qml.PhaseShift,
-    }
