@@ -41,7 +41,7 @@ if it fulfills :math:`\theta(\theta(g)) = g \ \forall g \in \mathfrak{g}` and is
 Cartan involutions of classical real simple Lie algebras (``AI, AII, AIII, BDI, DIII, CI, CII``)
 and one canonical involution for each real semisimple Lie algebra made up of two isomorphic
 classical simple components (``A, BD, C``).
-See, for example, Tab. 4 in `Edelman and Jeong <https://arxiv.org/abs/2104.08669>`__
+See, for example, Tab. 4 in `Edelman and Jeong <https://arxiv.org/abs/2104.08669>`__.
 Note that the functions implemented here do not represent the mathematical involutions directly,
 but return a boolean value that indicates whether or not the input is in the :math:`+1` eigenspace
 of :math:`\theta`. When using them, it is usually assumed that we apply them to operators in the

@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -152,14 +152,14 @@ def check_commutation(
     else:
         vspace_is_tensor = False
 
-    if not all((ops1_is_tensor, ops2_is_tensor, vspace_is_tensor)) and any(
-        (ops1_is_tensor, ops2_is_tensor, vspace_is_tensor)
-    ):
+    all_tensors = all((ops1_is_tensor, ops2_is_tensor, vspace_is_tensor))
+    any_tensors = any((ops1_is_tensor, ops2_is_tensor, vspace_is_tensor))
+    if not all_tensors and any_tensors:
         raise TypeError(
-            "All inputs ``ops1``, ``ops2`` and ``vspace`` to qml.liealg.check_commutation need to either be iterables of operators or matrices."
+            "All inputs `ops1`, `ops2` and `vspace` to qml.liealg.check_commutation need to either be iterables of operators or matrices."
         )
 
-    if all((ops1_is_tensor, ops2_is_tensor, vspace_is_tensor)):
+    if all_tensors:
         return _check_commutation_matrix(ops1, ops2, vspace)
 
     if any(isinstance(op, Operator) for op in ops1):
@@ -203,9 +203,7 @@ def _is_subspace(subspace, vspace):
     rank_V = qml.math.linalg.matrix_rank(vspace)
     rank_both = qml.math.linalg.matrix_rank(qml.math.vstack([vspace, subspace]))
 
-    if rank_both > rank_V:
-        return False
-    return True
+    return rank_both <= rank_V
 
 
 def _check_commutation_matrix(a, b, vspace):
@@ -276,7 +274,9 @@ def check_cartan_decomp(
             isinstance(op, TensorLike) for op in m
         ):
             raise TypeError(
-                f"All inputs ``k``, ``m`` to qml.liealg.check_cartan_decomp need to either be iterables of operators or matrices. Received k of types {[type(op) for op in k]} and m of types k of types {[type(op) for op in m]}"
+                "All inputs `k`, `m` to check_cartan_decomp need to either be iterables of "
+                f"operators or matrices. Received `k` of types {[type(op) for op in k]} and "
+                f"`m` of types {[type(op) for op in m]}"
             )
 
     if any(isinstance(op, Operator) for op in k):
