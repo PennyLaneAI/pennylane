@@ -240,6 +240,8 @@ class PauliX(Observable, Operation):
 
     basis = "X"
 
+    resource_param_keys = ()
+
     batch_size = None
 
     _queue_category = "_ops"
@@ -273,6 +275,10 @@ class PauliX(Observable, Operation):
     @property
     def name(self) -> str:
         return "PauliX"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -637,6 +643,8 @@ class PauliZ(Observable, Operation):
 
     batch_size = None
 
+    resource_param_keys = ()
+
     _queue_category = "_ops"
 
     @property
@@ -668,6 +676,10 @@ class PauliZ(Observable, Operation):
     @property
     def name(self) -> str:
         return "PauliZ"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()

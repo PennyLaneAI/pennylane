@@ -71,6 +71,8 @@ class RX(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     basis = "X"
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -80,6 +82,10 @@ class RX(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -606,6 +612,8 @@ class Rot(Operation):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
@@ -619,6 +627,10 @@ class Rot(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(
