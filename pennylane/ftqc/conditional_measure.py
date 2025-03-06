@@ -107,13 +107,19 @@ def cond_meas(
 
     if callable(true_fn):
 
+        # We assume this callable is a measurement function that returns a MeasurementValue
+        # containing a single mid-circuit measurement. If this isn't the case, getting the
+        # measurements will return None, and it will be caught in _validate_measurements.
+
         @wraps(true_fn)
         def wrapper(*args, **kwargs):
-            # We assume that the callable is a measure function
 
             with qml.QueuingManager.stop_recording():
-                true_meas = true_fn(*args, **kwargs).measurements[0]
-                false_meas = false_fn(*args, **kwargs).measurements[0]
+                true_meas_return = true_fn(*args, **kwargs)
+                false_meas_return = false_fn(*args, **kwargs)
+
+                true_meas = getattr(true_meas_return, "measurements", [None])[0]
+                false_meas = getattr(false_meas_return, "measurements", [None])[0]
 
             _validate_measurements(true_meas, false_meas)
 
@@ -123,11 +129,9 @@ def cond_meas(
             for op in false_meas.diagonalizing_gates():
                 Conditional(~condition, op)
 
-            mp = MidMeasureMP(
+            return qml.measure(
                 true_meas.wires, reset=true_meas.reset, postselect=true_meas.postselect
             )
-
-            return MeasurementValue([mp], processing_fn=lambda v: v)
 
     else:
         raise ValueError("Only measurement functions can be applied conditionally by `cond_meas`.")
@@ -136,9 +140,9 @@ def cond_meas(
 
 
 def _validate_measurements(true_meas, false_meas):
-    """Takes a pair of MCMs (representing a true and false functions for the conditional) and
-    confirms that they have the expected type ,and 'match' except for the measurement basis"""
-    print(true_meas, false_meas)
+    """Takes a pair of variables that are expected to be mid-circuit measurements
+    (representing a true and false functions for the conditional) and confirms that
+    they have the expected type ,and 'match' except for the measurement basis"""
 
     if not (isinstance(true_meas, MidMeasureMP) and isinstance(false_meas, MidMeasureMP)):
         raise ValueError(
