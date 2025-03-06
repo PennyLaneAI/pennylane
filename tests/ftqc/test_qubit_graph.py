@@ -179,6 +179,44 @@ class TestQubitGraphsInitialization:
             assert isinstance(child, QubitGraph)
             assert child.parent is qubit
 
+    def test_initialization_with_reused_graph(self):
+        """Test that we can properly initialize a QubitGraph when reusing a single networkx Graph
+        that defines the graph structure of the underlying qubits.
+        """
+        # Initialize qubit0 by passing graph to constructor and qubit1 using `init_graph` to cover
+        # both graph-initialization methods
+        g = nx.grid_graph((2, 2))
+        qubit0 = QubitGraph(0, g)
+        qubit1 = QubitGraph(1)
+        qubit1.init_graph(g)
+
+        # The underlying graphs should be distinct objects, but have the same structure
+        assert qubit0.graph is not qubit1.graph
+
+        assert set(qubit0.node_labels) == set(g.nodes)
+        assert set(qubit0.edge_labels) == set(g.edges)
+        assert set(qubit1.node_labels) == set(g.nodes)
+        assert set(qubit1.edge_labels) == set(g.edges)
+
+        # Altering the original graph object should not affect the QubitGraphs
+        g.add_node("aux")
+        assert set(qubit0.node_labels) == set(qubit1.node_labels)
+        assert set(qubit0.node_labels) != set(g.nodes)
+
+        # Test nesting
+        qubit0[(0, 0)] = QubitGraph((0, 0), g)
+        qubit0_00 = qubit0[(0, 0)]
+        assert set(qubit0_00.node_labels) == set(g.nodes)
+        assert set(qubit0_00.edge_labels) == set(g.edges)
+        assert qubit0_00.parent is qubit0
+
+        qubit0[(0, 0)][(0, 0)] = QubitGraph((0, 0), g)
+        qubit0_00_00 = qubit0[(0, 0)][(0, 0)]
+        assert set(qubit0_00_00.node_labels) == set(g.nodes)
+        assert set(qubit0_00_00.edge_labels) == set(g.edges)
+        assert qubit0_00_00.parent is qubit0_00
+        assert qubit0_00_00.parent.parent is qubit0
+
     @pytest.mark.xfail(reason="QubitGraph does not yet support rustworkx graphs")
     def test_initialization_with_rustworkx_graph(self):
         """Test that we can initialize a QubitGraph using a rustworkx graph."""
