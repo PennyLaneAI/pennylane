@@ -19,6 +19,7 @@ from unittest.mock import patch
 
 import numpy as onp
 import pytest
+import scipy as sp
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
@@ -251,6 +252,58 @@ def test_allclose(t1, t2):
 
     expected = all(float(x) == float(y) for x, y in zip(t1, t2))
     assert res == expected
+
+
+class TestAllcloseSparse:
+    """Test that the sparse-matrix specialized allclose functions works well"""
+
+    def test_dense_sparse_small_matrix(self):
+        """Test comparing small dense and sparse matrices"""
+        dense = np.array([[1, 0, 2], [0, 3, 0]])
+        sparse = sp.sparse.csr_matrix(dense)
+
+        # assert _allclose_dense_sparse(dense, sparse)
+        assert fn.allclose(dense, sparse)
+
+    def test_dense_sparse_zero_nnz(self):
+        """Test comparing dense matrix with empty sparse matrix"""
+        dense = np.zeros((2, 3))
+        sparse = sp.sparse.csr_matrix(dense)
+
+        # assert _allclose_dense_sparse(dense, sparse)
+        assert fn.allclose(dense, sparse)
+
+    def test_dense_sparse_different_shapes(self):
+        """Test comparing matrices with different shapes"""
+        dense = np.array([[1, 2], [3, 4]])
+        sparse = sp.sparse.csr_matrix(np.array([[1, 2]]))
+
+        assert not fn.allclose(dense, sparse)
+
+    def test_dense_sparse_large_matrix(self):
+        """Test comparing large dense and sparse matrices"""
+        n = 200
+        dense = np.eye(n)
+        sparse = sp.sparse.eye(n)
+
+        assert fn.allclose(dense, sparse)
+
+    def test_dense_sparse_different_nonzero(self):
+        """Test comparing matrices with different nonzero patterns"""
+        dense = np.array([[1, 0], [0, 1]])
+        sparse = sp.sparse.csr_matrix(np.array([[1, 1], [0, 1]]))
+
+        assert not fn.allclose(dense, sparse)
+
+    @pytest.mark.parametrize("rtol,atol", [(1e-7, 1e-8), (1e-5, 1e-6)])
+    def test_dense_sparse_tolerances(self, rtol, atol):
+        """Test comparing matrices with different tolerances"""
+        dense = np.array([[1.0, 0.0], [0.0, 1.0 + 1e-7]])
+        sparse = sp.sparse.csr_matrix(np.array([[1.0, 0.0], [0.0, 1.0]]))
+
+        allclose_result = fn.allclose(dense, sparse, rtol=rtol, atol=atol)
+        expected = np.allclose(dense, sparse.toarray(), rtol=rtol, atol=atol)
+        assert allclose_result == expected
 
 
 test_angle_data = [
