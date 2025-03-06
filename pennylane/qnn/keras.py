@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,22 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
 
+from packaging.version import Version
+
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
 
-    CORRECT_TF_VERSION = int(tf.__version__.split(".", maxsplit=1)[0]) > 1
+    CORRECT_TF_VERSION = Version(tf.__version__) >= Version("2.0.0")
+    try:
+        # this feels a bit hacky, but if users *only* have an old (i.e. PL-compatible) version of Keras installed
+        # then tf.keras doesn't have a version attribute, and we *should be* good to go.
+        # if you have a newer version of Keras installed, then you can use tf.keras.version to check if you
+        # are configured to use Keras 3 or Keras 2
+        CORRECT_KERAS_VERSION = Version(tf.keras.version()) < Version("3.0.0")
+    except AttributeError:
+        CORRECT_KERAS_VERSION = True
+
 except ImportError:
     # The following allows this module to be imported even if TensorFlow is not installed. Users
     # will instead see an ImportError when instantiating the KerasLayer.
@@ -39,6 +50,13 @@ class KerasLayer(Layer):
     `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
     creating quantum and hybrid models.
+
+    .. note::
+
+        ``KerasLayer`` currently only supports Keras 2. If you are running the newest version
+        of TensorFlow and Keras, you may automatically be using Keras 3. For instructions
+        on running with Keras 2, instead, see the
+        `documentation on backwards compatibility <https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility>`__ .
 
     Args:
         qnode (qml.QNode): the PennyLane QNode to be converted into a Keras Layer_
@@ -69,7 +87,7 @@ class KerasLayer(Layer):
             qml.Rot(*weights_0, wires=0)
             qml.RY(weight_1, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
     The signature of the QNode **must** contain an ``inputs`` named argument for input data,
     with all other arguments to be treated as internal weights. We can then convert to a Keras
@@ -130,7 +148,7 @@ class KerasLayer(Layer):
                 x = tf.zeros((batch_dim, n_qubits))
                 return qlayer(x).shape
 
-        >>> print_output_shape([qml.expval(qml.PauliZ(0))])
+        >>> print_output_shape([qml.expval(qml.Z(0))])
         TensorShape([5])
         >>> print_output_shape([qml.probs(wires=[0, 1])])
         TensorShape([5, 4])
@@ -140,7 +158,7 @@ class KerasLayer(Layer):
         If the QNode returns multiple measurements, then the measurement results will be flattened
         and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
 
-        >>> print_output_shape([qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])])
+        >>> print_output_shape([qml.expval(qml.Z(0)), qml.probs(wires=[0, 1])])
         TensorShape([5, 5])
         >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
         TensorShape([5, 204])
@@ -233,7 +251,7 @@ class KerasLayer(Layer):
             def qnode(inputs, weights):
                 qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
                 qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
 
@@ -299,6 +317,12 @@ class KerasLayer(Layer):
                 "https://www.tensorflow.org/install for detailed instructions."
             )
 
+        if not CORRECT_KERAS_VERSION:
+            raise ImportError(
+                "KerasLayer requires a Keras version lower than 3. For instructions on running with Keras 2,"
+                "visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
+            )
+
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
             for weight, size in weight_shapes.items()
@@ -307,7 +331,14 @@ class KerasLayer(Layer):
         self._signature_validation(qnode, weight_shapes)
 
         self.qnode = qnode
-        self.qnode.interface = "tf"
+        if self.qnode.interface not in (
+            "auto",
+            "tf",
+            "tensorflow",
+            "tensorflow-autograph",
+            "tf-autograph",
+        ):
+            raise ValueError(f"Invalid interface '{self.qnode.interface}' for KerasLayer")
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
@@ -384,6 +415,7 @@ class KerasLayer(Layer):
 
         # reshape to the correct number of batch dims
         if has_batch_dim:
+            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
             new_shape = tf.concat([batch_dims, tf.shape(results)[1:]], axis=0)
             results = tf.reshape(results, new_shape)
 
@@ -438,17 +470,14 @@ class KerasLayer(Layer):
         if self._initialized and hasattr(self.qnode, item):
             return getattr(self.qnode, item)
 
-        try:
-            return self.__dict__[item]
-        except KeyError as exc:
-            raise AttributeError(item) from exc
+        return super().__getattr__(item)
 
     def __setattr__(self, item, val):
         """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
         if self._initialized and hasattr(self.qnode, item):
             setattr(self.qnode, item, val)
         else:
-            self.__dict__[item] = val
+            super().__setattr__(item, val)
 
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the

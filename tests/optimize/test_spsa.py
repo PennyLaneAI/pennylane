@@ -17,7 +17,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-
 univariate = [(np.sin), (lambda x: np.exp(x / 10.0)), (lambda x: x**2)]
 
 multivariate = [
@@ -442,7 +441,8 @@ class TestSPSAOptimizer:
         ):
             opt.step(cost, params)
 
-    def test_lighting_device(self):
+    @pytest.mark.slow
+    def test_lightning_device(self):
         """Test SPSAOptimizer implementation with lightning.qubit device."""
         coeffs = [0.2, -0.543, 0.4514]
         obs = [
@@ -456,7 +456,10 @@ class TestSPSAOptimizer:
 
         @qml.qnode(dev)
         def cost_fun(params, num_qubits=1):
-            qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
+            qml.BasisState([1, 1, 0, 0], wires=range(num_qubits))
+
+            assert num_qubits == 4
+
             for i in range(num_qubits):
                 qml.Rot(*params[i], wires=0)
                 qml.CNOT(wires=[2, 3])
@@ -477,6 +480,7 @@ class TestSPSAOptimizer:
         assert np.all(params != init_params)
         assert energy < init_energy
 
+    @pytest.mark.slow
     def test_default_mixed_device(self):
         """Test SPSAOptimizer implementation with default.mixed device."""
         n_qubits = 1

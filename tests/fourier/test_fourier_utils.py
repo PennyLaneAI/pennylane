@@ -14,14 +14,11 @@
 """
 Tests for the Fourier module helper functions.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
-from pennylane.fourier.utils import (
-    format_nvec,
-    get_spectrum,
-    join_spectra,
-)
+from pennylane.fourier.utils import format_nvec, get_spectrum, join_spectra
 
 
 @pytest.mark.parametrize(

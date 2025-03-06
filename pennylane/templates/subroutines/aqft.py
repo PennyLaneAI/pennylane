@@ -16,6 +16,7 @@ This submodule contains the template for AQFT.
 """
 
 import warnings
+
 import numpy as np
 
 import pennylane as qml
@@ -47,7 +48,7 @@ class AQFT(Operation):
 
         @qml.qnode(dev)
         def circuit_aqft():
-            qml.PauliX(0)
+            qml.X(0)
             qml.Hadamard(1)
             qml.AQFT(order=1,wires=range(wires))
             return qml.state()
@@ -83,7 +84,7 @@ class AQFT(Operation):
 
             The resulting circuit is:
 
-            >>> print(qml.draw(circ, expansion_strategy='device')())
+            >>> print(qml.draw(circ, level='device')())
             UserWarning: order=0, applying Hadamard transform warnings.warn("order=0, applying Hadamard transform")
             0: ──H─╭SWAP─────────────┤ ╭Probs
             1: ──H─│─────╭SWAP───────┤ ├Probs
@@ -104,7 +105,7 @@ class AQFT(Operation):
 
             The resulting circuit is:
 
-            >>> print(qml.draw(circ, expansion_strategy='device')())
+            >>> print(qml.draw(circ, level='device')())
             0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤ ╭Probs
             1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤ ├Probs
             2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs
@@ -159,8 +160,8 @@ class AQFT(Operation):
 
         **Example:**
 
-        >>> qml.AQFT.compute_decomposition((0, 1, 2), 3, order=1)
-        [Hadamard(wires=[0]), ControlledPhaseShift(1.5707963267948966, wires=[1, 0]), Hadamard(wires=[1]), ControlledPhaseShift(1.5707963267948966, wires=[2, 1]), Hadamard(wires=[2]), SWAP(wires=[0, 2])]
+        >>> qml.AQFT.compute_decomposition((0, 1, 2), order=1)
+        [H(0), ControlledPhaseShift(1.5707963267948966, wires=[1, 0]), H(1), ControlledPhaseShift(1.5707963267948966, wires=[2, 1]), H(2), SWAP(wires=[0, 2])]
 
         """
         n_wires = len(wires)

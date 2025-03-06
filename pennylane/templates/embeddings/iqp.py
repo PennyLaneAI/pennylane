@@ -15,10 +15,12 @@ r"""
 Contains the IQPEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
 from itertools import combinations
 
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
+from pennylane.wires import Wires
 
 
 class IQPEmbedding(Operation):
@@ -93,7 +95,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features):
                 qml.IQPEmbedding(features, wires=range(3))
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -106,7 +108,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features):
                 qml.IQPEmbedding(features, wires=range(3), n_repeats=4)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -124,7 +126,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features):
                 qml.IQPEmbedding(features, wires=range(3), pattern=pattern)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -140,7 +142,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features, pattern):
                 qml.IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             res1 = circuit([1., 2., 3.], pattern=pattern1)
             res2 = circuit([1., 2., 3.], pattern=pattern2)
@@ -186,6 +188,15 @@ class IQPEmbedding(Operation):
 
         super().__init__(features, wires=wires, id=id)
 
+    def map_wires(self, wire_map):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["pattern"] = [
+            [wire_map.get(w, w) for w in wires] for wires in new_op._hyperparameters["pattern"]
+        ]
+        return new_op
+
     @property
     def num_params(self):
         return 1
@@ -218,13 +229,13 @@ class IQPEmbedding(Operation):
         >>> features = torch.tensor([1., 2., 3.])
         >>> pattern = [(0, 1), (0, 2), (1, 2)]
         >>> qml.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern)
-        [Hadamard(wires=[0]), RZ(tensor(1.), wires=[0]),
-         Hadamard(wires=[1]), RZ(tensor(2.), wires=[1]),
-         Hadamard(wires=[2]), RZ(tensor(3.), wires=[2]),
+        [H(0), RZ(tensor(1.), wires=[0]),
+         H(1), RZ(tensor(2.), wires=[1]),
+         H(2), RZ(tensor(3.), wires=[2]),
          MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2]),
-         Hadamard(wires=[0]), RZ(tensor(1.), wires=[0]),
-         Hadamard(wires=[1]), RZ(tensor(2.), wires=[1]),
-         Hadamard(wires=[2]), RZ(tensor(3.), wires=[2]),
+         H(0), RZ(tensor(1.), wires=[0]),
+         H(1), RZ(tensor(2.), wires=[1]),
+         H(2), RZ(tensor(3.), wires=[2]),
          MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2])]
         """
         wires = qml.wires.Wires(wires)

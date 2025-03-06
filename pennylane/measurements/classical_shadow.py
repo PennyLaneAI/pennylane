@@ -15,15 +15,15 @@
 This module contains the qml.classical_shadow measurement.
 """
 import copy
-from collections.abc import Iterable
-from typing import Optional, Union, Sequence
+from collections.abc import Iterable, Sequence
 from string import ascii_letters as ABC
+from typing import Optional, Union
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
 
@@ -57,7 +57,7 @@ def shadow_expval(H, k=1, seed=None):
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+        H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
         dev = qml.device("default.qubit", wires=range(2), shots=10000)
         @qml.qnode(dev)
@@ -79,7 +79,7 @@ def shadow_expval(H, k=1, seed=None):
     In ``shadow_expval``, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
     to include all observables that you want to estimate from a single measurement in the same execution.
 
-    >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+    >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
     >>> circuit(x, Hs)
     array([ 1.881 , -0.0312, -0.0027, -0.0087])
     >>> qml.jacobian(circuit)(x, Hs)
@@ -89,7 +89,7 @@ def shadow_expval(H, k=1, seed=None):
     return ShadowExpvalMP(H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed=None):
+def classical_shadow(wires: WiresLike, seed=None):
     """
     The classical shadow measurement protocol.
 
@@ -180,8 +180,8 @@ def classical_shadow(wires, seed=None):
             measurements = [qml.classical_shadow(wires=(0,1))]
             tape = qml.tape.QuantumTape(ops, measurements, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0]
+        >>> bits1, recipes1 = qml.execute([tape], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         True
         >>> np.all(bits1 == bits2)
@@ -200,8 +200,8 @@ def classical_shadow(wires, seed=None):
             measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
             tape2 = qml.tape.QuantumTape(ops, measurements2, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape1], device=dev, gradient_fn=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape2], device=dev, gradient_fn=None)[0]
+        >>> bits1, recipes1 = qml.execute([tape1], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape2], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         False
         >>> np.all(bits1 == bits2)
@@ -216,7 +216,7 @@ class ClassicalShadowMP(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    Please refer to :func:`classical_shadow` for detailed documentation.
+    Please refer to :func:`pennylane.classical_shadow` for detailed documentation.
 
 
     Args:
@@ -226,8 +226,13 @@ class ClassicalShadowMP(MeasurementTransform):
             where the instance has to be identified
     """
 
+    _shortname = Shadow  #! Note: deprecated. Change the value to "shadow" in v0.42
+
     def __init__(
-        self, wires: Optional[Wires] = None, seed: Optional[int] = None, id: Optional[str] = None
+        self,
+        wires: Optional[WiresLike] = None,
+        seed: Optional[int] = None,
+        id: Optional[str] = None,
     ):
         self.seed = seed
         super().__init__(wires=wires, id=id)
@@ -274,7 +279,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         Args:
             tape (QuantumTape): the quantum tape to be processed
-            device (pennylane.Device): the device used to process the quantum tape
+            device (pennylane.devices.LegacyDevice): the device used to process the quantum tape
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -284,7 +289,11 @@ class ClassicalShadowMP(MeasurementTransform):
         n_snapshots = device.shots
         seed = self.seed
 
-        with qml.interfaces.set_shots(device, shots=1):
+        original_shots = device.shots
+        original_shot_vector = device._shot_vector  # pylint: disable=protected-access
+
+        try:
+            device.shots = 1
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(device.map_wires(wires))
@@ -293,7 +302,7 @@ class ClassicalShadowMP(MeasurementTransform):
             # are the same for different executions with the same seed
             rng = np.random.RandomState(seed)
             recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+            obs_list = [qml.X, qml.Y, qml.Z]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
 
@@ -311,6 +320,9 @@ class ClassicalShadowMP(MeasurementTransform):
                 device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
+        finally:
+            device.shots = original_shots
+            device._shot_vector = original_shot_vector  # pylint: disable=protected-access
 
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
@@ -349,9 +361,9 @@ class ClassicalShadowMP(MeasurementTransform):
 
         obs_list = np.stack(
             [
-                qml.PauliX.compute_matrix(),
-                qml.PauliY.compute_matrix(),
-                qml.PauliZ.compute_matrix(),
+                qml.X.compute_matrix(),
+                qml.Y.compute_matrix(),
+                qml.Z.compute_matrix(),
             ]
         )
 
@@ -436,13 +448,19 @@ class ClassicalShadowMP(MeasurementTransform):
     def numeric_type(self):
         return int
 
-    @property
-    def return_type(self):
-        return Shadow
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ) -> tuple:
+        return (2, shots, n_wires), np.int8
 
-    def shape(self, device, shots):  # pylint: disable=unused-argument
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int, int]:
         # otherwise, the return type requires a device
-        if not shots:
+        if shots is None:
             raise MeasurementShapeError(
                 "Shots must be specified to obtain the shape of a classical "
                 "shadow measurement process."
@@ -450,7 +468,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        return (2, shots.total_shots, len(self.wires))
+        return (2, shots, len(self.wires))
 
     def __copy__(self):
         return self.__class__(
@@ -462,7 +480,7 @@ class ClassicalShadowMP(MeasurementTransform):
 class ShadowExpvalMP(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
-    Please refer to :func:`shadow_expval` for detailed documentation.
+    Please refer to :func:`~pennylane.shadow_expval` for detailed documentation.
 
     Args:
         H (Operator, Sequence[Operator]): Operator or list of Operators to compute the expectation value over.
@@ -472,6 +490,8 @@ class ShadowExpvalMP(MeasurementTransform):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    _shortname = ShadowExpval  #! Note: deprecated. Change the value to "shadowexpval" in v0.42
 
     def _flatten(self):
         metadata = (
@@ -495,6 +515,19 @@ class ShadowExpvalMP(MeasurementTransform):
         self.H = H
         self.k = k
         super().__init__(id=id)
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(
+        cls,
+        H: Union[Operator, Sequence],
+        seed: Optional[int] = None,
+        k: int = 1,
+        **kwargs,
+    ):
+        if cls._obs_primitive is None:  # pragma: no cover
+            return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
+        return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
         bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
@@ -532,12 +565,8 @@ class ShadowExpvalMP(MeasurementTransform):
     def numeric_type(self):
         return float
 
-    @property
-    def return_type(self):
-        return ShadowExpval
-
-    def shape(self, device, shots):  # pylint: disable=unused-argument
-        return ()
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+        return () if isinstance(self.H, Operator) else (len(self.H),)
 
     @property
     def wires(self):
@@ -569,3 +598,10 @@ class ShadowExpvalMP(MeasurementTransform):
             k=self.k,
             seed=self.seed,
         )
+
+
+if ShadowExpvalMP._obs_primitive is not None:  # pylint: disable=protected-access
+
+    @ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
+    def _(H, **kwargs):
+        return type.__call__(ShadowExpvalMP, H, **kwargs)

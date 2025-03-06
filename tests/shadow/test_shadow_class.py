@@ -15,13 +15,12 @@
 """Unit tests for the classical shadows class"""
 # pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
 
+import numpy as onp
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow, median_of_means, pauli_expval
-
-np.random.seed(777)
 
 wires = range(3)
 shots = 10000
@@ -260,8 +259,8 @@ class TestStateReconstruction:
 
         with monkeypatch.context() as m:
             # don't run the actual state computation since we only want the warning
-            m.setattr(np, "einsum", lambda *args, **kwargs: None)
-            m.setattr(np, "reshape", lambda *args, **kwargs: None)
+            m.setattr(onp, "einsum", lambda *args, **kwargs: None)
+            m.setattr(onp, "reshape", lambda *args, **kwargs: None)
 
             with pytest.warns(UserWarning, match=msg):
                 shadow.global_snapshots()
@@ -346,8 +345,18 @@ class TestExpvalEstimation:
 
         H = qml.Hadamard(0) @ qml.Hadamard(2)
 
-        msg = "Observable must be a linear combination of Pauli observables"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="Observable must have a valid pauli representation"):
+            shadow.expval(H, k=10)
+
+    def test_non_pauli_error_no_pauli_rep(self):
+        """Test that an error is raised when a non-Pauli observable is passed"""
+        circuit = hadamard_circuit(3)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        H = qml.Hadamard(0) @ qml.Hadamard(2)
+
+        with pytest.raises(ValueError, match="Observable must have a valid pauli representation."):
             shadow.expval(H, k=10)
 
 

@@ -14,13 +14,14 @@
 """
 Unit tests for the optimization transform ``commute_controlled``.
 """
+
 import pytest
-from utils import compare_operation_lists, check_matrix_equivalence
+from utils import check_matrix_equivalence, compare_operation_lists
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.transforms.optimization import commute_controlled
+from pennylane.wires import Wires
 
 
 class TestCommuteControlled:
@@ -45,7 +46,7 @@ class TestCommuteControlled:
 
         def qfunc():
             qml.PauliX(wires=2)
-            qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), control_wires=0, wires=2)
+            qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[0, 2])
             qml.PauliX(wires=2)
 
         transformed_qfunc = commute_controlled(qfunc, direction=direction)
@@ -354,7 +355,8 @@ class TestCommuteControlledInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
@@ -381,7 +383,8 @@ class TestCommuteControlledInterfaces:
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
@@ -413,7 +416,8 @@ class TestCommuteControlledInterfaces:
         assert qml.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -421,10 +425,6 @@ class TestCommuteControlledInterfaces:
         """Test QNode and gradient in JAX interface."""
         import jax
         from jax import numpy as jnp
-
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -440,7 +440,8 @@ class TestCommuteControlledInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
 
@@ -515,8 +516,8 @@ class TestTransformDispatch:
             commute_controlled(qfunc_circuit)()
             return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
-        new_circuit()
-        assert len(new_circuit.tape.operations) == 7
+        tape = qml.workflow.construct_tape(new_circuit)()
+        assert len(tape.operations) == 7
 
         names_expected = ["CNOT", "Toffoli", "PauliX", "RX", "CRX", "SX", "PauliX"]
         wires_expected = [
@@ -528,7 +529,7 @@ class TestTransformDispatch:
             Wires(1),
             Wires(1),
         ]
-        compare_operation_lists(new_circuit.tape.operations, names_expected, wires_expected)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
     def test_qnode(self):
         """Test the transform on a qnode directly."""

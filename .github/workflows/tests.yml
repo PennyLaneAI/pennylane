@@ -4,6 +4,19 @@ on:
     branches:
       - master
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches-ignore:
+      - 'v[0-9]+.[0-9]+.[0-9]+-docs'
+  # Scheduled trigger on Monday at 2:47am UTC
+  schedule:
+    - cron: "47 2 * * 1"
+  merge_group:
+    types:
+      - checks_requested
 
 concurrency:
   group: unit-tests-${{ github.ref }}
@@ -11,7 +24,10 @@ concurrency:
 
 jobs:
   tests:
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
       branch: ${{ github.ref }}
 
@@ -24,3 +40,22 @@ jobs:
           && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
           || false
          }}
+
+  upload-stable-deps:
+    needs: tests
+    uses: ./.github/workflows/check_in_artifact.yml
+    if: github.event_name == 'schedule'
+    with:
+      artifact_name_pattern: "frozen-*"
+      artifact_save_path: ".github/stable/"
+      pull_request_head_branch_name: bot/stable-deps-update
+      commit_message_description: Frozen Dependencies Update
+      pull_request_title: Update stable dependency files
+      pull_request_body: |
+        Automatic update of stable requirement files to snapshot valid python environments.
+
+        Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
+
+        ```
+        git commit --allow-empty -m 'trigger ci'
+        ```

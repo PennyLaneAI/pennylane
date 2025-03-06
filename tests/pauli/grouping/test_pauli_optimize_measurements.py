@@ -14,8 +14,9 @@
 """
 Unit tests for ``optimize_measurements`` function in ``/pauli/grouping/optimize_measurements.py``.
 """
-import pytest
 import numpy as np
+import pytest
+
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.pauli import are_identical_pauli_words
 from pennylane.pauli.grouping.optimize_measurements import optimize_measurements
@@ -127,7 +128,7 @@ class TestOptimizeMeasurements:
         grouped_coeffs_sol = [[1.43, 4.21]]
 
         grouped_coeffs = optimize_measurements(
-            obs, coefficients, grouping="qwc", colouring_method="rlf"
+            obs, coefficients, grouping="qwc", colouring_method="lf"
         )[2]
 
         assert len(grouped_coeffs) == len(grouped_coeffs)

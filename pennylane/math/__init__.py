@@ -34,7 +34,7 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, reduce_matrices, get_batch_size
+from .matrix_manipulation import expand_matrix, expand_vector, reduce_matrices, get_batch_size
 from .multi_dispatch import (
     add,
     array,
@@ -50,11 +50,11 @@ from .multi_dispatch import (
     gammainc,
     get_trainable_indices,
     iscomplex,
-    jax_argnums_to_tape_trainable,
     kron,
     matmul,
     multi_dispatch,
     norm,
+    svd,
     ones_like,
     scatter,
     scatter_element_add,
@@ -67,15 +67,20 @@ from .multi_dispatch import (
 from .quantum import (
     cov_matrix,
     dm_from_state_vector,
+    expectation_value,
     marginal_prob,
     mutual_info,
+    partial_trace,
     purity,
     reduce_dm,
     reduce_statevector,
     relative_entropy,
     sqrt_matrix,
+    sqrt_matrix_sparse,
     vn_entropy,
+    vn_entanglement_entropy,
     max_entropy,
+    min_entropy,
     trace_distance,
 )
 from .fidelity import fidelity, fidelity_statevector
@@ -85,12 +90,20 @@ from .utils import (
     cast,
     cast_like,
     convert_like,
+    in_backprop,
+    requires_grad,
+    is_abstract,
+)
+from .interface_utils import (
+    get_canonical_interface_name,
+    SupportedInterfaceUserInput,
+    SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
-    in_backprop,
-    is_abstract,
-    requires_grad,
+    Interface,
+    InterfaceLike,
 )
+from .grad import grad, jacobian
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
@@ -147,23 +160,31 @@ __all__ = [
     "dot",
     "einsum",
     "expand_matrix",
+    "expand_vector",
+    "expectation_value",
     "eye",
     "fidelity",
     "fidelity_statevector",
     "frobenius_inner_product",
     "get_dtype_name",
     "get_interface",
+    "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
+    "grad",
     "in_backprop",
     "is_abstract",
     "is_independent",
     "iscomplex",
+    "jacobian",
+    "Interface",
     "marginal_prob",
     "max_entropy",
+    "min_entropy",
     "multi_dispatch",
     "mutual_info",
     "ones_like",
+    "partial_trace",
     "purity",
     "reduce_dm",
     "reduce_statevector",
@@ -172,9 +193,11 @@ __all__ = [
     "sqrt_matrix",
     "scatter_element_add",
     "stack",
+    "svd",
     "tensordot",
     "trace_distance",
     "unwrap",
     "vn_entropy",
+    "vn_entanglement_entropy",
     "where",
 ]

@@ -14,14 +14,20 @@
 # pylint: disable=too-many-arguments
 """
 This submodule contains the discrete-variable quantum operations that are the
-core parameterized gates.
+core parametrized gates.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
+from typing import Optional, Union
+
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
+
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
@@ -57,6 +63,7 @@ class RX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -68,14 +75,14 @@ class RX(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self):
-        return -0.5 * PauliX(wires=self.wires)
+    def generator(self) -> "qml.Hamiltonian":
+        return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(theta):  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -107,16 +114,25 @@ class RX(Operation):
         js = -1j * s
         return qml.math.stack([stack_last([c, js]), stack_last([js, c])], axis=-2)
 
-    def adjoint(self):
+    @staticmethod
+    def compute_sparse_matrix(theta):
+        return sp.sparse.csr_matrix(
+            [
+                [qml.math.cos(theta / 2), -1j * qml.math.sin(theta / 2)],
+                [-1j * qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
+            ]
+        )
+
+    def adjoint(self) -> "RX":
         return RX(-self.data[0], wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [RX(self.data[0] * z, wires=self.wires)]
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.CRX":
         return qml.CRX(*self.parameters, wires=wire + self.wires)
 
-    def simplify(self):
+    def simplify(self) -> "RX":
         theta = self.data[0] % (4 * np.pi)
 
         if _can_replace(theta, 0):
@@ -124,7 +140,7 @@ class RX(Operation):
 
         return RX(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
         pi_half = qml.math.ones_like(self.data[0]) * (np.pi / 2)
         return [pi_half, self.data[0], -pi_half]
@@ -152,6 +168,7 @@ class RY(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -163,14 +180,14 @@ class RY(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self):
-        return -0.5 * PauliY(wires=self.wires)
+    def generator(self) -> "qml.Hamiltonian":
+        return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(theta):  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -202,16 +219,25 @@ class RY(Operation):
         s = (1 + 0j) * s
         return qml.math.stack([stack_last([c, -s]), stack_last([s, c])], axis=-2)
 
-    def adjoint(self):
+    @staticmethod
+    def compute_sparse_matrix(theta):
+        return sp.sparse.csr_matrix(
+            [
+                [qml.math.cos(theta / 2), -qml.math.sin(theta / 2)],
+                [qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
+            ]
+        )
+
+    def adjoint(self) -> "RY":
         return RY(-self.data[0], wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [RY(self.data[0] * z, wires=self.wires)]
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.CRY":
         return qml.CRY(*self.parameters, wires=wire + self.wires)
 
-    def simplify(self):
+    def simplify(self) -> "RY":
         theta = self.data[0] % (4 * np.pi)
 
         if _can_replace(theta, 0):
@@ -219,7 +245,7 @@ class RY(Operation):
 
         return RY(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # RY(\theta) = RZ(0) RY(\theta) RZ(0)
         return [0.0, self.data[0], 0.0]
 
@@ -246,6 +272,7 @@ class RZ(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -257,14 +284,14 @@ class RZ(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self):
-        return -0.5 * PauliZ(wires=self.wires)
+    def generator(self) -> "qml.Hamiltonian":
+        return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(theta):  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -300,7 +327,11 @@ class RZ(Operation):
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(theta):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(theta):
+        return sp.sparse.csr_matrix([[np.exp(-1j * theta / 2), 0], [0, np.exp(1j * theta / 2)]])
+
+    @staticmethod
+    def compute_eigvals(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -337,16 +368,16 @@ class RZ(Operation):
             product = qml.math.outer(theta, prefactors)
         return qml.math.exp(product)
 
-    def adjoint(self):
+    def adjoint(self) -> "RZ":
         return RZ(-self.data[0], wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [RZ(self.data[0] * z, wires=self.wires)]
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.CRZ":
         return qml.CRZ(*self.parameters, wires=wire + self.wires)
 
-    def simplify(self):
+    def simplify(self) -> "RZ":
         theta = self.data[0] % (4 * np.pi)
 
         if _can_replace(theta, 0):
@@ -354,7 +385,7 @@ class RZ(Operation):
 
         return RZ(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
         return [self.data[0], 0.0, 0.0]
 
@@ -381,6 +412,7 @@ class PhaseShift(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -392,17 +424,22 @@ class PhaseShift(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self):
+    def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -440,7 +477,7 @@ class PhaseShift(Operation):
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(phi):  # pylint: disable=arguments-differ
+    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -478,7 +515,7 @@ class PhaseShift(Operation):
         return qml.math.exp(product)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> "qml.operation.Operator":
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -496,21 +533,21 @@ class PhaseShift(Operation):
         **Example:**
 
         >>> qml.PhaseShift.compute_decomposition(1.234, wires=0)
-        [RZ(1.234, wires=[0])]
+        [RZ(1.234, wires=[0]), GlobalPhase(-0.617, wires=[])]
 
         """
-        return [RZ(phi, wires=wires)]
+        return [RZ(phi, wires=wires), qml.GlobalPhase(-phi / 2)]
 
-    def adjoint(self):
+    def adjoint(self) -> "PhaseShift":
         return PhaseShift(-self.data[0], wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.ControlledPhaseShift":
         return qml.ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
-    def simplify(self):
+    def simplify(self) -> "PhaseShift":
         phi = self.data[0] % (2 * np.pi)
 
         if _can_replace(phi, 0):
@@ -518,7 +555,7 @@ class PhaseShift(Operation):
 
         return PhaseShift(phi, wires=self.wires)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
         return [self.data[0], 0.0, 0.0]
 
@@ -555,6 +592,7 @@ class Rot(Operation):
         wires (Any, Wires): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
@@ -565,11 +603,23 @@ class Rot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    def __init__(self, phi, theta, omega, wires, id=None):
+    # pylint: disable=too-many-positional-arguments
+    def __init__(
+        self,
+        phi: TensorLike,
+        theta: TensorLike,
+        omega: TensorLike,
+        wires: WiresLike,
+        id: Optional[str] = None,
+    ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike,
+        theta: TensorLike,
+        omega: TensorLike,
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -627,7 +677,9 @@ class Rot(Operation):
         return qml.math.stack([stack_last(row) for row in mat], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, theta, omega, wires):
+    def compute_decomposition(
+        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
+    ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -650,30 +702,29 @@ class Rot(Operation):
         [RZ(1.2, wires=[0]), RY(2.3, wires=[0]), RZ(3.4, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
             RZ(omega, wires=wires),
         ]
-        return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self) -> "Rot":
         phi, theta, omega = self.parameters
         return Rot(-omega, -theta, -phi, wires=self.wires)
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.CRot":
         return qml.CRot(*self.parameters, wires=wire + self.wires)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         return self.data
 
-    def simplify(self):
+    def simplify(self) -> "Rot":
         """Simplifies into single-rotation gates or a Hadamard if possible.
 
         >>> qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0).simplify()
         RX(0.1, wires=[0])
         >>> qml.Rot(np.pi, np.pi/2, 0, 0).simplify()
-        Hadamard(wires=[0])
+        H(0)
 
         """
         p0, p1, p2 = [p % (4 * np.pi) for p in self.data]
@@ -718,6 +769,7 @@ class U1(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -728,14 +780,14 @@ class U1(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self):
+    def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -771,7 +823,7 @@ class U1(Operation):
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> "qml.operation.Operator":
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -794,13 +846,13 @@ class U1(Operation):
         """
         return [PhaseShift(phi, wires=wires)]
 
-    def adjoint(self):
+    def adjoint(self) -> "U1":
         return U1(-self.data[0], wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [U1(self.data[0] * z, wires=self.wires)]
 
-    def simplify(self):
+    def simplify(self) -> "U1":
         phi = self.data[0] % (2 * np.pi)
 
         if _can_replace(phi, 0):
@@ -845,6 +897,7 @@ class U2(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
@@ -855,11 +908,15 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
-    def __init__(self, phi, delta, wires, id=None):
+    def __init__(
+        self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: Optional[str] = None
+    ):
         super().__init__(phi, delta, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(phi, delta):  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, delta: TensorLike
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -896,7 +953,9 @@ class U2(Operation):
         return qml.math.stack([stack_last(row) for row in mat], axis=-2) / np.sqrt(2)
 
     @staticmethod
-    def compute_decomposition(phi, delta, wires):
+    def compute_decomposition(
+        phi: TensorLike, delta: TensorLike, wires: WiresLike
+    ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -920,20 +979,19 @@ class U2(Operation):
 
         """
         pi_half = qml.math.ones_like(delta) * (np.pi / 2)
-        decomp_ops = [
+        return [
             Rot(delta, pi_half, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
-        return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self) -> "U2":
         phi, delta = self.parameters
         new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
         new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
         return U2(new_phi, new_delta, wires=self.wires)
 
-    def simplify(self):
+    def simplify(self) -> "U2":
         """Simplifies the gate into RX or RY gates if possible."""
         wires = self.wires
 
@@ -986,6 +1044,7 @@ class U3(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
@@ -996,11 +1055,21 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    def __init__(self, theta, phi, delta, wires, id=None):
+    # pylint: disable=too-many-positional-arguments
+    def __init__(
+        self,
+        theta: TensorLike,
+        phi: TensorLike,
+        delta: TensorLike,
+        wires: WiresLike,
+        id: Optional[str] = None,
+    ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(theta, phi, delta):  # pylint: disable=arguments-differ
+    def compute_matrix(
+        theta: TensorLike, phi: TensorLike, delta: TensorLike
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1051,7 +1120,9 @@ class U3(Operation):
         return qml.math.stack([stack_last(row) for row in mat], axis=-2)
 
     @staticmethod
-    def compute_decomposition(theta, phi, delta, wires):
+    def compute_decomposition(
+        theta: TensorLike, phi: TensorLike, delta: TensorLike, wires: WiresLike
+    ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1076,20 +1147,19 @@ class U3(Operation):
         PhaseShift(2.34, wires=[0])]
 
         """
-        decomp_ops = [
+        return [
             Rot(delta, theta, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
-        return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self) -> "U3":
         theta, phi, delta = self.parameters
         new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
         new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
         return U3(theta, new_phi, new_delta, wires=self.wires)
 
-    def simplify(self):
+    def simplify(self) -> "U3":
         """Simplifies into :class:`~.RX`, :class:`~.RY`, or :class:`~.PhaseShift` gates
         if possible.
 

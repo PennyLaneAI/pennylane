@@ -13,12 +13,13 @@
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
 import warnings
-
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, List, Union
+from typing import Union
+
+import numpy as np
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.typing import TensorLike
@@ -29,12 +30,12 @@ from pennylane.wires import Wires
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
-    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(0.5j, qml.PauliY(wire))
+    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(0.5j, qml.Y(wire))
 
 
 def ad(wire, d=2):
     """annihilation operator"""
-    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
+    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(-0.5j, qml.Y(wire))
 
 
 # pylint: disable=too-many-arguments
@@ -215,7 +216,7 @@ def callable_freq_to_angular(fn):
 class TransmonSettings:
     """Dataclass that contains the information of a Transmon setup.
 
-    .. see-also:: :func:`transmon_interaction`
+    .. seealso:: :func:`transmon_interaction`
 
     Args:
             connections (List): List `[[idx_q0, idx_q1], ..]` of connected qubits (wires)
@@ -225,7 +226,7 @@ class TransmonSettings:
 
     """
 
-    connections: List
+    connections: list
     qubit_freq: Union[float, Callable]
     coupling: Union[list, TensorLike, Callable]
     anharmonicity: Union[float, Callable]
@@ -333,7 +334,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     :math:`2 \pi A \exp(0) \sin(\pi/2 + 0)\sigma^y = 2 \pi \sigma^y`.
 
     >>> H(params, t)
-    6.283185307179586*(PauliY(wires=[0]))
+    6.283185307179586 * Y(0)
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all
@@ -350,6 +351,10 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. code-block:: python3
 
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
         qubit_freqs = [5.1, 5., 5.3]
         connections = [[0, 1], [1, 2]]  # qubits 0 and 1 are coupled, as are 1 and 2
         g = [0.02, 0.05]
@@ -363,13 +368,13 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         for q in range(3):
             H += qml.pulse.transmon_drive(amp, phase, freq, q)  # Parametrized drive for each qubit
 
-        dev = qml.device("default.qubit.jax", wires=range(3))
+        dev = qml.device("default.qubit", wires=range(3))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(H)(params, time)
-            return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
+            return qml.expval(qml.Z(0) + qml.Z(1) + qml.Z(2))
 
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of :math:`0.5 \times 2\pi \text{GHz}`)
     and set the drive frequency equal to the qubit frequencies. Note how the order of the construction
@@ -404,7 +409,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq)]
 
-    drive_y_term = sum(qml.PauliY(wire) for wire in wires)
+    drive_y_term = sum(qml.Y(wire) for wire in wires)
 
     observables = [drive_y_term]
 

@@ -18,16 +18,17 @@
 This file contains the ``ParametrizedEvolution`` operator.
 """
 
-from typing import List, Union, Sequence
 import warnings
+from collections.abc import Sequence
+from typing import Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.typing import TensorLike
 from pennylane.ops import functions
+from pennylane.typing import TensorLike
 
-from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .hardware_hamiltonian import HardwareHamiltonian
+from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 has_jax = True
 try:
@@ -114,7 +115,7 @@ class ParametrizedEvolution(Operation):
         from jax import numpy as jnp
 
         f1 = lambda p, t: jnp.sin(p * t)
-        H = f1 * qml.PauliY(0)
+        H = f1 * qml.Y(0)
 
         ev = qml.evolve(H)
 
@@ -137,19 +138,21 @@ class ParametrizedEvolution(Operation):
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=1)
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=1)
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> params = [1.2]
     >>> circuit(params)
-    Array(0.96632576, dtype=float32)
+    Array(0.96632722, dtype=float64)
 
     >>> jax.grad(circuit)(params)
-    [Array(2.3569832, dtype=float32)]
+    [Array(2.35694829, dtype=float64)]
 
     .. note::
         In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
@@ -185,7 +188,7 @@ class ParametrizedEvolution(Operation):
             def f2(p, t):
                 return p * jnp.cos(t)
 
-            H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
+            H = 2 * qml.X(0) + f1 * qml.Y(0) + f2 * qml.Z(0)
             ev = qml.evolve(H)
 
         >>> params = [[4.6, 2.3], 1.2]
@@ -211,11 +214,11 @@ class ParametrizedEvolution(Operation):
 
             from jax import numpy as jnp
 
-            ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+            ops = [qml.X(0), qml.Y(1), qml.Z(2)]
             coeffs = [lambda p, t: p for _ in range(3)]
             H1 = qml.dot(coeffs, ops)  # time-independent parametrized Hamiltonian
 
-            ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
+            ops = [qml.Z(0), qml.Y(1), qml.X(2)]
             coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
             H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
 
@@ -223,18 +226,18 @@ class ParametrizedEvolution(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit.jax", wires=3)
+            dev = qml.device("default.qubit", wires=3)
 
             @qml.qnode(dev, interface="jax")
             def circuit1(params):
                 qml.evolve(H1)(params, t=[0, 10])
                 qml.evolve(H2)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+                return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
             @qml.qnode(dev, interface="jax")
             def circuit2(params):
                 qml.evolve(H1 + H2)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+                return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
         In ``circuit1``, the two Hamiltonians are evolved over the same time window, but inside different operators.
         In ``circuit2``, we add the two to form a single :class:`~.ParametrizedHamiltonian`. This will combine the
@@ -245,11 +248,11 @@ class ParametrizedEvolution(Operation):
 
         >>> params = jnp.array([1., 2., 3.])
         >>> circuit1(params)
-        Array(-0.01543971, dtype=float32)
+        Array(-0.01542578, dtype=float64)
 
         >>> params = jnp.concatenate([params, params])  # H1 + H2 requires 6 parameters!
         >>> circuit2(params)
-        Array(-0.78236955, dtype=float32)
+        Array(-0.78235162, dtype=float64)
 
         Here, ``circuit1`` is not executing the evolution of ``H1`` and ``H2`` simultaneously, but rather
         executing ``H1`` in the ``[0, 10]`` time window and then executing ``H2`` with the same time window,
@@ -265,13 +268,13 @@ class ParametrizedEvolution(Operation):
             @qml.qnode(dev, interface="jax")
             def circuit(params):
                 qml.evolve(H1 + H2)(params, t=t)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+                return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
         >>> circuit(params)
-        Array(-0.78236955, dtype=float32)
+        Array(-0.78235162, dtype=float64)
         >>> jax.grad(circuit)(params)
-        Array([-4.8066125 ,  3.703827  , -1.3297377 , -2.406232  ,  0.6811726 ,
-            -0.52277344], dtype=float32)
+        Array([-4.80708632,  3.70323783, -1.32958799, -2.40642477,  0.68105214,
+            -0.52269657], dtype=float64)
 
         Given that we used the same time window (``[0, 10]``), the results are the same as before.
 
@@ -291,7 +294,7 @@ class ParametrizedEvolution(Operation):
 
         .. code-block:: python
 
-            ops = [qml.PauliZ(0), qml.PauliY(0), qml.PauliX(0)]
+            ops = [qml.Z(0), qml.Y(0), qml.X(0)]
             coeffs = [lambda p, t: p * jnp.cos(t) for _ in range(3)]
             H = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
 
@@ -311,7 +314,7 @@ class ParametrizedEvolution(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit.jax", wires=1)
+            dev = qml.device("default.qubit", wires=1)
 
             @qml.qnode(dev, interface="jax")
             def circuit(param, time):
@@ -320,11 +323,11 @@ class ParametrizedEvolution(Operation):
 
         >>> circuit(param, time)
         Array([[1.        , 0.        ],
-               [0.9897738 , 0.01022595],
-               [0.9599043 , 0.04009585],
-               [0.9123617 , 0.08763832],
-               [0.84996957, 0.15003097],
-               [0.7761489 , 0.22385144]], dtype=float32)
+               [0.98977406, 0.01022594],
+               [0.95990416, 0.04009584],
+               [0.91236167, 0.08763833],
+               [0.84996865, 0.15003133],
+               [0.77614817, 0.22385181]], dtype=float64)
 
 
         **Computing complementary time evolution**
@@ -371,14 +374,14 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t: Union[float, List[float]] = None,
+        t: Union[float, list[float]] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
         id=None,
         **odeint_kwargs,
     ):
-        if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
+        if not all(op.has_matrix for op in H.ops):
             raise ValueError(
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
             )
@@ -472,6 +475,35 @@ class ParametrizedEvolution(Operation):
             )
         )
 
+    def _flatten(self):
+        data = self.data
+        odeint_kwargs_tuples = tuple((key, value) for key, value in self.odeint_kwargs.items())
+        t = self.t if self.t is None else tuple(self.t)
+        metadata = (
+            t,
+            self.H,
+            self.hyperparameters["return_intermediate"],
+            self.hyperparameters["complementary"],
+            self.dense,
+            odeint_kwargs_tuples,
+        )
+
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        t, H, return_intermediate, complementary, dense, odeint_kwargs = metadata
+
+        return cls(
+            H,
+            None if len(data) == 0 else data,
+            t,
+            return_intermediate=return_intermediate,
+            complementary=complementary,
+            dense=dense,
+            **dict(odeint_kwargs),
+        )
+
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
@@ -525,7 +557,7 @@ class ParametrizedEvolution(Operation):
 
         **Example:**
 
-        >>> H = qml.PauliX(1) + qml.pulse.constant * qml.PauliY(0) + jnp.polyval * qml.PauliY(1)
+        >>> H = qml.X(1) + qml.pulse.constant * qml.Y(0) + jnp.polyval * qml.Y(1)
         >>> params = [0.2, [1, 2, 3]]
         >>> op = qml.evolve(H)(params, t=2)
         >>> cache = {'matrices': []}

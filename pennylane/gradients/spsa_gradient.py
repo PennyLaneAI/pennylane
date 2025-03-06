@@ -15,8 +15,6 @@
 This module contains functions for computing the SPSA gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
-from typing import Sequence, Callable
 from functools import partial
 
 import numpy as np
@@ -24,17 +22,21 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.typing import PostprocessingFn
 
 from .finite_difference import _processing_fn, finite_diff_coeffs
+from .general_shift_rules import generate_multishifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
-    assert_no_tape_batching,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
     _no_trainable_grad,
+    assert_no_trainable_tape_batching,
+    choose_trainable_param_indices,
+    find_and_validate_gradient_methods,
 )
-from .general_shift_rules import generate_multishifted_tapes
+
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
 
 
 def _rademacher_sampler(indices, num_params, *args, rng):
@@ -60,7 +62,7 @@ def _rademacher_sampler(indices, num_params, *args, rng):
 
 
 def _expand_transform_spsa(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     h=1e-5,
     approx_order=2,
@@ -71,7 +73,7 @@ def _expand_transform_spsa(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before spsa gradient."""
     expanded_tape = expand_invalid_trainable(tape)
 
@@ -91,7 +93,7 @@ def _expand_transform_spsa(
     final_transform=True,
 )
 def spsa_grad(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     h=1e-5,
     approx_order=2,
@@ -102,7 +104,7 @@ def spsa_grad(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
     simultaneously and approximates the gradient based on these shifts and a
@@ -112,7 +114,8 @@ def spsa_grad(
         tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         h (float or tensor_like[float]): Step size for the finite-difference method
             underlying the SPSA. Can be a tensor-like object
             with as many entries as differentiated *gate* parameters
@@ -182,15 +185,11 @@ def spsa_grad(
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.gradients.spsa_grad(circuit)(params)
-    ((tensor(-0.19280803, requires_grad=True),
-      tensor(-0.19280803, requires_grad=True),
-      tensor(0.19280803, requires_grad=True)),
-     (tensor(0.34786926, requires_grad=True),
-      tensor(0.34786926, requires_grad=True),
-      tensor(-0.34786926, requires_grad=True)))
+    (tensor([ 0.18488771, -0.18488771, -0.18488771], requires_grad=True),
+     tensor([-0.33357922,  0.33357922,  0.33357922], requires_grad=True))
 
     Note that the SPSA gradient is a statistical estimator that uses a given number of
     function evaluations that does not depend on the number of parameters. While this
@@ -206,22 +205,14 @@ def spsa_grad(
         a more precise gradient estimation from ``num_directions=20`` directions yields
 
         >>> qml.gradients.spsa_grad(circuit, num_directions=20)(params)
-        ((tensor(-0.27362235, requires_grad=True),
-          tensor(-0.07219669, requires_grad=True),
-          tensor(-0.36369011, requires_grad=True)),
-         (tensor(0.49367656, requires_grad=True),
-          tensor(0.13025915, requires_grad=True),
-          tensor(0.65617915, requires_grad=True)))
+        (tensor([-0.53976776, -0.34385475, -0.46106048], requires_grad=True),
+         tensor([0.97386303, 0.62039169, 0.83185731], requires_grad=True))
 
         We may compare this to the more precise values obtained from finite differences:
 
         >>> qml.gradients.finite_diff(circuit)(params)
-        ((tensor(-0.38751724, requires_grad=True),
-          tensor(-0.18884792, requires_grad=True),
-          tensor(-0.38355708, requires_grad=True)),
-         (tensor(0.69916868, requires_grad=True),
-          tensor(0.34072432, requires_grad=True),
-          tensor(0.69202365, requires_grad=True)))
+        (tensor([-0.38751724, -0.18884792, -0.38355708], requires_grad=True),
+         tensor([0.69916868, 0.34072432, 0.69202365], requires_grad=True))
 
         As we can see, the SPSA output is a rather coarse approximation to the true
         gradient, and this although the parameter-shift rule for three parameters uses
@@ -236,41 +227,55 @@ def spsa_grad(
         function, which together define the gradient are directly returned:
 
         >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
-        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.spsa_grad(tape)
         >>> gradient_tapes
-        [<QuantumTape: wires=[0], params=3>, <QuantumTape: wires=[0], params=3>]
+        [<QuantumScript: wires=[0], params=3>, <QuantumScript: wires=[0], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed. Here we see that for ``num_directions=1``,
         the default, we obtain two tapes.
 
+        Note that ``argnum`` refers to the index of a parameter within the list of trainable
+        parameters. For example, if we have:
+
+        >>> tape = qml.tape.QuantumScript(
+        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
+        ...     [qml.expval(qml.Z(0))],
+        ...     trainable_params = [1, 2]
+        ... )
+        >>> qml.gradients.spsa_grad(tape, argnum=1)
+
+        The code above will differentiate the third parameter rather than the second.
+
         The output tapes can then be evaluated and post-processed to retrieve
         the gradient:
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        >>> dev = qml.device("default.qubit")
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        ((array(-0.58222637), array(0.58222637), array(-0.58222637)),
-         (array(1.05046797), array(-1.05046797), array(1.05046797)))
+        ((tensor(0.18488771, requires_grad=True),
+          tensor(-0.18488771, requires_grad=True),
+          tensor(-0.18488771, requires_grad=True)),
+         (tensor(-0.33357922, requires_grad=True),
+          tensor(0.33357922, requires_grad=True),
+          tensor(0.33357922, requires_grad=True)))
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit", wires=2, shots=shots)
+        >>> dev = qml.device("default.qubit", shots=shots)
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.spsa_grad(circuit, h=1e-2)(params)
-        (((array(0.), array(0.), array(0.)), (array(0.), array(0.), array(0.))),
-         ((array(-1.4), array(-1.4), array(-1.4)),
-          (array(2.548), array(2.548), array(2.548))),
-         ((array(-1.06), array(-1.06), array(-1.06)),
-          (array(1.90588), array(1.90588), array(1.90588))))
+        ((array([ 10.,  10., -10.]), array([-18., -18.,  18.])),
+         (array([-5., -5.,  5.]), array([ 8.9,  8.9, -8.9])),
+         (array([ 1.5,  1.5, -1.5]), array([-2.667, -2.667,  2.667])))
 
         The outermost tuple contains results corresponding to each element of the shot vector,
         as is also visible by the increasing precision.
@@ -279,17 +284,19 @@ def spsa_grad(
     """
 
     transform_name = "SPSA"
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    if validate_params:
-        diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=spsa_grad)
-    else:
-        diff_methods = ["F" for i in tape.trainable_params]
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    diff_methods = (
+        find_and_validate_gradient_methods(tape, "numeric", trainable_params_indices)
+        if validate_params
+        else {idx: "F" for idx in trainable_params_indices}
+    )
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
     gradient_tapes = []
@@ -315,10 +322,10 @@ def spsa_grad(
 
     sampler_rng = np.random.default_rng(sampler_rng)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
     num_trainable_params = len(tape.trainable_params)
-    indices = [i for i in range(num_trainable_params) if (i in method_map and method_map[i] != "0")]
+    indices = [
+        i for i in range(num_trainable_params) if (i in diff_methods and diff_methods[i] != "0")
+    ]
 
     tapes_per_grad = len(shifts)
     all_coeffs = []

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains methods for computing Fourier coefficients and frequency spectra of quantum functions."""
 from itertools import product
+
 import numpy as np
 
 # pylint:disable=too-many-arguments
@@ -95,7 +96,7 @@ def coefficients(
             qml.RY(inpt[1], wires='a')
             qml.Rot(*weights[1], wires='a')
 
-            return qml.expval(qml.PauliZ(wires='a'))
+            return qml.expval(qml.Z('a'))
 
     .. note::
 
@@ -146,7 +147,7 @@ def coefficients(
             qml.RX(inpt[0], wires=0)
             qml.RY(inpt[0], wires=1)
             qml.CNOT(wires=[1, 0])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     One can work out by hand that the Fourier coefficients are :math:`c_0 = 0.5, c_1 = c_{-1} = 0,`
     and :math:`c_2 = c_{-2} = 0.25`. Suppose we would like only to obtain the coefficients
@@ -255,9 +256,11 @@ def _coefficients_no_filter(f, degree, use_broadcasting):
             nvec = (*nvec, n_ranges[-1])
             sampling_point = [s * n for s, n in zip(spacing, nvec)]
         else:
+            # sampling_point = np.squeeze(spacing * np.array(nvec))
             sampling_point = spacing * np.array(nvec)
         # fill discretized function array with value of f at inpts
-        f_discrete[nvec] = f(sampling_point)
+        f_out = f(sampling_point)
+        f_discrete[nvec] = f_out if use_broadcasting else np.squeeze(f_out)
 
     coeffs = np.fft.fftn(f_discrete) / f_discrete.size
 

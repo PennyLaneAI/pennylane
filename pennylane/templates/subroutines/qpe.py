@@ -15,12 +15,16 @@
 Contains the QuantumPhaseEstimation template.
 """
 # pylint: disable=too-many-arguments,arguments-differ
+import copy
+
 import pennylane as qml
+from pennylane.operation import AnyWires, Operator
 from pennylane.queuing import QueuingManager
-from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.wires import Wires
 
 
-class QuantumPhaseEstimation(Operation):
+class QuantumPhaseEstimation(ErrorOperation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -136,6 +140,7 @@ class QuantumPhaseEstimation(Operation):
             phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
 
     """
+
     num_wires = AnyWires
     grad_method = None
 
@@ -144,6 +149,10 @@ class QuantumPhaseEstimation(Operation):
         data = (self.hyperparameters["unitary"],)
         metadata = (self.hyperparameters["estimation_wires"],)
         return data, metadata
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
@@ -199,19 +208,47 @@ class QuantumPhaseEstimation(Operation):
         """The estimation wires of the QPE"""
         return self._hyperparameters["estimation_wires"]
 
+    def error(self):
+        """The QPE error computed from the spectral norm error of the input unitary operator.
+
+        **Example**
+
+        >>> class CustomOP(qml.resource.ErrorOperation):
+        ...    def error(self):
+        ...       return qml.resource.SpectralNormError(0.005)
+        >>> Op = CustomOP(wires=[0])
+        >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
+        >>> QPE.error()
+        SpectralNormError(0.075)
+
+        """
+        base_unitary = self._hyperparameters["unitary"]
+        if not isinstance(base_unitary, ErrorOperation):
+            return SpectralNormError(0.0)
+
+        unitary_error = base_unitary.error().error
+
+        sequence_error = qml.math.array(
+            [unitary_error * (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)],
+            like=qml.math.get_interface(unitary_error),
+        )
+
+        additive_error = qml.math.sum(sequence_error)
+
+        return SpectralNormError(additive_error)
+
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
-        new_op = super().map_wires(wire_map)
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["unitary"] = qml.map_wires(
             new_op._hyperparameters["unitary"], wire_map
         )
 
-        new_op._hyperparameters["estimation_wires"] = [
-            wire_map.get(wire, wire) for wire in self.estimation_wires
-        ]
-        new_op._hyperparameters["target_wires"] = [
-            wire_map.get(wire, wire) for wire in self.target_wires
-        ]
+        for key in ["estimation_wires", "target_wires"]:
+            new_op._hyperparameters[key] = [
+                wire_map.get(wire, wire) for wire in self.hyperparameters[key]
+            ]
 
         return new_op
 

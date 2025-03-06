@@ -14,10 +14,9 @@
 """
 Unit tests for the ``RiemannianGradientOptimizer``.
 """
-import pytest
-
-from scipy.sparse.linalg import expm
 import numpy as np
+import pytest
+from scipy.sparse.linalg import expm
 
 import pennylane as qml
 from pennylane.optimize import RiemannianGradientOptimizer
@@ -30,7 +29,7 @@ def circuit_1():
 
 
 def circuit_2():
-    """Simply parameterized circuit."""
+    """Simply parametrized circuit."""
     qml.RX(0.1, wires=[0])
     qml.RY(0.5, wires=[1])
     qml.CNOT(wires=[0, 1])
@@ -303,6 +302,7 @@ def test_riemannian_gradient_restriction_check():
         RiemannianGradientOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
 
 
+@pytest.mark.slow
 def test_docstring_example():
     """Test the docstring example with Trotterized evolution."""
     hamiltonian = qml.Hamiltonian(

@@ -15,13 +15,15 @@
 Function cut_circuit for cutting a quantum circuit into smaller circuit fragments.
 """
 
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, Optional, Union, Sequence
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -32,13 +34,13 @@ from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
 def _cut_circuit_expand(
-    tape: QuantumTape,
+    tape: QuantumScript,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     auto_cutter: Union[bool, Callable] = False,
     **kwargs,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations until reaching a depth that
     includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument
@@ -50,31 +52,29 @@ def _cut_circuit_expand(
 
     # Expand the tapes for handling Hamiltonian with two or more terms
     tape_meas_ops = tape.measurements
-    if tape_meas_ops and isinstance(tape_meas_ops[0].obs, qml.Hamiltonian):
+    if tape_meas_ops and isinstance(tape_meas_ops[0].obs, qml.ops.Sum):
         if len(tape_meas_ops) > 1:
             raise NotImplementedError(
                 "Hamiltonian expansion is supported only with a single Hamiltonian"
             )
 
         new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
-        new_tape = type(tape)(
-            tape.operations, [new_meas_op], shots=tape.shots, trainable_params=tape.trainable_params
-        )
+        new_tape = tape.copy(measurements=[new_meas_op])
 
-        tapes, tapes_fn = qml.transforms.hamiltonian_expand(new_tape, group=False)
+        tapes, tapes_fn = qml.transforms.split_non_commuting(new_tape, grouping_strategy=None)
 
     return [_qcut_expand_fn(tape, max_depth, auto_cutter) for tape in tapes], tapes_fn
 
 
 @partial(transform, expand_transform=_cut_circuit_expand)
 def cut_circuit(
-    tape: QuantumTape,
+    tape: QuantumScript,
     auto_cutter: Union[bool, Callable] = False,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     **kwargs,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Cut up a quantum circuit into smaller circuit fragments.
 
@@ -290,13 +290,13 @@ def cut_circuit(
 
         The circuit fragments can now be visualized:
 
-        >>> print(fragment_tapes[0].draw())
-         0: ──RX(0.531)──╭●──RY(-0.4)─────┤ ⟨Z⟩
-         1: ──RY(0.9)────╰Z──MeasureNode──┤
+        >>> print(fragment_tapes[0].draw(decimals=2))
+        0: ──RX(0.53)─╭●──RY(-0.40)───┤  <Z>
+        1: ──RY(0.90)─╰Z──MeasureNode─┤
 
-        >>> print(fragment_tapes[1].draw())
-         2: ──RX(0.3)──────╭Z──╭┤ ⟨Z ⊗ Z⟩
-         1: ──PrepareNode──╰●──╰┤ ⟨Z ⊗ Z⟩
+        >>> print(fragment_tapes[1].draw(decimals=1))
+        2: ──RX(0.3)─────╭Z─┤ ╭<Z@Z>
+        1: ──PrepareNode─╰●─┤ ╰<Z@Z>
 
         Additionally, we must remap the tape wires to match those available on our device.
 
@@ -324,35 +324,36 @@ def cut_circuit(
 
         >>> for t in tapes:
         ...     print(qml.drawer.tape_text(t))
+        ...     print()
 
         .. code-block::
 
-             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ I⟩ ╭┤ ⟨Z ⊗ Z⟩
-             1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ I⟩ ╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@I> ╭<Z@Z>
+            1: ──RY(0.90)─╰Z────────────┤ ╰<Z@I> ╰<Z@Z>
 
-             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ X⟩
-             1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ X⟩
+            0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@X>
+            1: ──RY(0.90)─╰Z────────────┤ ╰<Z@X>
 
-             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ Y⟩
-             1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ Y⟩
+            0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@Y>
+            1: ──RY(0.90)─╰Z────────────┤ ╰<Z@Y>
 
-             0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──I────────╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.30)─╭Z─┤ ╭<Z@Z>
+            1: ──I────────╰●─┤ ╰<Z@Z>
 
-             0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──X────────╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.30)─╭Z─┤ ╭<Z@Z>
+            1: ──X────────╰●─┤ ╰<Z@Z>
 
-             0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──H────────╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.30)─╭Z─┤ ╭<Z@Z>
+            1: ──H────────╰●─┤ ╰<Z@Z>
 
-             0: ──RX(0.3)─────╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──H────────S──╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.30)────╭Z─┤ ╭<Z@Z>
+            1: ──H─────────S─╰●─┤ ╰<Z@Z>
 
         The last step is to execute the tapes and postprocess the results using
         :func:`~.qcut_processing_fn`, which processes the results to the original full circuit
         output via a tensor network contraction
 
-        >>> results = qml.execute(tapes, dev, gradient_fn=None)
+        >>> results = qml.execute(tapes, dev, diff_method=None)
         >>> qml.qcut.qcut_processing_fn(
         ...     results,
         ...     communication_graph,

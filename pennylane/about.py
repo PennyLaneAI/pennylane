@@ -17,9 +17,10 @@ e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 """
 import platform
 import sys
-from subprocess import check_output
 from importlib import metadata
+from subprocess import check_output
 from sys import version_info
+
 import numpy
 import scipy
 

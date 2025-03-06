@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
+
+.. _transforms:
 
 Custom transforms
 -----------------
@@ -51,6 +53,8 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.undo_swaps
     ~transforms.pattern_matching_optimization
     ~transforms.transpile
+    ~transforms.decompose
+    ~transforms.combine_global_phases
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -58,8 +62,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.one_qubit_decomposition
-    ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
     ~transforms.to_zx
@@ -74,15 +76,16 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transform for Clifford+T compilation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transform for Clifford+T decomposition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following functions assist in decomposing operations to the Clifford+T basis.
+This transform accepts quantum circuits and decomposes them to the Clifford+T basis.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.sk_decomposition
+    ~clifford_t_decomposition
+
 
 Transforms for error mitigation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -94,28 +97,28 @@ Transforms for error mitigation
     ~transforms.fold_global
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
+    ~transforms.exponential_extrapolate
 
 Other transforms
 ~~~~~~~~~~~~~~~~
 
-These transforms use the :func:`pennylane.transform` function / decorator and can be used on
+These transforms use the :func:`pennylane.transform` function/decorator and can be used on
 :class:`pennylane.tape.QuantumTape`, :class:`pennylane.QNode`. They fulfill multiple purposes like circuit
-preprocessing, get information from a circuit and more.
+preprocessing, getting information from a circuit, and more.
 
 .. autosummary::
     :toctree: api
 
-    ~metric_tensor
-    ~adjoint_metric_tensor
     ~batch_params
     ~batch_input
     ~transforms.insert
+    ~transforms.add_noise
     ~defer_measurements
+    ~transforms.diagonalize_measurements
     ~transforms.split_non_commuting
+    ~transforms.split_to_single_terms
     ~transforms.broadcast_expand
-    ~transforms.hamiltonian_expand
     ~transforms.sign_expand
-    ~transforms.sum_expand
     ~transforms.convert_to_numpy_parameters
     ~apply_controlled_Q
     ~quantum_monte_carlo
@@ -129,37 +132,16 @@ that compute the desired quantity.
 .. autosummary::
     :toctree: api
 
-    ~transforms.classical_jacobian
     ~batch_partial
-    ~specs
     ~draw
     ~draw_mpl
-
-Decorators and utility functions
---------------------------------
-
-The following decorators and convenience functions are provided
-to help build custom QNode, quantum function, and tape transforms:
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.make_tape
-    ~transforms.map_batch_transform
-    ~transforms.create_expand_fn
-    ~transforms.create_decomp_expand_fn
-    ~transforms.expand_invalid_trainable
-    ~transforms.expand_invalid_trainable_hadamard_gradient
-    ~transforms.expand_multipar
-    ~transforms.expand_trainable_multipar
-    ~transforms.expand_nonunitary_gen
 
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformContainer`, :class:`~.TransformDispatcher` and  :class:`~.TransformProgram` are
+:class:`~.TransformContainer`, :class:`~.TransformDispatcher`, and  :class:`~.TransformProgram` are
 developer-facing objects that allow the
-creation, dispatching and composability of transforms. If you would like to make a custom transform, refer
+creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
 instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
 .. autosummary::
@@ -168,47 +150,171 @@ instead to the documentation of :func:`qml.transform <pennylane.transform>`.
     ~transforms.core.transform_dispatcher
     ~transforms.core.transform_program
 
-Old transforms framework
-------------------------
+Transforming circuits
+---------------------
 
-These utility functions were previously used to create transforms in PennyLane and are now
-deprecated. It is now recommended to use :class:`qml.transform <pennylane.transform>`
-for the creation of custom transforms.
+A quantum transform is a crucial concept in PennyLane, and refers to mapping a quantum
+circuit to one or more circuits, alongside a classical post-processing function.
+Once a transform is registered with PennyLane, the transformed circuits will be executed,
+and the classical post-processing function automatically applied to the outputs.
+This becomes particularly valuable when a transform generates multiple circuits,
+requiring a method to aggregate or reduce the results (e.g.,
+applying the parameter-shift rule or computing the expectation value of a Hamiltonian
+term-by-term).
 
-.. autosummary::
-    :toctree: api
+.. note::
 
-    ~single_tape_transform
-    ~batch_transform
-    ~qfunc_transform
-    ~op_transform
+    For examples of built-in transforms that come with PennyLane, see the
+    :doc:`/introduction/compiling_circuits` documentation.
 
+Creating your own transform
+---------------------------
+
+To streamline the creation of transforms and ensure their versatility across
+various circuit abstractions in PennyLane, the
+:func:`pennylane.transform` is available.
+
+This decorator registers transforms that accept a :class:`~.QuantumTape`
+as its primary input and returns a sequence of :class:`~.QuantumTape`
+and an associated processing function.
+
+To illustrate the process of creating a quantum transform, let's consider an example. Suppose we want
+a transform that removes all :class:`~.RX` operations from a given circuit. In this case, we merely need to filter the
+original :class:`~.QuantumTape` and return a new one without the filtered operations. As we don't require a specific processing
+function in this scenario, we include a function that simply returns the first and only result.
+
+.. code-block:: python
+
+    from pennylane.tape import QuantumScript, QuantumScriptBatch
+    from pennylane.typing import PostprocessingFn
+
+    def remove_rx(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+
+        operations = filter(lambda op: op.name != "RX", tape.operations)
+        new_tape = tape.copy(operations=operations)
+
+        def null_postprocessing(results):
+            return results[0]
+
+        return [new_tape], null_postprocessing
+
+To make your transform applicable to both :class:`~.QNode` and quantum functions, you can use the :func:`pennylane.transform` decorator.
+
+.. code-block:: python
+
+    dispatched_transform = qml.transform(remove_rx)
+
+For a more advanced example, let's consider a transform that sums a circuit with its adjoint. We define the adjoint
+of the tape operations, create a new tape with these new operations, and return both tapes.
+The processing function then sums the results of the original and the adjoint tape.
+In this example, we use ``qml.transform`` in the form of a decorator in order to turn the custom
+function into a quantum transform.
+
+.. code-block:: python
+
+    from pennylane.tape import QuantumScript, QuantumScriptBatch
+    from pennylane.typing import PostprocessingFn
+
+    @qml.transform
+    def sum_circuit_and_adjoint(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+
+        operations = [qml.adjoint(op) for op in tape.operation]
+        new_tape = tape.copy(operations=operations)
+
+        def sum_postprocessing(results):
+            return qml.sum(results)
+
+        return [tape, new_tape], sum_postprocessing
+
+Composability of transforms
+---------------------------
+
+Transforms are inherently composable on a :class:`~.QNode`, meaning that transforms with compatible post-processing
+functions can be successively applied to QNodes. For example, this allows for the application of multiple compilation
+passes on a QNode to maximize gate reduction before execution.
+
+.. code-block:: python
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(device=dev)
+        def circuit(x, y):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(y, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.Z(0))
+
+In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
+merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.
+
+
+Passing arguments to transforms
+-------------------------------
+
+We can decorate a QNode with ``@partial(transform_fn, **transform_kwargs)`` to provide additional keyword arguments to a transform function.
+In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` quantum transform,
+which splits a circuit into tapes measuring groups of commuting observables.
+
+.. code-block:: python
+
+        from functools import partial
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RZ(params[1], wires=1)
+            return [
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Y(1)),
+                qml.expval(qml.Z(0) @ qml.Z(1)),
+                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+            ]
+
+Additional information
+----------------------
+
+Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
+For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qml_gradients>`. Finally,
+for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qml_transforms>`.
 """
+
+# Leave as alias for backwards-compatibility
+from pennylane.tape import make_qscript as make_tape
+
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, TransformError
-from .batch_transform import batch_transform, map_batch_transform
-from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
-from .op_transforms import op_transform
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
-from .classical_jacobian import classical_jacobian
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-from .decompositions import (
-    one_qubit_decomposition,
-    two_qubit_decomposition,
-    sk_decomposition,
-)
-from .defer_measurements import defer_measurements
-from .sign_expand import sign_expand
-from .hamiltonian_expand import hamiltonian_expand, sum_expand
-from .split_non_commuting import split_non_commuting
-from .metric_tensor import metric_tensor
-from .adjoint_metric_tensor import adjoint_metric_tensor
-from .insert_ops import insert
+from .add_noise import add_noise
 
-from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
+from .decompositions import clifford_t_decomposition
+from .defer_measurements import defer_measurements
+from .diagonalize_measurements import diagonalize_measurements
+from .dynamic_one_shot import dynamic_one_shot, is_mcm
+from .sign_expand import sign_expand
+from .split_non_commuting import split_non_commuting
+from .split_to_single_terms import split_to_single_terms
+from .insert_ops import insert
+from .combine_global_phases import combine_global_phases
+
+from .mitigate import (
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
+)
 from .optimization import (
     cancel_inverses,
     commute_controlled,
@@ -220,7 +326,6 @@ from .optimization import (
     pattern_matching,
     pattern_matching_optimization,
 )
-from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .commutation_dag import (
@@ -230,14 +335,15 @@ from .commutation_dag import (
 )
 from .tape_expand import (
     expand_invalid_trainable,
-    expand_invalid_trainable_hadamard_gradient,
     expand_multipar,
     expand_nonunitary_gen,
     expand_trainable_multipar,
     create_expand_fn,
     create_decomp_expand_fn,
+    create_expand_trainable_multipar,
     set_decomposition,
 )
 from .transpile import transpile
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
+from .decompose import decompose

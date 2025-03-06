@@ -14,22 +14,21 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
-# pylint: disable=protected-access,too-few-public-methods,too-many-arguments
-# pylint: disable=too-many-public-methods,comparison-with-callable
-# pylint: disable=no-value-for-parameter,no-member,not-callable
+# pylint: disable=protected-access, too-few-public-methods, too-many-arguments, too-many-public-methods, comparison-with-callable, unused-argument, no-value-for-parameter, no-member, not-callable, use-implicit-booleaness-not-comparison
 import copy
 import itertools
 import string
 import sys
+from functools import partial, reduce
 from itertools import product
 from os import environ
 from pathlib import Path
-from functools import partial
 
+import numpy as onp
 import pytest
-from flaky import flaky
-from networkx import MultiDiGraph, number_of_selfloops
+from networkx import MultiDiGraph
 from networkx import __version__ as networkx_version
+from networkx import number_of_selfloops
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -94,6 +93,11 @@ with qml.queuing.AnnotatedQueue() as q_multi_cut_tape:
     qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]))
 
 multi_cut_tape = qml.tape.QuantumScript.from_queue(q_multi_cut_tape)
+
+
+def get_name(obj):
+    """MeasurementProcesses don't have names, so we return Measurement."""
+    return "Measurement" if isinstance(obj, qml.measurements.MeasurementProcess) else obj.name
 
 
 def kron(*args):
@@ -219,27 +223,31 @@ def compare_nodes(nodes, expected_wires, expected_names):
         assert node.obj.wires.tolist() == exp_wire
 
     for node, exp_name in zip(nodes, expected_names):
-        assert node.obj.name == exp_name
+        assert get_name(node.obj) == exp_name
 
 
 def compare_fragment_nodes(node_data, expected_data):
     """Helper function to compare nodes of fragment graphs"""
     assert len(node_data) == len(expected_data)
-    expected = [(exp_data[0].name, exp_data[0].wires, exp_data[1]) for exp_data in expected_data]
+    expected = [
+        (get_name(exp_data[0]), exp_data[0].wires, exp_data[1]) for exp_data in expected_data
+    ]
 
     for data in node_data:
         # The exact ordering of node_data varies on each call
-        assert (data[0].obj.name, data[0].obj.wires, data[1]) in expected
+        assert (get_name(data[0].obj), data[0].obj.wires, data[1]) in expected
 
 
 def compare_fragment_edges(edge_data, expected_data):
     """Helper function to compare fragment edges"""
     assert len(edge_data) == len(expected_data)
-    expected = [(exp_data[0].name, exp_data[1].name, exp_data[2]) for exp_data in expected_data]
+    expected = [
+        (get_name(exp_data[0]), get_name(exp_data[1]), exp_data[2]) for exp_data in expected_data
+    ]
 
     for data in edge_data:
         # The exact ordering of edge_data varies on each call
-        assert (data[0].obj.name, data[1].obj.name, data[2]) in expected
+        assert (get_name(data[0].obj), get_name(data[1].obj), data[2]) in expected
 
 
 def compare_tapes(res_tape, expected_tape):
@@ -252,16 +260,16 @@ def compare_tapes(res_tape, expected_tape):
 
     for op, exp_op in zip(res_tape.operations, expected_tape.operations):
         if (
-            op.name == "PrepareNode"
+            get_name(op) == "PrepareNode"
         ):  # The exact ordering of PrepareNodes w.r.t wires varies on each call
-            assert exp_op.name == "PrepareNode"
+            assert get_name(exp_op) == "PrepareNode"
         else:
-            assert op.name == exp_op.name
+            assert get_name(op) == get_name(exp_op)
             assert op.wires.tolist() == exp_op.wires.tolist()
 
     for meas, exp_meas in zip(res_tape.measurements, expected_tape.measurements):
-        assert meas.return_type.name == exp_meas.return_type.name
-        assert meas.obs.name == exp_meas.obs.name
+        assert (meas._shortname) == (exp_meas._shortname)
+        assert get_name(meas.obs) == get_name(exp_meas.obs)
         assert meas.wires.tolist() == exp_meas.wires.tolist()
 
 
@@ -269,10 +277,10 @@ def compare_measurements(meas1, meas2):
     """
     Helper function to compare measurements
     """
-    assert meas1.return_type.name == meas2.return_type.name
+    assert meas1._shortname == meas2._shortname
     obs1 = meas1.obs
     obs2 = meas2.obs
-    assert np.array(obs1.name == obs2.name).all()
+    assert np.array(get_name(obs1) == get_name(obs2)).all()
     assert obs1.wires.tolist() == obs2.wires.tolist()
 
 
@@ -288,6 +296,37 @@ def test_node_ids(monkeypatch):
 
         assert mn.id == "some_string"
         assert pn.id == "some_string"
+
+
+@pytest.mark.parametrize("cls", [qcut.MeasureNode, qcut.PrepareNode])
+class TestMeasurePrepareNodes:
+    """Tests for the MeasureNode and PrepareNode classes."""
+
+    def test_initialization(self, cls):
+        """Test that nodes can be initialized with wires."""
+        n = cls(wires=0)
+        assert n.wires == qml.wires.Wires(0)
+        n = cls(0)
+        assert n.wires == qml.wires.Wires(0)
+        with pytest.raises(TypeError, match="got multiple values for argument 'wires'"):
+            cls(0.5, wires=0)
+
+    def test_id(self, cls):
+        """Test that nodes can be initialized with an id or recieves its own UUID."""
+        n = cls(wires=0, id="hi")
+        assert n.id == "hi"
+        n = cls(wires=0, id=None)
+        assert n.id is not None
+        n2 = cls(wires=0, id=None)
+        assert n.id != n2.id
+
+    @pytest.mark.parametrize("decimals", [0, 1, 5])
+    @pytest.mark.parametrize("base_label", [None, "CustomNode"])
+    def test_label(self, cls, decimals, base_label):
+        """Test the label."""
+        expected_base_label = base_label or cls.__name__
+        n = cls(wires=0)
+        assert n.label(decimals=decimals, base_label=base_label) == expected_base_label
 
 
 class TestTapeToGraph:
@@ -437,17 +476,17 @@ class TestTapeToGraph:
 
         for node_obs, exp_obs in zip(node_observables, expected_obs):
             assert node_obs.wires == exp_obs.wires
-            assert node_obs.obs.name == exp_obs.obs.name
+            assert get_name(node_obs.obs) == get_name(exp_obs.obs)
 
     @pytest.mark.parametrize(
         "measurement,expected_measurement",
         [
-            (qml.expval(qml.PauliZ(wires=[0])), "Expectation"),
-            (qml.sample(qml.PauliZ(wires=[0])), "Sample"),
-            (qml.var(qml.PauliZ(wires=[0])), "Variance"),
-            (qml.probs(wires=0), "Probability"),
-            (qml.state(), "State"),
-            (qml.density_matrix([0]), "State"),
+            (qml.expval(qml.PauliZ(wires=[0])), "expval"),
+            (qml.sample(qml.PauliZ(wires=[0])), "sample"),
+            (qml.var(qml.PauliZ(wires=[0])), "var"),
+            (qml.probs(wires=0), "probs"),
+            (qml.state(), "state"),
+            (qml.density_matrix([0]), "state"),
         ],
     )
     def test_measurement_conversion(self, measurement, expected_measurement):
@@ -467,9 +506,11 @@ class TestTapeToGraph:
         g = qcut.tape_to_graph(tape)
         nodes = list(g.nodes)
 
-        node_observables = [node.obj for node in nodes if hasattr(node.obj, "return_type")]
+        node_observables = [
+            node.obj for node in nodes if isinstance(node.obj, qml.measurements.MeasurementProcess)
+        ]
 
-        assert node_observables[0].return_type.name == expected_measurement
+        assert node_observables[0]._shortname.value == expected_measurement
 
     def test_multiple_observables(self):
         """
@@ -500,7 +541,7 @@ class TestTapeToGraph:
 
         for node_obs, exp_obs in zip(node_observables, expected_obs):
             assert node_obs.wires == exp_obs.wires
-            assert node_obs.obs.name == exp_obs.obs.name
+            assert get_name(node_obs.obs) == get_name(exp_obs.obs)
 
     def test_split_sample_measurement(self):
         """
@@ -531,12 +572,12 @@ class TestTapeToGraph:
         ]
 
         for node, expected_node in zip(g.nodes, expected_nodes):
-            assert node.obj.name == expected_node.name
+            assert get_name(node.obj) == get_name(expected_node)
             assert node.obj.wires == expected_node.wires
 
             if getattr(node.obj, "obs", None) is not None:
-                assert node.obj.return_type is qml.measurements.Sample
-                assert node.obj.obs.name == expected_node.obs.name
+                assert isinstance(node.obj, qml.measurements.SampleMP)
+                assert get_name(node.obj.obs) == get_name(expected_node.obs)
 
     def test_sample_tensor_obs(self):
         """
@@ -587,12 +628,12 @@ class TestTapeToGraph:
         ]
 
         for node, expected_node in zip(g.nodes, expected_nodes):
-            assert node.obj.name == expected_node.name
+            assert get_name(node.obj) == get_name(expected_node)
             assert node.obj.wires == expected_node.wires
 
             if getattr(node.obj, "obs", None) is not None:
-                assert node.obj.return_type is qml.measurements.Sample
-                assert node.obj.obs.name == expected_node.obs.name
+                assert isinstance(node.obj, qml.measurements.SampleMP)
+                assert get_name(node.obj.obs) == get_name(expected_node.obs)
 
 
 class TestReplaceWireCut:
@@ -613,17 +654,17 @@ class TestReplaceWireCut:
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.obj.name for op, _ in new_node_data]
+        op_names = [get_name(op.obj) for op, _ in new_node_data]
 
         assert "WireCut" not in op_names
         assert "MeasureNode" in op_names
         assert "PrepareNode" in op_names
 
         for op, order in new_node_data:
-            if op.obj.name == "MeasureNode":
+            if get_name(op.obj) == "MeasureNode":
                 assert op.obj.wires.tolist() == [wire_cut_num]
                 assert order == wire_cut_order
-            elif op.obj.name == "PrepareNode":
+            elif get_name(op.obj) == "PrepareNode":
                 assert op.obj.wires.tolist() == [wire_cut_num]
                 assert order == wire_cut_order
 
@@ -658,11 +699,11 @@ class TestReplaceWireCut:
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
-        wire_cut_order = [order for op, order in node_data if op.obj.name == "WireCut"]
+        wire_cut_order = [order for op, order in node_data if get_name(op.obj) == "WireCut"]
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.obj.name for op, _ in new_node_data]
+        op_names = [get_name(op.obj) for op, _ in new_node_data]
 
         assert "WireCut" not in op_names
         assert op_names.count("MeasureNode") == 3
@@ -671,11 +712,11 @@ class TestReplaceWireCut:
         measure_counter = prepare_counter = 0
 
         for op, order in new_node_data:
-            if op.obj.name == "MeasureNode":
+            if get_name(op.obj) == "MeasureNode":
                 assert op.obj.wires.tolist() == [wire_cut_num[measure_counter]]
                 assert order == wire_cut_order[measure_counter]
                 measure_counter += 1
-            elif op.obj.name == "PrepareNode":
+            elif get_name(op.obj) == "PrepareNode":
                 assert op.obj.wires.tolist() == [wire_cut_num[prepare_counter]]
                 assert order == wire_cut_order[prepare_counter]
                 prepare_counter += 1
@@ -703,16 +744,16 @@ class TestReplaceWireCut:
         nodes = list(g.nodes)
 
         for node in nodes:
-            if node.obj.name == "MeasureNode":
+            if get_name(node.obj) == "MeasureNode":
                 succ = list(g.succ[node])[0]
                 pred = list(g.pred[node])[0]
-                assert succ.obj.name == "PrepareNode"
-                assert pred.obj.name == "RZ"
-            if node.obj.name == "PrepareNode":
+                assert get_name(succ.obj) == "PrepareNode"
+                assert get_name(pred.obj) == "RZ"
+            if get_name(node.obj) == "PrepareNode":
                 succ = list(g.succ[node])[0]
                 pred = list(g.pred[node])[0]
-                assert succ.obj.name == "CNOT"
-                assert pred.obj.name == "MeasureNode"
+                assert get_name(succ.obj) == "CNOT"
+                assert get_name(pred.obj) == "MeasureNode"
 
     def test_wirecut_has_no_predecessor(self):
         """
@@ -732,18 +773,18 @@ class TestReplaceWireCut:
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.obj.name for op, _ in new_node_data]
+        op_names = [get_name(op.obj) for op, _ in new_node_data]
 
         assert "WireCut" not in op_names
         assert "MeasureNode" in op_names
         assert "PrepareNode" in op_names
 
         for op, order in new_node_data:
-            if op.obj.name == "MeasureNode":
+            if get_name(op.obj) == "MeasureNode":
                 assert order == {"order": 0}
                 pred = list(g.pred[op])
                 assert pred == []
-            elif op.obj.name == "PrepareNode":
+            elif get_name(op.obj) == "PrepareNode":
                 assert order == {"order": 0}
 
     def test_wirecut_has_no_successor(self):
@@ -763,16 +804,16 @@ class TestReplaceWireCut:
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.obj.name for op, order in new_node_data]
+        op_names = [get_name(op.obj) for op, order in new_node_data]
 
         assert "WireCut" not in op_names
         assert "MeasureNode" in op_names
         assert "PrepareNode" in op_names
 
         for op, order in new_node_data:
-            if op.obj.name == "MeasureNode":
+            if get_name(op.obj) == "MeasureNode":
                 assert order == {"order": 3}
-            elif op.obj.name == "PrepareNode":
+            elif get_name(op.obj) == "PrepareNode":
                 assert order == {"order": 3}
                 succ = list(g.succ[op])
                 assert succ == []
@@ -794,8 +835,8 @@ class TestReplaceWireCut:
         qcut.replace_wire_cut_nodes(g)
 
         nodes = list(g.nodes)
-        measure_nodes = [node for node in nodes if node.obj.name == "MeasureNode"]
-        prepare_nodes = [node for node in nodes if node.obj.name == "PrepareNode"]
+        measure_nodes = [node for node in nodes if get_name(node.obj) == "MeasureNode"]
+        prepare_nodes = [node for node in nodes if get_name(node.obj) == "PrepareNode"]
 
         assert len(measure_nodes) == len(prepare_nodes) == 3
 
@@ -997,7 +1038,7 @@ class TestFragmentGraph:
             assert edge[1] == exp_edge[1]
 
             for node, exp_node in zip(edge[2]["pair"], exp_edge[2]["pair"]):
-                assert node.obj.name == exp_node.name
+                assert get_name(node.obj) == get_name(exp_node)
                 assert node.obj.wires.tolist() == exp_node.wires.tolist()
 
     def test_fragment_wirecut_first_and_last(self):
@@ -1345,7 +1386,7 @@ class TestGraphToTape:
         m = tape_out.measurements
         assert len(m) == 1
         assert m[0].wires == Wires([2])
-        assert m[0].obs.name == "PauliZ"
+        assert get_name(m[0].obs) == "PauliZ"
 
     def test_single_sample_meas_conversion(self):
         """
@@ -1380,7 +1421,7 @@ class TestGraphToTape:
         # For tapes with multiple measurements, the ordering varies
         # so we check the set of wires rather that the order
         for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
-            assert meas.return_type is qml.measurements.Sample
+            assert isinstance(meas, qml.measurements.SampleMP)
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(1), Wires(2)}
 
@@ -1422,7 +1463,7 @@ class TestGraphToTape:
         frag1_expected_meas = [qml.sample(qml.Projector([1], wires=[2]))]
 
         for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
-            assert meas.return_type is qml.measurements.Sample
+            assert isinstance(meas, qml.measurements.SampleMP)
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(0), Wires(3)}
 
@@ -1522,8 +1563,8 @@ class TestGetMeasurements:
         out = qcut._get_measurements(group, meas)
 
         assert len(out) == len(group)
-        assert out[0].return_type is qml.measurements.Expectation
-        assert out[0].obs.name == "Identity"
+        assert isinstance(out[0], qml.measurements.ExpectationMP)
+        assert get_name(out[0].obs) == "Identity"
         assert out[0].obs.wires[0] == 0
 
     def test_single_measurement(self):
@@ -1534,18 +1575,15 @@ class TestGetMeasurements:
         out = qcut._get_measurements(group, meas)
 
         assert len(out) == 2
-        assert [o.return_type for o in out] == [
-            qml.measurements.Expectation,
-            qml.measurements.Expectation,
-        ]
+        assert [o._shortname.value for o in out] == ["expval", "expval"]
 
         obs = [o.obs for o in out]
 
         assert obs[0].wires.tolist() == [1, 0, 2]
         assert obs[1].wires.tolist() == [1, 0]
 
-        assert [o.name for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
-        assert [o.name for o in obs[1].obs] == ["PauliZ", "PauliX"]
+        assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
+        assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
 
 
 class TestExpandFragmentTapes:
@@ -1850,8 +1888,14 @@ class TestExpandFragmentTapesMC:
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
         fixed_choice = np.array([[4, 0, 1]])
+
+        class _MockRNG:
+
+            def choice(self, *args, **kwargs):
+                return fixed_choice
+
         with monkeypatch.context() as m:
-            m.setattr(np.random, "choice", lambda a, size, replace: fixed_choice)
+            m.setattr(onp.random, "default_rng", lambda *_: _MockRNG())
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 tapes, communication_graph, 3
             )
@@ -1915,11 +1959,17 @@ class TestExpandFragmentTapesMC:
         communication_graph = MultiDiGraph(frag_edge_data)
 
         fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
+
+        class _MockRNG:
+
+            def choice(self, *args, **kwargs):
+                return fixed_choice
+
         with monkeypatch.context() as m:
             m.setattr(
-                np.random,
-                "choice",
-                lambda a, size, replace: fixed_choice,
+                onp.random,
+                "default_rng",
+                lambda *_: _MockRNG(),
             )
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 frags, communication_graph, 2
@@ -2027,7 +2077,7 @@ class TestExpandFragmentTapesMC:
 
         for ops, expected_ops in zip(operations, expected_operations):
             for op, exp_op in zip(ops, expected_ops):
-                assert op.name == exp_op.name
+                assert get_name(op) == get_name(exp_op)
                 assert op.wires == exp_op.wires
 
 
@@ -2458,20 +2508,19 @@ class TestMCPostprocessing:
             )
 
 
-@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubitLegacy, qml.devices.DefaultQubit])
+@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubit])
 class TestCutCircuitMCTransform:
     """
     Tests that the `cut_circuit_mc` transform gives the correct results.
     """
 
-    @flaky(max_runs=3)
-    def test_cut_circuit_mc_expval(self, dev_fn):
+    def test_cut_circuit_mc_expval(self, dev_fn, seed):
         """
         Tests that a circuit containing sampling measurements can be cut and
         recombined to give the correct expectation value
         """
 
-        dev_sim = dev_fn(wires=3)
+        dev_sim = dev_fn(wires=3, seed=seed)
 
         @qml.qnode(dev_sim)
         def target_circuit(v):
@@ -2488,9 +2537,9 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
-        dev = dev_fn(wires=2, shots=10000)
+        dev = dev_fn(wires=2, shots=20000, seed=seed)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn, seed=seed)
         @qml.qnode(dev)
         def circuit(v):
             qml.RX(v, wires=0)
@@ -2510,7 +2559,7 @@ class TestCutCircuitMCTransform:
         cut_res_mc = circuit(v)
 
         target = target_circuit(v)
-        assert np.isclose(cut_res_mc, target, atol=0.1)  # not guaranteed to pass each time
+        assert np.isclose(cut_res_mc, target, atol=0.15)  # not guaranteed to pass each time
 
     def test_cut_circuit_mc_sample(self, dev_fn):
         """
@@ -3829,9 +3878,8 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
-    def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots):
+    def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots, seed):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
@@ -3839,7 +3887,7 @@ class TestCutCircuitTransform:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -4021,9 +4069,7 @@ class TestCutCircuitTransform:
 
         import torch
 
-        # TODO: this passes with default.qubit locally, but fails on CI
-        # possibly an architecture-specific issue
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -4376,9 +4422,8 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
-    def test_standard_circuit(self, mocker, use_opt_einsum, shots):
+    def test_standard_circuit(self, mocker, use_opt_einsum, shots, seed):
         """
         Tests that the full circuit cutting pipeline returns the correct value for a typical
         scenario. The circuit is drawn below:
@@ -4391,7 +4436,7 @@ class TestCutCircuitTransform:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        dev_original = qml.device("default.qubit", wires=4)
+        dev_original = qml.device("default.qubit", wires=4, seed=seed)
 
         # We need a 3-qubit device
         dev_cut = qml.device("default.qubit", wires=3, shots=shots)
@@ -4512,32 +4557,10 @@ class TestCutCircuitExpansion:
         spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
 
-        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
         cut_transform(circuit, device_wires=[0])(**kwargs)
 
         assert spy.call_count == 1 or spy_mc.call_count == 1
-
-    @pytest.mark.skip("Nested tapes are being deprecated")
-    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
-    def test_expansion(self, mocker, cut_transform, measurement):
-        """Test if expansion occurs if WireCut operations are present in a nested tape"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.3, wires=0)
-            with qml.tape.QuantumTape() as _:
-                qml.WireCut(wires=0)
-            qml.RY(0.4, wires=0)
-            qml.apply(measurement)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(qcut.tapes, "_qcut_expand_fn")
-        spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
-        spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
-
-        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
-        cut_transform(tape, device_wires=[0], **kwargs)
-
-        spy.assert_called_once()
-        assert spy_cc.call_count == 1 or spy_mc.call_count == 1
 
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
@@ -4551,7 +4574,7 @@ class TestCutCircuitExpansion:
             return qml.apply(measurement)
 
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+            kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
             cut_transform(circuit, device_wires=[0])(**kwargs)
 
     def test_expansion_ttn(self, mocker):
@@ -4634,7 +4657,7 @@ class TestCutStrategy:
         """Test if ill-initialized instances throw errors."""
 
         if (
-            isinstance(devices, (qml.Device, qml.devices.Device))
+            isinstance(devices, qml.devices.Device)
             and imbalance_tolerance is None
             and num_fragments_probed is None
         ):
@@ -5062,7 +5085,7 @@ class TestKaHyPar:
             qcut.CutStrategy(max_free_wires=2, num_fragments_probed=5),  # impossible to cut
         ],
     )
-    def test_find_and_place_cuts(self, local_measurement, with_manual_cut, cut_strategy):
+    def test_find_and_place(self, local_measurement, with_manual_cut, cut_strategy):
         """Integration tests for auto cutting pipeline."""
         pytest.importorskip("kahypar")
 
@@ -5383,12 +5406,15 @@ class TestAutoCutCircuit:
         device_size = 2
         cut_strategy = qml.qcut.CutStrategy(max_free_wires=device_size)
 
+        if measure_all_wires:
+            obs = [qml.PauliZ(i) for i in range(n_wires)]
+            obs = reduce(lambda a, b: a @ b, obs)
+        else:
+            obs = qml.PauliZ(n_wires - 1)
+
         with qml.queuing.AnnotatedQueue() as q0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
-            if measure_all_wires:
-                qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires))
-            else:
-                qml.expval(qml.PauliZ(wires=n_wires - 1))
+            qml.expval(obs)
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
         tape = tape0.expand()
@@ -5525,16 +5551,18 @@ class TestCutCircuitWithHamiltonians:
         cut_circuit = qcut.cut_circuit(
             qml.QNode(f, dev_cut), auto_cutter=True, device_wires=qml.wires.Wires(range(3))
         )
+        cut_tape = qml.workflow.construct_tape(cut_circuit, level=0)()
 
         res_expected = circuit()
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit()
+
         assert spy.call_count == len(hamiltonian.ops)
         assert np.isclose(res, res_expected, atol=1e-8)
-        assert cut_circuit.tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
+        assert cut_tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
 
-    def test_template_with_hamiltonian(self):
+    def test_template_with_hamiltonian(self, seed):
         """Test cut with MPS Template"""
 
         pytest.importorskip("kahypar")
@@ -5555,7 +5583,10 @@ class TestCutCircuitWithHamiltonians:
 
         hamiltonian = qml.Hamiltonian(
             [1.0, 1.0],
-            [qml.PauliZ(1) @ qml.PauliZ(8) @ qml.PauliZ(3), qml.PauliY(5) @ qml.PauliX(4)],
+            [
+                qml.PauliZ(1) @ qml.PauliZ(8) @ qml.PauliZ(3),
+                qml.PauliY(5) @ qml.PauliX(4),
+            ],
         )
 
         with qml.queuing.AnnotatedQueue() as q0:
@@ -5564,16 +5595,14 @@ class TestCutCircuitWithHamiltonians:
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
         tape = tape0.expand()
-        tapes, _ = qml.transforms.hamiltonian_expand(tape, group=False)
+        tapes, _ = qml.transforms.split_non_commuting(tape, grouping_strategy=None)
 
         frag_lens = [5, 7]
         frag_ords = [[1, 6], [3, 6]]
         for idx, tape in enumerate(tapes):
             graph = qcut.tape_to_graph(tape)
             cut_graph = qcut.find_and_place_cuts(
-                graph=graph,
-                cut_strategy=cut_strategy,
-                replace_wire_cuts=True,
+                graph=graph, cut_strategy=cut_strategy, replace_wire_cuts=True, seed=seed
             )
             frags, _ = qcut.fragment_graph(cut_graph)
 

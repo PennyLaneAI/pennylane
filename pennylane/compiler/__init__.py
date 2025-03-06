@@ -24,6 +24,7 @@ performance improvements.
 
 Currently, PennyLane supports the
 `Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler
+and the CUDA Quantum compiler
 with the :func:`~.qjit` decorator. A significant benefit of Catalyst
 is the ability to preserve complex control flow around quantum
 operations — such as if statements and for loops, and including measurement
@@ -46,8 +47,6 @@ other compiler-specific decorators and functions:
     :toctree: api
 
     ~qjit
-    ~for_loop
-    ~while_loop
     ~jvp
     ~vjp
 
@@ -82,8 +81,8 @@ hybrid quantum-classical compilers with PennyLane, but does not provide
 a built-in compiler.
 
 Currently, only the `Catalyst <https://github.com/pennylaneai/catalyst>`__
-hybrid compiler is supported with PennyLane, however there are plans
-to incorporate additional compilers in the near future.
+hybrid compiler and CUDA Quantum compiler toolchains are supported with PennyLane,
+however there are plans to incorporate additional compilers in the near future.
 
 .. note::
 
@@ -101,12 +100,11 @@ Basic usage
 
 .. note::
 
-    Catalyst supports compiling QNodes that use ``lightning.qubit``,
-    ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
-    devices. It does not support ``default.qubit``.
+    Supported backend devices for Catalyst include
+    ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
+    but **not** ``default.qubit``.
 
-    See the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
-    devices, operations, and measurements.
+    For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
 When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
 first time the quantum function is executed. For example, ``circuit`` is
@@ -122,7 +120,7 @@ compiled in the first call.
         qml.Hadamard(wires=0)
         qml.RX(theta, wires=1)
         qml.CNOT(wires=[0,1])
-        return qml.expval(qml.PauliZ(wires=1))
+        return qml.expval(qml.Z(1))
 
 >>> circuit(0.5)  # the first call, compilation occurs here
 array(0.)
@@ -164,7 +162,7 @@ rather than in Python at compile time. You can enable this feature via the
         else:
             qml.T(wires=0)
 
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
 >>> circuit(3)
 array(0.)
@@ -196,19 +194,37 @@ This interface exposes the ``entry_points``
 metadata under the designated group name ``pennylane.compilers``, including the
 following entry points:
 
-- ``context``: Path to the compilation evaluation context manager.
+- ``compiler_name.context"``: Path to the compilation evaluation context manager.
   This context manager should have the method ``context.is_tracing()``,
   which returns ``True`` if called within a program that is being traced
   or captured.
 
-- ``ops``: Path to the compiler operations module. This operations module
+- ``compiler_name.ops``: Path to the compiler operations module. This operations module
   may contain compiler specific versions of PennyLane operations,
   for example :func:`~.cond`, :func:`~.measure`, and :func:`~.adjoint`.
   Within a JIT context, PennyLane operations may dispatch to these functions.
 
-- ``qjit``: Path to the JIT decorator provided by the compiler.
+- ``compiler_name.qjit``: Path to the JIT decorator provided by the compiler.
   This decorator should have the signature ``qjit(fn, *args, **kwargs)``,
   where ``fn`` is the function to be compiled.
+
+where ``compiler_name`` should be replaced with the name of the compiler.
+For example, for Catalyst, we define the entry points ``catalyst.context``,
+``catalyst.ops`` and ``catalyst.qjit``. This allows the catalyst package to define
+multiple compilers.
+
+The name of the compiler can then be used by the user to denote which compiler should be used.
+For example:
+
+.. code-block:: python
+
+    @qml.qjit(compiler="catalyst")
+    def function(x, y):
+        ...
+
+    @qml.qjit(compiler="compiler_name")
+    def function(x, y):
+        ...
 
 In order to support applying the ``qjit`` decorator with and without arguments,
 
@@ -238,6 +254,5 @@ if no function is provided:
 
 """
 
-from .compiler import available_compilers, available, active_compiler, active
-
-from .qjit_api import qjit, while_loop, for_loop
+from .compiler import active, active_compiler, available, available_compilers
+from .qjit_api import qjit

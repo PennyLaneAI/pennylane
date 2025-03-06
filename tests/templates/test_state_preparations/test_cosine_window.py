@@ -14,9 +14,11 @@
 """
 Unit tests for the CosineWindow template.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane.wires import WireError
 
@@ -36,7 +38,7 @@ class TestDecomposition:
         """Test that the correct gates are applied."""
 
         op = qml.CosineWindow(wires=[0])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert queue[0].name == "Hadamard"
         assert queue[1].name == "RZ"
@@ -125,3 +127,35 @@ class TestStateVector:
         res = np.reshape(op.state_vector(wire_order=[1, 0]) ** 2, (-1,))
         expected = np.array([0.0, 0.5, 0.25, 0.25])
         assert np.allclose(res, expected)
+
+    def test_CosineWindow_state_vector_subset_of_wires(self):
+        """Tests that the state vector works with not all state wires."""
+        op = qml.CosineWindow([2, 1])
+        res = op.state_vector(wire_order=[0, 1, 2])
+        assert res.shape == (2, 2, 2)
+
+        expected_10 = qml.CosineWindow([0, 1]).state_vector(wire_order=[1, 0])
+        expected = np.stack([expected_10, np.zeros_like(expected_10)])
+        assert np.allclose(res, expected)
+
+
+class TestInterfaces:
+    """Test that the template works with different interfaces"""
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        """Test that the template correctly compiles with JAX JIT   ."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.CosineWindow(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        circuit2 = jax.jit(circuit)
+
+        res = circuit()
+        res2 = circuit2()
+        assert qml.math.allclose(res, res2, atol=1e-6, rtol=0)

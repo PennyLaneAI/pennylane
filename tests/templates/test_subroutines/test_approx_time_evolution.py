@@ -14,10 +14,11 @@
 """
 Tests for the ApproxTimeEvolution template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():
@@ -43,8 +44,19 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
     assert new_op is not op
+
+
+def test_queuing():
+    """Test that ApproxTimeEvolution de-queues the input hamiltonian."""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        H = qml.X(0) + qml.Y(1)
+        op = qml.ApproxTimeEvolution(H, 0.1, n=20)
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is op
 
 
 class TestDecomposition:
@@ -66,13 +78,13 @@ class TestDecomposition:
             ),
             (
                 2,
-                qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliZ("b") @ qml.PauliX("a")]),
+                qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliX("a") @ qml.PauliZ("b")]),
                 2,
                 [
                     qml.PauliRot(4.0, "X", wires=["a"]),
-                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                    qml.PauliRot(1.0, "XZ", wires=["a", "b"]),
                     qml.PauliRot(4.0, "X", wires=["a"]),
-                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                    qml.PauliRot(1.0, "XZ", wires=["a", "b"]),
                 ],
             ),
             (
@@ -87,15 +99,15 @@ class TestDecomposition:
                     [2, 0.5, 0.5],
                     [
                         qml.PauliX("a"),
-                        qml.PauliZ(-15) @ qml.PauliX("a"),
+                        qml.PauliX("a") @ qml.PauliZ(-15),
                         qml.Identity(0) @ qml.PauliY(-15),
                     ],
                 ),
                 1,
                 [
                     qml.PauliRot(8.0, "X", wires=["a"]),
-                    qml.PauliRot(2.0, "ZX", wires=[-15, "a"]),
-                    qml.PauliRot(2.0, "IY", wires=[0, -15]),
+                    qml.PauliRot(2.0, "XZ", wires=["a", -15]),
+                    qml.PauliRot(2.0, "Y", wires=[-15]),
                 ],
             ),
         ],
@@ -104,13 +116,10 @@ class TestDecomposition:
         """Tests that the sequence of gates implemented in the ApproxTimeEvolution template is correct"""
 
         op = qml.ApproxTimeEvolution(hamiltonian, time, steps)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for expected_gate, gate in zip(expected_queue, queue):
-            prep = [gate.parameters, gate.wires]
-            target = [expected_gate.parameters, expected_gate.wires]
-
-            assert prep == target
+            qml.assert_equal(expected_gate, gate)
 
     @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expectation"),
@@ -203,7 +212,9 @@ class TestInputs:
             qml.ApproxTimeEvolution(hamiltonian, 2, 3)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian"):
+        with pytest.raises(
+            ValueError, match="hamiltonian must be a linear combination of pauli words"
+        ):
             circuit()
 
     @pytest.mark.parametrize(
@@ -228,7 +239,7 @@ class TestInputs:
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         with pytest.raises(
-            ValueError, match="hamiltonian must be written in terms of Pauli matrices"
+            ValueError, match="hamiltonian must be a linear combination of pauli words"
         ):
             circuit()
 
@@ -337,6 +348,32 @@ class TestInterfaces:
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        time = jnp.array(0.5)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(time)
+        res2 = circuit2(time)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(time)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(time)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+
     @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
@@ -421,8 +458,8 @@ def test_trainable_hamiltonian(dev_name, diff_method):
         if diff_method is qml.gradients.param_shift and dev_name != "default.qubit":
             tape = dev.expand_fn(tape)
             return qml.execute([tape], dev, diff_method)[0]
-        program, _ = dev.preprocess()
-        return qml.execute([tape], dev, gradient_fn=diff_method, transform_program=program)[0]
+        program = dev.preprocess_transforms()
+        return qml.execute([tape], dev, diff_method=diff_method, transform_program=program)[0]
 
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)

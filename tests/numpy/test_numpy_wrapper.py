@@ -16,15 +16,17 @@ Tests for the ``autograd.numpy`` wrapping functionality. This functionality
 modifies Autograd NumPy arrays so that they have an additional property,
 ``requires_grad``, that marks them as trainable/non-trainable.
 """
+
 import numpy as onp
 import pytest
-
 from autograd.numpy.numpy_boxes import ArrayBox
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.numpy.tensor import tensor_to_arraybox
 
 
+@pytest.mark.unit
 class TestExtractTensors:
     """Tests for the extract_tensors function"""
 
@@ -56,6 +58,7 @@ class TestExtractTensors:
         assert res[1] is arr2
 
 
+@pytest.mark.unit
 class TestTensor:
     """Tests for the Tensor(ndarray) subclass"""
 
@@ -141,6 +144,7 @@ ARRAY_SHAPE_FNS = [
 ]
 
 
+@pytest.mark.unit
 class TestNumpyIntegration:
     """Test that the wrapped NumPy functionality integrates well
     with standard NumPy functions."""
@@ -428,6 +432,7 @@ class TestNumpyIntegration:
         assert len(res) == 2
 
 
+@pytest.mark.integration
 class TestAutogradIntegration:
     """Test autograd works with the new tensor subclass"""
 
@@ -458,6 +463,7 @@ class TestAutogradIntegration:
             grad_fn(arr1)
 
 
+@pytest.mark.unit
 class TestScalarHashing:
     """Test for the hashing capability of scalar arrays."""
 
@@ -505,6 +511,7 @@ class TestScalarHashing:
 class TestNumpyConversion:
     """Tests for the tensor.unwrap() and tensor.numpy() methods"""
 
+    @pytest.mark.unit
     def test_convert_scalar_array(self):
         """Test that a scalar array converts to a python literal"""
         data = np.array(1.543)
@@ -512,6 +519,7 @@ class TestNumpyConversion:
         assert res == data.item()
         assert isinstance(res, float)
 
+    @pytest.mark.unit
     def test_convert_array(self):
         """Test that a numpy array successfully converts"""
         data = np.array([1, 2, 3])
@@ -522,6 +530,7 @@ class TestNumpyConversion:
         assert isinstance(res, np.ndarray)
         assert not isinstance(res, np.tensor)
 
+    @pytest.mark.system
     def test_single_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes an
         unwrapped tensor as the argument to a gate taking a single parameter"""
@@ -536,15 +545,16 @@ class TestNumpyConversion:
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
 
-        circuit(phi=phi)
+        tape = qml.workflow.construct_tape(circuit)(phi)
 
-        ops = circuit.tape.operations
+        ops = tape.operations
         assert len(ops) == 4
         for op, p in zip(ops, phi[0]):
             # Test each rotation applied
             assert op.name == "RX"
             assert op.parameters == [p]
 
+    @pytest.mark.system
     def test_multiple_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes arguments
         as unwrapped tensors to a gate taking multiple parameters"""
@@ -558,10 +568,10 @@ class TestNumpyConversion:
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643]])
 
-        circuit(phi=phi)
+        tape = qml.workflow.construct_tape(circuit)(phi)
 
         # Test the rotation applied
-        ops = circuit.tape.operations
+        ops = tape.operations
         assert len(ops) == 1
         assert ops[0].name == "Rot"
         assert np.array_equal(ops[0].parameters, phi[0])

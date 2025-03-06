@@ -16,12 +16,12 @@ Contains the MERA template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
-from typing import Callable
+from collections.abc import Callable
 
+import numpy as np
 
 import pennylane as qml
-import pennylane.numpy as np
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 def compute_indices(wires, n_block_wires):
@@ -51,7 +51,7 @@ def compute_indices(wires, n_block_wires):
             f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
-    if not np.log2(n_wires / n_block_wires).is_integer():
+    if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
         warnings.warn(
             f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
         )
@@ -156,11 +156,11 @@ class MERA(Operation):
             @qml.qnode(dev)
             def circuit(template_weights):
                 qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.PauliZ(wires=1))
+                return qml.expval(qml.Z(1))
 
         It may be necessary to reorder the wires to see the MERA architecture clearly:
 
-        >>> print(qml.draw(circuit, expansion_strategy='device', wire_order=[2,0,1,3])(template_weights))
+        >>> print(qml.draw(circuit, level='device', wire_order=[2,0,1,3])(template_weights))
         2: ───────────────╭●──RY(0.10)──╭X──RY(-0.30)───────────────┤
         0: ─╭X──RY(-0.30)─│─────────────╰●──RY(0.10)──╭●──RY(0.10)──┤
         1: ─╰●──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
@@ -174,6 +174,19 @@ class MERA(Operation):
     @property
     def num_params(self):
         return 1
+
+    @classmethod
+    def _primitive_bind_call(
+        cls, wires, n_block_wires, block, n_params_block, template_weights=None, id=None
+    ):  # pylint: disable=arguments-differ
+        return super()._primitive_bind_call(
+            wires=wires,
+            n_block_wires=n_block_wires,
+            block=block,
+            n_params_block=n_params_block,
+            template_weights=template_weights,
+            id=id,
+        )
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -257,7 +270,7 @@ class MERA(Operation):
         """
 
         n_wires = len(wires)
-        if not np.log2(n_wires / n_block_wires).is_integer():
+        if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
             warnings.warn(
                 f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
             )

@@ -14,9 +14,10 @@
 """
 Unit tests for the SparseHamiltonian observable.
 """
-import pytest
 import numpy as np
+import pytest
 from scipy.sparse import coo_matrix, csr_matrix
+
 import pennylane as qml
 
 SPARSEHAMILTONIAN_TEST_MATRIX = np.array(
@@ -198,8 +199,7 @@ class TestSparse:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="SparseHamiltonian observable must be"
-            " used with the parameter-shift differentiation method",
+            match="does not support backprop with requested circuit.",
         ):
             qml.grad(circuit, argnum=0)([0.5])
 
@@ -267,6 +267,18 @@ class TestSparse:
                 ],
                 H_hydrogen,
                 -1.1373060481,
+            ),
+            (
+                4,
+                [
+                    qml.PauliX(0),
+                    qml.PauliX(1),
+                    qml.DoubleExcitation(
+                        [0.22350048065138242, 0.22350048065138242], wires=[0, 1, 2, 3]
+                    ),
+                ],
+                H_hydrogen,
+                [-1.1373060481, -1.1373060481],
             ),
         ],
     )

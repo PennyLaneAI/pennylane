@@ -15,13 +15,12 @@
 This module contains unit tests for ``qml.bind_parameters``.
 """
 
+import numpy as np
 import pytest
-from gate_data import X, Y, Z, I, GELL_MANN
+from gate_data import GELL_MANN, I, X, Y, Z
 
 import pennylane as qml
-
 from pennylane.ops.functions import bind_new_parameters
-from pennylane.operation import Tensor
 
 
 @pytest.mark.parametrize(
@@ -87,7 +86,7 @@ def test_composite_ops(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert all(no is not o for no, o in zip(new_op.operands, op.operands))
 
@@ -122,7 +121,7 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert new_op.base is not op.base
 
@@ -157,11 +156,15 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
             [-0.5, 0.456],
             qml.ctrl(qml.s_prod(-0.5, qml.RX(0.456, 0)), [1]),
         ),
-        (qml.ControlledQubitUnitary(X, [1], [0]), [Y], qml.ControlledQubitUnitary(Y, [1], [0])),
         (
-            qml.ControlledQubitUnitary(qml.QubitUnitary(X, 0), [1]),
+            qml.ControlledQubitUnitary(X, wires=[1, 0]),
             [Y],
-            qml.ControlledQubitUnitary(qml.QubitUnitary(Y, 0), [1]),
+            qml.ControlledQubitUnitary(Y, wires=[1, 0]),
+        ),
+        (
+            qml.ControlledQubitUnitary(qml.QubitUnitary(X, 0).matrix(), wires=[1, 0]),
+            [Y],
+            qml.ControlledQubitUnitary(qml.QubitUnitary(Y, 0).matrix(), wires=[1, 0]),
         ),
     ],
 )
@@ -171,7 +174,7 @@ def test_symbolic_ops(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert new_op.base is not op.base
 
@@ -181,37 +184,97 @@ def test_controlled_sequence():
     op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
     new_op = bind_new_parameters(op, (0.5,))
     assert qml.math.allclose(new_op.data[0], 0.5)
-    assert qml.equal(new_op.base, qml.RX(0.5, wires=3))
+    qml.assert_equal(new_op.base, qml.RX(0.5, wires=3))
+
+
+TEST_BIND_LINEARCOMBINATION = [
+    (  # LinearCombination with only data being the coeffs
+        qml.ops.LinearCombination(
+            [1.1, 2.1, 3.1],
+            [qml.prod(qml.PauliZ(0), qml.X(1)), qml.Hadamard(1), qml.Y(0)],
+        ),
+        [1.2, 2.2, 3.2],
+        qml.ops.LinearCombination(
+            [1.2, 2.2, 3.2],
+            [qml.prod(qml.PauliZ(0), qml.X(1)), qml.Hadamard(1), qml.Y(0)],
+        ),
+    ),
+    (  # LinearCombination with Hermitian that carries extra data
+        qml.ops.LinearCombination(
+            [1.6, -1], [qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1), qml.X(1)]
+        ),
+        [-1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
+        qml.ops.LinearCombination(
+            [-1, 1.6], [qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1), qml.X(1)]
+        ),
+    ),
+    (  # LinearCombination with prod that contains Hermitian that carries extra data
+        qml.ops.LinearCombination(
+            [1.6, -1],
+            [
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)),
+                qml.X(1),
+            ],
+        ),
+        [-1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
+        qml.ops.LinearCombination(
+            [-1, 1.6],
+            [
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)),
+                qml.X(1),
+            ],
+        ),
+    ),
+    (  # LinearCombination with prod that contains Hermitian that carries extra data
+        qml.ops.LinearCombination(
+            [1.6, -1],
+            [
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)),
+                qml.X(1),
+            ],
+        ),
+        [-1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
+        qml.ops.LinearCombination(
+            [-1, 1.6],
+            [
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)),
+                qml.X(1),
+            ],
+        ),
+    ),
+    (  # LinearCombination with Projector that carries extra data and prod that contains Hermitian that carries extra data
+        qml.ops.LinearCombination(
+            [1.0, 1.6, -1],
+            [
+                qml.Projector(np.array([1.0, 0.0]), 0),
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[0.0, 1.0], [1.0, 0.0]]), wires=1)),
+                qml.X(1),
+            ],
+        ),
+        [-1.0, np.array([0.0, 1.0]), -1, np.array([[1.0, 1.0], [1.0, 1.0]]), 1.6],
+        qml.ops.LinearCombination(
+            [-1.0, -1, 1.6],
+            [
+                qml.Projector(np.array([0.0, 1.0]), 0),
+                qml.prod(qml.X(0), qml.Hermitian(np.array([[1.0, 1.0], [1.0, 1.0]]), wires=1)),
+                qml.X(1),
+            ],
+        ),
+    ),
+]
 
 
 @pytest.mark.parametrize(
     "H, new_coeffs, expected_H",
-    [
-        (
-            qml.Hamiltonian(
-                [1.1, 2.1, 3.1],
-                [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
-            ),
-            [1.2, 2.2, 3.2],
-            qml.Hamiltonian(
-                [1.2, 2.2, 3.2],
-                [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
-            ),
-        ),
-        (
-            qml.Hamiltonian([1.6, -1], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
-            [-1, 1.6],
-            qml.Hamiltonian([-1, 1.6], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
-        ),
-    ],
+    TEST_BIND_LINEARCOMBINATION,
 )
-def test_hamiltonian(H, new_coeffs, expected_H):
-    """Test that `bind_new_parameters` with `Hamiltonian` returns a new
+def test_linear_combination(H, new_coeffs, expected_H):
+    """Test that `bind_new_parameters` with `LinearCombination` returns a new
     operator with the new parameters without mutating the original
     operator."""
     new_H = bind_new_parameters(H, new_coeffs)
 
-    assert qml.equal(new_H, expected_H)
+    qml.assert_equal(new_H, expected_H)
     assert new_H is not H
 
 
@@ -222,33 +285,6 @@ def test_hamiltonian_grouping_indices():
     new_H = bind_new_parameters(H, [2.3, 3.4])
     assert H.grouping_indices == new_H.grouping_indices
     assert new_H.data == (2.3, 3.4)
-
-
-@pytest.mark.parametrize(
-    "op, new_params, expected_op",
-    [
-        (
-            Tensor(qml.Hermitian(Y, wires=0), qml.PauliZ(1)),
-            [X],
-            Tensor(qml.Hermitian(X, wires=0), qml.PauliZ(1)),
-        ),
-        (
-            Tensor(qml.Hermitian(qml.math.kron(X, Z), wires=[0, 1]), qml.Hermitian(I, wires=2)),
-            [qml.math.kron(I, I), Z],
-            Tensor(qml.Hermitian(qml.math.kron(I, I), wires=[0, 1]), qml.Hermitian(Z, wires=2)),
-        ),
-        (Tensor(qml.PauliZ(0), qml.PauliX(1)), [], Tensor(qml.PauliZ(0), qml.PauliX(1))),
-    ],
-)
-def test_tensor(op, new_params, expected_op):
-    """Test that `bind_new_parameters` with `Tensor` returns a new
-    operator with the new parameters without mutating the original
-    operator."""
-    new_op = bind_new_parameters(op, new_params)
-
-    assert qml.equal(new_op, expected_op)
-    assert new_op is not op
-    assert all(n_obs is not obs for n_obs, obs in zip(new_op.obs, op.obs))
 
 
 old_hamiltonian = qml.Hamiltonian(
@@ -272,6 +308,11 @@ new_hamiltonian = qml.Hamiltonian(
             [10, 0.4, 0.5, 0.6],
             qml.CommutingEvolution(new_hamiltonian, 10),
         ),
+        (
+            qml.QDrift(old_hamiltonian, 5, n=4, seed=251),
+            [0.4, 0.5, 0.6, 10],
+            qml.QDrift(new_hamiltonian, 10, n=4, seed=251),
+        ),
     ],
 )
 def test_evolution_template_ops(op, new_params, expected_op):
@@ -289,7 +330,7 @@ def test_evolution_template_ops(op, new_params, expected_op):
     assert new_op.wires == op.wires
     for val1, val2 in zip(new_op.hyperparameters.values(), expected_op.hyperparameters.values()):
         if isinstance(val1, qml.Hamiltonian):
-            assert qml.equal(val1, val2)
+            qml.assert_equal(val1, val2)
         else:
             assert val1 == val2
 
@@ -314,7 +355,7 @@ def test_fermionic_template_ops(op, new_params, expected_op):
     with the new parameters."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
 
 
@@ -354,7 +395,7 @@ def test_vanilla_operators(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
 
 
@@ -372,8 +413,32 @@ def test_projector(op, new_params, expected_op):
     parameters without mutating the original operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
+
+
+@pytest.mark.parametrize(
+    "op, new_params, expected_op",
+    [
+        (qml.RX(0.123, 0), (0.456,), qml.RX(0.456, 0)),
+        (
+            qml.QubitUnitary([[1, 0], [0, -1]], 0),
+            ([[0, 1], [1, 0]],),
+            qml.QubitUnitary([[0, 1], [1, 0]], 0),
+        ),
+        (qml.Rot(1.23, 4.56, 7.89, 0), (9.87, 6.54, 3.21), qml.Rot(9.87, 6.54, 3.21, 0)),
+    ],
+)
+def test_conditional_ops(op, new_params, expected_op):
+    """Test that Conditional ops are bound correctly."""
+    mp0 = qml.measurements.MidMeasureMP(qml.wires.Wires(0), reset=True, id="foo")
+    mv0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
+    cond_op = qml.ops.Conditional(mv0, op)
+    new_op = bind_new_parameters(cond_op, new_params)
+
+    assert isinstance(new_op, qml.ops.Conditional)
+    assert new_op.base == expected_op
+    assert new_op.meas_val.measurements == [mp0]
 
 
 def test_unsupported_op_copy_and_set():
@@ -385,5 +450,5 @@ def test_unsupported_op_copy_and_set():
 
     expected_op = qml.PCPhase(0.456, 2, wires=[1, 2])
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op

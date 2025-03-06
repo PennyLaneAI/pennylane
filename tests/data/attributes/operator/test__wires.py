@@ -21,16 +21,14 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.data.attributes.operator._wires import (
-    UnserializableWireError,
-    wires_to_json,
-)
+from pennylane.data.attributes.operator._wires import UnserializableWireError, wires_to_json
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.data
 
 
 class TestWiresToJson:
+
     @pytest.mark.parametrize(
         "in_, out",
         [
@@ -41,7 +39,6 @@ class TestWiresToJson:
             (["a", "b"], '["a", "b"]'),
             ([0, 1, None], "[0, 1, null]"),
             (["a", 1, None], '["a", 1, null]'),
-            (None, "[null]"),
             (1, "[1]"),
             ("a", '["a"]'),
             (np.int64(1), "[1]"),

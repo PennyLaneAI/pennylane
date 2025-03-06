@@ -14,9 +14,11 @@
 """
 Tests for the Permute template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments
 import pytest
-import numpy as np
+
 import pennylane as qml
 
 
@@ -24,6 +26,11 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qml.Permute([0, 1, 2, 3], wires=(3, 2, 1, 0))
     qml.ops.functions.assert_valid(op)
+
+
+def test_repr():
+    op = qml.Permute([2, 1, 0], wires=(0, 1, 2))
+    assert repr(op) == "Permute((2, 1, 0), wires=[0, 1, 2])"
 
 
 class TestDecomposition:
@@ -308,6 +315,22 @@ class TestDecomposition:
 
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        """Tests the template is correctly compiled with JAX JIT."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def apply_perm():
+            qml.Permute([4, 2, 0, 1, 3], wires=dev.wires)
+            return qml.expval(qml.Z(0))
+
+        jit_perm = jax.jit(apply_perm)
+
+        assert qml.math.allclose(apply_perm(), jit_perm())
 
 
 class TestInputs:

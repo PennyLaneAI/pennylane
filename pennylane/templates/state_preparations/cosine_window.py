@@ -15,10 +15,11 @@ r"""
 Contains the CosineWindow template.
 """
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import StatePrepBase
 from pennylane import math
-from pennylane.wires import Wires, WireError
+from pennylane.operation import StatePrepBase
+from pennylane.wires import WireError, Wires
 
 
 class CosineWindow(StatePrepBase):
@@ -99,10 +100,10 @@ class CosineWindow(StatePrepBase):
 
         num_op_wires = len(self.wires)
         op_vector_shape = (2,) * num_op_wires
+        coeff = np.sqrt(2 ** (1 - num_op_wires))
         vector = np.array(
             [
-                np.sqrt(2 ** (1 - num_op_wires))
-                * np.cos(-np.pi / 2 + np.pi * x / 2**num_op_wires)
+                coeff * np.cos(-np.pi / 2 + np.pi * x / 2**num_op_wires)
                 for x in range(2**num_op_wires)
             ]
         )
@@ -115,9 +116,11 @@ class CosineWindow(StatePrepBase):
         if not wire_order.contains_wires(self.wires):
             raise WireError(f"Custom wire_order must contain all {self.name} wires")
 
-        indices = tuple([Ellipsis] + [slice(None)] * num_op_wires)
-
-        ket_shape = [2] * num_op_wires
+        num_total_wires = len(wire_order)
+        indices = tuple(
+            [Ellipsis] + [slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires)
+        )
+        ket_shape = [2] * num_total_wires
         ket = np.zeros(ket_shape, dtype=np.complex128)
         ket[indices] = op_vector
 

@@ -14,12 +14,12 @@
 """
 Unit tests for the optimization transform ``merge_amplitude_embedding``.
 """
+
 import pytest
-from pennylane import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.transforms.optimization import merge_amplitude_embedding
-from pennylane._device import DeviceError
 
 
 class TestMergeAmplitudeEmbedding:
@@ -72,7 +72,7 @@ class TestMergeAmplitudeEmbedding:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(transformed_qfunc, dev)
 
-        with pytest.raises(DeviceError, match="applied in the same qubit"):
+        with pytest.raises(qml.DeviceError, match="applied in the same qubit"):
             qnode()
 
     def test_decorator(self):
@@ -102,7 +102,8 @@ class TestMergeAmplitudeEmbedding:
             return qml.state()
 
         res = qnode()
-        assert qnode.tape.batch_size == 2
+        tape = qml.workflow.construct_tape(qnode)()
+        assert tape.batch_size == 2
 
         # |001> and |100>
         expected = np.array([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]])
@@ -169,9 +170,6 @@ class TestMergeAmplitudeEmbeddingInterfaces:
     def test_merge_amplitude_embedding_jax(self):
         """Test QNode in JAX interface."""
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         def qfunc(amplitude):
             qml.AmplitudeEmbedding(amplitude, wires=0)

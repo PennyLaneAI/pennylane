@@ -17,7 +17,8 @@ import warnings
 from collections.abc import Iterable
 from string import ascii_letters as ABC
 
-import pennylane.numpy as np
+import numpy as np
+
 import pennylane as qml
 
 
@@ -45,7 +46,7 @@ class ClassicalShadow:
 
     .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
         qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``. For more details on this topic, see our demo
-        on `estimating expectation values with classical shadows <https://pennylane.ai/qml/demos/tutorial_diffable_shadows.html>`_.
+        on :doc:`estimating expectation values with classical shadows <demos/tutorial_diffable_shadows>`.
 
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
@@ -54,7 +55,7 @@ class ClassicalShadow:
             they appear in the columns of ``bits`` and ``recipes``. If None, defaults
             to ``range(n)``, where ``n`` is the number of measured wires.
 
-    .. seealso:: Demo on `Estimating observables with classical shadows in the Pauli basis <https://pennylane.ai/qml/demos/tutorial_diffable_shadows.html>`_, :func:`~.pennylane.classical_shadow`
+    .. seealso:: Demo on :doc:`Estimating observables with classical shadows in the Pauli basis <demos/tutorial_diffable_shadows>`, :func:`~.pennylane.classical_shadow`
 
     **Example**
 
@@ -76,12 +77,12 @@ class ClassicalShadow:
     After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
     For example, we can compute the expectation value of a Pauli string
 
-    >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
+    >>> shadow.expval(qml.X(0) @ qml.X(1), k=1)
     array(0.972)
 
     or of a Hamiltonian:
 
-    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+    >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
     >>> shadow.expval(H, k=1)
     array(1.917)
 
@@ -111,9 +112,9 @@ class ClassicalShadow:
             )
 
         self.observables = [
-            qml.matrix(qml.PauliX(0)),
-            qml.matrix(qml.PauliY(0)),
-            qml.matrix(qml.PauliZ(0)),
+            qml.matrix(qml.X(0)),
+            qml.matrix(qml.Y(0)),
+            qml.matrix(qml.Z(0)),
         ]
 
     @property
@@ -228,11 +229,27 @@ class ClassicalShadow:
             (T, 2**n, 2**n),
         )
 
+    def _convert_to_pauli_words_with_pauli_rep(self, pr, num_wires):
+        """Convert to recipe using pauli representation"""
+        pr_to_recipe_map = {"X": 0, "Y": 1, "Z": 2, "I": -1}
+
+        coeffs_and_words = []
+        for pw, c in pr.items():
+            word = [-1] * num_wires
+            for i, s in pw.items():
+                word[self.wire_map.index(i)] = pr_to_recipe_map[s]
+
+            coeffs_and_words.append((c, word))
+
+        return coeffs_and_words
+
     def _convert_to_pauli_words(self, observable):
         """Given an observable, obtain a list of coefficients and Pauli words, the
         sum of which is equal to the observable"""
 
         num_wires = self.bits.shape[1]
+
+        # Legacy support for old opmath
         obs_to_recipe_map = {"PauliX": 0, "PauliY": 1, "PauliZ": 2, "Identity": -1}
 
         def pauli_list_to_word(obs):
@@ -245,23 +262,17 @@ class ClassicalShadow:
 
             return word
 
-        if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)):
+        if isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Identity)):
             word = pauli_list_to_word([observable])
             return [(1, word)]
 
-        if isinstance(observable, qml.operation.Tensor):
-            word = pauli_list_to_word(observable.obs)
-            return [(1, word)]
+        # Support for all operators with a valid pauli_rep
+        if (pr := observable.pauli_rep) is not None:
+            return self._convert_to_pauli_words_with_pauli_rep(pr, num_wires)
 
-        # TODO: cases for new operator arithmetic
-
-        if isinstance(observable, qml.Hamiltonian):
-            coeffs_and_words = []
-            for coeff, op in zip(observable.data, observable.ops):
-                coeffs_and_words.extend(
-                    [(coeff * c, w) for c, w in self._convert_to_pauli_words(op)]
-                )
-            return coeffs_and_words
+        raise ValueError(
+            f"Observable must have a valid pauli representation. Received {observable} with observable.pauli_rep = {pr}"
+        )
 
     def expval(self, H, k=1):
         r"""Compute expectation value of an observable :math:`H`.
@@ -297,16 +308,16 @@ class ClassicalShadow:
 
         Compute Pauli string observables
 
-        >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
+        >>> shadow.expval(qml.X(0) @ qml.X(1), k=1)
         array(1.116)
 
         or of a Hamiltonian using `the same` measurement results
 
-        >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+        >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
         >>> shadow.expval(H, k=1)
         array(1.9980000000000002)
         """
-        if not isinstance(H, Iterable):
+        if not isinstance(H, (list, tuple)):
             H = [H]
 
         coeffs_and_words = [self._convert_to_pauli_words(h) for h in H]
@@ -324,7 +335,7 @@ class ClassicalShadow:
 
         return qml.math.squeeze(results)
 
-    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
+    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None):
         r"""Compute entropies from classical shadow measurements.
 
         Compute general Renyi entropies of order :math:`\alpha` for a reduced density matrix :math:`\rho` in terms of
@@ -337,7 +348,10 @@ class ClassicalShadow:
 
         In the case of :math:`\alpha = 2`, the Renyi entropy becomes the logarithm of the purity of the reduced state
 
-        .. math:: S_{\alpha=2}(\rho) = - \log\left(\text{tr}(\rho^2) \right)
+        .. math:: S_{\alpha=2}(\rho) = - \log\left(\text{tr}(\rho^2) \right).
+
+        Since density matrices reconstructed from classical shadows can have negative eigenvalues, we use the algorithm described in
+        `1106.5458 <https://arxiv.org/abs/1106.5458>`_ to project the estimator to the closest valid state.
 
         .. warning::
 
@@ -356,7 +370,6 @@ class ClassicalShadow:
             k (int): Allow to split the snapshots into ``k`` equal parts and estimate the snapshots in a median of means fashion. There is no known advantage to do this for entropies.
                 Thus, ``k=1`` is default and advised.
             base (float): Base to the logarithm used for the entropies.
-            atol (float): Absolute tolerance for eigenvalues close to 0 that are taken into account.
 
         Returns:
             float: Entropy of the chosen subsystem.
@@ -381,7 +394,7 @@ class ClassicalShadow:
             bits, recipes = max_entangled_circuit()
             shadow = qml.ClassicalShadow(bits, recipes)
 
-            entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2) for alpha in [1., 2., 3.]]
+            entropies = [shadow.entropy(wires=[0], alpha=alpha) for alpha in [1., 2., 3.]]
 
         >>> np.isclose(entropies, entropies[0], atol=1e-2)
         [ True,  True,  True]
@@ -404,7 +417,7 @@ class ClassicalShadow:
             bitstrings, recipes = qnode(x)
             shadow = qml.ClassicalShadow(bitstrings, recipes)
 
-        >>> [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
+        >>> [shadow.entropy(wires=wires, alpha=alpha) for alpha in [1., 2., 3.]]
         [1.5419292874423107, 1.1537924276625828, 0.9593638767763727]
 
         """
@@ -415,29 +428,28 @@ class ClassicalShadow:
         # Allow for different log base
         div = np.log(base) if base else 1
 
-        # This was returning negative values in most cases, so commenting it out
-        # until we figure out the issue.
-        # if alpha == 2:
-        #     # special case of purity
-        #     res = -qml.math.log(qml.math.trace(rdm @ rdm))
-        #     return res / div
-
-        # Else
-        # Compute Eigenvalues and choose only those >>0
-        evs = qml.math.eigvalsh(rdm)
-        mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
-        mask1 = qml.math.where(evs > 0, True, False)
-        mask = qml.math.logical_and(mask0, mask1)
-        # Renormalize because of cropped evs
-        evs_nonzero = qml.math.gather(evs, mask)
-        evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
-
+        evs_nonzero = _project_density_matrix_spectrum(rdm)
         if alpha == 1:
             # Special case of von Neumann entropy
-            return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
+            return qml.math.entr(evs_nonzero) / div
 
         # General Renyi-alpha entropy
         return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
+
+
+def _project_density_matrix_spectrum(rdm):
+    """Project the estimator density matrix rdm with possibly negative eigenvalues onto the closest true density matrix in L2 norm"""
+    # algorithm below eq. (16) in https://arxiv.org/pdf/1106.5458.pdf
+    evs = qml.math.eigvalsh(rdm)[::-1]  # order from largest to smallest
+    d = len(rdm)
+    a = 0.0
+    for i in range(d - 1, -1, -1):
+        if evs[i] + a / (i + 1) > 0:
+            break
+        a += evs[i]
+
+    lambdas = evs[: i + 1] + a / (i + 1)
+    return lambdas[::-1]
 
 
 # Util functions
@@ -490,7 +502,7 @@ def pauli_expval(bits, recipes, word):
             to PauliX, ``1`` to PauliY, and ``2`` to PauliZ.
         word (tensor-like[int]): An array with shape ``(n,)``. Each entry must be
             either ``0``, ``1``, ``2``, or ``-1`` depending on the Pauli observable
-            on each qubit. For example, when ``n=3``, the observable ``PauliY(0) @ PauliX(2)``
+            on each qubit. For example, when ``n=3``, the observable ``Y(0) @ X(2)``
             corresponds to the word ``np.array([1 -1 0])``.
 
     Returns:

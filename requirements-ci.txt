@@ -5,11 +5,12 @@ cvxopt
 networkx
 rustworkx
 autograd
-toml
+tomlkit
 appdirs
-semantic_version
-dask[delayed]
-autoray
+packaging
+autoray>=0.6.11
 matplotlib
 requests
-tomli # Drop once minimum Python version is 3.11
+rich
+diastatic-malt
+pandas

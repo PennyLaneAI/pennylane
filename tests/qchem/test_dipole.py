@@ -22,7 +22,6 @@ from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
-from pennylane.operation import disable_new_opmath, enable_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -188,21 +187,19 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-    d_ref = qml.Hamiltonian(coeffs, ops)
+    dops = list(map(qml.simplify, ops))
+    d_ref = qml.Hamiltonian(coeffs, dops)
 
-    assert np.allclose(sorted(d.coeffs), sorted(d_ref.coeffs))
-    assert qml.Hamiltonian(np.ones(len(d.coeffs)), d.ops).compare(
-        qml.Hamiltonian(np.ones(len(d_ref.coeffs)), d_ref.ops)
+    d_coeff, d_ops = d.terms()
+    dref_coeff, dref_ops = d_ref.terms()
+
+    assert np.allclose(sorted(d_coeff), sorted(dref_coeff))
+    assert qml.Hamiltonian(np.ones(len(d_coeff)), d_ops).compare(
+        qml.Hamiltonian(np.ones(len(dref_coeff)), dref_ops)
     )
-
-    enable_new_opmath()
-    d_op_math = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-    disable_new_opmath()
-    d_ref_op_math = qml.dot(coeffs, ops)
-
     assert np.allclose(
-        qml.matrix(d_op_math, wire_order=[0, 1, 2, 3]),
-        qml.matrix(d_ref_op_math, wire_order=[0, 1, 2, 3]),
+        qml.matrix(d, wire_order=[0, 1, 2, 3]),
+        qml.matrix(d_ref, wire_order=[0, 1, 2, 3]),
     )
 
 
@@ -229,8 +226,7 @@ def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha, basis_name="6-31g")
     args = [alpha]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-
-    assert isinstance(d, qml.Hamiltonian)
+    assert isinstance(d, (qml.Hamiltonian, qml.ops.Sum))
 
 
 @pytest.mark.parametrize(
@@ -325,3 +321,14 @@ def test_gradient_expvalD():
     grad_finitediff = (d_2 - d_1) / 0.0002
 
     assert np.allclose(grad_qml[0][0], grad_finitediff)
+
+
+def test_molecular_dipole_error():
+    """Test that an error is raised if the shape of the coordinates does not match the number of atoms in the molecule."""
+
+    m = qml.qchem.Molecule(["H"], np.array([1.0, 2.0]))
+    with pytest.raises(
+        ValueError,
+        match="The shape of the coordinates does not match the number of atoms in the molecule.",
+    ):
+        qml.qchem.molecular_dipole(m)

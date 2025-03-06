@@ -17,6 +17,7 @@ Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop,too-many-arguments
 import pytest
+
 import pennylane as qml
 from pennylane import layer
 

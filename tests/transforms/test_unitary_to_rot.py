@@ -17,13 +17,13 @@ Tests for the QubitUnitary decomposition transforms.
 from itertools import product
 
 import pytest
-
-from gate_data import I, Z, S, T, H, X
+from gate_data import H, I, S, T, X, Z
 from test_optimization.utils import check_matrix_equivalence
+
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.transforms import unitary_to_rot
+from pennylane.wires import Wires
 
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ)
 single_qubit_decompositions = [
@@ -196,11 +196,6 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform works in the JAX interface."""
         import jax
 
-        # Enable float64 support
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
         transformed_qfunc = unitary_to_rot(qfunc)
@@ -228,11 +223,6 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform works in the JAX interface with JIT."""
         # pylint: disable=unused-argument
         import jax
-
-        # Enable float64 support
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
@@ -412,11 +402,6 @@ class TestQubitUnitaryDifferentiability:
         import jax
         from jax import numpy as jnp
 
-        # Enable float64 support
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]
             x = angles[1]
@@ -575,7 +560,8 @@ class TestTwoQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_qnode(x, y, z), transformed_qnode(x, y, z))
 
         # 3 normal operations + 18 for the first decomp and 6 for the second
-        assert len(transformed_qnode.qtape.operations) == 27
+        tape = qml.workflow.construct_tape(transformed_qnode)(x, y, z)
+        assert len(tape.operations) == 27
 
         original_grad = qml.grad(original_qnode)(x, y, z)
         transformed_grad = qml.grad(transformed_qnode)(x, y, z)
@@ -623,7 +609,10 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_result, transformed_result)
 
-        assert len(transformed_qnode.qtape.operations) == 27
+        tape = qml.workflow.construct_tape(transformed_qnode)(
+            transformed_x, transformed_y, transformed_z
+        )
+        assert len(tape.operations) == 27
 
         original_result.backward()
         transformed_result.backward()
@@ -668,7 +657,8 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_result, transformed_result)
 
-        assert len(transformed_qnode.qtape.operations) == 25
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_x)
+        assert len(tape.operations) == 25
 
         with tf.GradientTape() as tape:
             loss = original_qnode(x)
@@ -687,10 +677,6 @@ class TestTwoQubitUnitaryDifferentiability:
         """Tests differentiability in jax interface."""
         import jax
         from jax import numpy as jnp
-
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         U0 = jnp.array(test_two_qubit_unitaries[0], dtype=jnp.complex128)
         U1 = jnp.array(test_two_qubit_unitaries[1], dtype=jnp.complex128)
@@ -717,7 +703,8 @@ class TestTwoQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_qnode(x), transformed_qnode(x))
 
         # 1 normal operations + 18 for the first decomp and 6 for the second
-        assert len(transformed_qnode.qtape.operations) == 25
+        tape = qml.workflow.construct_tape(transformed_qnode)(x)
+        assert len(tape.operations) == 25
 
         original_grad = jax.grad(original_qnode, argnums=(0))(x)
         transformed_grad = jax.grad(transformed_qnode, argnums=(0))(x)

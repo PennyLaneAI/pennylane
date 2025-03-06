@@ -71,9 +71,9 @@ class SquaredErrorLoss:
     .. code-block:: python3
 
         obs = [
-            qml.PauliZ(0),
-            qml.PauliX(0),
-            qml.PauliZ(1) @ qml.PauliZ(2)
+            qml.Z(0),
+            qml.X(0),
+            qml.Z(1) @ qml.Z(2)
         ]
 
     Next, we can define the loss function:

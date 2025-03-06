@@ -13,14 +13,14 @@
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
 # pylint: disable=too-many-branches
-from typing import Sequence, Callable
 
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 @transform
-def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to remove Barrier gates.
 
     Args:
@@ -41,8 +41,8 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=1)
             qml.Barrier(wires=[0,1])
-            qml.PauliX(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.X(0)
+            return qml.expval(qml.Z(0))
 
     The barrier is then removed before execution.
 
@@ -57,8 +57,8 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 qml.Hadamard(wires=0)
                 qml.Hadamard(wires=1)
                 qml.Barrier(wires=[0,1])
-                qml.PauliX(wires=0)
-                return qml.expval(qml.PauliZ(0))
+                qml.X(0)
+                return qml.expval(qml.Z(0))
 
         The circuit before optimization:
 
@@ -79,7 +79,7 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     """
     operations = filter(lambda op: op.name != "Barrier", tape.operations)
-    new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

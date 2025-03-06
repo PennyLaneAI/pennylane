@@ -16,15 +16,27 @@ This submodule defines functions to decompose controlled operations
 """
 
 from copy import copy
+from typing import Optional
+
 import numpy as np
 import numpy.linalg as npl
+
 import pennylane as qml
-from pennylane.operation import Operator
-from pennylane.wires import Wires
 from pennylane import math
+from pennylane.operation import Operation, Operator
+from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
+    _get_single_qubit_rot_angles_via_matrix,
+)
+from pennylane.wires import Wires
 
 
-def _convert_to_su2(U):
+def _is_single_qubit_special_unitary(op):
+    mat = op.matrix()
+    det = mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]
+    return qml.math.allclose(det, 1)
+
+
+def _convert_to_su2(U, return_global_phase=False):
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
 
     Args:
@@ -40,11 +52,12 @@ def _convert_to_su2(U):
         :math:`SU(2)` equivalent and the second, the global phase.
     """
     # Compute the determinants
-    dets = math.linalg.det(U)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        dets = math.linalg.det(U)
 
-    exp_angles = math.cast_like(math.angle(dets), 1j) / 2
-    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)
-    return U_SU2
+    global_phase = math.cast_like(math.angle(dets), 1.0) / 2
+    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * global_phase)
+    return (U_SU2, global_phase) if return_global_phase else U_SU2
 
 
 def _convert_to_real_diagonal(q: np.ndarray) -> np.ndarray:
@@ -122,19 +135,99 @@ def _bisect_compute_b(u: np.ndarray):
     return _param_su2(c, d, b, 0)
 
 
-def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
+def _multi_controlled_zyz(
+    rot_angles,
+    global_phase,
+    target_wire: Wires,
+    control_wires: Wires,
+    work_wires: Optional[Wires] = None,
+) -> list[Operator]:
+    # The decomposition of zyz for special unitaries with multiple control wires
+    # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
+
+    if not qml.math.allclose(0.0, global_phase, atol=1e-6, rtol=0):
+        raise ValueError(f"The global_phase should be zero, instead got: {global_phase}.")
+
+    # Unpack the rotation angles
+    phi, theta, omega = rot_angles
+
+    # We use the conditional statements to account when decomposition is ran within a queue
+    decomp = []
+
+    cop_wires = (control_wires[-1], target_wire[0])
+
+    # Add operator A
+    if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
+        decomp.append(qml.CRZ(phi, wires=cop_wires))
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.CRY(theta / 2, wires=cop_wires))
+
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires[:-1], work_wires=work_wires))
+
+    # Add operator B
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.CRY(-theta / 2, wires=cop_wires))
+    if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
+        decomp.append(qml.CRZ(-(phi + omega) / 2, wires=cop_wires))
+
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires[:-1], work_wires=work_wires))
+
+    # Add operator C
+    if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.CRZ((omega - phi) / 2, wires=cop_wires))
+
+    return decomp
+
+
+def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wires):
+    # The zyz decomposition of a general unitary with single control wire
+    # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
+
+    # Unpack the rotation angles
+    phi, theta, omega = rot_angles
+    # We use the conditional statements to account when decomposition is ran within a queue
+    decomp = []
+    # Add negative of global phase. Compare definition of qml.GlobalPhase and Ph(delta) from section 4.1 of Barenco et al.
+    if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
+        decomp.append(
+            qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
+        )
+    # Add operator A
+    if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
+        decomp.append(qml.RZ(phi, wires=target_wire))
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.RY(theta / 2, wires=target_wire))
+
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
+
+    # Add operator B
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.RY(-theta / 2, wires=target_wire))
+    if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
+        decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
+
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
+
+    # Add operator C
+    if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
+
+    return decomp
+
+
+def ctrl_decomp_zyz(
+    target_operation: Operator, control_wires: Wires, work_wires: Optional[Wires] = None
+) -> list[Operator]:
     """Decompose the controlled version of a target single-qubit operation
 
-    This function decomposes a controlled single-qubit target operation using the
-    decomposition defined in section 5 of
-    `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
-
-    .. warning:: This method will add a global phase for target operations that do not
-        belong to the SU(2) group.
+    This function decomposes both single and multiple controlled single-qubit
+    target operations using the decomposition defined in Lemma 4.3 and Lemma 5.1
+    for single `controlled_wires`, and Lemma 7.9 for multiple `controlled_wires`
+    from `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
-        control_wires (~.wires.Wires): the control wires of the operation
+        control_wires (~.wires.Wires): the control wires of the operation.
 
     Returns:
         list[Operation]: the decomposed operations
@@ -149,31 +242,30 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        import pennylane as qml
+
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def expected_circuit(op):
             qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.ctrl(op, [0,1])
+            qml.ctrl(op, [0])
             return qml.probs()
 
         @qml.qnode(dev)
         def decomp_circuit(op):
             qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.ops.ctrl_decomp_zyz(op, [0,1])
+            qml.ops.ctrl_decomp_zyz(op, [0])
             return qml.probs()
 
     Measurements on both circuits will give us the same results:
 
-    >>> op = qml.RX(0.123, wires=2)
+    >>> op = qml.RX(0.123, wires=1)
     >>> expected_circuit(op)
-    tensor([0.25      , 0.        , 0.25      , 0.        , 0.25      ,
-        0.        , 0.24905563, 0.00094437], requires_grad=True)
+    tensor([0.5       , 0.        , 0.49811126, 0.00188874], requires_grad=True)
+
     >>> decomp_circuit(op)
-    tensor([0.25      , 0.        , 0.25      , 0.        , 0.25      ,
-        0.        , 0.24905563, 0.00094437], requires_grad=True)
+    tensor([0.5       , 0.        , 0.49811126, 0.00188874], requires_grad=True)
 
     """
     if len(target_operation.wires) != 1:
@@ -181,39 +273,25 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
             "The target operation must be a single-qubit operation, instead "
             f"got {target_operation.__class__.__name__}."
         )
+    control_wires = Wires(control_wires)
 
     target_wire = target_operation.wires
 
-    try:
-        phi, theta, omega = target_operation.single_qubit_rot_angles()
-    except NotImplementedError:
-        with qml.QueuingManager.stop_recording():
-            zyz_decomp = qml.transforms.one_qubit_decomposition(
-                qml.matrix(target_operation), target_wire
-            )
-        phi, theta, omega = [gate.parameters[0] for gate in zyz_decomp]
-
-    decomp = []
-
-    if not qml.math.isclose(phi, 0.0, atol=1e-8, rtol=0):
-        decomp.append(qml.RZ(phi, wires=target_wire))
-    if not qml.math.isclose(theta / 2, 0.0, atol=1e-8, rtol=0):
-        decomp.extend(
-            [
-                qml.RY(theta / 2, wires=target_wire),
-                qml.MultiControlledX(wires=control_wires + target_wire),
-                qml.RY(-theta / 2, wires=target_wire),
-            ]
-        )
+    if isinstance(target_operation, Operation):
+        try:
+            rot_angles = target_operation.single_qubit_rot_angles()
+        except NotImplementedError:
+            rot_angles = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
     else:
-        decomp.append(qml.MultiControlledX(wires=control_wires + target_wire))
-    if not qml.math.isclose(-(phi + omega) / 2, 0.0, atol=1e-6, rtol=0):
-        decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
-    decomp.append(qml.MultiControlledX(wires=control_wires + target_wire))
-    if not qml.math.isclose((omega - phi) / 2, 0.0, atol=1e-8, rtol=0):
-        decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
+        rot_angles = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
 
-    return decomp
+    _, global_phase = _convert_to_su2(qml.matrix(target_operation), return_global_phase=True)
+
+    return (
+        _multi_controlled_zyz(rot_angles, global_phase, target_wire, control_wires, work_wires)
+        if len(control_wires) > 1
+        else _single_control_zyz(rot_angles, global_phase, target_wire, control_wires)
+    )
 
 
 def _ctrl_decomp_bisect_od(
@@ -258,9 +336,9 @@ def _ctrl_decomp_bisect_od(
 
     def component():
         return [
-            qml.MultiControlledX(wires=control_k1 + target_wire, work_wires=control_k2),
+            qml.ctrl(qml.X(target_wire), control=control_k1, work_wires=control_k2),
             qml.QubitUnitary(a, target_wire),
-            qml.MultiControlledX(wires=control_k2 + target_wire, work_wires=control_k1),
+            qml.ctrl(qml.X(target_wire), control=control_k2, work_wires=control_k1),
             qml.adjoint(qml.QubitUnitary(a, target_wire)),
         ]
 
@@ -335,7 +413,7 @@ def _ctrl_decomp_bisect_general(
     Returns:
         list[Operation]: the decomposed operations
     """
-    x_matrix = qml.PauliX.compute_matrix()
+    x_matrix = qml.X.compute_matrix()
     h_matrix = qml.Hadamard.compute_matrix()
     alternate_h_matrix = x_matrix @ h_matrix @ x_matrix
 
@@ -352,9 +430,9 @@ def _ctrl_decomp_bisect_general(
 
     component = [
         qml.QubitUnitary(c2t, target_wire),
-        qml.MultiControlledX(wires=control_k2 + target_wire, work_wires=control_k1),
+        qml.ctrl(qml.X(target_wire), control=control_k2, work_wires=control_k1),
         qml.adjoint(qml.QubitUnitary(c1, target_wire)),
-        qml.MultiControlledX(wires=control_k1 + target_wire, work_wires=control_k2),
+        qml.ctrl(qml.X(target_wire), control=control_k1, work_wires=control_k2),
     ]
 
     od_decomp = _ctrl_decomp_bisect_od(d, target_wire, control_wires)
@@ -441,3 +519,153 @@ def ctrl_decomp_bisect(
         return _ctrl_decomp_bisect_md(target_matrix, target_wire, control_wires)
     # General algorithm - 20n+O(1) CNOTs
     return _ctrl_decomp_bisect_general(target_matrix, target_wire, control_wires)
+
+
+def decompose_mcx(control_wires, target_wire, work_wires):
+    """Decomposes the multi-controlled PauliX gate using decompositions from
+    `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_"""
+    num_work_wires_needed = len(control_wires) - 2
+
+    if len(control_wires) == 1:
+        return [qml.CNOT(wires=control_wires + Wires(target_wire))]
+    if len(control_wires) == 2:
+        return qml.Toffoli.compute_decomposition(wires=control_wires + Wires(target_wire))
+
+    if len(work_wires) >= num_work_wires_needed:
+        # Lemma 7.2
+        return _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
+    if len(work_wires) >= 1:
+        # Lemma 7.3
+        return _decompose_mcx_with_one_worker(control_wires, target_wire, work_wires[0])
+
+    # Lemma 7.5
+    with qml.QueuingManager.stop_recording():
+        op = qml.X(target_wire)
+    return _decompose_multicontrolled_unitary(op, control_wires)
+
+
+def _decompose_multicontrolled_unitary(op, control_wires):
+    """Decomposes general multi controlled unitary with no work wires
+    Follows approach from Lemma 7.5 combined with 7.3 and 7.2 of
+    https://arxiv.org/abs/quant-ph/9503016.
+
+    We are assuming this decomposition is used only in the general cases
+    """
+    if not op.has_matrix or len(op.wires) != 1:
+        raise ValueError(
+            "The target operation must be a single-qubit operation with a matrix representation"
+        )
+
+    target_wire = op.wires
+    if len(control_wires) == 0:
+        return [op]
+    if len(control_wires) == 1:
+        return ctrl_decomp_zyz(op, control_wires)
+    if _is_single_qubit_special_unitary(op):
+        return ctrl_decomp_bisect(op, control_wires)
+    # use recursive decomposition of general gate
+    return _decompose_recursive(op, 1.0, control_wires, target_wire, Wires([]))
+
+
+def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
+    """Decompose multicontrolled operator recursively using lemma 7.5
+    Number of gates in decomposition are: O(len(control_wires)^2)
+    """
+    if len(control_wires) == 1:
+        with qml.QueuingManager.stop_recording():
+            powered_op = qml.pow(op, power, lazy=True)
+        return ctrl_decomp_zyz(powered_op, control_wires)
+
+    with qml.QueuingManager.stop_recording():
+        cnots = decompose_mcx(
+            control_wires=control_wires[:-1],
+            target_wire=control_wires[-1],
+            work_wires=work_wires + target_wire,
+        )
+    with qml.QueuingManager.stop_recording():
+        powered_op = qml.pow(op, 0.5 * power, lazy=True)
+        powered_op_adj = qml.adjoint(powered_op, lazy=True)
+
+    if qml.QueuingManager.recording():
+        decomposition = [
+            *ctrl_decomp_zyz(powered_op, control_wires[-1]),
+            *(qml.apply(o) for o in cnots),
+            *ctrl_decomp_zyz(powered_op_adj, control_wires[-1]),
+            *(qml.apply(o) for o in cnots),
+            *_decompose_recursive(
+                op, 0.5 * power, control_wires[:-1], target_wire, control_wires[-1] + work_wires
+            ),
+        ]
+    else:
+        decomposition = [
+            *ctrl_decomp_zyz(powered_op, control_wires[-1]),
+            *cnots,
+            *ctrl_decomp_zyz(powered_op_adj, control_wires[-1]),
+            *cnots,
+            *_decompose_recursive(
+                op, 0.5 * power, control_wires[:-1], target_wire, control_wires[-1] + work_wires
+            ),
+        ]
+    return decomposition
+
+
+def _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires):
+    """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
+    https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
+    work wires"""
+    num_work_wires_needed = len(control_wires) - 2
+    work_wires = work_wires[:num_work_wires_needed]
+
+    work_wires_reversed = list(reversed(work_wires))
+    control_wires_reversed = list(reversed(control_wires))
+
+    gates = []
+
+    for i in range(len(work_wires)):
+        ctrl1 = control_wires_reversed[i]
+        ctrl2 = work_wires_reversed[i]
+        t = target_wire if i == 0 else work_wires_reversed[i - 1]
+        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
+
+    gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
+
+    for i in reversed(range(len(work_wires))):
+        ctrl1 = control_wires_reversed[i]
+        ctrl2 = work_wires_reversed[i]
+        t = target_wire if i == 0 else work_wires_reversed[i - 1]
+        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
+
+    for i in range(len(work_wires) - 1):
+        ctrl1 = control_wires_reversed[i + 1]
+        ctrl2 = work_wires_reversed[i + 1]
+        t = work_wires_reversed[i]
+        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
+
+    gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
+
+    for i in reversed(range(len(work_wires) - 1)):
+        ctrl1 = control_wires_reversed[i + 1]
+        ctrl2 = work_wires_reversed[i + 1]
+        t = work_wires_reversed[i]
+        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
+
+    return gates
+
+
+def _decompose_mcx_with_one_worker(control_wires, target_wire, work_wire):
+    """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.3 of
+    https://arxiv.org/abs/quant-ph/9503016, which requires a single work wire"""
+    tot_wires = len(control_wires) + 2
+    partition = int(np.ceil(tot_wires / 2))
+
+    first_part = control_wires[:partition]
+    second_part = control_wires[partition:]
+
+    gates = [
+        qml.ctrl(qml.X(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qml.ctrl(qml.X(target_wire), control=second_part + work_wire, work_wires=first_part),
+        qml.ctrl(qml.X(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qml.ctrl(qml.X(target_wire), control=second_part + work_wire, work_wires=first_part),
+    ]
+
+    return gates

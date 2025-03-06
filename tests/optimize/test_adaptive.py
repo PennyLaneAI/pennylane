@@ -15,10 +15,11 @@
 Unit tests for the ``AdaptiveOptimizer``.
 """
 import copy
+
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 
 symbols = ["H", "H", "H"]
 geometry = np.array(
@@ -86,6 +87,7 @@ def test_step(circuit, energy_ref, pool):
     assert np.allclose(energy, energy_ref)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [
@@ -98,14 +100,15 @@ def test_step_and_cost_drain(circuit, energy_ref, pool):
     for _ in range(4):
         circuit, energy, _ = opt.step_and_cost(circuit, copy.copy(pool), drain_pool=True)
 
-    _ = circuit()
-    selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
+    tape = qml.workflow.construct_tape(circuit)()
+    selected_excitations = [op.wires for op in tape.operations[1:]]
 
     assert np.allclose(energy, energy_ref)
     # assert that the operator pool is drained, no repeated gates in the circuit
     assert len(set(selected_excitations)) == len(selected_excitations)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [
@@ -116,28 +119,28 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is False."""
     opt = qml.AdaptiveOptimizer()
     for _ in range(4):
-        circuit, energy, __ = opt.step_and_cost(circuit, pool, drain_pool=False)
+        circuit, energy, _ = opt.step_and_cost(circuit, pool, drain_pool=False)
 
-    circuit()
-    selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
+    tape = qml.workflow.construct_tape(circuit)()
+    selected_excitations = [op.wires for op in tape.operations[1:]]
 
     assert np.allclose(energy, energy_ref, rtol=1e-4)
     # assert that the operator pool is not drained, there are repeated gates in the circuit
     assert len(set(selected_excitations)) < len(selected_excitations)
 
 
-@pytest.mark.parametrize("circuit", [(initial_circuit)])
+@pytest.mark.parametrize("circuit", [initial_circuit])
 def test_largest_gradient(circuit):
     """Test that step function selects the gate with the largest gradient."""
 
     opt = qml.AdaptiveOptimizer()
     circuit = opt.step(circuit, pool_exc)
-    circuit()
-    selected_gate = circuit.tape.operations[-1]
+    tape = qml.workflow.construct_tape(circuit)()
+    selected_gate = tape.operations[-1]
 
     #  the reference gate is obtained manually
     assert selected_gate.name == "DoubleExcitation"
-    assert circuit.tape.operations[-1].wires == qml.wires.Wires([0, 1, 4, 5])
+    assert tape.operations[-1].wires == qml.wires.Wires([0, 1, 4, 5])
 
 
 @pytest.mark.parametrize(
@@ -152,10 +155,10 @@ def test_append_gate(circuit):
 
     final_circuit = qml.optimize.adaptive.append_gate(circuit.func, param, [gate])
     qnode = qml.QNode(final_circuit, dev)
-    _ = qnode()
-    assert qml.equal(qnode.tape.operations[-1], gate)
+    tape = qml.workflow.construct_tape(qnode)()
+    qml.assert_equal(tape.operations[-1], gate)
 
-    final_circuit, fn = qml.optimize.adaptive.append_gate(qnode.tape, param, [gate])
+    final_circuit, fn = qml.optimize.adaptive.append_gate(tape, param, [gate])
 
     assert isinstance(final_circuit, list)
     assert isinstance(fn(final_circuit), qml.tape.QuantumScript)
@@ -177,10 +180,11 @@ def test_qubit_rotation(circuit):
     opt = qml.AdaptiveOptimizer(param_steps=20)
     circuit = opt.step(circuit, pool, params_zero=False)
     expval = circuit()
+    tape = qml.workflow.construct_tape(circuit)()
 
     #  rotation around X with np.pi gives expval(Z) = -1
     assert np.allclose(expval, -1)
-    assert qml.equal(circuit.tape.operations[-1], qml.RX(np.array([np.pi]), wires=0))
+    qml.assert_equal(tape.operations[-1], qml.RX(np.array([np.pi]), wires=0))
 
 
 @pytest.mark.parametrize(

@@ -15,19 +15,21 @@
 This module contains the transform function/decorator to make your custom transforms compatible with tapes, quantum
 functions and QNodes.
 """
-from typing import get_type_hints, Sequence, List, Tuple, Callable
-import pennylane as qml
+from typing import get_type_hints
+
 from .transform_dispatcher import TransformDispatcher, TransformError
 
 
-def transform(
+def transform(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     quantum_transform,
     expand_transform=None,
     classical_cotransform=None,
-    is_informative=None,
+    is_informative=False,
     final_transform=False,
-):
-    """Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
+    use_argnum_in_expand=False,
+    plxpr_transform=None,
+) -> TransformDispatcher:
+    r"""Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
     :class:`~.QNode`.
 
     ``transform`` should be applied to a function that transforms tapes. Once validated, the result will
@@ -43,18 +45,22 @@ def transform(
             * Accepts a :class:`~.QuantumTape` as its first input and
               returns a sequence of :class:`~.QuantumTape` and a processing function.
 
-            * The transform must have type hinting of the following form: ``my_quantum_transform(tape:
-              qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
+            * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
+              qml.tape.QuantumScript, ...) -> tuple[qml.tape.QuantumScriptBatch, qml.typing.PostprocessingFn]``
 
-        expand_transform (Callable): An optional expand transform is applied directly before the input
+    Keyword Args:
+        expand_transform=None (Optional[Callable]): An optional expand transform is applied directly before the input
             quantum transform. It must be a function that satisfies the same requirements as
             ``quantum_transform``.
-        classical_cotransform (Callable): A classical co-transform is a function to post-process the classical
+        classical_cotransform=None (Optional[Callable]): A classical co-transform is a function to post-process the classical
             jacobian and the quantum jacobian and has the signature: ``my_cotransform(qjac, cjac, tape) -> tensor_like``
-        is_informative (bool): Whether or not a transform is informative. If true the transform is queued at the end
+        is_informative=False (bool): Whether or not a transform is informative. If true the transform is queued at the end
             of the transform program and the tapes or qnode aren't executed.
-        final_transform (bool): Whether or not the transform is terminal. If true the transform is queued at the end
+        final_transform=False (bool): Whether or not the transform is terminal. If true the transform is queued at the end
             of the transform program. ``is_informative`` supersedes ``final_transform``.
+        use_argnum_in_expand=False (bool): Whether or not to use ``argnum`` of the tape to determine trainable parameters
+            during the expansion transform process.
+        plxpr_transform=None (Optional[Callable]): Function for transforming plxpr. **Experimental**
 
     Returns:
 
@@ -63,14 +69,15 @@ def transform(
 
     **Example**
 
-    First define an input quantum transform with the necessary type hinting defined above. In this example we copy the
+    First define an input quantum transform with the necessary structure defined above. In this example we copy the
     tape and sum the results of the execution of the two tapes.
 
     .. code-block:: python
 
-        from typing import Sequence, Callable
+        from pennylane.tape import QuantumScript, QuantumScriptBatch
+        from pennylane.typing import PostprocessingFn
 
-        def my_quantum_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+        def my_quantum_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             tape1 = tape
             tape2 = tape.copy()
 
@@ -92,9 +99,9 @@ def transform(
         def qnode_circuit(a):
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=0)
+            qml.X(0)
             qml.RZ(a, wires=1)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     We first apply ``transform`` to ``my_quantum_transform``:
 
@@ -123,6 +130,48 @@ def transform(
     reverse order of the transform program to obtain the final results.
 
     .. details::
+        :title: Dispatch a transform onto a batch of tapes
+
+        We can compose multiple transforms when working in the tape paradigm and apply them to more than one tape.
+        The following example demonstrates how to apply a transform to a batch of tapes.
+
+        **Example**
+
+        In this example, we apply sequentially a transform to a tape and another one to a batch of tapes.
+        We then execute the transformed tapes on a device and post-process the results.
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+            measurement = [qml.expval(H)]
+            operations = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
+            tape = qml.tape.QuantumTape(operations, measurement)
+
+            batch1, function1 = qml.transforms.split_non_commuting(tape)
+            batch2, function2 = qml.transforms.merge_rotations(batch1)
+
+            dev = qml.device("default.qubit", wires=3)
+            result = dev.execute(batch2)
+
+        The first ``split_non_commuting`` transform splits the original tape, returning a batch of tapes ``batch1`` and a processing function ``function1``.
+        The second ``merge_rotations`` transform is applied to the batch of tapes returned by the first transform.
+        It returns a new batch of tapes ``batch2``, each of which has been transformed by the second transform, and a processing function ``function2``.
+
+        >>> batch2
+        (<QuantumTape: wires=[0, 1, 2], params=2>,
+        <QuantumTape: wires=[0, 1, 2], params=1>)
+
+        >>> type(function2)
+        function
+
+        We can combine the processing functions to post-process the results of the execution.
+
+        >>> function1(function2(result))
+        [array(0.5)]
+
+    .. details::
         :title: Signature of a transform
 
         A dispatched transform is able to handle several PennyLane circuit-like objects:
@@ -130,6 +179,7 @@ def transform(
         - :class:`pennylane.QNode`
         - a quantum function (callable)
         - :class:`pennylane.tape.QuantumTape`
+        - a batch of :class:`pennylane.tape.QuantumTape`
         - :class:`pennylane.devices.Device`.
 
         For each object, the transform will be applied in a different way, but it always preserves the underlying
@@ -143,19 +193,101 @@ def transform(
           circuit. Then the transformed circuits are executed by a device and finally the post-processing function is
           applied on the results.
 
+          When experimental program capture is enabled, transforming a :class:`~.QNode` returns a new function to which the
+          transform has been added as a higher-order primitive.
+
         - For a quantum function (callable) input, the transform builds the tape when the quantum function is
           executed and then applies itself to the tape. The resulting tape is then converted back
           to a quantum function (callable). It therefore returns a transformed quantum function (Callable). The limitation
           is that the underlying transform can only return a sequence containing a single tape, because quantum
           functions only support a single circuit.
 
+          When experimental program capture is enabled, transforming a function (callable) returns a new function to which the
+          transform has been added as a higher-order primitive.
+
         - For a :class:`~.QuantumTape`, the underlying quantum transform is directly applied on the
           :class:`~.QuantumTape`. It returns a sequence of :class:`~.QuantumTape` and a processing
           function to be applied after execution.
 
+        - For a batch of :class:`pennylane.tape.QuantumTape`, the quantum transform is mapped across all the tapes.
+          It returns a sequence of :class:`~.QuantumTape` and a processing function to be applied after execution.
+          Each tape in the sequence is transformed by the transform.
+
         - For a :class:`~.devices.Device`, the transform is added to the device's transform program
           and a transformed :class:`pennylane.devices.Device` is returned. The transform is added
           to the end of the device program and will be last in the overall transform program.
+
+    .. details::
+        :title: Transforms with experimental program capture
+
+        To define a transform that can be applied directly to plxpr without the need to create ``QuantumScript``\ s, users
+        must provide the ``plxpr_transform`` argument. If this argument is not provided, executing transformed functions
+        will raise a ``NotImplementedError``. The ``plxpr_transform`` argument should be a function that applies the
+        respective transform to ``jax.core.Jaxpr`` and returns a transformed ``jax.core.ClosedJaxpr``. ``plxpr_transform``
+        can assume that no transform primitives are present in the input plxpr, and its implementation does not need to
+        account for these primitives. The exact expected signature of ``plxpr_transform`` is shown in the example below:
+
+        .. code-block:: python
+
+            def dummy_plxpr_transform(
+                jaxpr: jax.core.Jaxpr, consts: list, targs: list, tkwargs: dict, *args
+            ) -> jax.core.ClosedJaxpr:
+                ...
+
+        Once the ``plxpr_transform`` argument is provided, the transform can be easily used with program capture
+        enabled! To do so, apply the transform as you normally would:
+
+        .. code-block:: python
+
+            qml.capture.enable()
+
+            @qml.transforms.cancel_inverses
+            def circuit():
+                qml.X(0)
+                qml.S(1)
+                qml.X(0)
+                qml.adjoint(qml.S(1))
+                return qml.expval(qml.Z(1))
+
+        >>> qml.capture.make_plxpr(circuit)()
+        { lambda ; . let
+            a:AbstractMeasurement(n_wires=None) = cancel_inverses_transform[
+            args_slice=slice(0, 0, None)
+            consts_slice=slice(0, 0, None)
+            inner_jaxpr={ lambda ; . let
+                _:AbstractOperator() = PauliX[n_wires=1] 0
+                _:AbstractOperator() = S[n_wires=1] 1
+                _:AbstractOperator() = PauliX[n_wires=1] 0
+                b:AbstractOperator() = S[n_wires=1] 1
+                _:AbstractOperator() = Adjoint b
+                c:AbstractOperator() = PauliZ[n_wires=1] 1
+                d:AbstractMeasurement(n_wires=None) = expval_obs c
+              in (d,) }
+            targs_slice=slice(0, None, None)
+            tkwargs={}
+            ]
+          in (a,) }
+
+        As shown, the transform gets applied as a higher-order primitive, with the jaxpr
+        representation of the function being transformed stored in the ``inner_jaxpr``
+        parameter of the transform's primitive.
+
+        .. warning::
+
+            Currently, executing a function to which a transform has been applied will raise a
+            ``NotImplementedError``. See below for details on how to use functions that are
+            transformed.
+
+        To apply the transform, the :func:`pennylane.capture.expand_plxpr_transforms` function
+        should be used. This function accepts a function to which transforms have been applied
+        as an input, and returns a new function that has been transformed:
+
+        >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
+        >>> qml.capture.make_plxpr(transformed_circuit)()
+        { lambda ; . let
+            a:AbstractOperator() = PauliZ[n_wires=1] 1
+            b:AbstractMeasurement(n_wires=None) = expval_obs a
+          in (b,) }
     """
     # 1: Checks for the transform
     if not callable(quantum_transform):
@@ -165,68 +297,28 @@ def transform(
         )
 
     signature_transform = get_type_hints(quantum_transform)
-    # Check signature of transform to force the fn style (tape, ...) - > (Sequence(tape), fn)
-    _transform_signature_check(signature_transform)
 
     # 2: Checks for the expand transform
     if expand_transform is not None:
         if not callable(expand_transform):
             raise TransformError("The expand function must be a valid Python function.")
         signature_expand_transform = get_type_hints(expand_transform)
-        # Check the signature of expand_transform to force the fn style tape - > (Sequence(tape), fn)
-        _transform_signature_check(signature_expand_transform)
 
         if signature_expand_transform != signature_transform:
             raise TransformError(
                 "The expand transform must have the same signature as the transform"
             )
 
-    # 3: CHeck the classical co-transform
-    if classical_cotransform is not None:
-        if not callable(classical_cotransform):
-            raise TransformError("The classical co-transform must be a valid Python function.")
+    # 3: Check the classical co-transform
+    if classical_cotransform is not None and not callable(classical_cotransform):
+        raise TransformError("The classical co-transform must be a valid Python function.")
 
-    dispatcher = TransformDispatcher(
+    return TransformDispatcher(
         quantum_transform,
         expand_transform=expand_transform,
         classical_cotransform=classical_cotransform,
         is_informative=is_informative,
         final_transform=final_transform,
+        use_argnum_in_expand=use_argnum_in_expand,
+        plxpr_transform=plxpr_transform,
     )
-    return dispatcher
-
-
-def _transform_signature_check(signature):
-    """Check the signature of a quantum transform: (tape, ...) - > (Sequence(tape), fn)"""
-    # Check that the arguments of the transforms follows: (tape: qml.tape.QuantumTape, ...)
-    tape = signature.get("tape", None)
-
-    if tape is None:
-        raise TransformError("The first argument of a transform must be tape.")
-
-    if tape != qml.tape.QuantumTape:
-        raise TransformError("The type of the tape argument must be a QuantumTape.")
-
-    # Check return is (qml.tape.QuantumTape, callable):
-    ret = signature.get("return", None)
-
-    if ret is None or not isinstance(ret, tuple):
-        raise TransformError(
-            "The return of a transform must match (collections.abc.Sequence["
-            "pennylane.tape.tape.QuantumTape], <built-in function callable>)"
-        )
-
-    if ret[0] not in (
-        Sequence[qml.tape.QuantumTape],
-        List[qml.tape.QuantumTape],
-        Tuple[qml.tape.QuantumTape],
-    ):  # pylint:disable=unsubscriptable-object
-        raise TransformError(
-            "The first return of a transform must be a sequence of tapes: collections.abc.Sequence["
-            "pennylane.tape.tape.QuantumTape]"
-        )
-
-    if ret[1] != Callable:
-        raise TransformError(
-            "The second return of a transform must be a callable: <built-in function callable>"
-        )

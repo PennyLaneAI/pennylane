@@ -47,7 +47,7 @@ For example:
         qml.Toffoli(wires=(0, 1, 2))
         qml.CRY(x[1], wires=(0, 1))
         qml.Rot(x[2], x[3], y, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+        return qml.expval(qml.Z(0)), qml.expval(qml.X(1))
 
 
 We can now use the :func:`~pennylane.specs` transform to generate a function that returns
@@ -68,7 +68,6 @@ details and resource information:
  'depth': 4,
  'num_device_wires': 4,
  'device_name': 'default.qubit',
- 'expansion_strategy': 'gradient',
  'gradient_options': {},
  'interface': 'auto',
  'diff_method': 'parameter-shift',
@@ -85,17 +84,20 @@ For example:
 
 .. code-block:: python
 
-    dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+    dev = qml.device('default.qubit')
 
     @qml.qnode(dev)
     def circuit(x, z):
         qml.QFT(wires=(0,1,2,3))
         qml.IsingXX(1.234, wires=(0,2))
         qml.Toffoli(wires=(0,1,2))
+        mcm = qml.measure(1)
+        mcm_out = qml.measure(2)
         qml.CSWAP(wires=(0,2,3))
         qml.RX(x, wires=0)
+        qml.cond(mcm, qml.RY)(np.pi / 4, wires=3)
         qml.CRZ(z, wires=(3,0))
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0)), qml.probs(op=mcm_out)
 
 
     fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
@@ -107,10 +109,12 @@ For example:
     :target: javascript:void(0);
 
 >>> print(qml.draw(circuit)(1.2345,1.2345))
-0: ─╭QFT─╭IsingXX(1.23)─╭●─╭●─────RX(1.23)─╭RZ(1.23)─┤  <Z>
-1: ─├QFT─│──────────────├●─│───────────────│─────────┤     
-2: ─├QFT─╰IsingXX(1.23)─╰X─├SWAP───────────│─────────┤     
-3: ─╰QFT───────────────────╰SWAP───────────╰●────────┤     
+0: ─╭QFT─╭IsingXX(1.23)─╭●───────────╭●─────RX(1.23)─╭RZ(1.23)─┤  <Z>
+1: ─├QFT─│──────────────├●──┤↗├──────│───────────────│─────────┤
+2: ─├QFT─╰IsingXX(1.23)─╰X───║───┤↗├─├SWAP───────────│─────────┤
+3: ─╰QFT─────────────────────║────║──╰SWAP──RY(0.79)─╰●────────┤
+                             ╚════║═════════╝
+                                  ╚════════════════════════════╡  Probs[MCM]
 
 More information, including various fine-tuning options, can be found in
 the :doc:`drawing module <../code/qml_drawer>`.
@@ -128,7 +132,7 @@ Currently supported devices include:
 * ``default.mixed``: each snapshot saves the density matrix
 * ``default.gaussian``: each snapshot saves the covariance matrix and vector of means
 
-During normal execution, the snapshots are ignored:
+A :class:`~pennylane.Snapshot` can be used in a QNode like any other operation:
 
 .. code-block:: python
 
@@ -136,22 +140,121 @@ During normal execution, the snapshots are ignored:
 
     @qml.qnode(dev, interface=None)
     def circuit():
-        qml.Snapshot()
+        qml.Snapshot(measurement=qml.expval(qml.Z(0)))
         qml.Hadamard(wires=0)
         qml.Snapshot("very_important_state")
         qml.CNOT(wires=[0, 1])
         qml.Snapshot()
-        return qml.expval(qml.PauliX(0))
+        return qml.expval(qml.X(0))
+
+During normal execution, the snapshots are ignored:
+
+>>> circuit()
+0.0
 
 However, when using the :func:`~pennylane.snapshots`
 transform, intermediate device states will be stored and returned alongside the
 results.
 
 >>> qml.snapshots(circuit)()
-{0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
+{0: 1.0,
 'very_important_state': array([0.707+0.j, 0.+0.j, 0.707+0.j, 0.+0.j]),
 2: array([0.707+0.j, 0.+0.j, 0.+0.j, 0.707+0.j]),
-'execution_results': array(0.)}
+'execution_results': 0.0}
+
+All snapshots are numbered with consecutive integers, and if no tag was provided,
+the number of a snapshot is used as a key in the output dictionary instead.
+
+Interactive Debugging on Simulators
+-----------------------------------
+
+PennyLane allows for more interactive debugging of quantum circuits in a programmatic 
+fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is 
+currently supported on ``default.qubit`` and ``lightning.qubit`` devices. 
+
+Consider the following python script containing the quantum circuit with breakpoints.
+
+.. code-block:: python3
+    
+    dev = qml.device("default.qubit", wires=2)
+    
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.breakpoint()
+
+        qml.RX(x, wires=0)
+        qml.Hadamard(wires=1)
+
+        qml.breakpoint()
+
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.Z(0))
+
+    circuit(1.23)
+
+Running the circuit above launches an interactive :code:`[pldb]` prompt. Here we can
+step through the circuit execution:
+
+.. code-block:: console
+
+    > /Users/your/path/to/script.py(8)circuit()
+    -> qml.RX(x, wires=0)
+    [pldb] list
+      3
+      4  	@qml.qnode(dev)
+      5  	def circuit(x):
+      6  	    qml.breakpoint()
+      7
+      8  ->	    qml.RX(x, wires=0)
+      9  	    qml.Hadamard(wires=1)
+     10
+     11  	    qml.breakpoint()
+     12
+     13  	    qml.CNOT(wires=[0, 1])
+    [pldb] next
+    > /Users/your/path/to/script.py(9)circuit()
+    -> qml.Hadamard(wires=1)
+
+We can extract information by making measurements which do not change the state of 
+the circuit in execution: 
+
+.. code-block:: console
+
+    [pldb] qml.debug_state()
+    array([0.81677345+0.j        , 0.        +0.j        ,
+           1.        -0.57695852j, 0.        +0.j        ])
+    [pldb] continue
+    > /Users/your/path/to/script.py(13)circuit()
+    -> qml.CNOT(wires=[0, 1])
+    [pldb] next
+    > /Users/your/path/to/script.py(14)circuit()
+    -> return qml.expval(qml.Z(0))
+    [pldb] list
+      8  	    qml.RX(x, wires=0)
+      9  	    qml.Hadamard(wires=1)
+     10  	
+     11  	    qml.breakpoint()
+     12  	
+     13  	    qml.CNOT(wires=[0, 1])
+     14  ->	    return qml.expval(qml.Z(0))
+     15  	
+     16  	circuit(1.23)
+    [EOF]
+
+We can also visualize the circuit and dynamically queue operations directly to the circuit:
+
+.. code-block:: console
+
+    [pldb] print(qml.debug_tape().draw())
+    0: ──RX─╭●─┤  
+    1: ──H──╰X─┤
+    [pldb] qml.RZ(-4.56, 1)
+    RZ(-4.56, wires=[1])
+    [pldb] print(qml.debug_tape().draw())
+    0: ──RX─╭●─────┤  
+    1: ──H──╰X──RZ─┤
+
+See :doc:`/code/qml_debugging` for more information and detailed examples.
 
 Graph representation
 --------------------
@@ -176,6 +279,7 @@ or to check whether two gates causally influence each other.
 
     import pennylane as qml
     from pennylane import CircuitGraph
+    from pennylane.workflow import construct_tape
 
     dev = qml.device('lightning.qubit', wires=(0,1,2,3))
 
@@ -185,11 +289,11 @@ or to check whether two gates causally influence each other.
         qml.CNOT([1, 2])
         qml.CNOT([2, 3])
         qml.CNOT([3, 1])
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
 
     circuit()
-    tape = circuit.qtape
+    tape = construct_tape(circuit)() 
     ops = tape.operations
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)
@@ -197,7 +301,7 @@ or to check whether two gates causally influence each other.
 Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``rustworkx`` graph object.
 
 >>> type(g.graph)
-<class 'rustworkx.PyDiGraph'>
+rustworkx.PyDiGraph
 
 There is no edge between the ``Hadamard`` and the first ``CNOT``, but between consecutive ``CNOT`` gates:
 
@@ -228,11 +332,11 @@ Using the above example, we get:
 <class 'networkx.classes.multidigraph.MultiDiGraph'>
 >>> for k, v in g2.adjacency():
 ...    print(k, v)
-Hadamard(wires=[0]) {expval(PauliZ(wires=[0])): {0: {'wire': 0}}}
+H(0) {expval(Z(0)): {0: {'wire': 0}}}
 CNOT(wires=[1, 2]) {CNOT(wires=[2, 3]): {0: {'wire': 2}}, CNOT(wires=[3, 1]): {0: {'wire': 1}}}
 CNOT(wires=[2, 3]) {CNOT(wires=[3, 1]): {0: {'wire': 3}}}
 CNOT(wires=[3, 1]) {}
-expval(PauliZ(wires=[0])) {}
+expval(Z(0)) {}
 
 DAG of non-commuting ops
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -252,7 +356,7 @@ pairwise commutation:
 ...     qml.Hadamard(wires=2)
 ...     qml.CRZ(z, wires=[2, 0])
 ...     qml.RY(-y, wires=1)
-...     return qml.expval(qml.PauliZ(0))
+...     return qml.expval(qml.Z(0))
 >>> dag_fn = qml.commutation_dag(circuit)
 >>> dag = dag_fn(np.pi / 4, np.pi / 3, np.pi / 2)
 

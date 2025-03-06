@@ -24,7 +24,6 @@ from pennylane import numpy as qnp
 from pennylane.math import allclose, isclose
 from pennylane.templates.subroutines.qdrift import _sample_decomposition
 
-
 test_hamiltonians = (
     (
         [1, 1, 1],
@@ -44,44 +43,39 @@ test_hamiltonians = (
 class TestInitialization:
     """Test that the class is intialized correctly."""
 
+    def test_queuing(self):
+        """Test that QDrift de-queues the input hamiltonian."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            H = qml.X(0) + qml.Y(1)
+            op = qml.QDrift(H, 0.1, n=20)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] is op
+
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
-    @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_init_correctly(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
-        """Test that all of the attributes are initalized correctly."""
+        """Test that all of the attributes are initialized correctly."""
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
 
-        qml.ops.functions.assert_valid(op)
+        if seed is not None:
+            # For seed = None, decomposition and compute_decomposition do not match because
+            # compute_decomposition is stochastic
+            qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
         assert op.wires == h.wires
-        assert op.parameters == [time]
-        assert op.data == (time,)
+        assert op.parameters == [*h.data, time]
+        assert op.data == (*h.data, time)
 
         assert op.hyperparameters["n"] == n
         assert op.hyperparameters["seed"] == seed
         assert op.hyperparameters["base"] == h
 
-        for term in op.hyperparameters["decomposition"]:
-            # the decomposition is solely made up of exponentials of ops sampled from hamiltonian terms
-            assert term.base in ops
-
-    def test_set_decomp(self):
-        """Test that setting the decomposition works correctly."""
-        h = qml.dot([1.23, -0.45], [qml.PauliX(0), qml.PauliY(0)])
-        decomposition = [
-            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3),
-            qml.exp(qml.PauliY(0), -0.5j * 1.68 / 3),
-            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3),
-        ]
-        op = qml.QDrift(h, 0.5, n=3, decomposition=decomposition)
-
-        assert op.hyperparameters["decomposition"] == decomposition
-
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
-    @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_copy(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that we can make copies of QDrift correctly."""
@@ -107,9 +101,7 @@ class TestInitialization:
     def test_error_type(self, hamiltonian, raise_error):
         """Test an error is raised of an incorrect type is passed"""
         if raise_error:
-            with pytest.raises(
-                TypeError, match="The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
-            ):
+            with pytest.raises(TypeError, match="The given operator must be a PennyLane ~.Sum"):
                 qml.QDrift(hamiltonian, time=1.23)
         else:
             try:
@@ -118,33 +110,11 @@ class TestInitialization:
                 assert False  # test should fail if an error was raised when we expect it not to
 
     def test_error_hamiltonian(self):
-        """Test that a hamiltonian must have atleast 2 terms to be supported."""
-        msg = "There should be atleast 2 terms in the Hamiltonian."
+        """Test that a hamiltonian must have at least 2 terms to be supported."""
+        msg = "There should be at least 2 terms in the Hamiltonian."
         with pytest.raises(ValueError, match=msg):
             h = qml.Hamiltonian([1.0], [qml.PauliX(0)])
             qml.QDrift(h, 1.23, n=2, seed=None)
-
-    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_flatten_and_unflatten(self, coeffs, ops):
-        """Test that the flatten and unflatten methods work correctly."""
-        time, n, seed = (0.5, 2, 1234)
-        hamiltonian = qml.dot(coeffs, ops)
-        op = qml.QDrift(hamiltonian, time, n=n, seed=seed)
-        decomp = op.decomposition()
-
-        data, metadata = op._flatten()  # pylint: disable=protected-access
-        assert data[0] == time
-        assert metadata[0] == op.wires
-        assert dict(metadata[1]) == {
-            "n": n,
-            "seed": seed,
-            "base": hamiltonian,
-            "decomposition": tuple(decomp),
-        }
-
-        new_op = type(op)._unflatten(data, metadata)  # pylint: disable=protected-access
-        assert qml.equal(op, new_op)
-        assert new_op is not op
 
 
 class TestDecomposition:
@@ -152,7 +122,6 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
-    @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_private_sample(self, coeffs, ops, time, seed, n):  # pylint: disable=too-many-arguments
         """Test the private function which samples the decomposition"""
@@ -171,16 +140,15 @@ class TestDecomposition:
             assert term.base in ops  # sample from ops
             assert term.coeff == (s * normalization * time * 1j / n)  # with this exponent
 
-    @pytest.mark.parametrize("coeffs", ([0.99, 0.01], [0.5 + 0.49j, -0.01j]))
-    def test_private_sample_statistics(self, coeffs):
+    @pytest.mark.parametrize("coeffs", ([0.999, 0.001], [0.5 + 0.499j, -0.001j]))
+    def test_private_sample_statistics(self, coeffs, seed):
         """Test the private function samples from the right distribution"""
         ops = [qml.PauliX(0), qml.PauliZ(1)]
-        decomp = _sample_decomposition(coeffs, ops, 1.23, n=10, seed=1234)
+        decomp = _sample_decomposition(coeffs, ops, 1.23, n=10, seed=seed)
 
         # High probability we only sample PauliX!
         assert all(isinstance(op.base, qml.PauliX) for op in decomp)
 
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_compute_decomposition(self, seed):
         """Test that the decomposition is computed and queues correctly."""
         coeffs = [1, -0.5, 0.5]
@@ -197,13 +165,20 @@ class TestDecomposition:
         assert decomp == tape.operations  # queue matches decomp with circuit ordering
         assert decomp == list(expected_decomp)  # sample the same ops
 
+        # Decompositions of an instance are maintained across calls to `compute_decomposition`
+        with qml.tape.QuantumTape() as second_tape:
+            second_decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
+
+        assert second_tape.operations == tape.operations
+        assert second_decomp == decomp
+
 
 class TestIntegration:
     """Test that the QDrift template integrates well with the rest of PennyLane"""
 
+    @pytest.mark.local_salt(3)
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that the circuit executes as expected"""
@@ -230,10 +205,9 @@ class TestIntegration:
         )
         state = circ()
 
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_autograd(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using autograd"""
@@ -265,7 +239,6 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_torch(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using torch"""
@@ -296,7 +269,6 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_tf(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using tensorflow"""
@@ -327,7 +299,6 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jax(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax"""
@@ -358,7 +329,6 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jaxjit(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax jit"""
@@ -481,7 +451,6 @@ class TestIntegration:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("n", (1, 5, 10))
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_autograd_gradient(self, n, seed):
         """Test that the gradient is computed correctly"""
         time = qnp.array(1.5)
@@ -512,7 +481,6 @@ class TestIntegration:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("n", (1, 5, 10))
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_torch_gradient(self, n, seed):
         """Test that the gradient is computed correctly using torch"""
         import torch
@@ -553,7 +521,6 @@ class TestIntegration:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n", (1, 5, 10))
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_tf_gradient(self, n, seed):
         """Test that the gradient is computed correctly using tensorflow"""
         import tensorflow as tf
@@ -592,7 +559,6 @@ class TestIntegration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("n", (1, 5, 10))
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_jax_gradient(self, n, seed):
         """Test that the gradient is computed correctly using jax"""
         import jax
@@ -646,6 +612,6 @@ def test_error_func(h, time, n, expected_error):
 
 def test_error_func_type_error():
     """Test that an error is raised if the wrong type is passed for hamiltonian"""
-    msg = "The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
+    msg = "The given operator must be a PennyLane ~.Sum"
     with pytest.raises(TypeError, match=msg):
         qml.QDrift.error(qml.PauliX(0), time=1.23, n=10)

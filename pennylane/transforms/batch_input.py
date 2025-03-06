@@ -13,20 +13,23 @@
 """
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
-from typing import Callable, Sequence, Union
+from collections.abc import Sequence
+from typing import Union
+
+import numpy as np
 
 import pennylane as qml
-from pennylane import numpy as np
-from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.batch_params import _nested_stack, _split_operations
+from pennylane.transforms.core import transform
+from pennylane.typing import PostprocessingFn
 
 
 @transform
 def batch_input(
-    tape: QuantumTape,
+    tape: QuantumScript,
     argnum: Union[Sequence[int], int],
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Transform a circuit to support an initial batch dimension for gate inputs.
 
@@ -67,7 +70,7 @@ def batch_input(
             qml.RY(weights[0], wires=0)
             qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
             qml.RY(weights[1], wires=1)
-            return qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(1))
 
     >>> x = tf.random.uniform((10, 2), 0, 1)
     >>> w = tf.random.uniform((2,), 0, 1)

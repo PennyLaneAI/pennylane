@@ -15,12 +15,13 @@
 """
 This module contains the qml.purity measurement.
 """
+from collections.abc import Sequence
+from typing import Optional
 
-from typing import Sequence, Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement, Purity
+from .measurements import Purity, StateMeasurement
 
 
 def purity(wires) -> "PurityMP":
@@ -56,7 +57,7 @@ def purity(wires) -> "PurityMP":
     >>> circuit_purity(0.1)
     array(0.7048)
 
-    .. seealso:: :func:`pennylane.qinfo.transforms.purity` and :func:`pennylane.math.purity`
+    .. seealso:: :func:`pennylane.math.purity`
     """
     wires = Wires(wires)
     return PurityMP(wires=wires)
@@ -65,7 +66,7 @@ def purity(wires) -> "PurityMP":
 class PurityMP(StateMeasurement):
     """Measurement process that computes the purity of the system prior to measurement.
 
-    Please refer to :func:`purity` for detailed documentation.
+    Please refer to :func:`pennylane.purity` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -73,25 +74,28 @@ class PurityMP(StateMeasurement):
             applications where the instance has to be identified
     """
 
+    def __str__(self):
+        return "purity"
+
+    _shortname = Purity  #! Note: deprecated. Change the value to "purity" in v0.42
+
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
-
-    @property
-    def return_type(self):
-        return Purity
 
     @property
     def numeric_type(self):
         return float
 
-    def shape(self, device, shots):
-        if not shots.has_partitioned_shots:
-            return ()
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return tuple(() for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+        return ()
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
         indices = [wire_map[w] for w in self.wires]
         state = qml.math.dm_from_state_vector(state)
         return qml.math.purity(state, indices=indices, c_dtype=state.dtype)
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
+        indices = [wire_map[w] for w in self.wires]
+        return qml.math.purity(density_matrix, indices=indices, c_dtype=density_matrix.dtype)

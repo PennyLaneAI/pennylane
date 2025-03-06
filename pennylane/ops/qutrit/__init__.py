@@ -20,15 +20,16 @@ The operations are in one file:
   either unitary or hermitian depending.
 """
 
+from ..identity import Identity
 from .matrix_ops import *
-from .observables import *
 from .non_parametric_ops import *
+from .observables import *
 from .parametric_ops import *
 from .state_preparation import *
-from ..identity import Identity
+from .channel import *
 
 # TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
-ops = {
+__ops__ = {
     "Identity",
     "QutritUnitary",
     "ControlledQutritUnitary",
@@ -43,9 +44,10 @@ ops = {
     "QutritBasisState",
 }
 
-obs = {
+__obs__ = {
     "THermitian",
     "GellMann",
 }
+__channels__ = {"QutritDepolarizingChannel", "QutritAmplitudeDamping", "TritFlip", "QutritChannel"}
 
-__all__ = list(ops | obs)
+__all__ = list(__ops__ | __obs__ | __channels__)

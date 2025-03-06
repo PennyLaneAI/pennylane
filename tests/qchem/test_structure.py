@@ -14,18 +14,20 @@
 """
 Unit tests for the functions of the structure module.
 """
+import functools as ft
+
 # pylint: disable=too-many-arguments
 import os
 import sys
-import functools as ft
 from unittest.mock import patch
+
 import pytest
 
 import pennylane as qml
-from pennylane import qchem
 from pennylane import numpy as np
+from pennylane import qchem
+from pennylane.fermi import FermiWord
 from pennylane.templates.subroutines import UCCSD
-
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -76,39 +78,124 @@ def test_reading_xyz_file(tmpdir):
         "delta_sz",
         "singles_exp",
         "doubles_exp",
+        "fermionic_singles_exp",
+        "fermionic_doubles_exp",
     ),
     [
-        (1, 5, 0, [[0, 2], [0, 4]], []),
-        (1, 5, 1, [], []),
-        (1, 5, -1, [[0, 1], [0, 3]], []),
-        (2, 5, 0, [[0, 2], [0, 4], [1, 3]], [[0, 1, 2, 3], [0, 1, 3, 4]]),
-        (2, 5, 1, [[1, 2], [1, 4]], [[0, 1, 2, 4]]),
-        (2, 5, -1, [[0, 3]], []),
-        (2, 5, 2, [], []),
-        (3, 6, 1, [[1, 4]], []),
+        (
+            1,
+            5,
+            0,
+            [[0, 2], [0, 4]],
+            [],
+            [FermiWord({(0, 0): "+", (1, 2): "-"}), FermiWord({(0, 0): "+", (1, 4): "-"})],
+            [],
+        ),
+        (1, 5, 1, [], [], [], []),
+        (
+            1,
+            5,
+            -1,
+            [[0, 1], [0, 3]],
+            [],
+            [FermiWord({(0, 0): "+", (1, 1): "-"}), FermiWord({(0, 0): "+", (1, 3): "-"})],
+            [],
+        ),
+        (
+            2,
+            5,
+            0,
+            [[0, 2], [0, 4], [1, 3]],
+            [[0, 1, 2, 3], [0, 1, 3, 4]],
+            [
+                FermiWord({(0, 0): "+", (1, 2): "-"}),
+                FermiWord({(0, 0): "+", (1, 4): "-"}),
+                FermiWord({(0, 1): "+", (1, 3): "-"}),
+            ],
+            [
+                FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 3): "-"}),
+                FermiWord({(0, 0): "+", (1, 1): "+", (2, 3): "-", (3, 4): "-"}),
+            ],
+        ),
+        (
+            2,
+            5,
+            1,
+            [[1, 2], [1, 4]],
+            [[0, 1, 2, 4]],
+            [FermiWord({(0, 1): "+", (1, 2): "-"}), FermiWord({(0, 1): "+", (1, 4): "-"})],
+            [FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 4): "-"})],
+        ),
+        (2, 5, -1, [[0, 3]], [], [FermiWord({(0, 0): "+", (1, 3): "-"})], []),
+        (2, 5, 2, [], [], [], []),
+        (3, 6, 1, [[1, 4]], [], [FermiWord({(0, 1): "+", (1, 4): "-"})], []),
         (
             3,
             6,
             -1,
             [[0, 3], [0, 5], [2, 3], [2, 5]],
             [[0, 1, 3, 5], [0, 2, 3, 4], [0, 2, 4, 5], [1, 2, 3, 5]],
+            [
+                FermiWord({(0, 0): "+", (1, 3): "-"}),
+                FermiWord({(0, 0): "+", (1, 5): "-"}),
+                FermiWord({(0, 2): "+", (1, 3): "-"}),
+                FermiWord({(0, 2): "+", (1, 5): "-"}),
+            ],
+            [
+                FermiWord({(0, 0): "+", (1, 1): "+", (2, 3): "-", (3, 5): "-"}),
+                FermiWord({(0, 0): "+", (1, 2): "+", (2, 3): "-", (3, 4): "-"}),
+                FermiWord({(0, 0): "+", (1, 2): "+", (2, 4): "-", (3, 5): "-"}),
+                FermiWord({(0, 1): "+", (1, 2): "+", (2, 3): "-", (3, 5): "-"}),
+            ],
         ),
-        (3, 6, -2, [], [[0, 2, 3, 5]]),
-        (3, 4, 0, [[1, 3]], []),
-        (3, 4, 1, [], []),
-        (3, 4, -1, [[0, 3], [2, 3]], []),
-        (3, 4, 2, [], []),
+        (
+            3,
+            6,
+            -2,
+            [],
+            [[0, 2, 3, 5]],
+            [],
+            [FermiWord({(0, 0): "+", (1, 2): "+", (2, 3): "-", (3, 5): "-"})],
+        ),
+        (3, 4, 0, [[1, 3]], [], [FermiWord({(0, 1): "+", (1, 3): "-"})], []),
+        (3, 4, 1, [], [], [], []),
+        (
+            3,
+            4,
+            -1,
+            [[0, 3], [2, 3]],
+            [],
+            [FermiWord({(0, 0): "+", (1, 3): "-"}), FermiWord({(0, 2): "+", (1, 3): "-"})],
+            [],
+        ),
+        (3, 4, 2, [], [], [], []),
     ],
 )
-def test_excitations(electrons, orbitals, delta_sz, singles_exp, doubles_exp):
+def test_excitations(
+    electrons,
+    orbitals,
+    delta_sz,
+    singles_exp,
+    doubles_exp,
+    fermionic_singles_exp,
+    fermionic_doubles_exp,
+):
     r"""Test the correctness of the generated configurations"""
 
     singles, doubles = qchem.excitations(electrons, orbitals, delta_sz)
+    fermionic_singles, fermionic_doubles = qchem.excitations(
+        electrons, orbitals, delta_sz, fermionic=True
+    )
 
     assert len(singles) == len(singles_exp)
     assert len(doubles) == len(doubles_exp)
     assert singles == singles_exp
     assert doubles == doubles_exp
+
+    assert len(fermionic_singles) == len(fermionic_singles_exp)
+    assert len(fermionic_doubles) == len(fermionic_doubles_exp)
+    assert fermionic_singles == fermionic_singles_exp
+    assert fermionic_doubles == fermionic_doubles_exp
 
 
 @pytest.mark.parametrize(
@@ -216,20 +303,70 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
 
 
 @pytest.mark.parametrize(
-    ("electrons", "orbitals", "exp_state"),
+    ("electrons", "orbitals", "basis", "exp_state"),
+    # Obtained manually using Eqs (10, 14) of
+    # [`Tranter et al. Int. J. Quantum Chem. 115, 1431 (2015)
+    # <https://doi.org/10.1002/qua.24969>`_]
     [
-        (2, 5, np.array([1, 1, 0, 0, 0])),
-        (1, 5, np.array([1, 0, 0, 0, 0])),
-        (5, 5, np.array([1, 1, 1, 1, 1])),
+        (1, 1, "occupation_number", np.array([1])),
+        (2, 5, "occupation_number", np.array([1, 1, 0, 0, 0])),
+        (1, 5, "occupation_number", np.array([1, 0, 0, 0, 0])),
+        (5, 5, "occupation_number", np.array([1, 1, 1, 1, 1])),
+        (1, 1, "parity", np.array([1])),
+        (2, 5, "parity", np.array([1, 0, 0, 0, 0])),
+        (1, 5, "parity", np.array([1, 1, 1, 1, 1])),
+        (5, 5, "parity", np.array([1, 0, 1, 0, 1])),
+        (1, 1, "bravyi_kitaev", np.array([1])),
+        (2, 5, "bravyi_kitaev", np.array([1, 0, 0, 0, 0])),
+        (1, 5, "bravyi_kitaev", np.array([1, 1, 0, 1, 0])),
+        (5, 5, "bravyi_kitaev", np.array([1, 0, 1, 0, 1])),
     ],
 )
-def test_hf_state(electrons, orbitals, exp_state):
+def test_hf_state(electrons, orbitals, basis, exp_state):
     r"""Test the correctness of the generated occupation-number vector"""
 
-    res_state = qchem.hf_state(electrons, orbitals)
+    res_state = qchem.hf_state(electrons, orbitals, basis)
 
     assert len(res_state) == len(exp_state)
     assert np.allclose(res_state, exp_state)
+
+
+@pytest.mark.parametrize(
+    ("electrons", "symbols", "geometry", "charge"),
+    [
+        (2, ["H", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False), 0),
+        (
+            2,
+            ["H", "H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]], requires_grad=False),
+            1,
+        ),
+    ],
+)
+def test_hf_state_basis(electrons, symbols, geometry, charge):
+    r"""Test the correctness of the generated HF state in a circuit."""
+
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    h_ferm = qchem.fermionic_hamiltonian(mol)()
+    qubits = len(h_ferm.wires)
+
+    state_occ = qchem.hf_state(electrons, qubits, basis="occupation_number")
+    state_parity = qchem.hf_state(electrons, qubits, basis="parity")
+    state_bk = qchem.hf_state(electrons, qubits, basis="bravyi_kitaev")
+
+    h_occ = qml.jordan_wigner(h_ferm, ps=True, tol=1e-16).operation()
+    h_parity = qml.parity_transform(h_ferm, qubits, ps=True, tol=1e-16).operation()
+    h_bk = qml.bravyi_kitaev(h_ferm, qubits, ps=True, tol=1e-16).operation()
+
+    dev = qml.device("default.qubit", wires=qubits)
+
+    @qml.qnode(dev)
+    def circuit(hf_state, h):
+        qml.BasisState(hf_state, wires=range(qubits))
+        return qml.expval(h)
+
+    assert circuit(state_occ, h_occ) == circuit(state_parity, h_parity)
+    assert circuit(state_occ, h_occ) == circuit(state_bk, h_bk)
 
 
 @pytest.mark.parametrize(
@@ -365,8 +502,10 @@ def mock_from_cid(cid, record_type, pcp=None):
     if [cid, record_type] in [[297, "3d"], [783, "2d"]]:
         return pcp.Compound(records[cid])
 
-    raise pcp.NotFoundError if [cid, record_type] == [783, "3d"] else ValueError(
-        "Provided CID (or Identifier) is None."
+    raise (
+        pcp.NotFoundError
+        if [cid, record_type] == [783, "3d"]
+        else ValueError("Provided CID (or Identifier) is None.")
     )
 
 

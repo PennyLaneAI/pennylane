@@ -18,9 +18,9 @@ Unit tests for :mod:`fourier` coefficient and spectra calculations.
 from functools import partial
 
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.fourier import coefficients
 
 
@@ -382,12 +382,6 @@ class TestInterfaces:
         """Test that coefficients are correctly computed when using the JAX interface."""
         import jax
 
-        # Need to enable float64 support
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
-
         qnode = qml.QNode(self.circuit, self.dev, diff_method="parameter-shift")
 
         weights = jax.numpy.array([0.5, 0.2])
@@ -395,5 +389,3 @@ class TestInterfaces:
         obtained_result = coefficients(partial(qnode, weights), 2, 1)
 
         assert np.allclose(obtained_result, self.expected_result)
-
-        config.update("jax_enable_x64", remember)

@@ -15,10 +15,14 @@ r"""
 Contains the FermionicDoubleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
-from pennylane.ops import RZ, RX, CNOT, Hadamard
+from pennylane.operation import AnyWires, Operation
+from pennylane.ops import CNOT, RX, RZ, Hadamard
+from pennylane.wires import Wires
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):
@@ -486,7 +490,7 @@ class FermionicDoubleExcitation(Operation):
             @qml.qnode(dev)
             def circuit(weight, wires1=None, wires2=None):
                 qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             weight = 1.34817
             print(circuit(weight, wires1=[0, 1], wires2=[2, 3, 4]))
@@ -499,6 +503,10 @@ class FermionicDoubleExcitation(Operation):
 
     def _flatten(self):
         return self.data, (self.hyperparameters["wires1"], self.hyperparameters["wires2"])
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
@@ -530,6 +538,15 @@ class FermionicDoubleExcitation(Operation):
 
         wires = wires1 + wires2
         super().__init__(weight, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        for key in ["wires1", "wires2"]:
+            new_op._hyperparameters[key] = Wires(
+                [wire_map.get(wire, wire) for wire in self._hyperparameters[key]]
+            )
+        return new_op
 
     @property
     def num_params(self):

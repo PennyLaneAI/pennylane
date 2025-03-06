@@ -14,7 +14,7 @@
 """Contains DatasetAttribute definition for ``scipy.sparse.csr_array``."""
 
 from functools import lru_cache
-from typing import Dict, Generic, Tuple, Type, TypeVar, Union, cast
+from typing import Generic, Type, TypeVar, Union, cast
 
 import numpy as np
 from scipy.sparse import (
@@ -64,7 +64,7 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
     @classmethod
     def consumes_types(
         cls,
-    ) -> Tuple[Type[Union[SparseArray, SparseMatrix]], ...]:
+    ) -> tuple[Type[Union[SparseArray, SparseMatrix]], ...]:
         return (
             bsr_array,
             coo_array,
@@ -122,6 +122,6 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
 
     @classmethod
     @lru_cache(1)
-    def _supported_sparse_dict(cls) -> Dict[str, Type[Union[SparseArray, SparseMatrix]]]:
+    def _supported_sparse_dict(cls) -> dict[str, Type[Union[SparseArray, SparseMatrix]]]:
         """Returns a dict mapping sparse array class names to the class."""
         return {op.__name__: op for op in cls.consumes_types()}

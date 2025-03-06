@@ -15,8 +15,9 @@
 Tests for the FlipSign template.
 """
 import pytest
-from pennylane import numpy as np
+
 import pennylane as qml
+from pennylane import numpy as np
 
 
 def test_standarad_checks():
@@ -30,25 +31,6 @@ def test_repr():
     op = qml.FlipSign([0, 1], wires=("a", "b"))
     expected = "FlipSign((0, 1), wires=['a', 'b'])"
     assert repr(op) == expected
-
-
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Test the flatten and unflatten methods."""
-    op = qml.FlipSign([0, 1], wires=2)
-    data, metadata = op._flatten()
-
-    assert data == tuple()
-    hyperparameters = (("n", (0, 1)),)
-    assert metadata == (op.wires, hyperparameters)
-
-    # make sure metadata hasable
-    assert hash(metadata)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    # data casted to tuple. unimportant difference
-    assert qml.equal(qml.FlipSign((0, 1), wires=2), new_op)
-    assert op is not new_op
 
 
 class TestFlipSign:
@@ -152,3 +134,24 @@ class TestFlipSign:
         """Assert error raised when given empty wires"""
         with pytest.raises(ValueError, match="expected at least one wire representing the qubit "):
             qml.FlipSign(n_status, wires=n_wires)
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        import jax
+
+        basis_state = [1, 0]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            for wire in list(range(2)):
+                qml.Hadamard(wires=wire)
+            qml.FlipSign(basis_state, wires=list(range(2)))
+            return qml.state()
+
+        jit_circuit = jax.jit(circuit)
+
+        res = circuit()
+        res2 = jit_circuit()
+        assert qml.math.allclose(res, res2)

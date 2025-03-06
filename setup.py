@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,26 +13,28 @@
 # limitations under the License.
 
 """Setup file for package installation."""
+# pylint: disable=unspecified-encoding, consider-using-with
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy",
+    "numpy<2.1",
     "scipy",
     "networkx",
-    "rustworkx",
+    "rustworkx>=0.14.0",
     "autograd",
-    "toml",
+    "tomlkit",
     "appdirs",
-    "semantic-version>=2.7",
-    "autoray>=0.6.1",
+    "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.33",
+    "pennylane-lightning>=0.40",
     "requests",
     "typing_extensions",
+    "packaging",
+    "diastatic-malt",
 ]
 
 info = {
@@ -48,19 +50,18 @@ info = {
         # This requires a rename in the setup file of all devices, and is best done during another refactor
         "pennylane.plugins": [
             "default.qubit = pennylane.devices:DefaultQubit",
-            "default.qubit.legacy = pennylane.devices:DefaultQubitLegacy",
             "default.gaussian = pennylane.devices:DefaultGaussian",
-            "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
-            "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",
-            "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
-            "default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax",
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
+            "reference.qubit = pennylane.devices.reference_qubit:ReferenceQubit",
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
+            "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
+            "default.qutrit.mixed = pennylane.devices.default_qutrit_mixed:DefaultQutritMixed",
+            "default.tensor = pennylane.devices.default_tensor:DefaultTensor",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
-    "description": "PennyLane is a Python quantum machine learning library by Xanadu Inc.",
+    "description": "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network.",
     "long_description": open("README.md").read(),
     "long_description_content_type": "text/markdown",
     "provides": ["pennylane"],
@@ -82,9 +83,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Physics",
 ]

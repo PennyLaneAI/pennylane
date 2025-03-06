@@ -16,7 +16,7 @@ Contains the StronglyEntanglingLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class StronglyEntanglingLayers(Operation):
@@ -63,7 +63,7 @@ class StronglyEntanglingLayers(Operation):
             @qml.qnode(dev)
             def circuit(parameters):
                 qml.StronglyEntanglingLayers(weights=parameters, wires=range(4))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
             weights = np.random.random(size=shape)
@@ -72,7 +72,7 @@ class StronglyEntanglingLayers(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit, level="device")(weights))
         0: ──Rot(0.68,0.98,0.48)─╭●───────╭X──Rot(0.94,0.22,0.70)─╭●────╭X────┤  <Z>
         1: ──Rot(0.91,0.19,0.15)─╰X─╭●────│───Rot(0.50,0.20,0.63)─│──╭●─│──╭X─┤
         2: ──Rot(0.91,0.68,0.96)────╰X─╭●─│───Rot(0.14,0.05,0.16)─╰X─│──╰●─│──┤
@@ -101,14 +101,14 @@ class StronglyEntanglingLayers(Operation):
             @qml.qnode(dev)
             def circuit(parameters):
                 qml.StronglyEntanglingLayers(weights=parameters, wires=range(4), ranges=[2, 3], imprimitive=qml.ops.CZ)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
             weights = np.random.random(size=shape)
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit, level="device")(weights))
         0: ──Rot(0.99,0.17,0.12)─╭●────╭Z──Rot(0.02,0.94,0.57)──────────────────────╭●─╭Z───────┤  <Z>
         1: ──Rot(0.55,0.42,0.61)─│──╭●─│──╭Z────────────────────Rot(0.15,0.26,0.82)─│──╰●─╭Z────┤
         2: ──Rot(0.79,0.93,0.27)─╰Z─│──╰●─│─────────────────────Rot(0.73,0.01,0.44)─│─────╰●─╭Z─┤
@@ -129,6 +129,7 @@ class StronglyEntanglingLayers(Operation):
             weights = np.random.random(size=shape)
 
     """
+
     num_wires = AnyWires
     grad_method = None
 
@@ -199,7 +200,7 @@ class StronglyEntanglingLayers(Operation):
         CNOT(wires=['a', 'a']),
         CNOT(wires=['b', 'b'])]
         """
-        n_layers = qml.math.shape(weights)[0]
+        n_layers = qml.math.shape(weights)[-3]
         wires = qml.wires.Wires(wires)
         op_list = []
 
@@ -234,3 +235,41 @@ class StronglyEntanglingLayers(Operation):
         """
 
         return n_layers, n_wires, 3
+
+    # pylint:disable = no-value-for-parameter
+    @staticmethod
+    def compute_qfunc_decomposition(
+        weights, *wires, ranges, imprimitive
+    ):  # pylint: disable=arguments-differ
+        wires = qml.math.array(wires, like="jax")
+        ranges = qml.math.array(ranges, like="jax")
+
+        n_wires = len(wires)
+        n_layers = weights.shape[0]
+
+        @qml.for_loop(n_layers)
+        def layers(l):
+            @qml.for_loop(n_wires)
+            def rot_loop(i):
+                qml.Rot(
+                    weights[l, i, 0],
+                    weights[l, i, 1],
+                    weights[l, i, 2],
+                    wires=wires[i],
+                )
+
+            def imprim_true():
+                @qml.for_loop(n_wires)
+                def imprimitive_loop(i):
+                    act_on = qml.math.array([i, i + ranges[l]], like="jax") % n_wires
+                    imprimitive(wires=wires[act_on])
+
+                imprimitive_loop()
+
+            def imprim_false():
+                pass
+
+            rot_loop()
+            qml.cond(n_wires > 1, imprim_true, imprim_false)()
+
+        layers()

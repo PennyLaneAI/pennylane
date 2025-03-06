@@ -24,9 +24,8 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.ops.op_math.sprod import SProd, s_prod
+from pennylane.ops.op_math import Prod, SProd, Sum, s_prod
 from pennylane.wires import Wires
-
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
@@ -85,15 +84,15 @@ ops = (
 )
 
 ops_rep = (
-    "1.0*(PauliX(wires=[0]))",
-    "0.0*(PauliZ(wires=[0]))",
-    "1j*(Hadamard(wires=[0]))",
-    "1.23*(CNOT(wires=[0, 1]))",
-    "4.56*(RX(1.23, wires=[1]))",
-    "(1+2j)*(Identity(wires=[0]))",
-    "10*(IsingXX(4.56, wires=[2, 3]))",
-    "0j*(Toffoli(wires=[1, 2, 3]))",
-    "42*(Rot(0.34, 1.0, 0, wires=[0]))",
+    "1.0 * X(0)",
+    "0.0 * Z(0)",
+    "1j * H(0)",
+    "1.23 * CNOT(wires=[0, 1])",
+    "4.56 * RX(1.23, wires=[1])",
+    "(1+2j) * I(0)",
+    "10 * IsingXX(4.56, wires=[2, 3])",
+    "0j * Toffoli(wires=[1, 2, 3])",
+    "42 * Rot(0.34, 1.0, 0, wires=[0])",
 )
 
 
@@ -110,7 +109,6 @@ class TestInitialization:
         assert sprod_op.num_wires == 1
         assert sprod_op.name == "SProd"
         assert sprod_op.id == test_id
-        assert sprod_op.queue_idx is None
 
         assert sprod_op.data == (3.14, 0.23)
         assert sprod_op.parameters == [3.14, 0.23]
@@ -163,7 +161,25 @@ class TestInitialization:
 
         assert coeff == [scalar]
         for op1, op2 in zip(op2, [op]):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize(
+        "sprod_op, coeffs_exp, ops_exp",
+        [
+            (qml.s_prod(1.23, qml.sum(qml.X(0), qml.Y(0))), [1.23, 1.23], [qml.X(0), qml.Y(0)]),
+            (
+                qml.s_prod(1.23, qml.Hamiltonian([0.1, 0.2], [qml.X(0), qml.Y(0)])),
+                [0.123, 0.246],
+                [qml.X(0), qml.Y(0)],
+            ),
+        ],
+    )
+    def test_terms_nested(self, sprod_op, coeffs_exp, ops_exp):
+        """Tests that SProd.terms() flattens a nested structure."""
+        coeffs, ops_actual = sprod_op.terms()
+        assert coeffs == coeffs_exp
+        for op1, op2 in zip(ops_actual, ops_exp):
+            qml.assert_equal(op1, op2)
 
     def test_decomposition_raises_error(self):
         sprod_op = s_prod(3.14, qml.Identity(wires=1))
@@ -181,9 +197,43 @@ class TestInitialization:
 
         assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
 
+    def test_base_gets_cast_to_new_type(self):
+        """Test that Tensor and Hamiltonian instances get cast to new types."""
+        base_H = qml.Hamiltonian([1.1, 2.2], [qml.PauliZ(0), qml.PauliZ(1)])
+        op_H = qml.s_prod(2j, base_H)
+        assert isinstance(op_H.base, Sum)
+
+        base_T = qml.PauliZ(0) @ qml.PauliZ(1)
+        op_T = qml.s_prod(2j, base_T)
+        assert isinstance(op_T.base, Prod)
+
 
 class TestMscMethods:
     """Test miscellaneous methods of the SProd class."""
+
+    def test_string_with_single_pauli(self):
+        """Test the string representation with single pauli"""
+        res = qml.s_prod(0.5, qml.PauliX("a"))
+        true_res = "0.5 * X('a')"
+        assert repr(res) == true_res
+
+        res = qml.s_prod(0.5, qml.PauliX(0))
+        true_res = "0.5 * X(0)"
+        assert repr(res) == true_res
+
+    def test_string_with_sum_of_pauli(self):
+        """Test the string representation with single pauli"""
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX("b")))
+        true_res = "0.5 * (X('a') + X('b'))"
+        assert repr(res) == true_res
+
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX(0), qml.PauliX(1)))
+        true_res = "0.5 * (X(0) + X(1))"
+        assert repr(res) == true_res
+
+        res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX(1)))
+        true_res = "0.5 * (X('a') + X(1))"
+        assert repr(res) == true_res
 
     @pytest.mark.parametrize("op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, op_scalar_tup, op_rep):
@@ -207,7 +257,7 @@ class TestMscMethods:
         assert metadata == tuple()
 
         new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
-        assert qml.equal(new_op, sprod_op)
+        qml.assert_equal(new_op, sprod_op)
         assert new_op is not sprod_op
 
     @pytest.mark.parametrize("op_scalar_tup", ops)
@@ -677,6 +727,13 @@ class TestProperties:
             op = s_prod(scalar, qml.PauliX(wires=0))
             assert op.is_hermitian == hermitian_state
 
+    @pytest.mark.tf
+    def test_no_dtype_promotion(self):
+        import tensorflow as tf
+
+        op = qml.s_prod(tf.constant(0.5), qml.X(0))
+        assert op.scalar.dtype == next(iter(op.pauli_rep.values())).dtype
+
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
@@ -797,53 +854,28 @@ class TestSimplify:
             SProd(2, qml.RX(1.9, wires=1)),
         )
         simplified_op = sprod_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member
-        for s1, s2 in zip(final_op.operands, simplified_op.operands):
-            assert isinstance(s2, SProd)
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_scalar_equal_to_1(self):
         """Test the simplify method when the scalar is 1."""
         sprod_op = s_prod(1, qml.PauliX(0))
         final_op = qml.PauliX(0)
         simplified_op = sprod_op.simplify()
-
-        assert isinstance(simplified_op, qml.PauliX)
-        assert simplified_op.name == final_op.name
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_nested_sprod_scalar_equal_to_1(self):
         """Test the simplify method with nested SProd where the global scalar is 1."""
         sprod_op = s_prod(3, s_prod(1 / 3, qml.PauliX(0)))
         final_op = qml.PauliX(0)
         simplified_op = sprod_op.simplify()
-
-        assert isinstance(simplified_op, qml.PauliX)
-        assert simplified_op.name == final_op.name
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_with_sum_operator(self):
         """Test the simplify method a scalar product of a Sum operator."""
         sprod_op = s_prod(0 - 3j, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         final_op = s_prod(0 - 6j, qml.PauliX(0))
         simplified_op = sprod_op.simplify()
-
-        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
-        assert simplified_op.name == final_op.name
-        assert repr(simplified_op) == repr(final_op)
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
@@ -856,7 +888,7 @@ class TestSimplify:
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -868,12 +900,7 @@ class TestSimplify:
         op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
-
-        assert isinstance(simplified_op, type(result))
-        assert result.wires == simplified_op.wires
-        assert result.arithmetic_depth == simplified_op.arithmetic_depth
-        assert qnp.isclose(result.data[0], simplified_op.data[0])
-        assert result.data[1:] == simplified_op.data[1:]
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.torch
     def test_simplify_pauli_rep_torch(self):
@@ -886,7 +913,7 @@ class TestSimplify:
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
 
 class TestWrapperFunc:
@@ -901,13 +928,7 @@ class TestWrapperFunc:
 
         sprod_func_op = s_prod(coeff, op, id=op_id)
         sprod_class_op = SProd(coeff, op, id=op_id)
-
-        assert sprod_class_op.scalar == sprod_func_op.scalar
-        assert sprod_class_op.base == sprod_func_op.base
-        assert np.allclose(sprod_class_op.matrix(), sprod_func_op.matrix())
-        assert sprod_class_op.id == sprod_func_op.id
-        assert sprod_class_op.wires == sprod_func_op.wires
-        assert sprod_class_op.parameters == sprod_func_op.parameters
+        qml.assert_equal(sprod_func_op, sprod_class_op)
 
     def test_lazy_mode(self):
         """Test that by default, the operator is simply wrapped in `SProd`, even if a simplification exists."""
@@ -923,7 +944,7 @@ class TestWrapperFunc:
 
         assert isinstance(op, SProd)
         assert op.scalar == 12
-        assert qml.equal(op.base, qml.PauliX(0))
+        qml.assert_equal(op.base, qml.PauliX(0))
 
     def test_non_lazy_mode_queueing(self):
         """Test that if a simpification is accomplished, the metadata for the original op
@@ -975,13 +996,10 @@ class TestIntegration:
         @qml.qnode(dev)
         def my_circ():
             qml.PauliX(0)
-            return qml.probs(op=sprod_op)
+            return qml.probs(op=sprod_op), qml.probs(op=qml.Hadamard(1))
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        res1, res2 = my_circ()
+        assert qml.math.allclose(res1, res2)
 
     def test_measurement_process_sample(self):
         """Test SProd class instance in sample measurement process."""
@@ -1046,20 +1064,6 @@ class TestIntegration:
         true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
-    def test_non_hermitian_obs_not_supported(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
-        wires = [0, 1]
-        dev = qml.device("default.qubit", wires=wires)
-        sprod_op = SProd(1.0 + 2.0j, qml.RX(1.23, wires=0))
-
-        @qml.qnode(dev)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.expval(sprod_op)
-
-        with pytest.raises(NotImplementedError):
-            my_circ()
-
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
     def test_torch(self, diff_method):
@@ -1121,14 +1125,7 @@ class TestArithmetic:
         sprod_op = SProd(3, qml.RX(1.23, wires=0))
         final_op = SProd(scalar=3**2, base=qml.pow(base=qml.RX(1.23, wires=0), z=2))
         pow_op = sprod_op.pow(z=2)[0]
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(pow_op, SProd)
-        assert pow_op.name == final_op.name
-        assert pow_op.wires == final_op.wires
-        assert pow_op.data == final_op.data
-        assert pow_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(pow_op, final_op)
 
     def test_adjoint(self):
         """Test the adjoint method for Sprod Operators."""
@@ -1136,11 +1133,4 @@ class TestArithmetic:
         sprod_op = SProd(3j, qml.RX(1.23, wires=0))
         final_op = SProd(scalar=-3j, base=qml.adjoint(qml.RX(1.23, wires=0)))
         adj_op = sprod_op.adjoint()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(adj_op, SProd)
-        assert adj_op.name == final_op.name
-        assert adj_op.wires == final_op.wires
-        assert adj_op.data == final_op.data
-        assert adj_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(adj_op, final_op)

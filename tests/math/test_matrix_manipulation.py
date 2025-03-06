@@ -19,9 +19,23 @@ import numpy as np
 import pytest
 from gate_data import CNOT, II, SWAP, I, Toffoli
 from scipy.sparse import csr_matrix
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.math import expand_matrix, expand_vector, sqrt_matrix, sqrt_matrix_sparse
+from pennylane.math.quantum import _denman_beavers_iterations
+
+# Define a list of dtypes to test
+dtypes = ["complex64", "complex128"]
+
+ml_frameworks_list = [
+    "numpy",
+    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("jax", marks=pytest.mark.jax),
+    pytest.param("torch", marks=pytest.mark.torch),
+    pytest.param("tensorflow", marks=pytest.mark.tf),
+]
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -486,6 +500,8 @@ class TestExpandMatrix:
         )
 
         class DummyOp(qml.operation.Operator):
+            """Dummy operator for testing the expand_matrix method."""
+
             num_wires = 2
 
             @staticmethod
@@ -516,16 +532,84 @@ class TestExpandMatrix:
         expanded_matrix = np.moveaxis(expanded_matrix, 0, -2)
 
         class DummyOp(qml.operation.Operator):
+            """Dummy operator for testing the expand_matrix method."""
+
             num_wires = 2
 
+            # pylint: disable=arguments-differ
             @staticmethod
             def compute_matrix():
+                """Compute the matrix of the DummyOp."""
                 return self.base_matrix_2_broadcasted
 
         op = DummyOp(wires=[0, 2])
         assert np.allclose(op.matrix(), self.base_matrix_2_broadcasted, atol=tol)
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
+
+
+class TestExpandMatrixQutrit:
+
+    def test_add_wire_at_end(self):
+        """Test that expand_matrix works on qutrit matrices when an additional wire is added at the end."""
+
+        mat = np.reshape(np.arange(9), (3, 3))
+
+        new_mat = expand_matrix(mat, 0, (0, 1))
+        assert qml.math.allclose(new_mat, np.kron(mat, np.eye(3)))
+
+    def test_add_wire_at_start(self):
+        """Test that expand_matrix works on qutrit matrices when an additional wire is added at the start."""
+
+        mat = np.reshape(np.arange(9), (3, 3))
+        new_mat = expand_matrix(mat, 0, (1, 0))
+        assert qml.math.allclose(new_mat, np.kron(np.eye(3), mat))
+
+    def test_wire_permutation(self):
+        """Test that wires can be permuted."""
+        m1 = np.reshape(np.arange(81), (9, 9))
+        m2 = expand_matrix(m1, (0, 1), (1, 0))
+
+        # states across row are 00, 01, 02, 10, 11, 12, 20, 21, 22
+        # extract out right qubit state with mod
+        m1_wire_zero = m1 % 3
+        m2_wire_zero = m2 % 3
+
+        # extract out left qubit state  with floor then mod
+        m1_wire_one = np.floor(m1 / 3) % 3
+        m2_wire_one = np.floor(m2 / 3) % 3
+
+        assert qml.math.allclose(m1_wire_zero, m2_wire_one)
+        assert qml.math.allclose(m1_wire_one, m2_wire_zero)
+
+        # check columns also switched
+        # now matrix numbers indicate row number
+        m1p = np.floor(m1 / 9)
+        m2p = np.floor(m2 / 9)
+
+        # states across column are 00, 01, 02, 10, 11, 12, 20, 21, 22
+        # extract out right qubit state with mod
+        m1_wire_zerop = m1p % 3
+        m2_wire_zerop = m2p % 3
+
+        # extract out left qubit state  with floor then mod
+        m1_wire_onep = np.floor(m1p / 3) % 3
+        m2_wire_onep = np.floor(m2p / 3) % 3
+
+        assert qml.math.allclose(m1_wire_zerop, m2_wire_onep)
+        assert qml.math.allclose(m1_wire_onep, m2_wire_zerop)
+
+    def test_adding_wire_in_middle(self):
+        """Test that expand_matrix can add an identity wire in the middle of a two qutrit matrix."""
+
+        m1 = np.reshape(np.arange(9), (3, 3))
+        m2 = np.reshape(np.arange(9, 18), (3, 3))
+        m3 = np.kron(m1, m2)
+
+        m3_added_wire = expand_matrix(m3, (0, 1), (1, 2, 0))
+        m3_kron = np.kron(np.kron(m2, np.eye(3)), m1)
+
+        assert qml.math.allclose(m3_added_wire, m3_kron)
 
 
 class TestExpandMatrixSparse:
@@ -818,3 +902,366 @@ class TestReduceMatrices:
         assert final_wires == expected_wires
         assert qml.math.allclose(reduced_mat, expected_matrix)
         assert reduced_mat.shape == (2**5, 2**5)
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+class TestPartialTrace:
+    """Unit tests for the partial_trace function."""
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_single_density_matrix(self, ml_framework, c_dtype):
+        """Test partial trace on a single density matrix."""
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
+        )
+
+        # Expected result after tracing out the second qubit
+        expected = qml.math.asarray(np.array([[[1, 0], [0, 0]]], dtype=c_dtype), like=ml_framework)
+
+        # Perform the partial trace
+        result = qml.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype)
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_batched_density_matrices(self, ml_framework, c_dtype):
+        """Test partial trace on a batch of density matrices."""
+        # Define a batch of 2-qubit density matrices
+        rho = qml.math.asarray(
+            np.array(
+                [
+                    [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                    [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                ]
+            ),
+            like=ml_framework,
+        )
+
+        # rho = qml.math.asarrays(rho)
+        # Expected result after tracing out the first qubit for each matrix
+        expected = qml.math.asarray(
+            np.array([[[1, 0], [0, 0]], [[1, 0], [0, 0]]], dtype=c_dtype), like=ml_framework
+        )
+
+        # Perform the partial trace
+        result = qml.math.quantum.partial_trace(rho, [1], c_dtype=c_dtype)
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_partial_trace_over_no_wires(self, ml_framework, c_dtype):
+        """Test that tracing over no wires returns the original matrix."""
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]], dtype=c_dtype),
+            like=ml_framework,
+        )
+
+        # Perform the partial trace over no wires
+        result = qml.math.quantum.partial_trace(rho, [], c_dtype=c_dtype)
+        assert qml.math.allclose(result, rho)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_partial_trace_over_all_wires(self, ml_framework, c_dtype):
+        """Test that tracing over all wires returns the trace of the matrix."""
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
+        )
+        # Expected result after tracing out all qubits
+        expected = qml.math.asarray(np.array([1], dtype=c_dtype), like=ml_framework)
+
+        # Perform the partial trace over all wires
+        result = qml.math.quantum.partial_trace(rho, [0, 1], c_dtype=c_dtype)
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_invalid_wire_selection(self, ml_framework, c_dtype):
+        """Test that an error is raised for an invalid wire selection."""
+
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
+        )
+
+        # Attempt to trace over an invalid wire
+        with pytest.raises(Exception) as e:
+            import tensorflow as tf  # pylint: disable=Import outside toplevel (tensorflow) (import-outside-toplevel)
+
+            qml.math.quantum.partial_trace(rho, [2], c_dtype=c_dtype)
+            assert e.type in (
+                ValueError,
+                IndexError,
+                tf.python.framework.errors_impl.InvalidArgumentError,
+            )
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_partial_trace_single_matrix(self, ml_framework, c_dtype):
+        """Test that partial_trace works on a single matrix."""
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), like=ml_framework
+        )
+
+        result = qml.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype)
+        expected = qml.math.asarray(np.array([[1, 0], [0, 0]], dtype=c_dtype), like=ml_framework)
+
+        assert qml.math.allclose(result, expected)
+
+
+class TestExpandVector:
+    """Tests vector expansion to more wires"""
+
+    VECTOR1 = np.array([1, -1])
+    ONES = np.array([1, 1])
+
+    @pytest.mark.parametrize(
+        "original_wires,expanded_wires,expected",
+        [
+            ([0], 3, np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([1], 3, np.kron(np.kron(ONES, VECTOR1), ONES)),
+            ([2], 3, np.kron(np.kron(ONES, ONES), VECTOR1)),
+            ([0], [0, 4, 7], np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([4], [0, 4, 7], np.kron(np.kron(ONES, VECTOR1), ONES)),
+            ([7], [0, 4, 7], np.kron(np.kron(ONES, ONES), VECTOR1)),
+            ([0], [0, 4, 7], np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([4], [4, 0, 7], np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([7], [7, 4, 0], np.kron(np.kron(VECTOR1, ONES), ONES)),
+        ],
+    )
+    def test_expand_vector_single_wire(self, original_wires, expanded_wires, expected, tol):
+        """Test that expand_vector works with a single-wire vector."""
+
+        res = expand_vector(TestExpandVector.VECTOR1, original_wires, expanded_wires)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    VECTOR2 = np.array([1, 2, 3, 4])
+    ONES = np.array([1, 1])
+
+    @pytest.mark.parametrize(
+        "original_wires,expanded_wires,expected",
+        [
+            ([0, 1], 3, np.kron(VECTOR2, ONES)),
+            ([1, 2], 3, np.kron(ONES, VECTOR2)),
+            ([0, 2], 3, np.array([1, 2, 1, 2, 3, 4, 3, 4])),
+            ([0, 5], [0, 5, 9], np.kron(VECTOR2, ONES)),
+            ([5, 9], [0, 5, 9], np.kron(ONES, VECTOR2)),
+            ([0, 9], [0, 5, 9], np.array([1, 2, 1, 2, 3, 4, 3, 4])),
+            ([9, 0], [0, 5, 9], np.array([1, 3, 1, 3, 2, 4, 2, 4])),
+            ([0, 1], [0, 1], VECTOR2),
+        ],
+    )
+    def test_expand_vector_two_wires(self, original_wires, expanded_wires, expected, tol):
+        """Test that expand_vector works with a single-wire vector."""
+
+        res = expand_vector(TestExpandVector.VECTOR2, original_wires, expanded_wires)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_vector_invalid_wires(self):
+        """Test exception raised if unphysical subsystems provided."""
+        with pytest.raises(
+            ValueError,
+            match="Invalid target subsystems provided in 'original_wires' argument",
+        ):
+            expand_vector(TestExpandVector.VECTOR2, [-1, 5], 4)
+
+    def test_expand_vector_invalid_vector(self):
+        """Test exception raised if incorrect sized vector provided."""
+        with pytest.raises(ValueError, match="Vector parameter must be of length"):
+            expand_vector(TestExpandVector.VECTOR1, [0, 1], 4)
+
+
+class TestSqrtMatrix:
+    """Tests for the sqrt_matrix function."""
+
+    # NOTE: make sure the matrix is positive definite
+    dm_list = [
+        np.array([[1, 0], [0, 1]]),
+        np.array([[1, 0], [0, 2]]),
+        np.array([[4, 2], [2, 3]]),
+    ]
+    shape_list = range(2, 10)
+    # NOTE: sqrt_matrix is frequently used by BlockEncode
+    #       here below are some test matrices that are used
+    #       in the BlockEncode tests
+    matrices = [
+        # 2x2 matrices
+        np.array([[0.1, 0.2], [0.3, 0.4]]),
+        # Non-square matrices
+        np.array([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2]]),
+        # 3x3 matrix
+        np.array([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]]),
+        # Identity-like matrices
+        np.array([[1, 0], [0, 1]]),
+        np.identity(3),
+        # Matrix with complex entries
+        0.2 * np.array([[0.3, 0.9539392j], [0.9539392j, -0.3]]),
+    ]
+    # negative matrices: matrices that have negative eigenvalues
+    matrices_negative = [
+        # 2x2 matrix with negative eigenvalue
+        np.array([[1, 2], [2, -3]]),
+        # 3x3 matrix with mixed positive/negative eigenvalues
+        np.array([[2, -1, 0], [-1, -2, 1], [0, 1, 3]]),
+        # 4x4 matrix with negative eigenvalues
+        np.array([[1, 2, 0, 1], [2, -2, 1, 0], [0, 1, -3, 2], [1, 0, 2, -1]]),
+    ]
+    # Known problematic matrices with informative error message.
+    # NOTE: keep the entries here common. No fine-tuned corner cases.
+    illmats_info_pairs = [
+        (
+            np.array([[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
+            ValueError,
+            "Factor is exactly singular",
+        )
+    ]
+
+    @pytest.mark.parametrize("dm", dm_list)
+    def test_sqrt_matrix_sparse_dm(self, dm, tol):
+        """Test the sqrt_matrix function."""
+
+        A = qml.math.asarray(dm)
+        A_sparse = csr_matrix(A)
+
+        assert np.allclose(sqrt_matrix(A), sqrt_matrix_sparse(A_sparse).toarray(), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("shape", shape_list)
+    def test_sqrt_matrix_sparse_random(self, shape, tol):
+        """Test the sqrt_matrix function."""
+
+        # From unitary group
+        dm = unitary_group.rvs(shape)
+        dm = dm @ dm.T.conj()
+        A = qml.math.asarray(dm)
+        A_sparse = csr_matrix(A)
+
+        assert np.allclose(sqrt_matrix(A), sqrt_matrix_sparse(A_sparse).toarray(), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("matrix", matrices)
+    def test_sqrt_matrix_inputs(self, matrix, tol):
+        """Test sqrt_matrix function with various input matrices."""
+
+        # type M^† M
+        A = matrix.T.conj() @ matrix
+        A = np.eye(A.shape[0]) - A
+        A_sparse = csr_matrix(A)
+
+        result_sparse = sqrt_matrix_sparse(A_sparse)
+        result = result_sparse.toarray()
+        result_2 = result @ result
+
+        assert np.allclose(result_2, A, atol=tol, rtol=0)
+
+        # type M M^†
+        A = matrix @ matrix.T.conj()
+        A = np.eye(A.shape[0]) - A
+        A_sparse = csr_matrix(A)
+
+        result_sparse = sqrt_matrix_sparse(A_sparse)
+        result = result_sparse.toarray()
+        result_2 = result @ result
+
+        assert np.allclose(result_2, A, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("m", matrices_negative)
+    def test_sqrt_matrix_sparse_input_negative(self, m):
+        """Test that sqrt_matrix_sparse raises ValueError for matrices with negative eigenvalues."""
+        m = csr_matrix(m)
+        with pytest.raises(ValueError):
+            sqrt_matrix_sparse(m)
+
+    @pytest.mark.parametrize("m, e, info", illmats_info_pairs)
+    def test_sqrt_matrix_sparse_input_ill_conditioned(self, m, e, info):
+        """Test that appropriate errors are raised for ill-conditioned matrices"""
+        m = csr_matrix(m)
+        with pytest.raises(e, match=info):
+            sqrt_matrix_sparse(m)
+
+    def test_sqrt_matrix_sparse_input_valid(self):
+        """Test that if dense input errors raised"""
+        A = np.array([[1, 0], [0, 1]])
+        with pytest.raises(TypeError, match="only supports scipy.sparse matrices"):
+            sqrt_matrix_sparse(A)
+
+
+CONVERGENCE_ERROR = "Convergence threshold not reached"
+
+
+class TestDenmanBeaversIterations:
+    """Tests for the Denman-Beavers iteration method for matrix square root"""
+
+    def test_singular_matrix(self):
+        """Test that singular matrix raises appropriate error"""
+        n = 4
+        mat = csr_matrix(np.diag([0.0] + [1.0] * (n - 1)))
+
+        with pytest.raises(ValueError, match="Factor is exactly singular"):
+            _denman_beavers_iterations(mat)
+
+    def test_overflow_matrix(self):
+        """Test that matrix with very large values raises convergence warning"""
+        n = 4
+        mat = csr_matrix(np.eye(n) * 1e150)
+
+        with pytest.raises(ValueError, match=CONVERGENCE_ERROR):
+            _denman_beavers_iterations(mat)
+
+    def test_invalid_value_matrix(self):
+        """Test that matrix leading to invalid values raises appropriate error"""
+        n = 4
+        mat = csr_matrix(np.diag([-1e-10] + [1.0] * (n - 1)))
+
+        with pytest.raises(ValueError, match="nan or inf"):
+            _denman_beavers_iterations(mat)
+
+    def test_non_convergent_matrix(self):
+        """Test that non-convergent matrix raises appropriate error"""
+        mat = csr_matrix([[1, 1e-6], [1e-6, 1e-12 + 1e-25]])
+        with pytest.raises(ValueError, match=CONVERGENCE_ERROR):
+            _denman_beavers_iterations(mat)
+
+    def test_unstable_matrix(self):
+        """Test that numerically unstable matrix raises convergence warning"""
+        n = 4
+        mat = csr_matrix(np.diag([1e-200, 1e200] + [1.0] * (n - 2)))
+
+        with pytest.raises(ValueError, match=CONVERGENCE_ERROR):
+            _denman_beavers_iterations(mat)
+
+    @pytest.mark.parametrize("size", [2, 3, 4, 5])
+    def test_valid_positive_definite(self, size):
+        """Test that valid real, positive definite matrices work correctly"""
+        # Create a positive definite matrix
+        A = np.random.random((size, size))
+        mat = csr_matrix(np.eye(size) - 0.1 * (A @ A.T))
+
+        result = _denman_beavers_iterations(mat)
+        # Check that result is a valid square root
+        result_dense = result.toarray()
+        original_dense = mat.toarray()
+        qml.math.allclose(result_dense @ result_dense, original_dense, atol=1e-7, rtol=1e-7)
+
+    def test_hermitian_matrix(self):
+        """Test that Hermitian matrices work correctly on Hermitians of positive det.
+        Emulate random users' random input; the iteration should pass the simple branch determined by determinant, or it needs extra examine.
+        """
+        n = 4
+        A = np.random.random((n, n)) + 1j * np.random.random((n, n))
+        mat = np.eye(n) - 0.2 * (A @ A.T.conj())
+
+        def _reverse_det_hermitian(mat):
+            eigvals, eigvecs = np.linalg.eigh(mat)
+            eigvals[0] *= -1
+            return eigvecs @ np.diag(eigvals) @ eigvecs.T.conj()
+
+        det_mat = np.real(np.linalg.det(mat))
+        good_mat = mat if det_mat > 0 else _reverse_det_hermitian(mat)
+
+        result = _denman_beavers_iterations(csr_matrix(good_mat))
+        result_dense = result.toarray()
+        qml.math.allclose(result_dense @ result_dense, good_mat, atol=1e-7, rtol=1e-7)
+
+        bad_mat = mat if det_mat < 0 else _reverse_det_hermitian(mat)
+        with pytest.raises(ValueError, match="Invalid values encountered"):
+            _denman_beavers_iterations(csr_matrix(bad_mat))

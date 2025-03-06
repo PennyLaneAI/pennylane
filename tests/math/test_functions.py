@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for pennylane.math.single_dispatch
-"""
+"""Unit tests for pennylane.math.single_dispatch"""
 # pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
@@ -136,9 +135,10 @@ class TestGetMultiTensorbox:
 
     def test_get_deep_interface(self):
         """Test get_deep_interface returns the interface of deep values."""
-        assert fn.get_deep_interface([()]) == "builtins"
-        assert fn.get_deep_interface(([1, 2], [3, 4])) == "builtins"
+        assert fn.get_deep_interface([()]) == "numpy"
+        assert fn.get_deep_interface(([1, 2], [3, 4])) == "numpy"
         assert fn.get_deep_interface([[jnp.array(1.1)]]) == "jax"
+        assert fn.get_deep_interface([[np.array(1.3, requires_grad=False)]]) == "autograd"
 
 
 test_abs_data = [
@@ -170,6 +170,16 @@ test_data = [
     tf.constant([1, 2, 3]),
 ]
 
+unequal_test_data = [
+    (2, 2, 3),
+    [1, 21, 3],
+    onp.array([1, 2, 39]),
+    np.array([1, 2, 4]),
+    torch.tensor([1, 20, 3]),
+    tf.Variable([2, 21, 3]),
+    tf.constant([2, 1, 3]),
+]
+
 
 @pytest.mark.parametrize("t1,t2", list(itertools.combinations(test_data, r=2)))
 def test_allequal(t1, t2):
@@ -186,11 +196,48 @@ def test_allequal(t1, t2):
     assert res == expected
 
 
+test_all_vectors = [
+    ((False, False, False), False),
+    ((True, True, False), False),
+    ((True, True, True), True),
+]
+
+
+@pytest.mark.parametrize(
+    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
+)
+@pytest.mark.parametrize("t1, expected", test_all_vectors)
+def test_all(array_fn, t1, expected):
+    """Test that the all function works for a variety of inputs."""
+    res = fn.all(array_fn(t1))
+
+    assert res == expected
+
+
+test_any_vectors = [
+    ((False, False, False), False),
+    ((True, True, False), True),
+    ((True, True, True), True),
+]
+
+
+@pytest.mark.parametrize(
+    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
+)
+@pytest.mark.parametrize("t1, expected", test_any_vectors)
+def test_any(array_fn, t1, expected):
+    """Test that the any function works for a variety of inputs."""
+    res = fn.any(array_fn(t1))
+
+    assert res == expected
+
+
 @pytest.mark.parametrize(
     "t1,t2",
     list(
         itertools.combinations(test_data + [torch.tensor([1.0, 2.0, 3.0], requires_grad=True)], r=2)
-    ),
+    )
+    + [(t1, t2) for t1 in test_data for t2 in unequal_test_data],
 )
 def test_allclose(t1, t2):
     """Test that the allclose function works for a variety of inputs."""
@@ -970,10 +1017,76 @@ interface_test_data = [
 @pytest.mark.parametrize("t,interface", interface_test_data)
 def test_get_interface(t, interface):
     """Test that the interface of a tensor-like object
-
     is correctly returned."""
     res = fn.get_interface(t)
     assert res == interface
+
+
+class TestScipySparse:
+    """Test the scipy.sparse objects get correctly dispatched"""
+
+    matrix = [sci.sparse.csr_matrix([[0, 1], [1, 0]])]
+
+    matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
+
+    dispatched_linalg_methods = [
+        fn.linalg.det,
+        fn.linalg.expm,
+        fn.linalg.inv,
+        fn.linalg.norm,
+    ]
+
+    dispatched_linalg_methods_factorization = [
+        fn.linalg.eigs,
+        fn.linalg.eigsh,
+        fn.linalg.svds,
+    ]
+
+    dispatched_linalg_methods_linear_solver = [
+        fn.linalg.spsolve,
+    ]
+
+    @pytest.mark.parametrize("matrix", matrix)
+    def test_get_interface_scipy(self, matrix):
+        """Test that the interface of a scipy sparse matrix is correctly returned."""
+
+        assert fn.get_interface(matrix) == "scipy"
+        assert fn.get_interface(matrix, matrix) == "scipy"
+
+    @pytest.mark.parametrize("matrix", matrix)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods)
+    def test_dispatched_linalg_methods_single(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_factorization)
+    def test_dispatched_linalg_methods_factorization(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, 1)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_linear_solver)
+    def test_dispatched_linalg_methods_linear_solver(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, sci.sparse.eye(matrix.shape[0]))
+
+    @pytest.mark.parametrize("matrix", matrix + matrix_4)
+    def test_dispatched_linalg_methods_matrix_power(self, matrix):
+        """Test that the matrix power method dispatched"""
+        fn.linalg.matrix_power(matrix, 2)
+
+
+# pylint: disable=too-few-public-methods
+class TestInterfaceEnum:
+    """Test the Interface enum class"""
+
+    def test_eq(self):
+        """Test that an error is raised if comparing to string"""
+        assert fn.Interface.NUMPY == fn.Interface.NUMPY
+        with pytest.raises(TypeError, match="Cannot compare Interface with str"):
+            # pylint: disable=pointless-statement
+            fn.Interface.NUMPY == "numpy"
 
 
 @pytest.mark.parametrize("t", test_data)
@@ -1947,6 +2060,21 @@ class TestDiag:
         res = fn.diag(t, k=1)
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
 
+    def test_array_to_vector_tensorflow(self):
+        """Test that calling diag on a 2D array returns the diagonal."""
+
+        x = tf.Variable([[1.0, 2.0], [3.0, 4.0]])
+        res = fn.diag(x)
+        assert fn.allclose(res, tf.Variable([1.0, 4.0]))
+
+    def test_error_on_higher_dim_tensorflow(self):
+        """Test that a ValueError is raised if diag is called on a 3D tensor."""
+
+        x = tf.reshape(tf.range(27), (3, 3, 3))
+
+        with pytest.raises(ValueError, match="Input must be 1- or 2-d."):
+            fn.diag(x)
+
     def test_torch(self):
         """Test that a torch tensor is automatically converted into
         a diagonal tensor"""
@@ -2142,7 +2270,7 @@ class TestCovMatrix:
     def test_jax(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the JAX interface"""
-        dev = qml.device("default.qubit.jax", wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(weights):
@@ -2292,7 +2420,22 @@ def test_gather(tensor):
 
 
 class TestCoercion:
-    """Test that TensorFlow and PyTorch correctly coerce types"""
+    """Test that qml.math.coerce works for all supported interfaces."""
+
+    @pytest.mark.parametrize("coercion_interface", ["jax", "autograd", "scipy"])
+    def test_trivial_coercions(self, coercion_interface):
+        """Test coercion is trivial for JAX, Autograd, and Scipy."""
+        tensors = [
+            jnp.array([0.2]),
+            onp.array([1, 2, 3]),
+            tf.constant(1 + 3j, dtype=tf.complex64),
+            torch.tensor(1 + 3j, dtype=torch.complex64),
+            np.array([1, 2, 3]),
+        ]
+        expected_interfaces = ["jax", "numpy", "tensorflow", "torch", "autograd"]
+        res = qml.math.coerce(tensors, like=coercion_interface)
+        for tensor, interface in zip(res, expected_interfaces, strict=True):
+            assert fn.get_interface(tensor) == interface
 
     def test_tensorflow_coercion(self):
         """Test tensorflow coercion"""
@@ -2906,3 +3049,11 @@ class TestSetIndex:
 
         assert qml.math.allclose(array2, jnp.array([[7, 2, 3, 4]]))
         assert isinstance(array2, jnp.ndarray)
+
+
+def test_unstack_tensorflow():
+    """Test that unstack works with tensorflow variables."""
+    x = tf.Variable([0.1, 0.2])
+    r1, r2 = qml.math.unstack(x)
+    assert qml.math.allclose(r1, tf.Variable(0.1))
+    assert qml.math.allclose(r2, tf.Variable(0.2))

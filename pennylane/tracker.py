@@ -42,7 +42,7 @@ class Tracker:
     manually triggered by setting ``tracker.active = True`` without the use of a context manager.
 
     Args:
-        dev (Device): A PennyLane compatible device
+        dev (.devices.Device): A PennyLane compatible device
         callback=None (callable or None): A function of the keywords ``totals``,
             ``history`` and ``latest``.  Run on each ``record`` call with current values of
             the corresponding attributes.
@@ -62,7 +62,7 @@ class Tracker:
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         x = np.array(0.1, requires_grad=True)
 
@@ -72,24 +72,26 @@ class Tracker:
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
     >>> tracker.totals
-    {'batches': 2, 'simulations': 3, 'executions': 3, 'shots': 300}
+    {'batches': 2, 'simulations': 3, 'executions': 3, 'results': 0.86, 'shots': 300}
     >>> tracker.latest
     {'simulations': 1,
      'executions': 1,
-     'results': array(-0.08),
+     'results': 0.16,
      'shots': 100,
      'resources': Resources(num_wires=1, num_gates=1,
                             gate_types=defaultdict(<class 'int'>, {'RX': 1}),
                             gate_sizes=defaultdict(<class 'int'>, {1: 1}),
                             depth=1,
-                            shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),)))}
+                            shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),))),
+     'errors': {}
+    }
     >>> tracker.history.keys()
-    dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources'])
+    dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources', 'errors'])
     >>> tracker.history['results']
-    [array(1.), array(0.02), array(-0.08)]
+    [1.0, -0.3, 0.16]
     >>> print(tracker.history['resources'][0])
-    wires: 1
-    gates: 1
+    num_wires: 1
+    num_gates: 1
     depth: 1
     shots: Shots(total=100)
     gate_types:
@@ -143,15 +145,15 @@ class Tracker:
         >>> @qml.qnode(dev)
         ... def circuit(x):
         ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         ...
         >>> with qml.Tracker(dev) as tracker:
         ...     circuit(0.1)
         ...
         >>> resources_lst = tracker.history['resources']
         >>> print(resources_lst[0])
-        wires: 1
-        gates: 1
+        num_wires: 1
+        num_gates: 1
         depth: 1
         shots: Shots(total=10)
         gate_types:

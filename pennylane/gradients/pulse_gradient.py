@@ -15,27 +15,29 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
-from typing import Sequence, Callable
-from functools import partial
 import warnings
+from functools import partial
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.pulse import ParametrizedEvolution, HardwareHamiltonian
 from pennylane import transform
+from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.typing import PostprocessingFn
 
-from .parameter_shift import _make_zero_rep
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from .gradient_transform import (
     _all_zero_grad,
-    assert_no_state_returns,
-    assert_no_tape_batching,
-    assert_no_variance,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
     _no_trainable_grad,
+    assert_no_state_returns,
+    assert_no_trainable_tape_batching,
+    assert_no_variance,
+    choose_trainable_param_indices,
+    find_and_validate_gradient_methods,
     reorder_grads,
 )
+from .parameter_shift import _make_zero_rep
 
 has_jax = True
 try:
@@ -270,13 +272,6 @@ def _parshift_and_integrate(
         # Single measurement without shot vector
         return _psr_and_contract(results, cjacs, int_prefactor)
 
-    # Multiple measurements with shot vector. Not supported with broadcasting yet.
-    if use_broadcasting:
-        # TODO: Remove once #2690 is resolved
-        raise NotImplementedError(
-            "Broadcasting, multiple measurements and shot vectors are currently not "
-            "supported all simultaneously by stoch_pulse_grad."
-        )
     return tuple(
         tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
     )
@@ -285,12 +280,12 @@ def _parshift_and_integrate(
 # pylint: disable=too-many-arguments
 @partial(transform, final_transform=True)
 def stoch_pulse_grad(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     num_split_times=1,
     sampler_seed=None,
     use_broadcasting=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 
@@ -337,7 +332,8 @@ def stoch_pulse_grad(
         tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         num_split_times (int): number of time samples to use in the stochastic parameter-shift
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
@@ -390,18 +386,18 @@ def stoch_pulse_grad(
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit")
 
         def sin(p, t):
             return jax.numpy.sin(p * t)
 
-        ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
-        Y_plus_X = qml.dot([1/5, 3/5], [qml.PauliY(0), qml.PauliX(1)])
-        H = 0.5 * qml.PauliX(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
+        ZZ = qml.Z(0) @ qml.Z(1)
+        Y_plus_X = qml.dot([1/5, 3/5], [qml.Y(0), qml.X(1)])
+        H = 0.5 * qml.X(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
 
         def ansatz(params):
             qml.evolve(H)(params, (0.2, 0.4))
-            return qml.expval(qml.PauliY(1))
+            return qml.expval(qml.Y(1))
 
         qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
 
@@ -607,7 +603,7 @@ def stoch_pulse_grad(
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if num_split_times < 1:
         raise ValueError(
@@ -621,14 +617,13 @@ def stoch_pulse_grad(
     if use_broadcasting and tape.batch_size is not None:
         raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=stoch_pulse_grad)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params_indices)
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     sampler_seed = sampler_seed or np.random.randint(18421)
     key = jax.random.PRNGKey(sampler_seed)
@@ -787,8 +782,8 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
     """
     tapes = []
     gradient_data = []
-    for idx, trainable_idx in enumerate(tape.trainable_params):
-        if trainable_idx not in argnum:
+    for idx in range(tape.num_params):
+        if idx not in argnum:
             # Only the number of tapes is needed to indicate a zero gradient entry
             gradient_data.append((0, None, None, None))
             continue

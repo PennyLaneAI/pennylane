@@ -16,8 +16,8 @@ Contains the ``AngleEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import RX, RY, RZ
-from pennylane.operation import Operation, AnyWires
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
 
@@ -65,7 +65,7 @@ class AngleEmbedding(Operation):
         Here, we have also used rotation angles :class:`RZ`. If not specified, :class:`RX` is used as default.
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(X))
+        >>> print(qml.draw(circuit, level="device")(X))
         0: ──RZ(1.00)──H─┤ ╭Probs
         1: ──RZ(2.00)────┤ ├Probs
         2: ──RZ(3.00)────┤ ╰Probs

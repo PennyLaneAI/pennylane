@@ -13,6 +13,8 @@
 # limitations under the License.
 """Contains a gradient recipe for the coefficients of Hamiltonians."""
 # pylint: disable=protected-access,unnecessary-lambda
+import warnings
+
 import pennylane as qml
 
 
@@ -20,19 +22,34 @@ def hamiltonian_grad(tape, idx):
     """Computes the tapes necessary to get the gradient of a tape with respect to
     a Hamiltonian observable's coefficients.
 
+    .. warning::
+        This function is deprecated and will be removed in v0.42. This gradient recipe is not
+        required for the new operator arithmetic of PennyLane.
+
     Args:
         tape (qml.tape.QuantumTape): tape with a single Hamiltonian expectation as measurement
         idx (int): index of parameter that we differentiate with respect to
     """
+    warnings.warn(
+        "The 'hamiltonian_grad' function is deprecated and will be removed in v0.42. "
+        "This gradient recipe is not required for the new operator arithmetic system.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     op, m_pos, p_idx = tape.get_operation(idx)
 
     # get position in queue
     queue_position = m_pos - len(tape.operations)
     new_measurements = list(tape.measurements)
-    new_measurements[queue_position] = qml.expval(op.ops[p_idx])
 
-    new_tape = qml.tape.QuantumScript(tape.operations, new_measurements, shots=tape.shots)
+    new_parameters = [0 * d for d in op.data]
+    new_parameters[p_idx] = qml.math.ones_like(op.data[p_idx])
+    new_obs = qml.ops.functions.bind_new_parameters(op, new_parameters)
+    new_obs = qml.simplify(new_obs)
+
+    new_measurements[queue_position] = qml.expval(new_obs)
+
+    new_tape = tape.copy(measurements=new_measurements)
 
     if len(tape.measurements) > 1:
 
@@ -40,9 +57,7 @@ def hamiltonian_grad(tape, idx):
             res = results[0][queue_position]
             zeros = qml.math.zeros_like(res)
 
-            final = []
-            for i, _ in enumerate(tape.measurements):
-                final.append(res if i == queue_position else zeros)
+            final = [res if i == queue_position else zeros for i, _ in enumerate(tape.measurements)]
 
             return qml.math.expand_dims(qml.math.stack(final), 0)
 

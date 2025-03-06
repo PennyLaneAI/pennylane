@@ -17,8 +17,8 @@ They can optionally be repeated, and may contain trainable parameters. Embedding
 used at the beginning of a circuit.
 """
 
-from .angle import AngleEmbedding
 from .amplitude import AmplitudeEmbedding
+from .angle import AngleEmbedding
 from .basis import BasisEmbedding
 from .displacement import DisplacementEmbedding
 from .iqp import IQPEmbedding

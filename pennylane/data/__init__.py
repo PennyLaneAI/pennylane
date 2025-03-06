@@ -15,7 +15,7 @@
 
 .. note::
 
-    For more details on using datasets, please see the
+    To start using datasets, please first see the
     :doc:`quantum datasets quickstart guide </introduction/data>`.
 
 Overview
@@ -37,6 +37,7 @@ Additionally, users can easily create, write to disk, and read custom datasets u
     load
     load_interactive
     list_attributes
+    list_data_names
     list_datasets
 
 In addition, various dataset types are provided
@@ -82,15 +83,14 @@ Creating a Dataset
 
 To create a new dataset in-memory, initialize a new :class:`~.Dataset` with the desired attributes:
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+>>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
 >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
 >>> dataset = qml.data.Dataset(
 ...   hamiltonian = hamiltonian,
 ...   eigen = {"eigvals": eigvals, "eigvecs": eigvecs}
 ... )
 >>> dataset.hamiltonian
-(1.0) [Z0]
-+ (1.0) [Z1]
+1.0 * Z(0) + 1.0 * Z(1)
 >>> dataset.eigen
 {'eigvals': array([-2.,  0.,  0.,  2.]),
 'eigvecs': array([[0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
@@ -133,6 +133,12 @@ it from the file:
 >>> my_dataset = Dataset.open("~/dataset/my_dataset/h5", mode="copy")
 >>> my_dataset.new_attribute = "abc"
 
+.. important::
+
+    Since opened datasets stream data from the disk, it is not possible to simultaneously access the same
+    dataset from separately running scripts or multiple Jupyter notebooks. To get around
+    this, either make a copy of the dataset in the disk or access the dataset using :meth:`Dataset.open()`
+    with ``mode="copy"``.
 
 Attribute Metadata
 ------------------
@@ -140,19 +146,19 @@ Attribute Metadata
 Dataset attributes can also contain additional metadata, such as docstrings. The :func:`~.data.attribute`
 function can be used to attach metadata on assignment or initialization.
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+>>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
 >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
 >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
 ...     hamiltonian,
 ...     doc="The hamiltonian of the system"))
 >>> dataset.eigen = qml.data.attribute(
 ...     {"eigvals": eigvals, "eigvecs": eigvecs},
-...     doc="Eigenvalues and eigenvectors of the hamiltonain")
+...     doc="Eigenvalues and eigenvectors of the hamiltonian")
 
 This metadata can then be accessed using the :meth:`Dataset.attr_info` mapping:
 
 >>> dataset.attr_info["eigen"]["doc"]
-'Eigenvalues and eigenvectors of the hamiltonain'
+'Eigenvalues and eigenvectors of the hamiltonian'
 
 
 Declarative API
@@ -186,7 +192,7 @@ definition:
 >>> dataset = QuantumOscillator(
 ...     mass=1,
 ...     force_constant=0.5,
-...     hamiltonian=qml.PauliX(0),
+...     hamiltonian=qml.X(0),
 ...     energy_levels=np.array([0.1, 0.2])
 ... )
 >>> dataset.attr_info["mass"]["doc"]
@@ -202,6 +208,7 @@ from .attributes import (
     DatasetMolecule,
     DatasetNone,
     DatasetOperator,
+    DatasetPyTree,
     DatasetScalar,
     DatasetSparseArray,
     DatasetString,
@@ -215,6 +222,7 @@ from .data_manager import (
     FULL,
     list_attributes,
     list_datasets,
+    list_data_names,
     load,
     load_interactive,
 )
@@ -227,6 +235,7 @@ __all__ = (
     "DatasetAttribute",
     "DatasetNotWriteableError",
     "DatasetArray",
+    "DatasetPyTree",
     "DatasetScalar",
     "DatasetString",
     "DatasetList",
@@ -240,6 +249,7 @@ __all__ = (
     "load",
     "load_interactive",
     "list_attributes",
+    "list_data_names",
     "list_datasets",
     "DEFAULT",
     "FULL",

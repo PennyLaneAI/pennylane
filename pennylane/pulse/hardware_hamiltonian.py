@@ -14,15 +14,15 @@
 """This module contains the classes/functions needed to simulate and execute the evolution of real
 Hardware Hamiltonians"""
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, List, Union
+from typing import Optional, Union
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.operation import Operator
-from pennylane.ops.qubit.hamiltonian import Hamiltonian
-
+from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
@@ -72,7 +72,7 @@ def drive(amplitude, phase, wires):
     .. code-block:: python3
 
         wires = [0, 1, 2, 3]
-        H_int = sum([qml.PauliX(i) @ qml.PauliX((i+1)%len(wires)) for i in wires])
+        H_int = sum([qml.X(i) @ qml.X((i+1)%len(wires)) for i in wires])
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
@@ -96,18 +96,20 @@ def drive(amplitude, phase, wires):
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit.jax", wires=wires)
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=wires)
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H_int + H_d)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> params = [2.4]
     >>> circuit(params)
     Array(0.32495208, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(1.31956098, dtype=float64)]
+    [Array(1.31956098, dtype=float64, weak_type=True)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
@@ -124,7 +126,7 @@ def drive(amplitude, phase, wires):
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
             qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         p_global = 2.4
         p_amp = [1.3, -2.0]
@@ -132,12 +134,12 @@ def drive(amplitude, phase, wires):
         params = (p_global, p_amp, p_phase)
 
     >>> circuit_local(params)
-    Array(-0.5334795, dtype=float64)
+    Array(0.37385014, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    (Array(0.01654573, dtype=float64),
-     [Array(-0.04422795, dtype=float64, weak_type=True),
-      Array(-0.51375441, dtype=float64, weak_type=True)],
-     Array(0.21901967, dtype=float64))
+    (Array(-3.35835837, dtype=float64),
+     [Array(-3.35835837, dtype=float64, weak_type=True),
+      Array(-3.35835837, dtype=float64, weak_type=True)],
+     Array(0.1339487, dtype=float64))
 
     .. details::
         :title: Theoretical background
@@ -189,7 +191,7 @@ def drive(amplitude, phase, wires):
             H_d = qml.pulse.drive(amplitude, phase, wires)
 
             # detuning term
-            H_z = qml.dot([-3*np.pi/4]*len(wires), [qml.PauliZ(i) for i in wires])
+            H_z = qml.dot([-3*jnp.pi/4]*len(wires), [qml.Z(i) for i in wires])
 
 
         The total Hamiltonian of that evolution is given by
@@ -202,17 +204,17 @@ def drive(amplitude, phase, wires):
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit.jax", wires=wires)
+            dev = qml.device("default.qubit", wires=wires)
             @qml.qnode(dev, interface="jax")
             def circuit(params):
                 qml.evolve(H_i + H_z + H_d)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         >>> params = [2.4]
         >>> circuit(params)
-        Array(0.6962041, dtype=float64)
+        Array(0.96347734, dtype=float64)
         >>> jax.grad(circuit)(params)
-        [Array(1.75825695, dtype=float64)]
+        [Array(-0.4311521, dtype=float64, weak_type=True)]
     """
     wires = Wires(wires)
 
@@ -223,8 +225,8 @@ def drive(amplitude, phase, wires):
         amplitude_and_phase(qml.math.sin, amplitude, phase),
     ]
 
-    drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
-    drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
+    drive_x_term = qml.Hamiltonian([0.5] * len(wires), [qml.X(wire) for wire in wires])
+    drive_y_term = qml.Hamiltonian([-0.5] * len(wires), [qml.Y(wire) for wire in wires])
 
     observables = [drive_x_term, drive_y_term]
 
@@ -307,8 +309,8 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         coeffs,
         observables,
         reorder_fn: Callable = _reorder_parameters,
-        pulses: List["HardwarePulse"] = None,
-        settings: Union["RydbergSettings", "TransmonSettings"] = None,
+        pulses: Optional[list["HardwarePulse"]] = None,
+        settings: Optional[Union["qml.pulse.RydbergSettings", "qml.pulse.TransmonSettings"]] = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses
@@ -353,7 +355,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         settings = self.settings
         pulses = self.pulses
 
-        if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
+        if isinstance(other, (qml.ops.LinearCombination, ParametrizedHamiltonian)):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
             return HardwareHamiltonian(
@@ -434,7 +436,7 @@ class HardwarePulse:
     amplitude: Union[float, Callable]
     phase: Union[float, Callable]
     frequency: Union[float, Callable]
-    wires: List[Wires]
+    wires: list[Wires]
 
     def __post_init__(self):
         self.wires = Wires(self.wires)

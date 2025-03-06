@@ -15,28 +15,29 @@
 This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
-from typing import Callable, Sequence
 from functools import partial
+
 import numpy as np
 
 import pennylane as qml
-
-from pennylane.pulse import ParametrizedEvolution
-from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
 from pennylane import transform
+from pennylane.ops.qubit.special_unitary import _pauli_decompose, pauli_basis_strings
+from pennylane.pulse import ParametrizedEvolution
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.typing import PostprocessingFn
 
-from .parameter_shift import _make_zero_rep
-from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
 from .gradient_transform import (
     _all_zero_grad,
-    assert_no_state_returns,
-    assert_no_tape_batching,
-    assert_no_variance,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
     _no_trainable_grad,
+    assert_no_state_returns,
+    assert_no_trainable_tape_batching,
+    assert_no_variance,
+    choose_trainable_param_indices,
+    find_and_validate_gradient_methods,
     reorder_grads,
 )
+from .parameter_shift import _make_zero_rep
+from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
 
 try:
     import jax
@@ -47,7 +48,7 @@ except ImportError:
 
 def _one_parameter_generators(op):
     r"""Compute the effective generators :math:`\{\Omega_k\}` of one-parameter groups that
-    reproduce the partial derivatives of a parameterized evolution.
+    reproduce the partial derivatives of a parametrized evolution.
     In particular, compute :math:`U` and :math:`\partial U / \partial \theta_k`
     and recombine them into :math:`\Omega_k = U^\dagger \partial U / \partial \theta_k`
 
@@ -289,7 +290,8 @@ def _expval_pulse_odegen(tape, argnum, atol):
             parameter-shift rule.
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         atol (float): absolute tolerance used to determine vanishing contributions.
 
     Returns:
@@ -400,8 +402,8 @@ def _expval_pulse_odegen(tape, argnum, atol):
 
 @partial(transform, final_transform=True)
 def pulse_odegen(
-    tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+    tape: QuantumScript, argnum=None, atol=1e-7
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
@@ -430,7 +432,8 @@ def pulse_odegen(
         tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
@@ -457,7 +460,7 @@ def pulse_odegen(
 
     **Example**
 
-    Consider the parameterized Hamiltonian
+    Consider the parametrized Hamiltonian
     :math:`\theta_0 Y_{0}+f(\boldsymbol{\theta_1}, t) Y_{1} + \theta_2 Z_{0}X_{1}`
     with parameters :math:`\theta_0 = \frac{1}{5}`,
     :math:`\boldsymbol{\theta_1}=\left(\frac{3}{5}, \frac{1}{5}\right)^{T}` and
@@ -467,11 +470,12 @@ def pulse_odegen(
 
     .. code-block:: python
 
+        from jax import numpy as jnp
         jax.config.update("jax_enable_x64", True)
         H = (
-            qml.pulse.constant * qml.PauliY(0)
-            + jnp.polyval * qml.PauliY(1)
-            + qml.pulse.constant * (qml.PauliZ(0) @ qml.PauliX(1))
+            qml.pulse.constant * qml.Y(0)
+            + jnp.polyval * qml.Y(1)
+            + qml.pulse.constant * (qml.Z(0) @ qml.X(1))
         )
         params = [jnp.array(0.2), jnp.array([0.6, 0.2]), jnp.array(0.4)]
         t = [0.1, 0.9]
@@ -481,12 +485,12 @@ def pulse_odegen(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
         def circuit(params):
             op = qml.evolve(H)(params, t)
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.X(0))
 
     We registered the ``QNode`` to be differentiated with the ``pulse_odegen`` method.
     This allows us to simply differentiate it with ``jax.grad``, which internally
@@ -500,8 +504,9 @@ def pulse_odegen(
     Alternatively, we may apply the transform to the tape of the pulse program, obtaining
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
-    >>> circuit.construct((params,), {}) # Build the tape of the circuit.
-    >>> tapes, fun = qml.gradients.pulse_odegen(circuit.tape, argnums=[0, 1, 2])
+    >>> tape = qml.workflow.construct_tape(circuit)(params) # Build the tape of the circuit.
+    >>> tape.trainable_params = [0, 1, 2]
+    >>> tapes, fun = qml.gradients.pulse_odegen(tape, argnum=[0, 1, 2])
     >>> len(tapes)
     12
 
@@ -679,19 +684,18 @@ def pulse_odegen(
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=pulse_odegen)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params_indices)
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     return _expval_pulse_odegen(tape, argnum, atol)
 

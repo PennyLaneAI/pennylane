@@ -19,19 +19,19 @@ works correctly an a device.
 # pylint: disable=too-many-arguments
 # pylint: disable=pointless-statement
 # pylint: disable=unnecessary-lambda-assignment
+# pylint: disable=no-name-in-module
 from cmath import exp
 from math import cos, sin, sqrt
 
-import pytest
 import numpy as np
-from scipy.linalg import block_diag
+import pytest
 from flaky import flaky
+from scipy.linalg import block_diag
 
 import pennylane as qml
 
 pytestmark = pytest.mark.skip_unsupported
 
-np.random.seed(42)
 
 # ==========================================================
 # Some useful global variables
@@ -54,23 +54,26 @@ ops = {
     "CH": qml.CH(wires=[0, 1]),
     "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
+    "H": qml.H(wires=[0]),
     "MultiRZ": qml.MultiRZ(0, wires=[0]),
-    "PauliX": qml.PauliX(wires=[0]),
-    "PauliY": qml.PauliY(wires=[0]),
-    "PauliZ": qml.PauliZ(wires=[0]),
+    "PauliX": qml.X(0),
+    "PauliY": qml.Y(0),
+    "PauliZ": qml.Z(0),
+    "X": qml.X([0]),
+    "Y": qml.Y([0]),
+    "Z": qml.Z([0]),
     "PhaseShift": qml.PhaseShift(0, wires=[0]),
     "PCPhase": qml.PCPhase(0, 1, wires=[0, 1]),
     "ControlledPhaseShift": qml.ControlledPhaseShift(0, wires=[0, 1]),
     "CPhaseShift00": qml.CPhaseShift00(0, wires=[0, 1]),
     "CPhaseShift01": qml.CPhaseShift01(0, wires=[0, 1]),
     "CPhaseShift10": qml.CPhaseShift10(0, wires=[0, 1]),
-    "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
     "StatePrep": qml.StatePrep(np.array([1.0, 0.0]), wires=[0]),
     "QubitDensityMatrix": qml.QubitDensityMatrix(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "SpecialUnitary": qml.SpecialUnitary(np.array([0.2, -0.1, 2.3]), wires=1),
-    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
-    "MultiControlledX": qml.MultiControlledX(control_wires=[1, 2], wires=[0]),
+    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
+    "MultiControlledX": qml.MultiControlledX(wires=[1, 2, 0]),
     "IntegerComparator": qml.IntegerComparator(1, geq=True, wires=[0, 1, 2]),
     "RX": qml.RX(0, wires=[0]),
     "RY": qml.RY(0, wires=[0]),
@@ -274,7 +277,11 @@ single_qubit = [
     (qml.PauliX, X),
     (qml.PauliY, Y),
     (qml.PauliZ, Z),
+    (qml.X, X),
+    (qml.Y, Y),
+    (qml.Z, Z),
     (qml.Hadamard, H),
+    (qml.H, H),
     (qml.S, S),
     (qml.T, T),
     (qml.SX, SX),
@@ -352,15 +359,24 @@ class TestSupportedGates:
         device_kwargs["wires"] = 4  # maximum size of current gates
         dev = qml.device(**device_kwargs)
 
-        assert hasattr(dev, "operations")
-        if operation in dev.operations:
+        if isinstance(dev, qml.devices.LegacyDevice):
+            if operation not in dev.operations:
+                pytest.skip("operation not supported.")
+        else:
+            if ops[operation].name == "QubitDensityMatrix":
+                prog = dev.preprocess_transforms()
+                tape = qml.tape.QuantumScript([ops[operation]])
+                try:
+                    prog((tape,))
+                except qml.DeviceError:
+                    pytest.skip("operation not supported on the device")
 
-            @qml.qnode(dev)
-            def circuit():
-                qml.apply(ops[operation])
-                return qml.expval(qml.Identity(wires=0))
+        @qml.qnode(dev)
+        def circuit():
+            qml.apply(ops[operation])
+            return qml.expval(qml.Identity(wires=0))
 
-            assert isinstance(circuit(), (float, np.ndarray))
+        assert isinstance(circuit(), (float, np.ndarray))
 
 
 @flaky(max_runs=10)
@@ -380,7 +396,8 @@ class TestGatesQubit:
         """Test basis state initialization."""
         n_wires = 4
         dev = device(n_wires)
-        skip_if(dev, {"returns_probs": False})
+        if isinstance(dev, qml.devices.LegacyDevice):
+            skip_if(dev, {"returns_probs": False})
 
         @qml.qnode(dev)
         def circuit():
@@ -397,7 +414,8 @@ class TestGatesQubit:
         """Test StatePrep initialisation."""
         n_wires = 1
         dev = device(n_wires)
-        skip_if(dev, {"returns_probs": False})
+        if isinstance(dev, qml.devices.LegacyDevice):
+            skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
 
@@ -416,7 +434,8 @@ class TestGatesQubit:
         """Test PauliX application."""
         n_wires = 1
         dev = device(n_wires)
-        skip_if(dev, {"returns_probs": False})
+        if isinstance(dev, qml.devices.LegacyDevice):
+            skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
 
@@ -439,7 +458,8 @@ class TestGatesQubit:
         """Test single qubit gates taking a single scalar argument."""
         n_wires = 1
         dev = device(n_wires)
-        skip_if(dev, {"returns_probs": False})
+        if isinstance(dev, qml.devices.LegacyDevice):
+            skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
 
@@ -458,7 +478,8 @@ class TestGatesQubit:
         """Test three axis rotation gate."""
         n_wires = 1
         dev = device(n_wires)
-        skip_if(dev, {"returns_probs": False})
+        if isinstance(dev, qml.devices.LegacyDevice):
+            skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
         a = 0.542
@@ -481,9 +502,10 @@ class TestGatesQubit:
         """Test two qubit gates."""
         n_wires = 2
         dev = device(n_wires)
-        skip_if(dev, {"returns_probs": False})
-        if not dev.supports_operation(op(wires=range(n_wires)).name):
-            pytest.skip("op not supported")
+        if isinstance(dev, qml.devices.LegacyDevice):
+            skip_if(dev, {"returns_probs": False})
+            if not dev.supports_operation(op(wires=range(n_wires)).name):
+                pytest.skip("op not supported")
 
         rnd_state = init_state(n_wires)
 
@@ -506,7 +528,8 @@ class TestGatesQubit:
         """Test parametrized two qubit gates taking a single scalar argument."""
         n_wires = 2
         dev = device(n_wires)
-        skip_if(dev, {"returns_probs": False})
+        if isinstance(dev, qml.devices.LegacyDevice):
+            skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
 
@@ -527,10 +550,11 @@ class TestGatesQubit:
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
 
-        if "QubitUnitary" not in dev.operations:
-            pytest.skip("Skipped because device does not support QubitUnitary.")
+        if isinstance(dev, qml.devices.LegacyDevice):
+            if "QubitUnitary" not in dev.operations:
+                pytest.skip("Skipped because device does not support QubitUnitary.")
 
-        skip_if(dev, {"returns_probs": False})
+            skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
 
@@ -551,10 +575,11 @@ class TestGatesQubit:
         n_wires = int(np.log(len(theta_) + 1) / np.log(4))
         dev = device(n_wires)
 
-        if "SpecialUnitary" not in dev.operations:
-            pytest.skip("Skipped because device does not support SpecialUnitary.")
+        if isinstance(dev, qml.devices.LegacyDevice):
+            if "SpecialUnitary" not in dev.operations:
+                pytest.skip("Skipped because device does not support SpecialUnitary.")
 
-        skip_if(dev, {"returns_probs": False})
+            skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
 
@@ -579,7 +604,8 @@ class TestGatesQubit:
         n_wires = 3
         dev = device(n_wires)
 
-        skip_if(dev, {"returns_probs": False})
+        if isinstance(dev, qml.devices.LegacyDevice):
+            skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
 

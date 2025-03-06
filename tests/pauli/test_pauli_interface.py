@@ -17,7 +17,6 @@ Unit tests for the :mod:`pauli` interface functions in ``pauli/pauli_interface.p
 import pytest
 
 import pennylane as qml
-
 from pennylane.pauli import pauli_word_prefactor
 
 ops_factors = (
@@ -29,6 +28,7 @@ ops_factors = (
     (qml.PauliX(0) @ qml.PauliY(0), 1j),
     (qml.Hamiltonian([-1.23], [qml.PauliZ(0)]), -1.23),
     (qml.prod(qml.PauliX(0), qml.PauliY(1)), 1),
+    (qml.prod(qml.X(0), qml.Y(0)), 1j),
     (qml.s_prod(1.23, qml.s_prod(-1j, qml.PauliZ(0))), -1.23j),
 )
 

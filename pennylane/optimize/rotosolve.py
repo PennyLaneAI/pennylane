@@ -15,6 +15,7 @@
 # pylint: disable=too-many-branches,cell-var-from-loop
 
 from inspect import signature
+
 import numpy as np
 from scipy.optimize import brute, shgo
 
@@ -215,7 +216,7 @@ class RotosolveOptimizer:
                 qml.RX(layer_par, wires=w)
             for i, par in enumerate(crot_param*crot_weights):
                 qml.CRY(par, wires=[i, (i+1)%3])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+            return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
     This QNode is defined simply by measuring the expectation value of the tensor
     product of ``PauliZ`` operators on all qubits.
@@ -233,6 +234,8 @@ class RotosolveOptimizer:
     The number of frequencies per parameter are summarized in ``nums_frequency``.
 
     .. code-block :: python
+
+        from pennylane import numpy as np
 
         init_param = (
             np.array([0.3, 0.2, 0.67], requires_grad=True),
@@ -324,6 +327,7 @@ class RotosolveOptimizer:
     to converge than previously, Rotosolve was able to adapt to the more complicated
     dependence on the input arguments and still found the global minimum successfully.
     """
+
     # pylint: disable=too-few-public-methods
 
     def __init__(self, substep_optimizer="brute", substep_kwargs=None):
@@ -337,6 +341,7 @@ class RotosolveOptimizer:
         else:
             self.substep_optimizer = substep_optimizer
 
+    # pylint: disable=too-many-arguments
     def step_and_cost(
         self,
         objective_fn,
@@ -498,6 +503,7 @@ class RotosolveOptimizer:
 
         return args, fun_at_zero
 
+    # pylint: disable=too-many-arguments
     def step(
         self,
         objective_fn,

@@ -20,15 +20,18 @@ import itertools
 
 import numpy as np
 import pytest
-
 from gate_data import (
+    CCZ,
+    CH,
     CNOT,
     CSWAP,
-    CCZ,
+    CY,
+    CZ,
     ECR,
     ISWAP,
     SISWAP,
     SWAP,
+    SX,
     H,
     I,
     S,
@@ -37,7 +40,6 @@ from gate_data import (
     X,
     Y,
     Z,
-    CH,
 )
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
@@ -49,31 +51,77 @@ from pennylane.wires import Wires
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.Identity, I),
-    (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
     (qml.SISWAP, SISWAP),
-    (qml.CCZ, CCZ),
     (qml.S, S),
     (qml.T, T),
-    (qml.CSWAP, CSWAP),
-    (qml.Toffoli, Toffoli),
     (qml.ECR, ECR),
+    # Controlled operations
+    (qml.CNOT, CNOT),
     (qml.CH, CH),
+    (qml.Toffoli, Toffoli),
+    (qml.CSWAP, CSWAP),
+    (qml.CY, CY),
+    (qml.CZ, CZ),
+    (qml.CCZ, CCZ),
 ]
 
-SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
-    (qml.Identity(wires=0), I),
-    (qml.Hadamard(wires=0), H),
-    (qml.PauliZ(wires=0), Z),
-    (qml.PauliX(wires=0), X),
-    (qml.PauliY(wires=0), Y),
+NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED = [
+    (qml.X(0), X),
+    (qml.Y(0), Y),
+    (qml.Z(0), Z),
+    (qml.S(10000000), S),
+    (qml.T(10000000), T),
+    (qml.SX("qubit0"), SX),
+    (qml.SWAP([0, 1]), SWAP),
+    (qml.ISWAP([0, 1]), ISWAP),
+    (qml.ECR([-1, 1]), ECR),
+    (qml.SISWAP(["qubit0", "qubit1"]), SISWAP),
+]
+
+STRING_REPR = (
+    (qml.Identity(0), "I(0)"),
+    (qml.Hadamard(0), "H(0)"),
+    (qml.PauliX(0), "X(0)"),
+    (qml.PauliY(0), "Y(0)"),
+    (qml.PauliZ(0), "Z(0)"),
+    (qml.Identity("a"), "I('a')"),
+    (qml.Identity(10), "I(10)"),
+    (qml.Identity(), "I()"),
+    (qml.Hadamard("a"), "H('a')"),
+    (qml.PauliX("a"), "X('a')"),
+    (qml.PauliY("a"), "Y('a')"),
+    (qml.PauliZ("a"), "Z('a')"),
+    (qml.H("a"), "H('a')"),
+    (qml.X("a"), "X('a')"),
+    (qml.Y("a"), "Y('a')"),
+    (qml.Z("a"), "Z('a')"),
+    (qml.T("a"), "T('a')"),
+    (qml.S("a"), "S('a')"),
+    (qml.SX("a"), "SX('a')"),
+    (qml.H(0), "H(0)"),
+    (qml.X(1), "X(1)"),
+    (qml.Y(2), "Y(2)"),
+    (qml.Z(3), "Z(3)"),
+    (qml.T(0), "T(0)"),
+    (qml.S(0), "S(0)"),
+    (qml.SX(0), "SX(0)"),
 )
+
+
+@pytest.mark.parametrize("wire", [0, "a", "a"])
+def test_alias_XYZI(wire):
+    assert qml.PauliX(wire) == qml.X(wire)
+    assert qml.PauliY(wire) == qml.Y(wire)
+    assert qml.PauliZ(wire) == qml.Z(wire)
+    assert qml.Identity(wire) == qml.I(wire)
+    assert qml.Hadamard(wire) == qml.H(wire)
 
 
 class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
-    def test_nonparametrized_op_copy(self, op_cls, _, tol):
+    def test_op_copy(self, op_cls, _, tol):
         """Tests that copied nonparametrized ops function as expected"""
         op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
         copied_op = copy.copy(op)
@@ -88,8 +136,15 @@ class TestOperations:
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("op, str_repr", STRING_REPR)
+    def test_string_repr(self, op, str_repr):
+        """Test explicit string representations that overwrite the Operator default"""
+        assert repr(op) == str_repr
+
 
 class TestDecompositions:
+    """Tests that the decomposition of non-parametrized operations is correct"""
+
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
         op = qml.PauliX(wires=0)
@@ -238,7 +293,7 @@ class TestDecompositions:
             elif i.wires == Wires([0, 1]) and i.name == "CZ":
                 mats.append(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]))
             else:
-                raise Exception("Unexpected gate in decomposition.")
+                raise ValueError("Unexpected gate in decomposition.")
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
@@ -440,7 +495,7 @@ class TestDecompositions:
                     )
                 )
             else:
-                raise Exception("Unexpected gate in decomposition.")
+                raise ValueError("Unexpected gate in decomposition.")
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
@@ -537,136 +592,54 @@ class TestEigenval:
         expected = np.linalg.eigvals(qml.SX(wires=0).matrix())
         assert np.allclose(evals, expected)
 
+    def test_cz_eigenval(self):
+        """Tests that the CZ eigenvalue matches the numpy eigenvalues of the CZ matrix"""
+
+        op = qml.CZ(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
+
 
 class TestMultiControlledX:
     """Tests for the MultiControlledX"""
 
     X = np.array([[0, 1], [1, 0]])
 
-    @pytest.mark.parametrize(
-        "control_wires,wires,control_values,expected_warning_message",
-        [
-            ([0], 1, "0", "The control_wires keyword will be removed soon."),
-        ],
-    )
-    def test_warning_depractation_controlwires(
-        self, control_wires, wires, control_values, expected_warning_message
-    ):
-        target_wires = wires
-        with pytest.warns(UserWarning, match=expected_warning_message):
-            qml.MultiControlledX(
-                control_wires=control_wires, wires=target_wires, control_values=control_values
-            )
+    def test_str_control_values_error(self):
+        """Tests that control_values specified with a bit string is deprecated."""
+        with pytest.raises(
+            ValueError,
+            match="control_values must be boolean or int",
+        ):
+            _ = qml.MultiControlledX(wires=[0, 1, 2], control_values="01")
 
     @pytest.mark.parametrize(
-        "control_wires,wires,control_values,expected_error_message",
+        "wires, control_values, error_message",
         [
-            (None, None, "10", "Must specify the wires where the operation acts on"),
-            (None, [0, 1, 2], "ab", "String of control values can contain only '0' or '1'."),
+            (None, [1, 0], "Must specify the wires where the operation acts on"),
+            ([0, 1, 2], [0, 1, 0], "Length of control values must equal number of control wires."),
             (
-                None,
-                [0, 1, 2],
-                "011",
-                "Length of control bit string must equal number of control wires.",
-            ),
-            (
-                None,
-                [0, 1, 2],
-                [0, 1],
-                "Control values must be passed as a string.",
-            ),
-            (
-                None,
                 [1],
-                "1",
+                [1],
                 r"MultiControlledX: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
             ),
-            ([0], None, "", "Must specify the wires where the operation acts on"),
-            ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
-            ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
-            ([0, 1], 2, [0, 1], "Control values must be passed as a string."),
-            ([0, 1], [2, 3], "10", "MultiControlledX accepts a single target wire."),
         ],
     )
-    @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon.")
-    def test_invalid_mixed_polarity_controls(
-        self, control_wires, wires, control_values, expected_error_message
-    ):
-        """Test if MultiControlledX properly handles invalid mixed-polarity
-        control values."""
-        target_wires = wires
+    def test_invalid_arguments_to_init(self, wires, control_values, error_message):
+        """Tests initializing a MultiControlledX with invalid arguments"""
+        with pytest.raises(ValueError, match=error_message):
+            _ = qml.MultiControlledX(wires=wires, control_values=control_values)
 
-        with pytest.raises(ValueError, match=expected_error_message):
-            qml.MultiControlledX(
-                control_wires=control_wires, wires=target_wires, control_values=control_values
-            ).matrix()
-
-    @pytest.mark.parametrize(
-        "control_wires,wires,control_values",
-        [
-            ([0], 1, "0"),
-            ([0, 1], 2, "00"),
-            ([0, 1], 2, "10"),
-            ([1, 0], 2, "10"),
-            ([0, 1], 2, "11"),
-            ([0, 2], 1, "10"),
-            ([1, 2, 0], 3, "100"),
-            ([1, 0, 2, 4], 3, "1001"),
-            ([0, 1, 2, 5, 3, 6], 4, "100001"),
-        ],
-    )
-    @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon.")
-    def test_mixed_polarity_controls_old(self, control_wires, wires, control_values):
-        """Test if MultiControlledX properly applies mixed-polarity
-        control values with old version of the arguments."""
-
-        target_wires = Wires(wires)
-        dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
-
-        # Pick random starting state for the control and target qubits
-        control_state_weights = np.random.normal(size=(2 ** (len(control_wires) + 1) - 2))
-        target_state_weights = np.random.normal(size=(2 ** (len(target_wires) + 1) - 2))
-
-        @qml.qnode(dev)
-        def circuit_mpmct():
-            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
-            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
-
-            qml.MultiControlledX(
-                control_wires=control_wires, wires=target_wires, control_values=control_values
-            )
-            return qml.state()
-
-        # The result of applying the mixed-polarity gate should be the same as
-        # if we conjugated the specified control wires with Pauli X and applied the
-        # "regular" ControlledQubitUnitary in between.
-
-        x_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
-
-        @qml.qnode(dev)
-        def circuit_pauli_x():
-            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
-            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
-
-            for wire in x_locations:
-                qml.PauliX(wires=control_wires[wire])
-
-            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wires)
-
-            for wire in x_locations:
-                qml.PauliX(wires=control_wires[wire])
-
-            return qml.state()
-
-        mpmct_state = circuit_mpmct()
-        pauli_x_state = circuit_pauli_x()
-
-        assert np.allclose(mpmct_state, pauli_x_state)
+    def test_decomposition_not_enough_wires(self):
+        """Test that the decomposition raises an error if the number of wires is lower than two"""
+        with pytest.raises(ValueError, match="Wrong number of wires"):
+            qml.MultiControlledX.compute_decomposition((0,), control_values=[1])
 
     def test_decomposition_no_control_values(self):
         """Test decomposition has default control values of all ones."""
         decomp1 = qml.MultiControlledX.compute_decomposition((0, 1, 2))
-        decomp2 = qml.MultiControlledX.compute_decomposition((0, 1, 2), control_values="111")
+        decomp2 = qml.MultiControlledX.compute_decomposition((0, 1, 2), control_values=[1, 1, 1])
 
         assert len(decomp1) == len(decomp2)
 
@@ -676,15 +649,15 @@ class TestMultiControlledX:
     @pytest.mark.parametrize(
         "wires,control_values",
         [
-            ([0, 1], "0"),
-            ([0, 1, 2], "00"),
-            ([0, 1, 2], "10"),
-            ([1, 0, 2], "10"),
-            ([0, 1, 2], "11"),
-            ([0, 2, 1], "10"),
-            ([1, 2, 0, 3], "100"),
-            ([1, 0, 2, 4, 3], "1001"),
-            ([0, 1, 2, 5, 3, 6, 4], "100001"),
+            ([0, 1], [0]),
+            ([0, 1, 2], [0, 0]),
+            ([0, 1, 2], [1, 0]),
+            ([1, 0, 2], [1, 0]),
+            ([0, 1, 2], [1, 1]),
+            ([0, 2, 1], [1, 0]),
+            ([1, 2, 0, 3], [1, 0, 0]),
+            ([1, 0, 2, 4, 3], [1, 0, 0, 1]),
+            ([0, 1, 2, 5, 3, 6, 4], [1, 0, 0, 0, 0, 1]),
         ],
     )
     def test_mixed_polarity_controls(self, wires, control_values):
@@ -697,8 +670,8 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
 
         # Pick random starting state for the control and target qubits
-        control_state_weights = np.random.normal(size=(2 ** (len(control_wires) + 1) - 2))
-        target_state_weights = np.random.normal(size=(2 ** (len(target_wires) + 1) - 2))
+        control_state_weights = np.random.normal(size=2 ** (len(control_wires) + 1) - 2)
+        target_state_weights = np.random.normal(size=2 ** (len(target_wires) + 1) - 2)
 
         @qml.qnode(dev)
         def circuit_mpmct():
@@ -712,7 +685,7 @@ class TestMultiControlledX:
         # if we conjugated the specified control wires with Pauli X and applied the
         # "regular" ControlledQubitUnitary in between.
 
-        x_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
+        x_locations = [x for x in range(len(control_values)) if control_values[x] == 0]
 
         @qml.qnode(dev)
         def circuit_pauli_x():
@@ -722,7 +695,7 @@ class TestMultiControlledX:
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
 
-            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wires)
+            qml.ControlledQubitUnitary(X, wires=control_wires + target_wires)
 
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
@@ -732,99 +705,25 @@ class TestMultiControlledX:
         mpmct_state = circuit_mpmct()
         pauli_x_state = circuit_pauli_x()
 
-        assert np.allclose(mpmct_state, pauli_x_state)
-
-    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
-    def test_decomposition_with_many_workers(self, n_ctrl_wires):
-        """Test that the decomposed MultiControlledX gate performs the same unitary as the
-        matrix-based version by checking if U^dagger U applies the identity to each basis
-        state. This test focuses on the case where there are many work wires."""
-        # pylint: disable=protected-access
-        control_wires = range(n_ctrl_wires)
-        target_wire = n_ctrl_wires
-        work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
-
-        dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.MultiControlledX._decomposition_with_many_workers(
-                control_wires, target_wire, work_wires
-            )
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert all(isinstance(op, qml.Toffoli) for op in tape.operations)
-
-        @qml.qnode(dev)
-        def f(bitstring):
-            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(wires=list(control_wires) + [target_wire])
-            for op in tape.operations:
-                op.queue()
-            return qml.probs(wires=range(n_ctrl_wires + 1))
-
-        u = np.array(
-            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
-        ).T
-        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
-
-    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
-    def test_decomposition_with_one_worker(self, n_ctrl_wires):
-        """Test that the decomposed MultiControlledX gate performs the same unitary as the
-        matrix-based version by checking if U^dagger U applies the identity to each basis
-        state. This test focuses on the case where there is one work wire."""
-        # pylint: disable=protected-access
-        control_wires = Wires(range(n_ctrl_wires))
-        target_wire = n_ctrl_wires
-        work_wires = n_ctrl_wires + 1
-
-        dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.MultiControlledX._decomposition_with_one_worker(
-                control_wires, target_wire, work_wires
-            )
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
-        assert all(isinstance(op, (qml.Toffoli, qml.CNOT)) for op in tape.operations)
-
-        @qml.qnode(dev)
-        def f(bitstring):
-            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(wires=list(control_wires) + [target_wire])
-            for op in tape.operations:
-                op.queue()
-            return qml.probs(wires=range(n_ctrl_wires + 1))
-
-        u = np.array(
-            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
-        ).T
-        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
-
-    def test_not_enough_workers(self):
-        """Test that a ValueError is raised when more than 2 control wires are to be decomposed with
-        no work wires supplied"""
-        control_target_wires = range(4)
-        op = qml.MultiControlledX(wires=control_target_wires)
-
-        match = "At least one work wire is required to decompose operation: MultiControlledX"
-        with pytest.raises(ValueError, match=match):
-            op.decomposition()
+        assert qml.math.allclose(mpmct_state, pauli_x_state)
 
     def test_not_unique_wires(self):
         """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
         control_target_wires = range(4)
         work_wires = range(2)
         with pytest.raises(
-            ValueError, match="The work wires must be different from the control and target wires"
+            ValueError,
+            match="Work wires must be different the control_wires and base operation wires.",
         ):
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
 
-    @pytest.mark.parametrize("control_val", ["0", "1"])
+    @pytest.mark.parametrize("control_val", [0, 1])
     @pytest.mark.parametrize("n_ctrl_wires", range(1, 6))
     def test_decomposition_with_flips(self, n_ctrl_wires, control_val, mocker):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on varying the control values."""
-        control_values = control_val * n_ctrl_wires
+        control_values = [control_val] * n_ctrl_wires
         control_target_wires = list(range(n_ctrl_wires)) + [n_ctrl_wires]
         work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
 
@@ -921,15 +820,16 @@ class TestMultiControlledX:
         """Test compute_matrix assumes all control on "1" if no
         `control_values` provided"""
         mat1 = qml.MultiControlledX.compute_matrix([0, 1])
-        mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values="11")
+        mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values=[1, 1])
         assert np.allclose(mat1, mat2)
 
     def test_repr(self):
         """Test ``__repr__`` method that shows ``control_values``"""
         wires = [0, 1, 2]
-        control_values = "01"
+        control_values = [False, True]
+        # pylint: disable=unnecessary-dunder-call
         op_repr = qml.MultiControlledX(wires=wires, control_values=control_values).__repr__()
-        assert op_repr == f'MultiControlledX(wires={wires}, control_values="{control_values}")'
+        assert op_repr == f"MultiControlledX(wires={wires}, control_values={control_values})"
 
 
 period_two_ops = (
@@ -937,11 +837,14 @@ period_two_ops = (
     qml.PauliY(0),
     qml.PauliZ(0),
     qml.Hadamard("a"),
-    qml.CNOT(wires=(0, 1)),
-    qml.CH(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
+    # Controlled operations
+    qml.CNOT(wires=(0, 1)),
+    qml.CY(wires=(0, 1)),
+    qml.CZ(wires=(0, 1)),
+    qml.CH(wires=(0, 1)),
     qml.CCZ(wires=(0, 1, 2)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
@@ -965,10 +868,21 @@ class TestPowMethod:
     @pytest.mark.parametrize("op", period_two_ops)
     def test_period_two_noninteger_power(self, op):
         """Test that ops with a period of 2 raised to a non-integer power raise an error."""
-        if op.__class__ is qml.PauliZ:
+        if op.__class__ in [qml.PauliZ, qml.CZ, qml.CCZ]:
             pytest.skip("PauliZ can be raised to any power.")
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(1.234)
+
+    @pytest.mark.parametrize("n", (0.12, -3.462, 3.693))
+    def test_cz_general_power(self, n):
+        """Check that CZ raised to a non-integer power that's not the square root
+        results in a controlled PhaseShift."""
+        op_pow = qml.CZ(wires=[0, 1]).pow(n)
+
+        assert len(op_pow) == 1
+        assert isinstance(op_pow[0], qml.ops.ControlledOp)
+        assert isinstance(op_pow[0].base, qml.PhaseShift)
+        assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
 
     @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
     def test_paulix_squareroot(self, n):
@@ -979,7 +893,7 @@ class TestPowMethod:
         assert len(pow_ops) == 1
         assert pow_ops[0].__class__ is qml.SX
 
-        sqrt_mat = qml.matrix(op.pow)(n)
+        sqrt_mat = qml.matrix(op.pow, wire_order=[0])(n)
         sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
 
         assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
@@ -990,7 +904,7 @@ class TestPowMethod:
         assert qml.PauliZ(0).pow(n)[0].__class__ is qml.S
 
         op = qml.PauliZ(0)
-        sqrt_mat = qml.matrix(op.pow)(n)
+        sqrt_mat = qml.matrix(op.pow, wire_order=[0])(n)
         sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
 
         assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
@@ -1001,7 +915,7 @@ class TestPowMethod:
         assert qml.PauliZ(0).pow(n)[0].__class__ is qml.T
 
         op = qml.PauliZ(0)
-        quad_mat = qml.matrix(op.pow)(n)
+        quad_mat = qml.matrix(op.pow, wire_order=[0])(n)
         quad_mat_pow = qml.math.linalg.matrix_power(quad_mat, 4)
 
         assert qml.math.allclose(quad_mat_pow, qml.matrix(op))
@@ -1023,7 +937,7 @@ class TestPowMethod:
 
         assert op.pow(n)[0].__class__ is qml.SISWAP
 
-        sqrt_mat = qml.matrix(op.pow)(n)
+        sqrt_mat = qml.matrix(op.pow, wire_order=[0, 1])(n)
         sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
         assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
 
@@ -1097,49 +1011,64 @@ class TestControlledMethod:
     def test_PauliX(self):
         """Test the PauliX _controlled method."""
         out = qml.PauliX(0)._controlled("a")
-        assert qml.equal(out, qml.CNOT(("a", 0)))
+        qml.assert_equal(out, qml.CNOT(("a", 0)))
 
     def test_PauliY(self):
         """Test the PauliY _controlled method."""
         out = qml.PauliY(0)._controlled("a")
-        assert qml.equal(out, qml.CY(("a", 0)))
+        qml.assert_equal(out, qml.CY(("a", 0)))
 
     def test_PauliZ(self):
         """Test the PauliZ _controlled method."""
         out = qml.PauliZ(0)._controlled("a")
-        assert qml.equal(out, qml.CZ(("a", 0)))
+        qml.assert_equal(out, qml.CZ(("a", 0)))
 
     def test_Hadamard(self):
         """Test the Hadamard _controlled method."""
         out = qml.Hadamard(0)._controlled("a")
-        assert qml.equal(out, qml.CH(("a", 0)))
+        qml.assert_equal(out, qml.CH(("a", 0)))
 
     def test_CNOT(self):
         """Test the CNOT _controlled method"""
         out = qml.CNOT((0, 1))._controlled("a")
-        assert qml.equal(out, qml.Toffoli(("a", 0, 1)))
+        qml.assert_equal(out, qml.Toffoli(("a", 0, 1)))
 
     def test_SWAP(self):
         """Test the SWAP _controlled method."""
         out = qml.SWAP((0, 1))._controlled("a")
-        assert qml.equal(out, qml.CSWAP(("a", 0, 1)))
+        qml.assert_equal(out, qml.CSWAP(("a", 0, 1)))
 
     def test_Barrier(self):
         """Tests the _controlled behavior of Barrier."""
         original = qml.Barrier((0, 1, 2), only_visual=True)
         out = original._controlled("a")
-        assert qml.equal(original, out)
+        qml.assert_equal(original, out)
+
+    def test_CZ(self):
+        """Test the PauliZ _controlled method."""
+        out = qml.CZ(wires=[0, 1])._controlled("a")
+        qml.assert_equal(out, qml.CCZ(("a", 0, 1)))
 
 
-class TestSparseMatrix:
-    @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
-    def test_sparse_matrix(self, op, mat):
-        expected_sparse_mat = csr_matrix(mat)
-        sparse_mat = op.sparse_matrix()
+SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
+    (qml.Identity(wires=0), I),
+    (qml.Hadamard(wires=0), H),
+    (qml.PauliZ(wires=0), Z),
+    (qml.PauliX(wires=0), X),
+    (qml.PauliY(wires=0), Y),
+    (qml.CY(wires=[0, 1]), CY),
+    (qml.CZ(wires=[0, 1]), CZ),
+)
 
-        assert isinstance(sparse_mat, type(expected_sparse_mat))
-        assert all(sparse_mat.data == expected_sparse_mat.data)
-        assert all(sparse_mat.indices == expected_sparse_mat.indices)
+
+@pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
+def test_sparse_matrix(op, mat):
+    expected_sparse_mat = csr_matrix(mat)
+    sparse_mat = op.sparse_matrix()
+
+    assert isinstance(sparse_mat, type(expected_sparse_mat))
+    assert all(sparse_mat.data == expected_sparse_mat.data)
+    assert all(sparse_mat.indices == expected_sparse_mat.indices)
 
 
 label_data = [
@@ -1151,19 +1080,22 @@ label_data = [
     (qml.S(wires=0), "S"),
     (qml.T(wires=0), "T"),
     (qml.SX(wires=0), "SX"),
-    (qml.CNOT(wires=(0, 1)), "X"),
-    (qml.CH(wires=(0, 1)), "H"),
     (qml.SWAP(wires=(0, 1)), "SWAP"),
     (qml.ISWAP(wires=(0, 1)), "ISWAP"),
     (qml.ECR(wires=(0, 1)), "ECR"),
     (qml.SISWAP(wires=(0, 1)), "SISWAP"),
     (qml.SQISW(wires=(0, 1)), "SISWAP"),
+    (qml.Barrier(0), "||"),
+    (qml.WireCut(wires=0), "//"),
+    # Controlled operations
+    (qml.CY(wires=(0, 1)), "Y"),
+    (qml.CZ(wires=(0, 1)), "Z"),
+    (qml.CNOT(wires=(0, 1)), "X"),
+    (qml.CH(wires=(0, 1)), "H"),
     (qml.CCZ(wires=(0, 1, 2)), "Z"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X"),
-    (qml.Barrier(0), "||"),
-    (qml.WireCut(wires=0), "//"),
 ]
 
 
@@ -1185,6 +1117,9 @@ control_data = [
     (qml.ISWAP(wires=(0, 1)), Wires([])),
     (qml.SISWAP(wires=(0, 1)), Wires([])),
     (qml.ECR(wires=(0, 1)), Wires([])),
+    # Controlled operations
+    (qml.CY(wires=(0, 1)), Wires(0)),
+    (qml.CZ(wires=(0, 1)), Wires(0)),
     (qml.CNOT(wires=(0, 1)), Wires(0)),
     (qml.CH(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
@@ -1197,7 +1132,6 @@ control_data = [
 @pytest.mark.parametrize("op, control_wires", control_data)
 def test_control_wires(op, control_wires):
     """Test ``control_wires`` attribute for non-parametrized operations."""
-
     assert op.control_wires == control_wires
 
 
@@ -1207,21 +1141,24 @@ involution_ops = [  # ops who are their own inverses
     qml.PauliX(0),
     qml.PauliY(0),
     qml.PauliZ(0),
-    qml.CNOT((0, 1)),
-    qml.CH((0, 1)),
     qml.SWAP((0, 1)),
     qml.ECR((0, 1)),
+    qml.Barrier(0),
+    qml.WireCut(0),
+    # Controlled operations
+    qml.CNOT((0, 1)),
+    qml.CH((0, 1)),
+    qml.CY((0, 1)),
+    qml.CZ(wires=(0, 1)),
     qml.CSWAP((0, 1, 2)),
     qml.CCZ((0, 1, 2)),
     qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
-    qml.Barrier(0),
-    qml.WireCut(0),
 ]
 
 
 @pytest.mark.parametrize("op", involution_ops)
-def test_adjoint_method(op):
+def test_involution_operators(op):
     adj_op = copy.copy(op)
     for _ in range(4):
         adj_op = adj_op.adjoint()
@@ -1241,3 +1178,69 @@ op_pauli_rep = (
 def test_pauli_rep(op, rep):
     # pylint: disable=protected-access
     assert op.pauli_rep == rep
+
+
+class TestPauliAlias:
+    def test_X_class_name(self):
+        """Test the class name of X is by default correct"""
+        assert qml.X.__name__ == "PauliX"
+        assert qml.PauliX.__name__ == "PauliX"
+
+        assert qml.X(0).name == "PauliX"
+        assert qml.PauliX(0).name == "PauliX"
+
+    def test_Y_class_name(self):
+        """Test the class name of Y is by default correct"""
+        assert qml.Y.__name__ == "PauliY"
+        assert qml.PauliY.__name__ == "PauliY"
+
+        assert qml.Y(0).name == "PauliY"
+        assert qml.PauliY(0).name == "PauliY"
+
+    def test_Z_class_name(self):
+        """Test the class name of Z is by default correct"""
+        assert qml.Z.__name__ == "PauliZ"
+        assert qml.PauliZ.__name__ == "PauliZ"
+
+        assert qml.Z(0).name == "PauliZ"
+        assert qml.PauliZ(0).name == "PauliZ"
+
+
+class TestHadamardAlias:
+    def test_H_class_name(self):
+        """Test the class name of H is by default correct"""
+        assert qml.H.__name__ == "Hadamard"
+        assert qml.Hadamard.__name__ == "Hadamard"
+
+        assert qml.H(0).name == "Hadamard"
+        assert qml.Hadamard(0).name == "Hadamard"
+
+    def test_hadamard_alias(self):
+        """Test that qml.H is an alias for qml.Hadamard."""
+        # Verify that qml.H is the same as qml.Hadamard
+        assert qml.H is qml.Hadamard, "qml.H should be an alias for qml.Hadamard"
+
+        # Verify that an instance of qml.H is treated as qml.Hadamard
+        assert isinstance(
+            qml.H(0), qml.Hadamard
+        ), "qml.H(0) should create an instance of qml.Hadamard"
+
+
+class TestPauliRep:
+    @pytest.mark.parametrize(
+        "op, _", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED
+    )
+    def test_lazy_implementation(self, op, _):
+        """Checks if the ._pauli_rep attribute is only computed when needed."""
+        # pylint: disable=unused-variable, protected-access
+        assert op._pauli_rep is None
+        pauli_rep = op.pauli_rep
+        assert op._pauli_rep is not None
+
+    @pytest.mark.parametrize(
+        "op, rep", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED
+    )
+    def test_matrix_and_pauli_rep_equivalence(self, op, rep):
+        """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
+        assert np.allclose(op.matrix(), qml.matrix(op.pauli_rep, wire_order=op.wires))
+        assert np.allclose(rep, qml.matrix(op.pauli_rep, wire_order=op.wires))

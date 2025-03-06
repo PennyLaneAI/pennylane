@@ -15,16 +15,16 @@
 of operators."""
 
 import json
-import typing
+from collections.abc import Sequence
 from functools import lru_cache
-from typing import Dict, FrozenSet, Generic, List, Type, TypeVar
+from typing import Generic, Type, TypeVar
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 
 from ._wires import wires_to_json
 
@@ -44,24 +44,25 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
             arguments.
         - Hyperparameters are not used or are automatically derived by ``__init__()``.
 
-    Almost all operators meet these conditions. This type also supports serializing the
-    ``Hamiltonian`` and ``Tensor`` operators.
     """
 
     type_id = "operator"
 
     @classmethod
     @lru_cache(1)
-    def consumes_types(cls) -> FrozenSet[Type[Operator]]:
+    def supported_ops(cls) -> frozenset[Type[Operator]]:
+        """Set of supported operators."""
         return frozenset(
             (
-                # pennylane/operation/Tensor
-                Tensor,
                 # pennylane/ops/qubit/arithmetic_qml.py
                 qml.QubitCarry,
                 qml.QubitSum,
-                # pennylane/ops/qubit/hamiltonian.py
-                qml.Hamiltonian,
+                # pennylane/ops/op_math/linear_combination.py
+                qml.ops.LinearCombination,
+                # pennylane/ops/op_math - prod.py, s_prod.py, sum.py
+                qml.ops.Prod,
+                qml.ops.SProd,
+                qml.ops.Sum,
                 # pennylane/ops/qubit/matrix_qml.py
                 qml.QubitUnitary,
                 qml.DiagonalQubitUnitary,
@@ -70,12 +71,13 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.PauliX,
                 qml.PauliY,
                 qml.PauliZ,
+                qml.X,
+                qml.Y,
+                qml.Z,
                 qml.T,
                 qml.S,
                 qml.SX,
                 qml.CNOT,
-                qml.CZ,
-                qml.CY,
                 qml.CH,
                 qml.SWAP,
                 qml.ECR,
@@ -87,15 +89,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 # pennylane/ops/qubit/observables.py
                 qml.Hermitian,
                 qml.Projector,
-                # pennylane/ops/qubit/parametric_ops_controlled.py
-                qml.ControlledPhaseShift,
-                qml.CPhaseShift00,
-                qml.CPhaseShift01,
-                qml.CPhaseShift10,
-                qml.CRX,
-                qml.CRY,
-                qml.CRZ,
-                qml.CRot,
                 # pennylane/ops/qubit/parametric_ops_multi_qubit.py
                 qml.MultiRZ,
                 qml.IsingXX,
@@ -103,6 +96,9 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.IsingZZ,
                 qml.IsingXY,
                 qml.PSWAP,
+                qml.CPhaseShift00,
+                qml.CPhaseShift01,
+                qml.CPhaseShift10,
                 # pennylane/ops/qubit/parametric_ops_single_qubit.py
                 qml.RX,
                 qml.RY,
@@ -125,7 +121,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.SpecialUnitary,
                 # pennylane/ops/state_preparation.py
                 qml.BasisState,
-                qml.QubitStateVector,
                 qml.StatePrep,
                 qml.QubitDensityMatrix,
                 # pennylane/ops/qutrit/matrix_obs.py
@@ -177,6 +172,15 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.FockStateProjector,
                 # pennylane/ops/identity.py
                 qml.Identity,
+                # pennylane/ops/op_math/controlled_ops.py
+                qml.ControlledQubitUnitary,
+                qml.ControlledPhaseShift,
+                qml.CRX,
+                qml.CRY,
+                qml.CRZ,
+                qml.CRot,
+                qml.CZ,
+                qml.CY,
             )
         )
 
@@ -187,7 +191,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         return self._hdf5_to_ops(bind)[0]
 
     def _ops_to_hdf5(
-        self, bind_parent: HDF5Group, key: str, value: typing.Sequence[Operator]
+        self, bind_parent: HDF5Group, key: str, value: Sequence[Operator]
     ) -> HDF5Group:
         """Serialize op sequence ``value``, and create nested sequences for any
         composite ops in ``value``.
@@ -202,18 +206,25 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         op_class_names = []
         for i, op in enumerate(value):
             op_key = f"op_{i}"
-            if type(op) not in self.consumes_types():
+            if isinstance(op, (qml.ops.Prod, qml.ops.SProd, qml.ops.Sum)):
+                op = op.simplify()
+            if type(op) not in self.supported_ops():
                 raise TypeError(
                     f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
 
-            if isinstance(op, Tensor):
-                self._ops_to_hdf5(bind, op_key, op.obs)
-                op_wire_labels.append("null")
-            elif isinstance(op, qml.Hamiltonian):
+            if isinstance(op, qml.ops.LinearCombination):
                 coeffs, ops = op.terms()
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
+                op_wire_labels.append("null")
+            elif isinstance(op, (qml.ops.Prod, qml.ops.Sum)):
+                self._ops_to_hdf5(bind, op_key, op.operands)
+                op_wire_labels.append("null")
+            elif isinstance(op, qml.ops.SProd):
+                coeffs, ops = op.terms()
+                sprod_grp = self._ops_to_hdf5(bind, op_key, ops)
+                sprod_grp["sprod_scalar"] = coeffs
                 op_wire_labels.append("null")
             else:
                 bind[op_key] = op.data if len(op.data) else h5py.Empty("f")
@@ -226,7 +237,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
         return bind
 
-    def _hdf5_to_ops(self, bind: HDF5Group) -> List[Operator]:
+    def _hdf5_to_ops(self, bind: HDF5Group) -> list[Operator]:
         """Load list of serialized ops from ``bind``."""
         ops = []
 
@@ -238,15 +249,21 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         with qml.QueuingManager.stop_recording():
             for i, op_class_name in enumerate(op_class_names):
                 op_key = f"op_{i}"
-
                 op_cls = self._supported_ops_dict()[op_class_name]
-                if op_cls is Tensor:
-                    ops.append(Tensor(*self._hdf5_to_ops(bind[op_key])))
-                elif op_cls is qml.Hamiltonian:
+                if op_cls is qml.ops.LinearCombination:
                     ops.append(
                         qml.Hamiltonian(
                             coeffs=list(bind[op_key]["hamiltonian_coeffs"]),
                             observables=self._hdf5_to_ops(bind[op_key]),
+                        )
+                    )
+                elif op_cls in (qml.ops.Prod, qml.ops.Sum):
+                    ops.append(op_cls(*self._hdf5_to_ops(bind[op_key])))
+                elif op_cls is qml.ops.SProd:
+                    ops.append(
+                        qml.ops.s_prod(
+                            scalar=bind[op_key]["sprod_scalar"][0],
+                            operator=self._hdf5_to_ops(bind[op_key])[0],
                         )
                     )
                 else:
@@ -263,6 +280,9 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def _supported_ops_dict(cls) -> Dict[str, Type[Operator]]:
+    def _supported_ops_dict(cls) -> dict[str, Type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
-        return {op.__name__: op for op in cls.consumes_types()}
+        ops_dict = {op.__name__: op for op in cls.supported_ops()}
+        ops_dict["Hamiltonian"] = qml.ops.LinearCombination
+        ops_dict["Tensor"] = qml.ops.Prod
+        return ops_dict

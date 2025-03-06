@@ -21,15 +21,16 @@ from test_optimization.utils import compare_operation_lists
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
-from pennylane.transforms.compile import compile
 from pennylane.transforms import unitary_to_rot
+from pennylane.transforms.compile import compile
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
     merge_rotations,
     single_qubit_fusion,
 )
+from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
+from pennylane.wires import Wires
 
 
 def build_qfunc(wires):
@@ -47,6 +48,14 @@ def build_qfunc(wires):
         return qml.expval(qml.PauliZ(wires=wires[0]))
 
     return qfunc
+
+
+def test_deprecation_pipeline_None():
+    """Test that specifying `pipeline=None` is deprecated."""
+
+    tape = qml.tape.QuantumScript()
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="pipeline=None is now deprecated"):
+        qml.compile(tape, pipeline=None)
 
 
 class TestCompile:
@@ -85,7 +94,6 @@ class TestCompile:
 
         transformed_qfunc = compile(qfunc, pipeline)
         transformed_qnode = qml.QNode(transformed_qfunc, dev_3wires)
-        transformed_qnode(0.3, 0.4, 0.5)
 
         names_expected = ["Hadamard", "CNOT", "RX", "CY", "PauliY"]
         wires_expected = [
@@ -96,7 +104,30 @@ class TestCompile:
             Wires(wires[2]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
+
+    def test_compile_non_commuting_observables(self):
+        """Test that compile works with non-commuting observables."""
+
+        ops = (qml.RX(0.1, 0), qml.RX(0.2, 0), qml.Barrier(only_visual=True), qml.X(0), qml.X(0))
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
+        tape = qml.tape.QuantumScript(ops, ms, shots=50)
+
+        [out], _ = qml.compile(tape)
+        expected = qml.tape.QuantumScript((qml.RX(0.3, 0),), ms, shots=50)
+        qml.assert_equal(out, expected)
+
+    def test_compile_mcm(self):
+        """Test that compile works with mid circuit measurements and conditionals."""
+
+        m0 = qml.measure(0)
+        ops = [qml.X(0), qml.X(0), *m0.measurements, qml.ops.Conditional(m0, qml.S(0))]
+        tape = qml.tape.QuantumScript(ops, [qml.probs()], shots=50)
+
+        [new_tape], _ = qml.compile(tape)
+        assert new_tape.shots == tape.shots
+        assert new_tape.circuit == tape[2:]
 
 
 class TestCompileIntegration:
@@ -118,10 +149,12 @@ class TestCompileIntegration:
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
         assert np.allclose(original_result, transformed_result)
 
-        names_expected = [op.name for op in qnode.qtape.operations]
-        wires_expected = [op.wires for op in qnode.qtape.operations]
+        tape = qml.workflow.construct_tape(qnode)(0.3, 0.4, 0.5)
+        names_expected = [op.name for op in tape.operations]
+        wires_expected = [op.wires for op in tape.operations]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        transformed_tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(transformed_tape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_default_pipeline(self, wires):
@@ -148,7 +181,8 @@ class TestCompileIntegration:
             Wires(wires[2]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_default_pipeline_qnode(self, wires):
@@ -174,6 +208,22 @@ class TestCompileIntegration:
         tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Barrier([0, 1]), qml.CNOT([0, 1])])
         [compiled_tape], _ = qml.compile(tape)
         assert compiled_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1])]
+
+    def test_compile_empty_basis_set(self):
+        """Test that compiling with empty basis set decomposes any decomposable operation."""
+        ops = (
+            qml.RX(0.1, 0),
+            qml.H(1),
+            qml.Barrier([0, 1]),
+            qml.CNOT([1, 0]),
+            qml.PauliY(0),
+            qml.CY([0, 1]),
+        )
+        tape = qml.tape.QuantumScript(ops)
+        decomposable_ops = {op.name for op in tape.operations if op.has_decomposition}
+
+        [transformed_tape], _ = qml.compile(tape, basis_set=[])
+        assert not any(op.name in decomposable_ops for op in transformed_tape.operations)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
@@ -206,7 +256,27 @@ class TestCompileIntegration:
             Wires([wires[1], wires[2]]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
+
+    def test_compile_decomposes_state_prep(self):
+        """Test that compile decomposes state prep operations"""
+
+        class DummyStatePrep(qml.operation.StatePrepBase):
+            """Dummy state prep operation for unit testing"""
+
+            def decomposition(self):
+                return [qml.Hadamard(i) for i in self.wires]
+
+            def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
+                return self.parameters[0]
+
+        state_prep_op = DummyStatePrep([1, 1], wires=[0, 1])
+        tape = qml.tape.QuantumScript([state_prep_op])
+
+        [compiled_tape], _ = qml.compile(tape)
+        expected = qml.tape.QuantumScript(state_prep_op.decomposition())
+        qml.assert_equal(compiled_tape, expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_multiple_passes(self, wires):
@@ -237,7 +307,8 @@ class TestCompileIntegration:
             Wires([wires[1], wires[2]]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_decompose_into_basis_gates(self, wires):
@@ -250,7 +321,7 @@ class TestCompileIntegration:
 
         pipeline = [partial(commute_controlled, direction="left"), cancel_inverses, merge_rotations]
 
-        basis_set = ["CNOT", "RX", "RY", "RZ"]
+        basis_set = ["CNOT", "RX", "RY", "RZ", "GlobalPhase"]
 
         transformed_qfunc = compile(qfunc, pipeline=pipeline, basis_set=basis_set)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
@@ -273,6 +344,7 @@ class TestCompileIntegration:
             "CNOT",
             "RY",
             "CNOT",
+            "GlobalPhase",
         ]
 
         wires_expected = [
@@ -289,18 +361,24 @@ class TestCompileIntegration:
             Wires([wires[1], wires[2]]),
             Wires(wires[2]),
             Wires([wires[1], wires[2]]),
+            Wires([]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        tansformed_ops = _fuse_global_phases(tape.operations)
+        compare_operation_lists(tansformed_ops, names_expected, wires_expected)
 
     def test_compile_template(self):
         """Test that functions with templates are correctly expanded and compiled."""
 
         # Push commuting gates to the right and merging rotations gives a circuit
         # with alternating RX and CNOT gates
+        # pylint: disable=expression-not-assigned
         def qfunc(x, params):
             qml.templates.AngleEmbedding(x, wires=range(3))
-            qml.templates.BasicEntanglerLayers(params, wires=range(3))
+            qml.adjoint(
+                qml.adjoint(qml.templates.BasicEntanglerLayers(params, wires=range(3)))
+            ) ** 2
             return qml.expval(qml.PauliZ(wires=2))
 
         dev = qml.device("default.qubit", wires=3)
@@ -317,7 +395,7 @@ class TestCompileIntegration:
         transformed_result = transformed_qnode(x, params)
         assert np.allclose(original_result, transformed_result)
 
-        names_expected = ["RX", "CNOT"] * 6
+        names_expected = ["RX", "CNOT"] * 12
         wires_expected = [
             Wires(0),
             Wires([0, 1]),
@@ -325,9 +403,10 @@ class TestCompileIntegration:
             Wires([1, 2]),
             Wires(2),
             Wires([2, 0]),
-        ] * 2
+        ] * 4
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(x, params)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
 
 def qfunc_emb(x, params):
@@ -383,7 +462,8 @@ class TestCompileInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(x, params)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
@@ -415,7 +495,8 @@ class TestCompileInterfaces:
         assert qml.math.allclose(original_params.grad, transformed_params.grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_x, transformed_params)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
@@ -451,7 +532,8 @@ class TestCompileInterfaces:
         assert qml.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_x, transformed_params)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -460,10 +542,6 @@ class TestCompileInterfaces:
         """Test QNode and gradient in JAX interface."""
         import jax
         from jax import numpy as jnp
-
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_emb, dev_3wires, diff_method=diff_method)
         transformed_qnode = qml.QNode(transformed_qfunc_emb, dev_3wires, diff_method=diff_method)
@@ -476,13 +554,14 @@ class TestCompileInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode, argnums=(1))(x, params),
-            jax.grad(transformed_qnode, argnums=(1))(x, params),
+            jax.grad(original_qnode, argnums=1)(x, params),
+            jax.grad(transformed_qnode, argnums=1)(x, params),
             atol=1e-7,
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(x, params)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -491,9 +570,6 @@ class TestCompileInterfaces:
         """Test that compilation pipelines work with jax.jit, unitary_to_rot, and fusion."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 

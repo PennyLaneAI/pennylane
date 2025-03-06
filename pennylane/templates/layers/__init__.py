@@ -16,11 +16,11 @@ Layers are trainable templates that are typically repeated, using different adju
 They implement a transformation from a quantum state to another quantum state.
 """
 
-from .strongly_entangling import StronglyEntanglingLayers
-from .random import RandomLayers
-from .cv_neural_net import CVNeuralNetLayers
-from .simplified_two_design import SimplifiedTwoDesign
 from .basic_entangler import BasicEntanglerLayers
-from .particle_conserving_u2 import ParticleConservingU2
-from .particle_conserving_u1 import ParticleConservingU1
+from .cv_neural_net import CVNeuralNetLayers
 from .gate_fabric import GateFabric
+from .particle_conserving_u1 import ParticleConservingU1
+from .particle_conserving_u2 import ParticleConservingU2
+from .random import RandomLayers
+from .simplified_two_design import SimplifiedTwoDesign
+from .strongly_entangling import StronglyEntanglingLayers

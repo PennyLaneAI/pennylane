@@ -16,16 +16,16 @@ import itertools
 
 import numpy as np
 import pytest
-from scipy.stats import unitary_group, norm
+from scipy.stats import norm, unitary_group
 
 import pennylane as qml
+from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.transforms.qmc import (
-    _apply_controlled_z,
     _apply_controlled_v,
+    _apply_controlled_z,
     apply_controlled_Q,
     quantum_monte_carlo,
 )
-from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.wires import Wires
 
 
@@ -96,12 +96,12 @@ def test_apply_controlled_z(n_wires):
     unitary and comparing against the one provided in _make_Z."""
     n_all_wires = n_wires + 1
 
-    wires = Wires(range(n_wires))
+    target_wires = Wires(range(n_wires))
     control_wire = n_wires
     work_wires = None
 
     circ = lambda: _apply_controlled_z(
-        wires=wires, control_wire=control_wire, work_wires=work_wires
+        wires=target_wires, control_wire=control_wire, work_wires=work_wires
     )
     u = get_unitary(circ, n_all_wires)
 
@@ -109,7 +109,7 @@ def test_apply_controlled_z(n_wires):
     # because two Zs are used.
     z_ideal = -_make_Z(2**n_wires)
 
-    circ = lambda: qml.ControlledQubitUnitary(z_ideal, wires=wires, control_wires=control_wire)
+    circ = lambda: qml.ControlledQubitUnitary(z_ideal, wires=control_wire + target_wires)
     u_ideal = get_unitary(circ, n_all_wires)
 
     assert np.allclose(u, u_ideal)
@@ -121,7 +121,7 @@ def test_apply_controlled_v(n_wires):
     unitary and comparing against the one provided in _make_V."""
     n_all_wires = n_wires + 1
 
-    wires = Wires(range(n_wires))
+    target_wires = Wires(range(n_wires))
     control_wire = Wires(n_wires)
 
     circ = lambda: _apply_controlled_v(target_wire=Wires([n_wires - 1]), control_wire=control_wire)
@@ -131,7 +131,7 @@ def test_apply_controlled_v(n_wires):
     # because two Vs are used.
     v_ideal = -_make_V(2**n_wires)
 
-    circ = lambda: qml.ControlledQubitUnitary(v_ideal, wires=wires, control_wires=control_wire)
+    circ = lambda: qml.ControlledQubitUnitary(v_ideal, wires=control_wire + target_wires)
     u_ideal = get_unitary(circ, n_all_wires)
 
     assert np.allclose(u, u_ideal)
@@ -166,7 +166,7 @@ class TestApplyControlledQ:
 
         u = get_unitary(circ, n_all_wires)
 
-        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=wires, control_wires=control_wire)
+        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=Wires(control_wire) + Wires(wires))
         u_ideal = get_unitary(circ, n_all_wires)
 
         assert np.allclose(u_ideal, u)
@@ -176,7 +176,7 @@ class TestApplyControlledQ:
         with pytest.raises(ValueError, match="The target wire must be contained within wires"):
             apply_controlled_Q(
                 lambda: ..., wires=range(3), target_wire=4, control_wire=5, work_wires=None
-            )
+            )()
 
 
 class TestQuantumMonteCarlo:
@@ -225,7 +225,7 @@ class TestQuantumMonteCarlo:
         with pytest.raises(ValueError, match="No wires can be shared between the wires"):
             quantum_monte_carlo(
                 lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires
-            )
+            )()
 
     @pytest.mark.slow
     def test_integration(self):
@@ -258,27 +258,21 @@ class TestQuantumMonteCarlo:
             fn, wires=wires, target_wire=target_wire, estimation_wires=estimation_wires
         )
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qmc_circuit()
-            qml.probs(estimation_wires)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=2)
-
-        assert all(
-            not isinstance(op, (qml.MultiControlledX, qml.templates.QFT, qml.tape.QuantumScript))
-            for op in tape.operations
-        )
-
         dev = qml.device("default.qubit", wires=wires + estimation_wires)
-        res = dev.execute(tape)
 
         @qml.qnode(dev)
         def circuit():
+            qmc_circuit()
+            return qml.probs(estimation_wires)
+
+        @qml.qnode(dev)
+        def circuit_expected():
             qml.templates.QuantumMonteCarlo(
                 probs, func, target_wires=wires, estimation_wires=estimation_wires
             )
             return qml.probs(estimation_wires)
 
-        res_expected = circuit()
+        res = circuit()
+        res_expected = circuit_expected()
+
         assert np.allclose(res, res_expected)

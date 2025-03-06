@@ -15,11 +15,13 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 # pylint: disable=protected-access
 import json
 from os import path
-from typing import Sequence, Callable
+
+import numpy as np
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 def controlled_pauli_evolution(theta, wires, pauli_word, controls):
@@ -184,10 +186,10 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
 
         operations = tape.operations + added_operations
 
-        if tape.measurements[0].return_type == qml.measurements.Expectation:
-            measurements = [qml.expval(-1 * qml.PauliZ(controls[0]))]
+        if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
+            measurements = [qml.expval(-1 * qml.Z(controls[0]))]
         else:
-            measurements = [qml.var(qml.PauliZ(controls[0]))]
+            measurements = [qml.var(qml.Z(controls[0]))]
 
         new_tape = qml.tape.QuantumScript(operations, measurements, shots=tape.shots)
 
@@ -197,8 +199,8 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
 
 @transform
 def sign_expand(  # pylint: disable=too-many-arguments
-    tape: qml.tape.QuantumTape, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+    tape: QuantumScript, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
     the Xi or sgn decomposition, and provides a function to recombine the results.
@@ -227,7 +229,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-        H = qml.PauliZ(0) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+        H = qml.Z(0) + 0.5 * qml.Z(2) + qml.Z(1)
 
     a device with auxiliary qubits,
 
@@ -244,7 +246,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
+            qml.X(2)
             return qml.expval(H)
 
     >>> circuit()
@@ -254,7 +256,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.PauliX(wires=2)]
+            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
             measurements = [qml.expval(H)]
             tape = qml.tape.QuantumTape(operations, measurements)
 
@@ -287,7 +289,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.PauliX(wires=2)]
+            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
             measurements = [qml.var(H)]
             tape = qml.tape.QuantumTape(operations, measurements)
 
@@ -308,12 +310,12 @@ def sign_expand(  # pylint: disable=too-many-arguments
     hamiltonian = tape.measurements[0].obs
     wires = hamiltonian.wires
 
-    # TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
     if (
-        not isinstance(hamiltonian, qml.Hamiltonian)
+        not isinstance(hamiltonian, qml.ops.LinearCombination)
         or len(tape.measurements) > 1
-        or tape.measurements[0].return_type
-        not in [qml.measurements.Expectation, qml.measurements.Variance]
+        or not isinstance(
+            tape.measurements[0], (qml.measurements.ExpectationMP, qml.measurements.VarianceMP)
+        )
     ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)` or 'qml.var(H)', where H is of type `qml.Hamiltonian`"
@@ -327,7 +329,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     if circuit:
         tapes = construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls)
-        if tape.measurements[0].return_type == qml.measurements.Expectation:
+        if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
             # pylint: disable=function-redefined
             def processing_fn(res):
                 products = [a * b for a, b in zip(res, dEs)]
@@ -344,7 +346,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     # make one tape per observable
     tapes = []
     for proj in projs:
-        if tape.measurements[0].return_type == qml.measurements.Expectation:
+        if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
             measurements = [qml.expval(qml.Hermitian(proj, wires=wires))]
         else:
             measurements = [qml.var(qml.Hermitian(proj, wires=wires))]
@@ -357,7 +359,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     def processing_fn(res):
         return (
             qml.math.sum(res)
-            if tape.measurements[0].return_type == qml.measurements.Expectation
+            if isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
             else qml.math.sum(res) * len(res)
         )
 

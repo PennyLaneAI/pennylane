@@ -16,11 +16,12 @@ This module contains the qml.ops.functions.check_validity function for determini
 Operator class is correctly defined.
 """
 
-from string import ascii_lowercase
 import copy
 import pickle
+from string import ascii_lowercase
 
 import numpy as np
+import scipy.sparse
 
 import pennylane as qml
 from pennylane.operation import EigvalsUndefinedError
@@ -38,7 +39,7 @@ def _assert_error_raised(func, error, failure_comment):
     return inner_func
 
 
-def _check_decomposition(op):
+def _check_decomposition(op, skip_wire_mapping):
     """Checks involving the decomposition."""
     if op.has_decomposition:
         decomp = op.decomposition()
@@ -53,26 +54,40 @@ def _check_decomposition(op):
         with qml.queuing.AnnotatedQueue() as queued_decomp:
             op.decomposition()
         processed_queue = qml.tape.QuantumTape.from_queue(queued_decomp)
-        expand = op.expand()
 
         assert isinstance(decomp, list), "decomposition must be a list"
         assert isinstance(compute_decomp, list), "decomposition must be a list"
-        assert isinstance(expand, qml.tape.QuantumScript), "expand must return a QuantumScript"
+        assert op.__class__ not in [
+            decomp_op.__class__ for decomp_op in decomp
+        ], "an operator should not be included in its own decomposition"
 
-        for o1, o2, o3, o4 in zip(decomp, compute_decomp, processed_queue, expand):
+        for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue):
             assert o1 == o2, "decomposition must match compute_decomposition"
             assert o1 == o3, "decomposition must match queued operations"
-            assert o1 == o4, "decomposition must match expansion"
             assert isinstance(o1, qml.operation.Operator), "decomposition must contain operators"
+
+        if skip_wire_mapping:
+            return
+        # Check that mapping wires transitions to the decomposition
+        wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
+        mapped_op = op.map_wires(wire_map)
+        # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
+        # base, so may return a different class of operator. We only compare decomps of `op` and
+        # `mapped_op` if `mapped_op` **has** a decomposition.
+        # see MultiControlledX([0, 1]) and CNOT([0, 1]) as an example
+        if mapped_op.has_decomposition:
+            mapped_decomp = mapped_op.decomposition()
+            orig_decomp = op.decomposition()
+            for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
+                assert (
+                    mapped_op.wires == qml.map_wires(orig_op, wire_map).wires
+                ), "Operators in decomposition of wire-mapped operator must have mapped wires."
     else:
         failure_comment = "If has_decomposition is False, then decomposition must raise a ``DecompositionUndefinedError``."
         _assert_error_raised(
             op.decomposition,
             qml.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
-        )()
-        _assert_error_raised(
-            op.expand, qml.operation.DecompositionUndefinedError, failure_comment=failure_comment
         )()
         _assert_error_raised(
             op.compute_decomposition,
@@ -98,11 +113,28 @@ def _check_matrix(op):
         )()
 
 
+def _check_sparse_matrix(op):
+    """Check that if the operation says it has a sparse matrix, it does. Otherwise a ``SparseMatrixUndefinedError`` should be raised."""
+    if op.has_sparse_matrix:
+        mat = op.sparse_matrix()
+        assert isinstance(mat, scipy.sparse.csr_matrix), "matrix must be a TensorLike"
+        l = 2 ** len(op.wires)
+        failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
+        assert qml.math.shape(mat) == (l, l), failure_comment
+    else:
+        failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
+        _assert_error_raised(
+            op.sparse_matrix,
+            qml.operation.SparseMatrixUndefinedError,
+            failure_comment=failure_comment,
+        )()
+
+
 def _check_matrix_matches_decomp(op):
     """Check that if both the matrix and decomposition are defined, they match."""
     if op.has_matrix and op.has_decomposition:
         mat = op.matrix()
-        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
+        decomp_mat = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=op.wires)
         failure_comment = (
             f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
         )
@@ -146,13 +178,32 @@ def _check_eigendecomposition(op):
         assert qml.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
     if has_eigvals and op.has_diagonalizing_gates:
-        dg = qml.prod(*dg) if len(dg) > 0 else qml.Identity(op.wires)
+        dg = qml.prod(*dg[::-1]) if len(dg) > 0 else qml.Identity(op.wires)
         eg = qml.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qml.prod(qml.adjoint(dg), eg, dg)
         decomp_mat = qml.matrix(decomp)
         original_mat = qml.matrix(op)
         failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
         assert qml.math.allclose(decomp_mat, original_mat), failure_comment
+
+
+def _check_generator(op):
+    """Checks that if an operator's has_generator property is True, it has a generator."""
+
+    if op.has_generator:
+        gen = op.generator()
+        assert isinstance(gen, qml.operation.Operator)
+        new_op = qml.exp(gen, 1j * op.data[0])
+        assert qml.math.allclose(
+            qml.matrix(op, wire_order=op.wires), qml.matrix(new_op, wire_order=op.wires)
+        )
+    else:
+        failure_comment = (
+            "If has_generator is False, the matrix method must raise a ``GeneratorUndefinedError``."
+        )
+        _assert_error_raised(
+            op.generator, qml.operation.GeneratorUndefinedError, failure_comment=failure_comment
+        )()
 
 
 def _check_copy(op):
@@ -199,6 +250,34 @@ def _check_pytree(op):
         ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
 
 
+def _check_capture(op):
+    try:
+        import jax
+    except ImportError:
+        return
+
+    if not all(isinstance(w, int) for w in op.wires):
+        return
+
+    qml.capture.enable()
+    try:
+        jaxpr = jax.make_jaxpr(lambda obj: obj)(op)
+        data, _ = jax.tree_util.tree_flatten(op)
+        new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
+        assert op == new_op
+    except Exception as e:
+        raise ValueError(
+            (
+                "The capture of the operation into jaxpr failed somehow."
+                " This capture mechanism is currently experimental and not a core"
+                " requirement, but will be necessary in the future."
+                " Please see the capture module documentation for more information."
+            )
+        ) from e
+    finally:
+        qml.capture.disable()
+
+
 def _check_pickle(op):
     """Check that an operation can be dumped and reloaded with pickle."""
     pickled = pickle.dumps(op)
@@ -216,17 +295,57 @@ def _check_bind_new_parameters(op):
         assert qml.math.allclose(d1, d2), failure_comment
 
 
-def _check_wires(op):
+def _check_differentiation(op):
+    """Checks that the operator can be executed and differentiated correctly."""
+
+    if op.num_params == 0:
+        return
+
+    data, struct = qml.pytrees.flatten(op)
+
+    def circuit(*args):
+        qml.apply(qml.pytrees.unflatten(args, struct))
+        return qml.probs(wires=op.wires)
+
+    qnode_ref = qml.QNode(circuit, qml.device("default.qubit"), diff_method="backprop")
+    qnode_ps = qml.QNode(circuit, qml.device("default.qubit"), diff_method="parameter-shift")
+
+    params = [x if isinstance(x, int) else qml.numpy.array(x) for x in data]
+
+    ps = qml.jacobian(qnode_ps)(*params)
+    expected_bp = qml.jacobian(qnode_ref)(*params)
+
+    error_msg = (
+        "Parameter-shift does not produce the same Jacobian as with backpropagation. "
+        "This might be a bug, or it might be expected due to the mathematical nature "
+        "of backpropagation, in which case, this test can be skipped for this operator."
+    )
+
+    if isinstance(ps, tuple):
+        for actual, expected in zip(ps, expected_bp):
+            assert qml.math.allclose(actual, expected), error_msg
+    else:
+        assert qml.math.allclose(ps, expected_bp), error_msg
+
+
+def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, qml.wires.Wires), "wires must be a wires instance"
 
+    if skip_wire_mapping:
+        return
     wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
     new_wires = qml.wires.Wires(list(ascii_lowercase[: len(op.wires)]))
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
-def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
+def assert_valid(
+    op: qml.operation.Operator,
+    skip_pickle=False,
+    skip_wire_mapping=False,
+    skip_differentiation=False,
+) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
 
@@ -236,6 +355,8 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
     Keyword Args:
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
+        skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
+            the operator is parametrized but not differentiable.
 
     **Examples:**
 
@@ -277,14 +398,20 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
         assert isinstance(d, qml.typing.TensorLike), "each data element must be tensorlike"
         assert qml.math.allclose(d, p), "data and parameters must match."
 
-    _check_wires(op)
+    if len(op.wires) <= 26:
+        _check_wires(op, skip_wire_mapping)
     _check_copy(op)
     _check_pytree(op)
     if not skip_pickle:
         _check_pickle(op)
     _check_bind_new_parameters(op)
 
-    _check_decomposition(op)
+    _check_decomposition(op, skip_wire_mapping)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
+    _check_sparse_matrix(op)
     _check_eigendecomposition(op)
+    _check_generator(op)
+    if not skip_differentiation:
+        _check_differentiation(op)
+    _check_capture(op)

@@ -14,16 +14,21 @@
 """
 Tests for mitigation transforms.
 """
-# pylint:disable=no-self-use
+# pylint:disable=no-self-use, unnecessary-lambda-assignment, protected-access
 from functools import partial
-import pytest
 
+import pytest
 from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumScript
-from pennylane.transforms import mitigate_with_zne, richardson_extrapolate, fold_global
+from pennylane.transforms import (
+    exponential_extrapolate,
+    fold_global,
+    mitigate_with_zne,
+    richardson_extrapolate,
+)
 
 with qml.queuing.AnnotatedQueue() as q_tape:
     qml.BasisState([1], wires=0)
@@ -44,6 +49,7 @@ with qml.queuing.AnnotatedQueue() as q_tape_base:
 
 
 tape_base = QuantumScript.from_queue(q_tape_base)
+dev_ideal = qml.device("default.mixed", wires=2)
 
 
 def same_tape(tape1, tape2):
@@ -56,7 +62,7 @@ def same_tape(tape1, tape2):
     )
     assert len(tape1.measurements) == len(tape2.measurements)
     assert all(
-        m1.return_type == m2.return_type for m1, m2 in zip(tape1.measurements, tape2.measurements)
+        m1._shortname == m2._shortname for m1, m2 in zip(tape1.measurements, tape2.measurements)
     )
     assert all(o1.name == o2.name for o1, o2 in zip(tape1.observables, tape2.observables))
     assert all(o1.wires == o2.wires for o1, o2 in zip(tape1.observables, tape2.observables))
@@ -65,6 +71,7 @@ def same_tape(tape1, tape2):
 class TestMitigateWithZNE:
     """Tests for the mitigate_with_zne function"""
 
+    # pylint:disable = unnecessary-lambda-assignment
     folding = lambda *args, **kwargs: tape_base
     extrapolate = lambda *args, **kwargs: [3.141]
 
@@ -109,32 +116,42 @@ class TestMitigateWithZNE:
         for t in tapes:
             same_tape(t, tape)
 
-    def test_multi_returns(self):
+    def test_shots_preserved(self):
+        """Tests that the mitigated circuits contain the same shots as the original circuit"""
+
+        _tape = qml.tape.QuantumScript(
+            [qml.RX(0.1, wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            shots=1000,
+        )
+        tapes, _ = mitigate_with_zne(_tape, [1, 2, 3], fold_global, exponential_extrapolate)
+        assert all(t.shots.total_shots == 1000 for t in tapes)
+
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_multi_returns(self, extrapolate):
         """Tests if the expected shape is returned when mitigating a circuit with two returns"""
         noise_strength = 0.05
 
-        dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
+        dev_noise = qml.transforms.insert(dev_ideal, qml.AmplitudeDamping, noise_strength)
 
         n_wires = 2
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @partial(
             qml.transforms.mitigate_with_zne,
             scale_factors=[1, 2, 3],
             folding=fold_global,
-            extrapolate=richardson_extrapolate,
+            extrapolate=extrapolate,
         )
-        @qml.qnode(dev)
+        @qml.qnode(dev_noise)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-        @qml.qnode(dev_noise_free)
+        @qml.qnode(dev_ideal)
         def ideal_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
@@ -179,6 +196,76 @@ class TestMitigateWithZNE:
         assert args[0][0] == scale_factors
         assert np.allclose(args[0][1], np.mean(np.reshape(random_results, (3, 2)), axis=1))
 
+    def test_broadcasting(self, seed):
+        """Tests that mitigate_with_zne supports batch arguments"""
+
+        batch_size = 2
+
+        @qml.qnode(dev_noisy)
+        def original_qnode(inputs):
+            qml.AmplitudeEmbedding(features=inputs, wires=range(2), normalize=True)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
+
+        expanded_qnode = qml.transforms.broadcast_expand(original_qnode)
+
+        mitigated_qnode_orig = qml.transforms.mitigate_with_zne(
+            original_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+        )
+        mitigated_qnode_expanded = qml.transforms.mitigate_with_zne(
+            expanded_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+        )
+        rng = np.random.default_rng(seed=seed)
+        inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
+        result_orig = mitigated_qnode_orig(inputs)
+        result_expanded = mitigated_qnode_expanded(inputs)
+        assert qml.math.allclose(result_orig, result_expanded)
+
+    # pylint:disable=not-callable
+    def test_zne_with_noise_models(self):
+        """Test that mitigate_with_zne transform works with noise models"""
+        fcond = qml.noise.wires_in([0, 1])
+        noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.05)
+        noise_model = qml.NoiseModel({fcond: noise})
+
+        def circuit():
+            qml.RX(1.23, wires=0)
+            qml.RZ(0.45, wires=1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        noise_qnode = qml.QNode(circuit, device=qml.add_noise(dev_ideal, noise_model))
+        zne_qnode = qml.transforms.mitigate_with_zne(
+            noise_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+        )
+
+        # following result has been obtained manually and also by using
+        # qml.transforms.mitigate_with_zne(
+        #     noise_qnode, [1, 2, 3],
+        #     mitiq.zne.scaling.fold_global, mitiq.zne.inference.RichardsonFactory.extrapolate
+        # )()
+        mitigated_result = 0.39843788456
+        assert qml.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
+
+    # pylint:disable=not-callable
+    def test_zne_error_with_channels(self):
+        """Test that mitigate_with_zne transform raises correct error with channels"""
+        fcond = qml.noise.wires_in([0, 1])
+        noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.05)
+        noise_model = qml.NoiseModel({fcond: noise})
+
+        def circuit():
+            qml.RX(1.23, wires=0)
+            qml.RZ(0.45, wires=1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        with pytest.raises(
+            ValueError,
+            match="Circuits containing quantum channels cannot be folded with mitigate_with_zne.",
+        ):
+            noisy_qnode = qml.add_noise(qml.QNode(circuit, device=dev_ideal), noise_model)
+            qml.transforms.mitigate_with_zne(
+                noisy_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+            )()
+
 
 @pytest.fixture
 def skip_if_no_mitiq_support():
@@ -200,6 +287,7 @@ def skip_if_no_pl_qiskit_support():
     pytest.importorskip("pennylane_qiskit")
 
 
+@pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qiskit_support")
 @pytest.mark.usefixtures("skip_if_no_mitiq_support")
 class TestMitiqIntegration:
@@ -212,13 +300,12 @@ class TestMitiqIntegration:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
 
         n_wires = 2
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @partial(
@@ -227,6 +314,7 @@ class TestMitiqIntegration:
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -262,13 +350,12 @@ class TestMitiqIntegration:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
 
         n_wires = 2
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @partial(
@@ -277,6 +364,7 @@ class TestMitiqIntegration:
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -296,19 +384,18 @@ class TestMitiqIntegration:
     def test_with_reps_per_factor(self):
         """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
         set not equal to 1"""
-        from mitiq.zne.scaling import fold_gates_at_random
         from mitiq.zne.inference import RichardsonFactory
+        from mitiq.zne.scaling import fold_gates_at_random
 
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
 
         n_wires = 2
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @partial(
@@ -318,6 +405,7 @@ class TestMitiqIntegration:
             extrapolate=RichardsonFactory.extrapolate,
             reps_per_factor=2,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -342,13 +430,12 @@ class TestMitiqIntegration:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
 
         n_wires = 2
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         def circuit(w1, w2):
@@ -365,6 +452,7 @@ class TestMitiqIntegration:
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_qnode(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -400,13 +488,12 @@ class TestMitiqIntegration:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
 
         n_wires = 2
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s, requires_grad=True) for s in shapes]
 
         @partial(
@@ -415,6 +502,7 @@ class TestMitiqIntegration:
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -442,7 +530,6 @@ def qfunc_multi(theta):
 noise_gate = qml.PhaseDamping
 
 # Load devices
-dev_ideal = qml.device("default.mixed", wires=2)
 dev_noisy = qml.transforms.insert(dev_ideal, noise_gate, 0.05)
 
 out_ideal = np.sqrt(2) / 2 + np.sqrt(2)
@@ -470,6 +557,7 @@ class TestDifferentiableZNE:
         dev = qml.device("default.qubit", wires=range(n_wires))
 
         # This circuit itself produces the identity by construction
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def circuit(w1, w2):
             template(w1, w2, wires=range(n_wires))
@@ -489,17 +577,67 @@ class TestDifferentiableZNE:
         coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
         assert qml.math.allclose(qml.math.squeeze(coeffs), [3, 2, 1])
 
+    @pytest.mark.parametrize("exp_params", [[0.5, -2, 2], [-9, -4, 0]])
+    def test_exponential_extrapolation_accuracy(self, exp_params):
+        """Testing the exponential extrapolation works as expected for known exponential models."""
+        A, B, asymptote = exp_params
+        x = np.linspace(1, 4, 4)
+        y = A * np.exp(B * x) + asymptote
+        zne_val = qml.transforms.exponential_extrapolate(x, y, asymptote=asymptote)
+        assert qml.math.allclose(zne_val, A + asymptote, atol=1e-3)
+
     @pytest.mark.autograd
-    def test_diffability_autograd(self):
+    def test_exponential_extrapolation_autograd(self):
+        """Test exponential extrapolation works with expvals stored as a numpy array."""
+        scale_factors = [1, 3, 5]
+        noise_scaled_expvals = np.array([0.9, 0.8, 0.7])
+        zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
+        assert isinstance(zne_val, np.ndarray)
+        assert zne_val.ndim == 0
+
+    @pytest.mark.tf
+    def test_exponential_extrapolation_tf(self):
+        """Test exponential extrapolation works with expvals stored as a tensorflow tensor."""
+        import tensorflow as tf
+
+        scale_factors = [1, 3, 5]
+        noise_scaled_expvals = tf.constant([0.9, 0.8, 0.7], dtype=tf.float32)
+        zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
+        assert tf.is_tensor(zne_val)
+        assert zne_val.shape.ndims == 0
+
+    @pytest.mark.torch
+    def test_exponential_extrapolation_torch(self):
+        """Test exponential extrapolation works with expvals stored as a torch tensor."""
+        import torch
+
+        scale_factors = [1, 3, 5]
+        noise_scaled_expvals = torch.tensor([0.9, 0.8, 0.7])
+        zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
+        assert torch.is_tensor(zne_val)
+        assert zne_val.ndimension() == 0
+
+    @pytest.mark.jax
+    def test_exponential_extrapolation_jax(self):
+        """Test exponential extrapolation works with expvals stored as a jax array."""
+        import jax.numpy as jnp
+
+        scale_factors = [1, 3, 5]
+        noise_scaled_expvals = jnp.array([0.9, 0.8, 0.7])
+        zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
+        assert isinstance(zne_val, jnp.ndarray)
+        assert zne_val.ndim == 0
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_autograd(self, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in autograd"""
         qnode_noisy = qml.QNode(qfunc, dev_noisy)
         qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = np.array([np.pi / 4, np.pi / 4], requires_grad=True)
 
@@ -513,7 +651,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_diffability_jax(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_jax(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax"""
         import jax
         import jax.numpy as jnp
@@ -523,9 +662,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = jnp.array(
             [np.pi / 4, np.pi / 4],
@@ -541,7 +678,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
-    def test_diffability_jaxjit(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_jaxjit(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax-jit"""
         import jax
         import jax.numpy as jnp
@@ -552,7 +690,7 @@ class TestDifferentiableZNE:
         scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = jax.jit(
-            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, richardson_extrapolate)
+            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
         )
 
         theta = jnp.array(
@@ -569,7 +707,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    def test_diffability_torch(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_torch(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in torch"""
         import torch
 
@@ -578,9 +717,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
 
@@ -598,7 +735,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["auto", "tf"])
-    def test_diffability_tf(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_tf(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
         import tensorflow as tf
 
@@ -607,9 +745,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = tf.Variable([np.pi / 4, np.pi / 4])
 
@@ -627,7 +763,8 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.autograd
-    def test_diffability_autograd_multi(self):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_autograd_multi(self, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in autograd for multiple measurements"""
         qnode_noisy = qml.QNode(qfunc_multi, dev_noisy)
@@ -635,9 +772,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = np.array([np.pi / 4, np.pi / 6], requires_grad=True)
 
@@ -651,7 +786,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_diffability_jax_multi(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_jax_multi(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in jax for multiple measurements"""
         import jax
@@ -662,9 +798,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = jnp.array(
             [np.pi / 4, np.pi / 6],
@@ -680,7 +814,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
-    def test_diffability_jaxjit_multi(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_jaxjit_multi(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and
         returns the correct gradient in jax-jit for multiple measurements"""
         import jax
@@ -692,7 +827,7 @@ class TestDifferentiableZNE:
         scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = jax.jit(
-            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, richardson_extrapolate)
+            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
         )
 
         theta = jnp.array(
@@ -709,7 +844,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    def test_diffability_torch_multi(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_torch_multi(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in torch for multiple measurements"""
         import torch
@@ -719,9 +855,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = torch.tensor([np.pi / 4, np.pi / 6], requires_grad=True)
 
@@ -738,7 +872,8 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.tf
-    def test_diffability_tf_multi(self):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_tf_multi(self, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in tf for multiple measurements"""
         import tensorflow as tf
@@ -748,9 +883,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = tf.Variable([np.pi / 4, np.pi / 6])
 

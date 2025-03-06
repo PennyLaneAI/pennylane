@@ -14,11 +14,12 @@
 """Unit tests for the mid_measure module"""
 
 from itertools import product
+
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MidMeasureMP, MeasurementValue
+from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
@@ -79,6 +80,15 @@ mp3 = MidMeasureMP(Wires(2), id="m2")
 
 class TestMeasurementValueManipulation:
     """Test all the dunder methods associated with the MeasurementValue class"""
+
+    def test_error_on_boolean_conversion(self):
+        """Test that an error is raised if a measurement value if used as a boolean."""
+
+        m = MeasurementValue([mp1], lambda v: v)
+
+        with pytest.raises(ValueError, match="The truth value of a MeasurementValue"):
+            if m:
+                return
 
     def test_apply_function_to_measurement(self):
         """Test the general _apply method that can apply an arbitrary function to a measurement."""
@@ -223,8 +233,14 @@ class TestMeasurementValueManipulation:
         """Test the __inv__ dunder method."""
         m = MeasurementValue([mp1], lambda v: v)
         m_inversion = ~m
-        assert m_inversion[0] is True
-        assert m_inversion[1] is False
+        assert qml.math.allclose(m_inversion[0], True)
+        assert qml.math.allclose(m_inversion[1], False)
+        values = {mp1: True}
+        assert qml.math.allclose(m_inversion.concretize(values), False)
+        values = {mp1: False}
+        assert qml.math.allclose(m_inversion.concretize(values), True)
+        values = {mp1: np.random.rand(10) < 0.5}
+        assert all(m_inversion.concretize(values) != np.array(values.values()))
 
     def test_lt(self):
         """Test the __lt__ dunder method between a MeasurementValue and a float."""
@@ -380,13 +396,21 @@ class TestMeasurementValueManipulation:
         w.r.t a more complicated MeasurementValue"""
         a = MeasurementValue([mp1], lambda v: v)
         b = MeasurementValue([mp2], lambda v: v)
-        assert (
-            str(a + b)
-            == """if m0=0,m1=0 => 0
-if m0=0,m1=1 => 1
-if m0=1,m1=0 => 1
-if m0=1,m1=1 => 2"""
+        assert str(a + b) == (
+            "if m0=0,m1=0 => 0\nif m0=0,m1=1 => 1\nif m0=1,m1=0 => 1\nif m0=1,m1=1 => 2"
         )
+
+    def test_repr(self):
+        """Test that the output of the __repr__ dunder method is as expected."""
+        m = qml.measure(0)
+        assert repr(m) == "MeasurementValue(wires=[0])"
+
+    def test_complex_repr(self):
+        """Test that the output of the __repr__ dunder method is as expected
+        w.r.t a more complicated MeasurementValue"""
+        a = MeasurementValue([mp1], lambda v: v)
+        b = MeasurementValue([mp2], lambda v: v)
+        assert repr(a + b) == "MeasurementValue(wires=[0, 1])"
 
     def test_map_wires(self):
         """Test that map_wires works as expected."""
@@ -395,6 +419,23 @@ if m0=1,m1=1 => 2"""
         [new_meas] = b.measurements
         assert new_meas.wires == Wires(["b"])
         assert new_meas.id == mp1.id
+
+    def test_mod(self):
+        """Test the __xor__ dunder method between two measurement values"""
+        m1 = MeasurementValue([mp1], lambda v: v)
+        mod_val = m1 % 2
+        assert mod_val[0] == 0
+        assert mod_val[1] == 1
+
+    def test_xor(self):
+        """Test the __xor__ dunder method between two measurement values"""
+        m1 = MeasurementValue([mp1], lambda v: v)
+        m2 = MeasurementValue([mp2], lambda v: v)
+        compared = m1 ^ m2
+        assert compared[0] == 0
+        assert compared[1] == 1
+        assert compared[2] == 1
+        assert compared[3] == 0
 
 
 unary_dunders = ["__invert__"]
@@ -407,6 +448,7 @@ measurement_value_binary_dunders = [
     "__rmul__",
     "__rsub__",
     "__sub__",
+    "__mod__",
 ]
 
 boolean_binary_dunders = [
@@ -418,6 +460,7 @@ boolean_binary_dunders = [
     "__lt__",
     "__ne__",
     "__or__",
+    "__xor__",
 ]
 
 binary_dunders = measurement_value_binary_dunders + boolean_binary_dunders
@@ -495,3 +538,98 @@ class TestMeasurementCompositeValueManipulation:
         division_dunder = getattr(m0, div)
         res = division_dunder(other)
         assert isinstance(res, MeasurementValue)
+
+
+class TestMeasurementValueItems:
+    """Test that a MeasurementValue returns its items correctly."""
+
+    # pylint: disable=protected-access
+
+    funcs_and_expected_single = [
+        ((lambda v: v), [0, 1]),
+        ((lambda v: 1 - v), [1, 0]),
+    ]
+
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
+    @pytest.mark.parametrize("func, expected", funcs_and_expected_single)
+    def test_items_single_mp(self, func, expected, postselect):
+        """Test the full items. Note that postselect should not affect the
+        output at all."""
+        mp = MidMeasureMP(0, postselect=postselect)
+        mv = MeasurementValue([mp], func)
+        items = list(mv.items())
+        assert items == [((0,), expected[0]), ((1,), expected[1])]
+
+    funcs_and_expected_multi = [
+        ((lambda *v: sum(v) == 1), [0, 1, 1, 0, 1, 0, 0, 0]),
+        ((lambda *v: v[0]), [0, 0, 0, 0, 1, 1, 1, 1]),
+    ]
+
+    @pytest.mark.parametrize("func, expected", funcs_and_expected_multi)
+    def test_items_multiple_mps(self, func, expected):
+        """Test the full items."""
+        MP0 = MidMeasureMP(0)
+        MP1 = MidMeasureMP(1)
+        MP2 = MidMeasureMP(2)
+        branches3 = [
+            (0, 0, 0),
+            (0, 0, 1),
+            (0, 1, 0),
+            (0, 1, 1),
+            (1, 0, 0),
+            (1, 0, 1),
+            (1, 1, 0),
+            (1, 1, 1),
+        ]
+        mv = MeasurementValue([MP0, MP1, MP2], func)
+        items = list(mv.items())
+        assert len(items) == len(branches3) == len(expected)
+        for item, branch, exp in zip(items, branches3, expected):
+            assert item == (branch, exp)
+
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
+    @pytest.mark.parametrize("func, expected", funcs_and_expected_single)
+    def test_postselected_items_single_mp(self, postselect, func, expected):
+        """Test the full items."""
+        mp = MidMeasureMP(0, postselect=postselect)
+        mv = MeasurementValue([mp], func)
+        items = list(mv.postselected_items())
+        if postselect is None:
+            assert items == [((0,), expected[0]), ((1,), expected[1])]
+        else:
+            all_items = [((), expected[0]), ((), expected[1])]
+            assert items == [all_items[postselect]]
+
+    branches3 = [
+        (0, 0, 0),
+        (0, 0, 1),
+        (0, 1, 0),
+        (0, 1, 1),
+        (1, 0, 0),
+        (1, 0, 1),
+        (1, 1, 0),
+        (1, 1, 1),
+    ]
+
+    postselects_and_branches = [
+        ((None, 1, None), [(0, 1, 0), (0, 1, 1), (1, 1, 0), (1, 1, 1)]),
+        ((None, 1, 0), [(0, 1, 0), (1, 1, 0)]),
+        ((1, 1, 1), [(1, 1, 1)]),
+        ((0, None, None), [(0, 0, 0), (0, 0, 1), (0, 1, 0), (0, 1, 1)]),
+        ((None, None, None), branches3),
+    ]
+
+    @pytest.mark.parametrize("postselects, branches", postselects_and_branches)
+    @pytest.mark.parametrize("func, expected", funcs_and_expected_multi)
+    def test_postselected_items_multiple_mps(self, func, expected, postselects, branches):
+        """Test the full items."""
+        MP0 = MidMeasureMP(0, postselect=postselects[0])
+        MP1 = MidMeasureMP(1, postselect=postselects[1])
+        MP2 = MidMeasureMP(2, postselect=postselects[2])
+
+        mv = MeasurementValue([MP0, MP1, MP2], func)
+        items = list(mv.postselected_items())
+        assert len(items) == len(branches)
+        for item, branch in zip(items, branches):
+            pruned_branch = tuple(b for i, b in enumerate(branch) if postselects[i] is None)
+            assert item == (pruned_branch, expected[self.branches3.index(branch)])

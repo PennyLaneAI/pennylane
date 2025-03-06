@@ -17,12 +17,15 @@ from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import functools
+from typing import Optional, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
 
 I4 = np.eye(4)
 I16 = np.eye(16)
@@ -30,7 +33,7 @@ I16 = np.eye(16)
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
 
-def _single_excitations_matrix(phi, phase_prefactor):
+def _single_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> TensorLike:
     """This helper function unifies the `compute_matrix` methods
     of `SingleExcitation`, `SingleExcitationPlus` and `SingleExcitationMinus`.
     `phase_prefactor` determines which operation is produced:
@@ -76,7 +79,7 @@ def _single_excitations_matrix(phi, phase_prefactor):
     )
 
 
-def _double_excitations_matrix(phi, phase_prefactor):
+def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> TensorLike:
     """This helper function unifies the `compute_matrix` methods
     of `DoubleExcitation`, `DoubleExcitationPlus` and `DoubleExcitationMinus`.
     `phase_prefactor` determines which operation is produced:
@@ -147,7 +150,7 @@ class SingleExcitation(Operation):
 
         @qml.qnode(dev)
         def circuit(phi):
-            qml.PauliX(wires=0)
+            qml.X(0)
             qml.SingleExcitation(phi, wires=[0, 1])
             return qml.state()
 
@@ -169,15 +172,15 @@ class SingleExcitation(Operation):
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    def generator(self):
+    def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
-        return 0.25 * (qml.PauliX(w1) @ qml.PauliY(w2) - qml.PauliY(w1) @ qml.PauliX(w2))
+        return qml.Hamiltonian([0.25, -0.25], [qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2)])
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -203,7 +206,7 @@ class SingleExcitation(Operation):
         return _single_excitations_matrix(phi, 0.0)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -221,22 +224,22 @@ class SingleExcitation(Operation):
         **Example:**
 
         >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
-        [Adjoint(T(wires=[0])),
-         Hadamard(wires=[0]),
-         S(wires=[0]),
-         Adjoint(T(wires=[1])),
-         Adjoint(S(wires=[1])),
-         Hadamard(wires=[1]),
+        [Adjoint(T(0)),
+         H(0),
+         S(0),
+         Adjoint(T(1)),
+         Adjoint(S(1)),
+         H(1),
          CNOT(wires=[1, 0]),
          RZ(-0.615, wires=[0]),
          RY(0.615, wires=[1]),
          CNOT(wires=[1, 0]),
-         Adjoint(S(wires=[0])),
-         Hadamard(wires=[0]),
-         T(wires=[0]),
-         Hadamard(wires=[1]),
-         S(wires=[1]),
-         T(wires=[1])]
+         Adjoint(S(0)),
+         H(0),
+         T(0),
+         H(1),
+         S(1),
+         T(1)]
 
         """
         # This decomposition was found by plugging the matrix representation
@@ -262,14 +265,19 @@ class SingleExcitation(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self) -> "SingleExcitation":
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [SingleExcitation(self.data[0] * z, wires=self.wires)]
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
 
@@ -298,6 +306,7 @@ class SingleExcitationMinus(Operation):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -313,20 +322,18 @@ class SingleExcitationMinus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    def generator(self):
+    def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
-        return 0.25 * (
-            -qml.Identity(w1)
-            + qml.PauliX(w1) @ qml.PauliY(w2)
-            - qml.PauliY(w1) @ qml.PauliX(w2)
-            - qml.PauliZ(w1) @ qml.PauliZ(w2)
+        return qml.Hamiltonian(
+            [-0.25, 0.25, -0.25, -0.25],
+            [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
         )
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -352,7 +359,7 @@ class SingleExcitationMinus(Operation):
         return _single_excitations_matrix(phi, -0.5j)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -370,11 +377,11 @@ class SingleExcitationMinus(Operation):
         **Example:**
 
         >>> qml.SingleExcitationMinus.compute_decomposition(1.23, wires=(0,1))
-        [PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        [X(0),
+        X(1),
         ControlledPhaseShift(-0.615, wires=[1, 0]),
-        PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        X(0),
+        X(1),
         ControlledPhaseShift(-0.615, wires=[0, 1]),
         CNOT(wires=[0, 1]),
         CRY(1.23, wires=[1, 0]),
@@ -382,11 +389,11 @@ class SingleExcitationMinus(Operation):
 
         """
         decomp_ops = [
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(-phi / 2, wires=[wires[1], wires[0]]),
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(-phi / 2, wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(phi, wires=[wires[1], wires[0]]),
@@ -394,11 +401,16 @@ class SingleExcitationMinus(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self) -> "SingleExcitationMinus":
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G₋", cache=cache)
 
 
@@ -427,6 +439,7 @@ class SingleExcitationPlus(Operation):
         id (str or None): String representing the operation (optional)
 
     """
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -442,20 +455,18 @@ class SingleExcitationPlus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    def generator(self):
+    def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
-        return 0.25 * (
-            qml.Identity(w1)
-            + qml.PauliX(w1) @ qml.PauliY(w2)
-            - qml.PauliY(w1) @ qml.PauliX(w2)
-            + qml.PauliZ(w1) @ qml.PauliZ(w2)
+        return qml.Hamiltonian(
+            [0.25, 0.25, -0.25, 0.25],
+            [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
         )
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -481,7 +492,7 @@ class SingleExcitationPlus(Operation):
         return _single_excitations_matrix(phi, 0.5j)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -499,11 +510,11 @@ class SingleExcitationPlus(Operation):
         **Example:**
 
         >>> qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
-        [PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        [X(0),
+        X(1),
         ControlledPhaseShift(0.615, wires=[1, 0]),
-        PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        X(0),
+        X(1),
         ControlledPhaseShift(0.615, wires=[0, 1]),
         CNOT(wires=[0, 1]),
         CRY(1.23, wires=[1, 0]),
@@ -511,11 +522,11 @@ class SingleExcitationPlus(Operation):
 
         """
         decomp_ops = [
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(phi / 2, wires=[wires[1], wires[0]]),
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
+            qml.X(wires[0]),
+            qml.X(wires[1]),
             qml.ControlledPhaseShift(phi / 2, wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(phi, wires=[wires[1], wires[0]]),
@@ -523,11 +534,16 @@ class SingleExcitationPlus(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self) -> "SingleExcitationPlus":
         (phi,) = self.parameters
         return SingleExcitationPlus(-phi, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G₊", cache=cache)
 
 
@@ -573,13 +589,14 @@ class DoubleExcitation(Operation):
 
         @qml.qnode(dev)
         def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
+            qml.X(0)
+            qml.X(1)
             qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
             return qml.state()
 
         circuit(0.1)
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -595,25 +612,26 @@ class DoubleExcitation(Operation):
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    def generator(self):
+    def generator(self) -> "qml.Hamiltonian":
         w0, w1, w2, w3 = self.wires
-        coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
-        obs = [
-            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
-            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
-            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
-            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
-            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
-            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
-            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
-            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
-        ]
-        return qml.Hamiltonian(coeffs, obs)
+        return qml.Hamiltonian(
+            [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
+            [
+                qml.X(w0) @ qml.X(w1) @ qml.X(w2) @ qml.Y(w3),
+                qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.X(w3),
+                qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.X(w3),
+                qml.X(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.Y(w3),
+                qml.Y(w0) @ qml.X(w1) @ qml.X(w2) @ qml.X(w3),
+                qml.Y(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Y(w3),
+                qml.Y(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Y(w3),
+                qml.Y(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.X(w3),
+            ],
+        )
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     mask_s = np.zeros((16, 16))
@@ -621,7 +639,7 @@ class DoubleExcitation(Operation):
     mask_s[12, 3] = 1
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -639,7 +657,7 @@ class DoubleExcitation(Operation):
         return _double_excitations_matrix(phi, 0.0)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -662,14 +680,14 @@ class DoubleExcitation(Operation):
         >>> qml.DoubleExcitation.compute_decomposition(1.23, wires=(0,1,2,3))
         [CNOT(wires=[2, 3]),
         CNOT(wires=[0, 2]),
-        Hadamard(wires=[3]),
-        Hadamard(wires=[0]),
+        H(3),
+        H(0),
         CNOT(wires=[2, 3]),
         CNOT(wires=[0, 1]),
         RY(0.15375, wires=[1]),
         RY(-0.15375, wires=[0]),
         CNOT(wires=[0, 3]),
-        Hadamard(wires=[3]),
+        H(3),
         CNOT(wires=[3, 1]),
         RY(0.15375, wires=[1]),
         RY(-0.15375, wires=[0]),
@@ -678,14 +696,14 @@ class DoubleExcitation(Operation):
         RY(-0.15375, wires=[1]),
         RY(0.15375, wires=[0]),
         CNOT(wires=[3, 1]),
-        Hadamard(wires=[3]),
+        H(3),
         CNOT(wires=[0, 3]),
         RY(-0.15375, wires=[1]),
         RY(0.15375, wires=[0]),
         CNOT(wires=[0, 1]),
         CNOT(wires=[2, 0]),
-        Hadamard(wires=[0]),
-        Hadamard(wires=[3]),
+        H(0),
+        H(3),
         CNOT(wires=[0, 2]),
         CNOT(wires=[2, 3])]
 
@@ -724,11 +742,16 @@ class DoubleExcitation(Operation):
 
         return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self) -> "DoubleExcitation":
         (theta,) = self.parameters
         return DoubleExcitation(-theta, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G²", cache=cache)
 
 
@@ -761,6 +784,7 @@ class DoubleExcitationPlus(Operation):
         wires (Sequence[int]): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -776,7 +800,7 @@ class DoubleExcitationPlus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    def generator(self):
+    def generator(self) -> "qml.SparseHamiltonian":
         G = -1 * np.eye(16, dtype=np.complex64)
         G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
@@ -784,11 +808,11 @@ class DoubleExcitationPlus(Operation):
         H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -805,11 +829,16 @@ class DoubleExcitationPlus(Operation):
         """
         return _double_excitations_matrix(phi, 0.5j)
 
-    def adjoint(self):
+    def adjoint(self) -> "DoubleExcitationPlus":
         (theta,) = self.parameters
         return DoubleExcitationPlus(-theta, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G²₊", cache=cache)
 
 
@@ -842,6 +871,7 @@ class DoubleExcitationMinus(Operation):
         wires (Sequence[int]): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -857,7 +887,7 @@ class DoubleExcitationMinus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    def generator(self):
+    def generator(self) -> "qml.SparseHamiltonian":
         G = np.eye(16, dtype=np.complex64)
         G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
@@ -866,7 +896,7 @@ class DoubleExcitationMinus(Operation):
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -884,11 +914,16 @@ class DoubleExcitationMinus(Operation):
         """
         return _double_excitations_matrix(phi, -0.5j)
 
-    def adjoint(self):
+    def adjoint(self) -> "DoubleExcitationMinus":
         (theta,) = self.parameters
         return DoubleExcitationMinus(-theta, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G²₋", cache=cache)
 
 
@@ -948,6 +983,7 @@ class OrbitalRotation(Operation):
                 0.99750208+0.j,  0.        +0.j,  0.        +0.j,
                 0.        +0.j])
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -963,16 +999,19 @@ class OrbitalRotation(Operation):
     parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    def generator(self):
+    def generator(self) -> "qml.Hamiltonian":
         w0, w1, w2, w3 = self.wires
-        return 0.25 * (
-            qml.PauliX(w0) @ qml.PauliZ(w1) @ qml.PauliY(w2)
-            - (qml.PauliY(w0) @ qml.PauliZ(w1) @ qml.PauliX(w2))
-            + (qml.PauliX(w1) @ qml.PauliZ(w2) @ qml.PauliY(w3))
-            - (qml.PauliY(w1) @ qml.PauliZ(w2) @ qml.PauliX(w3))
+        return qml.Hamiltonian(
+            [0.25, -0.25, 0.25, -0.25],
+            [
+                qml.X(w0) @ qml.Z(w1) @ qml.Y(w2),
+                (qml.Y(w0) @ qml.Z(w1) @ qml.X(w2)),
+                (qml.X(w1) @ qml.Z(w2) @ qml.Y(w3)),
+                (qml.Y(w1) @ qml.Z(w2) @ qml.X(w3)),
+            ],
         )
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     mask_s = np.zeros((16, 16))
@@ -987,7 +1026,7 @@ class OrbitalRotation(Operation):
     mask_s2[3, 12] = mask_s2[12, 3] = mask_s2[6, 9] = mask_s2[9, 6] = 1
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1042,7 +1081,7 @@ class OrbitalRotation(Operation):
         return diag + off_diag
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1076,7 +1115,7 @@ class OrbitalRotation(Operation):
             qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
         ]
 
-    def adjoint(self):
+    def adjoint(self) -> "OrbitalRotation":
         (phi,) = self.parameters
         return OrbitalRotation(-phi, wires=self.wires)
 
@@ -1129,7 +1168,7 @@ class FermionicSWAP(Operation):
         >>> dev = qml.device('default.qubit', wires=2)
         >>> @qml.qnode(dev)
         ... def circuit(phi):
-        ...     qml.PauliX(wires=1)
+        ...     qml.X(1)
         ...     qml.FermionicSWAP(phi, wires=[0, 1])
         ...     return qml.state()
         >>> circuit(0.1)
@@ -1151,20 +1190,24 @@ class FermionicSWAP(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    def generator(self):
+    def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
-        return 0.5 * qml.Identity(w1) @ qml.Identity(w2) - 0.25 * (
-            qml.Identity(w1) @ qml.PauliZ(w2)
-            + qml.PauliZ(w1) @ qml.Identity(w2)
-            + qml.PauliX(w1) @ qml.PauliX(w2)
-            + qml.PauliY(w1) @ qml.PauliY(w2)
+        return qml.Hamiltonian(
+            [0.5, -0.25, -0.25, -0.25, -0.25],
+            [
+                qml.Identity(w1) @ qml.Identity(w2),
+                qml.Identity(w1) @ qml.Z(w2),
+                qml.Z(w1) @ qml.Identity(w2),
+                qml.X(w1) @ qml.X(w2),
+                qml.Y(w1) @ qml.Y(w2),
+            ],
         )
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1207,7 +1250,7 @@ class FermionicSWAP(Operation):
         return qml.math.stack([stack_last(row) for row in rows], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires):
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1225,11 +1268,11 @@ class FermionicSWAP(Operation):
         **Example:**
 
         >>> qml.FermionicSWAP.compute_decomposition(0.2, wires=(0, 1))
-        [Hadamard(wires=[0]),
-         Hadamard(wires=[1]),
+        [H(0),
+         H(1),
          MultiRZ(0.1, wires=[0, 1]),
-         Hadamard(wires=[0]),
-         Hadamard(wires=[1]),
+         H(0),
+         H(1),
          RX(1.5707963267948966, wires=[0]),
          RX(1.5707963267948966, wires=[1]),
          MultiRZ(0.1, wires=[0, 1]),
@@ -1257,12 +1300,17 @@ class FermionicSWAP(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self) -> "FermionicSWAP":
         (phi,) = self.parameters
         return FermionicSWAP(-phi, wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [FermionicSWAP(self.data[0] * z, wires=self.wires)]
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "fSWAP", cache=cache)

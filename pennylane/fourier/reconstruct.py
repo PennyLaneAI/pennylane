@@ -13,12 +13,13 @@
 # limitations under the License.
 """Contains a function that computes the fourier series of
 a quantum expectation value."""
+import warnings
 from functools import wraps
 from inspect import signature
-import warnings
 
 import numpy as np
 from autoray import numpy as anp
+
 import pennylane as qml
 
 
@@ -128,11 +129,11 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
     f_max = qml.math.max(spectrum)
 
     # If no shifts are provided, choose equidistant ones
+    need_f0 = True
     if not have_shifts:
         R = qml.math.shape(spectrum)[0]
         shifts = qml.math.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
         zero_idx = R
-        need_f0 = True
     elif have_f0:
         zero_idx = qml.math.where(qml.math.isclose(shifts, qml.math.zeros_like(shifts[0])))
         zero_idx = zero_idx[0][0] if (len(zero_idx) > 0 and len(zero_idx[0]) > 0) else None
@@ -391,9 +392,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     `Wierichs, Izaac, Wang and Lin (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__ .
     An introduction to the concept of quantum circuits as Fourier series can also be found in
     the
-    `Quantum models as Fourier series <https://pennylane.ai/qml/demos/tutorial_expressivity_fourier_series.html>`__
+    :doc:`Quantum models as Fourier series <demos/tutorial_expressivity_fourier_series>`
     and
-    `General parameter-shift rules <https://pennylane.ai/qml/demos/tutorial_general_parshift.html>`__
+    :doc:`General parameter-shift rules <demos/tutorial_general_parshift>`
     demos as well as the
     :mod:`qml.fourier <pennylane.fourier>` module docstring.
 
@@ -412,7 +413,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
             qml.RY(Y[1], wires=1)
             qml.CNOT(wires=[0, 1])
             qml.RY(5*  Y[1], wires=1)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
         x = 0.4
         Y = np.array([1.9, -0.5])
@@ -553,7 +554,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
                 qml.RY(Y[1], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.RY(5*  Y[1], wires=1)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                return qml.expval(qml.Z(0) @ qml.Z(1))
 
             f = 2.3
 

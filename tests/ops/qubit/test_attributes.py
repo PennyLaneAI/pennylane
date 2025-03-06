@@ -15,13 +15,14 @@
 Unit tests for the available qubit state preparation operations.
 """
 import itertools as it
-import pytest
-import numpy as np
-from scipy.stats import unitary_group
-import pennylane as qml
 
-from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
+import numpy as np
+import pytest
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane.operation import AnyWires
+from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])
@@ -31,14 +32,16 @@ class TestAttribute:
     """Test addition and inclusion of operations and subclasses in attributes."""
 
     def test_invalid_input(self):
-        """Test that anything that is not a string or Operation throws an error."""
-        # Test something that is not an object
-        with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
-            assert 3 not in new_attribute
+        """Test that anything that is not a string or Operation returns False."""
+        assert 3 not in new_attribute
 
         # Test a dummy object that is not an Operation.
-        with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
-            assert object() not in new_attribute
+        assert object() not in new_attribute
+
+    def test_measurement_process_input(self):
+        """Test that MeasurementProcesses are valid objects to check inside Attributes"""
+        assert qml.measurements.MidMeasureMP(0) not in new_attribute
+        assert qml.expval(qml.PauliX(0)) not in new_attribute
 
     def test_string_inclusion(self):
         """Test that we can check inclusion using strings."""
@@ -79,10 +82,6 @@ class TestAttribute:
         assert "PhaseShift" in new_attribute
         assert "RY" in new_attribute
         assert len(new_attribute) == 8
-
-    def test_tensor_check(self):
-        """Test that we can ask if a tensor is in the attribute."""
-        assert not qml.PauliX(wires=0) @ qml.PauliZ(wires=1) in new_attribute
 
 
 single_scalar_single_wire_ops = [
@@ -134,7 +133,6 @@ separately_tested_ops = [
     "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
-    "QubitStateVector",
     "StatePrep",
     "AmplitudeEmbedding",
     "AngleEmbedding",
@@ -285,15 +283,14 @@ class TestSupportsBroadcasting:
         actually does support broadcasting."""
 
         U = np.array([unitary_group.rvs(4, random_state=state) for state in [91, 1, 4]])
-        wires = [0, "9"]
+        target_wires = [0, "9"]
+        control_wires = [1, "10"]
+        wires = control_wires + target_wires
 
-        op = qml.ControlledQubitUnitary(U, wires=wires, control_wires=[1, "10"])
+        op = qml.ControlledQubitUnitary(U, wires=wires)
 
         mat1 = op.matrix()
-        single_mats = [
-            qml.ControlledQubitUnitary(_U, wires=wires, control_wires=[1, "10"]).matrix()
-            for _U in U
-        ]
+        single_mats = [qml.ControlledQubitUnitary(_U, wires=wires).matrix() for _U in U]
 
         assert qml.math.allclose(mat1, single_mats)
 

@@ -14,38 +14,197 @@
 r"""
 The default.mixed device is PennyLane's standard qubit simulator for mixed-state computations.
 
-It implements the necessary :class:`~pennylane.Device` methods as well as some built-in
+It implements the necessary :class:`~pennylane.devices.LegacyDevice` methods as well as some built-in
 qubit :doc:`operations </introduction/operations>`, providing a simple mixed-state simulation of
 qubit-based quantum circuits.
 """
-
+# isort: skip_file
+# pylint: disable=wrong-import-order, ungrouped-imports
 import functools
 import itertools
+import logging
 from collections import defaultdict
 from string import ascii_letters as ABC
 
+import numpy as np
+
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane import (
-    BasisState,
-    DeviceError,
-    QubitDensityMatrix,
-    QubitDevice,
-    StatePrep,
-    Snapshot,
+from pennylane import BasisState, QubitDensityMatrix, Snapshot, StatePrep
+from pennylane.logging import debug_logger, debug_logger_init
+from pennylane.measurements import (
+    CountsMP,
+    DensityMatrixMP,
+    ExpectationMP,
+    MutualInfoMP,
+    ProbabilityMP,
+    PurityMP,
+    SampleMP,
+    StateMP,
+    VarianceMP,
+    VnEntropyMP,
 )
-from pennylane import numpy as np
-from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP, PurityMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
 
 from .._version import __version__
+from ._qubit_device import QubitDevice
+
+# We deliberately separate the imports to avoid confusion with the legacy device
+import warnings
+from collections.abc import Callable, Sequence
+from dataclasses import replace
+from typing import Optional, Union
+
+from pennylane.devices.qubit_mixed import simulate
+from pennylane.ops.channel import __qubit_channels__ as channels
+from pennylane.transforms.core import TransformProgram
+from pennylane.tape import QuantumScript
+from pennylane.typing import Result, ResultBatch
+
+from . import Device
+from .execution_config import ExecutionConfig
+from .preprocess import (
+    decompose,
+    no_sampling,
+    null_postprocessing,
+    validate_device_wires,
+    validate_measurements,
+    validate_observables,
+)
+from .modifiers import simulator_tracking, single_tape_support
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+observables = {
+    "Hadamard",
+    "Hermitian",
+    "Identity",
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "Prod",
+    "Projector",
+    "SProd",
+    "Sum",
+}
+
+operations_mixed = {
+    "Identity",
+    "Snapshot",
+    "BasisState",
+    "StatePrep",
+    "QubitDensityMatrix",
+    "QubitUnitary",
+    "ControlledQubitUnitary",
+    "BlockEncode",
+    "MultiControlledX",
+    "DiagonalQubitUnitary",
+    "SpecialUnitary",
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "MultiRZ",
+    "Hadamard",
+    "S",
+    "T",
+    "SX",
+    "CNOT",
+    "SWAP",
+    "ISWAP",
+    "CSWAP",
+    "Toffoli",
+    "CCZ",
+    "CY",
+    "CZ",
+    "CH",
+    "PhaseShift",
+    "PCPhase",
+    "ControlledPhaseShift",
+    "CPhaseShift00",
+    "CPhaseShift01",
+    "CPhaseShift10",
+    "RX",
+    "RY",
+    "RZ",
+    "Rot",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "AmplitudeDamping",
+    "GeneralizedAmplitudeDamping",
+    "PhaseDamping",
+    "DepolarizingChannel",
+    "BitFlip",
+    "PhaseFlip",
+    "PauliError",
+    "ResetError",
+    "QubitChannel",
+    "SingleExcitation",
+    "SingleExcitationPlus",
+    "SingleExcitationMinus",
+    "DoubleExcitation",
+    "DoubleExcitationPlus",
+    "DoubleExcitationMinus",
+    "QubitCarry",
+    "QubitSum",
+    "OrbitalRotation",
+    "FermionicSWAP",
+    "QFT",
+    "ThermalRelaxationError",
+    "ECR",
+    "ParametrizedEvolution",
+    "GlobalPhase",
+}
+
+
+def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+    """Specifies whether an observable is accepted by DefaultQubitMixed."""
+    if obs.name in {"Prod", "Sum"}:
+        return all(observable_stopping_condition(observable) for observable in obs.operands)
+    if obs.name == "LinearCombination":
+        return all(observable_stopping_condition(observable) for observable in obs.terms()[1])
+    if obs.name == "SProd":
+        return observable_stopping_condition(obs.base)
+
+    return obs.name in observables
+
+
+def stopping_condition(op: qml.operation.Operator) -> bool:
+    """Specify whether an Operator object is supported by the device."""
+    expected_set = operations_mixed | {"Snapshot"} | channels
+    return op.name in expected_set
+
+
+@qml.transform
+def warn_readout_error_state(
+    tape: qml.tape.QuantumTape,
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+    """If a measurement in the QNode is an analytic state or density_matrix, warn that readout error will not be applied.
+
+    Args:
+        tape (QuantumTape, .QNode, Callable): a quantum circuit.
+
+    Returns:
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
+        The unaltered input circuit.
+    """
+    if not tape.shots:
+        for m in tape.measurements:
+            if isinstance(m, qml.measurements.StateMP):
+                warnings.warn(f"Measurement {m} is not affected by readout error.")
+
+    return (tape,), null_postprocessing
+
 
 ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
 
 
+# !TODO: when removing this class, rename operations_mixed back to operations
 class DefaultMixed(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
 
@@ -81,75 +240,7 @@ class DefaultMixed(QubitDevice):
     version = __version__
     author = "Xanadu Inc."
 
-    operations = {
-        "Identity",
-        "Snapshot",
-        "BasisState",
-        "QubitStateVector",
-        "StatePrep",
-        "QubitDensityMatrix",
-        "QubitUnitary",
-        "ControlledQubitUnitary",
-        "BlockEncode",
-        "MultiControlledX",
-        "DiagonalQubitUnitary",
-        "SpecialUnitary",
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "MultiRZ",
-        "Hadamard",
-        "S",
-        "T",
-        "SX",
-        "CNOT",
-        "SWAP",
-        "ISWAP",
-        "CSWAP",
-        "Toffoli",
-        "CCZ",
-        "CY",
-        "CZ",
-        "CH",
-        "PhaseShift",
-        "PCPhase",
-        "ControlledPhaseShift",
-        "CPhaseShift00",
-        "CPhaseShift01",
-        "CPhaseShift10",
-        "RX",
-        "RY",
-        "RZ",
-        "Rot",
-        "CRX",
-        "CRY",
-        "CRZ",
-        "CRot",
-        "AmplitudeDamping",
-        "GeneralizedAmplitudeDamping",
-        "PhaseDamping",
-        "DepolarizingChannel",
-        "BitFlip",
-        "PhaseFlip",
-        "PauliError",
-        "ResetError",
-        "QubitChannel",
-        "SingleExcitation",
-        "SingleExcitationPlus",
-        "SingleExcitationMinus",
-        "DoubleExcitation",
-        "DoubleExcitationPlus",
-        "DoubleExcitationMinus",
-        "QubitCarry",
-        "QubitSum",
-        "OrbitalRotation",
-        "FermionicSWAP",
-        "QFT",
-        "ThermalRelaxationError",
-        "ECR",
-        "ParametrizedEvolution",
-        "GlobalPhase",
-    }
+    operations = operations_mixed
 
     _reshape = staticmethod(qnp.reshape)
     _flatten = staticmethod(qnp.flatten)
@@ -176,6 +267,8 @@ class DefaultMixed(QubitDevice):
         res = qnp.cast(array, dtype=dtype)
         return res
 
+    # pylint: disable=too-many-arguments
+    @debug_logger_init
     def __init__(
         self,
         wires,
@@ -247,6 +340,7 @@ class DefaultMixed(QubitDevice):
         # User obtains state as a matrix
         return qnp.reshape(self._pre_rotated_state, (dim, dim))
 
+    @debug_logger
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.
 
@@ -261,12 +355,14 @@ class DefaultMixed(QubitDevice):
         wires = self.map_wires(wires)
         return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
+    @debug_logger
     def purity(self, mp, **kwargs):  # pylint: disable=unused-argument
         """Returns the purity of the final state"""
         state = getattr(self, "state", None)
         wires = self.map_wires(mp.wires)
         return qml.math.purity(state, indices=wires, c_dtype=self.C_DTYPE)
 
+    @debug_logger
     def reset(self):
         """Resets the device"""
         super().reset()
@@ -274,6 +370,7 @@ class DefaultMixed(QubitDevice):
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
 
+    @debug_logger
     def analytic_probability(self, wires=None):
         if self._state is None:
             return None
@@ -537,7 +634,7 @@ class DefaultMixed(QubitDevice):
         if dm_dim != state.shape[0]:
             raise ValueError("Density matrix must be of length (2**wires, 2**wires)")
 
-        if not qnp.allclose(
+        if not qml.math.is_abstract(state) and not qnp.allclose(
             qnp.trace(qnp.reshape(state, (state_dim, state_dim))), 1.0, atol=tolerance
         ):
             raise ValueError("Trace of density matrix is not equal one.")
@@ -573,7 +670,7 @@ class DefaultMixed(QubitDevice):
                     right_axes.append(index + self.num_wires)
             transpose_axes = left_axes + right_axes
             rho = qnp.transpose(rho, axes=transpose_axes)
-            assert qnp.allclose(
+            assert qml.math.is_abstract(rho) or qnp.allclose(
                 qnp.trace(qnp.reshape(rho, (2**self.num_wires, 2**self.num_wires))),
                 1.0,
                 atol=tolerance,
@@ -581,6 +678,81 @@ class DefaultMixed(QubitDevice):
 
             self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
             self._pre_rotated_state = self._state
+
+    def _snapshot_measurements(self, density_matrix, measurement):
+        """Perform state-based snapshot measurement"""
+        meas_wires = self.wires if not measurement.wires else measurement.wires
+
+        pre_rotated_state = self._state
+        if isinstance(measurement, (ProbabilityMP, ExpectationMP, VarianceMP)):
+            for diag_gate in measurement.diagonalizing_gates():
+                self._apply_operation(diag_gate)
+
+        if isinstance(measurement, (StateMP, DensityMatrixMP)):
+            map_wires = self.map_wires(meas_wires)
+            snap_result = qml.math.reduce_dm(
+                density_matrix, indices=map_wires, c_dtype=self.C_DTYPE
+            )
+
+        elif isinstance(measurement, PurityMP):
+            map_wires = self.map_wires(meas_wires)
+            snap_result = qml.math.purity(density_matrix, indices=map_wires, c_dtype=self.C_DTYPE)
+
+        elif isinstance(measurement, ProbabilityMP):
+            snap_result = self.analytic_probability(wires=meas_wires)
+
+        elif isinstance(measurement, ExpectationMP):
+            eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
+            probs = self.analytic_probability(wires=meas_wires)
+            snap_result = self._dot(probs, eigvals)
+
+        elif isinstance(measurement, VarianceMP):
+            eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
+            probs = self.analytic_probability(wires=meas_wires)
+            snap_result = self._dot(probs, (eigvals**2)) - self._dot(probs, eigvals) ** 2
+
+        elif isinstance(measurement, VnEntropyMP):
+            base = measurement.log_base
+            map_wires = self.map_wires(meas_wires)
+            snap_result = qml.math.vn_entropy(
+                density_matrix, indices=map_wires, c_dtype=self.C_DTYPE, base=base
+            )
+
+        elif isinstance(measurement, MutualInfoMP):
+            base = measurement.log_base
+            wires0, wires1 = list(map(self.map_wires, measurement.raw_wires))
+            snap_result = qml.math.mutual_info(
+                density_matrix,
+                indices0=wires0,
+                indices1=wires1,
+                c_dtype=self.C_DTYPE,
+                base=base,
+            )
+
+        else:
+            raise qml.DeviceError(
+                f"Snapshots of {type(measurement)} are not yet supported on default.mixed"
+            )
+
+        self._state = pre_rotated_state
+        self._pre_rotated_state = self._state
+
+        return snap_result
+
+    def _apply_snapshot(self, operation):
+        """Applies the snapshot operation"""
+        measurement = operation.hyperparameters["measurement"]
+
+        if self._debugger and self._debugger.active:
+            dim = 2**self.num_wires
+            density_matrix = qnp.reshape(self._state, (dim, dim))
+
+            snapshot_result = self._snapshot_measurements(density_matrix, measurement)
+
+            if operation.tag:
+                self._debugger.snapshots[operation.tag] = snapshot_result
+            else:
+                self._debugger.snapshots[len(self._debugger.snapshots)] = snapshot_result
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
@@ -605,13 +777,7 @@ class DefaultMixed(QubitDevice):
             return
 
         if isinstance(operation, Snapshot):
-            if self._debugger and self._debugger.active:
-                dim = 2**self.num_wires
-                density_matrix = qnp.reshape(self._state, (dim, dim))
-                if operation.tag:
-                    self._debugger.snapshots[operation.tag] = density_matrix
-                else:
-                    self._debugger.snapshots[len(self._debugger.snapshots)] = density_matrix
+            self._apply_snapshot(operation)
             return
 
         matrices = self._get_kraus(operation)
@@ -630,6 +796,7 @@ class DefaultMixed(QubitDevice):
 
     # pylint: disable=arguments-differ
 
+    @debug_logger
     def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
@@ -655,7 +822,7 @@ class DefaultMixed(QubitDevice):
             circuit (QuantumTape): circuit to execute on the device
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -677,20 +844,22 @@ class DefaultMixed(QubitDevice):
                     self.measured_wires = self.wires
                     return super().execute(circuit, **kwargs)
                 if isinstance(m, (VnEntropyMP, MutualInfoMP)):
-                    # VnEntropy, MutualInfo: Computed for the state prior to measurement. So, readout
-                    # error need not be applied on the corresponding device wires.
+                    # VnEntropy, MutualInfo: Computed for the state
+                    # prior to measurement. So, readout error need not be applied on the
+                    # corresponding device wires.
                     continue
                 wires_list.append(m.wires)
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
 
+    @debug_logger
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, (StatePrep, BasisState)):
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )
@@ -709,3 +878,201 @@ class DefaultMixed(QubitDevice):
             for k in self.measured_wires:
                 bit_flip = qml.BitFlip(self.readout_err, wires=k)
                 self._apply_operation(bit_flip)
+
+
+@simulator_tracking
+@single_tape_support
+class DefaultMixedNewAPI(Device):
+    r"""A PennyLane Python-based device for mixed-state qubit simulation.
+
+    Args:
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``).
+        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
+            to use in executions involving this device.
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
+            a request to seed from numpy's global random number generator.
+            The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
+            will pull a seed from the OS entropy.
+            If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
+            ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
+            ``numpy.random.default_rng``.
+        r_dtype (numpy.dtype): Real datatype to use for computations. Default is np.float64.
+        c_dtype (numpy.dtype): Complex datatype to use for computations. Default is np.complex128.
+        readout_prob (float): Probability of readout error for qubit measurements. Must be in :math:`[0,1]`.
+    """
+
+    _device_options = ("rng", "prng_key")  # tuple of string names for all the device options.
+
+    @property
+    def name(self):
+        """The name of the device."""
+        return "default.mixed"
+
+    # pylint: disable=too-many-positional-arguments
+    @debug_logger_init
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        wires=None,
+        shots=None,
+        seed="global",
+        # The following parameters are inherited from DefaultMixed
+        readout_prob=None,
+    ) -> None:
+
+        if isinstance(wires, int) and wires > 23:
+            raise ValueError(
+                "This device does not currently support computations on more than 23 wires"
+            )
+
+        self.readout_err = readout_prob
+        # Check that the readout error probability, if entered, is either integer or float in [0,1]
+        if self.readout_err is not None:
+            if not isinstance(self.readout_err, float) and not isinstance(self.readout_err, int):
+                raise TypeError(
+                    "The readout error probability should be an integer or a floating-point number in [0,1]."
+                )
+            if self.readout_err < 0 or self.readout_err > 1:
+                raise ValueError("The readout error probability should be in the range [0,1].")
+        super().__init__(wires=wires, shots=shots)
+
+        # Seed setting
+        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        if qml.math.get_interface(seed) == "jax":
+            self._prng_key = seed
+            self._rng = np.random.default_rng(None)
+        else:
+            self._prng_key = None
+            self._rng = np.random.default_rng(seed)
+
+        self._debugger = None
+
+    @debug_logger
+    def supports_derivatives(
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumScript] = None,
+    ) -> bool:
+        """Check whether or not derivatives are available for a given configuration and circuit.
+
+        ``DefaultQubitMixed`` supports backpropagation derivatives with analytic results.
+
+        Args:
+            execution_config (ExecutionConfig): The configuration of the desired derivative calculation.
+            circuit (QuantumTape): An optional circuit to check derivatives support for.
+
+        Returns:
+            bool: Whether or not a derivative can be calculated provided the given information.
+
+        """
+        if execution_config is None or execution_config.gradient_method in {"backprop", "best"}:
+            return circuit is None or not circuit.shots
+        return False
+
+    @debug_logger
+    def execute(
+        self,
+        circuits: QuantumScript,
+        execution_config: Optional[ExecutionConfig] = None,
+    ) -> Union[Result, ResultBatch]:
+        return tuple(
+            simulate(
+                c,
+                rng=self._rng,
+                prng_key=self._prng_key,
+                debugger=self._debugger,
+                interface=execution_config.interface,
+                readout_errors=self.readout_err,
+            )
+            for c in circuits
+        )
+
+    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
+        """This is a private helper for ``preprocess`` that sets up the execution config.
+
+        Args:
+            execution_config (ExecutionConfig): an unprocessed execution config.
+
+        Returns:
+            ExecutionConfig: a preprocessed execution config.
+        """
+        updated_values = {}
+
+        # Add gradient related
+        if execution_config.gradient_method == "best":
+            updated_values["gradient_method"] = "backprop"
+        updated_values["use_device_gradient"] = execution_config.gradient_method in {
+            "backprop",
+            "best",
+        }
+        updated_values["grad_on_execution"] = False
+        if execution_config.gradient_method not in {"best", "backprop", None}:
+            updated_values["interface"] = None
+
+        # Add device options
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
+
+        for option in self._device_options:
+            if option not in updated_values["device_options"]:
+                updated_values["device_options"][option] = getattr(self, f"_{option}")
+        return replace(execution_config, **updated_values)
+
+    @debug_logger
+    def preprocess(
+        self,
+        execution_config: ExecutionConfig = None,
+    ) -> tuple[TransformProgram, ExecutionConfig]:
+        """This function defines the device transform program to be applied and an updated device
+        configuration.
+
+        Args:
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure
+                describing the parameters needed to fully describe the execution.
+
+        Returns:
+            TransformProgram, ExecutionConfig: A transform program that when called returns
+            ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
+            function to be called after execution, and a configuration with unset
+            specifications filled in.
+
+        This device:
+
+        * Supports any qubit operations that provide a matrix
+        * Supports any qubit channel that provides Kraus matrices
+
+        """
+        execution_config = execution_config or ExecutionConfig()
+        config = self._setup_execution_config(execution_config)
+        transform_program = TransformProgram()
+
+        # Defer first since it addes wires to the device
+        transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
+        transform_program.add_transform(
+            decompose,
+            stopping_condition=stopping_condition,
+            name=self.name,
+        )
+
+        # TODO: If the setup_execution_config method becomes circuit-dependent in the future,
+        # we should handle this case directly within setup_execution_config. This would
+        # eliminate the need for the no_sampling transform in this section.
+        if config.gradient_method == "backprop":
+            transform_program.add_transform(no_sampling, name="backprop + default.mixed")
+
+        if self.readout_err is not None:
+            transform_program.add_transform(warn_readout_error_state)
+
+        # Add the validate section
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(validate_measurements, name=self.name)
+        transform_program.add_transform(
+            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
+        )
+
+        return transform_program, config

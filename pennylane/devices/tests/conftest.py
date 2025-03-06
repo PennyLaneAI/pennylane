@@ -35,9 +35,6 @@ N_SHOTS = 1e6
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {
     "default.qubit",
-    "default.qubit.torch",
-    "default.qubit.tf",
-    "default.qubit.autograd",
 }
 
 
@@ -67,6 +64,18 @@ def init_state():
     return _init_state
 
 
+def get_legacy_capabilities(dev):
+    """Gets the capabilities dictionary of a device."""
+
+    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+        return dev.target_device.capabilities()
+
+    if isinstance(dev, qml.devices.LegacyDevice):
+        return dev.capabilities()
+
+    return {}
+
+
 @pytest.fixture(scope="session")
 def skip_if():
     """Fixture to skip tests."""
@@ -74,7 +83,8 @@ def skip_if():
     def _skip_if(dev, capabilities):
         """Skip test if device has any of the given capabilities."""
 
-        dev_capabilities = dev.capabilities()
+        dev_capabilities = get_legacy_capabilities(dev)
+
         for capability, value in capabilities.items():
             # skip if capability not found, or if capability has specific value
             if capability not in dev_capabilities or dev_capabilities[capability] == value:
@@ -85,8 +95,21 @@ def skip_if():
     return _skip_if
 
 
-@pytest.fixture(scope="function")
-def device(device_kwargs):
+@pytest.fixture
+def validate_diff_method(device, diff_method, device_kwargs):
+    """Skip tests if a device does not support a diff_method"""
+    if diff_method in {"parameter-shift", "hadamard"}:
+        return
+    if diff_method == "backprop" and device_kwargs.get("shots") is not None:
+        pytest.skip(reason="test should only be run in analytic mode")
+    dev = device(1)
+    config = qml.devices.ExecutionConfig(gradient_method=diff_method)
+    if not dev.supports_derivatives(execution_config=config):
+        pytest.skip(reason="device does not support diff_method")
+
+
+@pytest.fixture(scope="function", name="device")
+def fixture_device(device_kwargs):
     """Fixture to create a device."""
 
     # internally used by pytest
@@ -104,11 +127,6 @@ def device(device_kwargs):
                 f"Device {dev_name} cannot be created. To run the device tests on an external device, the "
                 f"plugin and all of its dependencies must be installed."
             )
-
-        capabilities = dev.capabilities()
-        if capabilities.get("model", None) != "qubit":
-            # exit the tests if device based on cv model (currently not supported)
-            pytest.exit("The device test suite currently only runs on qubit-based devices.")
 
         return dev
 
@@ -207,6 +225,9 @@ def pytest_addoption(parser):
         nargs="+",
         metavar="KEY=VAL",
         help="Additional device kwargs.",
+    )
+    addoption(
+        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
     )
 
 

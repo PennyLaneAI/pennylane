@@ -46,6 +46,7 @@ Symbolic Classes
     ~ControlledOp
     ~Evolution
     ~Exp
+    ~LinearCombination
     ~Pow
     ~Prod
     ~Sum
@@ -64,9 +65,32 @@ Controlled Operator Classes
     ~ControlledQubitUnitary
     ~CY
     ~CZ
+    ~CH
+    ~CCZ
+    ~CSWAP
+    ~CNOT
+    ~Toffoli
+    ~MultiControlledX
+    ~CRX
+    ~CRY
+    ~CRZ
+    ~CRot
+    ~ControlledPhaseShift
 
 Decompositions
 ~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.ops
+
+.. autosummary::
+    :toctree: api
+
+    ~one_qubit_decomposition
+    ~two_qubit_decomposition
+    ~sk_decomposition
+
+Control Decompositions
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.ops.op_math
 
@@ -80,16 +104,50 @@ Decompositions
 
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
-from .condition import cond, Conditional
+from .condition import Conditional, cond
 from .controlled import Controlled, ControlledOp, ctrl
-from .controlled_ops import ControlledQubitUnitary, CY, CZ
+from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
+from .controlled_ops import (
+    CCZ,
+    CH,
+    CNOT,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    ControlledPhaseShift,
+    ControlledQubitUnitary,
+    CPhase,
+    CRot,
+    MultiControlledX,
+    Toffoli,
+)
+from .decompositions import one_qubit_decomposition, sk_decomposition, two_qubit_decomposition
 from .evolution import Evolution
 from .exp import Exp, exp
+from .linear_combination import LinearCombination
 from .pow import Pow, pow
 from .prod import Prod, prod
 from .sprod import SProd, s_prod
 from .sum import Sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
-from .controlled_decompositions import ctrl_decomp_zyz, ctrl_decomp_bisect
 
-controlled_qubit_ops = {"ControlledQubitUnitary", "CY", "CZ"}
+controlled_qubit_ops = {
+    "ControlledQubitUnitary",
+    "CY",
+    "CZ",
+    "CH",
+    "CCZ",
+    "CSWAP",
+    "CNOT",
+    "Toffoli",
+    "MultiControlledX",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "ControlledPhaseShift",
+    "CPhase",
+}

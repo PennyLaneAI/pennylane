@@ -18,8 +18,12 @@ import pytest
 import pennylane as qml
 from pennylane import Identity
 
+op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
+op_repr = ["I()", "I(0)", "I('a')", "I([0, 1])", "I(['a', 'b', 'c'])", "I([100, 'xasd', 12])"]
+op_params = tuple(zip(op_wires, op_repr))
 
-@pytest.mark.parametrize("wires", [[0], [0, 1], ["a", "b", "c"], [100, "xasd", 12]])
+
+@pytest.mark.parametrize("wires", op_wires)
 class TestIdentity:
     # pylint: disable=protected-access
     def test_flatten_unflatten(self, wires):
@@ -31,7 +35,15 @@ class TestIdentity:
         assert metadata[1] == tuple()
 
         new_op = Identity._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
+        qml.assert_equal(op, new_op)
+
+    def test_class_name(self, wires):
+        """Test the class name of either I and Identity is by default 'Identity'"""
+        assert qml.I.__name__ == "Identity"
+        assert qml.Identity.__name__ == "Identity"
+
+        assert qml.I(wires).name == "Identity"
+        assert qml.Identity(wires).name == "Identity"
 
     @pytest.mark.jax
     def test_jax_pytree_integration(self, wires):
@@ -42,7 +54,7 @@ class TestIdentity:
 
         adj_op = jax.jit(lambda op: qml.adjoint(op, lazy=False))(op)
 
-        assert qml.equal(op, adj_op)
+        qml.assert_equal(op, adj_op)
 
     def test_identity_eigvals(self, wires, tol):
         """Test identity eigenvalues are correct"""
@@ -76,3 +88,10 @@ class TestIdentity:
         expected = np.eye(int(2 ** len(wires)))
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
+
+@pytest.mark.parametrize("wires, expected_repr", op_params)
+def test_repr(wires, expected_repr):
+    """Test the operator's repr"""
+    op = Identity(wires=wires)
+    assert repr(op) == expected_repr

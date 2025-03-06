@@ -14,14 +14,15 @@
 """This file contains different PennyLane types."""
 import contextlib
 
-# pylint: disable=import-outside-toplevel, too-few-public-methods
+# pylint: disable=import-outside-toplevel, too-few-public-methods, unused-import
 import sys
-from typing import Union, TypeVar, Tuple
+from collections.abc import Callable, Sequence
+from typing import TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox]
+_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
 
 
 class TensorLikeMETA(type):
@@ -34,7 +35,7 @@ class TensorLikeMETA(type):
     def __instancecheck__(cls, other):
         """Dunder method used to check if an object is a `TensorLike` instance."""
         return (
-            isinstance(other, _TensorLike.__args__)  # TODO: Remove __args__ when python>=3.10
+            isinstance(other, _TensorLike)
             or _is_jax(other)
             or _is_torch(other)
             or _is_tensorflow(other)
@@ -43,7 +44,7 @@ class TensorLikeMETA(type):
     def __subclasscheck__(cls, other):
         """Dunder method that checks if a class is a subclass of ``TensorLike``."""
         return (
-            issubclass(other, _TensorLike.__args__)  # TODO: Remove __args__ when python>=3.10
+            issubclass(other, _TensorLike)
             or _is_jax(other, subclass=True)
             or _is_torch(other, subclass=True)
             or _is_tensorflow(other, subclass=True)
@@ -53,7 +54,7 @@ class TensorLikeMETA(type):
 class TensorLike(metaclass=TensorLikeMETA):
     """Returns a ``Union`` of all tensor-like types, which includes any scalar or sequence
     that can be interpreted as a pennylane tensor, including lists and tuples. Any argument
-    accepted by ``pnp.array`` is tensor-like.
+    accepted by ``qml.numpy.array`` is tensor-like.
 
     **Examples**
 
@@ -73,6 +74,7 @@ class TensorLike(metaclass=TensorLikeMETA):
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
+    # pylint: disable=c-extension-no-member
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
             import jax
@@ -81,11 +83,11 @@ def _is_jax(other, subclass=False):
 
             JaxTensor = Union[
                 ndarray,
-                jax.Array  # TODO: keep this after jax>=0.4 is required
-                if hasattr(jax, "Array")
-                else Union[
-                    jaxlib.xla_extension.DeviceArray, jax.core.Tracer
-                ],  # pylint: disable=c-extension-no-member
+                (
+                    jax.Array  # TODO: keep this after jax>=0.4 is required
+                    if hasattr(jax, "Array")
+                    else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer]
+                ),  # pylint: disable=c-extension-no-member
             ]
             check = issubclass if subclass else isinstance
 
@@ -118,6 +120,11 @@ def _is_torch(other, subclass=False):
     return False
 
 
-Result = TypeVar("Result", Tuple, TensorLike)
+Result = TypeVar("Result", dict, tuple, TensorLike)
 
-ResultBatch = Tuple[Result]
+ResultBatch = Sequence[Result]
+
+PostprocessingFn = Callable[[ResultBatch], Result]
+BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
+
+JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]

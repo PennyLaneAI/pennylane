@@ -16,20 +16,31 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
+from typing import Sequence
+
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
+from pennylane.operation import (
+    AllWires,
+    AnyWires,
+    CVObservable,
+    Operation,
+    SparseMatrixUndefinedError,
+)
+from pennylane.wires import WiresLike
 
 
 class Identity(CVObservable, Operation):
-    r"""pennylane.Identity(wires)
-    The identity observable :math:`\I`.
+    r"""
+    The Identity operator
 
     The expectation of this observable
 
     .. math::
-        E[\I] = \text{Tr}(\I \rho)
+        E[I] = \text{Tr}(I \rho)
+
+    .. seealso:: The equivalent short-form alias :class:`~I`
 
     Args:
         wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
@@ -39,6 +50,7 @@ class Identity(CVObservable, Operation):
     Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
+
     num_params = 0
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
@@ -50,16 +62,37 @@ class Identity(CVObservable, Operation):
 
     ev_order = 1
 
+    @classmethod
+    def _primitive_bind_call(
+        cls, wires: WiresLike = (), **kwargs
+    ):  # pylint: disable=arguments-differ
+        return super()._primitive_bind_call(wires=wires, **kwargs)
+
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
-    def __init__(self, *params, wires=None, id=None):
-        super().__init__(*params, wires=wires, id=id)
+    def __init__(self, wires: WiresLike = (), id=None):
+        super().__init__(wires=wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
+
+    def __repr__(self):
+        """String representation."""
+        if len(self.wires) == 0:
+            return "I()"
+        if len(self.wires) == 1:
+            wire = self.wires[0]
+            if isinstance(wire, str):
+                return f"I('{wire}')"
+            return f"I({wire})"
+        return f"I({self.wires.tolist()})"
+
+    @property
+    def name(self):
+        return "Identity"
 
     @staticmethod
     def compute_eigvals(n_wires=1):  # pylint: disable=arguments-differ
@@ -74,14 +107,14 @@ class Identity(CVObservable, Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.Identity.eigvals`
+        .. seealso:: :meth:`~.I.eigvals`
 
         Returns:
             array: eigenvalues
 
         **Example**
 
-        >>> print(qml.Identity.compute_eigvals())
+        >>> print(qml.I.compute_eigvals())
         [ 1 1]
         """
         return qml.math.ones(2**n_wires)
@@ -111,6 +144,10 @@ class Identity(CVObservable, Operation):
     @lru_cache()
     def compute_sparse_matrix(n_wires=1):  # pylint: disable=arguments-differ
         return sparse.eye(int(2**n_wires), format="csr")
+
+    def matrix(self, wire_order=None):
+        n_wires = len(wire_order) if wire_order else len(self.wires)
+        return self.compute_matrix(n_wires=n_wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -169,13 +206,34 @@ class Identity(CVObservable, Operation):
     @staticmethod
     def identity_op(*params):
         """Alias for matrix representation of the identity operator."""
-        return Identity.compute_matrix(*params)
+        return I.compute_matrix(*params)
 
     def adjoint(self):
-        return Identity(wires=self.wires)
+        return I(wires=self.wires)
 
-    def pow(self, _):
-        return [Identity(wires=self.wires)]
+    # pylint: disable=unused-argument
+    def pow(self, z):
+        return [I(wires=self.wires)]
+
+
+I = Identity
+r"""The Identity operator
+
+The expectation of this observable
+
+.. math::
+    E[I] = \text{Tr}(I \rho)
+
+.. seealso:: The equivalent long-form alias :class:`~Identity`
+
+Args:
+    wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+    id (str): custom label given to an operator instance,
+        can be useful for some applications where the instance has to be identified.
+
+Corresponds to the trace of the quantum state, which in exact
+simulators should always be equal to 1.
+"""
 
 
 class GlobalPhase(Operation):
@@ -185,6 +243,7 @@ class GlobalPhase(Operation):
 
     * Number of wires: All (the operation acts on all wires)
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: None
 
     Args:
@@ -201,12 +260,12 @@ class GlobalPhase(Operation):
 
         @qml.qnode(dev)
         def circuit(phi=None, return_state=False):
-            qml.PauliX(0)
+            qml.X(0)
             if phi:
                 qml.GlobalPhase(phi)
             if return_state:
                 return qml.state()
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
     The circuit yields the same expectation values with and without the global phase:
 
@@ -239,13 +298,26 @@ class GlobalPhase(Operation):
 
 
     """
-    grad_method = "A"
-    num_params = 1
+
     num_wires = AllWires
     """int: Number of wires that the operator acts on."""
 
-    def __init__(self, phi, wires=None, id=None):
-        super().__init__(phi, wires=[] if wires is None else wires, id=id)
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = None
+
+    @classmethod
+    def _primitive_bind_call(
+        cls, phi, wires: WiresLike = (), **kwargs
+    ):  # pylint: disable=arguments-differ
+        return super()._primitive_bind_call(phi, wires=wires, **kwargs)
+
+    def __init__(self, phi, wires: WiresLike = (), id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -270,7 +342,15 @@ class GlobalPhase(Operation):
         >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17+1.j, 6.123234e-17+1.j])
         """
-        return qml.math.exp(-1j * phi) * qml.math.ones(2**n_wires)
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+        exp = qml.math.exp(-1j * phi)
+        ones = qml.math.ones(2**n_wires, like=phi)
+
+        if qml.math.ndim(phi) == 0:
+            return exp * ones
+
+        return qml.math.tensordot(exp, ones, axes=0)
 
     @staticmethod
     def compute_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -290,15 +370,22 @@ class GlobalPhase(Operation):
                [0.        +0.j        , 0.70710678-0.70710678j]])
         """
         interface = qml.math.get_interface(phi)
+        eye = qml.math.eye(2**n_wires, like=phi)
+        exp = qml.math.exp(-1j * qml.math.cast(phi, complex))
         if interface == "tensorflow":
-            return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(int(2**n_wires))
-        return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(
-            int(2**n_wires), like=interface
-        )
+            eye = qml.math.cast_like(eye, 1j)
+        elif interface == "torch":
+            eye = eye.to(exp.device)
+
+        if qml.math.ndim(phi) == 0:
+            return exp * eye
+        return qml.math.tensordot(exp, eye, axes=0)
 
     @staticmethod
     def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
-        return qml.math.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
+        if qml.math.ndim(phi) > 0:
+            raise SparseMatrixUndefinedError("Sparse matrices do not support broadcasting")
+        return qml.math.exp(-1j * phi) * sparse.eye(2**n_wires, format="csr")
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -329,7 +416,9 @@ class GlobalPhase(Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(phi, wires=None):  # pylint:disable=arguments-differ,unused-argument
+    def compute_decomposition(
+        phi, wires: WiresLike = ()
+    ):  # pylint:disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::
@@ -360,9 +449,16 @@ class GlobalPhase(Operation):
         """
         return []
 
-    def matrix(self, wire_order=None):
-        n_wires = len(wire_order) if wire_order else len(self.wires)
+    def eigvals(self):
+        return self.compute_eigvals(self.data[0], n_wires=len(self.wires))
+
+    def matrix(self, wire_order: Sequence = None):
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
         return self.compute_matrix(self.data[0], n_wires=n_wires)
+
+    def sparse_matrix(self, wire_order: Sequence = None):
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
+        return self.compute_sparse_matrix(self.data[0], n_wires=n_wires)
 
     def adjoint(self):
         return GlobalPhase(-1 * self.data[0], self.wires)
@@ -371,5 +467,6 @@ class GlobalPhase(Operation):
         return [GlobalPhase(z * self.data[0], self.wires)]
 
     def generator(self):
-        wires = self.wires or [0]
-        return -1 * qml.Identity(wires)
+        # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
+        # it otherwise can't handle Identity with no wires, see PR #5194
+        return qml.s_prod(-1, qml.I(self.wires))

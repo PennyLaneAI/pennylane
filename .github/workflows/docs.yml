@@ -16,15 +16,70 @@
 
 name: "Documentation check"
 on:
-- pull_request
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  # Scheduled trigger on Monday at 2:47am UTC
+  schedule:
+    - cron: "47 2 * * 1"
+
+permissions: write-all
 
 jobs:
+  determine_runner:
+    if: github.event.pull_request.draft == false
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+
   sphinx:
-    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    needs: [determine_runner]
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - uses: PennyLaneAI/sphinx-action@master
       with:
         docs-folder: "doc/"
-        pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf && pip3 install aiohttp fsspec h5py"
+        pre-build-command: >
+            apt install -y graphviz
+            && pip3 install -r doc/requirements.txt
+            && pip3 install .
+            && pip3 install openfermionpyscf
+            && pip3 install aiohttp fsspec h5py
         build-command: "sphinx-build -b html . _build -W --keep-going"
+
+    - name: Freeze dependencies
+      shell: bash
+      run: |
+        pip freeze | grep -v 'file:///' > doc.txt
+        cat doc.txt
+
+    - name: Upload frozen requirements
+      uses: actions/upload-artifact@v4
+      with:
+        name: frozen-doc
+        path: doc.txt
+
+  upload-stable-deps:
+    if: github.event_name == 'schedule'
+    needs:
+      - determine_runner
+      - sphinx
+    uses: ./.github/workflows/check_in_artifact.yml
+    with:
+      artifact_name_pattern: "frozen-doc"
+      artifact_save_path: ".github/stable/"
+      merge_multiple: true
+      pull_request_head_branch_name: bot/stable-deps-update
+      commit_message_description: Frozen Doc Dependencies Update
+      pull_request_title: Update stable dependency files
+      pull_request_body: |
+        Automatic update of stable requirement files to snapshot valid python environments.

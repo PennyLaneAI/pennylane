@@ -14,8 +14,9 @@
 """Unit tests for qutrit observables."""
 import functools
 from unittest.mock import PropertyMock, patch
-import pytest
+
 import numpy as np
+import pytest
 from gate_data import GELL_MANN
 
 import pennylane as qml
@@ -295,12 +296,6 @@ class TestTHermitian:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.THermitian(H_01[1:], wires=0).matrix()
 
-        # test non-Hermitian matrix
-        H2 = H_01.copy()
-        H2[0, 1] = 2
-        with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.THermitian(H2, wires=0).matrix()
-
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         A = np.array([[6 + 0j, 1 - 2j, 0], [1 + 2j, -1, 0], [0, 0, 1]])
@@ -370,18 +365,6 @@ class TestGellMann:
 
         assert np.allclose(res_static, mat)
         assert np.allclose(res_dynamic, mat)
-
-    def test_obs_data(self):
-        """Test that the _obs_data() method of qml.GellMann returns the correct
-        observable data."""
-        ob1 = qml.GellMann(wires=0, index=2)
-        ob2 = qml.GellMann(wires=0, index=2) @ qml.GellMann(wires=1, index=1)
-
-        assert ob1._obs_data() == {("GellMann", qml.wires.Wires(0), (2,))}
-        assert ob2._obs_data() == {
-            ("GellMann", qml.wires.Wires(0), (2,)),
-            ("GellMann", qml.wires.Wires(1), (1,)),
-        }
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_eigvals(self, index, mat, eigs, tol):

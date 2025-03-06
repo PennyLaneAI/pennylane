@@ -15,23 +15,25 @@
 This module contains the qml.iterative_qpe function.
 """
 
+
 import numpy as np
+
 import pennylane as qml
 
 
-def iterative_qpe(base, ancilla, iters):
+def iterative_qpe(base, aux_wire, iters):
     r"""Performs the `iterative quantum phase estimation <https://arxiv.org/pdf/quant-ph/0610214.pdf>`_ circuit.
 
     Given a unitary :math:`U`, this function applies the circuit for iterative quantum phase
     estimation and returns a list of mid-circuit measurements with qubit reset.
 
     Args:
-      base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
-      ancilla (Union[Wires, int, str]): the wire to be used for the estimation
-      iters (int): the number of measurements to be performed
+        base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
+        aux_wire (Union[Wires, int, str]): the wire to be used for the estimation
+        iters (int): the number of measurements to be performed
 
     Returns:
-      list[MidMeasureMP]: the list of measurements performed
+        list[MeasurementValue]: the abstract results of the mid-circuit measurements
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`, :func:`~.measure`
 
@@ -39,46 +41,69 @@ def iterative_qpe(base, ancilla, iters):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", shots = 5)
+        dev = qml.device("default.qubit", shots=5)
 
         @qml.qnode(dev)
         def circuit():
 
-          # Initial state
-          qml.PauliX(wires = [0])
+            # Initial state
+            qml.X(0)
 
-          # Iterative QPE
-          measurements = qml.iterative_qpe(qml.RZ(2., wires = [0]), ancilla = 1, iters = 3)
+            # Iterative QPE
+            measurements = qml.iterative_qpe(qml.RZ(2.0, wires=[0]), aux_wire=1, iters=3)
 
-          return [qml.sample(op = meas) for meas in measurements]
+            return qml.sample(measurements)
 
     .. code-block:: pycon
 
         >>> print(circuit())
-        [array([0, 0, 0, 0, 0]), array([1, 0, 0, 0, 0]), array([0, 1, 1, 1, 1])]
+        [[0 0 1]
+         [0 0 1]
+         [0 0 1]
+         [1 1 1]
+         [0 0 1]]
 
-    The output is an array of size ``(number of iterations, number of shots)``.
+    The output is an array of size ``(number of shots, number of iterations)``.
 
     .. code-block:: pycon
 
-        >>> print(qml.draw(circuit)())
+        >>> print(qml.draw(circuit, max_length=150)())
 
-        1: ──H─╭●────────────H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤  Sample  Sample  Sample
-        0: ──X─╰RZ(2.00)⁴⋅⁰──────║──────────╰RZ(2.00)²⋅⁰──║──────────────║──────────╰RZ(2.00)¹⋅⁰──║──────────║──────────────────────┤
-                                 ╚════════════════════════╝══════════════║════════════════════════║══════════╝
-                                                                         ╚════════════════════════╝
+        0: ──X─╭RZ(2.00)⁴─────────────────╭RZ(2.00)²────────────────────────────╭RZ(2.00)¹────────────────────────────────────┤
+        1: ──H─╰●──────────H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤
+                               ╚══════════════════════╩══════════════║══════════════════════║══════════╩══════════════║═══════╡ ╭Sample[MCM]
+                                                                     ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
+                                                                                                                      ╚═══════╡ ╰Sample[MCM]
     """
+    if qml.capture.enabled():
+        measurements = qml.math.zeros(iters, dtype=int, like="jax")
+    else:
+        measurements = [0] * iters
 
-    measurements = []
+    def measurement_loop(i, measurements, target):
+        # closure: aux_wire, iters, target
 
-    for i in range(iters):
-        qml.Hadamard(wires=ancilla)
-        qml.ctrl(qml.pow(base, z=2 ** (iters - i - 1)), control=ancilla)
+        qml.Hadamard(wires=aux_wire)
+        qml.ctrl(qml.pow(target, z=2 ** (iters - i - 1)), control=aux_wire)
 
-        for ind, meas in enumerate(measurements):
-            qml.cond(meas, qml.PhaseShift)(-2.0 * np.pi / 2 ** (ind + 2), wires=ancilla)
+        def conditional_loop(j):
+            # closure: measurements, iters, i, aux_wire
+            meas = measurements[iters - i + j]
 
-        qml.Hadamard(wires=ancilla)
-        measurements.insert(0, qml.measure(wires=ancilla, reset=True))
+            def cond_func():
+                qml.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
 
-    return measurements
+            qml.cond(meas, cond_func)()
+
+        qml.for_loop(i)(conditional_loop)()
+
+        qml.Hadamard(wires=aux_wire)
+        m = qml.measure(wires=aux_wire, reset=True)
+        if qml.capture.enabled():
+            measurements = measurements.at[iters - i - 1].set(m)
+        else:
+            measurements[iters - i - 1] = m
+
+        return measurements, target
+
+    return qml.for_loop(iters)(measurement_loop)(measurements, base)[0]

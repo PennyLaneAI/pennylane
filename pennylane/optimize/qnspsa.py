@@ -13,9 +13,11 @@
 # limitations under the License.
 """Quantum natural SPSA optimizer"""
 import warnings
+
 from scipy.linalg import sqrtm
+
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 class QNSPSAOptimizer:
@@ -59,7 +61,7 @@ class QNSPSAOptimizer:
 
     where :math:`F(\mathbf{x}', \mathbf{x}) = \bigr\rvert\langle \phi(\mathbf{x}') | \phi(\mathbf{x}) \rangle \bigr\rvert ^ 2`
     measures the state overlap between :math:`\phi(\mathbf{x}')` and :math:`\phi(\mathbf{x})`,
-    where :math:`\phi` is the parameterized ansatz. The finite difference :math:`\delta F` is
+    where :math:`\phi` is the parametrized ansatz. The finite difference :math:`\delta F` is
     computed from the two perturbations:
 
     .. math::
@@ -75,7 +77,7 @@ class QNSPSAOptimizer:
         "Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information."
         `Quantum, 5, 567 <https://quantum-journal.org/papers/q-2021-10-20-567/>`_, 2021.
 
-    You can also find a walkthrough of the implementation in this `tutorial <https://pennylane.ai/qml/demos/qnspsa.html>`_.
+    You can also find a walkthrough of the implementation in this :doc:`tutorial <demos/qnspsa>`.
 
     **Examples:**
 
@@ -87,11 +89,12 @@ class QNSPSAOptimizer:
     ... def cost(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.CRY(params[1], wires=[0, 1])
-    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
 
     Once constructed, the qnode can be passed directly to the ``step`` or ``step_and_cost``
     function of the optimizer.
 
+    >>> from pennylane import numpy as np
     >>> params = np.random.rand(2)
     >>> opt = QNSPSAOptimizer(stepsize=5e-2)
     >>> for i in range(51):
@@ -107,7 +110,7 @@ class QNSPSAOptimizer:
 
     Keyword Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default: 1e-3)
-        regularization (float): regularitzation term :math:`\beta` to the Fubini-Study metric tensor
+        regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
             for numerical stability (default: 1e-3)
         finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
             gradient and the Fubini-Study metric tensor (default: 1e-2)
@@ -140,8 +143,8 @@ class QNSPSAOptimizer:
         self.k = 1
         self.resamplings = resamplings
         self.blocking = blocking
-        self.last_n_steps = np.zeros(history_length)
-        self.rng = np.random.default_rng(seed)
+        self.last_n_steps = pnp.zeros(history_length)
+        self.rng = pnp.random.default_rng(seed)
 
     def step(self, cost, *args, **kwargs):
         """Update trainable arguments with one step of the optimizer.
@@ -156,7 +159,7 @@ class QNSPSAOptimizer:
             kwargs : variable length of keyword arguments for the qnode
 
         Returns:
-            np.array: the new variable values after step-wise update :math:`x^{(t+1)}`
+            pnp.ndarray: the new variable values after step-wise update :math:`x^{(t+1)}`
         """
         if self.blocking:
             warnings.warn(
@@ -201,7 +204,7 @@ class QNSPSAOptimizer:
             kwargs : variable length of keyword arguments for the qnode
 
         Returns:
-            np.array: the new variable values :math:`x^{(t+1)}` before the blocking condition
+            pnp.ndarray: the new variable values :math:`x^{(t+1)}` before the blocking condition
             is applied.
         """
         all_grad_tapes = []
@@ -218,25 +221,12 @@ class QNSPSAOptimizer:
             all_grad_dirs.append(grad_dirs)
             all_tensor_dirs.append(tensor_dirs)
 
-        if isinstance(cost.device, qml.devices.Device):
-            program, config = cost.device.preprocess()
-
-            raw_results = qml.execute(
-                all_grad_tapes + all_metric_tapes,
-                cost.device,
-                None,
-                transform_program=program,
-                config=config,
-            )
-        else:
-            raw_results = qml.execute(
-                all_grad_tapes + all_metric_tapes, cost.device, None
-            )  # pragma: no cover
+        raw_results = qml.execute(all_grad_tapes + all_metric_tapes, cost.device)
         grads = [
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
             for i in range(self.resamplings)
         ]
-        grads = np.array(grads)
+        grads = pnp.array(grads)
         metric_tensors = [
             self._post_process_tensor(
                 raw_results[2 * self.resamplings + 4 * i : 2 * self.resamplings + 4 * i + 4],
@@ -244,9 +234,9 @@ class QNSPSAOptimizer:
             )
             for i in range(self.resamplings)
         ]
-        metric_tensors = np.array(metric_tensors)
-        grad_avg = np.mean(grads, axis=0)
-        tensor_avg = np.mean(metric_tensors, axis=0)
+        metric_tensors = pnp.array(metric_tensors)
+        grad_avg = pnp.mean(grads, axis=0)
+        tensor_avg = pnp.mean(metric_tensors, axis=0)
 
         self._update_tensor(tensor_avg)
         params_next = self._get_next_params(args, grad_avg)
@@ -283,7 +273,7 @@ class QNSPSAOptimizer:
             been concatenated
 
         Returns:
-            np.array: estimated Fubini-Study metric tensor
+            pnp.array: estimated Fubini-Study metric tensor
         """
         tensor_raw_results = [result.squeeze() for result in tensor_raw_results]
         # For each element of tensor_raw_results, the first dimension is the measured probability in
@@ -297,8 +287,8 @@ class QNSPSAOptimizer:
         )
         return (
             -(
-                np.tensordot(tensor_dirs[0], tensor_dirs[1], axes=0)
-                + np.tensordot(tensor_dirs[1], tensor_dirs[0], axes=0)
+                pnp.tensordot(tensor_dirs[0], tensor_dirs[1], axes=0)
+                + pnp.tensordot(tensor_dirs[1], tensor_dirs[0], axes=0)
             )
             * tensor_finite_diff
             / (8 * self.finite_diff_step**2)
@@ -319,12 +309,12 @@ class QNSPSAOptimizer:
 
         # params_vec and grad_vec group multiple inputs into the same vector to solve the
         # linear equation
-        params_vec = np.concatenate([param.reshape(-1) for param in params])
-        grad_vec = np.concatenate([grad.reshape(-1) for grad in gradient])
+        params_vec = pnp.concatenate([param.reshape(-1) for param in params])
+        grad_vec = pnp.concatenate([grad.reshape(-1) for grad in gradient])
 
-        new_params_vec = np.linalg.solve(
-            self.metric_tensor,
-            (-self.stepsize * grad_vec + np.matmul(self.metric_tensor, params_vec)),
+        new_params_vec = pnp.matmul(
+            pnp.linalg.pinv(self.metric_tensor),
+            (-self.stepsize * grad_vec + pnp.matmul(self.metric_tensor, params_vec)),
         )
         # reshape single-vector new_params_vec into new_params, to match the input params
         params_split_indices = []
@@ -332,7 +322,7 @@ class QNSPSAOptimizer:
         for param in params:
             tmp += param.size
             params_split_indices.append(tmp)
-        new_params = np.split(new_params_vec, params_split_indices)
+        new_params = pnp.split(new_params_vec, params_split_indices)
         new_params_reshaped = [new_params[i].reshape(params[i].shape) for i in range(len(params))]
 
         next_args = []
@@ -366,21 +356,21 @@ class QNSPSAOptimizer:
             args_plus[index] = arg + self.finite_diff_step * direction
             args_minus[index] = arg - self.finite_diff_step * direction
 
-        cost.construct(args_plus, kwargs)
-        tape_plus = cost.tape.copy(copy_operations=True)
-        cost.construct(args_minus, kwargs)
-        tape_minus = cost.tape.copy(copy_operations=True)
+        tape = qml.workflow.construct_tape(cost)(*args_plus, **kwargs)
+        tape_plus = tape.copy(copy_operations=True)
+        tape = qml.workflow.construct_tape(cost)(*args_minus, **kwargs)
+        tape_minus = tape.copy(copy_operations=True)
         return [tape_plus, tape_minus], dirs
 
     def _update_tensor(self, tensor_raw):
         def get_tensor_moving_avg(metric_tensor):
             if self.metric_tensor is None:
-                self.metric_tensor = np.identity(metric_tensor.shape[0])
+                self.metric_tensor = pnp.identity(metric_tensor.shape[0])
             return self.k / (self.k + 1) * self.metric_tensor + 1 / (self.k + 1) * metric_tensor
 
         def regularize_tensor(metric_tensor):
-            tensor_reg = np.real(sqrtm(np.matmul(metric_tensor, metric_tensor)))
-            return (tensor_reg + self.reg * np.identity(metric_tensor.shape[0])) / (1 + self.reg)
+            tensor_reg = pnp.real(sqrtm(pnp.matmul(metric_tensor, metric_tensor)))
+            return (tensor_reg + self.reg * pnp.identity(metric_tensor.shape[0])) / (1 + self.reg)
 
         tensor_avg = get_tensor_moving_avg(tensor_raw)
         tensor_regularized = regularize_tensor(tensor_avg)
@@ -405,7 +395,7 @@ class QNSPSAOptimizer:
             args_list[1][index] = arg + self.finite_diff_step * dir1
             args_list[2][index] = arg + self.finite_diff_step * (-dir1 + dir2)
             args_list[3][index] = arg - self.finite_diff_step * dir1
-        dir_vecs = (np.concatenate(dir1_list), np.concatenate(dir2_list))
+        dir_vecs = (pnp.concatenate(dir1_list), pnp.concatenate(dir2_list))
         tapes = [
             self._get_overlap_tape(cost, args, args_finite_diff, kwargs)
             for args_finite_diff in args_list
@@ -422,23 +412,26 @@ class QNSPSAOptimizer:
         op_inv = self._get_operations(cost, args2, kwargs)
 
         new_ops = op_forward + [qml.adjoint(op) for op in reversed(op_inv)]
-        return qml.tape.QuantumScript(new_ops, [qml.probs(wires=cost.tape.wires.labels)])
+        tape = qml.workflow.construct_tape(cost)(*args1, **kwargs)
+        return qml.tape.QuantumScript(new_ops, [qml.probs(wires=tape.wires.labels)])
 
     @staticmethod
     def _get_operations(cost, args, kwargs):
-        cost.construct(args, kwargs)
-        return cost.tape.operations
+        tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
+        return tape.operations
 
     def _apply_blocking(self, cost, args, kwargs, params_next):
-        cost.construct(args, kwargs)
-        tape_loss_curr = cost.tape.copy(copy_operations=True)
+        tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
+        tape_loss_curr = tape.copy(copy_operations=True)
 
         if not isinstance(params_next, list):
             params_next = [params_next]
 
-        cost.construct(params_next, kwargs)
-        tape_loss_next = cost.tape.copy(copy_operations=True)
-        program, _ = cost.device.preprocess()
+        tape = qml.workflow.construct_tape(cost)(*params_next, **kwargs)
+        tape_loss_next = tape.copy(copy_operations=True)
+
+        program = cost.device.preprocess_transforms()
+
         loss_curr, loss_next = qml.execute(
             [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
         )

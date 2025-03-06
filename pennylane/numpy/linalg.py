@@ -16,6 +16,7 @@ This package provides a wrapped version of autograd.numpy.linalg, such that
 it works with the PennyLane :class:`~.tensor` class.
 """
 from autograd.numpy import linalg as _linalg
+
 from .wrapper import wrap_arrays
 
 wrap_arrays(_linalg.__dict__, globals())

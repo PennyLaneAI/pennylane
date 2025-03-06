@@ -15,12 +15,12 @@
 Unit tests for the optimization transform ``single_qubit_fusion``.
 """
 import pytest
-from utils import compare_operation_lists, check_matrix_equivalence
+from utils import check_matrix_equivalence, compare_operation_lists
 
-from pennylane import numpy as np
 import pennylane as qml
-from pennylane.wires import Wires
+from pennylane import numpy as np
 from pennylane.transforms.optimization import single_qubit_fusion
+from pennylane.wires import Wires
 
 
 class TestSingleQubitFusion:
@@ -224,8 +224,8 @@ class TestSingleQubitFusionInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
     def test_single_qubit_fusion_torch(self):
@@ -251,8 +251,8 @@ class TestSingleQubitFusionInterfaces:
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
     def test_single_qubit_fusion_tf(self):
@@ -283,19 +283,14 @@ class TestSingleQubitFusionInterfaces:
         assert qml.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
     def test_single_qubit_fusion_jax(self):
         """Test QNode and gradient in JAX interface."""
         import jax
         from jax import numpy as jnp
-
-        # Enable float64 support
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -311,18 +306,14 @@ class TestSingleQubitFusionInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
     def test_single_qubit_fusion_jax_jit(self):
         """Test QNode and gradient in JAX interface with JIT."""
         import jax
         from jax import numpy as jnp
-
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         jitted_qnode = jax.jit(original_qnode)
@@ -345,5 +336,5 @@ class TestSingleQubitFusionInterfaces:
         assert qml.math.allclose(jax.grad(jitted_transformed_qnode)(input), original_gradient)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)

@@ -14,7 +14,6 @@
 """
 Unit tests for the qml.is_hermitian function
 """
-from typing import List
 
 import pytest
 
@@ -35,7 +34,7 @@ hermitian_ops = (
     qml.SWAP([0, 1]),
     qml.CSWAP([0, 1, 2]),
     qml.Toffoli([0, 1, 2]),
-    qml.MultiControlledX(control_wires=[0, 1], wires=2),
+    qml.MultiControlledX(wires=[0, 1, 2]),
 )
 
 non_hermitian_ops = (
@@ -88,7 +87,7 @@ class TestIsHermitian:
         assert not op.is_hermitian
 
     @pytest.mark.parametrize("arithmetic_ops", ops)
-    def test_arithmetic_ops(self, arithmetic_ops: List[Operator]):
+    def test_arithmetic_ops(self, arithmetic_ops: list[Operator]):
         """Test that provided arithmetic op cases are non-hermitian."""
         assert not qml.is_hermitian(qml.prod(*arithmetic_ops))
         assert not qml.is_hermitian(qml.sum(*arithmetic_ops))

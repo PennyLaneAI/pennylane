@@ -14,17 +14,19 @@
 """Contains a transform that computes the simple frequency spectrum
 of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
-from typing import Sequence, Callable
 from functools import partial
+
 from pennylane import transform
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.typing import PostprocessingFn
+
 from .utils import get_spectrum, join_spectra
 
 
 @partial(transform, is_informative=True)
 def circuit_spectrum(
-    tape: QuantumTape, encoding_gates=None, decimals=8
-) -> (Sequence[QuantumTape], Callable):
+    tape: QuantumScript, encoding_gates=None, decimals=8
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Compute the frequency spectrum of the Fourier representation of
     simple quantum circuits ignoring classical preprocessing.
 
@@ -113,16 +115,16 @@ def circuit_spectrum(
                     qml.RX(x[i], wires=i, id="x"+str(i))
                     qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=i)
             qml.RZ(x[0], wires=0, id="x0")
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
         x = np.array([1, 2, 3])
         w = np.random.random((n_layers, n_qubits, 3))
         res = qml.fourier.circuit_spectrum(circuit)(x, w)
 
     >>> print(qml.draw(circuit)(x, w))
-    0: ──RX(1.00)──Rot(0.53,0.70,0.90)──RX(1.00)──Rot(0.81,0.38,0.43)──RZ(1.00)─┤  <Z>
-    1: ──RX(2.00)──Rot(0.56,0.61,0.96)──RX(2.00)──Rot(0.32,0.49,0.77)───────────┤
-    2: ──RX(3.00)──Rot(0.11,0.63,0.31)──RX(3.00)──Rot(0.52,0.46,0.83)───────────┤
+    0: ──RX(1.00,"x0")──Rot(0.03,0.03,0.37)──RX(1.00,"x0")──Rot(0.35,0.89,0.29)──RZ(1.00,"x0")─┤  <Z>
+    1: ──RX(2.00,"x1")──Rot(0.70,0.12,0.60)──RX(2.00,"x1")──Rot(0.04,0.03,0.88)────────────────┤
+    2: ──RX(3.00,"x2")──Rot(0.65,0.87,0.05)──RX(3.00,"x2")──Rot(0.37,0.53,0.02)────────────────┤
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
@@ -148,7 +150,7 @@ def circuit_spectrum(
             qml.RX(x[0], wires=0, id="x0")
             qml.PhaseShift(x[0], wires=0, id="x0")
             qml.RX(x[1], wires=0, id="x1")
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
         x = np.array([1, 2])
         res = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x0"])(x)
@@ -174,7 +176,7 @@ def circuit_spectrum(
         def circuit(x):
             qml.RX(x[0], wires=0, id="x0")
             qml.PhaseShift(x[1], wires=0, id="x1")
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
         x = tf.constant([1, 2])
         res = qml.fourier.circuit_spectrum(circuit)(x)

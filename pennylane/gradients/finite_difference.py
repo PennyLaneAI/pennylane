@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,29 +15,31 @@
 This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
-from typing import Sequence, Callable
 import functools
 from functools import partial
+from typing import Callable, Literal
+
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from warnings import warn
 
 import numpy as np
+from scipy.linalg import solve as linalg_solve
 from scipy.special import factorial
 
 import pennylane as qml
-from pennylane.measurements import ProbabilityMP
 from pennylane import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
-
+from pennylane.measurements import ProbabilityMP
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
-    assert_no_tape_batching,
-    choose_grad_methods,
-    gradient_analysis_and_validation,
     _no_trainable_grad,
+    assert_no_trainable_tape_batching,
+    choose_trainable_param_indices,
+    find_and_validate_gradient_methods,
 )
 
 
@@ -146,7 +148,11 @@ def finite_diff_coeffs(n, approx_order, strategy):
     A = shifts ** np.arange(len(shifts)).reshape(-1, 1)
     b = np.zeros_like(shifts)
     b[n] = factorial(n)
-    coeffs = np.linalg.solve(A, b)
+
+    # Note: using np.linalg.solve instead of scipy.linalg.solve can cause a bus error when this
+    # is inside a tf.py_function inside a tf.function, as occurs with the tensorflow-autograph interface
+    # Bus errors were potentially specific to the M1 Mac. Change with caution.
+    coeffs = linalg_solve(A, b)
 
     coeffs_and_shifts = np.stack([coeffs, shifts])
 
@@ -161,6 +167,92 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
+def finite_diff_jvp(
+    f: Callable,
+    args: tuple,
+    tangents: tuple,
+    *,
+    h: float = 1e-7,
+    approx_order: int = 1,
+    strategy: Literal["forward", "backward", "center"] = "forward",
+) -> tuple:
+    r"""Compute the jvp of a generic function using finite differences.
+
+    Args:
+        f (Callable): a generic function that returns a pytree of tensors. Note that this
+
+            function should not have keyword arguments.
+        args (tuple[TensorLike]): the tuple of arguments to the function ``f``
+
+        tangents (tuple[TensorLike]): the tuple of tangents for the arguments ``args``
+
+
+    Keyword Args:
+        h=1e-7 (float): finite difference method step size
+        approx_order=1 (int): The approximation order of the finite-difference method to use.
+        strategy="forward" (str): The strategy of the finite difference method. Must be one of
+            ``"forward"``, ``"center"``, or ``"backward"``.
+            For the ``"forward"`` strategy, the finite-difference shifts occur at the points
+            :math:`x_0, x_0+h, x_0+2h,\dots`, where :math:`h` is some small
+            stepsize. The ``"backwards"`` strategy is similar, but in
+            reverse: :math:`x_0, x_0-h, x_0-2h, \dots`. Finally, the
+            ``"center"`` strategy results in shifts symmetric around the
+            unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
+
+    Returns:
+        tuple(TensorLike, TensorLike): the results and their cotangents
+
+
+    >>> def f(x, y):
+    ...     return 2 * x * y, x**2
+    >>> args = (0.5, 1.2)
+    >>> tangents = (1.0, 1.0)
+    >>> results, dresults = qml.gradients.finite_diff_jvp(f, args, tangents)
+    >>> results
+    (1.2, 0.25)
+    >>> dresults
+    [np.float64(3.399999999986747), np.float64(1.000001000006634)]
+
+    """
+    coeffs, shifts = finite_diff_coeffs(n=1, approx_order=approx_order, strategy=strategy)
+
+    initial_res = f(*args)
+    flat_initial_res, pytree_structure = qml.pytrees.flatten(initial_res)
+
+    jvps = [0 for _ in flat_initial_res]
+    for i, t in enumerate(tangents):
+        if type(t).__name__ == "Zero":  # Zero = jax.interpreters.ad.Zero
+            continue
+        t = np.array(t) if isinstance(t, (int, float, complex)) else t
+
+        if qml.math.get_dtype_name(args[i]) in ("float32", "complex64"):
+
+            warn(
+                "Detected 32 bits precision parameter with finite differences. It is recommended to use 64 bit precision when computing finite differences.",
+                UserWarning,
+            )
+
+        shifted_args = list(args)
+        for index in np.ndindex(qml.math.shape(args[i])):
+            ti = t[index]
+
+            if not qml.math.is_abstract(ti) and qml.math.allclose(ti, 0):
+                continue
+
+            ti_over_h = ti / h
+            for coeff, shift in zip(coeffs, shifts):
+                if shift == 0:
+                    res = flat_initial_res
+                else:
+                    shifted_args[i] = qml.math.scatter_element_add(args[i], index, h * shift)
+                    res, _ = qml.pytrees.flatten(f(*shifted_args))
+
+                for result_idx, r in enumerate(res):
+                    jvps[result_idx] += ti_over_h * coeff * r
+
+    return initial_res, qml.pytrees.unflatten(jvps, pytree_structure)
+
+
 def _processing_fn(results, shots, single_shot_batch_fn):
     if not shots.has_partitioned_shots:
         return single_shot_batch_fn(results)
@@ -172,28 +264,44 @@ def _processing_fn(results, shots, single_shot_batch_fn):
     return tuple(grads_tuple)
 
 
+def _finite_diff_stopping_condition(op) -> bool:
+    if not op.has_decomposition:
+        # let things without decompositions through without error
+        # error will happen when calculating shifted tapes for finite diff
+
+        return True
+    if isinstance(op, qml.operation.Operator) and any(qml.math.requires_grad(p) for p in op.data):
+        return op.grad_method is not None
+    return True
+
+
+# pylint: disable=too-many-positional-arguments
 def _expand_transform_finite_diff(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
-    h=1e-7,
-    approx_order=1,
-    n=1,
-    strategy="forward",
+    h: float = 1e-7,
+    approx_order: int = 1,
+    n: int = 1,
+    strategy: Literal["forward", "backward", "center"] = "forward",
     f0=None,
-    validate_params=True,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+    validate_params: bool = True,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before finite difference."""
-    expanded_tape = expand_invalid_trainable(tape)
+    [new_tape], postprocessing = qml.devices.preprocess.decompose(
+        tape,
+        stopping_condition=_finite_diff_stopping_condition,
+        skip_initial_state_prep=False,
+        name="finite_diff",
+        error=qml.operation.DecompositionUndefinedError,
+    )
+    if new_tape is tape:
+        return [tape], postprocessing
+    params = new_tape.get_parameters(trainable_only=False)
+    new_tape.trainable_params = qml.math.get_trainable_indices(params)
+    return [new_tape], postprocessing
 
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
 
-    return [expanded_tape], null_postprocessing
-
-
+# pylint: disable=too-many-positional-arguments
 @partial(
     transform,
     expand_transform=_expand_transform_finite_diff,
@@ -201,22 +309,23 @@ def _expand_transform_finite_diff(
     final_transform=True,
 )
 def finite_diff(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
-    h=1e-7,
-    approx_order=1,
-    n=1,
-    strategy="forward",
+    h: float = 1e-7,
+    approx_order: int = 1,
+    n: int = 1,
+    strategy: Literal["forward", "backward", "center"] = "forward",
     f0=None,
-    validate_params=True,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+    validate_params: bool = True,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
+            trainable parameters are returned. Note that the indices are with respect to
+            the list of trainable parameters.
         h (float): finite difference method step size
         approx_order (int): The approximation order of the finite-difference method to use.
         n (int): compute the :math:`n`-th derivative
@@ -248,13 +357,13 @@ def finite_diff(
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
 
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, interface="autograd", diff_method="finite-diff")
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.jacobian(circuit)(params)
     array([-0.38751725, -0.18884792, -0.38355708])
@@ -265,40 +374,37 @@ def finite_diff(
     post-processing.
 
     >>> import jax
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, interface="jax", diff_method="finite-diff")
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
     (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
-    Array([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
+     Array([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
 
 
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
-        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
-        of the QNode decorator, and differentiating with your preferred machine learning framework.
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
+        objects. However, for performance reasons, we recommend providing the gradient transform
+        as the ``diff_method`` argument of the QNode decorator, and differentiating with your
+        preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.finite_diff(circuit)(params)
-        ((tensor(-0.38751724, requires_grad=True),
-          tensor(-0.18884792, requires_grad=True),
-          tensor(-0.38355709, requires_grad=True)),
-         (tensor(0.69916868, requires_grad=True),
-          tensor(0.34072432, requires_grad=True),
-          tensor(0.69202366, requires_grad=True)))
+        (tensor([-0.38751724, -0.18884792, -0.38355708], requires_grad=True),
+         tensor([0.69916868, 0.34072432, 0.69202365], requires_grad=True))
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -306,53 +412,62 @@ def finite_diff(
         function, which together define the gradient are directly returned:
 
         >>> ops = [qml.RX(p, wires=0) for p in params]
-        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
         >>> gradient_tapes
         [<QuantumTape: wires=[0], params=3>,
-         <QuantumTape: wires=[0], params=3>,
-         <QuantumTape: wires=[0], params=3>,
-         <QuantumTape: wires=[0], params=3>]
+         <QuantumScript: wires=[0], params=3>,
+         <QuantumScript: wires=[0], params=3>,
+         <QuantumScript: wires=[0], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
 
-        The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
+        Note that ``argnum`` refers to the index of a parameter within the list of trainable
+        parameters. For example, if we have:
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        >>> tape = qml.tape.QuantumScript(
+        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
+        ...     [qml.expval(qml.Z(0))],
+        ...     trainable_params = [1, 2]
+        ... )
+        >>> qml.gradients.finite_diff(tape, argnum=1)
+
+        The code above will differentiate the third parameter rather than the second.
+
+        The output tapes can then be evaluated and post-processed to retrieve the gradient:
+
+        >>> dev = qml.device("default.qubit")
         >>> fn(qml.execute(gradient_tapes, dev, None))
         ((tensor(-0.56464251, requires_grad=True),
-         tensor(-0.56464251, requires_grad=True),
-         tensor(-0.56464251, requires_grad=True)),
-        (tensor(0.93203912, requires_grad=True),
-         tensor(0.93203912, requires_grad=True),
-         tensor(0.93203912, requires_grad=True)))
+          tensor(-0.56464251, requires_grad=True),
+          tensor(-0.56464251, requires_grad=True)),
+         (tensor(0.93203912, requires_grad=True),
+          tensor(0.93203912, requires_grad=True),
+          tensor(0.93203912, requires_grad=True)))
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit", wires=2, shots=shots)
+        >>> dev = qml.device("default.qubit", shots=shots)
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.finite_diff(circuit, h=10e-2)(params)
-        (((array(-2.), array(-2.), array(0.)), (array(3.6), array(3.6), array(0.))),
-         ((array(1.), array(0.4), array(1.)),
-          (array(-1.62), array(-0.624), array(-1.62))),
-         ((array(-0.48), array(-0.34), array(-0.46)),
-          (array(0.84288), array(0.6018), array(0.80868))))
+        >>> qml.gradients.finite_diff(circuit, h=0.1)(params)
+        ((array([-2., -2.,  0.]), array([3.6, 3.6, 0. ])),
+         (array([1. , 0.2, 0.4]), array([-1.78 , -0.34 , -0.688])),
+         (array([-0.9 , -0.22, -0.48]), array([1.5498 , 0.3938 , 0.84672])))
 
         The outermost tuple contains results corresponding to each element of the shot vector.
     """
 
     transform_name = "finite difference"
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if any(qml.math.get_dtype_name(p) == "float32" for p in tape.get_parameters()):
         warn(
@@ -364,14 +479,14 @@ def finite_diff(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    if validate_params:
-        diff_methods = gradient_analysis_and_validation(
-            tape, "numeric", grad_fn=finite_diff, overwrite=False
-        )
-    else:
-        diff_methods = ["F" for i in tape.trainable_params]
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    diff_methods = (
+        find_and_validate_gradient_methods(tape, "numeric", trainable_params_indices)
+        if validate_params
+        else {idx: "F" for idx in trainable_params_indices}
+    )
 
-    if all(g == "0" for g in diff_methods):
+    if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)
 
     gradient_tapes = []
@@ -394,10 +509,8 @@ def finite_diff(
         shifts = shifts[1:]
         coeffs = coeffs[1:]
 
-    method_map = choose_grad_methods(diff_methods, argnum)
-
     for i, _ in enumerate(tape.trainable_params):
-        if i not in method_map or method_map[i] == "0":
+        if i not in diff_methods or diff_methods[i] == "0":
             # parameter has zero gradient
             shapes.append(0)
             continue

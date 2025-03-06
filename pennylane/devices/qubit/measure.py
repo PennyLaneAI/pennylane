@@ -14,18 +14,18 @@
 """
 Code relevant for performing measurements on a state.
 """
-from typing import Callable
+from collections.abc import Callable
 
 from scipy.sparse import csr_matrix
 
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
-    StateMeasurement,
+    ExpectationMP,
     MeasurementProcess,
     MeasurementValue,
-    ExpectationMP,
+    StateMeasurement,
 )
+from pennylane.ops import LinearCombination, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -134,17 +134,16 @@ def full_dot_products(
         TensorLike: the result of the measurement
     """
     ket = apply_operation(measurementprocess.obs, state, is_state_batched=is_state_batched)
-    total_indices = len(state.shape) - is_state_batched
-    flattened_state = flatten_state(state, total_indices)
-    flattened_ket = flatten_state(ket, total_indices)
-    dot_product = math.sum(math.conj(flattened_state) * flattened_ket, axis=int(is_state_batched))
+    dot_product = math.sum(
+        math.conj(state) * ket, axis=tuple(range(int(is_state_batched), math.ndim(state)))
+    )
     return math.real(dot_product)
 
 
 def sum_of_terms_method(
     measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
-    """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
+    """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
 
     Args:
@@ -155,21 +154,15 @@ def sum_of_terms_method(
     Returns:
         TensorLike: the result of the measurement
     """
-    if isinstance(measurementprocess.obs, Sum):
-        # Recursively call measure on each term, so that the best measurement method can
-        # be used for each term
-        return sum(
-            measure(ExpectationMP(term), state, is_state_batched=is_state_batched)
-            for term in measurementprocess.obs
-        )
-    # else hamiltonian
+    # Recursively call measure on each term, so that the best measurement method can
+    # be used for each term
     return sum(
-        c * measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
-        for c, t in zip(*measurementprocess.obs.terms())
+        measure(ExpectationMP(term), state, is_state_batched=is_state_batched)
+        for term in measurementprocess.obs
     )
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements,too-many-branches
 def get_measurement_function(
     measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
@@ -187,7 +180,7 @@ def get_measurement_function(
         if isinstance(measurementprocess.mv, MeasurementValue):
             return state_diagonalizing_gates
 
-        if isinstance(measurementprocess, ExpectationMP):
+        if isinstance(measurementprocess, ExpectationMP) and measurementprocess.obs is not None:
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 
@@ -195,14 +188,25 @@ def get_measurement_function(
                 return full_dot_products
 
             backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
-            if isinstance(measurementprocess.obs, Hamiltonian):
-                # need to work out thresholds for when its faster to use "backprop mode" measurements
-                return sum_of_terms_method if backprop_mode else csr_dot_products
+            if isinstance(measurementprocess.obs, LinearCombination):
+
+                # need to work out thresholds for when it's faster to use "backprop mode"
+                if backprop_mode:
+                    return sum_of_terms_method
+
+                if not all(obs.has_sparse_matrix for obs in measurementprocess.obs.terms()[1]):
+                    return sum_of_terms_method
+
+                return csr_dot_products
 
             if isinstance(measurementprocess.obs, Sum):
                 if backprop_mode:
                     # always use sum_of_terms_method for Sum observables in backprop mode
                     return sum_of_terms_method
+
+                if not all(obs.has_sparse_matrix for obs in measurementprocess.obs):
+                    return sum_of_terms_method
+
                 if (
                     measurementprocess.obs.has_overlapping_wires
                     and len(measurementprocess.obs.wires) > 7

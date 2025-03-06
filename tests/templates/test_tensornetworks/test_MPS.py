@@ -14,11 +14,13 @@
 """
 Tests for the MPS template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments
 import pytest
-import numpy as np
+
 import pennylane as qml
-from pennylane.templates.tensornetworks.mps import compute_indices_MPS, MPS
+from pennylane.templates.tensornetworks.mps import MPS, compute_indices_MPS
 
 
 # pylint: disable=protected-access
@@ -52,7 +54,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = qml.MPS._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op._name == "MPS"  # make sure acutally initialized
     assert new_op is not op
 
@@ -452,3 +454,92 @@ class TestTemplateOutputs:
 
         manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)
+
+    @pytest.mark.parametrize(
+        (
+            "block",
+            "n_params_block",
+            "wires",
+            "n_block_wires",
+            "template_weights",
+            "offset",
+            "kwargs",
+            "expected_circuit",
+        ),
+        [
+            (
+                "circuit1_block",
+                2,
+                [1, 2, 3, 4],
+                2,
+                [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
+                None,
+                {},
+                "circuit1_MPS",
+            ),
+            (
+                "circuit2_block",
+                3,
+                [1, 2, 3],
+                2,
+                [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]],
+                None,
+                {},
+                "circuit2_MPS",
+            ),
+            (
+                "circuit3_block",
+                0,
+                [1, 2, 3, 4, 5, 6, 7, 8],
+                4,
+                None,
+                1,
+                {"k": 2},
+                "circuit3_MPS",
+            ),
+            (
+                "circuit3_block",
+                0,
+                [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                5,
+                None,
+                2,
+                {"k": 2},
+                "circuit4_MPS",
+            ),
+        ],
+    )
+    @pytest.mark.jax
+    def test_jax_jit(
+        self,
+        block,
+        n_params_block,
+        wires,
+        n_block_wires,
+        template_weights,
+        offset,
+        kwargs,
+        expected_circuit,
+    ):
+        import jax
+
+        dev = qml.device("default.qubit", wires=wires)
+        block = getattr(self, block)
+        expected_circuit = getattr(self, expected_circuit)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.MPS(
+                wires,
+                n_block_wires,
+                block,
+                n_params_block,
+                template_weights,
+                offset=offset,
+                **kwargs,
+            )
+            return qml.expval(qml.PauliZ(wires=wires[-1]))
+
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.isclose(circuit(), jit_circuit())

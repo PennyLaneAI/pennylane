@@ -17,6 +17,7 @@ Tests for the CommutingEvolution template.
 # pylint: disable=too-few-public-methods
 import pytest
 from scipy.linalg import expm
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -29,28 +30,6 @@ def test_standard_validity():
     shifts = (1, 0.5)
     op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
     qml.ops.functions.assert_valid(op)
-
-
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Unit tests for the flatten and unflatten methods."""
-    H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
-    time = 0.5
-    frequencies = (2, 4)
-    shifts = (1, 0.5)
-    op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
-    data, metadata = op._flatten()
-
-    assert hash(metadata)
-
-    assert len(data) == 2
-    assert data[1] is H
-    assert data[0] == time
-    assert metadata == (frequencies, shifts)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
 
 
 def test_adjoint():
@@ -85,6 +64,17 @@ def test_adjoint():
     assert all(np.isclose(state1, state2))
 
 
+def test_queuing():
+    """Test that CommutingEvolution de-queues the input hamiltonian."""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        H = qml.X(0) + qml.Y(1)
+        op = qml.CommutingEvolution(H, 0.1, (2,))
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is op
+
+
 def test_decomposition_expand():
     """Test that the decomposition of CommutingEvolution is an ApproxTimeEvolution with one step."""
 
@@ -96,10 +86,10 @@ def test_decomposition_expand():
     decomp = op.decomposition()[0]
 
     assert isinstance(decomp, qml.ApproxTimeEvolution)
-    assert all(decomp.hyperparameters["hamiltonian"].coeffs == hamiltonian.coeffs)
+    assert qml.math.allclose(decomp.hyperparameters["hamiltonian"].data, hamiltonian.data)
     assert decomp.hyperparameters["n"] == 1
 
-    tape = op.expand()
+    tape = op.decomposition()
     assert len(tape) == 1
     assert isinstance(tape[0], qml.ApproxTimeEvolution)
 
@@ -137,20 +127,72 @@ def test_forward_execution():
     assert np.allclose(res, expected)
 
 
+@pytest.mark.jax
+def test_jax_jit():
+    """Test that the template correctly compiles with JAX JIT."""
+    import jax
+
+    n_wires = 2
+    dev = qml.device("default.qubit", wires=n_wires)
+
+    coeffs = [1, -1]
+    obs = [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.X(1)]
+    hamiltonian = qml.ops.LinearCombination(coeffs, obs)
+    frequencies = (2, 4)
+
+    @qml.qnode(dev)
+    def circuit(time):
+        qml.X(0)
+        qml.CommutingEvolution(hamiltonian, time, frequencies)
+        return qml.expval(qml.Z(0))
+
+    jit_circuit = jax.jit(circuit)
+
+    assert qml.math.allclose(circuit(1), jit_circuit(1))
+
+
 class TestInputs:
     """Tests for input validation of `CommutingEvolution`."""
 
     def test_invalid_hamiltonian(self):
-        """Tests TypeError is raised if `hamiltonian` is not type `qml.Hamiltonian`."""
+        """Tests TypeError is raised if `hamiltonian` does not have a pauli rep."""
 
-        invalid_operator = qml.PauliX(0)
-
+        invalid_operator = qml.Hermitian(np.eye(2), 0)
         assert pytest.raises(TypeError, qml.CommutingEvolution, invalid_operator, 1)
 
 
 class TestGradients:
     """Tests that correct gradients are obtained for `CommutingEvolution` when frequencies
     are specified."""
+
+    @pytest.mark.unit
+    def test_grad_method_and_recipe(self):
+        """Tests that CommutingEvolution returns the correct grad method and recipe."""
+
+        time = qml.numpy.array(0.1)
+        H = qml.Hamiltonian([0.5, 0.5], [qml.X(0), qml.Y(0)])
+        op = qml.CommutingEvolution(H, time, frequencies=(2,))
+        assert op.grad_method == "A"
+        assert qml.math.allclose(
+            op.grad_recipe[0], [[1.0, 1.0, 0.78539816], [-1.0, 1.0, -0.78539816]]
+        )
+        assert op.grad_recipe[1:] == (None, None)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        "H",
+        [
+            qml.Hamiltonian(qml.numpy.array([0.5, 0.5]), [qml.X(0), qml.Y(0)]),
+            qml.X(0) + qml.numpy.array(0.5) * qml.Y(0),
+        ],
+    )
+    def test_grad_method_is_none_when_trainable_hamiltonian(self, H):
+        """Tests that the grad method is None for a trainable Hamiltonian."""
+
+        time = qml.numpy.array(0.1)
+        op = qml.CommutingEvolution(H, time, frequencies=(2,))
+        assert op.grad_method is None
+        assert op.grad_recipe == [None] * (len(H.data) + 1)
 
     def test_two_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
@@ -212,13 +254,13 @@ class TestGradients:
         diff_coeffs = np.array([1.0, -1.0], requires_grad=True)
         frequencies = (2, 4)
 
-        def parameterized_hamiltonian(coeffs):
+        def parametrized_hamiltonian(coeffs):
             return qml.Hamiltonian(coeffs, obs)
 
         @qml.qnode(dev)
         def circuit(time, coeffs):
             qml.PauliX(0)
-            qml.CommutingEvolution(parameterized_hamiltonian(coeffs), time, frequencies)
+            qml.CommutingEvolution(parametrized_hamiltonian(coeffs), time, frequencies)
             return qml.expval(qml.PauliZ(0))
 
         x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]

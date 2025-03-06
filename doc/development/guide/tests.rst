@@ -3,17 +3,17 @@ Software tests
 
 Requirements
 ~~~~~~~~~~~~
-The PennyLane test suite requires the Python ``pytest`` package, as well as:
+The PennyLane test suite requires the Python ``pytest`` package, as well as
+some extentions thereof, for example:
 
 * ``pytest-cov``: determines test coverage
 * ``pytest-mock``: allows replacing components with dummy/mock objects
 * ``flaky``: manages tests with non-deterministic behaviour
+* ``pytest-benchmark``: benchmarks the performance of functions, and can be used to ensure consistent runtime
+* ``pytest-xdist``: currently used to force some tests to run on the same thread to avoid race conditions
 
-These requirements can be installed via ``pip``:
-
-.. code-block:: bash
-
-    pip install pytest pytest-cov pytest-mock flaky
+If you properly followed the :doc:`installation guide <./installation>`, you should have all of these packages and others installed in your
+environment, so you can go ahead and put your code to the test!
 
 Creating a test
 ~~~~~~~~~~~~~~~

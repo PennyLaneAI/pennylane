@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
+# pylint: disable=protected-access, no-member
 r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
@@ -120,12 +120,11 @@ Operator Types
     ~CVObservable
     ~CVOperation
     ~Channel
-    ~Tensor
     ~StatePrepBase
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrepBase
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
 
 Errors
@@ -172,25 +171,6 @@ The ``operation`` module provides the following:
     ~is_measurement
     ~is_trainable
     ~not_tape
-
-Enabling New Arithmetic Operators
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-PennyLane is in the process of replacing :class:`~pennylane.Hamiltonian` and :class:`~.Tensor`
-with newer, more general arithmetic operators. These consist of :class:`~pennylane.ops.op_math.Prod`,
-:class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`. By default, using dunder
-methods (eg. ``+``, ``-``, ``@``, ``*``) to combine operators with scalars or other operators will
-create :class:`~pennylane.Hamiltonian`'s and :class:`~.Tensor`'s. If you would like to switch dunders to
-return newer arithmetic operators, the ``operation`` module provides the following helper functions:
-
-.. currentmodule:: pennylane.operation
-
-.. autosummary::
-    :toctree: api
-
-    ~enable_new_opmath
-    ~disable_new_opmath
-    ~active_new_opmath
 
 Other
 ~~~~~
@@ -242,23 +222,21 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 # pylint:disable=access-member-before-definition,global-statement
 import abc
 import copy
-import functools
-import itertools
 import warnings
+from collections.abc import Hashable, Iterable
 from enum import IntEnum
-from typing import List
+from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
-from numpy.linalg import multi_dot
-from scipy.sparse import coo_matrix, eye, kron
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane.capture import ABCCaptureMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
-from .utils import pauli_eigs
 from .pytrees import register_pytree
 
 # =============================================================================
@@ -266,7 +244,6 @@ from .pytrees import register_pytree
 # =============================================================================
 
 SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
-__use_new_opmath = False
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
 
 
@@ -386,19 +363,26 @@ def classproperty(func):
 
 
 def _process_data(op):
+    def _mod_and_round(x, mod_val):
+        if mod_val is None:
+            return x
+        return qml.math.round(qml.math.real(x) % mod_val, 10)
+
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
+        mod_val = 2 * np.pi
+    else:
+        mod_val = None
 
-    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
-
-    return str(op.data)
+    return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-class Operator(abc.ABC):
+FlatPytree = tuple[Iterable[Any], Hashable]
+
+
+class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -504,7 +488,7 @@ class Operator(abc.ABC):
                 # The general signature of this function is (*parameters, wires, **hyperparameters).
                 op_list = []
                 if do_flip:
-                    op_list.append(qml.PauliX(wires=wires[1]))
+                    op_list.append(qml.X(wires[1]))
                 op_list.append(qml.RX(angle, wires=wires[0]))
                 return op_list
 
@@ -523,7 +507,7 @@ class Operator(abc.ABC):
         @qml.qnode(dev)
         def circuit(angle):
             FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-            return qml.expval(qml.PauliZ("q1"))
+            return qml.expval(qml.Z("q1"))
 
     >>> a = np.array(3.14)
     >>> circuit(a)
@@ -549,7 +533,7 @@ class Operator(abc.ABC):
 
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> qml.PauliRot._unflatten(*op._flatten())
         PauliRot(1.2, XY, wires=[0, 1])
 
@@ -683,12 +667,51 @@ class Operator(abc.ABC):
         one of them (in other words, without the leading underscore) for the first time will
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
+
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
+
+    # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
+    # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
+    __array_priority__ = 1000
+
+    _primitive: Optional["jax.core.Primitive"] = None
+    """
+    Optional[jax.core.Primitive]
+    """
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
+        cls._primitive = create_operator_primitive(cls)
 
-    def __copy__(self):
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        """This class method should match the call signature of the class itself.
+
+        When plxpr is enabled, this method is used to bind the arguments and keyword arguments
+        to the primitive via ``cls._primitive.bind``.
+
+        """
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, *args, **kwargs)
+        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
+
+        # process wires so that we can handle them either as a final argument or as a keyword argument.
+        # Stick `n_wires` as a keyword argument so we have enough information to repack them during
+        # the implementation call defined by `primitive.def_impl`.
+        if "wires" in kwargs:
+            wires = kwargs.pop("wires")
+            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
+            kwargs["n_wires"] = len(wires)
+            args += wires
+        elif args and isinstance(args[-1], iterable_wires_types):
+            kwargs["n_wires"] = len(args[-1])
+            args = args[:-1] + tuple(args[-1])
+        else:
+            kwargs["n_wires"] = 1
+        return cls._primitive.bind(*args, **kwargs)
+
+    def __copy__(self) -> "Operator":
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op.data = copy.copy(self.data)
@@ -698,7 +721,7 @@ class Operator(abc.ABC):
 
         return copied_op
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo) -> "Operator":
         copied_op = object.__new__(type(self))
 
         # The memo dict maps object ID to object, and is required by
@@ -718,7 +741,7 @@ class Operator(abc.ABC):
         return copied_op
 
     @property
-    def hash(self):
+    def hash(self) -> int:
         """int: Integer hash that uniquely represents the operator."""
         return hash(
             (
@@ -729,14 +752,16 @@ class Operator(abc.ABC):
             )
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return qml.equal(self, other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.hash
 
     @staticmethod
-    def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
+    def compute_matrix(
+        *params: TensorLike, **hyperparams: dict[str, Any]
+    ) -> TensorLike:  # pylint:disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -755,14 +780,14 @@ class Operator(abc.ABC):
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_matrix(cls):
+    def has_matrix(cls) -> bool:
         r"""Bool: Whether or not the Operator returns a defined matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
-    def matrix(self, wire_order=None):
+    def matrix(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         r"""Representation of the operator as a matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -784,13 +809,22 @@ class Operator(abc.ABC):
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
-        if wire_order is None or self.wires == Wires(wire_order):
+        if (
+            wire_order is None
+            or self.wires == Wires(wire_order)
+            or (
+                self.name in qml.ops.qubit.attributes.symmetric_over_all_wires
+                and set(self.wires) == set(wire_order)
+            )
+        ):
             return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
+    def compute_sparse_matrix(
+        *params: TensorLike, **hyperparams: dict[str, Any]
+    ) -> csr_matrix:  # pylint:disable=unused-argument
         r"""Representation of the operator as a sparse matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -808,7 +842,19 @@ class Operator(abc.ABC):
         """
         raise SparseMatrixUndefinedError
 
-    def sparse_matrix(self, wire_order=None):
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_sparse_matrix(cls) -> bool:
+        r"""Bool: Whether the Operator returns a defined sparse matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (
+            cls.compute_sparse_matrix != Operator.compute_sparse_matrix
+            or cls.sparse_matrix != Operator.sparse_matrix
+        )
+
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -833,7 +879,7 @@ class Operator(abc.ABC):
         return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
-    def compute_eigvals(*params, **hyperparams):
+    def compute_eigvals(*params: TensorLike, **hyperparams) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -856,7 +902,7 @@ class Operator(abc.ABC):
         """
         raise EigvalsUndefinedError
 
-    def eigvals(self):
+    def eigvals(self) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis.
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`, the operator
@@ -889,7 +935,7 @@ class Operator(abc.ABC):
                 return qml.math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
-    def terms(self):  # pylint: disable=no-self-use
+    def terms(self) -> tuple[list[TensorLike], list["Operation"]]:  # pylint: disable=no-self-use
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
@@ -902,24 +948,29 @@ class Operator(abc.ABC):
         """
         raise TermsUndefinedError
 
-    num_wires = AnyWires
+    num_wires: Union[int, WiresEnum] = AnyWires
     """Number of wires the operator acts on."""
 
     @property
-    def name(self):
+    def name(self) -> str:
         """String for the name of the operator."""
         return self._name
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Custom string to label a specific operator instance."""
         return self._id
 
     @name.setter
-    def name(self, value):
+    def name(self, value: str):
         self._name = value
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         r"""A customizable string representation of the operator.
 
         Args:
@@ -1028,12 +1079,19 @@ class Operator(abc.ABC):
             else f'{op_label}\n({param_string},"{self._id}")'
         )
 
-    def __init__(self, *params, wires=None, id=None):
+    def __init__(
+        self,
+        *params: TensorLike,
+        wires: Optional[WiresLike] = None,
+        id: Optional[str] = None,
+    ):
         # pylint: disable=too-many-branches
-        self._name = self.__class__.__name__  #: str: name of the operator
-        self._id = id
-        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
-        self._pauli_rep = None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
+
+        self._name: str = self.__class__.__name__  #: str: name of the operator
+        self._id: str = id
+        self._pauli_rep: Optional[qml.pauli.PauliSentence] = (
+            None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
+        )
 
         wires_from_args = False
         if wires is None:
@@ -1046,7 +1104,7 @@ class Operator(abc.ABC):
                     f"Must specify the wires that {type(self).__name__} acts on"
                 ) from err
 
-        self._num_params = len(params)
+        self._num_params: int = len(params)
 
         # Check if the expected number of parameters coincides with the one received.
         # This is always true for the default `Operator.num_params` property, but
@@ -1059,12 +1117,21 @@ class Operator(abc.ABC):
                 f"{len(params)} parameters passed, {self.num_params} expected."
             )
 
-        self._wires = wires if isinstance(wires, Wires) else Wires(wires)
+        self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
         if self.num_wires in {AllWires, AnyWires}:
             if (
-                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase))
+                not isinstance(
+                    self,
+                    (
+                        qml.Barrier,
+                        qml.Snapshot,
+                        qml.ops.LinearCombination,
+                        qml.GlobalPhase,
+                        qml.Identity,
+                    ),
+                )
                 and len(qml.wires.Wires(wires)) == 0
             ):
                 raise ValueError(
@@ -1077,8 +1144,8 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-        self._batch_size = _UNSET_BATCH_SIZE
-        self._ndim_params = _UNSET_BATCH_SIZE
+        self._batch_size: Optional[int] = _UNSET_BATCH_SIZE
+        self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
         self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
 
@@ -1095,7 +1162,22 @@ class Operator(abc.ABC):
         self._batch_size = None
         params = self.data
 
-        ndims = tuple(qml.math.ndim(p) for p in params)
+        try:
+            ndims = tuple(qml.math.ndim(p) for p in params)
+        except ValueError as e:
+            # TODO:[dwierichs] When using tf.function with an input_signature that contains
+            # an unknown-shaped input, ndim() will not be able to determine the number of
+            # dimensions because they are not specified yet. Failing example: Let `fun` be
+            # a single-parameter QNode.
+            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
+            # There might be a way to support batching nonetheless, which remains to be
+            # investigated. For now, the batch_size is left to be `None` when instantiating
+            # an operation with abstract parameters that make `qml.math.ndim` fail.
+            if any(qml.math.is_abstract(p) for p in params):
+                self._batch_size = None
+                self._ndim_params = (0,) * len(params)
+                return
+            raise e  # pragma: no cover
 
         if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
@@ -1123,40 +1205,18 @@ class Operator(abc.ABC):
                     "Broadcasting was attempted but the broadcasted dimensions "
                     f"do not match: {first_dims}."
                 )
+
             self._batch_size = first_dims[0]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Constructor-call-like representation."""
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
 
-    @staticmethod
-    def validate_subspace(subspace):
-        """Validate the subspace for qutrit operations.
-
-        This method determines whether a given subspace for qutrit operations
-        is defined correctly or not. If not, a `ValueError` is thrown.
-
-        Args:
-            subspace (tuple[int]): Subspace to check for correctness
-        """
-        if not hasattr(subspace, "__iter__") or len(subspace) != 2:
-            raise ValueError(
-                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
-            )
-
-        if not all(s in {0, 1, 2} for s in subspace):
-            raise ValueError("Elements of the subspace must be 0, 1, or 2.")
-
-        if subspace[0] == subspace[1]:
-            raise ValueError("Elements of subspace list must be unique.")
-
-        return tuple(sorted(subspace))
-
     @property
-    def num_params(self):
+    def num_params(self) -> int:
         """Number of trainable parameters that the operator depends on.
 
         By default, this property returns as many parameters as were used for the
@@ -1169,7 +1229,7 @@ class Operator(abc.ABC):
         return self._num_params
 
     @property
-    def ndim_params(self):
+    def ndim_params(self) -> tuple[int]:
         """Number of dimensions per trainable parameter of the operator.
 
         By default, this property returns the numbers of dimensions of the parameters used
@@ -1184,7 +1244,7 @@ class Operator(abc.ABC):
         return self._ndim_params
 
     @property
-    def batch_size(self):
+    def batch_size(self) -> Optional[int]:
         r"""Batch size of the operator if it is used with broadcasted parameters.
 
         The ``batch_size`` is determined based on ``ndim_params`` and the provided parameters
@@ -1200,7 +1260,7 @@ class Operator(abc.ABC):
         return self._batch_size
 
     @property
-    def wires(self):
+    def wires(self) -> Wires:
         """Wires that the operator acts on.
 
         Returns:
@@ -1209,12 +1269,12 @@ class Operator(abc.ABC):
         return self._wires
 
     @property
-    def parameters(self):
+    def parameters(self) -> list[TensorLike]:
         """Trainable parameters that the operator depends on."""
         return list(self.data)
 
     @property
-    def hyperparameters(self):
+    def hyperparameters(self) -> dict[str, Any]:
         """dict: Dictionary of non-trainable variables that this operation depends on."""
         # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
@@ -1223,18 +1283,18 @@ class Operator(abc.ABC):
         return self._hyperparameters
 
     @property
-    def pauli_rep(self):
+    def pauli_rep(self) -> Optional["qml.pauli.PauliSentence"]:
         """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 
     @property
-    def is_hermitian(self):
+    def is_hermitian(self) -> bool:
         """This property determines if an operator is hermitian."""
         return False
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_decomposition(cls):
+    def has_decomposition(cls) -> bool:
         r"""Bool: Whether or not the Operator returns a defined decomposition.
 
         Note: Child classes may have this as an instance property instead of as a class property.
@@ -1246,7 +1306,7 @@ class Operator(abc.ABC):
             or cls.decomposition != Operator.decomposition
         )
 
-    def decomposition(self):
+    def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n
@@ -1263,7 +1323,11 @@ class Operator(abc.ABC):
         )
 
     @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters):
+    def compute_decomposition(
+        *params: TensorLike,
+        wires: Optional[WiresLike] = None,
+        **hyperparameters: dict[str, Any],
+    ) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1285,9 +1349,41 @@ class Operator(abc.ABC):
         """
         raise DecompositionUndefinedError
 
+    @classproperty
+    def has_plxpr_decomposition(cls) -> bool:
+        """Whether or not the Operator returns a defined plxpr decomposition."""
+        return cls.compute_qfunc_decomposition != Operator.compute_qfunc_decomposition
+
+    @staticmethod
+    def compute_qfunc_decomposition(*args, **hyperparameters) -> None:
+        r"""Experimental method to compute the dynamic decomposition of the operator with program capture enabled.
+
+        When the program capture feature is enabled with ``qml.capture.enable()``, the decomposition of the operator
+        is computed with this method if it is defined. Otherwise, the :meth:`~.Operator.compute_decomposition` method is used.
+
+        The exception to this rule is when the operator is returned from the :meth:`~.Operator.compute_decomposition` method
+        of another operator, in which case the decomposition is performed with :meth:`~.Operator.compute_decomposition`
+        (even if this method is defined), and not with this method.
+
+        When ``compute_qfunc_decomposition`` is defined for an operator, the control flow operations within the method
+        (specifying the decomposition of the operator) are recorded in the JAX representation.
+
+        .. note::
+          This method is experimental and subject to change.
+
+        .. seealso:: :meth:`~.Operator.compute_decomposition`.
+
+        Args:
+            *args (list): positional arguments passed to the operator, including trainable parameters and wires
+            **hyperparameters (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        """
+
+        raise DecompositionUndefinedError
+
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_diagonalizing_gates(cls):
+    def has_diagonalizing_gates(cls) -> bool:
         r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
 
         Note: Child classes may have this as an instance property instead of as a class property.
@@ -1301,8 +1397,8 @@ class Operator(abc.ABC):
 
     @staticmethod
     def compute_diagonalizing_gates(
-        *params, wires, **hyperparams
-    ):  # pylint: disable=unused-argument
+        *params: TensorLike, wires: WiresLike, **hyperparams: dict[str, Any]
+    ) -> list["Operator"]:  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1324,7 +1420,7 @@ class Operator(abc.ABC):
         """
         raise DiagGatesUndefinedError
 
-    def diagonalizing_gates(self):  # pylint:disable=no-self-use
+    def diagonalizing_gates(self) -> list["Operator"]:  # pylint:disable=no-self-use
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1347,14 +1443,14 @@ class Operator(abc.ABC):
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_generator(cls):
+    def has_generator(cls) -> bool:
         r"""Bool: Whether or not the Operator returns a defined generator.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return cls.generator != Operator.generator
 
-    def generator(self):  # pylint: disable=no-self-use
+    def generator(self) -> "Operator":  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1366,18 +1462,15 @@ class Operator(abc.ABC):
         we get the generator
 
         >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
+          0.5 * Y(0) + Z(0) @ X(1)
 
         The generator may also be provided in the form of a dense or sparse Hamiltonian
-        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
+        (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
 
-        The default value to return is ``None``, indicating that the operation has
-        no defined generator.
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
-    def pow(self, z) -> List["Operator"]:
+    def pow(self, z: float) -> list["Operator"]:
         """A list of new operators equal to this one raised to the given power.
 
         Args:
@@ -1398,13 +1491,13 @@ class Operator(abc.ABC):
             return [copy.copy(self)]
         raise PowUndefinedError
 
-    def queue(self, context=QueuingManager):
+    def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
     @property
-    def _queue_category(self):
+    def _queue_category(self) -> Literal["_ops", "_measurements", None]:
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
 
         This property is a temporary solution that should not exist long-term and should not be
@@ -1419,7 +1512,7 @@ class Operator(abc.ABC):
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_adjoint(cls):
+    def has_adjoint(cls) -> bool:
         r"""Bool: Whether or not the Operator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.
@@ -1438,29 +1531,12 @@ class Operator(abc.ABC):
         """
         raise AdjointUndefinedError
 
-    def expand(self):
-        """Returns a tape that contains the decomposition of the operator.
-
-        Returns:
-            .QuantumTape: quantum tape
-        """
-        if not self.has_decomposition:
-            raise DecompositionUndefinedError
-
-        qscript = qml.tape.QuantumScript(self.decomposition())
-
-        if not self.data:
-            # original operation has no trainable parameters
-            qscript.trainable_params = {}
-
-        return qscript
-
     @property
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
         return 0
 
-    def map_wires(self, wire_map: dict):
+    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator":
         """Returns a copy of the current operator with its wires changed according to the given
         wire map.
 
@@ -1472,7 +1548,7 @@ class Operator(abc.ABC):
         """
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        if (p_rep := new_op.pauli_rep) is not None:
+        if (p_rep := self.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
@@ -1484,27 +1560,31 @@ class Operator(abc.ABC):
         """
         return self
 
-    def __add__(self, other):
+    def __add__(self, other: Union["Operator", TensorLike]) -> "Operator":
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return qml.sum(self, other)
+            return qml.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
             if qml.math.allequal(other, 0):
                 return self
-            return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+            return qml.sum(
+                self,
+                qml.s_prod(scalar=other, operator=qml.Identity(self.wires), lazy=False),
+                lazy=False,
+            )
         return NotImplemented
 
     __radd__ = __add__
 
-    def __mul__(self, other):
+    def __mul__(self, other: Union[Callable, TensorLike]) -> "Operator":
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
-            return qml.s_prod(scalar=other, operator=self)
+            return qml.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: TensorLike):
         """The division between an Operator and a number."""
         if isinstance(other, TensorLike):
             return self.__mul__(1 / other)
@@ -1512,33 +1592,33 @@ class Operator(abc.ABC):
 
     __rmul__ = __mul__
 
-    def __matmul__(self, other):
+    def __matmul__(self, other: "Operator") -> "Operator":
         """The product operation between Operator objects."""
-        return qml.prod(self, other) if isinstance(other, Operator) else NotImplemented
+        return qml.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
 
-    def __sub__(self, other):
+    def __sub__(self, other: Union["Operator", TensorLike]) -> "Operator":
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return self + qml.s_prod(-1, other)
+            return self + qml.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
             return self + (qml.math.multiply(-1, other))
         return NotImplemented
 
-    def __rsub__(self, other):
+    def __rsub__(self, other: Union["Operator", TensorLike]):
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
         return -self + other
 
     def __neg__(self):
         """The negation operation of an Operator object."""
-        return qml.s_prod(scalar=-1, operator=self)
+        return qml.s_prod(scalar=-1, operator=self, lazy=False)
 
-    def __pow__(self, other):
+    def __pow__(self, other: TensorLike):
         r"""The power operation of an Operator object."""
         if isinstance(other, TensorLike):
             return qml.pow(self, z=other)
         return NotImplemented
 
-    def _flatten(self):
+    def _flatten(self) -> FlatPytree:
         """Serialize the operation into trainable and non-trainable components.
 
         Returns:
@@ -1567,7 +1647,7 @@ class Operator(abc.ABC):
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
         ((U2(3.4, 4.5, wires=['a']),),
-        (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
+        (Wires(['b', 'c']), (True, True), Wires([])))
 
         """
         hashable_hyperparameters = tuple(
@@ -1576,7 +1656,7 @@ class Operator(abc.ABC):
         return self.data, (self.wires, hashable_hyperparameters)
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
         """Recreate an operation from its serialized format.
 
         Args:
@@ -1590,11 +1670,11 @@ class Operator(abc.ABC):
 
         >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten()
-        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        ((1.2, 2.3, 3.4), (Wires([0]), ()))
         >>> qml.Rot._unflatten(*op._flatten())
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> type(op)._unflatten(*op._flatten())
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
@@ -1616,7 +1696,7 @@ class Operation(Operator):
     transformations such as gradient transforms.
 
     The following three class attributes are optional, but in most cases
-    at least one should be clearly defined to avoid unexpected behavior during
+    at least one should be clearly defined to avoid unexpected behaviour during
     differentiation.
 
     * :attr:`~.Operation.grad_recipe`
@@ -1631,7 +1711,7 @@ class Operation(Operator):
     :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
     Args:
-        params (tuple[tensor_like]): trainable parameters
+        *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         id (str): custom label given to an operator instance,
@@ -1639,7 +1719,7 @@ class Operation(Operator):
     """
 
     @property
-    def grad_method(self):
+    def grad_method(self) -> Literal["A", "F", None]:
         """Gradient computation method.
 
         * ``'A'``: analytic differentiation using the parameter-shift method.
@@ -1676,7 +1756,7 @@ class Operation(Operator):
 
     # Attributes for compilation transforms
     @property
-    def basis(self):
+    def basis(self) -> Literal["X", "Y", "Z", None]:
         """str or None: The basis of an operation, or for controlled gates, of the
         target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
         or ``"Z"``.
@@ -1687,7 +1767,7 @@ class Operation(Operator):
         return None
 
     @property
-    def control_wires(self):  # pragma: no cover
+    def control_wires(self) -> Wires:  # pragma: no cover
         r"""Control wires of the operator.
 
         For operations that are not controlled,
@@ -1698,7 +1778,7 @@ class Operation(Operator):
         """
         return Wires([])
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> tuple[float, float, float]:
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
 
@@ -1710,7 +1790,7 @@ class Operation(Operator):
         raise NotImplementedError
 
     @property
-    def parameter_frequencies(self):
+    def parameter_frequencies(self) -> list[tuple[Union[float, int]]]:
         r"""Returns the frequencies for each operator parameter with respect
         to an expectation value of the form
         :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
@@ -1766,7 +1846,12 @@ class Operation(Operator):
             "and parameter frequencies can not be computed as no generator is defined."
         )
 
-    def __init__(self, *params, wires=None, id=None):
+    def __init__(
+        self,
+        *params: TensorLike,
+        wires: Optional[WiresLike] = None,
+        id: Optional[str] = None,
+    ):
         super().__init__(*params, wires=wires, id=id)
 
         # check the grad_recipe validity
@@ -1788,11 +1873,14 @@ class Channel(Operation, abc.ABC):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
 
     @staticmethod
     @abc.abstractmethod
-    def compute_kraus_matrices(*params, **hyperparams):  # pylint:disable=unused-argument
+    def compute_kraus_matrices(
+        *params, **hyperparams
+    ) -> list[np.ndarray]:  # pylint:disable=unused-argument
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 
@@ -1858,10 +1946,8 @@ class Observable(Operator):
             can be useful for some applications where the instance has to be identified
     """
 
-    _return_type = None
-
     @property
-    def _queue_category(self):
+    def _queue_category(self) -> Literal["_ops", "_measurements", None]:
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
 
         This property is a temporary solution that should not exist long-term and should not be
@@ -1872,77 +1958,24 @@ class Observable(Operator):
             * `"_measurements"`
             * None
 
-        Non-pauli observables, like Tensor, Hermitian, and Hamiltonian, should not be processed into any queue.
-        The Pauli observables double as Operations, and should therefore be processed into `_ops` if unowned.
+        Non-pauli observables like Hermitian should not be processed into any queue.
+        The Pauli observables double as Operations, and should therefore be processed
+        into `_ops` if unowned.
         """
         return "_ops" if isinstance(self, Operation) else None
 
     @property
-    def is_hermitian(self):
+    def is_hermitian(self) -> bool:
         """All observables must be hermitian"""
         return True
 
-    @property
-    def return_type(self):
-        """None or ObservableReturnTypes: Measurement type that this observable is called with."""
-        warnings.warn(
-            "`Observable.return_type` is deprecated. Instead, you should "
-            "inspect the type of the surrounding measurement process.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._return_type
+    def compare(
+        self,
+        other: Union["Observable", "qml.ops.LinearCombination"],
+    ) -> bool:
+        r"""Compares with another :class:`~Observable`, to determine if they are equivalent.
 
-    @return_type.setter
-    def return_type(self, value):
-        """Change the return type of an Observable. Note that this property is deprecated."""
-        warnings.warn(
-            "`Observable.return_type` is deprecated. Instead, you should "
-            "create a measurement process containing this Observable.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        self._return_type = value
-
-    def __matmul__(self, other):
-        if active_new_opmath():
-            return super().__matmul__(other=other)
-
-        if isinstance(other, (Tensor, qml.Hamiltonian)):
-            return other.__rmatmul__(self)
-
-        if isinstance(other, Observable):
-            return Tensor(self, other)
-
-        return super().__matmul__(other=other)
-
-    def _obs_data(self):
-        r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
-
-        This allows for comparison between observables that are equivalent, but are expressed
-        in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
-        `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
-
-        **Example**
-
-        >>> tensor = qml.PauliX(0) @ qml.PauliZ(1)
-        >>> print(tensor._obs_data())
-        {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
-        """
-        obs = Tensor(self).non_identity_obs
-        tensor = set()
-
-        for ob in obs:
-            parameters = tuple(param.tobytes() for param in ob.parameters)
-            if isinstance(ob, qml.GellMann):
-                parameters += (ob.hyperparameters["index"],)
-            tensor.add((ob.name, ob.wires, parameters))
-
-        return tensor
-
-    def compare(self, other):
-        r"""Compares with another :class:`~.Hamiltonian`, :class:`~Tensor`, or :class:`~Observable`,
-        to determine if they are equivalent.
-
-        Observables/Hamiltonians are equivalent if they represent the same operator
+        Observables are equivalent if they represent the same operator
         (their matrix representations are equal), and they are defined on the same wires.
 
         .. Warning::
@@ -1950,599 +1983,24 @@ class Observable(Operator):
             The compare method does **not** check if the matrix representation
             of a :class:`~.Hermitian` observable is equal to an equivalent
             observable expressed in terms of Pauli matrices.
-            To do so would require the matrix form of Hamiltonians and Tensors
-            be calculated, which would drastically increase runtime.
+            To do so would require the matrix form to be calculated, which would
+            drastically increase runtime.
 
         Returns:
             (bool): True if equivalent.
 
         **Examples**
 
-        >>> ob1 = qml.PauliX(0) @ qml.Identity(1)
-        >>> ob2 = qml.Hamiltonian([1], [qml.PauliX(0)])
+        >>> ob1 = qml.X(0) @ qml.Identity(1)
+        >>> ob2 = qml.Hamiltonian([1], [qml.X(0)])
         >>> ob1.compare(ob2)
         True
-        >>> ob1 = qml.PauliX(0)
+        >>> ob1 = qml.X(0)
         >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, qml.Hamiltonian):
-            return other.compare(self)
-        if isinstance(other, (Tensor, Observable)):
-            return other._obs_data() == self._obs_data()
-
-        raise ValueError(
-            "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
-        )
-
-    def __add__(self, other):
-        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if active_new_opmath():
-            return super().__add__(other=other)
-
-        if isinstance(other, qml.Hamiltonian):
-            return other + self
-        if isinstance(other, (Observable, Tensor)):
-            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-
-        return super().__add__(other=other)
-
-    __radd__ = __add__
-
-    def __mul__(self, a):
-        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
-        if active_new_opmath():
-            return super().__mul__(other=a)
-
-        if isinstance(a, (int, float)):
-            return qml.Hamiltonian([a], [self], simplify=True)
-
-        return super().__mul__(other=a)
-
-    __rmul__ = __mul__
-
-    def __sub__(self, other):
-        r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if active_new_opmath():
-            return super().__sub__(other=other)
-
-        if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
-            return self + (-1 * other)
-        return super().__sub__(other=other)
-
-
-class Tensor(Observable):
-    """Container class representing tensor products of observables.
-
-    To create a tensor, simply initiate it like so:
-
-    >>> T = Tensor(qml.PauliX(0), qml.Hermitian(A, [1, 2]))
-
-    You can also create a tensor from other Tensors:
-
-    >>> T = Tensor(T, qml.PauliZ(4))
-
-    The ``@`` symbol can be used as a tensor product operation:
-
-    >>> T = qml.PauliX(0) @ qml.Hadamard(2)
-
-    .. note:
-
-        This class is marked for deletion or overhaul.
-    """
-
-    # pylint: disable=abstract-method
-    tensor = True
-    has_matrix = True
-
-    def _flatten(self):
-        return tuple(self.obs), tuple()
-
-    @classmethod
-    def _unflatten(cls, data, _):
-        return cls(*data)
-
-    def __init__(self, *args):  # pylint: disable=super-init-not-called
-        wires = [op.wires for op in args]
-        if len(wires) != len(set(wires)):
-            warnings.warn(
-                "Tensor object acts on overlapping wires; in some PennyLane functions this will lead to undefined behaviour",
-                UserWarning,
-            )
-
-        self._eigvals_cache = None
-        self.obs: List[Observable] = []
-        self._args = args
-        self._batch_size = None
-        self._pauli_rep = None
-        self.queue(init=True)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        r"""How the operator is represented in diagrams and drawings.
-
-        Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
-            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
-                Must be same length as ``obs`` attribute.
-            cache=None (dict): dictionary that carries information between label calls
-                in the same drawing
-
-        Returns:
-            str: label to use in drawings
-
-        >>> T = qml.PauliX(0) @ qml.Hadamard(2)
-        >>> T.label()
-        'X@H'
-        >>> T.label(base_label=["X0", "H2"])
-        'X0@H2'
-
-        """
-        if base_label is not None:
-            if len(base_label) != len(self.obs):
-                raise ValueError(
-                    "Tensor label requires ``base_label`` keyword to be same length "
-                    "as tensor components."
-                )
-            return "@".join(
-                ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)
-            )
-
-        return "@".join(ob.label(decimals=decimals) for ob in self.obs)
-
-    def queue(self, context=QueuingManager, init=False):  # pylint: disable=arguments-differ
-        constituents = self._args if init else self.obs
-
-        for o in constituents:
-            if init:
-                if isinstance(o, Tensor):
-                    self.obs.extend(o.obs)
-                elif isinstance(o, Observable):
-                    self.obs.append(o)
-                else:
-                    raise ValueError("Can only perform tensor products between observables.")
-
-            context.remove(o)
-
-        context.append(self)
-        return self
-
-    def __copy__(self):
-        cls = self.__class__
-        copied_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
-        copied_op.obs = self.obs.copy()
-        copied_op._eigvals_cache = self._eigvals_cache
-        copied_op._batch_size = self._batch_size
-        return copied_op
-
-    def __repr__(self):
-        """Constructor-call-like representation."""
-        return " @ ".join([repr(o) for o in self.obs])
-
-    @property
-    def name(self):
-        """All constituent observable names making up the tensor product.
-
-        Returns:
-            list[str]: list containing all observable names
-        """
-        return [o.name for o in self.obs]
-
-    @property
-    def num_wires(self):
-        """Number of wires the tensor product acts on.
-
-        Returns:
-            int: number of wires
-        """
-        return len(self.wires)
-
-    @property
-    def wires(self):
-        """All wires in the system the tensor product acts on.
-
-        Returns:
-            Wires: wires addressed by the observables in the tensor product
-        """
-        return Wires.all_wires([o.wires for o in self.obs])
-
-    @property
-    def data(self):
-        """Raw parameters of all constituent observables in the tensor product.
-
-        Returns:
-            tuple[Any]: flattened list containing all dependent parameters
-        """
-        return tuple(d for op in self.obs for d in op.data)
-
-    @data.setter
-    def data(self, new_data):
-        """Setter used to set the parameters of all constituent observables in the tensor product.
-
-        The ``new_data`` argument should contain a list of elements, where each element corresponds
-        to a list containing the parameters of each observable (in order). If an observable doesn't
-        have any parameter, an empty list must be used.
-
-        **Example:**
-
-        >>> op = qml.PauliX(0) @ qml.Hermitian(np.eye(2), wires=1)
-        >>> op.data
-        [array([[1., 0.],
-        [0., 1.]])]
-        >>> op.data = [[], [np.eye(2) * 5]]
-        >>> op.data
-        [array([[5., 0.],
-        [0., 5.]])]
-        """
-        if isinstance(new_data, tuple):
-            start = 0
-            for op in self.obs:
-                op.data = new_data[start : start + len(op.data)]
-                start += len(op.data)
-        else:
-            for new_entry, op in zip(new_data, self.obs):
-                op.data = tuple(new_entry)
-
-    @property
-    def num_params(self):
-        """Raw parameters of all constituent observables in the tensor product.
-
-        Returns:
-            list[Any]: flattened list containing all dependent parameters
-        """
-        return len(self.data)
-
-    @property
-    def parameters(self):
-        """Evaluated parameter values of all constituent observables in the tensor product.
-
-        Returns:
-            list[list[Any]]: nested list containing the parameters per observable
-            in the tensor product
-        """
-        return [o.parameters for o in self.obs]
-
-    @property
-    def non_identity_obs(self):
-        """Returns the non-identity observables contained in the tensor product.
-
-        Returns:
-            list[:class:`~.Observable`]: list containing the non-identity observables
-            in the tensor product
-        """
-        return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
-
-    @property
-    def arithmetic_depth(self) -> int:
-        return 1 + max(o.arithmetic_depth for o in self.obs)
-
-    def __matmul__(self, other):
-        if isinstance(other, qml.Hamiltonian):
-            return other.__rmatmul__(self)
-
-        if isinstance(other, Tensor):
-            self.obs.extend(other.obs)
-
-        elif isinstance(other, Observable):
-            self.obs.append(other)
-
-        else:
-            return NotImplemented
-
-        wires = [op.wires for op in self.obs]
-        if len(wires) != len(set(wires)):
-            warnings.warn(
-                "Tensor object acts on overlapping wires; in some PennyLane functions this will lead to undefined behaviour",
-                UserWarning,
-            )
-
-        if QueuingManager.recording() and self not in QueuingManager.active_context():
-            QueuingManager.append(self)
-
-        QueuingManager.remove(other)
-
-        return self
-
-    def __rmatmul__(self, other):
-        if isinstance(other, Observable):
-            self.obs[:0] = [other]
-            QueuingManager.remove(other)
-            return self
-
-        return NotImplemented
-
-    __imatmul__ = __matmul__
-
-    def eigvals(self):
-        """Return the eigenvalues of the specified tensor product observable.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible.
-
-        Returns:
-            array[float]: array containing the eigenvalues of the tensor product
-            observable
-        """
-        if self._eigvals_cache is not None:
-            return self._eigvals_cache
-
-        standard_observables = {"PauliX", "PauliY", "PauliZ", "Hadamard"}
-
-        # observable should be Z^{\otimes n}
-        self._eigvals_cache = pauli_eigs(len(self.wires))
-
-        # check if there are any non-standard observables (such as Identity)
-        if set(self.name) - standard_observables:
-            # Tensor product of observables contains a mixture
-            # of standard and non-standard observables
-            self._eigvals_cache = np.array([1])
-            for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
-                if k:
-                    # Subgroup g contains only standard observables.
-                    self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))
-                else:
-                    # Subgroup g contains only non-standard observables.
-                    for ns_ob in g:
-                        # loop through all non-standard observables
-                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
-
-        return self._eigvals_cache
-
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_diagonalizing_gates(self):
-        r"""Bool: Whether or not the Tensor returns defined diagonalizing gates."""
-        return all(o.has_diagonalizing_gates for o in self.obs)
-
-    def diagonalizing_gates(self):
-        """Return the gate set that diagonalizes a circuit according to the
-        specified tensor observable.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            list: list containing the gates diagonalizing the tensor observable
-        """
-        diag_gates = []
-        for o in self.obs:
-            diag_gates.extend(o.diagonalizing_gates())
-
-        return diag_gates
-
-    def matrix(self, wire_order=None):
-        r"""Matrix representation of the Tensor operator
-        in the computational basis.
-
-        .. note::
-
-            The wire_order argument is added for compatibility, but currently not implemented.
-            The Tensor class is planned to be removed soon.
-
-        Args:
-            wire_order (Iterable): global wire order, must contain all wire labels in the operator's wires
-
-        Returns:
-            array: matrix representation
-
-        **Example**
-
-        >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
-        >>> O.matrix()
-        array([[ 1,  0,  0,  0],
-               [ 0, -1,  0,  0],
-               [ 0,  0, -1,  0],
-               [ 0,  0,  0,  1]])
-
-        To get the full :math:`2^3\times 2^3` Hermitian matrix
-        acting on the 3-qubit system, the identity on wire 1
-        must be explicitly included:
-
-        >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> O.matrix()
-        array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
-               [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
-               [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
-               [ 0., -0.,  0., -1.,  0., -0.,  0., -0.],
-               [ 0.,  0.,  0.,  0., -1., -0., -0., -0.],
-               [ 0., -0.,  0., -0., -0.,  1., -0.,  0.],
-               [ 0.,  0.,  0.,  0., -0., -0., -1., -0.],
-               [ 0., -0.,  0., -0., -0.,  0., -0.,  1.]])
-        """
-
-        if wire_order is not None:
-            raise NotImplementedError("The wire_order argument is currently not implemented.")
-
-        # Check for partially (but not fully) overlapping wires in the observables
-        partial_overlap = self.check_wires_partial_overlap()
-
-        # group the observables based on what wires they act on
-        U_list = []
-        for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
-            # extract the matrices of each diagonalizing gate
-            mats = [i.matrix() for i in g]
-
-            if len(mats) > 1:
-                # multiply all unitaries together before appending
-                mats = [multi_dot(mats)]
-
-            # append diagonalizing unitary for specific wire to U_list
-            U_list.append(mats[0])
-
-        mat_size = np.prod([np.shape(mat)[0] for mat in U_list])
-        wire_size = 2 ** len(self.wires)
-        if mat_size != wire_size:
-            if partial_overlap:
-                warnings.warn(
-                    "The matrix for Tensors of Tensors/Observables with partially "
-                    "overlapping wires might yield unexpected results. In particular "
-                    "the matrix size might be larger than intended."
-                )
-            else:
-                warnings.warn(
-                    f"The size of the returned matrix ({mat_size}) will not be compatible "
-                    f"with the subspace of the wires of the Tensor ({wire_size}). "
-                    "This likely is due to wires being used in multiple tensor product "
-                    "factors of the Tensor."
-                )
-
-        # Return the Hermitian matrix representing the observable
-        # over the defined wires.
-        return functools.reduce(np.kron, U_list)
-
-    def check_wires_partial_overlap(self):
-        r"""Tests whether any two observables in the Tensor have partially
-        overlapping wires and raise a warning if they do.
-
-        .. note::
-
-            Fully overlapping wires, i.e., observables with
-            same (sets of) wires are not reported, as the ``matrix`` method is
-            well-defined and implemented for this scenario.
-        """
-        for o1, o2 in itertools.combinations(self.obs, r=2):
-            shared = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
-            if shared and (shared != o1.wires or shared != o2.wires):
-                return 1
-        return 0
-
-    def sparse_matrix(
-        self, wire_order=None, wires=None, format="csr"
-    ):  # pylint:disable=arguments-renamed, arguments-differ
-        r"""Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
-
-        This is useful for larger qubit numbers, where the dense matrix becomes very large, while
-        consisting mostly of zero entries.
-
-        Args:
-            wire_order (Iterable): Wire labels that indicate the order of wires according to which the matrix
-                is constructed. If not provided, ``self.wires`` is used.
-            wires (Iterable): Same as ``wire_order`` to ensure compatibility with all the classes. Must only
-                provide one: either ``wire_order`` or ``wires``.
-            format: the output format for the sparse representation. All scipy sparse formats are accepted.
-
-        Raises:
-            ValueError: if both ``wire_order`` and ``wires`` are provided at the same time.
-
-        Returns:
-            :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
-
-        **Example**
-
-        Consider the following tensor:
-
-        >>> t = qml.PauliX(0) @ qml.PauliZ(1)
-
-        Without passing wires, the sparse representation is given by:
-
-        >>> print(t.sparse_matrix())
-        (0, 2)	1
-        (1, 3)	-1
-        (2, 0)	1
-        (3, 1)	-1
-
-        If we define a custom wire ordering, the matrix representation changes
-        accordingly:
-
-        >>> print(t.sparse_matrix(wire_order=[1, 0]))
-        (0, 1)	1
-        (1, 0)	1
-        (2, 3)	-1
-        (3, 2)	-1
-
-        We can also enforce implicit identities by passing wire labels that
-        are not present in the constituent operations:
-
-        >>> res = t.sparse_matrix(wire_order=[0, 1, 2])
-        >>> print(res.shape)
-        (8, 8)
-        """
-        if wires is not None and wire_order is not None:
-            raise ValueError(
-                "Wire order has been specified twice. Provide only one of either "
-                "``wire_order`` or ``wires``, but not both."
-            )
-
-        wires = wires or wire_order
-        wires = self.wires if wires is None else Wires(wires)
-        list_of_sparse_ops = [eye(2, format="coo")] * len(wires)
-
-        for o in self.obs:
-            if len(o.wires) > 1:
-                # todo: deal with multi-qubit operations that do not act on consecutive qubits
-                raise ValueError(
-                    f"Can only compute sparse representation for tensors whose operations "
-                    f"act on consecutive wires; got {o}."
-                )
-            # store the single-qubit ops according to the order of their wires
-            idx = wires.index(o.wires)
-            list_of_sparse_ops[idx] = coo_matrix(o.matrix())
-
-        return functools.reduce(lambda i, j: kron(i, j, format=format), list_of_sparse_ops)
-
-    def prune(self):
-        """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
-        the observables building up the :class:`~.Tensor`.
-
-        The ``return_type`` attribute is preserved while pruning.
-
-        If the tensor product only contains one observable, then this observable instance is
-        returned.
-
-        Note that, as a result, this method can return observables that are not a :class:`~.Tensor`
-        instance.
-
-        **Example:**
-
-        Pruning that returns a :class:`~.Tensor`:
-
-        >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> O.prune()
-        <pennylane.operation.Tensor at 0x7fc1642d1590
-        >>> [(o.name, o.wires) for o in O.prune().obs]
-        [('PauliZ', [0]), ('PauliZ', [2])]
-
-        Pruning that returns a single observable:
-
-        >>> O = qml.PauliZ(0) @ qml.Identity(1)
-        >>> O_pruned = O.prune()
-        >>> (O_pruned.name, O_pruned.wires)
-        ('PauliZ', [0])
-
-        Returns:
-            ~.Observable: the pruned tensor product of observables
-        """
-        if qml.QueuingManager.recording():
-            qml.QueuingManager.remove(self)
-
-        if len(self.non_identity_obs) == 0:
-            # Return a single Identity as the tensor only contains Identities
-            obs = qml.Identity(self.wires[0])
-        elif len(self.non_identity_obs) == 1:
-            obs = self.non_identity_obs[0]
-        else:
-            obs = Tensor(*self.non_identity_obs)
-
-        obs._return_type = self._return_type
-        return obs
-
-    def map_wires(self, wire_map: dict):
-        """Returns a copy of the current tensor with its wires changed according to the given
-        wire map.
-
-        Args:
-            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
-
-        Returns:
-            .Tensor: new tensor
-        """
-        cls = self.__class__
-        new_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
-        new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
-        new_op._eigvals_cache = self._eigvals_cache
-        new_op._batch_size = self._batch_size
-        return new_op
+        return qml.equal(self, other)
 
 
 # =============================================================================
@@ -2801,6 +2259,7 @@ class CVObservable(CV, Observable):
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """
+
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
 
@@ -2833,7 +2292,7 @@ class StatePrepBase(Operation):
 
     # pylint:disable=too-few-public-methods
     @abc.abstractmethod
-    def state_vector(self, wire_order=None):
+    def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """
         Returns the initial state vector for a circuit given a state preparation.
 
@@ -2845,11 +2304,16 @@ class StatePrepBase(Operation):
             array: A state vector for all wires in a circuit
         """
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return "|Ψ⟩"
 
 
-def operation_derivative(operation) -> np.ndarray:
+def operation_derivative(operation: Operation) -> TensorLike:
     r"""Calculate the derivative of an operation.
 
     For an operation :math:`e^{i \hat{H} \phi t}`, this function returns the matrix representation
@@ -2954,61 +2418,7 @@ def gen_is_multi_term_hamiltonian(obj):
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
-    return isinstance(o, qml.Hamiltonian) and len(o.coeffs) > 1
-
-
-def enable_new_opmath():
-    """
-    Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
-
-    **Example**
-
-    >>> qml.operation.active_new_opmath()
-    False
-    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
-    <class 'pennylane.operation.Tensor'>
-    >>> qml.operation.enable_new_opmath()
-    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
-    <class 'pennylane.ops.op_math.prod.Prod'>
-    """
-    global __use_new_opmath
-    __use_new_opmath = True
-
-
-def disable_new_opmath():
-    """
-    Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
-
-    **Example**
-
-    >>> qml.operation.active_new_opmath()
-    True
-    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
-    <class 'pennylane.ops.op_math.prod.Prod'>
-    >>> qml.operation.disable_new_opmath()
-    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
-    <class 'pennylane.operation.Tensor'>
-    """
-    global __use_new_opmath
-    __use_new_opmath = False
-
-
-def active_new_opmath():
-    """
-    Function that checks if the new arithmetic operator dunders are active
-
-    Returns:
-        bool: Returns ``True`` if the new arithmetic operator dunders are active
-
-    **Example**
-
-    >>> qml.operation.active_new_opmath()
-    False
-    >>> qml.operation.enable_new_opmath()
-    >>> qml.operation.active_new_opmath()
-    True
-    """
-    return __use_new_opmath
+    return isinstance(o, qml.ops.LinearCombination) and len(o.coeffs) > 1
 
 
 def __getattr__(name):

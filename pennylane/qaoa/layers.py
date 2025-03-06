@@ -15,7 +15,6 @@
 Methods that define cost and mixer layers for use in QAOA workflows.
 """
 import pennylane as qml
-from pennylane.operation import Tensor
 
 
 def _diagonal_terms(hamiltonian):
@@ -28,16 +27,16 @@ def _diagonal_terms(hamiltonian):
     Returns:
         bool: ``True`` if all terms are products of diagonal Pauli gates, ``False`` otherwise
     """
-    val = True
 
-    for i in hamiltonian.ops:
-        obs = i.obs if isinstance(i, Tensor) else [i]
+    for op in hamiltonian.terms()[1]:
+        if isinstance(op, qml.ops.Prod):
+            obs = op.operands
+        else:
+            obs = [op]
         for j in obs:
             if j.name not in ("PauliZ", "Identity"):
-                val = False
-                break
-
-    return val
+                return False
+    return True
 
 
 def cost_layer(gamma, hamiltonian):
@@ -66,7 +65,7 @@ def cost_layer(gamma, hamiltonian):
             from pennylane import qaoa
             import pennylane as qml
 
-            cost_h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+            cost_h = qml.Hamiltonian([1, 1], [qml.Z(0), qml.Z(0) @ qml.Z(1)])
 
         We can then pass it into ``qaoa.cost_layer``, within a quantum circuit:
 
@@ -82,27 +81,23 @@ def cost_layer(gamma, hamiltonian):
 
                 qaoa.cost_layer(gamma, cost_h)
 
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
+                return [qml.expval(qml.Z(i)) for i in range(2)]
 
         which gives us a circuit of the form:
 
         >>> print(qml.draw(circuit)(0.5))
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
-        >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
+        >>> print(qml.draw(circuit, level="device")(0.5))
         0: ──H──RZ(1.00)─╭RZZ(1.00)─┤  <Z>
         1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, qml.Hamiltonian):
-        raise ValueError(
-            f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
-        )
-
+    # NOTE: op is defined explicitely as validation inside ApproxTimeEvolution needs to be called before checking Hamiltonian
+    op = qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
-
-    qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
+    return op
 
 
 def mixer_layer(alpha, hamiltonian):
@@ -128,7 +123,7 @@ def mixer_layer(alpha, hamiltonian):
             from pennylane import qaoa
             import pennylane as qml
 
-            mixer_h = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)])
+            mixer_h = qml.Hamiltonian([1, 1], [qml.X(0), qml.X(0) @ qml.X(1)])
 
         We can then pass it into ``qaoa.mixer_layer``, within a quantum circuit:
 
@@ -144,21 +139,16 @@ def mixer_layer(alpha, hamiltonian):
 
                 qaoa.mixer_layer(alpha, mixer_h)
 
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
+                return [qml.expval(qml.Z(i)) for i in range(2)]
 
         which gives us a circuit of the form:
 
         >>> print(qml.draw(circuit)(0.5))
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
-        >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
+        >>> print(qml.draw(circuit, level="device")(0.5))
         0: ──H──RX(1.00)─╭RXX(1.00)─┤  <Z>
         1: ──H───────────╰RXX(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, qml.Hamiltonian):
-        raise ValueError(
-            f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
-        )
-
-    qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)
+    return qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)

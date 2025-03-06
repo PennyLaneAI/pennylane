@@ -16,28 +16,25 @@ Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragm
     Monte Carlo method, at its auxillary functions"""
 
 import inspect
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Optional, Union
 
+import numpy as np
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.measurements import SampleMP
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
 from .processing import qcut_processing_fn_mc, qcut_processing_fn_sample
-
 from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
 from .utils import (
-    find_and_place_cuts,
-    fragment_graph,
-    replace_wire_cut_nodes,
     MeasureNode,
     PrepareNode,
     _prep_iminus_state,
@@ -46,18 +43,21 @@ from .utils import (
     _prep_one_state,
     _prep_plus_state,
     _prep_zero_state,
+    find_and_place_cuts,
+    fragment_graph,
+    replace_wire_cut_nodes,
 )
 
 
 def _cut_circuit_mc_expand(
-    tape: QuantumTape,
+    tape: QuantumScript,
     classical_processing_fn: Optional[callable] = None,
     max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     auto_cutter: Union[bool, Callable] = False,
     **kwargs,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument, too-many-arguments
@@ -70,14 +70,14 @@ def _cut_circuit_mc_expand(
 
 @partial(transform, expand_transform=_cut_circuit_mc_expand)
 def cut_circuit_mc(
-    tape: QuantumTape,
+    tape: QuantumScript,
     classical_processing_fn: Optional[callable] = None,
     auto_cutter: Union[bool, Callable] = False,
     max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     **kwargs,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
     Monte Carlo method.
@@ -114,7 +114,7 @@ def cut_circuit_mc(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or Tuple[List[QuantumTape], function]:
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
         will sample from the partitioned circuit fragments and combine the results using a Monte Carlo method.
@@ -226,7 +226,7 @@ def cut_circuit_mc(
             ops = [
                 qml.Hadamard(wires=0),
                 qml.CNOT(wires=[0, 1]),
-                qml.PauliX(wires=1),
+                qml.X(1),
                 qml.WireCut(wires=1),
                 qml.CNOT(wires=[1, 2]),
             ]
@@ -253,7 +253,7 @@ def cut_circuit_mc(
             ops = [
                 qml.Hadamard(wires=0),
                 qml.CNOT(wires=[0, 1]),
-                qml.PauliX(wires=1),
+                qml.X(1),
                 qml.CNOT(wires=[1, 2]),
             ]
             measurements = [qml.sample(wires=[0, 1, 2])]
@@ -355,7 +355,7 @@ def cut_circuit_mc(
         :func:`~.qcut_processing_fn_sample`, which processes the results to approximate the original full circuit
         output bitstrings.
 
-        >>> results = qml.execute(tapes, dev, gradient_fn=None)
+        >>> results = qml.execute(tapes, dev, diff_method=None)
         >>> qml.qcut.qcut_processing_fn_sample(
         ...     results,
         ...     communication_graph,
@@ -463,8 +463,9 @@ def cut_circuit_mc(
         qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
     ]
 
+    seed = kwargs.get("seed", None)
     configurations, settings = expand_fragment_tapes_mc(
-        fragment_tapes, communication_graph, shots=shots
+        fragment_tapes, communication_graph, shots=shots, seed=seed
     )
 
     tapes = tuple(tape for c in configurations for tape in c)
@@ -565,19 +566,19 @@ MC_STATES = [
 
 
 def _identity(wire):
-    qml.sample(qml.Identity(wires=wire))
+    return qml.sample(qml.Identity(wires=wire))
 
 
 def _pauliX(wire):
-    qml.sample(qml.PauliX(wires=wire))
+    return qml.sample(qml.X(wire))
 
 
 def _pauliY(wire):
-    qml.sample(qml.PauliY(wires=wire))
+    return qml.sample(qml.Y(wire))
 
 
 def _pauliZ(wire):
-    qml.sample(qml.PauliZ(wires=wire))
+    return qml.sample(qml.Z(wire))
 
 
 MC_MEASUREMENTS = [
@@ -593,8 +594,8 @@ MC_MEASUREMENTS = [
 
 
 def expand_fragment_tapes_mc(
-    tapes: Sequence[QuantumTape], communication_graph: MultiDiGraph, shots: int
-) -> Tuple[List[QuantumTape], np.ndarray]:
+    tapes: QuantumScriptBatch, communication_graph: MultiDiGraph, shots: int, seed=None
+) -> tuple[QuantumScriptBatch, np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
     :class:`MeasureNode` and :class:`PrepareNode` operations.
@@ -617,9 +618,10 @@ def expand_fragment_tapes_mc(
         communication_graph (nx.MultiDiGraph): the communication (quotient) graph of the fragmented
             full graph
         shots (int): number of shots
+        seed (int, optional): seed for the random number generator. Defaults to None.
 
     Returns:
-        Tuple[List[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
+        Tuple[Sequence[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
         settings that track each configuration pair
 
     **Example**
@@ -683,7 +685,7 @@ def expand_fragment_tapes_mc(
 
     """
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
-    settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
+    settings = np.random.default_rng(seed).choice(range(8), size=(len(pairs), shots), replace=True)
 
     meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings)}
     prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings)}
@@ -692,22 +694,26 @@ def expand_fragment_tapes_mc(
     for tape in tapes:
         frag_config = []
         for shot in range(shots):
-            with AnnotatedQueue() as q:
-                for op in tape.operations:
-                    w = op.wires[0]
-                    if isinstance(op, PrepareNode):
-                        MC_STATES[prep_settings[op.id][shot]](w)
-                    elif not isinstance(op, MeasureNode):
-                        qml.apply(op)
+            expanded_circuit_operations = []
+            expanded_circuit_measurements = tape.measurements.copy()
+            for op in tape.operations:
+                w = op.wires[0]
+                if isinstance(op, PrepareNode):
+                    expanded_circuit_operations.extend(MC_STATES[prep_settings[op.id][shot]](w))
+                elif not isinstance(op, MeasureNode):
+                    expanded_circuit_operations.append(op)
+                else:
+                    expanded_circuit_measurements.append(
+                        MC_MEASUREMENTS[meas_settings[op.id][shot]](w)
+                    )
 
-                for meas in tape.measurements:
-                    qml.apply(meas)
-                for op in tape.operations:
-                    if isinstance(op, MeasureNode):
-                        meas_w = op.wires[0]
-                        MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
-
-            frag_config.append(QuantumScript.from_queue(q, shots=1))
+            frag_config.append(
+                QuantumScript(
+                    ops=expanded_circuit_operations,
+                    measurements=expanded_circuit_measurements,
+                    shots=1,
+                )
+            )
 
         all_configs.append(frag_config)
 

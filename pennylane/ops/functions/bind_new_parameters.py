@@ -16,17 +16,18 @@ This module contains the qml.bind_new_parameters function.
 """
 # pylint: disable=missing-docstring
 
-from typing import Sequence
 import copy
+from collections.abc import Sequence
 from functools import singledispatch
+from typing import Union
 
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.typing import TensorLike
-from pennylane.operation import Operator, Tensor
 
 from ..identity import Identity
+from ..op_math import Adjoint, CompositeOp, Pow, ScalarSymbolicOp, SProd, SymbolicOp
 from ..qubit import Projector
-from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint, Pow, SProd
 
 
 @singledispatch
@@ -78,6 +79,16 @@ def bind_new_parameters_commuting_evolution(
 
 
 @bind_new_parameters.register
+def bind_new_parameters_qdrift(op: qml.QDrift, params: Sequence[TensorLike]):
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["base"], params[:-1])
+    time = params[-1]
+    n = op.hyperparameters["n"]
+    seed = op.hyperparameters["seed"]
+
+    return qml.QDrift(new_hamiltonian, time, n=n, seed=seed)
+
+
+@bind_new_parameters.register
 def bind_new_parameters_fermionic_double_excitation(
     op: qml.FermionicDoubleExcitation, params: Sequence[TensorLike]
 ):
@@ -99,6 +110,30 @@ def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
 
 
 @bind_new_parameters.register
+def bind_new_parameters_linear_combination(
+    op: qml.ops.LinearCombination, params: Sequence[TensorLike]
+):
+    new_coeffs, new_ops = [], []
+    i = 0
+    for o in op.ops:
+        new_coeffs.append(params[i])
+        i += 1
+        if o.data:
+            sub_data = params[i : i + len(o.data)]
+            new_ops.append(bind_new_parameters(o, sub_data))
+            i += len(sub_data)
+        else:
+            new_ops.append(o)
+
+    new_H = qml.ops.LinearCombination(new_coeffs, new_ops)
+
+    if op.grouping_indices is not None:
+        new_H.grouping_indices = op.grouping_indices
+
+    return new_H
+
+
+@bind_new_parameters.register
 def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLike]):
     new_operands = []
 
@@ -109,6 +144,31 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
         new_operands.append(bind_new_parameters(operand, sub_params))
 
     return op.__class__(*new_operands)
+
+
+@bind_new_parameters.register(qml.CY)
+@bind_new_parameters.register(qml.CZ)
+@bind_new_parameters.register(qml.CH)
+@bind_new_parameters.register(qml.CCZ)
+@bind_new_parameters.register(qml.CSWAP)
+@bind_new_parameters.register(qml.CNOT)
+@bind_new_parameters.register(qml.Toffoli)
+@bind_new_parameters.register(qml.MultiControlledX)
+def bind_new_parameters_copy(op, params: Sequence[TensorLike]):  # pylint:disable=unused-argument
+    return copy.copy(op)
+
+
+@bind_new_parameters.register(qml.CRX)
+@bind_new_parameters.register(qml.CRY)
+@bind_new_parameters.register(qml.CRZ)
+@bind_new_parameters.register(qml.CRot)
+@bind_new_parameters.register(qml.ControlledPhaseShift)
+@bind_new_parameters.register(qml.ControlledQubitUnitary)
+def bind_new_parameters_parametric_controlled_ops(
+    op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot, qml.ControlledPhaseShift],
+    params: Sequence[TensorLike],
+):
+    return op.__class__(*params, wires=op.wires)
 
 
 @bind_new_parameters.register
@@ -175,20 +235,8 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
 
 
 @bind_new_parameters.register
-def bind_new_parameters_hamiltonian(op: qml.Hamiltonian, params: Sequence[TensorLike]):
-    new_H = qml.Hamiltonian(params, op.ops)
-    if op.grouping_indices is not None:
-        new_H.grouping_indices = op.grouping_indices
-    return new_H
+def bind_new_parameters_conditional(op: qml.ops.Conditional, params: Sequence[TensorLike]):
+    then_op = bind_new_parameters(op.base, params)
+    mv = copy.deepcopy(op.meas_val)
 
-
-@bind_new_parameters.register
-def bind_new_parameters_tensor(op: Tensor, params: Sequence[TensorLike]):
-    new_obs = []
-
-    for obs in op.obs:
-        sub_params = params[: obs.num_params]
-        params = params[obs.num_params :]
-        new_obs.append(bind_new_parameters(obs, sub_params))
-
-    return Tensor(*new_obs)
+    return qml.ops.Conditional(mv, then_op)

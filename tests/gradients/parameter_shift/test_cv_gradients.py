@@ -16,11 +16,12 @@ Unit tests for computing Autograd gradients of quantum functions.
 """
 # pylint: disable=no-value-for-parameter
 
-import pytest
 import autograd
 import numpy as np
-import pennylane.numpy as anp  # only to be used inside classical computational nodes
+import pytest
+
 import pennylane as qml
+import pennylane.numpy as anp  # only to be used inside classical computational nodes
 
 alpha = 0.5  # displacement in tests
 hbar = 2
@@ -267,7 +268,11 @@ class TestCVGradient:
 
         grad_F = jax.grad(qf)(*par)
 
-        @qml.qnode(device=gaussian_dev, diff_method="parameter-shift", force_order2=True)
+        @qml.qnode(
+            device=gaussian_dev,
+            diff_method="parameter-shift",
+            gradient_kwargs={"force_order2": True},
+        )
         def qf2(x, y):
             qml.Displacement(0.5, 0, wires=[0])
             qml.Squeezing(x, 0, wires=[0])

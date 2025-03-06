@@ -15,6 +15,9 @@
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
 # pylint: disable=too-few-public-methods,too-many-public-methods
+import functools
+import itertools
+
 import numpy as np
 import pytest
 
@@ -24,7 +27,6 @@ from pennylane import (
     RY,
     U3,
     Hadamard,
-    Hamiltonian,
     Hermitian,
     Identity,
     PauliX,
@@ -32,7 +34,6 @@ from pennylane import (
     PauliZ,
     is_commuting,
 )
-from pennylane.operation import Tensor
 from pennylane.pauli import (
     are_identical_pauli_words,
     are_pauli_words_qwc,
@@ -43,15 +44,13 @@ from pennylane.pauli import (
     is_qwc,
     observables_to_binary_matrix,
     partition_pauli_group,
+    pauli_eigs,
     pauli_group,
-    pauli_mult,
-    pauli_mult_with_phase,
     pauli_to_binary,
     pauli_word_to_matrix,
     pauli_word_to_string,
     qwc_complement_adj_matrix,
     qwc_rotation,
-    simplify,
     string_to_pauli_word,
 )
 
@@ -63,6 +62,26 @@ non_pauli_words = [
 ]
 
 
+def _make_pauli_word_strings():
+    return [
+        (PauliX(0), {0: 0}, "X"),
+        (Identity(0), {0: 0}, "I"),
+        (PauliZ(0) @ PauliY(1), {0: 0, 1: 1}, "ZY"),
+        (PauliX(1), {0: 0, 1: 1}, "IX"),
+        (PauliX(1), None, "X"),
+        (PauliX(1), {1: 0, 0: 1}, "XI"),
+        (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
+        (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
+        (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
+        (4.5 * PauliX(0), {0: 0}, "X"),
+        (qml.prod(PauliX(0), PauliY(1)), {0: 0, 1: 1}, "XY"),
+        (PauliX(0) @ PauliZ(0), {0: 0}, "Y"),
+        (3 * PauliZ(0) @ PauliY(3), {0: 0, 3: 1}, "ZY"),
+        (qml.s_prod(8, qml.PauliX(0) @ qml.PauliZ(1)), {0: 0, 1: 1}, "XZ"),
+        (qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)]), None, "XY"),
+    ]
+
+
 class TestGroupingUtils:
     """Basic usage and edge-case tests for the measurement optimization utility functions."""
 
@@ -71,6 +90,9 @@ class TestGroupingUtils:
         (PauliZ(0) @ PauliY(2), np.array([0, 1, 1, 1])),
         (PauliY(1) @ PauliX(2), np.array([1, 1, 1, 0])),
         (Identity(0), np.zeros(2)),
+        (qml.prod(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)), np.array([1, 0, 1, 0, 1, 1])),
+        (qml.s_prod(1.5, qml.PauliZ(0)), np.array([0, 1])),
+        (qml.sum(qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)), np.array([1, 0])),
     ]
 
     @pytest.mark.parametrize("op,vec", ops_to_vecs_explicit_wires)
@@ -85,6 +107,15 @@ class TestGroupingUtils:
         (PauliY(6) @ PauliZ("a") @ PauliZ("b"), np.array([0, 0, 0, 1, 1, 1, 0, 1])),
         (PauliX("b") @ PauliY("c"), np.array([0, 1, 1, 0, 0, 0, 1, 0])),
         (Identity("a") @ Identity(6), np.zeros(8)),
+        (
+            qml.prod(qml.PauliX("a"), qml.PauliZ("b"), qml.PauliY(6)),
+            np.array([1, 0, 0, 1, 0, 1, 0, 1]),
+        ),
+        (qml.s_prod(1.5, qml.PauliZ(6)), np.array([0, 0, 0, 0, 0, 0, 0, 1])),
+        (
+            qml.sum(qml.PauliX("b"), qml.PauliX("b"), qml.PauliX("b")),
+            np.array([0, 1, 0, 0, 0, 0, 0, 0]),
+        ),
     ]
 
     @pytest.mark.parametrize("op,vec", ops_to_vecs_abstract_wires)
@@ -227,6 +258,9 @@ class TestGroupingUtils:
             True,
         ),  # multi I
         ([qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(2), qml.PauliX(1) @ qml.PauliY(2)], False),
+        # The following are use cases for `expand_tape`, so should be tested, even though Hadamard is not a Pauli op
+        ([qml.Hadamard(0) @ qml.PauliX(1), qml.Identity(0)], True),
+        ([qml.Hadamard(0) @ qml.PauliX(1), qml.PauliZ(0)], False),
     ]
 
     @pytest.mark.parametrize("obs_lst, expected_qwc", obs_lsts)
@@ -235,6 +269,21 @@ class TestGroupingUtils:
         determines if they are pairwise qubit-wise commuting."""
         qwc = are_pauli_words_qwc(obs_lst)
         assert qwc == expected_qwc
+
+    @pytest.mark.parametrize(
+        "ops",
+        (
+            [qml.PauliX(0), qml.sum(qml.PauliX(2), qml.PauliZ(1))],
+            [qml.sum(qml.prod(qml.PauliX(0), qml.PauliY(1)), 2 * qml.PauliZ(0))],
+            [qml.sum(qml.PauliY(0), qml.PauliX(1), qml.PauliZ(2))],
+            [qml.prod(qml.sum(qml.PauliX(0), qml.PauliY(1)), 2 * qml.PauliZ(0)), qml.PauliZ(0)],
+        ),
+    )
+    def test_are_pauli_words_qwc_sum_false(self, ops):
+        """Test that using operators with pauli rep containing more than one term with
+        are_pauli_words_qwc always returns False."""
+
+        assert are_pauli_words_qwc(ops) is False
 
     def test_is_qwc_not_equal_lengths(self):
         """Tests ValueError is raised when input Pauli vectors are not of equal length."""
@@ -266,16 +315,20 @@ class TestGroupingUtils:
         (PauliZ(1) @ PauliX(2) @ PauliZ(4), True),
         (PauliX(1) @ Hadamard(4), False),
         (Hadamard(0), False),
-        (Hamiltonian([], []), False),
-        (Hamiltonian([0.5], [PauliZ(1) @ PauliX(2)]), True),
-        (Hamiltonian([0.5], [PauliZ(1) @ PauliX(1)]), True),
-        (Hamiltonian([1.0], [Hadamard(0)]), False),
-        (Hamiltonian([1.0, 0.5], [PauliX(0), PauliZ(1) @ PauliX(2)]), False),
+        (qml.Hamiltonian([], []), False),
+        (qml.Hamiltonian([0.5], [PauliZ(1) @ PauliX(2)]), True),
+        (qml.Hamiltonian([0.5], [PauliZ(1) @ PauliX(1)]), True),
+        (qml.Hamiltonian([1.0], [Hadamard(0)]), False),
+        (qml.Hamiltonian([1.0, 0.5], [PauliX(0), PauliZ(1) @ PauliX(2)]), False),
         (qml.prod(qml.PauliX(0), qml.PauliY(0)), True),
         (qml.prod(qml.PauliX(0), qml.PauliY(1)), True),
         (qml.prod(qml.PauliX(0), qml.Hadamard(1)), False),
         (qml.s_prod(5, qml.PauliX(0) @ qml.PauliZ(1)), True),
         (qml.s_prod(5, qml.Hadamard(0)), False),
+        (qml.sum(qml.PauliX(0), qml.PauliY(0)), False),
+        (qml.sum(qml.s_prod(0.5, qml.PauliX(1)), qml.PauliX(1)), True),
+        (qml.sum(qml.s_prod(0.5, qml.Hadamard(1)), qml.PauliX(1)), False),
+        (qml.sum(qml.Hadamard(0), qml.Hadamard(0)), False),
     )
 
     @pytest.mark.parametrize("ob, is_pw", obs_pw_status)
@@ -294,7 +347,7 @@ class TestGroupingUtils:
     def test_are_identical_pauli_words(self):
         """Tests for determining if two Pauli words have the same ``wires`` and ``name`` attributes."""
 
-        pauli_word_1 = Tensor(PauliX(0))
+        pauli_word_1 = qml.ops.Prod(PauliX(0))
         pauli_word_2 = PauliX(0)
 
         assert are_identical_pauli_words(pauli_word_1, pauli_word_2)
@@ -302,13 +355,20 @@ class TestGroupingUtils:
 
         pauli_word_1 = PauliX(0) @ PauliY(1)
         pauli_word_2 = PauliY(1) @ PauliX(0)
-        pauli_word_3 = Tensor(PauliX(0), PauliY(1))
+        pauli_word_3 = qml.ops.Prod(PauliX(0), PauliY(1))
         pauli_word_4 = PauliX(1) @ PauliZ(2)
+        pauli_word_5 = qml.s_prod(1.5, qml.PauliX(0))
+        pauli_word_6 = qml.sum(qml.s_prod(0.5, qml.PauliX(0)), qml.s_prod(1.0, qml.PauliX(0)))
+        pauli_word_7 = qml.s_prod(2.2, qml.prod(qml.PauliX(0), qml.PauliY(1)))
 
         assert are_identical_pauli_words(pauli_word_1, pauli_word_2)
         assert are_identical_pauli_words(pauli_word_1, pauli_word_3)
         assert not are_identical_pauli_words(pauli_word_1, pauli_word_4)
         assert not are_identical_pauli_words(pauli_word_3, pauli_word_4)
+        assert are_identical_pauli_words(pauli_word_5, pauli_word_6)
+        assert are_identical_pauli_words(pauli_word_7, pauli_word_1)
+        assert not are_identical_pauli_words(pauli_word_7, pauli_word_4)
+        assert not are_identical_pauli_words(pauli_word_6, pauli_word_4)
 
     def test_identities_always_pauli_words(self):
         """Tests that identity terms are always identical."""
@@ -370,26 +430,9 @@ class TestGroupingUtils:
         with pytest.raises(ValueError, match="Expected a binary array, instead got"):
             qwc_complement_adj_matrix(not_binary_observables)
 
-    @pytest.mark.parametrize(
-        "pauli_word,wire_map,expected_string",
-        [
-            (PauliX(0), {0: 0}, "X"),
-            (Identity(0), {0: 0}, "I"),
-            (PauliZ(0) @ PauliY(1), {0: 0, 1: 1}, "ZY"),
-            (PauliX(1), {0: 0, 1: 1}, "IX"),
-            (PauliX(1), None, "X"),
-            (PauliX(1), {1: 0, 0: 1}, "XI"),
-            (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
-            (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
-            (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
-            (4.5 * PauliX(0), {0: 0}, "X"),
-            (qml.prod(PauliX(0), PauliY(1)), {0: 0, 1: 1}, "XY"),
-            (PauliX(0) @ PauliZ(0), {0: 0}, "X"),  # second operator is ignored!!
-            (3 * PauliZ(0) @ PauliY(3), {0: 0, 3: 1}, "ZY"),
-            (qml.s_prod(8, qml.PauliX(0) @ qml.PauliZ(1)), {0: 0, 1: 1}, "XZ"),
-            (qml.Hamiltonian([4], [qml.PauliX(0) @ qml.PauliZ(1)]), {0: 0, 1: 1}, "XZ"),
-        ],
-    )
+    PAULI_WORD_STRINGS = _make_pauli_word_strings()
+
+    @pytest.mark.parametrize("pauli_word,wire_map,expected_string", PAULI_WORD_STRINGS)
     def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):
         """Test that Pauli words are correctly converted into strings."""
         obtained_string = pauli_word_to_string(pauli_word, wire_map)
@@ -416,7 +459,7 @@ class TestGroupingUtils:
     def test_string_to_pauli_word(self, pauli_string, wire_map, expected_pauli):
         """Test that valid strings are correctly converted into Pauli words."""
         obtained_pauli = string_to_pauli_word(pauli_string, wire_map)
-        assert obtained_pauli.compare(expected_pauli)
+        qml.assert_equal(obtained_pauli, expected_pauli)
 
     @pytest.mark.parametrize(
         "non_pauli_string,wire_map,error_type,error_message",
@@ -437,7 +480,11 @@ class TestGroupingUtils:
         "pauli_word,wire_map,expected_matrix",
         [
             (PauliX(0), {0: 0}, PauliX(0).matrix()),
-            (Identity(0), {0: 0}, np.eye(2)),
+            (
+                Identity(0),
+                {0: 0},
+                np.eye(2),
+            ),
             (
                 PauliZ(0) @ PauliY(1),
                 {0: 0, 1: 1},
@@ -507,6 +554,7 @@ class TestGroupingUtils:
     )
     def test_pauli_word_to_matrix(self, pauli_word, wire_map, expected_matrix):
         """Test that Pauli words are correctly converted into matrices."""
+
         obtained_matrix = pauli_word_to_matrix(pauli_word, wire_map)
         assert np.allclose(obtained_matrix, expected_matrix)
 
@@ -589,104 +637,90 @@ class TestPauliGroup:
         ]
 
         pg_2 = list(pauli_group(2, wire_map=wire_map))
-        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_2, pg_2))
+        for expected, obtained in zip(expected_pg_2, pg_2):
+            qml.assert_equal(obtained, expected)
 
     @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,wire_map,expected_product",
+        "pauli_word_1,pauli_word_2,expected_product",
         [
-            (PauliX(0), Identity(0), {0: 0}, PauliX(0)),
-            (PauliZ(0), PauliY(0), {0: 0}, PauliX(0)),
-            (PauliZ(0), PauliZ(0), {0: 0}, Identity(0)),
-            (Identity("a"), Identity("b"), None, Identity("a")),
-            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), None, Identity("b")),
+            (PauliX(0), Identity(0), PauliX(0)),
+            (PauliZ(0), PauliY(0), PauliX(0)),
+            (PauliZ(0), PauliZ(0), Identity(0)),
+            (Identity("a"), Identity("b"), Identity(["a", "b"])),
+            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), Identity(["b", "a"])),
             (
                 PauliZ("b") @ PauliY("a"),
                 PauliZ("b") @ PauliY("a"),
-                {"b": 0, "a": 1},
-                Identity("b"),
+                Identity(["b", "a"]),
             ),
             (
                 PauliZ(0) @ PauliY(1),
                 PauliX(0) @ PauliZ(1),
-                {0: 0, 1: 1},
                 PauliY(0) @ PauliX(1),
             ),
-            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {0: 0, 1: 1}, PauliX(0) @ PauliZ(1)),
+            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), PauliX(0) @ PauliZ(1)),
             (
                 PauliZ(0) @ PauliY(3) @ PauliZ(1),
                 PauliX(1) @ PauliX(2) @ PauliY(0),
-                None,
                 PauliX(0) @ PauliY(1) @ PauliX(2) @ PauliY(3),
             ),
             (
                 PauliX(0) @ PauliX(2),
                 PauliX(0) @ PauliZ(2),
-                None,
                 PauliY(2),
             ),
-            (PauliZ("a"), PauliX("b"), {"a": 0, "b": 1}, PauliZ("a") @ PauliX("b")),
+            (PauliZ("a"), PauliX("b"), PauliZ("a") @ PauliX("b")),
             (
                 PauliZ("a"),
                 PauliX("e"),
-                {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4},
                 PauliZ("a") @ PauliX("e"),
             ),
-            (PauliZ("a"), PauliY("e"), None, PauliZ("a") @ PauliY("e")),
+            (PauliZ("a"), PauliY("e"), PauliZ("a") @ PauliY("e")),
             (
                 PauliZ(0) @ PauliZ(2) @ PauliZ(4),
                 PauliZ(0) @ PauliY(1) @ PauliX(3),
-                None,
                 PauliZ(2) @ PauliY(1) @ PauliZ(4) @ PauliX(3),
             ),
             (
                 PauliZ(0) @ PauliZ(4) @ PauliZ(2),
                 PauliZ(0) @ PauliY(1) @ PauliX(3),
-                {0: 0, 2: 1, 4: 2, 1: 3, 3: 4},
                 PauliZ(2) @ PauliY(1) @ PauliZ(4) @ PauliX(3),
             ),
             (
                 PauliZ(0) @ PauliY(3) @ PauliZ(1),
                 PauliX(1) @ PauliX(2) @ PauliY(0),
-                None,
                 PauliX(0) @ PauliY(3) @ PauliY(1) @ PauliX(2),
             ),
         ],
     )
-    def test_pauli_mult(self, pauli_word_1, pauli_word_2, wire_map, expected_product):
+    def test_pauli_mult_using_prod(self, pauli_word_1, pauli_word_2, expected_product):
         """Test that Pauli words are multiplied together correctly."""
-        obtained_product = pauli_mult(pauli_word_1, pauli_word_2, wire_map=wire_map)
-        assert obtained_product.compare(expected_product)
+        obtained_product = qml.prod(pauli_word_1, pauli_word_2).simplify()
+        if isinstance(obtained_product, qml.ops.SProd):  # don't care about phase here
+            obtained_product = obtained_product.base
+        assert obtained_product == expected_product
 
     @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,wire_map,expected_phase",
+        "pauli_word_1,pauli_word_2,expected_phase",
         [
-            (PauliX(0), Identity(0), {0: 0}, 1),
-            (PauliZ(0), PauliY(0), {0: 0}, -1j),
-            (PauliZ(0), PauliZ(0), {0: 0}, 1),
-            (Identity("a"), Identity("b"), None, 1),
-            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), None, 1),
-            (PauliZ(0), PauliY("b"), None, 1),
-            (
-                PauliZ("a") @ PauliY("b"),
-                PauliX("a") @ PauliZ("b"),
-                {"a": 0, "b": 1},
-                -1,
-            ),
-            (PauliX(0) @ PauliX(2), PauliX(0) @ PauliZ(2), None, -1j),
-            (
-                PauliX(0) @ PauliY(1) @ PauliZ(2),
-                PauliY(0) @ PauliY(1),
-                {0: 0, 1: 1, 2: 2},
-                1j,
-            ),
-            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {0: 0, 1: 1}, -1),
-            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {1: 0, 0: 1}, -1),
-            (PauliZ(0) @ PauliY(3) @ PauliZ(1), PauliX(1) @ PauliX(2) @ PauliY(0), None, 1),
+            (PauliX(0), Identity(0), 1),
+            (PauliZ(0), PauliY(0), -1j),
+            (PauliZ(0), PauliZ(0), 1),
+            (Identity("a"), Identity("b"), 1),
+            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), 1),
+            (PauliZ(0), PauliY("b"), 1),
+            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), -1),
+            (PauliX(0) @ PauliX(2), PauliX(0) @ PauliZ(2), -1j),
+            (PauliX(0) @ PauliY(1) @ PauliZ(2), PauliY(0) @ PauliY(1), 1j),
+            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), -1),
+            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), -1),
+            (PauliZ(0) @ PauliY(3) @ PauliZ(1), PauliX(1) @ PauliX(2) @ PauliY(0), 1),
         ],
     )
-    def test_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, wire_map, expected_phase):
+    def test_pauli_mult_with_phase_using_prod(self, pauli_word_1, pauli_word_2, expected_phase):
         """Test that multiplication including phases works as expected."""
-        _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2, wire_map=wire_map)
+        prod = qml.prod(pauli_word_1, pauli_word_2).simplify()
+        obtained_phase = prod.scalar if isinstance(prod, qml.ops.SProd) else 1
         assert obtained_phase == expected_phase
 
 
@@ -898,17 +932,15 @@ class TestMeasurementTransformations:
             self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
             for i in range(len(qwc_rot))
         )
-        assert all(
-            are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
-            for i in range(len(diag_qwc_grouping))
-        )
+        for diag_op, expected in zip(diag_qwc_grouping, diag_qwc_grouping_sol):
+            qml.assert_equal(diag_op, expected)
 
     not_qwc_groupings = [
         [PauliX("a"), PauliY("a")],
         [PauliZ(0) @ Identity(1), PauliZ(0) @ PauliZ(1), PauliX(0) @ Identity(1)],
         [PauliX("a") @ PauliX(0), PauliZ(0) @ PauliZ("a")],
         [PauliZ("a") @ PauliY(1), PauliZ(1) @ PauliY("a")],
-        [Hamiltonian([1.0, 2.0], [PauliX("a"), PauliY("a")])],
+        [qml.prod(qml.PauliZ(0), qml.PauliX(1)), qml.prod(qml.PauliZ(1), qml.PauliX(0))],
     ]
 
     @pytest.mark.parametrize("not_qwc_grouping", not_qwc_groupings)
@@ -919,72 +951,8 @@ class TestMeasurementTransformations:
         assert pytest.raises(ValueError, diagonalize_qwc_pauli_words, not_qwc_grouping)
 
 
-class TestObservableHF:
-    @pytest.mark.parametrize(
-        ("p1", "p2", "p_ref"),
-        [
-            (
-                [(0, "X"), (1, "Y")],  # X_0 @ Y_1
-                [(0, "X"), (2, "Y")],  # X_0 @ Y_2
-                ([(0, "I"), (2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
-            ),
-        ],
-    )
-    def test_pauli_mult(self, p1, p2, p_ref):
-        r"""Test that _pauli_mult returns the correct operator."""
-        # pylint: disable=protected-access
-        result = qml.pauli.utils._pauli_mult(p1, p2)
-
-        assert result == p_ref
-
-    @pytest.mark.parametrize(
-        ("hamiltonian", "result"),
-        [
-            (
-                qml.Hamiltonian(
-                    np.array([0.5, 0.5]),
-                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
-                ),
-                qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
-            ),
-            (
-                qml.Hamiltonian(
-                    np.array([0.5, -0.5]),
-                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
-                ),
-                qml.Hamiltonian([], []),
-            ),
-            (
-                qml.Hamiltonian(
-                    np.array([0.0, -0.5]),
-                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-                ),
-                qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
-            ),
-            (
-                qml.Hamiltonian(
-                    np.array([0.25, 0.25, 0.25, -0.25]),
-                    [
-                        qml.PauliX(0) @ qml.PauliY(1),
-                        qml.PauliX(0) @ qml.PauliZ(1),
-                        qml.PauliX(0) @ qml.PauliY(1),
-                        qml.PauliX(0) @ qml.PauliY(1),
-                    ],
-                ),
-                qml.Hamiltonian(
-                    np.array([0.25, 0.25]),
-                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-                ),
-            ),
-        ],
-    )
-    def test_simplify(self, hamiltonian, result):
-        r"""Test that simplify returns the correct hamiltonian."""
-        h = simplify(hamiltonian)
-        assert h.compare(result)
-
-
 class TestTapering:
+
     terms_bin_mat_data = [
         (
             [
@@ -1051,16 +1019,48 @@ class TestTapering:
     ]
 
     @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
-    def test_binary_matrix(self, terms, num_qubits, result):
-        r"""Test that _binary_matrix returns the correct result."""
-        # pylint: disable=protected-access
-        binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
-        assert (binary_matrix == result).all()
-
-    @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix_from_pws(self, terms, num_qubits, result):
         r"""Test that _binary_matrix_from_pws returns the correct result."""
         # pylint: disable=protected-access
         pws_lst = [list(qml.pauli.pauli_sentence(t))[0] for t in terms]
         binary_matrix = qml.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
         assert (binary_matrix == result).all()
+
+
+class TestPauliEigs:
+    """Tests for the auxiliary function to return the eigenvalues for Paulis"""
+
+    paulix = np.array([[0, 1], [1, 0]])
+    pauliy = np.array([[0, -1j], [1j, 0]])
+    pauliz = np.array([[1, 0], [0, -1]])
+    hadamard = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
+
+    standard_observables = [paulix, pauliy, pauliz, hadamard]
+
+    matrix_pairs = [
+        np.kron(x, y)
+        for x, y in list(itertools.product(standard_observables, standard_observables))
+    ]
+
+    def test_correct_eigenvalues_paulis(self):
+        """Test the paulieigs function for one qubit"""
+        assert np.array_equal(pauli_eigs(1), np.diag(self.pauliz))
+
+    def test_correct_eigenvalues_pauli_kronecker_products_two_qubits(self):
+        """Test the paulieigs function for two qubits"""
+        assert np.array_equal(pauli_eigs(2), np.diag(np.kron(self.pauliz, self.pauliz)))
+
+    def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(self):
+        """Test the paulieigs function for three qubits"""
+        assert np.array_equal(
+            pauli_eigs(3),
+            np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz))),
+        )
+
+    @pytest.mark.parametrize("depth", list(range(1, 6)))
+    def test_cache_usage(self, depth):
+        """Test that the right number of cachings have been executed after clearing the cache"""
+        pauli_eigs.cache_clear()
+        pauli_eigs(depth)
+        # pylint: disable=protected-access
+        assert functools._CacheInfo(depth - 1, depth, 128, depth) == pauli_eigs.cache_info()

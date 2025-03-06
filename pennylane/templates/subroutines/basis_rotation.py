@@ -16,7 +16,6 @@ This module contains the template for performing basis transformation defined by
 """
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import AnyWires, Operation
 from pennylane.qchem.givens_decomposition import givens_decomposition
 
@@ -69,7 +68,7 @@ class BasisRotation(Operation):
         ...    for idx, eigenval in enumerate(eigen_vals):
         ...        qml.RZ(eigenval, wires=[idx])
         ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
-        >>> circ_unitary = qml.matrix(circuit)()
+        >>> circ_unitary = qml.matrix(circuit, wire_order=wires)()
         >>> np.round(circ_unitary/circ_unitary[0][0], 3)
         tensor([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
                 [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
@@ -99,34 +98,45 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    @classmethod
+    def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
+        # pylint: disable=arguments-differ
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, wires, unitary_matrix, check=check, id=id)  # pragma: no cover
+
+        return cls._primitive.bind(*wires, unitary_matrix, check=check, id=id)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(wires=metadata[0], unitary_matrix=data[0])
+
     def __init__(self, wires, unitary_matrix, check=False, id=None):
-        M, N = unitary_matrix.shape
+        M, N = qml.math.shape(unitary_matrix)
+
         if M != N:
-            raise ValueError(
-                f"The unitary matrix should be of shape NxN, got {unitary_matrix.shape}"
-            )
+            raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
 
         if check:
-            umat = qml.math.toarray(unitary_matrix)
-            if not np.allclose(umat @ umat.conj().T, np.eye(M, dtype=complex), atol=1e-6):
+            if not qml.math.is_abstract(unitary_matrix) and not qml.math.allclose(
+                unitary_matrix @ qml.math.conj(unitary_matrix).T,
+                qml.math.eye(M, dtype=complex),
+                atol=1e-4,
+            ):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
-        self._hyperparameters = {
-            "unitary_matrix": unitary_matrix,
-        }
-
-        super().__init__(wires=wires, id=id)
+        super().__init__(unitary_matrix, wires=wires, id=id)
 
     @property
     def num_params(self):
-        return 0
+        return 1
 
     @staticmethod
     def compute_decomposition(
-        wires, unitary_matrix, check=False
+        unitary_matrix, wires, check=False
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -143,35 +153,54 @@ class BasisRotation(Operation):
             list[.Operator]: decomposition of the operator
         """
 
-        M, N = unitary_matrix.shape
+        M, N = qml.math.shape(unitary_matrix)
         if M != N:
             raise ValueError(
                 f"The unitary matrix should be of shape NxN, got {unitary_matrix.shape}"
             )
 
         if check:
-            umat = qml.math.toarray(unitary_matrix)
-            if not np.allclose(umat @ umat.conj().T, np.eye(M, dtype=complex), atol=1e-4):
+            if not qml.math.is_abstract(unitary_matrix) and not qml.math.allclose(
+                unitary_matrix @ qml.math.conj(unitary_matrix).T,
+                qml.math.eye(M, dtype=complex),
+                atol=1e-4,
+            ):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
         op_list = []
+
         phase_list, givens_list = givens_decomposition(unitary_matrix)
 
         for idx, phase in enumerate(phase_list):
-            op_list.append(qml.PhaseShift(np.angle(phase), wires=wires[idx]))
+            op_list.append(qml.PhaseShift(qml.math.angle(phase), wires=wires[idx]))
 
         for grot_mat, indices in givens_list:
-            theta = np.arccos(np.real(grot_mat[1, 1]))
-            phi = np.angle(grot_mat[0, 0])
+            theta = qml.math.arccos(qml.math.real(grot_mat[1, 1]))
+            phi = qml.math.angle(grot_mat[0, 0])
 
             op_list.append(
                 qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
             )
 
-            if not np.isclose(phi, 0.0):
+            if qml.math.is_abstract(phi) or not qml.math.isclose(phi, 0.0):
                 op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
 
         return op_list
+
+
+# Program capture needs to unpack and re-pack the wires to support dynamic wires. For
+# BasisRotation, the unconventional argument ordering requires custom def_impl code.
+# See capture module for more information on primitives
+# If None, jax isn't installed so the class never got a primitive.
+if BasisRotation._primitive is not None:  # pylint: disable=protected-access
+
+    @BasisRotation._primitive.def_impl  # pylint: disable=protected-access
+    def _(*args, **kwargs):
+        # If there are more than two args, we are calling with unpacked wires, so that
+        # we have to repack them. This replaces the n_wires logic in the general case.
+        if len(args) != 2:
+            args = (args[:-1], args[-1])
+        return type.__call__(BasisRotation, *args, **kwargs)

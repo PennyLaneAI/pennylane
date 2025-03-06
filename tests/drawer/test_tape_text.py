@@ -22,28 +22,35 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.drawer import tape_text
 from pennylane.drawer.tape_text import (
-    _add_grouping_symbols,
     _add_cond_grouping_symbols,
-    _add_mid_measure_grouping_symbols,
+    _add_cwire_measurement,
+    _add_cwire_measurement_grouping_symbols,
+    _add_grouping_symbols,
     _add_measurement,
+    _add_mid_measure_grouping_symbols,
     _add_op,
     _Config,
 )
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_bit_map = {}
 
-default_mid_measure_1 = qml.measurements.MidMeasureMP(0, id="foo")
-default_mid_measure_2 = qml.measurements.MidMeasureMP(0, id="bar")
+default_mid_measure_1 = qml.measurements.MidMeasureMP(0, id="1")
+default_mid_measure_2 = qml.measurements.MidMeasureMP(0, id="2")
+default_mid_measure_3 = qml.measurements.MidMeasureMP(0, id="3")
 default_measurement_value_1 = qml.measurements.MeasurementValue(
     [default_mid_measure_1], lambda v: v
 )
 default_measurement_value_2 = qml.measurements.MeasurementValue(
     [default_mid_measure_2], lambda v: v
 )
+default_measurement_value_3 = qml.measurements.MeasurementValue(
+    [default_mid_measure_3], lambda v: v
+)
 cond_bit_map_1 = {default_mid_measure_1: 0}
 cond_bit_map_2 = {default_mid_measure_1: 0, default_mid_measure_2: 1}
+stats_bit_map_1 = {default_mid_measure_1: 0, default_mid_measure_2: 1, default_mid_measure_3: 2}
 
 
 def get_conditional_op(mv, true_fn, *args, **kwargs):
@@ -167,8 +174,64 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 wire_map=default_wire_map,
                 bit_map=bit_map,
                 cur_layer=cur_layer,
-                final_cond_layers=[0, 1],
+                cwire_layers=[[0], [1]],
             ),
+        )
+
+    @pytest.mark.parametrize(
+        "mps, bit_map, out",
+        [
+            ([default_mid_measure_1], stats_bit_map_1, [" "] * (4 + len(stats_bit_map_1))),
+            (
+                [default_mid_measure_1, default_mid_measure_3],
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭", "│", "╰"],
+            ),
+            (
+                [default_mid_measure_1, default_mid_measure_2, default_mid_measure_3],
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭", "├", "╰"],
+            ),
+        ],
+    )
+    def test_add_cwire_measurement_grouping_symbols(self, mps, bit_map, out):
+        """Test private _add_cwire_measurement_grouping_symbols renders as expected."""
+        layer_str = [" "] * (len(default_wire_map) + len(bit_map))
+
+        assert out == _add_cwire_measurement_grouping_symbols(
+            mps, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map)
+        )
+
+    @pytest.mark.parametrize(
+        "mp, bit_map, out",
+        [
+            (
+                qml.sample([default_measurement_value_1]),
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + [" Sample[MCM]", " ", " "],
+            ),
+            (
+                qml.expval(default_measurement_value_1 * default_measurement_value_3),
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭<MCM>", "│", "╰<MCM>"],
+            ),
+            (
+                qml.counts(
+                    default_measurement_value_1
+                    + default_measurement_value_2
+                    - default_measurement_value_3
+                ),
+                stats_bit_map_1,
+                [" "] * len(default_wire_map) + ["╭Counts[MCM]", "├Counts[MCM]", "╰Counts[MCM]"],
+            ),
+        ],
+    )
+    def test_add_cwire_measurement(self, mp, bit_map, out):
+        """Test private _add_cwire_measurement renders as expected."""
+        layer_str = [" "] * (len(default_wire_map) + len(bit_map))
+
+        assert out == _add_cwire_measurement(
+            mp, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map)
         )
 
     @pytest.mark.parametrize(
@@ -290,7 +353,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
             op,
             layer_str,
             _Config(
-                wire_map=default_wire_map, bit_map=bit_map, cur_layer=1, final_cond_layers=[0, 1]
+                wire_map=default_wire_map, bit_map=bit_map, cur_layer=1, cwire_layers=[[0], [1]]
             ),
         )
 
@@ -369,6 +432,14 @@ class TestLabeling:
         assert split_str[1][:6] == "    0:"
         assert split_str[2][:6] == "    a:"
         assert split_str[3][:6] == "1.234:"
+
+    def test_hiding_labels(self):
+        """Test that printing wire labels can be skipped with show_wire_labels=False."""
+
+        split_str = tape_text(tape, show_wire_labels=False).split("\n")
+        assert split_str[0].startswith("─")
+        assert split_str[1].startswith("─")
+        assert split_str[2].startswith("─")
 
 
 class TestDecimals:
@@ -471,7 +542,7 @@ class TestMaxLength:
 
 single_op_tests_data = [
     (
-        qml.MultiControlledX(wires=[0, 1, 2, 3], control_values="010"),
+        qml.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0]),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  ",
     ),
     (
@@ -513,7 +584,10 @@ single_op_tests_data = [
     (qml.probs(op=qml.PauliZ(0)), "0: ───┤  Probs[Z]"),
     (qml.sample(wires=0), "0: ───┤  Sample"),
     (qml.sample(op=qml.PauliX(0)), "0: ───┤  Sample[X]"),
-    (qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)), "0: ───┤ ╭<𝓗(0.10)>\n1: ───┤ ╰<𝓗(0.10)>"),
+    (
+        qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)),
+        "0: ───┤ ╭<(0.10*X)@Y>\n1: ───┤ ╰<(0.10*X)@Y>",
+    ),
     (
         qml.expval(
             0.1 * qml.PauliX(0) + 0.2 * qml.PauliY(1) + 0.3 * qml.PauliZ(0) + 0.4 * qml.PauliZ(1)
@@ -633,90 +707,3 @@ class TestShowMatrices:
         )
 
         assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
-
-
-# @pytest.mark.skip("Nested tapes are being deprecated")
-class TestNestedTapes:
-    """Test situations with nested tapes."""
-
-    def test_cache_keyword_tape_offset(self):
-        """Test that tape numbering is determined by the `tape_offset` keyword of the cache."""
-
-        with QuantumTape() as _tape:
-            with QuantumTape():
-                qml.PauliX(0)
-
-        expected = "0: ──Tape:3─┤  \n\nTape:3\n0: ──X─┤  "
-
-        assert tape_text(_tape, cache={"tape_offset": 3}) == expected
-
-    def test_multiple_nested_tapes(self):
-        """Test numbers consistent with multiple nested tapes and
-        multiple levels of nesting."""
-
-        with QuantumTape() as _tape:
-            qml.PauliX(0)
-            with QuantumTape():
-                qml.PauliY(0)
-                qml.PauliZ(0)
-                with QuantumTape():
-                    qml.PauliX(0)
-            with QuantumTape():
-                qml.PauliY(0)
-                with QuantumTape():
-                    qml.PauliZ(0)
-
-        expected = (
-            "0: ──X──Tape:0──Tape:1─┤  \n"
-            "\nTape:0\n"
-            "0: ──Y──Z──Tape:2─┤  \n"
-            "\nTape:2\n"
-            "0: ──X─┤  \n"
-            "\nTape:1\n"
-            "0: ──Y──Tape:3─┤  \n"
-            "\nTape:3\n"
-            "0: ──Z─┤  "
-        )
-
-        assert tape_text(_tape) == expected
-
-    def test_nested_tapes_decimals(self):
-        """Test decimals keyword passed to nested tapes."""
-
-        with QuantumTape() as _tape:
-            qml.RX(1.2345, wires=0)
-            with QuantumTape():
-                qml.Rot(1.2345, 2.3456, 3.456, wires=0)
-
-        expected = "0: ──RX(1.2)──Tape:0─┤  \n\nTape:0\n0: ──Rot(1.2,2.3,3.5)─┤  "
-
-        assert tape_text(_tape, decimals=1) == expected
-
-    def test_nested_tapes_wire_order(self):
-        """Test wire order preserved in nested tapes."""
-
-        with QuantumTape() as _tape:
-            qml.PauliX(0)
-            qml.PauliY(1)
-            with QuantumTape():
-                qml.PauliX(0)
-                qml.PauliY(1)
-
-        expected = "1: ──Y─╭Tape:0─┤  \n0: ──X─╰Tape:0─┤  \n\nTape:0\n1: ──Y─┤  \n0: ──X─┤  "
-
-        assert tape_text(_tape, wire_order=[1, 0]) == expected
-
-    def test_nested_tapes_max_length(self):
-        """Test max length passes to recursive tapes."""
-
-        with QuantumTape() as _tape:
-            qml.PauliX(0)
-            with QuantumTape():
-                for _ in range(10):
-                    qml.PauliX(0)
-
-        expected = "0: ──X──Tape:0─┤  \n\nTape:0\n0: ──X──X──X──X──X\n\n───X──X──X──X──X─┤  "
-
-        out = tape_text(_tape, max_length=20)
-        assert out == expected
-        assert max(len(s) for s in out.split("\n")) <= 20

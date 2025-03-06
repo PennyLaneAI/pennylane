@@ -33,7 +33,10 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
                 execution_config = dataclasses.replace(
                     execution_config, use_device_jacobian_product=True
                 )
-        return super().preprocess(execution_config)
+        program, config = super().preprocess(execution_config)
+        config = dataclasses.replace(config, convert_to_numpy=True)
+        program.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
+        return program, config
 
     def supports_derivatives(self, execution_config=None, circuit=None):
         if execution_config is None:
@@ -50,7 +53,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             self.tracker.update(derivative_batches=1, derivatives=len(circuits))
             self.tracker.record()
 
-        diff_batch, fn = qml.transforms.map_batch_transform(qml.gradients.param_shift, circuits)
+        diff_batch, fn = qml.gradients.param_shift(circuits)
         diff_results = self.execute(diff_batch)
 
         jacs = fn(diff_results)
@@ -71,7 +74,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             )
             self.tracker.record()
 
-        diff_batch, fn = qml.transforms.map_batch_transform(qml.gradients.param_shift, circuits)
+        diff_batch, fn = qml.gradients.param_shift(circuits)
         combined_batch = tuple(circuits) + tuple(diff_batch)
         all_results = self.execute(combined_batch)
         results = all_results[: len(circuits)]

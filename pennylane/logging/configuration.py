@@ -17,8 +17,11 @@ This module contains support methods for configuring the logging functionality.
 import logging
 import logging.config
 import os
+import platform
+import subprocess
 from importlib import import_module
 from importlib.util import find_spec
+from typing import Optional
 
 has_toml = False
 toml_libs = ["tomllib", "tomli", "tomlkit"]
@@ -53,10 +56,15 @@ def _add_trace_level():
     lc.trace = trace
 
 
-def _configure_logging(config_file):
+def _configure_logging(config_file: str, config_override: Optional[dict] = None):
     """
     This method allows custom logging configuration throughout PennyLane.
-    All configurations are read through the ``log_config.toml`` file.
+    All configurations are read through the ``log_config.toml`` file, with additional custom options provided through the ``config_override`` dictionary.
+
+    Args:
+        config_file (str): The path to a given log configuration file, parsed as TOML and adhering to the ``logging.config.dictConfig`` end-point.
+
+        config_override (Optional[dict]): A dictionary with keys-values that override the default configuration options in the given ``config_file`` TOML.
     """
     if not has_toml:
         raise ImportError(
@@ -68,21 +76,27 @@ def _configure_logging(config_file):
         )
     with open(os.path.join(_path, config_file), "rb") as f:
         pl_config = tomllib.load(f)
-        logging.config.dictConfig(pl_config)
+        if not config_override:
+            logging.config.dictConfig(pl_config)
+        else:
+            logging.config.dictConfig({**pl_config, **config_override})
 
 
-def enable_logging():
+def enable_logging(config_file: str = "log_config.toml"):
     """
     This method allows to selectively enable logging throughout PennyLane, following the configuration options defined in the ``log_config.toml`` file.
 
     Enabling logging through this method will override any externally defined logging configurations.
+
+    Args:
+        config_file (str): The path to a given log configuration file, parsed as TOML and adhering to the ``logging.config.dictConfig`` end-point. The default argument uses the PennyLane ecosystem log-file configuration, located at the directory returned from :func:`pennylane.logging.config_path`.
 
     **Example**
 
     >>> qml.logging.enable_logging()
     """
     _add_trace_level()
-    _configure_logging("log_config.toml")
+    _configure_logging(config_file)
 
 
 def config_path():
@@ -99,3 +113,43 @@ def config_path():
     """
     path = os.path.join(_path, "log_config.toml")
     return path
+
+
+def show_system_config():
+    """
+    This function opens the logging configuration file in the system-default browser.
+    """
+    # pylint:disable = import-outside-toplevel
+    import webbrowser
+
+    webbrowser.open(config_path())
+
+
+def edit_system_config(wait_on_close=False):
+    """
+    This function opens the log configuration file using OS-specific editors.
+
+    Setting the ``EDITOR`` environment variable will override ``xdg-open/open`` on
+    Linux and MacOS, and allows use of ``wait_on_close`` for editor close before
+    continuing execution.
+
+    .. warning::
+
+        As each OS configuration differs user-to-user, you may wish to
+        instead open this file manually with the ``config_path()`` provided path.
+    """
+    if editor := os.getenv("EDITOR"):
+        # pylint:disable = consider-using-with
+        with subprocess.Popen((editor, config_path())) as p:
+            if wait_on_close:  # Only valid when editor is known
+                p.wait()
+    # pylint:disable = superfluous-parens
+    elif (s := platform.system()) in ["Linux", "Darwin"]:
+        f_cmd = None
+        if s == "Linux":
+            f_cmd = "xdg-open"
+        else:
+            f_cmd = "open"
+        subprocess.Popen((f_cmd, config_path()))
+    else:  # Windows-only, does not exist on MacOS/Linux
+        os.startfile(config_path())  # pylint:disable = no-member

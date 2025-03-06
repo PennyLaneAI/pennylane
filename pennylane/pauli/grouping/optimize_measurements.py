@@ -16,11 +16,19 @@ The main function for measurement reduction, ``optimize_measurements`` returns t
 corresponding necessary circuit post-rotations for a given list of Pauli words.
 """
 
+from pennylane.operation import Observable
 from pennylane.pauli.utils import diagonalize_qwc_groupings
-from .group_observables import group_observables
+from pennylane.typing import Sequence
+
+from .group_observables import compute_partition_indices
 
 
-def optimize_measurements(observables, coefficients=None, grouping="qwc", colouring_method="rlf"):
+def optimize_measurements(
+    observables: Sequence[Observable],
+    coefficients: Sequence[float] = None,
+    grouping: str = "qwc",
+    colouring_method: str = "lf",
+) -> tuple:
     """Partitions then diagonalizes a list of Pauli words, facilitating simultaneous measurement of
     all observables within a partition.
 
@@ -33,13 +41,14 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
     fully-commuting measurement-partitioning approaches respectively.
 
     Args:
-        observables (list[Observable]): a list of Pauli words (Pauli operation instances and Tensor
+        observables (list[Observable]): a list of Pauli words (Pauli operation instances and tensors
             instances thereof)
         coefficients (list[float]): a list of float coefficients, for instance the weights of
             the Pauli words comprising a Hamiltonian
-        grouping (str): the binary symmetric relation to use for operator partitioning
+        grouping (str): the binary symmetric relation to use for operator partitioning,
+            passed to :func:`~.pennylane.pauli.compute_partition_indices`.
         colouring_method (str): the graph-colouring heuristic to use in obtaining the operator
-            partitions
+            partitions, passed to :func:`~pennylane.pauli.compute_partition_indices`.
 
     Returns:
         tuple:
@@ -56,26 +65,22 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
 
     **Example**
 
-    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> obs = [qml.Y(0), qml.X(0) @ qml.X(1), qml.Z(1)]
     >>> coeffs = [1.43, 4.21, 0.97]
     >>> rotations, groupings, grouped_coeffs = optimize_measurements(obs, coeffs, 'qwc', 'rlf')
     >>> print(rotations)
     [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
      [RX(1.5707963267948966, wires=[0])]]
     >>> print(groupings)
-    [[PauliZ(wires=[0]) @ PauliZ(wires=[1])], [PauliZ(wires=[0]), PauliZ(wires=[1])]]
+    [[Z(0) @ Z(1)], [Z(0), Z(1)]]
     >>> print(grouped_coeffs)
     [[4.21], [1.43, 0.97]]
     """
 
-    if coefficients is None:
-        grouped_obs = group_observables(
-            observables, grouping_type=grouping, method=colouring_method
-        )
-    else:
-        grouped_obs, grouped_coeffs = group_observables(
-            observables, coefficients, grouping_type=grouping, method=colouring_method
-        )
+    partition_indices = compute_partition_indices(
+        observables, grouping_type=grouping, method=colouring_method
+    )
+    grouped_obs = [[observables[idx] for idx in group] for group in partition_indices]
 
     if grouping.lower() == "qwc":
         (
@@ -87,7 +92,10 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
             f"Measurement reduction by '{grouping.lower()}' grouping not implemented."
         )
 
-    if coefficients is None:
-        return post_rotations, diagonalized_groupings
+    result = (post_rotations, diagonalized_groupings)
 
-    return post_rotations, diagonalized_groupings, grouped_coeffs
+    if coefficients:
+        grouped_coeffs = [[coefficients[idx] for idx in group] for group in partition_indices]
+        result += (grouped_coeffs,)
+
+    return result

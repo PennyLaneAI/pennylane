@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for qubit observables."""
-# pylint: disable=protected-access
+# pylint: disable=protected-access, use-implicit-booleaness-not-comparison, function-redefined
 import functools
 import pickle
-import pytest
-import numpy as np
 
-from gate_data import I, X, Y, Z, H
+import numpy as np
+import pytest
+from gate_data import H, I, X, Y, Z
+from scipy.sparse import csr_matrix
+
 import pennylane as qml
 from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
 
@@ -62,6 +64,14 @@ EIGVALS_TEST_DATA = [
 ]
 
 EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [Y, I, Z])]
+
+DECOMPOSITION_TEST_DATA_MULTI_WIRES = [
+    functools.reduce(np.kron, [X]),
+    functools.reduce(np.kron, [X, Y]),
+    functools.reduce(np.kron, [X, Y, Z]),
+    functools.reduce(np.kron, [X, I, H, Y]),
+    functools.reduce(np.kron, [X, H, Y, Z, X]),
+]
 
 # Testing Projector observable with the basis states.
 BASISSTATEPROJECTOR_EIGVALS_TEST_DATA = [
@@ -180,7 +190,7 @@ class TestSimpleObservables:
 # Prevents multiple threads from updating Hermitian._eigs at the same time
 @pytest.mark.xdist_group(name="hermitian_cache_group")
 @pytest.mark.usefixtures("tear_down_hermitian")
-class TestHermitian:
+class TestHermitian:  # pylint: disable=too-many-public-methods
     """Test the Hermitian observable"""
 
     def test_preserves_autograd_trainability(self):
@@ -203,12 +213,6 @@ class TestHermitian:
         # test matrix with incorrect dimensions
         with pytest.raises(ValueError, match="Expected input matrix to have shape"):
             qml.Hermitian(H1, wires=[0])
-
-        # test non-Hermitian matrix
-        H2 = ham.copy()
-        H2[0, 1] = 2
-        with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.Hermitian(H2, wires=0)
 
     def test_ragged_input_raises(self):
         """Tests that an error is raised if the input to Hermitian is ragged."""
@@ -303,6 +307,65 @@ class TestHermitian:
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
+    def test_hermitian_compute_decomposition_wire_exceptions(self):
+        """Tests user errors associated with input exceptions"""
+        single_wire_observable = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        double_wire_observable = qml.matrix(qml.X(0) @ qml.X(1))
+
+        # test empty wire list
+        with pytest.raises(ValueError, match="At least one wire"):
+            qml.Hermitian.compute_decomposition(single_wire_observable, wires=[])
+
+        # test wrong number of wires
+        with pytest.raises(ValueError, match="Expected input matrix to have shape"):
+            qml.Hermitian.compute_decomposition(double_wire_observable, wires=[0, 1, 2])
+
+        with pytest.raises(ValueError, match="Expected input matrix to have shape"):
+            qml.Hermitian.compute_decomposition(double_wire_observable, wires="aux")
+
+        # test int as wire type
+        A_decomp = qml.Hermitian.compute_decomposition(single_wire_observable, wires=0)
+        assert np.allclose(qml.matrix(A_decomp[0]), single_wire_observable, rtol=0)
+
+        # test str as wire type
+        A_decomp = qml.Hermitian.compute_decomposition(single_wire_observable, wires="aux")
+        assert np.allclose(qml.matrix(A_decomp[0]), single_wire_observable, rtol=0)
+
+    def test_hermitian_compute_decomposition_inefficiency_warning(self):
+        """Tests user inefficiency warning associated with large matrix decomposition"""
+        num_wires = 8
+        observable = qml.Identity(wires=list(range(num_wires)))
+
+        with pytest.warns(
+            UserWarning, match="Decomposition may be inefficient for this large of a matrix."
+        ):
+            qml.Hermitian.compute_decomposition(
+                qml.matrix(observable), wires=list(range(num_wires))
+            )
+
+    @pytest.mark.parametrize("test_num_wires", list(range(1, 11)))
+    def test_hermitian_compute_decomposition_performance(self, test_num_wires, benchmark):
+        """Tests the performance of the compute_decomposition method of the Hermitian class.
+        Used to determine the minimum matrix dimension to raise an inefficiency warning"""
+        observable = qml.Identity(0)
+        for i in range(test_num_wires):
+            observable = observable @ qml.X(i)
+        benchmark(
+            qml.Hermitian.compute_decomposition, qml.matrix(observable), list(range(test_num_wires))
+        )
+
+    @pytest.mark.parametrize("observable", DECOMPOSITION_TEST_DATA_MULTI_WIRES)
+    def test_hermitian_decomposition(self, observable):
+        """Tests that the compute_decomposition method of the Hermitian class returns the correct result."""
+        num_wires = int(np.log2(len(observable)))
+        A_decomp_static = qml.Hermitian.compute_decomposition(
+            observable, wires=list(range(num_wires))
+        )
+        A_decomp = qml.Hermitian(observable, wires=list(range(num_wires))).decomposition()
+
+        assert np.allclose(qml.matrix(A_decomp_static[0]), observable, rtol=0)
+        assert np.allclose(qml.matrix(A_decomp[0]), observable, rtol=0)
+
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol, mocker):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
@@ -378,7 +441,7 @@ class TestHermitian:
         assert len(qml.Hermitian._eigs) == 2
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
-    def test_hermitian_diagonalizing_gatesi_same_observable_twice(
+    def test_hermitian_diagonalizing_gates_same_observable_twice(
         self, observable, eigvals, eigvecs, tol
     ):
         """Tests that the diagonalizing_gates method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
@@ -434,12 +497,6 @@ class TestHermitian:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.Hermitian(ham[1:], wires=0).matrix()
 
-        # test non-Hermitian matrix
-        H2 = ham.copy()
-        H2[0, 1] = 2
-        with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.Hermitian(H2, wires=0).matrix()
-
     def test_hermitian_empty_wire_list_error(self):
         """Tests that the hermitian operator raises an error when instantiated with wires=[]."""
         herm_mat = np.array([]).reshape((0, 0))
@@ -456,6 +513,31 @@ class TestHermitian:
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
+    @pytest.mark.jax
+    def test_jit_execution(self):
+        """Test that the Hermitian observable executes correctly under a jitted function."""
+
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+        matrix = jax.numpy.array([[1, 0], [0, 1]])
+
+        # Here the matrix is captured and traced
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(matrix):
+            return qml.expval(qml.Hermitian(matrix, wires=[1]))
+
+        assert qml.math.allclose(circuit(matrix), 1.0)
+
+        # Here the matrix is captured as a constant
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            return qml.expval(qml.Hermitian(matrix, wires=[1]))
+
+        assert qml.math.allclose(circuit(), 1.0)
+
 
 class TestProjector:
     """Tests for the projector observable."""
@@ -468,9 +550,9 @@ class TestProjector:
         assert isinstance(basis_state_projector, BasisStateProjector)
 
         second_projector = qml.Projector(basis_state, wires)
-        assert qml.equal(second_projector, basis_state_projector)
+        qml.assert_equal(second_projector, basis_state_projector)
 
-        qml.ops.functions.assert_valid(basis_state_projector)
+        qml.ops.functions.assert_valid(basis_state_projector, skip_differentiation=True)
 
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when input is a state vector."""
@@ -480,7 +562,7 @@ class TestProjector:
         assert isinstance(state_vector_projector, StateVectorProjector)
 
         second_projector = qml.Projector(state_vector, wires)
-        assert qml.equal(second_projector, state_vector_projector)
+        qml.assert_equal(second_projector, state_vector_projector)
 
         qml.ops.functions.assert_valid(state_vector_projector)
 
@@ -503,13 +585,13 @@ class TestProjector:
         basis_state = np.array([0, 1])
         op = qml.Projector(basis_state, wires=(0, 1))
         pow_op = op.pow(n)[0]
-        assert qml.equal(op, pow_op)
+        qml.assert_equal(op, pow_op)
 
         # State vector projector
         state_vector = np.array([0, 1])
         op = qml.Projector(state_vector, wires=[0])
         pow_op = op.pow(n)[0]
-        assert qml.equal(op, pow_op)
+        qml.assert_equal(op, pow_op)
 
     def test_exception_bad_input(self):
         """Tests that we get an exception when the input shape is wrong."""
@@ -527,7 +609,7 @@ class TestProjector:
         serialization = pickle.dumps(proj)
         new_proj = pickle.loads(serialization)
         assert type(new_proj) is type(proj)
-        assert qml.equal(new_proj, proj)
+        qml.assert_equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
 
         # State vector projector
@@ -536,8 +618,115 @@ class TestProjector:
         new_proj = pickle.loads(serialization)
 
         assert type(new_proj) is type(proj)
-        assert qml.equal(new_proj, proj)
+        qml.assert_equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
+
+    def test_single_qubit_basis_state_0(self):
+        """Tests the function with a single-qubit basis state |0>."""
+        basis_state = [0]
+        data = [1]
+        row_indices = [0]
+        col_indices = [0]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(2, 2))
+
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_single_qubit_basis_state_1(self):
+        """Tests the function with a single-qubit basis state |1>."""
+        basis_state = [1]
+        data = [1]
+        row_indices = [1]
+        col_indices = [1]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(2, 2))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_two_qubit_basis_state_10(self):
+        """Tests the function with a two-qubits basis state |10>."""
+        basis_state = [1, 0]
+        data = [1]
+        row_indices = [2]
+        col_indices = [2]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_two_qubit_basis_state_01(self):
+        """Tests the function with a two-qubits basis state |01>."""
+        basis_state = [0, 1]
+        data = [1]
+        row_indices = [1]
+        col_indices = [1]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_two_qubit_basis_state_11(self):
+        """Tests the function with a two-qubits basis state |11>."""
+        basis_state = [1, 1]
+        data = [1]
+        row_indices = [3]
+        col_indices = [3]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_three_qubit_basis_state_101(self):
+        """Tests the function with a three-qubits basis state |101>."""
+        basis_state = [1, 0, 1]
+        data = [1]
+        row_indices = [5]
+        col_indices = [5]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(8, 8))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_invalid_basis_state(self):
+        """Tests the function with an invalid state."""
+        basis_state = [0, 2]  # Invalid basis state
+        with pytest.raises(ValueError):
+            BasisStateProjector.compute_sparse_matrix(basis_state)
+
+    @pytest.mark.jax
+    def test_jit_measurement(self):
+        """Test that the measurement of a projector can be jitted."""
+
+        import jax
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(state):
+            qml.X(1)
+            return qml.expval(qml.Projector(state, wires=(0, 1)))
+
+        state00 = jax.numpy.array([0, 0])
+        out00 = circuit(state00)
+        assert qml.math.allclose(out00, 0)
+        state01 = jax.numpy.array([0, 1])
+        out01 = circuit(state01)
+        assert qml.math.allclose(out01, 1)
+        state10 = jax.numpy.array([True, False])
+        out10 = circuit(state10)
+        assert qml.math.allclose(out10, 0)
+
+        with pytest.raises(ValueError, match=r"Basis state must consist of integers or booleans."):
+            circuit(jax.numpy.array([0.5, 0.6]))
+
+    @pytest.mark.jax
+    def test_jit_matrix(self):
+        """Test that computing the matrix of a projector is jittable."""
+
+        import jax
+
+        basis_state = jax.numpy.array([0, 1])
+        f = jax.jit(BasisStateProjector.compute_matrix)
+        out = f(basis_state)
+
+        expected = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        assert qml.math.allclose(out, expected)
 
 
 class TestBasisStateProjector:
@@ -637,6 +826,18 @@ class TestBasisStateProjector:
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
+    def test_integration_batched_state(self):
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Projector([0], wires=0))
+
+        x = np.array([0.4, 0.8, 1.2])
+        res = circuit(x)
+        assert qml.math.allclose(res, np.cos(x / 2) ** 2)
+
 
 class TestStateVectorProjector:
     """Tests for state vector projector observable."""
@@ -701,6 +902,24 @@ class TestStateVectorProjector:
         assert projector.label(cache=cache) == "P(M1)"  # Does not check repetition (not needed)
         assert len(cache["matrices"]) == 2
         assert np.allclose(cache["matrices"][1], projector.parameters[0])
+
+    @pytest.mark.jax
+    def test_jit_execution(self):
+        """Test that executing a StateVectorProjector can be jitted."""
+
+        import jax
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(state):
+            return qml.expval(qml.Projector(state, wires=(0, 1)))
+
+        basis_state = jax.numpy.array([1, 1, 1, 1.0]) / 2
+        out = circuit(basis_state)
+        assert qml.math.allclose(out, 0.25)
+
+        basis_state2 = jax.numpy.array([0, 0, 0, 0])
+        assert qml.math.allclose(circuit(basis_state2), 0)
 
 
 label_data = [

@@ -15,37 +15,39 @@
 This module contains functions for computing the parameter-shift gradient
 of a CV-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches,unused-argument
-from typing import Sequence, Callable
 import itertools
-from functools import partial
 import warnings
+from functools import partial
 
 import numpy as np
 
 import pennylane as qml
+from pennylane import transform
+from pennylane.gradients.gradient_transform import (
+    _contract_qjac_with_cjac,
+    _validate_gradient_methods,
+    choose_trainable_param_indices,
+)
 from pennylane.measurements import (
     ExpectationMP,
+    MeasurementProcess,
     ProbabilityMP,
     StateMP,
     VarianceMP,
-    MeasurementProcess,
 )
-from pennylane import transform
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.typing import PostprocessingFn
 
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
-from .gradient_transform import (
-    choose_grad_methods,
-    _grad_method_validation,
-    _no_trainable_grad,
-)
+from .gradient_transform import _no_trainable_grad
 from .parameter_shift import _get_operation_recipe, expval_param_shift
 
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches,unused-argument
 
-def _grad_method(tape, idx):
+
+def _grad_method_cv(tape, idx):
     """Determine the best CV parameter-shift gradient recipe for a given
     parameter index of a tape.
 
@@ -60,7 +62,7 @@ def _grad_method(tape, idx):
             or ``"0"`` (constant parameter).
     """
 
-    par_info = tape._par_info[idx]
+    par_info = tape.par_info[idx]
     op = par_info["op"]
 
     if op.grad_method in (None, "F"):
@@ -131,25 +133,19 @@ def _grad_method(tape, idx):
     return "A"
 
 
-def _gradient_analysis_cv(tape):
-    """Update the parameter information dictionary of the tape with
-    gradient information of each parameter."""
-    if getattr(tape, "_gradient_fn", None) is param_shift_cv:
-        # gradient analysis for param_shift_cv has already been performed on this tape
-        return
-
-    tape._gradient_fn = param_shift_cv
-
-    for idx, info in enumerate(tape._par_info):
-        info["grad_method"] = _grad_method(tape, idx)
+def _find_gradient_methods_cv(tape, trainable_param_indices):
+    """Find the best gradient methods for each parameter."""
+    return {
+        idx: _grad_method_cv(tape, tape.trainable_params[idx]) for idx in trainable_param_indices
+    }
 
 
-def _gradient_analysis_and_validation_cv(tape, method):
-    """Update the parameter information dictionary of the tape with
-    gradient information of each parameter. Subsequently validate the
-    gradient methods and return diff_methods."""
-    _gradient_analysis_cv(tape)
-    return _grad_method_validation(method, tape)
+def _gradient_analysis_and_validation_cv(tape, method, trainable_param_indices):
+    """Find the best gradient methods for each parameter. Subsequently, validate
+    the gradient methods and return diff_methods."""
+    diff_methods = _find_gradient_methods_cv(tape, trainable_param_indices)
+    _validate_gradient_methods(tape, method, diff_methods)
+    return diff_methods
 
 
 def _transform_observable(obs, Z, device_wires):
@@ -335,7 +331,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
     for idx, _ in enumerate(tape.trainable_params):
         t_idx = list(tape.trainable_params)[idx]
-        op = tape._par_info[t_idx]["op"]
+        op = tape.par_info[t_idx]["op"]
 
         if idx not in argnum:
             # parameter has zero gradient
@@ -369,8 +365,8 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         # evaluate transformed observables at the original parameter point
         # first build the Heisenberg picture transformation matrix Z
         Z0 = op.heisenberg_tr(dev_wires, inverse=True)
-        Z2 = shifted_tapes[0]._par_info[t_idx]["op"].heisenberg_tr(dev_wires)
-        Z1 = shifted_tapes[1]._par_info[t_idx]["op"].heisenberg_tr(dev_wires)
+        Z2 = shifted_tapes[0].par_info[t_idx]["op"].heisenberg_tr(dev_wires)
+        Z1 = shifted_tapes[1].par_info[t_idx]["op"].heisenberg_tr(dev_wires)
 
         # derivative of the operation
         Z = Z2 * coeffs[0] + Z1 * coeffs[1]
@@ -381,8 +377,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         B_inv = B.copy()
 
         succ = tape.graph.descendants_in_order((op,))
-        operation_descendents = itertools.filterfalse(qml.circuit_graph._is_observable, succ)
-        observable_descendents = filter(qml.circuit_graph._is_observable, succ)
+        operation_descendents = itertools.filterfalse(
+            lambda obj: isinstance(obj, MeasurementProcess), succ
+        )
+        observable_descendents = filter(lambda obj: isinstance(obj, MeasurementProcess), succ)
 
         for BB in operation_descendents:
             if not BB.supports_heisenberg:
@@ -395,7 +393,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
         Z = B @ Z @ B_inv  # conjugation
 
-        g_tape = tape.copy(copy_operations=True)
+        new_measurements = list(tape.measurements)
         constants = []
 
         # transform the descendant observables into their derivatives using Z
@@ -424,9 +422,14 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
                     constant = A[0]
 
             constants.append(constant)
+            new_measurements[obs_idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
 
-            g_tape._measurements[obs_idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
-        g_tape._update_par_info()
+        g_tape = qml.tape.QuantumScript(
+            tape.operations,
+            new_measurements,
+            shots=tape.shots,
+            trainable_params=tape.trainable_params,
+        )
 
         if not any(i is None for i in constants):
             # Check if *all* transformed observables corresponds to a constant
@@ -447,7 +450,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         start = 0
 
         if not results:
-            results = [np.squeeze(np.zeros([tape.output_dim]))]
+            results = [np.array(0.0)]
 
         interface = qml.math.get_interface(results[0])
         iterator = enumerate(zip(shapes, gradient_values, obs_indices))
@@ -493,7 +496,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
 
 def _expand_transform_param_shift_cv(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     dev,
     argnum=None,
     shifts=None,
@@ -501,7 +504,7 @@ def _expand_transform_param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift CV."""
     expanded_tape = expand_invalid_trainable(tape)
 
@@ -521,7 +524,7 @@ def _expand_transform_param_shift_cv(
     final_transform=True,
 )
 def param_shift_cv(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     dev,
     argnum=None,
     shifts=None,
@@ -529,13 +532,13 @@ def param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
-        dev (pennylane.Device): device the parameter-shift method is to be computed on
+        dev (pennylane.devices.LegacyDeviceFacade): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -558,7 +561,7 @@ def param_shift_cv(
             If ``None``, the default gradient recipe containing the two terms
             :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
             s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
-        fallback_fn (None or Callable): a fallback grdient function to use for
+        fallback_fn (None or Callable): a fallback gradient function to use for
             any parameters that do not support the parameter-shift rule.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
@@ -670,7 +673,7 @@ def param_shift_cv(
         function, which together define the gradient are directly returned:
 
         >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
-        >>> ops = [qml.Squeezing(r0, phi0, wires=0), qml.Squeezing(r1, phi2, wires=0)]
+        >>> ops = [qml.Squeezing(r0, phi0, wires=0), qml.Squeezing(r1, phi1, wires=0)]
         >>> tape = qml.tape.QuantumTape(ops, [qml.expval(qml.NumberOperator(0))])
         >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
         >>> gradient_tapes
@@ -687,7 +690,10 @@ def param_shift_cv(
 
         >>> dev = qml.device("default.gaussian", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
+        (-0.32487113372219933,
+         -0.4054074025310772,
+         -0.8704985300843778,
+         0.4054074025310775)
     """
     if len(tape.measurements) > 1:
         raise ValueError(
@@ -701,7 +707,9 @@ def param_shift_cv(
         )
 
     method = "analytic" if fallback_fn is None else "best"
-    diff_methods = _gradient_analysis_and_validation_cv(tape, method)
+
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    method_map = _gradient_analysis_and_validation_cv(tape, method, trainable_params_indices)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -717,10 +725,9 @@ def param_shift_cv(
         shapes.append(len(data[0]))
         fns.append(data[1])
 
-    if all(g == "0" for g in diff_methods):
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+    if all(g == "0" for g in method_map.values()):
+        return [], lambda _: np.zeros([1, len(tape.trainable_params)])
 
-    method_map = choose_grad_methods(diff_methods, argnum)
     var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
 
     unsupported_params = []

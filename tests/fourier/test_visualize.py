@@ -19,16 +19,7 @@ Unit tests for :mod:`fourier` visualization functions.
 import pytest
 
 from pennylane import numpy as np
-
-from pennylane.fourier.visualize import _validate_coefficients
-
-from pennylane.fourier.visualize import (
-    violin,
-    bar,
-    box,
-    panel,
-    radial_box,
-)
+from pennylane.fourier.visualize import _validate_coefficients, bar, box, panel, radial_box, violin
 
 matplotlib = pytest.importorskip("matplotlib")
 

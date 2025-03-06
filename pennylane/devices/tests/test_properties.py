@@ -14,10 +14,11 @@
 """Tests that a device has the right attributes, arguments and methods."""
 # pylint: disable=no-self-use
 import pytest
-import pennylane.numpy as pnp
-import pennylane as qml
-from pennylane._device import DeviceError
 
+import pennylane as qml
+import pennylane.numpy as pnp
+
+from .conftest import get_legacy_capabilities
 
 try:
     import tensorflow as tf
@@ -71,6 +72,17 @@ class TestDeviceProperties:
         device_kwargs["shots"] = 1234
 
         dev = qml.device(**device_kwargs)
+        if isinstance(dev, qml.devices.Device):
+            assert isinstance(dev.wires, qml.wires.Wires)
+            assert dev.wires == qml.wires.Wires((0, 1))
+
+            assert isinstance(dev.shots, qml.measurements.Shots)
+            assert dev.shots == qml.measurements.Shots(1234)
+
+            assert device_kwargs["name"] == dev.name
+            assert isinstance(dev.tracker, qml.Tracker)
+            return
+
         assert dev.num_wires == 2
         assert dev.shots == 1234
         assert dev.short_name == device_kwargs["name"]
@@ -78,7 +90,9 @@ class TestDeviceProperties:
     def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
-            qml.device(**device_kwargs)
+            dev = qml.device(**device_kwargs)
+            if isinstance(dev, qml.devices.Device):
+                pytest.skip("test is old interface specific.")
 
     def test_no_0_shots(self, device_kwargs):
         """Test that non-analytic devices cannot accept 0 shots."""
@@ -86,8 +100,10 @@ class TestDeviceProperties:
         device_kwargs["wires"] = 2
         device_kwargs["shots"] = 0
 
-        with pytest.raises(DeviceError, match="The specified number of shots needs to be"):
-            qml.device(**device_kwargs)
+        with pytest.raises(Exception):  # different types of error based on interface
+            dev = qml.device(**device_kwargs)
+            if isinstance(dev, qml.devices.Device):
+                pytest.skip("test is old interface specific.")
 
 
 class TestCapabilities:
@@ -97,14 +113,18 @@ class TestCapabilities:
         """Test that the device class has a capabilities() method returning a dictionary."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
+        if isinstance(dev, qml.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
         assert isinstance(cap, dict)
 
     def test_model_is_defined_valid_and_correct(self, device_kwargs):
         """Test that the capabilities dictionary defines a valid model."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
+        if isinstance(dev, qml.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
         assert "model" in cap
         assert cap["model"] in ["qubit", "cv"]
 
@@ -112,8 +132,8 @@ class TestCapabilities:
 
             @qml.qnode(dev)
             def circuit():
-                qml.PauliX(wires=0)
-                return qml.expval(qml.PauliZ(wires=0))
+                qml.X(0)
+                return qml.expval(qml.Z(0))
 
         else:
 
@@ -129,7 +149,9 @@ class TestCapabilities:
         """Test that the capabilities dictionary defines a valid passthru interface, if not None."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
+        if isinstance(dev, qml.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
 
         if "passthru_interface" not in cap:
             pytest.skip("No passthru_interface capability specified by device.")
@@ -178,7 +200,9 @@ class TestCapabilities:
         """Tests that the device reports correctly whether it supports tensor observables."""
         device_kwargs["wires"] = 2
         dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
+        if isinstance(dev, qml.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
 
         if "supports_tensor_observables" not in cap:
             pytest.skip("No supports_tensor_observables capability specified by device.")
@@ -187,7 +211,7 @@ class TestCapabilities:
         def circuit():
             """Model agnostic quantum function with tensor observable"""
             if cap["model"] == "qubit":
-                qml.PauliX(wires=0)
+                qml.X(0)
             else:
                 qml.QuadX(wires=0)
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
@@ -202,11 +226,13 @@ class TestCapabilities:
         """Tests that the device reports correctly whether it supports returning the state."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
+        if isinstance(dev, qml.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(wires=0)
+            qml.X(0)
             return qml.state()
 
         if not cap.get("returns_state"):
@@ -237,7 +263,9 @@ class TestCapabilities:
         """Tests that the device reports correctly whether it supports reversible differentiation."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
+        if isinstance(dev, qml.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
 
         if "returns_probs" not in cap:
             pytest.skip("No returns_probs capability specified by device.")
@@ -245,7 +273,7 @@ class TestCapabilities:
         @qml.qnode(dev)
         def circuit():
             if cap["model"] == "qubit":
-                qml.PauliX(wires=0)
+                qml.X(0)
             else:
                 qml.QuadX(wires=0)
             return qml.probs(wires=0)
@@ -262,7 +290,9 @@ class TestCapabilities:
 
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
+        if isinstance(dev, qml.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
 
         assert "supports_broadcasting" in cap
 

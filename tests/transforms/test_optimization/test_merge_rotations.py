@@ -16,13 +16,14 @@ Unit tests for the optimization transform ``merge_rotations``.
 """
 # pylint: disable=too-many-arguments
 
-import pytest
 
+import pytest
 from utils import compare_operation_lists
+
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.transforms.optimization import merge_rotations
+from pennylane.wires import Wires
 
 
 class TestMergeRotations:
@@ -53,6 +54,17 @@ class TestMergeRotations:
         for op_obtained, op_expected in zip(ops, expected_ops):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
+
+    def test_rot_gate_cancel(self):
+        """Test that two rotation gates get merged to the identity operator (cancel)."""
+
+        def qfunc():
+            qml.Rot(-1, 0, 1, wires=0)
+            qml.Rot(-1, 0, 1, wires=0)
+
+        transformed_qfunc = merge_rotations(qfunc)
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        assert not ops
 
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
@@ -261,6 +273,17 @@ class TestMergeRotations:
         assert ops[0].parameters[0] == 0.2
         assert ops[1].parameters[0] == 0.3
 
+    def test_merge_rotations_non_commuting_observables(self):
+        """Test that merge_rotations can be used with non-commuting observables."""
+
+        ops = (qml.RX(0.1, 0), qml.RX(0.3, 0))
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
+
+        tape = qml.tape.QuantumScript(ops, ms, shots=50)
+        [out], _ = qml.transforms.merge_rotations(tape)
+        expected = qml.tape.QuantumScript((qml.RX(0.4, 0),), ms, shots=50)
+        qml.assert_equal(out, expected)
+
 
 # Example QNode and device for interface testing
 dev = qml.device("default.qubit", wires=3)
@@ -317,7 +340,8 @@ class TestMergeRotationsInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
@@ -344,7 +368,8 @@ class TestMergeRotationsInterfaces:
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
@@ -376,7 +401,8 @@ class TestMergeRotationsInterfaces:
         assert qml.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -384,9 +410,6 @@ class TestMergeRotationsInterfaces:
         """Test QNode and gradient in JAX interface."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -402,7 +425,8 @@ class TestMergeRotationsInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -412,22 +436,15 @@ class TestMergeRotationsInterfaces:
 
         import jax
 
-        # Enable float64 support
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         @jax.jit
         @qml.qnode(qml.device("default.qubit", wires=["w1", "w2"]), interface="jax")
         @merge_rotations
         def qfunc():
-            qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=["w1"])
-            qml.Rot(
-                jax.numpy.array(-0.1), jax.numpy.array(-0.2), jax.numpy.array(-0.3), wires=["w1"]
-            )
+            qml.Rot(*jax.numpy.array([0.1, 0.2, 0.3]), wires=["w1"])
+            qml.Rot(*jax.numpy.array([-0.3, -0.2, -0.1]), wires=["w1"])
             qml.CRX(jax.numpy.array(0.2), wires=["w1", "w2"])
             qml.CRX(jax.numpy.array(-0.2), wires=["w1", "w2"])
-            return qml.expval(qml.PauliZ("w1"))
+            return qml.expval(qml.PauliZ("w2"))
 
         res = qfunc()
 
@@ -506,8 +523,8 @@ class TestTransformDispatch:
             merge_rotations(qfunc_circuit)(a)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
-        new_circuit([0.1, 0.2, 0.3, 0.4])
-        ops = new_circuit.tape.operations
+        tape = qml.workflow.construct_tape(new_circuit)([0.1, 0.2, 0.3, 0.4])
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_qnode(self):
@@ -518,3 +535,18 @@ class TestTransformDispatch:
         res = transformed_qnode([0.1, 0.2, 0.3, 0.4])
         exp_res = qnode_circuit([0.1, 0.2, 0.3, 0.4])
         assert np.allclose(res, exp_res)
+
+
+@pytest.mark.xfail
+def test_merge_rotations_non_commuting_observables():
+    """Test that merge_rotations works with non-commuting observables."""
+
+    @qml.transforms.merge_rotations
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.RX(-x, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
+
+    res = circuit(0.5)
+    assert qml.math.allclose(res[0], 1.0)
+    assert qml.math.allclose(res[1], 0.0)

@@ -14,9 +14,9 @@
 """Tests that a device has the right attributes, arguments and methods."""
 # pylint: disable=no-self-use,too-many-arguments,too-few-public-methods
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 
 # ===== Factories for circuits using arbitrary wire labels and numbers
 
@@ -32,7 +32,7 @@ def make_simple_circuit_expval(device, wires):
         qml.RY(2.0, wires=wires[1 % n_wires])
         if n_wires > 1:
             qml.CNOT(wires=[wires[0], wires[1]])
-        return [qml.expval(qml.PauliZ(wires=w)) for w in wires]
+        return [qml.expval(qml.Z(w)) for w in wires]
 
     return circuit
 

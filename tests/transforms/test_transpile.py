@@ -1,11 +1,13 @@
 """
 Unit tests for transpiler function.
 """
+
 from math import isclose
+
 import pytest
 
-from pennylane import numpy as np
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.transforms.transpile import transpile
 
 
@@ -43,6 +45,7 @@ def build_qfunc_pauli_z(wires):
     return qfunc
 
 
+# pylint: disable=too-many-public-methods
 class TestTranspile:
     """Unit tests for transpile function"""
 
@@ -60,7 +63,7 @@ class TestTranspile:
         with pytest.raises(ValueError, match=err_msg):
             transpiled_qnode(0.1, 0.2, 0.3)
 
-    def test_transpile_raise_not_implemented_hamiltonain_mmt(self):
+    def test_transpile_raise_not_implemented_hamiltonian_mmt(self):
         """test that error is raised when measurement is expectation of a Hamiltonian"""
         dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
         coeffs = [1]
@@ -81,8 +84,8 @@ class TestTranspile:
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
-    def test_transpile_raise_not_implemented_tensorproduct_mmt(self):
-        """test that error is raised when measurement is expectation of a Tensor product"""
+    def test_transpile_raise_not_implemented_prod_mmt(self):
+        """test that error is raised when measurement is expectation of a Prod"""
         dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
 
         def circuit():
@@ -98,6 +101,17 @@ class TestTranspile:
         )
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
+
+    def test_transpile_non_commuting_observables(self):
+        """Test that transpile will work with non-commuting observables."""
+
+        ops = (qml.CRX(0.1, wires=(0, 2)),)
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
+        tape = qml.tape.QuantumScript(ops, ms, shots=50)
+        [out], _ = qml.transforms.transpile(tape, coupling_map=((0, 1), (1, 2)))
+
+        expected = qml.tape.QuantumScript((qml.SWAP((1, 2)), qml.CRX(0.1, (0, 1))), ms, shots=50)
+        qml.assert_equal(out, expected)
 
     def test_transpile_qfunc_transpiled_mmt_obs(self):
         """test that transpile does not alter output for expectation value of an observable"""
@@ -208,10 +222,11 @@ class TestTranspile:
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(param)
 
-        original_ops = list(transpiled_qnode.qtape)
-        transpiled_ops = list(transpiled_qnode.qtape)
-        assert qml.equal(transpiled_ops[0], original_ops[0])
-        assert qml.equal(transpiled_ops[1], original_ops[1])
+        tape = qml.workflow.construct_tape(transpiled_qnode)(param)
+        original_ops = list(tape)
+        transpiled_ops = list(tape)
+        qml.assert_equal(transpiled_ops[0], original_ops[0])
+        qml.assert_equal(transpiled_ops[1], original_ops[1])
 
         # SWAP to ensure connectivity
         assert isinstance(transpiled_ops[2], qml.SWAP)
@@ -251,10 +266,11 @@ class TestTranspile:
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(param)
 
-        original_ops = list(transpiled_qnode.qtape)
-        transpiled_ops = list(transpiled_qnode.qtape)
-        assert qml.equal(transpiled_ops[0], original_ops[0])
-        assert qml.equal(transpiled_ops[1], original_ops[1])
+        tape = qml.workflow.construct_tape(transpiled_qnode)(param)
+        original_ops = list(tape)
+        transpiled_ops = list(tape)
+        qml.assert_equal(transpiled_ops[0], original_ops[0])
+        qml.assert_equal(transpiled_ops[1], original_ops[1])
 
         # SWAP to ensure connectivity
         assert isinstance(transpiled_ops[2], qml.SWAP)
@@ -270,6 +286,18 @@ class TestTranspile:
         assert qml.math.allclose(
             original_expectation, transpiled_expectation, atol=np.finfo(float).eps
         )
+
+    def test_transpile_mcm(self):
+        """Test that transpile can be used with mid circuit measurements."""
+
+        m0 = qml.measure(0)
+        ops = [qml.CNOT((0, 2)), *m0.measurements, qml.ops.Conditional(m0, qml.S(0))]
+        tape = qml.tape.QuantumScript(ops, [qml.probs()], shots=50)
+
+        [new_tape], _ = transpile(tape, [(0, 1), (1, 2)])
+        expected_ops = [qml.SWAP((1, 2)), qml.CNOT((0, 1))] + ops[1:]
+        assert new_tape.operations == expected_ops
+        assert new_tape.shots == tape.shots
 
     def test_transpile_ops_anywires_1_qubit_qnode(self):
         """test that transpile does not alter output for expectation value of an observable if the qfunc contains
@@ -329,7 +357,7 @@ class TestTranspile:
         assert batch[0][2] == qml.CNOT((0, 1))
         assert batch[0][3] == qml.state()
 
-        pre, post = dev.preprocess()[0]((tape,))
+        pre, post = dev.preprocess_transforms()((tape,))
         original_results = post(dev.execute(pre))
         transformed_results = fn(dev.execute(batch))
         assert qml.math.allclose(original_results, transformed_results)
@@ -355,7 +383,7 @@ class TestTranspile:
         assert batch[0][3] == qml.state()
         assert batch[0][4] == qml.expval(qml.PauliZ(1))
 
-        pre, post = dev.preprocess()[0]((tape,))
+        pre, post = dev.preprocess_transforms()((tape,))
         original_results = post(dev.execute(pre))
         transformed_results = fn(dev.execute(batch))
         assert qml.math.allclose(original_results[0][0], transformed_results[0])
@@ -387,7 +415,7 @@ class TestTranspile:
         assert batch[0].measurements[0] == qml.probs(wires=(0, 2, 1))
         assert batch[0].measurements[1] == qml.sample(wires=(0, 2, 1))
 
-        pre, post = dev.preprocess()[0]((tape,))
+        pre, post = dev.preprocess_transforms()((tape,))
         original_results = post(dev.execute(pre))[0]
         transformed_results = fn(dev.execute(batch))
         assert qml.math.allclose(original_results[0], transformed_results[0])

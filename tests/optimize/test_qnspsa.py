@@ -16,9 +16,10 @@ Unit tests for the ``QNSPSAOptimizer``
 """
 # pylint: disable=protected-access
 from copy import deepcopy
-import pytest
 
+import pytest
 from scipy.linalg import sqrtm
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -102,7 +103,7 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
     perturb2 = dir2 * finite_diff_step
 
     def get_state_overlap(params1, params2):
-        # analytically computed state overlap between two parameterized ansatzes
+        # analytically computed state overlap between two parametrized ansatzes
         # with input params1 and params2
         return (
             np.cos(params1[0][0] / 2) * np.cos(params2[0][0] / 2)
@@ -128,7 +129,6 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
     return metric_tensor_expected
 
 
-@pytest.mark.parametrize("seed", [1, 151, 1231])
 @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
 class TestQNSPSAOptimizer:
     def test_gradient_from_single_input(self, finite_diff_step, seed):
@@ -348,7 +348,10 @@ class TestQNSPSAOptimizer:
         )
 
     def test_step_and_cost_with_non_trainable_input(self, finite_diff_step, seed):
-        """Test step_and_cost() function with the qnode with non-trainable input."""
+        """
+        Test step_and_cost() function with the qnode with non-trainable input,
+        both using the `default.qubit` device.
+        """
         regularization = 1e-3
         stepsize = 1e-2
         opt = qml.QNSPSAOptimizer(
@@ -420,7 +423,7 @@ class TestQNSPSAOptimizer:
         assert np.allclose(new_params, params)
 
 
-def test_template_no_adjoint():
+def test_template_no_adjoint(seed):
     """Test that qnspsa iterates when the operations do not have a custom adjoint."""
 
     num_qubits = 2
@@ -428,10 +431,33 @@ def test_template_no_adjoint():
 
     @qml.qnode(dev)
     def cost(params):
-        qml.RandomLayers(weights=params, wires=range(num_qubits), seed=42)
+        qml.RandomLayers(weights=params, wires=range(num_qubits), seed=seed)
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
     params = np.random.normal(0, np.pi, (2, 4))
     opt = qml.QNSPSAOptimizer(stepsize=5e-2)
     assert opt.step_and_cost(cost, params)  # just checking it runs without error
     assert not qml.RandomLayers.has_adjoint
+
+
+def test_workflow_integration():
+    """Test that the optimizer can optimize a workflow."""
+
+    num_qubits = 2
+    dev = qml.device("default.qubit", wires=num_qubits)
+
+    @qml.qnode(dev)
+    def cost(params):
+        qml.RX(params[0], wires=0)
+        qml.CRY(params[1], wires=[0, 1])
+        return qml.expval(qml.Z(0) @ qml.Z(1))
+
+    params = qml.numpy.array([0.5, 0.5], requires_grad=True)
+    opt = qml.optimize.QNSPSAOptimizer(stepsize=5e-2)
+    for _ in range(101):
+        params, loss = opt.step_and_cost(cost, params)
+
+    assert qml.math.allclose(loss, -1, atol=1e-3)
+    # compare sine of params and target params as could converge to params + 2* np.pi
+    target_params = np.array([np.pi, 0])
+    assert qml.math.allclose(np.sin(params), np.sin(target_params), atol=1e-2)

@@ -11,14 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the qml.transforms.classical_jacobian function."""
+"""Tests for the qml.gradients.classical_jacobian function."""
+import numpy as np
+
 # pylint: disable=too-many-arguments
 import pytest
-import numpy as np
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.transforms.classical_jacobian import classical_jacobian
+from pennylane.gradients.classical_jacobian import classical_jacobian
 
 a = pnp.array(-2.1, requires_grad=True)
 b = pnp.array(0.71, requires_grad=True)
@@ -142,6 +143,18 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, inter
 
 
 interfaces = ["tf"]
+
+
+def test_error_undefined_interface():
+    """Test that an error is raised in the qnode interface is not differentiable."""
+
+    @qml.qnode(qml.device("default.qubit"), interface=None)
+    def circuit(_var):
+        qml.RX(_var, 0)
+        return qml.expval(qml.Z(0))
+
+    with pytest.raises(ValueError, match="Undifferentiable interface numpy"):
+        classical_jacobian(circuit)(np.array(0.5))
 
 
 @pytest.mark.tf

@@ -14,10 +14,18 @@
 """
 Tests for the FermionicSingleExcitation template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
+
+
+def test_standard_validity():
+    """Test standard validity criteria using assert_valid."""
+    weight = np.pi / 3
+    op = qml.FermionicSingleExcitation(weight, wires=[0, 1, 2])
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -90,7 +98,7 @@ class TestDecomposition:
         cnots = 4 * (len(single_wires) - 1)
         weight = np.pi / 3
         op = qml.FermionicSingleExcitation(weight, wires=single_wires)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert len(queue) == sqg + cnots
 
@@ -102,7 +110,7 @@ class TestDecomposition:
             assert isinstance(res_gate, exp_gate)
 
             exp_wires = gate[2]
-            res_wires = queue[idx]._wires
+            res_wires = queue[idx].wires
             assert res_wires.tolist() == exp_wires
 
             exp_weight = gate[3]
@@ -207,6 +215,24 @@ class TestInterfaces:
 
         # check that the gradient is computed without error
         grad_fn(weight)
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weight = jnp.array(0.5)
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(circuit_template, dev)
+        jit_circuit = jax.jit(circuit)
+        assert qml.math.allclose(circuit(weight), jit_circuit(weight))
+
+        grad_fn = jax.grad(circuit)
+        grad_jit = jax.grad(jit_circuit)
+        assert qml.math.allclose(grad_fn(weight), grad_jit(weight))
 
     @pytest.mark.tf
     def test_tf(self):

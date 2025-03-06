@@ -19,12 +19,38 @@ from utils import compare_operation_lists
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.transforms.optimization import undo_swaps
+from pennylane.wires import Wires
 
 
 class TestUndoSwaps:
     """Test that check the main functionalities of the `undo_swaps` transform"""
+
+    def test_transform_non_standard_operations(self):
+        """Test that the transform works on non-standard operations with nesting or hyperparameters."""
+
+        ops = [
+            qml.adjoint(qml.S(0)),
+            qml.PauliRot(1.2, "XY", wires=(0, 2)),
+            qml.ctrl(qml.PauliX(0), [2, 3], control_values=[0, 0]),
+            qml.SWAP((0, 1)),
+        ]
+
+        tape = qml.tape.QuantumScript(ops, [qml.state()], shots=100)
+        batch, fn = qml.transforms.undo_swaps(tape)
+
+        expected_ops = [
+            qml.adjoint(qml.S(1)),
+            qml.PauliRot(1.2, "XY", wires=(1, 2)),
+            qml.ctrl(qml.PauliX(1), [2, 3], control_values=[0, 0]),
+        ]
+        assert len(batch) == 1
+        assert batch[0].shots == tape.shots
+
+        assert fn(["a"]) == "a"
+
+        for op1, expected in zip(batch[0].operations, expected_ops):
+            assert op1 == expected
 
     def test_one_qubit_gates_transform(self):
         """Test that a single-qubit gate changes correctly with a SWAP."""
@@ -190,8 +216,8 @@ class TestUndoSwapsInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
     def test_undo_swaps_torch(self):
@@ -217,8 +243,8 @@ class TestUndoSwapsInterfaces:
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
     def test_undo_swaps_tf(self):
@@ -249,18 +275,14 @@ class TestUndoSwapsInterfaces:
         assert qml.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
     def test_undo_swaps_jax(self):
         """Test QNode and gradient in JAX interface."""
         import jax
         from jax import numpy as jnp
-
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -276,5 +298,6 @@ class TestUndoSwapsInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)

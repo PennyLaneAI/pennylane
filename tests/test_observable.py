@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 
+
 import pennylane as qml
 
 
@@ -29,5 +30,5 @@ def test_pass_positional_wires_to_observable():
     def circuit():
         return qml.expval(obs)
 
-    circuit()
-    assert obs in circuit.qtape.observables
+    tape = qml.workflow.construct_tape(circuit)()
+    assert obs in tape.observables

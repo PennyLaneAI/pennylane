@@ -96,6 +96,7 @@ def indices_up_to_dm(n_max):
     return zip(*[a + 1], zip(*[2 ** (b + 1), 2 ** (b + 1)]))
 
 
+# pylint: disable=too-many-public-methods
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
@@ -112,6 +113,20 @@ class TestKerasLayer:
         with monkeypatch.context() as m:
             m.setattr(qml.qnn.keras, "CORRECT_TF_VERSION", False)
             with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
+                KerasLayer(c, w, output_dim)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_bad_keras_version(
+        self, get_circuit, output_dim, monkeypatch
+    ):  # pylint: disable=no-self-use
+        """Test if an ImportError is raised when instantiated with an incorrect version of
+        Keras."""
+        c, w = get_circuit
+        with monkeypatch.context() as m:
+            m.setattr(qml.qnn.keras, "CORRECT_KERAS_VERSION", False)
+            with pytest.raises(
+                ImportError, match="KerasLayer requires a Keras version lower than 3"
+            ):
                 KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
@@ -488,7 +503,7 @@ class TestKerasLayer:
     def test_backprop_gradients(self, mocker):  # pylint: disable=no-self-use
         """Test if KerasLayer is compatible with the backprop diff method."""
 
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def f(inputs, weights):
@@ -523,17 +538,61 @@ class TestKerasLayer:
         output_shape = layer.compute_output_shape(inputs_shape)
         assert output_shape.as_list() == [None, 1]
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
+    def test_construct(self, get_circuit, n_qubits, output_dim):
+        """Test that the construct method builds the correct tape with correct differentiability"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+
+        x = tf.ones((1, n_qubits))
+
+        tape = qml.workflow.construct_tape(layer)(x)
+
+        assert tape is not None
+        assert (
+            len(tape.get_parameters(trainable_only=False))
+            == len(tape.get_parameters(trainable_only=True)) + 1
+        )
+
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
-@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-@pytest.mark.usefixtures("get_circuit")
-def test_interface_conversion(get_circuit, output_dim):
-    """Test if input QNodes with all types of interface are converted internally to the TensorFlow
-    interface"""
-    c, w = get_circuit
-    layer = KerasLayer(c, w, output_dim)
-    assert layer.qnode.interface == "tf"
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+def test_invalid_interface_error(interface):
+    """Test an error gets raised if input QNode has the wrong interface"""
+    dev = qml.device("default.qubit", wires=3)
+    weight_shapes = {"w1": 1}
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    with pytest.raises(ValueError, match="Invalid interface"):
+        _ = KerasLayer(circuit, weight_shapes, output_dim=2)
+
+
+@pytest.mark.tf
+@pytest.mark.parametrize(
+    "interface", ("auto", "tf", "tensorflow", "tensorflow-autograph", "tf-autograph")
+)
+def test_qnode_interface_not_mutated(interface):
+    """Test that the input QNode's interface is not mutated by KerasLayer"""
+    dev = qml.device("default.qubit", wires=3)
+    weight_shapes = {"w1": 1}
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    qlayer = KerasLayer(circuit, weight_shapes, output_dim=2)
+    assert (
+        qlayer.qnode.interface
+        == circuit.interface
+        == qml.math.get_canonical_interface_name(interface).value
+    )
 
 
 @pytest.mark.tf
@@ -758,9 +817,9 @@ def test_no_attribute():
 @pytest.mark.tf
 def test_batch_input_single_measure(tol):
     """Test input batching in keras"""
-    dev = qml.device("default.qubit.tf", wires=4)
+    dev = qml.device("default.qubit")
 
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
     def circuit(x, weights):
         qml.AngleEmbedding(x, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
@@ -775,7 +834,6 @@ def test_batch_input_single_measure(tol):
     res = layer(x)
 
     assert res.shape == (10, 2)
-    assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
         assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
@@ -787,9 +845,9 @@ def test_batch_input_single_measure(tol):
 @pytest.mark.tf
 def test_batch_input_multi_measure(tol):
     """Test input batching in keras for multiple measurements"""
-    dev = qml.device("default.qubit.tf", wires=4)
+    dev = qml.device("default.qubit")
 
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
     def circuit(x, weights):
         qml.AngleEmbedding(x, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
@@ -804,7 +862,6 @@ def test_batch_input_multi_measure(tol):
     res = layer(x)
 
     assert res.shape == (10, 5)
-    assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
         exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
@@ -893,7 +950,7 @@ def test_specs():
     dev = qml.device("default.qubit", wires=3)
     weight_shapes = {"w1": 1, "w2": (3, 2, 3)}
 
-    @qml.qnode(dev, interface="tensorflow")
+    @qml.qnode(dev, interface="tf")
     def circuit(inputs, w1, w2):
         qml.templates.AngleEmbedding(inputs, wires=[0, 1])
         qml.RX(w1, wires=0)
@@ -916,7 +973,47 @@ def test_specs():
 
     assert info["num_observables"] == 2
     assert info["num_diagonalizing_gates"] == 0
-    assert info["num_device_wires"] == 2
+    assert info["num_device_wires"] == 3
+    assert info["num_tape_wires"] == 2
     assert info["num_trainable_params"] == 2
     assert info["interface"] == "tf"
     assert info["device_name"] == "default.qubit"
+
+
+@pytest.mark.slow
+@pytest.mark.tf
+def test_save_and_load_preserves_weights(tmpdir):
+    """
+    Test that saving and loading a model doesn't lose the weights. This particular
+    test is important aside from `test_save_whole_model` because a bug caused issues
+    when the name of (at least one of) your weights is 'weights'.
+    """
+
+    dev = qml.device("default.qubit")
+    n_qubits = 2
+
+    @qml.qnode(dev)
+    def circuit(inputs, weights):
+        qml.AngleEmbedding(inputs, wires=range(n_qubits))
+        qml.RX(weights[0], 0)
+        qml.RX(weights[1], 1)
+        return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+    weight_shapes = {"weights": (n_qubits,)}
+    quantum_layer = qml.qnn.KerasLayer(circuit, weight_shapes, output_dim=2)
+
+    model0 = tf.keras.models.Sequential()
+    model0.add(quantum_layer)
+    model0.add(tf.keras.layers.Dense(2, activation=tf.nn.softmax, input_shape=(2,)))
+
+    model0.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
+
+    num_points = 5
+    dummy_input_data = np.random.uniform(0, np.pi, size=(num_points, 2))
+    dummy_output_data = np.random.randint(2, size=(num_points, 2))
+
+    model0.fit(dummy_input_data, dummy_output_data, epochs=1, batch_size=0)
+    file = str(tmpdir) + "/model"
+    model0.save(file)
+    loaded_model = tf.keras.models.load_model(file)
+    assert np.array_equal(model0.layers[0].weights, loaded_model.layers[0].weights)

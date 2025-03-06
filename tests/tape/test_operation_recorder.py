@@ -26,8 +26,8 @@ class TestOperationRecorder:
         expected_output = (
             "Operations\n"
             + "==========\n"
-            + "PauliY(wires=[0])\n"
-            + "PauliY(wires=[1])\n"
+            + "Y(0)\n"
+            + "Y(1)\n"
             + "RZ(0.4, wires=[0])\n"
             + "RZ(0.4, wires=[1])\n"
             + "CNOT(wires=[0, 1])\n"
@@ -83,7 +83,7 @@ class TestOperationRecorder:
             template(3)
 
         assert str(recorder) == expected_output
-        assert qml.equal(recorder[0], qml.RZ(0, wires=0))
+        qml.assert_equal(recorder[0], qml.RZ(0, wires=0))
 
     def test_template_with_return_integration(self):
         """Tests that the OperationRecorder integrates well with the
@@ -99,8 +99,8 @@ class TestOperationRecorder:
             + "\n"
             + "Observables\n"
             + "===========\n"
-            + "PauliZ(wires=[0])\n"
-            + "PauliX(wires=[1])\n"
+            + "Z(0)\n"
+            + "X(1)\n"
         )
 
         def template(x):

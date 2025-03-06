@@ -15,55 +15,34 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import copy
-import itertools
-from functools import reduce
 
 import numpy as np
 import pytest
 from gate_data import CNOT, I, Toffoli, X
-from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import (
+    _UNSET_BATCH_SIZE,
     Operation,
     Operator,
     StatePrepBase,
-    Tensor,
     operation_derivative,
-    _UNSET_BATCH_SIZE,
 )
-from pennylane.ops import Prod, SProd, Sum, cv
+from pennylane.ops import Prod, SProd, Sum
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
+# pylint: disable=use-implicit-booleaness-not-comparison
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-qutrit_subspace_error_data = [
-    ([1, 1], "Elements of subspace list must be unique."),
-    ([1, 2, 3], "The subspace must be a sequence with"),
-    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
-    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
-    ([1], "The subspace must be a sequence with"),
-    (0, "The subspace must be a sequence with two unique"),
-]
-
-
-@pytest.mark.parametrize("subspace, err_msg", qutrit_subspace_error_data)
-def test_qutrit_subspace_op_errors(subspace, err_msg):
-    """Test that the correct errors are raised when subspace is incorrectly defined"""
-
-    with pytest.raises(ValueError, match=err_msg):
-        _ = Operator.validate_subspace(subspace)
-
-
 class TestOperatorConstruction:
-    """Test custom operators construction."""
+    """Test custom operators' construction."""
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context"""
@@ -81,6 +60,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         with pytest.raises(ValueError, match="wrong number of wires"):
@@ -91,6 +71,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
@@ -110,6 +91,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares num_params as an instance property"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -125,6 +107,7 @@ class TestOperatorConstruction:
 
         class DummyOp2(qml.operation.Operator):
             r"""Dummy custom operator that declares num_params as a class property"""
+
             num_params = 4
             num_wires = 1
             grad_method = "A"
@@ -138,6 +121,7 @@ class TestOperatorConstruction:
 
         class DummyOp3(qml.operation.Operator):
             r"""Dummy custom operator that does not declare num_params at all"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -150,6 +134,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as an instance property"""
+
             num_wires = 1
             grad_method = "A"
             ndim_params = (0,)
@@ -163,6 +148,7 @@ class TestOperatorConstruction:
 
         class DummyOp2(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (1, 2)
             num_wires = 1
             grad_method = "A"
@@ -177,6 +163,7 @@ class TestOperatorConstruction:
 
         class DummyOp3(qml.operation.Operator):
             r"""Dummy custom operator that does not declare ndim_params at all"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -188,6 +175,7 @@ class TestOperatorConstruction:
 
         class DummyOp4(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -201,6 +189,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         op = DummyOp(wires=0)
@@ -211,6 +200,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         op = DummyOp([1, 2, 3], wires=0)
@@ -246,6 +236,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         op = DummyOp(wires=0)
@@ -351,7 +342,7 @@ class TestPytreeMethods:
         _ = {metadata: 0}
 
         new_op = CustomOp._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
+        qml.assert_equal(op, new_op)
         assert new_op.i_got_initialized
 
 
@@ -378,6 +369,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -393,6 +385,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -410,6 +403,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -427,6 +421,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -444,6 +439,7 @@ class TestBroadcasting:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -459,15 +455,8 @@ class TestBroadcasting:
         just in time (JIT) compilation."""
         import tensorflow as tf
 
-        class MyRX(qml.RX):
-            @property
-            def ndim_params(self):
-                self._check_batching()
-                return self._ndim_params
-
         def fun(x):
-            _ = qml.RX(x, 0)
-            _ = MyRX(x, 0)
+            _ = qml.RX(x, 0).batch_size
 
         # No kwargs
         fun0 = tf.function(fun)
@@ -516,11 +505,11 @@ class TestHasReprProperties:
         assert MyOp.has_matrix is False
         assert MyOp(wires=0).has_matrix is False
 
-    def test_has_matrix_false_concrete_template(self):
+    def test_has_matrix_false_concrete_template(self, seed):
         """Test has_matrix with a concrete operation (StronglyEntanglingLayers)
         that does not have a matrix defined."""
 
-        rng = qml.numpy.random.default_rng(seed=42)
+        rng = qml.numpy.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
         op = qml.StronglyEntanglingLayers(params, wires=range(2))
@@ -666,6 +655,7 @@ class TestModificationMethods:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             num_wires = 1
 
         op = DummyOp(wires=0)
@@ -677,6 +667,7 @@ class TestModificationMethods:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
@@ -705,6 +696,7 @@ class TestModificationMethods:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
+
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
@@ -724,6 +716,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -743,6 +736,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
 
             @property
@@ -760,6 +754,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
 
             def generator(self):
@@ -776,6 +771,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
 
         x = 0.654
@@ -789,6 +785,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_recipe = ["not a recipe"]
 
@@ -803,6 +800,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
 
         op = DummyOp(wires=0)
@@ -814,6 +812,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = "A"
 
@@ -830,6 +829,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_params = 3
             num_wires = 1
             grad_method = "A"
@@ -848,6 +848,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_params = num_param
             num_wires = 1
             grad_method = "A"
@@ -878,6 +879,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             num_params = 1
             grad_method = None
@@ -890,6 +892,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = None
 
@@ -901,6 +904,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = None
 
@@ -912,6 +916,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
+
             num_wires = 1
             grad_method = None
 
@@ -922,27 +927,12 @@ class TestOperationConstruction:
 class TestObservableConstruction:
     """Test custom observables construction."""
 
-    def test_observable_return_type_none(self):
-        """Check that the return_type of an observable is initially None"""
-
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
-            num_wires = 1
-            grad_method = None
-
-        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
-            assert DummyObserv(0, wires=[1]).return_type is None
-
-        obs = DummyObserv(0, wires=[1])
-        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
-            # pylint:disable=attribute-defined-outside-init
-            obs.return_type = qml.measurements.Sample
-
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
+
             num_wires = 1
             grad_method = None
 
@@ -960,6 +950,7 @@ class TestObservableConstruction:
 
         class DummyObserv(qml.operation.Observable, qml.operation.Operation):
             r"""Dummy custom observable"""
+
             num_wires = 1
             grad_method = None
 
@@ -998,7 +989,7 @@ class TestObservableConstruction:
         """Test the string representation of an observable with and without a return type."""
 
         m = qml.expval(qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"]))
-        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
+        expected = "expval(Z('a') @ Z('b'))"
         assert str(m) == expected
 
         m = qml.probs(wires=["a"])
@@ -1006,15 +997,15 @@ class TestObservableConstruction:
         assert str(m) == expected
 
         m = qml.probs(op=qml.PauliZ(wires=["a"]))
-        expected = "probs(PauliZ(wires=['a']))"
+        expected = "probs(Z('a'))"
         assert str(m) == expected
 
         m = qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"])
-        expected = "PauliZ(wires=['a']) @ PauliZ(wires=['b'])"
+        expected = "Z('a') @ Z('b')"
         assert str(m) == expected
 
         m = qml.PauliZ(wires=["a"])
-        expected = "PauliZ(wires=['a'])"
+        expected = "Z('a')"
         assert str(m) == expected
 
     def test_id(self):
@@ -1022,13 +1013,16 @@ class TestObservableConstruction:
 
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
+
             num_wires = 1
             grad_method = None
 
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
 
-    def test_wire_is_given_in_argument(self):
+    def test_raises_if_no_wire_is_given(self):
+        """Test that an error is raised if no wire is passed at initialization."""
+
         class DummyObservable(qml.operation.Observable):
             num_wires = 1
 
@@ -1040,6 +1034,7 @@ class TestObservableConstruction:
 
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
+
             num_wires = 1
             grad_method = None
 
@@ -1050,33 +1045,13 @@ class TestObservableConstruction:
 class TestOperatorIntegration:
     """Integration tests for the Operator class"""
 
-    def test_all_wires_defined_but_init_with_one(self):
-        """Test that an exception is raised if the class is defined with ALL wires,
-        but then instantiated with only one"""
-
-        dev1 = qml.device("default.qubit.legacy", wires=2)
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operator"""
-            num_wires = qml.operation.WiresEnum.AllWires
-
-        @qml.qnode(dev1)
-        def circuit():
-            DummyOp(wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match=f"Operator {DummyOp.__name__} must act on all wires",
-        ):
-            circuit()
-
     def test_pow_method_with_non_numeric_power_raises_error(self):
         """Test that when raising an Operator to a power that is not a number raises
         a ValueError."""
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
+
             num_wires = 1
 
         with pytest.raises(TypeError, match="unsupported operand type"):
@@ -1086,25 +1061,13 @@ class TestOperatorIntegration:
         """Test the __sum__ dunder method with two operators."""
         sum_op = qml.PauliX(0) + qml.RX(1, 0)
         final_op = qml.sum(qml.PauliX(0), qml.RX(1, 0))
-        #  TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, Sum)
-        for s1, s2 in zip(sum_op.operands, final_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+        qml.assert_equal(sum_op, final_op)
 
     def test_sum_with_scalar(self):
         """Test the __sum__ dunder method with a scalar value."""
         sum_op = 5 + qml.PauliX(0) + 0
         final_op = qml.sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
-        # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, Sum)
-        for s1, s2 in zip(sum_op.operands, final_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+        qml.assert_equal(sum_op, final_op)
 
     def test_sum_scalar_tensor(self):
         """Test the __sum__ dunder method with a scalar tensor."""
@@ -1149,13 +1112,7 @@ class TestOperatorIntegration:
             qml.CNOT(wires=[0, 1]),
             qml.s_prod(5, qml.Identity([0, 1])),
         )
-        # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, Sum)
-        for s1, s2 in zip(sum_op.operands, final_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+        qml.assert_equal(sum_op, final_op)
 
     def test_sub_rsub_and_neg_dunder_methods(self):
         """Test the __sub__, __rsub__ and __neg__ dunder methods."""
@@ -1171,23 +1128,16 @@ class TestOperatorIntegration:
         op = qml.S(0) - qml.PauliX(1)
         assert isinstance(op, Sum)
         assert isinstance(op[1], SProd)
-        assert qml.equal(op[0], qml.S(0))
-        assert qml.equal(op[1], SProd(-1, qml.PauliX(1)))
+        qml.assert_equal(op[0], qml.S(0))
+        qml.assert_equal(op[1], SProd(-1, qml.PauliX(1)))
 
     def test_mul_with_scalar(self):
         """Test the __mul__ dunder method with a scalar value."""
         sprod_op = 4 * qml.RX(1, 0)
         sprod_op2 = qml.RX(1, 0) * 4
         final_op = qml.s_prod(scalar=4, operator=qml.RX(1, 0))
-        assert isinstance(sprod_op, qml.ops.SProd)
-        assert sprod_op.name == sprod_op2.name
-        assert sprod_op.wires == sprod_op2.wires
-        assert sprod_op.data == sprod_op2.data
-        assert sprod_op.name == final_op.name
-        assert sprod_op.wires == final_op.wires
-        assert sprod_op.data == final_op.data
-        assert np.allclose(sprod_op.matrix(), sprod_op2.matrix(), rtol=0)
-        assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
+        qml.assert_equal(final_op, sprod_op2)
+        qml.assert_equal(sprod_op, final_op)
 
     def test_mul_scalar_tensor(self):
         """Test the __mul__ dunder method with a scalar tensor."""
@@ -1195,6 +1145,24 @@ class TestOperatorIntegration:
         prod_op = qml.RX(1.23, 0) * scalar
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
+
+        prod_op2 = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op2, SProd)
+        assert prod_op.scalar is scalar
+
+    def test_mul_array_numpy(self):
+        """Test that the __mul__ dunder works with a batched scalar."""
+
+        scalar = np.array([0.5, 0.6, 0.7])
+        prod_op = scalar * qml.S(0)
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+        assert prod_op.batch_size == 3
+
+        prod_op = qml.S(0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+        assert prod_op.batch_size == 3
 
     def test_divide_with_scalar(self):
         """Test the __truediv__ dunder method with a scalar value."""
@@ -1217,11 +1185,8 @@ class TestOperatorIntegration:
         """Test that the division of an operator with an unknown object is not supported."""
         obs = qml.PauliX(0)
 
-        class UnknownObject:
-            pass
-
         with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = obs / UnknownObject()
+            _ = obs / object()
 
     def test_dunder_method_with_new_class(self):
         """Test that when calling any Operator dunder method with a non-supported class that
@@ -1257,6 +1222,10 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+        prod_op = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
     @pytest.mark.tf
     def test_mul_scalar_tf_tensor(self):
         """Test the __mul__ dunder method with a scalar tf tensor."""
@@ -1267,6 +1236,10 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+        prod_op = scalar * qml.RX(1.23, 0)
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
     @pytest.mark.jax
     def test_mul_scalar_jax_tensor(self):
         """Test the __mul__ dunder method with a scalar jax tensor."""
@@ -1274,6 +1247,10 @@ class TestOperatorIntegration:
 
         scalar = jnp.array(5)
         prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+        prod_op = scalar * qml.RX(1.23, 0)
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
@@ -1306,852 +1283,6 @@ class TestOperatorIntegration:
         op = qml.RX(1.344, wires=0)
         assert '"test_with_id"' not in op.label()
         assert '"test_with_id"' not in op.label(decimals=2)
-
-
-class TestTensor:
-    """Unit tests for the Tensor class"""
-
-    def test_construct(self):
-        """Test construction of a tensor product"""
-        X = qml.PauliX(0)
-        Y = qml.PauliY(2)
-        T = Tensor(X, Y)
-        assert T.obs == [X, Y]
-
-        T = Tensor(T, Y)
-        assert T.obs == [X, Y, Y]
-
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
-            Tensor(T, qml.CNOT(wires=[0, 1]))
-
-    def test_flatten_unflatten(self):
-        """Test flattening and unflattening for tensors."""
-        op1 = qml.PauliX(0)
-        op2 = qml.Hermitian(np.eye(2), wires=1)
-        t = Tensor(op1, op2)
-
-        data, metadata = t._flatten()
-        assert qml.equal(data[0], op1)
-        assert qml.equal(data[1], op2)
-        assert not metadata
-        assert hash(metadata)
-
-        new_op = Tensor._unflatten(*t._flatten())
-        assert qml.equal(t, new_op)
-
-    def test_warning_for_overlapping_wires(self):
-        """Test that creating a Tensor with overlapping wires raises a warning"""
-        X = qml.PauliX(0)
-        Y = qml.PauliY(0)
-        op = qml.PauliX(0) @ qml.PauliY(1)
-
-        with pytest.warns(UserWarning, match="Tensor object acts on overlapping wires"):
-            Tensor(X, Y)
-
-        with pytest.warns(UserWarning, match="Tensor object acts on overlapping wires"):
-            _ = op @ qml.PauliZ(1)
-
-    def test_queuing_defined_outside(self):
-        """Test the queuing of a Tensor object."""
-
-        op1 = qml.PauliX(0)
-        op2 = qml.PauliY(1)
-        T = Tensor(op1, op2)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            T.queue()
-
-        assert len(q.queue) == 1
-        assert q.queue[0] is T
-
-    def test_queuing(self):
-        """Test the queuing of a Tensor object."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            op1 = qml.PauliX(0)
-            op2 = qml.PauliY(1)
-            T = Tensor(op1, op2)
-
-        assert len(q) == 1
-        assert q.queue[0] is T
-
-    def test_queuing_observable_matmul(self):
-        """Test queuing when tensor constructed with matmul."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            op1 = qml.PauliX(0)
-            op2 = qml.PauliY(1)
-            t = op1 @ op2
-
-        assert len(q) == 1
-        assert q.queue[0] is t
-
-    def test_queuing_tensor_matmul(self):
-        """Tests the tensor-specific matmul method updates queuing metadata."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            op1 = qml.PauliX(0)
-            op2 = qml.PauliY(1)
-            t = Tensor(op1, op2)
-
-            op3 = qml.PauliZ(2)
-            t2 = t @ op3
-
-        assert len(q) == 1
-        assert q.queue[0] is t2
-
-    def test_queuing_tensor_matmul_components_outside(self):
-        """Tests the tensor-specific matmul method when components are defined outside the
-        queuing context."""
-
-        op1 = qml.PauliX(0)
-        op2 = qml.PauliY(1)
-        t1 = Tensor(op1, op2)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            op3 = qml.PauliZ(2)
-            t2 = t1 @ op3
-
-        assert len(q) == 1
-        assert q.queue[0] is t2
-
-    def test_queuing_tensor_rmatmul(self):
-        """Tests tensor-specific rmatmul updates queuing metatadata."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            op1 = qml.PauliX(0)
-            op2 = qml.PauliY(1)
-
-            t1 = op1 @ op2
-
-            op3 = qml.PauliZ(3)
-
-            t2 = op3 @ t1
-
-        assert len(q.queue) == 1
-        assert q.queue[0] is t2
-
-    def test_name(self):
-        """Test that the names of the observables are
-        returned as expected"""
-        X = qml.PauliX(0)
-        Y = qml.PauliY(2)
-        t = Tensor(X, Y)
-        assert t.name == [X.name, Y.name]
-
-    def test_batch_size(self):
-        """Test that the batch_size attribute of the Tensor is initialized as None."""
-        X = qml.PauliX(0)
-        Y = qml.PauliY(2)
-        t = Tensor(X, Y)
-        assert t.batch_size is None
-
-    def test_pauli_rep(self):
-        """Test that the _pauli_rep attribute of the Tensor is initialized as None."""
-        X = qml.PauliX(0)
-        Y = qml.PauliY(2)
-        t = Tensor(X, Y)
-        assert t.pauli_rep is None
-
-    def test_has_matrix(self):
-        """Test that the Tensor class has a ``has_matrix`` static attribute set to True."""
-        assert Tensor.has_matrix is True
-
-    def test_num_wires(self):
-        """Test that the correct number of wires is returned"""
-        p = np.eye(4)
-        X = qml.PauliX(0)
-        Y = qml.Hermitian(p, wires=[1, 2])
-        t = Tensor(X, Y)
-        assert t.num_wires == 3
-
-    def test_wires(self):
-        """Test that the correct nested list of wires is returned"""
-        p = np.eye(4)
-        X = qml.PauliX(0)
-        Y = qml.Hermitian(p, wires=[1, 2])
-        t = Tensor(X, Y)
-        assert t.wires == Wires([0, 1, 2])
-
-    def test_params(self):
-        """Test that the correct flattened list of parameters is returned"""
-        p = np.eye(4)
-        X = qml.PauliX(0)
-        Y = qml.Hermitian(p, wires=[1, 2])
-        t = Tensor(X, Y)
-        assert t.data == (p,)
-
-    def test_data_setter(self):
-        """Test the data setter"""
-        p = np.eye(4)
-        X = qml.PauliX(0)
-        Y = qml.Hermitian(p, wires=[1, 2])
-        t = Tensor(X, Y)
-        assert t.data == (p,)
-        new_data = np.eye(4) * 6
-        t.data = [(), (new_data,)]
-        assert qml.math.allequal(t.data, (new_data,))
-
-    def test_num_params(self):
-        """Test that the correct number of parameters is returned"""
-        p = np.eye(4)
-        X = qml.PauliX(0)
-        Y = qml.Hermitian(p, wires=[1, 2])
-        Z = qml.Hermitian(p, wires=[3, 4])
-        t = Tensor(X, Y, Z)
-        assert t.num_params == 2
-
-    def test_parameters(self):
-        """Test that the correct nested list of parameters is returned"""
-        p = np.eye(4)
-        X = qml.PauliX(0)
-        Y = qml.Hermitian(p, wires=[1, 2])
-        t = Tensor(X, Y)
-        assert t.parameters == [[], [p]]
-
-    def test_label(self):
-        """Test that Tensors are labelled as expected"""
-
-        x = qml.PauliX(0)
-        y = qml.PauliZ(2)
-        T = Tensor(x, y)
-
-        assert T.label() == "X@Z"
-        assert T.label(decimals=2) == "X@Z"
-        assert T.label(base_label=["X0", "Z2"]) == "X0@Z2"
-
-        with pytest.raises(ValueError, match=r"Tensor label requires"):
-            T.label(base_label="nope")
-
-    def test_multiply_obs(self):
-        """Test that multiplying two observables
-        produces a tensor"""
-        X = qml.PauliX(0)
-        Y = qml.Hadamard(2)
-        t = X @ Y
-        assert isinstance(t, Tensor)
-        assert t.obs == [X, Y]
-
-    def test_multiply_obs_tensor(self):
-        """Test that multiplying an observable by a tensor
-        produces a tensor"""
-        X = qml.PauliX(0)
-        Y = qml.Hadamard(2)
-        Z = qml.PauliZ(1)
-
-        t = X @ Y
-        t = Z @ t
-
-        assert isinstance(t, Tensor)
-        assert t.obs == [Z, X, Y]
-
-    def test_multiply_tensor_obs(self):
-        """Test that multiplying a tensor by an observable
-        produces a tensor"""
-        X = qml.PauliX(0)
-        Y = qml.Hadamard(2)
-        Z = qml.PauliZ(1)
-
-        t = X @ Y
-        t = t @ Z
-
-        assert isinstance(t, Tensor)
-        assert t.obs == [X, Y, Z]
-
-    def test_multiply_tensor_tensor(self):
-        """Test that multiplying a tensor by a tensor
-        produces a tensor"""
-        X = qml.PauliX(0)
-        Y = qml.PauliY(2)
-        Z = qml.PauliZ(1)
-        H = qml.Hadamard(3)
-
-        t1 = X @ Y
-        t2 = Z @ H
-        t = t2 @ t1
-
-        assert isinstance(t, Tensor)
-        assert t.obs == [Z, H, X, Y]
-
-    def test_multiply_tensor_hamiltonian(self):
-        """Test that a tensor can be multiplied by a hamiltonian."""
-        H = qml.PauliX(0) + qml.PauliY(0)
-        t = qml.PauliZ(1) @ qml.PauliZ(2)
-        out = t @ H
-
-        expected = qml.Hamiltonian(
-            [1, 1],
-            [
-                qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(0),
-                qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(0),
-            ],
-        )
-        assert qml.equal(out, expected)
-
-    def test_multiply_tensor_in_place(self):
-        """Test that multiplying a tensor in-place
-        produces a tensor"""
-        X = qml.PauliX(0)
-        Y = qml.PauliY(2)
-        Z = qml.PauliZ(1)
-        H = qml.Hadamard(3)
-
-        t = X
-        t @= Y
-        t @= Z @ H
-
-        assert isinstance(t, Tensor)
-        assert t.obs == [X, Y, Z, H]
-
-    def test_operation_multiply_invalid(self):
-        """Test that an exception is raised if an observable
-        is multiplied by an operation"""
-        X = qml.PauliX(0)
-        Y = qml.CNOT(wires=[0, 1])
-        Z = qml.PauliZ(1)
-
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            T = X @ Z
-            _ = T @ Y
-
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            T = X @ Z
-            _ = 4 @ T
-
-    def test_eigvals(self):
-        """Test that the correct eigenvalues are returned for the Tensor"""
-        X = qml.PauliX(0)
-        Y = qml.PauliY(2)
-        t = Tensor(X, Y)
-        assert np.array_equal(t.eigvals(), np.kron([1, -1], [1, -1]))
-
-        # test that the eigvals are now cached and not recalculated
-        assert np.array_equal(t._eigvals_cache, t.eigvals())
-
-    @pytest.mark.usefixtures("tear_down_hermitian")
-    def test_eigvals_hermitian(self, tol):
-        """Test that the correct eigenvalues are returned for the Tensor containing an Hermitian observable"""
-        X = qml.PauliX(0)
-        hamiltonian = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-        Herm = qml.Hermitian(hamiltonian, wires=[1, 2])
-        t = Tensor(X, Herm)
-        d = np.kron(np.array([1.0, -1.0]), np.array([-1.0, 1.0, 1.0, 1.0]))
-        t = t.eigvals()
-        assert np.allclose(t, d, atol=tol, rtol=0)
-
-    def test_eigvals_identity(self, tol):
-        """Test that the correct eigenvalues are returned for the Tensor containing an Identity"""
-        X = qml.PauliX(0)
-        Iden = qml.Identity(1)
-        t = Tensor(X, Iden)
-        d = np.kron(np.array([1.0, -1.0]), np.array([1.0, 1.0]))
-        t = t.eigvals()
-        assert np.allclose(t, d, atol=tol, rtol=0)
-
-    def test_eigvals_identity_and_hermitian(self, tol):
-        """Test that the correct eigenvalues are returned for the Tensor containing
-        multiple types of observables"""
-        H = np.diag([1, 2, 3, 4])
-        O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4, 5])
-        res = O.eigvals()
-        expected = np.kron(np.array([1.0, -1.0]), np.kron(np.array([1.0, 1.0]), np.arange(1, 5)))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_diagonalizing_gates(self, tol):
-        """Test that the correct diagonalizing gate set is returned for a Tensor of observables"""
-        H = np.diag([1, 2, 3, 4])
-        O = qml.PauliX(0) @ qml.Identity(2) @ qml.PauliY(1) @ qml.Hermitian(H, [5, 6])
-
-        res = O.diagonalizing_gates()
-
-        # diagonalize the PauliX on wire 0 (H.X.H = Z)
-        assert isinstance(res[0], qml.Hadamard)
-        assert res[0].wires == Wires([0])
-
-        # diagonalize the PauliY on wire 1 (U.Y.U^\dagger = Z
-        # where U = HSZ).
-        assert isinstance(res[1], qml.PauliZ)
-        assert res[1].wires == Wires([1])
-        assert isinstance(res[2], qml.S)
-        assert res[2].wires == Wires([1])
-        assert isinstance(res[3], qml.Hadamard)
-        assert res[3].wires == Wires([1])
-
-        # diagonalize the Hermitian observable on wires 5, 6
-        assert isinstance(res[4], qml.QubitUnitary)
-        assert res[4].wires == Wires([5, 6])
-
-        O = O @ qml.Hadamard(4)
-        res = O.diagonalizing_gates()
-
-        # diagonalize the Hadamard observable on wire 4
-        # (RY(-pi/4).H.RY(pi/4) = Z)
-        assert isinstance(res[-1], qml.RY)
-        assert res[-1].wires == Wires([4])
-        assert np.allclose(res[-1].parameters, -np.pi / 4, atol=tol, rtol=0)
-
-    def test_diagonalizing_gates_numerically_diagonalizes(self, tol):
-        """Test that the diagonalizing gate set numerically
-        diagonalizes the tensor observable"""
-
-        # create a tensor observable acting on consecutive wires
-        H = np.diag([1, 2, 3, 4])
-        O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
-
-        O_mat = O.matrix()
-        diag_gates = O.diagonalizing_gates()
-
-        # group the diagonalizing gates based on what wires they act on
-        U_list = []
-        for _, g in itertools.groupby(diag_gates, lambda x: x.wires.tolist()):
-            # extract the matrices of each diagonalizing gate
-            mats = [i.matrix() for i in g]
-
-            # Need to revert the order in which the matrices are applied such that they adhere to the order
-            # of matrix multiplication
-            # E.g. for PauliY: [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
-            # becomes Hadamard @ S @ PauliZ, where @ stands for matrix multiplication
-            mats = mats[::-1]
-
-            if len(mats) > 1:
-                # multiply all unitaries together before appending
-                mats = [multi_dot(mats)]
-
-            # append diagonalizing unitary for specific wire to U_list
-            U_list.append(mats[0])
-
-        # since the test is assuming consecutive wires for each observable
-        # in the tensor product, it is sufficient to Kronecker product
-        # the entire list.
-        U = reduce(np.kron, U_list)
-
-        res = U @ O_mat @ U.conj().T
-        expected = np.diag(O.eigvals())
-
-        # once diagonalized by U, the result should be a diagonal
-        # matrix of the eigenvalues.
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_tensor_matrix(self, tol):
-        """Test that the tensor product matrix method returns
-        the correct result"""
-        H = np.diag([1, 2, 3, 4])
-        O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
-
-        res = O.matrix()
-        expected = reduce(np.kron, [qml.PauliX.compute_matrix(), qml.PauliY.compute_matrix(), H])
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_matrix_wire_order_not_implemented(self):
-        """Test that an exception is raised if a wire_order is passed to the matrix method"""
-        O = qml.PauliX(0) @ qml.PauliY(1)
-        with pytest.raises(NotImplementedError, match="wire_order"):
-            O.matrix(wire_order=[1, 0])
-
-    def test_tensor_matrix_partial_wires_overlap_warning(self):
-        """Tests that a warning is raised if the wires the factors in
-        the tensor product act on have partial overlaps."""
-        H = np.diag([1, 2, 3, 4])
-        O1 = qml.PauliX(0) @ qml.Hermitian(H, [0, 1])
-        O2 = qml.Hermitian(H, [0, 1]) @ qml.PauliY(1)
-
-        for O in (O1, O2):
-            with pytest.warns(UserWarning, match="partially overlapping"):
-                O.matrix()
-
-    def test_tensor_matrix_too_large_warning(self):
-        """Tests that a warning is raised if wires occur in multiple of the
-        factors in the tensor product, leading to a wrongly-sized matrix."""
-        with pytest.warns(UserWarning, match="acts on overlapping wires"):
-            O = qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(0)
-        with pytest.warns(UserWarning, match="The size of the returned matrix"):
-            O.matrix()
-
-    @pytest.mark.parametrize("classes", [(qml.PauliX, qml.PauliX), (qml.PauliZ, qml.PauliX)])
-    def test_multiplication_matrix(self, tol, classes):
-        """If using the ``@`` operator on two observables acting on the
-        same wire, the tensor class should treat this as matrix multiplication."""
-        c1, c2 = classes
-        with pytest.warns(UserWarning, match="acts on overlapping wires"):
-            O = c1(0) @ c2(0)
-
-        res = O.matrix()
-        expected = c1.compute_matrix() @ c2.compute_matrix()
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    herm_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-
-    tensor_obs = [
-        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), [qml.PauliZ(0), qml.PauliZ(2)]),
-        (
-            qml.Identity(0)
-            @ qml.PauliX(1)
-            @ qml.Identity(2)
-            @ qml.PauliZ(3)
-            @ qml.PauliZ(4)
-            @ qml.Identity(5),
-            [qml.PauliX(1), qml.PauliZ(3), qml.PauliZ(4)],
-        ),
-        # List containing single observable is returned
-        (qml.PauliZ(0) @ qml.Identity(1), [qml.PauliZ(0)]),
-        (qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2), [qml.PauliX(1)]),
-        (qml.Identity(0) @ qml.Identity(1), [qml.Identity(0)]),
-        (
-            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
-            [qml.Hermitian(herm_matrix, wires=[2, 3])],
-        ),
-    ]
-
-    @pytest.mark.parametrize("tensor_observable, expected", tensor_obs)
-    def test_non_identity_obs(self, tensor_observable, expected):
-        """Tests that the non_identity_obs property returns a list that contains no Identity instances."""
-
-        O = tensor_observable
-        for idx, obs in enumerate(O.non_identity_obs):
-            assert isinstance(obs, type(expected[idx]))
-            assert obs.wires == expected[idx].wires
-
-    tensor_obs_pruning = [
-        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliZ(0) @ qml.PauliZ(2)),
-        (
-            qml.Identity(0)
-            @ qml.PauliX(1)
-            @ qml.Identity(2)
-            @ qml.PauliZ(3)
-            @ qml.PauliZ(4)
-            @ qml.Identity(5),
-            qml.PauliX(1) @ qml.PauliZ(3) @ qml.PauliZ(4),
-        ),
-        # Single observable is returned
-        (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0)),
-        (qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2), qml.PauliX(1)),
-        (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
-        (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
-        (
-            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
-            qml.Hermitian(herm_matrix, wires=[2, 3]),
-        ),
-    ]
-
-    @pytest.mark.parametrize("tensor_observable, expected", tensor_obs_pruning)
-    def test_prune(self, tensor_observable, expected):
-        """Tests that the prune method returns the expected Tensor or single non-Tensor Observable."""
-        O = tensor_observable
-
-        O_pruned = O.prune()
-        assert isinstance(O_pruned, type(expected))
-        assert O_pruned.wires == expected.wires
-
-    def test_prune_while_queuing_return_tensor(self):
-        """Tests that pruning a tensor to a tensor in a tape context registers
-        the pruned tensor as owned by the measurement,
-        and turns the original tensor into an orphan without an owner."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            # we assign operations to variables here so we can compare them below
-            a = qml.PauliX(wires=0)
-            b = qml.PauliY(wires=1)
-            c = qml.Identity(wires=2)
-            T = qml.operation.Tensor(a, b, c)
-            T_pruned = T.prune()
-            m = qml.expval(T_pruned)
-
-        assert len(q.queue) == 1
-        assert q.queue[0] is m
-
-    def test_prune_while_queueing_return_obs(self):
-        """Tests that pruning a tensor to an observable in a tape context registers
-        the pruned observable as owned by the measurement,
-        and turns the original tensor into an orphan without an owner."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            a = qml.PauliX(wires=0)
-            c = qml.Identity(wires=2)
-            T = qml.operation.Tensor(a, c)
-            T_pruned = T.prune()
-            m = qml.expval(T_pruned)
-
-        assert len(q.queue) == 1
-        assert q.queue[0] is m
-
-    def test_sparse_matrix_no_wires(self):
-        """Tests that the correct sparse matrix representation is used."""
-
-        t = qml.PauliX(0) @ qml.PauliZ(1)
-        s = t.sparse_matrix()
-
-        assert np.allclose(s.data, [1, -1, 1, -1])
-        assert np.allclose(s.indices, [2, 3, 0, 1])
-        assert np.allclose(s.indptr, [0, 1, 2, 3, 4])
-
-    def test_sparse_matrix_swapped_wires(self):
-        """Tests that the correct sparse matrix representation is used
-        when the custom wires swap the order."""
-
-        t = qml.PauliX(0) @ qml.PauliZ(1)
-        data = [1, 1, -1, -1]
-        indices = [1, 0, 3, 2]
-        indptr = [0, 1, 2, 3, 4]
-
-        s = t.sparse_matrix(wires=[1, 0])
-
-        assert np.allclose(s.data, data)
-        assert np.allclose(s.indices, indices)
-        assert np.allclose(s.indptr, indptr)
-
-        s = t.sparse_matrix(wire_order=[1, 0])
-
-        assert np.allclose(s.data, data)
-        assert np.allclose(s.indices, indices)
-        assert np.allclose(s.indptr, indptr)
-
-    def test_sparse_matrix_extra_wire(self):
-        """Tests that the correct sparse matrix representation is used
-        when the custom wires add an extra wire with an implied identity operation."""
-
-        t = qml.PauliX(0) @ qml.PauliZ(1)
-        data = [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]
-        indices = [4, 5, 6, 7, 0, 1, 2, 3]
-        indptr = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-
-        s = t.sparse_matrix(wires=[0, 1, 2])
-
-        assert s.shape == (8, 8)
-        assert np.allclose(s.data, data)
-        assert np.allclose(s.indices, indices)
-        assert np.allclose(s.indptr, indptr)
-
-        s = t.sparse_matrix(wire_order=[0, 1, 2])
-
-        assert s.shape == (8, 8)
-        assert np.allclose(s.data, data)
-        assert np.allclose(s.indices, indices)
-        assert np.allclose(s.indptr, indptr)
-
-    def test_sparse_matrix_errors(self):
-        """Tests that errors are raised when the sparse matrix is computed for a tensor
-        whose constituent operations are not all single-qubit gates, and when both ``wires``
-        and ``wire_order`` at specified at once."""
-
-        t = qml.PauliX(0) @ qml.Hermitian(np.eye(4), wires=[1, 2])
-        with pytest.raises(ValueError, match="Can only compute"):
-            t.sparse_matrix()
-
-        t = qml.PauliX(0) @ qml.PauliZ(1)
-        with pytest.raises(ValueError, match="Wire order has been specified twice"):
-            t.sparse_matrix(wires=[0, 1], wire_order=[0, 1])
-
-    def test_copy(self):
-        """Test copying of a Tensor."""
-        tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
-        c = copy.copy(tensor)
-        assert c is not tensor
-        assert c.wires == Wires([0, 1, 2])
-        assert c.batch_size == tensor.batch_size == None
-        for obs1, obs2 in zip(c.obs, tensor.obs):
-            assert qml.equal(obs1, obs2)
-
-    def test_map_wires(self):
-        """Test the map_wires method."""
-        tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
-        wire_map = {0: 10, 1: 11, 2: 12}
-        mapped_tensor = tensor.map_wires(wire_map=wire_map)
-        final_obs = [qml.PauliX(10), qml.PauliY(11), qml.PauliZ(12)]
-        assert tensor is not mapped_tensor
-        assert tensor.wires == Wires([0, 1, 2])
-        assert mapped_tensor.wires == Wires([10, 11, 12])
-        assert mapped_tensor.batch_size == tensor.batch_size
-        for obs1, obs2 in zip(mapped_tensor.obs, final_obs):
-            assert qml.equal(obs1, obs2)
-
-
-equal_obs = [
-    (qml.PauliZ(0), qml.PauliZ(0), True),
-    (qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliX(1) @ qml.Identity(2), True),
-    (qml.PauliZ("b"), qml.PauliZ("b") @ qml.Identity(1.3), True),
-    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), True),
-    (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
-    (
-        qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
-        qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
-        True,
-    ),
-    (qml.PauliZ("a") @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ("a"), True),
-    (qml.PauliZ("a"), qml.Hamiltonian([1], [qml.PauliZ("a")]), True),
-]
-
-add_obs = [
-    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([2], [qml.PauliZ(0)])),
-    (
-        qml.PauliZ(0),
-        qml.PauliZ(0) @ qml.PauliX(1),
-        qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
-    ),
-    (
-        qml.PauliZ("b") @ qml.Identity(1),
-        qml.Hamiltonian([3], [qml.PauliZ("b")]),
-        qml.Hamiltonian([4], [qml.PauliZ("b")]),
-    ),
-    (
-        qml.PauliX(0) @ qml.PauliZ(1),
-        qml.PauliZ(1) @ qml.Identity(2) @ qml.PauliX(0),
-        qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)]),
-    ),
-    (
-        qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-        qml.Hamiltonian([4], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-    ),
-]
-
-add_zero_obs = [
-    qml.PauliX(0),
-    qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-    qml.PauliX(0) @ qml.Hadamard(2),
-    # qml.Projector(np.array([1, 1]), wires=[0, 1]),
-    # qml.SparseHamiltonian(csr_matrix(np.array([[1, 0], [-1.5, 0]])), 1),
-    # CVObservables
-    qml.Identity(1),
-    cv.NumberOperator(wires=[1]),
-    cv.TensorN(wires=[1]),
-    cv.QuadX(wires=[1]),
-    cv.QuadP(wires=[1]),
-    # cv.QuadOperator(1.234, wires=0),
-    # cv.FockStateProjector([1,2,3], wires=[0, 1, 2]),
-    cv.PolyXP(np.array([1.0, 2.0, 3.0]), wires=[0]),
-]
-
-mul_obs = [
-    (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
-    (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
-    (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)])),
-    (
-        qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"),
-        3,
-        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]),
-    ),
-]
-
-matmul_obs = [
-    (qml.PauliX(0), qml.PauliZ(1), Tensor(qml.PauliX(0), qml.PauliZ(1))),  # obs @ obs
-    (
-        qml.PauliX(0),
-        qml.PauliZ(1) @ qml.PauliY(2),
-        Tensor(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)),
-    ),  # obs @ tensor
-    (
-        qml.PauliX(0),
-        qml.Hamiltonian([1.0], [qml.PauliY(1)]),
-        qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliY(1)]),
-    ),  # obs @ hamiltonian
-]
-
-sub_obs = [
-    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([], [])),
-    (
-        qml.PauliZ(0),
-        qml.PauliZ(0) @ qml.PauliX(1),
-        qml.Hamiltonian([1, -1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
-    ),
-    (
-        qml.PauliZ(0) @ qml.Identity(1),
-        qml.Hamiltonian([3], [qml.PauliZ(0)]),
-        qml.Hamiltonian([-2], [qml.PauliZ(0)]),
-    ),
-    (
-        qml.PauliX(0) @ qml.PauliZ(1),
-        qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
-        qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]),
-    ),
-    (
-        qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-        qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-    ),
-]
-
-
-class TestTensorObservableOperations:
-    """Tests arithmetic operations between observables/tensors"""
-
-    def test_data(self):
-        """Tests the data() method for Tensors and Observables"""
-
-        obs = qml.PauliZ(0)
-        data = obs._obs_data()
-
-        assert data == {("PauliZ", Wires(0), ())}
-
-        obs = qml.PauliZ(0) @ qml.PauliX(1)
-        data = obs._obs_data()
-
-        assert data == {("PauliZ", Wires(0), ()), ("PauliX", Wires(1), ())}
-
-        obs = qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)
-        data = obs._obs_data()
-
-        assert data == {
-            (
-                "Hermitian",
-                Wires(0),
-                (
-                    b"\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff",
-                ),
-            )
-        }
-
-    def test_equality_error(self):
-        """Tests that the correct error is raised when compare() is called on invalid type"""
-
-        obs = qml.PauliZ(0)
-        tensor = qml.PauliZ(0) @ qml.PauliX(1)
-        A = [[1, 0], [0, -1]]
-        with pytest.raises(
-            ValueError,
-            match=r"Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor.",
-        ):
-            obs.compare(A)
-            tensor.compare(A)
-
-    @pytest.mark.parametrize(("obs1", "obs2", "res"), equal_obs)
-    def test_equality(self, obs1, obs2, res):
-        """Tests the compare() method for Tensors and Observables"""
-        assert obs1.compare(obs2) == res
-
-    @pytest.mark.parametrize(("obs1", "obs2", "obs"), add_obs)
-    def test_addition(self, obs1, obs2, obs):
-        """Tests addition between Tensors and Observables"""
-        assert obs.compare(obs1 + obs2)
-
-    @pytest.mark.parametrize("obs", add_zero_obs)
-    def test_add_zero(self, obs):
-        """Tests adding Tensors and Observables to zero"""
-        assert obs.compare(obs + 0)
-        assert obs.compare(0 + obs)
-        assert obs.compare(obs + 0.0)
-        assert obs.compare(0.0 + obs)
-        assert obs.compare(obs + 0e1)
-        assert obs.compare(0e1 + obs)
-
-    @pytest.mark.parametrize(("coeff", "obs", "res_obs"), mul_obs)
-    def test_scalar_multiplication(self, coeff, obs, res_obs):
-        """Tests scalar multiplication of Tensors and Observables"""
-        assert res_obs.compare(coeff * obs)
-        assert res_obs.compare(obs * coeff)
-
-    @pytest.mark.parametrize(("obs1", "obs2", "obs"), sub_obs)
-    def test_subtraction(self, obs1, obs2, obs):
-        """Tests subtraction between Tensors and Observables"""
-        assert obs.compare(obs1 - obs2)
-
-    @pytest.mark.parametrize(("obs1", "obs2", "res"), matmul_obs)
-    def test_tensor_product(self, obs1, obs2, res):
-        """Tests the tensor product between Observables"""
-        assert res.compare(obs1 @ obs2)
 
 
 # Dummy class inheriting from Operator
@@ -2272,6 +1403,7 @@ class TestChannel:
 
         class DummyOp(qml.operation.Channel):
             r"""Dummy custom channel"""
+
             num_wires = 1
             grad_method = "F"
 
@@ -2533,12 +1665,6 @@ pairs_of_ops = [
 class TestNewOpMath:
     """Tests dunder operations with new operator arithmetic enabled."""
 
-    @pytest.fixture(autouse=True, scope="class")
-    def run_before_and_after_tests(self):
-        qml.operation.enable_new_opmath()
-        yield
-        qml.operation.disable_new_opmath()
-
     class TestAdd:
         """Test the __add__/__radd__/__sub__ dunders."""
 
@@ -2547,18 +1673,18 @@ class TestNewOpMath:
             """Tests adding two operators, observable or not."""
             op = op0 + op1
             assert isinstance(op, Sum)
-            assert qml.equal(op[0], op0)
-            assert qml.equal(op[1], op1)
+            qml.assert_equal(op[0], op0)
+            qml.assert_equal(op[1], op1)
 
         @pytest.mark.parametrize("op0,op1", pairs_of_ops)
         def test_sub_operators(self, op0, op1):
             """Tests subtracting two operators."""
             op = op0 - op1
             assert isinstance(op, Sum)
-            assert qml.equal(op[0], op0)
+            qml.assert_equal(op[0], op0)
             assert isinstance(op[1], SProd)
             assert op[1].scalar == -1
-            assert qml.equal(op[1].base, op1)
+            qml.assert_equal(op[1].base, op1)
 
         def test_sub_with_unknown_not_supported(self):
             """Test subtracting an unexpected type from an Operator."""
@@ -2570,38 +1696,37 @@ class TestNewOpMath:
             x0 = qml.PauliX(0)
             for op in [x0 + 1, 1 + x0]:
                 assert isinstance(op, Sum)
-                assert qml.equal(op[0], x0)
+                qml.assert_equal(op[0], x0)
                 assert isinstance(op[1], SProd)
                 assert op[1].scalar == 1
-                assert qml.equal(op[1].base, qml.Identity(0))
+                qml.assert_equal(op[1].base, qml.Identity(0))
 
             x1 = qml.PauliX(1)
             op = x1 - 1.1
             assert isinstance(op, Sum)
-            assert qml.equal(op[0], x1)
+            qml.assert_equal(op[0], x1)
             assert isinstance(op[1], SProd)
             assert op[1].scalar == -1.1
-            assert qml.equal(op[1].base, qml.Identity(1))
+            qml.assert_equal(op[1].base, qml.Identity(1))
 
             op = 1.1 - x1  # will use radd
             assert isinstance(op, Sum)
             assert isinstance(op[0], SProd)
             assert op[0].scalar == -1
-            assert qml.equal(op[0].base, x1)
+            qml.assert_equal(op[0].base, x1)
             assert isinstance(op[1], SProd)
             assert op[1].scalar == 1.1
-            assert qml.equal(op[1].base, qml.Identity(1))
+            qml.assert_equal(op[1].base, qml.Identity(1))
 
-        def test_adding_many_does_not_auto_simplify(self):
+        def test_adding_many_does_auto_simplify(self):
             """Tests that adding more than two operators creates nested Sums."""
             op0, op1, op2 = qml.S(0), qml.T(0), qml.PauliZ(0)
             op = op0 + op1 + op2
             assert isinstance(op, Sum)
-            assert len(op) == 2
-            assert isinstance(op[0], Sum)
-            assert qml.equal(op[0][0], op0)
-            assert qml.equal(op[0][1], op1)
-            assert qml.equal(op[1], op2)
+            assert len(op) == 3
+            qml.assert_equal(op[0], op0)
+            qml.assert_equal(op[1], op1)
+            qml.assert_equal(op[2], op2)
 
     class TestMul:
         """Test the __mul__/__rmul__ dunders."""
@@ -2613,7 +1738,7 @@ class TestNewOpMath:
             for op in [scalar * base, base * scalar]:
                 assert isinstance(op, SProd)
                 assert qml.math.allequal(op.scalar, scalar)
-                assert qml.equal(op.base, base)
+                qml.assert_equal(op.base, base)
 
         @pytest.mark.parametrize("scalar", [1, 1.1, 1 + 2j, qml.numpy.array([3, 4j])])
         def test_div(self, scalar):
@@ -2622,15 +1747,15 @@ class TestNewOpMath:
             op = base / scalar
             assert isinstance(op, SProd)
             assert qml.math.allequal(op.scalar, 1 / scalar)
-            assert qml.equal(op.base, base)
+            qml.assert_equal(op.base, base)
 
-        def test_mul_does_not_auto_simplify(self):
+        def test_mul_does_auto_simplify(self):
             """Tests that multiplying an SProd with a scalar creates nested SProds."""
             op = 2 * qml.PauliX(0)
             nested = 0.5 * op
             assert isinstance(nested, SProd)
-            assert nested.scalar == 0.5
-            assert qml.equal(nested.base, op)
+            assert nested.scalar == 1.0
+            qml.assert_equal(nested.base, qml.X(0))
 
     class TestMatMul:
         """Test the __matmul__/__rmatmul__ dunders."""
@@ -2640,31 +1765,69 @@ class TestNewOpMath:
             """Tests matrix-multiplication of two operators, observable or not."""
             op = op0 @ op1
             assert isinstance(op, Prod)
-            assert qml.equal(op[0], op0)
-            assert qml.equal(op[1], op1)
+            qml.assert_equal(op[0], op0)
+            if isinstance(op1, Prod):
+                qml.assert_equal(op[1], op1[0])
+                qml.assert_equal(op[2], op1[1])
+            else:
+                qml.assert_equal(op[1], op1)
 
-        def test_mul_does_not_auto_simplify(self):
+        def test_mul_does_auto_simplify(self):
             """Tests that matrix-multiplying a Prod with another operator creates nested Prods."""
             op0, op1, op2 = qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)
             op = op0 @ op1 @ op2
             assert isinstance(op, Prod)
-            assert len(op) == 2
-            assert isinstance(op[0], Prod)
-            assert qml.equal(op[0], op0 @ op1)
-            assert qml.equal(op[1], op2)
+            assert len(op) == 3
+            qml.assert_equal(op[0], op0)
+            qml.assert_equal(op[1], op1)
+            qml.assert_equal(op[2], op2)
 
 
-def test_op_arithmetic_toggle():
-    """Tests toggling op arithmetic on and off, and that it is off by default."""
-    assert not qml.operation.active_new_opmath()
+class TestHamiltonianLinearCombinationAlias:
+    """Unit tests for using qml.Hamiltonian as an alias for LinearCombination"""
 
-    qml.operation.enable_new_opmath()
-    assert qml.operation.active_new_opmath()
-    assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Prod)
+    def test_hamiltonian_linear_combination_alias_enabled(self):
+        """Test that qml.Hamiltonian is an alias for LinearCombination with new operator
+        arithmetic enabled"""
+        op = qml.Hamiltonian([1.0], [qml.X(0)])
 
-    qml.operation.disable_new_opmath()
-    assert not qml.operation.active_new_opmath()
-    assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
+        assert isinstance(op, qml.ops.LinearCombination)
+        assert isinstance(op, qml.Hamiltonian)
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        qml.CZ(wires=[1, 0]),
+        qml.CCZ(wires=[2, 0, 1]),
+        qml.SWAP(wires=[1, 0]),
+        qml.IsingXX(1.23, wires=[1, 0]),
+        qml.Identity(wires=[3, 1, 2, 0]),
+        qml.ISWAP(wires=[1, 0]),
+        qml.SISWAP(wires=[1, 0]),
+        qml.SQISW(wires=[1, 0]),
+        qml.MultiRZ(1.23, wires=[2, 0, 1, 3]),
+        qml.IsingXY(1.23, wires=[1, 0]),
+        qml.IsingYY(1.23, wires=[1, 0]),
+        qml.IsingZZ(1.23, wires=[1, 0]),
+        qml.PSWAP(1.23, wires=[1, 0]),
+    ],
+)
+def test_symmetric_matrix_early_return(op, mocker):
+    """Test that operators that are symmetric over all wires are not reordered
+    when the wire order only contains the same wires as the operator."""
+
+    spy = mocker.spy(qml.operation, "expand_matrix")
+    actual = op.matrix(wire_order=list(range(len(op.wires))))
+
+    spy.assert_not_called()
+    expected = op.matrix()
+    manually_expanded = qml.math.expand_matrix(
+        expected, wires=op.wires, wire_order=list(range(len(op.wires)))
+    )
+
+    assert np.allclose(actual, expected)
+    assert np.allclose(actual, manually_expanded)
 
 
 def test_docstring_example_of_operator_class(tol):
@@ -2676,7 +1839,7 @@ def test_docstring_example_of_operator_class(tol):
         num_wires = qml.operation.AnyWires
         grad_method = "A"
 
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments,too-many-positional-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
@@ -2737,7 +1900,7 @@ def test_custom_operator_is_jax_pytree():
     assert data == [1.2]
 
     new_op = jax.tree_util.tree_unflatten(structure, [2.3])
-    assert qml.equal(new_op, CustomOperator(2.3, wires=0))
+    qml.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
 # pylint: disable=unused-import,no-name-in-module
