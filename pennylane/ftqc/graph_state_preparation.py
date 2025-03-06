@@ -35,7 +35,7 @@ class GraphStatePrep(Operation):
     2. Entangle every nearest qubit pair in the graph with `entanglement_ops` (`CZ` gate) operation.
 
     Args:
-        qubit_graph (QubitGraph): QubitGraph object mapping qubit to wires.
+        graph (Union[QubitGraph, nx.Graph]): QubitGraph or nx.Graph object mapping qubit to wires.
         qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
         entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
         wires: Wires the graph state preparation to apply on. Default as None.
@@ -84,8 +84,6 @@ class GraphStatePrep(Operation):
         if isinstance(graph, QubitGraph):
             super().__init__(wires=wires if wires is not None else [q for q in graph.graph])
         else:
-            for q in graph:
-                print(q)
             super().__init__(wires=wires if wires is not None else [q for q in graph])
 
     def label(
@@ -134,7 +132,7 @@ class GraphStatePrep(Operation):
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
-            qubit_graph (QubitGraph): QubitGraph object mapping qubit to wires.
+            graph (Union[nx.Graph, QubitGraph]): QubitGraph object mapping qubit to wires.
             qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
             entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
             wires : Wires the decomposition applies on. Default as None.
