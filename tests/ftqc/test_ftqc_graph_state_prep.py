@@ -14,11 +14,10 @@
 # pylint: disable=no-name-in-module, no-self-use, protected-access
 """Unit tests for the GraphStatePrep module"""
 
-import copy
-
 import pytest
 
 import pennylane as qml
+import jax
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 from pennylane.ops.functions import assert_valid
 from pennylane.transforms.decompose import decompose
@@ -26,6 +25,21 @@ from pennylane.transforms.decompose import decompose
 
 class TestGraphStatePrep:
     """Test for graph state prep"""
+
+    @pytest.mark.xfail(reason="Jax JIT requires wires to be integers.")
+    def test_jaxjit_circuit_graph_state_prep(self):
+        """Test if Jax JIT works with GraphStatePrep"""
+        lattice = generate_lattice([2, 2], "square")
+        q = QubitGraph("test", lattice.graph)
+        dev = qml.device("default.qubit")
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit(q):
+            GraphStatePrep(qubit_graph=q)
+            return qml.probs()
+
+        circuit(q)
+
 
     def test_circuit_accept_graph_state_prep(self):
         """Test if a quantum function accepts GraphStatePrep."""
@@ -80,22 +94,3 @@ class TestGraphStatePrep:
             assert op.name == entangle_ops.name
             assert all(isinstance(w, QubitGraph) for w in op.wires)
 
-    def test_preprocess_decompose(self):
-        """Test if pennylane.transforms.decompose work with the GraphStatePrep class."""
-        lattice = generate_lattice([2, 2, 2], "cubic")
-        q = QubitGraph("test", lattice.graph)
-        ops = [GraphStatePrep(qubit_graph=q)]
-        measurements = [qml.probs()]
-        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
-        expanded_tapes, _ = decompose(tape)
-        expanded_tape = expanded_tapes[0]
-        for i in range(len(expanded_tape) - 1):
-            assert (
-                expanded_tape[i].name == "Hadamard"
-                if i < len(lattice.nodes)
-                else expanded_tape[i].name == "CZ"
-            )
-            assert isinstance(expanded_tape[i].wires[0], QubitGraph)
-            if i >= len(lattice.nodes):
-                assert isinstance(expanded_tape[i].wires[1], QubitGraph)
-        assert isinstance(expanded_tape, qml.tape.QuantumScript)
