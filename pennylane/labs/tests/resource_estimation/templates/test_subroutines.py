@@ -903,73 +903,43 @@ class TestResourceSuperposition:
         )
 
     @pytest.mark.parametrize(
-        "num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean",
-        [(4, 2, 2, 3, 3, True), (4, 5, 2, 3, 3, False), (4, 5, 0, 3, 3, False)],
+        "num_stateprep_wires, num_basis_states, size_basis_state",
+        [(4, 2, 2), (4, 5, 2), (4, 5, 0)],
     )
-    def test_resources_from_rep(
-        self,
-        num_bitstrings,
-        num_bit_flips,
-        num_control_wires,
-        num_work_wires,
-        size_bitstring,
-        clean,
-    ):
+    def test_resources_from_rep(self, num_stateprep_wires, num_basis_states, size_basis_state):
         """Test that computing the resources from a compressed representation works"""
         expected = {}
-        rep = re.ResourceQROM.resource_rep(
-            num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean
+        rep = re.ResourceSuperposition.resource_rep(
+            num_stateprep_wires, num_basis_states, size_basis_state
         )
         actual = rep.op_type.resources(**rep.params)
 
-        x = re.CompressedResourceOp(re.ResourceX, {})
-
-        if num_control_wires == 0:
-            expected[x] = num_bit_flips
-            assert actual == expected
-            return
+        expected = {}
+        msp = re.CompressedResourceOp(
+            re.ResourceMottonenStatePreparation, {"num_wires": num_stateprep_wires}
+        )
+        expected[msp] = 1
 
         cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
-        hadamard = re.CompressedResourceOp(re.ResourceHadamard, {})
-
-        num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
-        num_parallel_computations = min(num_parallel_computations, num_bitstrings)
-
-        num_swap_wires = math.floor(math.log2(num_parallel_computations))
-        num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
-        assert num_swap_wires + num_select_wires <= num_control_wires
-
-        swap_clean_prefactor = 1
-        select_clean_prefactor = 1
-
-        if clean:
-            expected[hadamard] = 2 * size_bitstring
-            swap_clean_prefactor = 4
-            select_clean_prefactor = 2
-
-        # SELECT cost:
-        expected[cnot] = num_bit_flips  # each unitary in the select is just a CNOT
-
+        num_zero_ctrls = size_basis_state // 2
         multi_x = re.CompressedResourceOp(
             re.ResourceMultiControlledX,
             {
-                "num_ctrl_wires": num_select_wires,
-                "num_ctrl_values": 0,
+                "num_ctrl_wires": size_basis_state,
+                "num_ctrl_values": num_zero_ctrls,
                 "num_work_wires": 0,
             },
         )
 
-        num_total_ctrl_possibilities = 2**num_select_wires
-        expected[multi_x] = select_clean_prefactor * (
-            2 * num_total_ctrl_possibilities  # two applications targetting the aux qubit
-        )
-        num_zero_controls = (2 * num_total_ctrl_possibilities * num_select_wires) // 2
-        expected[x] = select_clean_prefactor * (
-            num_zero_controls * 2  # conjugate 0 controls on the multi-qubit x gates from above
-        )
-        # SWAP cost:
-        ctrl_swap = re.CompressedResourceOp(re.ResourceCSWAP, {})
-        expected[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
+        basis_size = 2**size_basis_state
+        prob_matching_basis_states = num_basis_states / basis_size
+        num_permutes = round(num_basis_states * (1 - prob_matching_basis_states))
+
+        if num_permutes:
+            expected[cnot] = num_permutes * (
+                size_basis_state // 2
+            )  # average number of bits to flip
+            expected[multi_x] = 2 * num_permutes  # for compute and uncompute
 
         assert actual == expected
 
