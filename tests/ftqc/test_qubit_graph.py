@@ -587,46 +587,46 @@ class TestQubitGraphRepresentation:
     def test_representation(self):
         """Test basic conversion of a QubitGraph to its string representation."""
         q = QubitGraph(id=0)
-        assert str(q) == "QubitGraph<0>"
+        assert str(q) == "QubitGraph<id=0, loc=[]>"
 
         q = QubitGraph(id="0")
-        assert str(q) == "QubitGraph<0>"
+        assert str(q) == "QubitGraph<id=0, loc=[]>"
 
         q = QubitGraph(id=(0, 0))
-        assert str(q) == "QubitGraph<(0, 0)>"
+        assert str(q) == "QubitGraph<id=(0, 0), loc=[]>"
 
         q = QubitGraph(id=("aux", 0))
-        assert str(q) == "QubitGraph<('aux', 0)>"
+        assert str(q) == "QubitGraph<id=('aux', 0), loc=[]>"
 
         q = QubitGraph()  # ID is initialized as UUID if not given
         hex_pattern_8char = r"[0-9a-fA-F]{8}"  # Expect string repr to contain 8-character hex code
-        assert re.match(rf"QubitGraph<{hex_pattern_8char}>", str(q))
+        assert re.match(rf"QubitGraph<id={hex_pattern_8char}, loc=\[\]>", str(q))
 
     def test_representation_nested(self):
         """Test conversion of a nested QubitGraph to its string representation."""
         graph = nx.Graph()
         graph.add_node(1)
         q = QubitGraph(graph, id=0)
-        assert str(q) == "QubitGraph<0>"
-        assert str(q[1]) == "QubitGraph<0, 1>"
+        assert str(q) == "QubitGraph<id=0, loc=[]>"
+        assert str(q[1]) == "QubitGraph<id=1, loc=[0]>"
 
         graph = nx.Graph()
         graph.add_node("1")
         q = QubitGraph(graph, id=0)
-        assert str(q) == "QubitGraph<0>"
-        assert str(q["1"]) == "QubitGraph<0, 1>"
+        assert str(q) == "QubitGraph<id=0, loc=[]>"
+        assert str(q["1"]) == "QubitGraph<id=1, loc=[0]>"
 
         graph = nx.Graph()
         graph.add_node((0, 0))
         q = QubitGraph(graph, id=0)
-        assert str(q) == "QubitGraph<0>"
-        assert str(q[(0, 0)]) == "QubitGraph<0, (0, 0)>"
+        assert str(q) == "QubitGraph<id=0, loc=[]>"
+        assert str(q[(0, 0)]) == "QubitGraph<id=(0, 0), loc=[0]>"
 
         graph = nx.Graph()
         graph.add_node(("aux", 0))
         q = QubitGraph(graph, id=0)
-        assert str(q) == "QubitGraph<0>"
-        assert str(q[("aux", 0)]) == "QubitGraph<0, ('aux', 0)>"
+        assert str(q) == "QubitGraph<id=0, loc=[]>"
+        assert str(q[("aux", 0)]) == "QubitGraph<id=('aux', 0), loc=[0]>"
 
     def test_representation_cyclically_nested_graph(self):
         """This test currently checks that attempting to represent a cyclically nested graph
@@ -641,7 +641,7 @@ class TestQubitGraphRepresentation:
         q[0] = q
 
         with pytest.warns(UserWarning, match="A cyclically nested graph structure was detected"):
-            assert str(q) == "QubitGraph<0; cyclic>"
+            assert str(q) == "QubitGraph<id=0; cyclic>"
 
     def test_representation_deeply_nested_graph(self):
         """Test that attempting to represent a deeply nested QubitGraph object emits a 'Maximum
@@ -655,7 +655,9 @@ class TestQubitGraphRepresentation:
             q_next.init_graph_nd_grid((1,))
 
         with pytest.warns(UserWarning, match="Maximum traversal depth reached"):
-            assert str(q_next).startswith("QubitGraph<...,")
+            q_next_str_repr = str(q_next)
+            assert q_next_str_repr.startswith("QubitGraph<id=0, loc=[")
+            assert q_next_str_repr.endswith("...]>")
 
 
 class TestQubitGraphWorkflows:

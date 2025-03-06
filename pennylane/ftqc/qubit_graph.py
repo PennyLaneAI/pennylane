@@ -58,28 +58,55 @@ class QubitGraph:
         >>> from pennylane.ftqc import QubitGraph
         >>> q = QubitGraph(nx.grid_graph((2,2)), id=0)
         >>> q
-        QubitGraph<0>
+        QubitGraph<id=0, loc=[]>
         >>> for child in q.children:
         ...     print(child)
-        QubitGraph<0, (0, 0)>
-        QubitGraph<0, (0, 1)>
-        QubitGraph<0, (1, 0)>
-        QubitGraph<0, (1, 1)>
+        QubitGraph<id=(0, 0), loc=[0]>
+        QubitGraph<id=(0, 1), loc=[0]>
+        QubitGraph<id=(1, 0), loc=[0]>
+        QubitGraph<id=(1, 1), loc=[0]>
 
         Using the QubitGraph object defined above as a starting point, it's possible to nest other
         QubitGraph objects in any of the nodes of its underlying qubit graph:
 
         >>> q[(0,0)] = QubitGraph(nx.grid_graph((2,)))
         >>> q[(0,0)]
-        QubitGraph<0, (0, 0)>
+        QubitGraph<id=(0, 0), loc=[0]>
         >>> for child in q[(0,0)].children:
         ...     print(child)
-        QubitGraph<0, (0, 0), 0>
-        QubitGraph<0, (0, 0), 1>
+        QubitGraph<id=0, loc=[(0, 0), 0]>
+        QubitGraph<id=1, loc=[(0, 0), 0]>
 
         Notice that you do not have to provide an ID when constructing the QubitGraph; when a
         QubitGraph object is assigned to the node of another QubitGraph, its ID takes on the label
         of the node it was assigned to.
+
+    **How to Read the QubitGraph String Representation**
+
+        The examples above showed that any QubitGraph in the hierarchical structure can be displayed
+        with information on its ID and its location in the hierarchy. For example, the string
+        representation
+
+            QubitGraph<id=1, loc=[(0, 0), 0]>
+
+        indicates that this QubitGraph has an ID of ``1``, and it is nested within a parent node
+        labelled ``(0, 0)``, which is nested within a parent node labelled ``0``, which is a root
+        node. If a QubitGraph is itself a root node (meaning it is not nested within a parent
+        QubitGraph), its location is displayed as an empty list, for example:
+
+            QubitGraph<id=0, loc=[]>
+
+        If no ID parameter was given upon construction of the QubitGraph, you will notice that a
+        random UUID has been assigned to it:
+
+            >>> q = QubitGraph()
+            >>> q
+            QubitGraph<id=7491161c, loc=[]>
+
+        This ID is truncated for brevity; the full ID is 32-digit hexadecimal number:
+
+            >>> q.id
+            '7491161c-ca7e-42cc-af3e-8ca6250a370e'
 
     ..  TODO:
 
@@ -155,14 +182,14 @@ class QubitGraph:
             >>> graph = nx.Graph()
             >>> graph.add_node(0)
             >>> q_top = QubitGraph(graph, id="top")
-            >>> print(f"{q_top}; {q_top.nodes}")
-            QubitGraph<top>; [0]
+            >>> print(f"{q_top}; {q_top.node_labels}")
+            QubitGraph<id=top, loc=[]>; [0]
             >>> q_new = QubitGraph(graph, "new")
-            >>> print(f"{q_new}; {q_new.nodes}")
-            QubitGraph<new>; [0]
+            print(f"{q_new}; {q_new.node_labels}")
+            QubitGraph<id=new, loc=[]>; [0]
             >>> q_top[0] = q_new
-            >>> print(f"{q_top[0]}; {q_top[0].nodes}")
-            QubitGraph<top, 0>; [0]
+            >>> print(f"{q_top[0]}; {q_top[0].node_labels}")
+            QubitGraph<id=0, loc=[top]>; [0]
 
         ..  TODO:
 
@@ -197,7 +224,7 @@ class QubitGraph:
             >>> q = QubitGraph(id=0)
             >>> q.init_graph_nd_grid((2,))
             >>> tuple(q)
-            (QubitGraph<0>,)
+            (QubitGraph<id=0, loc=[]>,)
 
         Without this dummy method defined, the ``tuple()`` constructor attempts to iterate over the
         values that the ``__getitem__()`` method yield, which creates a tuple of the QubitGraph
@@ -207,7 +234,7 @@ class QubitGraph:
             >>> q = QubitGraph(id=0)
             >>> q.init_graph_nd_grid((2,))
             >>> tuple(q)
-            (QubitGraph<0, 0>, QubitGraph<0, 1>)
+            (QubitGraph<id=0, loc=[0]>, QubitGraph<id=1, loc=[0]>)
 
         Making QubitGraph non-iterable is especially important when using it as input to the
         :class:`~.Wires` class, which checks if the input is iterable by wrapping it in a tuple.
@@ -222,25 +249,25 @@ class QubitGraph:
         **Examples**
 
             >>> QubitGraph(id=0)
-            QubitGraph<0>
+            QubitGraph<id=0, loc=[]>
 
             >>> q = QubitGraph(id=0)
             >>> q.init_graph_nd_grid((2, 2))
             >>> q
-            QubitGraph<0>
+            QubitGraph<id=0, loc=[]>
             >>> q[(0, 1)]
-            QubitGraph<0, (0, 1)>
+            QubitGraph<id=(0, 1), loc=[0]>
             >>> graph = nx.Graph()
             >>> graph.add_node("aux")
             >>> q[(0, 1)].init_graph(graph)
             >>> q[(0, 1)]["aux"]
-            QubitGraph<0, (0, 1), aux>
+            QubitGraph<id=aux, loc=[(0, 1), 0]>
         """
         # Truncate the ID representation if it is a UUID
         id_repr = self._truncate_id_if_uuid(self._id)
 
         if self.is_root:
-            return f"QubitGraph<{id_repr}>"
+            return f"QubitGraph<id={id_repr}, loc=[]>"
 
         if self.has_cycle():
             # NOTE: For now, we check if the QubitGraph nesting structure is cyclic and break early,
@@ -248,11 +275,11 @@ class QubitGraph:
             # Eventually, it would be better to explicitly disallow constructing a cyclically nested
             # QubitGraph.
             self._warn_cyclically_nested_graph()
-            return f"QubitGraph<{id_repr}; cyclic>"
+            return f"QubitGraph<id={id_repr}; cyclic>"
 
         depth_counter = 1
 
-        ids = [self._truncate_id_if_uuid(self._id)]
+        ids = []
         parent = self.parent
         while parent is not None:
             # To prevent extremely long string representations, we break early once we reach the
@@ -263,13 +290,13 @@ class QubitGraph:
                 ids.append("...")
                 break
 
-            ids.append(parent.id)
+            ids.append(self._truncate_id_if_uuid(parent._id))
             parent = parent.parent
 
             depth_counter += 1
 
-        ids_str = ", ".join(str(id) for id in ids[::-1])
-        return f"QubitGraph<{ids_str}>"
+        ids_str = ", ".join(str(id) for id in ids)
+        return f"QubitGraph<id={id_repr}, loc=[{ids_str}]>"
 
     @property
     def id(self):
@@ -399,8 +426,8 @@ class QubitGraph:
             >>> q = QubitGraph(nx.grid_graph((2,)), id=0)
             >>> set(q.node_labels)
             {0, 1}
-            >>> set(q.children)
-            {QubitGraph<0, 0>, QubitGraph<0, 1>}
+            >>> list(q.children)
+            [QubitGraph<id=0, loc=[0]>, QubitGraph<id=1, loc=[0]>]
         """
         if not self.is_initialized:
             self._warn_uninitialized()
@@ -423,8 +450,8 @@ class QubitGraph:
         **Example**
 
             >>> q = QubitGraph(nx.grid_graph((2, 2)), id=0)
-            >>> set(q[(0,0)].neighbors)
-            {QubitGraph<0, (0, 1)>, QubitGraph<0, (1, 0)>}
+            >>> list(q[(0,0)].neighbors)
+            [QubitGraph<id=(1, 0), loc=[0]>, QubitGraph<id=(0, 1), loc=[0]>]
         """
         if self.is_root:
             return
@@ -478,7 +505,7 @@ class QubitGraph:
             >>> q = QubitGraph(id=0)
             >>> q.init_graph(graph)
             >>> list(q.children)
-            [QubitGraph<0, 0>, QubitGraph<0, 1>]
+            [QubitGraph<id=0, loc=[0]>, QubitGraph<id=1, loc=[0]>]
         """
         if graph is None:
             raise TypeError("QubitGraph requires a graph-like input, got NoneType.")
@@ -513,8 +540,9 @@ class QubitGraph:
             >>> q = QubitGraph(id=0)
             >>> q.init_graph_2d_grid(2, 3)
             >>> list(q.children)
-            [QubitGraph<0, (0, 0)>, QubitGraph<0, (0, 1)>, QubitGraph<0, (0, 2)>,
-            QubitGraph<0, (1, 0)>, QubitGraph<0, (1, 1)>, QubitGraph<0, (1, 2)>]
+            [QubitGraph<id=(0, 0), loc=[0]>, QubitGraph<id=(0, 1), loc=[0]>,
+            QubitGraph<id=(0, 2), loc=[0]>, QubitGraph<id=(1, 0), loc=[0]>,
+            QubitGraph<id=(1, 1), loc=[0]>, QubitGraph<id=(1, 2), loc=[0]>]
         """
         if self.is_initialized:
             self._warn_reinitialization()
@@ -552,10 +580,12 @@ class QubitGraph:
             >>> q = QubitGraph(id=0)
             >>> q.init_graph_nd_grid((2, 2, 3))
             >>> list(q.children)
-            [QubitGraph<0, (0, 0, 0)>, QubitGraph<0, (0, 0, 1)>, QubitGraph<0, (0, 1, 0)>,
-            QubitGraph<0, (0, 1, 1)>, QubitGraph<0, (1, 0, 0)>, QubitGraph<0, (1, 0, 1)>,
-            QubitGraph<0, (1, 1, 0)>, QubitGraph<0, (1, 1, 1)>, QubitGraph<0, (2, 0, 0)>,
-            QubitGraph<0, (2, 0, 1)>, QubitGraph<0, (2, 1, 0)>, QubitGraph<0, (2, 1, 1)>]
+            [QubitGraph<id=(0, 0, 0), loc=[0]>, QubitGraph<id=(0, 0, 1), loc=[0]>,
+            QubitGraph<id=(0, 1, 0), loc=[0]>, QubitGraph<id=(0, 1, 1), loc=[0]>,
+            QubitGraph<id=(1, 0, 0), loc=[0]>, QubitGraph<id=(1, 0, 1), loc=[0]>,
+            QubitGraph<id=(1, 1, 0), loc=[0]>, QubitGraph<id=(1, 1, 1), loc=[0]>,
+            QubitGraph<id=(2, 0, 0), loc=[0]>, QubitGraph<id=(2, 0, 1), loc=[0]>,
+            QubitGraph<id=(2, 1, 0), loc=[0]>, QubitGraph<id=(2, 1, 1), loc=[0]>]
         """
         if self.is_initialized:
             self._warn_reinitialization()
