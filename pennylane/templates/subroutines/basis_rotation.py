@@ -17,6 +17,8 @@ This module contains the template for performing basis transformation defined by
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.wires import Wires, WiresLike
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.qchem.givens_decomposition import givens_decomposition
 
 
@@ -98,6 +100,8 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    resource_param_keys = ("dim_N",)
+
     @classmethod
     def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
         # pylint: disable=arguments-differ
@@ -129,6 +133,11 @@ class BasisRotation(Operation):
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
         super().__init__(unitary_matrix, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        unitary_matrix = self.parameters[0]
+        return {"dim_N": qml.math.shape(unitary_matrix)[0]}
 
     @property
     def num_params(self):
@@ -190,6 +199,31 @@ class BasisRotation(Operation):
 
         return op_list
 
+
+def _basis_rot_resources(dim_N):
+
+    pass
+
+
+@register_resources(_basis_rot_resources)
+def _basis_rot(unitary_matrix, wires: WiresLike, **__):
+
+    phase_list, givens_list = givens_decomposition(unitary_matrix)
+
+    for idx, phase in enumerate(phase_list):
+        qml.PhaseShift(qml.math.angle(phase), wires=wires[idx])
+
+    for grot_mat, indices in givens_list:
+        theta = qml.math.arccos(qml.math.real(grot_mat[1, 1]))
+        phi = qml.math.angle(grot_mat[0, 0])
+
+        qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
+
+        if qml.math.is_abstract(phi) or not qml.math.isclose(phi, 0.0):
+            qml.PhaseShift(phi, wires=wires[indices[0]])
+
+
+add_decomps(BasisRotation, _basis_rot)
 
 # Program capture needs to unpack and re-pack the wires to support dynamic wires. For
 # BasisRotation, the unconventional argument ordering requires custom def_impl code.
