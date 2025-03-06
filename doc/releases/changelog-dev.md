@@ -4,6 +4,13 @@
 
 <h3>New features since last release</h3>
 
+* Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
+  [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
+
+* Added a class `qml.capture.transforms.MergeRotationsInterpreter` that merges rotation operators
+  following the same API as `qml.transforms.optimization.merge_rotations` when experimental program capture is enabled.
+  [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
+
 * `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
   `qml.defer_measurements` can be executed on `default.qubit`.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
@@ -48,6 +55,10 @@
   [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
 
 <h3>Improvements 🛠</h3>
+
+* Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
+  handle sparse matrices.
+  [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
 
 * Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
   following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
@@ -419,6 +430,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Change some `scipy` imports from submodules to whole module to reduce memory footprint of importing pennylane. 
+  [(#7040)](https://github.com/PennyLaneAI/pennylane/pull/7040)
+
 * Add `NotImplementedError`s for `grad` and `jacobian` in `CollectOpsandMeas`.
   [(#7041)](https://github.com/PennyLaneAI/pennylane/pull/7041)
 
@@ -540,6 +554,11 @@
 
 * The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
   [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
+
+* Processing mid-circuit measurements inside conditionals is not supported and previously resulted in 
+  unclear error messages or incorrect results. It is now explicitly not allowed, and raises an error when 
+  processing the tape.
+  [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)
 
 <h3>Contributors ✍️</h3>
 

@@ -17,7 +17,7 @@ non-Clifford gates for quantum algorithms in first quantization using a plane-wa
 """
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
 import numpy as np
-from scipy import integrate
+import scipy as sp
 
 from pennylane.operation import AnyWires, Operation
 
@@ -317,7 +317,7 @@ class FirstQuantization(Operation):
             4 * np.pi * (np.sqrt(3) * n ** (1 / 3) / 2 - 1)
             + 3
             - 3 / n ** (1 / 3)
-            + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
+            + 3 * sp.integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
         )
         n_m = int(
             np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021)
@@ -738,7 +738,7 @@ class FirstQuantization(Operation):
             4 * np.pi * (np.sqrt(3) * n ** (1 / 3) / 2 - 1)
             + 3
             - 3 / n ** (1 / 3)
-            + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
+            + 3 * sp.integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
         ) / bmin**2
 
         # computed using error term derived in Eq. (113) of PRX Quantum 2, 040332 (2021)
