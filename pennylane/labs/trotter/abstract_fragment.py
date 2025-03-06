@@ -53,6 +53,7 @@ def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
 
     return commutator(head, nested_commutator(tail))
 
+
 class State(ABC):
     """Abstract class specifying which methods a State class should implement"""
 
