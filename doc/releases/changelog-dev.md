@@ -64,6 +64,11 @@
   CII
   ```
 
+  ``qml.liealg.check_commutation(A, B, C)`` checks if all commutators between `A` and `B`
+  map to a subspace of `C`, i.e. `[A, B] \subset C`.
+
+  ``qml.liealg.check_cartan_decomp`` checks the commutation relations that define a ``cartan_decomp``, i.e. `[k, m] \subset m`, `[k, k] \subset k` and `[m, m] \subset k`.
+
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
 
