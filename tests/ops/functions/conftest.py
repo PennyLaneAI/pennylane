@@ -90,7 +90,7 @@ _INSTANCES_TO_TEST = [
     ),
     (
         ftqc.GraphStatePrep(
-            qml.ftqc.QubitGraph(0, graph=nx.grid_graph([2, 2])), wires=[1, 2, 3, 4]
+            qml.ftqc.QubitGraph(graph=nx.grid_graph([2, 2])), wires=[1, 2, 3, 4]
         ),
         {"skip_deepcopy": True, "skip_pickle": True},
     ),
