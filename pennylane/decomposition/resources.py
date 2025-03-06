@@ -160,7 +160,7 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
     """
     _validate_resource_rep(op_type, params)
     if op_type is qml.ops.Controlled or op_type is qml.ops.ControlledOp:
-        return controlled_resource_rep(op_type, **params)
+        return controlled_resource_rep(**params)
     return CompressedResourceOp(op_type, params)
 
 
