@@ -21,7 +21,7 @@ import functools
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import add_decomposition, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -243,10 +243,11 @@ def _qft_decomposition_resources(num_wires):
     }
 
 
+# pylint: disable=no-value-for-parameter
 @register_resources(_qft_decomposition_resources)
 def _qft_decomposition(wires: WiresLike, n_wires, **__):
 
-    shifts = qml.math.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)], like="jax")
+    shifts = qml.math.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)])
     shift_len = len(shifts)
 
     @qml.for_loop(n_wires)
@@ -268,4 +269,4 @@ def _qft_decomposition(wires: WiresLike, n_wires, **__):
     swaps()
 
 
-add_decomposition(QFT, _qft_decomposition)
+add_decomps(QFT, _qft_decomposition)

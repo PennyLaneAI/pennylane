@@ -14,16 +14,14 @@
 
 """The decomposition module."""
 
-# FIXME(remove)
-from .utils import enable_graph_debug, disable_graph_debug, enabled_graph_debug
-
 from .utils import enable_graph, disable_graph, enabled_graph, DecompositionError
-from .resources import Resources, CompressedResourceOp, resource_rep
-from .decomposition import DecompositionGraph
+
+from .decomposition_graph import DecompositionGraph
+from .resources import Resources, CompressedResourceOp, resource_rep, controlled_resource_rep
 from .decomposition_rule import (
     register_resources,
     DecompositionRule,
-    add_decomposition,
-    get_decompositions,
-    has_decomposition,
+    add_decomps,
+    list_decomps,
+    has_decomp,
 )

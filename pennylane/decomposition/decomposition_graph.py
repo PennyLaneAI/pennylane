@@ -30,12 +30,12 @@ from dataclasses import dataclass
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
-from .decomposition_rule import DecompositionRule, get_decompositions
+from .decomposition_rule import DecompositionRule, list_decomps
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .utils import DecompositionError
 
 
-class DecompositionGraph:
+class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     """A graph that models a decomposition problem.
 
     Args:
@@ -78,10 +78,10 @@ class DecompositionGraph:
     def _get_decompositions(self, op_type) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
         if op_type in self._fixed_decomps:
-            return self._fixed_decomps[op_type]
+            return [self._fixed_decomps[op_type]]
         if op_type in self._alt_decomps:
-            return self._alt_decomps[op_type] + get_decompositions(op_type)
-        return get_decompositions(op_type)
+            return self._alt_decomps[op_type] + list_decomps(op_type)
+        return list_decomps(op_type)
 
     def _construct_graph(self):
         """Constructs the decomposition graph."""
