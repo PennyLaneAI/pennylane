@@ -75,7 +75,7 @@ QS = TypeVar("QS", bound="QuantumScript")
 
 
 class SpecsDict(dict):
-    """A special dictionary for storing the specs of a circuit. Used to custom KeyError's."""
+    """A special dictionary for storing the specs of a circuit. Used to customize ``KeyError`` messages."""
 
     def __getitem__(self, __k):
         if __k == "num_diagonalizing_gates":
