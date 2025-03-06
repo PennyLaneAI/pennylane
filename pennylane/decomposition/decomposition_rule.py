@@ -64,7 +64,7 @@ def register_resources(
 
     .. code-block:: python
 
-        qml.add_decomposition(qml.CNOT, cnot_decomp)
+        qml.add_decomps(qml.CNOT, cnot_decomp)
 
     or specified as a fixed decomposition rule to the decompose transform:
 
@@ -84,7 +84,7 @@ def register_resources(
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        qml.add_decomposition(qml.CNOT, cnot_decomp)
+        qml.add_decomps(qml.CNOT, cnot_decomp)
 
     .. details::
         :title: Usage Details

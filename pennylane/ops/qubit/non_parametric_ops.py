@@ -25,6 +25,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -55,6 +56,8 @@ class Hadamard(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_param_keys = ()
+
     _queue_category = "_ops"
 
     def __init__(self, wires: WiresLike, id: Optional[str] = None):
@@ -78,6 +81,10 @@ class Hadamard(Observable, Operation):
     @property
     def name(self) -> str:
         return "Hadamard"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -196,6 +203,31 @@ class Hadamard(Observable, Operation):
     def pow(self, z: Union[int, float]):
         return super().pow(z % 2)
 
+
+def _hadamard_rz_rx_resources():
+    return {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_hadamard_rz_rx_resources)
+def _hadamard_to_rz_rx(wires: WiresLike, **__):
+    qml.RZ(np.pi / 2, wires=wires)
+    qml.RX(np.pi / 2, wires=wires)
+    qml.RZ(np.pi / 2, wires=wires)
+    qml.GlobalPhase(-np.pi / 2, wires=wires)
+
+
+def _hadamard_rz_ry_resources():
+    return {qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_hadamard_rz_ry_resources)
+def _hadamard_to_rz_ry(wires: WiresLike, **__):
+    qml.RZ(np.pi, wires=wires)
+    qml.RY(np.pi / 2, wires=wires)
+    qml.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(Hadamard, [_hadamard_to_rz_rx, _hadamard_to_rz_ry])
 
 H = Hadamard
 r"""H(wires)
@@ -1239,6 +1271,7 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_param_keys = ()
     batch_size = None
 
     @property
@@ -1336,6 +1369,10 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
 
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
@@ -1348,6 +1385,20 @@ class SWAP(Operation):
     @property
     def is_hermitian(self) -> bool:
         return True
+
+
+def _swap_to_cnot_resources():
+    return {qml.CNOT: 3}
+
+
+@register_resources(_swap_to_cnot_resources)
+def _swap_to_cnot(wires, **__):
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[1], wires[0]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+
+
+add_decomps(SWAP, _swap_to_cnot)
 
 
 class ECR(Operation):

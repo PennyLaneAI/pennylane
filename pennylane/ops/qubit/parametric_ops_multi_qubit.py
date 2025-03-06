@@ -166,6 +166,10 @@ class MultiRZ(Operation):
 
         return qml.math.exp(qml.math.outer(-0.5j * theta, eigs))
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": self.hyperparameters["num_wires"]}
+
     @staticmethod
     def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
         theta: TensorLike, wires: WiresLike, **kwargs
@@ -195,10 +199,6 @@ class MultiRZ(Operation):
         ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
 
         return ops
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": self.hyperparameters["num_wires"]}
 
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
@@ -288,6 +288,8 @@ class PauliRot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    resource_param_keys = ("pauli_word",)
+
     _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
@@ -366,6 +368,10 @@ class PauliRot(Operation):
             op_label += param_string
 
         return op_label
+
+    @property
+    def resource_params(self) -> dict:
+        return {"pauli_word": self.hyperparameters["pauli_word"]}
 
     @staticmethod
     def _check_pauli_word(pauli_word) -> bool:
@@ -550,6 +556,41 @@ class PauliRot(Operation):
 
     def pow(self, z):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
+
+
+def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
+    if set(pauli_word) == {"I"}:
+        qml.GlobalPhase(theta / 2)
+        return
+    active_wires, active_gates = zip(
+        *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+    )
+    for wire, gate in zip(active_wires, active_gates):
+        if gate == "X":
+            qml.Hadamard(wires=[wire])
+        elif gate == "Y":
+            qml.RX(np.pi / 2, wires=[wire])
+    qml.MultiRZ(theta, wires=list(active_wires))
+    for wire, gate in zip(active_wires, active_gates):
+        if gate == "X":
+            qml.Hadamard(wires=[wire])
+        elif gate == "Y":
+            qml.RX(-np.pi / 2, wires=[wire])
+
+
+def _pauli_rot_resources(pauli_word):
+    if set(pauli_word) == {"I"}:
+        return {qml.GlobalPhase: 1}
+    num_active_wires = len(pauli_word.replace("I", ""))
+    return {
+        qml.Hadamard: 2 * pauli_word.count("X"),
+        qml.RX: 2 * pauli_word.count("Y"),
+        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
+    }
+
+
+pauli_rot_decomposition = qml.register_resources(_pauli_rot_resources, _pauli_rot_decomposition)
+add_decomps(PauliRot, pauli_rot_decomposition)
 
 
 class PCPhase(Operation):
