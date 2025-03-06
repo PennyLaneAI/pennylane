@@ -24,7 +24,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.decomposition import add_decomposition, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.wires import WiresLike
@@ -120,6 +120,8 @@ class ControlledQubitUnitary(ControlledOp):
 
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_param_keys = ("base", "num_control_wires", "num_zero_control_values", "num_work_wires")
 
     grad_method = None
     """Gradient computation method."""
@@ -230,6 +232,15 @@ class ControlledQubitUnitary(ControlledOp):
         )
         self._name = "ControlledQubitUnitary"
 
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "base": self.base,
+            "num_control_wires": len(self.control_wires),
+            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_work_wires": len(self.work_wires),
+        }
+
     def _controlled(self, wire):
         ctrl_wires = wire + self.control_wires
         values = None if self.control_values is None else [True] + self.control_values
@@ -289,6 +300,8 @@ class CH(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CH"
 
     def _flatten(self):
@@ -313,6 +326,10 @@ class CH(ControlledOp):
 
     def __repr__(self):
         return f"CH(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -407,6 +424,8 @@ class CY(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CY"
 
     def _flatten(self):
@@ -428,6 +447,10 @@ class CY(ControlledOp):
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -610,6 +633,8 @@ class CSWAP(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CSWAP"
 
     def _flatten(self):
@@ -634,6 +659,10 @@ class CSWAP(ControlledOp):
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -749,6 +778,8 @@ class CCZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CCZ"
 
     def __init__(self, wires, id=None):
@@ -762,6 +793,10 @@ class CCZ(ControlledOp):
 
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -980,7 +1015,7 @@ def _cnot_to_cz_h(wires, **__):
     qml.H(wires[1])
 
 
-add_decomposition(CNOT, _cnot_to_cz_h)
+add_decomps(CNOT, _cnot_to_cz_h)
 
 
 class Toffoli(ControlledOp):
@@ -1019,6 +1054,8 @@ class Toffoli(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "Toffoli"
 
     def _flatten(self):
@@ -1042,6 +1079,10 @@ class Toffoli(ControlledOp):
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -1208,6 +1249,8 @@ class MultiControlledX(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ("num_control_wires", "num_zero_control_values", "num_work_wires")
+
     name = "MultiControlledX"
 
     def _flatten(self):
@@ -1281,6 +1324,14 @@ class MultiControlledX(ControlledOp):
     @property
     def wires(self):
         return self.control_wires + self.target_wires
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_control_wires": len(self.control_wires),
+            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_work_wires": len(self.work_wires),
+        }
 
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
@@ -1429,6 +1480,8 @@ class CRX(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -1451,6 +1504,10 @@ class CRX(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1585,6 +1642,8 @@ class CRY(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -1607,6 +1666,10 @@ class CRY(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1741,6 +1804,8 @@ class CRZ(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -1763,6 +1828,10 @@ class CRZ(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1929,6 +1998,8 @@ class CRot(ControlledOp):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
@@ -1957,6 +2028,10 @@ class CRot(ControlledOp):
         cls, phi, theta, omega, wires, id=None
     ):  # pylint: disable=too-many-positional-arguments
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
@@ -2262,6 +2337,6 @@ def _cphase_to_rz_cnot(phi, wires, **__):
     qml.GlobalPhase(-phi / 4)
 
 
-add_decomposition(ControlledPhaseShift, _cphase_to_rz_cnot)
+add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot)
 
 CPhase = ControlledPhaseShift
