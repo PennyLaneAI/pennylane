@@ -309,3 +309,37 @@ class TestControlledResourceRep:
                 "num_work_wires": 3,
             },
         )
+
+    def test_nested_controlled_qubit_unitary(self):
+        """Tests that a nested controlled qubit unitary is flattened."""
+
+        U = qml.math.eye(2)
+
+        rep = controlled_resource_rep(
+            qml.ops.Controlled,
+            {
+                "base_class": qml.ControlledQubitUnitary,
+                "base_params": {
+                    "num_control_wires": 2,
+                    "num_zero_control_values": 1,
+                    "num_work_wires": 1,
+                    "base": qml.QubitUnitary(U, wires=[0]),
+                },
+                "num_control_wires": 1,
+                "num_zero_control_values": 1,
+                "num_work_wires": 1,
+            },
+            1,
+            1,
+            1,
+        )
+        assert rep == CompressedResourceOp(
+            qml.ops.Controlled,
+            {
+                "base_class": qml.QubitUnitary,
+                "base_params": {"U": U},
+                "num_control_wires": 4,
+                "num_zero_control_values": 3,
+                "num_work_wires": 3,
+            },
+        )
