@@ -22,7 +22,6 @@ from typing import Iterable, Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices.preprocess import is_conditional_mcm
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
 from pennylane.wires import Wires
@@ -604,8 +603,6 @@ def diagonalize_mcms(tape):
 
         if isinstance(op, ParametricMidMeasureMP):
 
-            print(f"I found an arbitrary basis MCM, {op}, outside a conditional, and I'm diagonalizing it")
-
             # add diagonalizing gates to tape
             diag_gates = op.diagonalizing_gates()
             new_operations.extend(diag_gates)
@@ -617,27 +614,22 @@ def diagonalize_mcms(tape):
 
             # track mapping from original to computational basis MCMs
             mps_mapping[op] = new_mp
-            curr_idx += 1
-
-            print(f"now my ops are {new_operations}")
 
         elif isinstance(op, qml.ops.Conditional):
-
-            print(f"I found a conditional, {op}")
 
             # from MCM mapping, map any MCMs in the condition if needed
             processing_fn = op.meas_val.processing_fn
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
             expr = MeasurementValue(mps, processing_fn=processing_fn)
 
-            print(f"It has meas_vals {op.meas_val.measurements} that will map to {mps}")
-
             if isinstance(op.base, MidMeasureMP):
-                print("oh look, this one is a measurement!")
-                true_cond, false_cond = (op, tape.operations[i + 1] if i < len(tape.operations) else None)
+                # the only user-facing API for creating Conditionals with MCMs is meas_cond,
+                # which ensures both and true_fn and false_fn are included, so here we assume the
+                # expected format (i.e. conditional mcms are found pairwise with opposite conditions)
+                true_cond, false_cond = (op, tape.operations[i + 1])
+                # we process both the true_cond and the false_cond together, so we skip an index in the ops
                 curr_idx += 1
 
-                print(f"now we are diagonalizing {true_cond} and {false_cond} and making a single measurement")
                 # add conditional diagonalizing gates + computational basis MCM to the tape
                 with qml.QueuingManager.stop_recording():
                     for op in [true_cond, false_cond]:
@@ -654,128 +646,18 @@ def diagonalize_mcms(tape):
 
                 # track mapping from original to computational basis MCMs
                 new_operations.append(new_mp)
-                print(f"we've added the diagonalizing gates and the measurement to the ops, now its {new_operations}")
                 mps_mapping[true_cond.base] = new_mp
                 mps_mapping[false_cond.base] = new_mp
-                curr_idx += 1
-                print(f"we've added them to the mps_mapping, so now its {mps_mapping}")
             else:
-                print(f"updating the measurement values on the conditional {op}")
                 with qml.QueuingManager.stop_recording():
                     new_cond = qml.ops.Conditional(expr=expr, then_op=op.base)
                 new_operations.append(new_cond)
-                print(f"now my ops are {new_operations}")
-                print(f"my new conditional has measurements {new_cond.meas_val.measurements}")
-                curr_idx += 1
 
         else:
             new_operations.append(op)
-            print(f"{op} is a completely normal op, I just leave it alone")
-            curr_idx += 1
+
+        curr_idx += 1
 
     new_tape = tape.copy(operations=new_operations)
 
     return (new_tape,), null_postprocessing
-
-
-def _consolidate_conditional_measurements(ops):
-    # this should occur before general diagonalization, while the measurements are still grouped together
-
-    new_operations = []
-    mps_mapping = {}
-
-    curr_idx = 0
-
-    for i, op in enumerate(ops):
-
-        if i != curr_idx:
-            continue
-
-        if isinstance(op, qml.ops.Conditional):
-
-            # from MCM mapping, map any MCMs in the condition if needed
-            processing_fn = op.meas_val.processing_fn
-            mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
-            expr = MeasurementValue(mps, processing_fn=processing_fn)
-
-            if isinstance(op.base, qml.measurements.MidMeasureMP):
-                # in core PennyLane with tapes, we can assume that a conditional has only a
-                # true_fn and false_fn, so we make that assumption in the PL tape transform
-                # for Catalyst and ProgramCapture, it is also possible to have additional elif functions
-                true_cond, false_cond = (op, ops[i + 1] if i < len(ops) else None)
-                _validate_false_cond(true_cond, false_cond)
-                curr_idx += 1
-
-                # add conditional diagonalizing gates + conditional MCM to the tape
-                with qml.QueuingManager.stop_recording():
-                    for op in [true_cond, false_cond]:
-                        diag_gates = [
-                            qml.ops.Conditional(expr=expr, then_op=gate)
-                            for gate in op.diagonalizing_gates()
-                        ]
-
-                        new_operations.extend(diag_gates)
-
-                    new_mp = MidMeasureMP(
-                        op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
-                    )
-
-                # track mapping from original to computational basis MCMs
-                new_operations.append(new_mp)
-                mps_mapping[op.base] = new_mp
-                curr_idx += 1
-
-            else:
-                with qml.QueuingManager.stop_recording():
-                    new_cond = qml.ops.Conditional(expr=expr, then_op=op.base)
-                new_operations.append(new_cond)
-                curr_idx += 1
-
-        else:
-            new_operations.append(op)
-            curr_idx += 1
-
-    return new_operations
-
-
-def _validate_false_cond(true_cond, false_cond):
-    """Takes a pair of Conditional MCMs (representing a true and false condition) and confirms that
-    the group is complete, i.e. that each input for the measurement values maps to one output"""
-
-    # if the 2nd op isn't a conditional MCM dependent on the same measurement values,
-    # then a `false_fn` wasn't provided
-    if (
-        not is_conditional_mcm(false_cond)
-        or true_cond.meas_val.measurements != false_cond.meas_val.measurements
-    ):
-        raise ValueError(
-            "Using `cond` to add mid-circuit measurements to a circuit must always "
-            "result in application of a mid-circuit measurement. Make sure any "
-            "instances of `qml.cond` that apply a measurement for their `true_fn` "
-            "also apply a measurement for their `false_fn`"
-        )
-
-    if not (
-        true_cond.base.wires == false_cond.base.wires
-        and true_cond.base.reset == false_cond.base.reset
-        and true_cond.base.postselect == false_cond.base.postselect
-    ):
-        raise ValueError(
-            "When applying a mid-circuit measurement in `cond`, the `wire`, "
-            "`postselect` and `reset` behaviour must be consistent for all "
-            "branches of the conditional. Only the basis of the measurement (defined "
-            "by measurement type or by `plane` and `angle`) can vary."
-        )
-
-    # ToDo: is this even relevant anymore since PL doesn't support elif? or can we just return True here?
-    meas_vals = [true_cond.meas_val, false_cond.meas_val]
-
-    # get each conditionals outcomes for all combinations of inputs
-    all_outcomes = [[outcome for branch, outcome in mv.items()] for mv in meas_vals]
-
-    # sum outcomes for each possible input and confirm they all sum to 1
-    # (i.e. each input is true for one conditional, and false for all the others)
-    all_branches_true_once = np.allclose(np.sum(all_outcomes, axis=0), 1)
-
-    if not all_branches_true_once:
-        raise ValueError("can I even make it raise this error or is this part redundant?")
