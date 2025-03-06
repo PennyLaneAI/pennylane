@@ -561,6 +561,7 @@ class PauliRot(Operation):
 def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
     if set(pauli_word) == {"I"}:
         qml.GlobalPhase(theta / 2)
+        return
     active_wires, active_gates = zip(
         *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
     )
