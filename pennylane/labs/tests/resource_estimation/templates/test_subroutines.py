@@ -396,57 +396,80 @@ class TestResourceMultiplier:
         }
 
     @pytest.mark.parametrize(
-        "base_class, base_params, num_ctrl_wires",
-        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
+        "mod, num_work_wires, num_x_wires",
+        [(7, 5, 3), (8, 5, 3)],
     )
-    def test_resource_rep(self, base_class, base_params, num_ctrl_wires):
+    def test_resource_rep(self, mod, num_work_wires, num_x_wires):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = re.CompressedResourceOp(
-            re.ResourceControlledSequence,
+            re.ResourceMultiplier,
             {
-                "base_class": base_class,
-                "base_params": base_params,
-                "num_ctrl_wires": num_ctrl_wires,
+                "mod": mod,
+                "num_work_wires": num_work_wires,
+                "num_x_wires": num_x_wires,
             },
         )
-        assert expected == re.ResourceControlledSequence.resource_rep(
-            base_class, base_params, num_ctrl_wires
+        assert expected == re.ResourceMultiplier.resource_rep(
+            mod, num_work_wires, num_x_wires
         )
 
     @pytest.mark.parametrize(
-        "base_class, base_params, num_ctrl_wires",
-        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
+        "mod, num_work_wires, num_x_wires",
+        [(7, 5, 3), (8, 5, 3)],
     )
-    def test_resources_from_rep(self, base_class, base_params, num_ctrl_wires):
+    def test_resources_from_rep(self, mod, num_work_wires, num_x_wires):
         """Test that computing the resources from a compressed representation works"""
 
-        resource_controlled_sequence = re.CompressedResourceOp(
-            re.ResourceControlled,
+        if mod == 2**num_x_wires:
+            num_aux_wires = num_x_wires
+            num_aux_swap = num_x_wires
+        else:
+            num_aux_wires = num_work_wires - 1
+            num_aux_swap = num_aux_wires - 1
+
+        qft = re.CompressedResourceOp(re.ResourceQFT, {"num_wires": num_aux_wires})
+        qft_dag = re.CompressedResourceOp(
+            re.ResourceAdjoint,
+            {"base_class": re.ResourceQFT, "base_params": {"num_wires": num_aux_wires}},
+        )
+
+        sequence = re.CompressedResourceOp(
+            re.ResourceControlledSequence,
             {
-                "base_class": base_class,
-                "base_params": base_params,
-                "num_ctrl_wires": 1,
-                "num_ctrl_values": 0,
-                "num_work_wires": 0,
+                "base_class": re.ResourcePhaseAdder,
+                "base_params": {},
+                "num_ctrl_wires": num_x_wires,
             },
         )
 
-        expected = {resource_controlled_sequence: 2**num_ctrl_wires - 1}
+        sequence_dag = re.CompressedResourceOp(
+            re.ResourceAdjoint,
+            {
+                "base_class": re.ResourceControlledSequence,
+                "base_params": {
+                    "base_class": re.ResourcePhaseAdder,
+                    "base_params": {},
+                    "num_ctrl_wires": num_x_wires,
+                },
+            },
+        )
 
-        rep = re.ResourceControlledSequence.resource_rep(base_class, base_params, num_ctrl_wires)
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+
+        expected = {}
+        expected[qft] = 2
+        expected[qft_dag] = 2
+        expected[sequence] = 1
+        expected[sequence_dag] = 1
+        expected[cnot] = min(num_x_wires, num_aux_swap)
+
+        rep = re.ResourceMultiplier.resource_rep(mod, num_work_wires, num_x_wires)
         actual = rep.op_type.resources(**rep.params)
 
         assert actual == expected
 
-    @pytest.mark.parametrize(
-        "base_class, base_params, num_ctrl_wires",
-        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
-    )
-    def test_tracking_name(self, base_class, base_params, num_ctrl_wires):
+
+    def test_tracking_name(self):
         """Test that the tracking name is correct."""
-        base_name = base_class.tracking_name(**base_params)
-        assert (
-            re.ResourceControlledSequence.tracking_name(base_class, base_params, num_ctrl_wires)
-            == f"ControlledSequence({base_name}, {num_ctrl_wires})"
-        )
+        assert re.ResourceMultiplier.tracking_name() == f"Multiplier"
