@@ -64,5 +64,5 @@ def test_get_decomp_rule():
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps", return_value=[]
 )  # We're going to define all decomposition rules locally in the test suite.
-class TestGraphConstruction:  # pylint: disable=too-many-public-methods
+class TestGraphConstruction:  # pylint: disable=too-few-public-methods
     """Unit tests for constructing the graph."""
