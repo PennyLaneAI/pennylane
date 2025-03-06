@@ -5,3 +5,6 @@ include = '\.pyi?$'
 [tool.bandit]
 targets = "pennylane"
 exclude_dirs = ["tests", "pennylane/labs/tests"]
+skips = [
+    "B101"  # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane
+]
