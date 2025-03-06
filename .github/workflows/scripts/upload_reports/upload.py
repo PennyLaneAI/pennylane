@@ -28,8 +28,15 @@ def read_reports() -> dict:
     else:
         reports_dir = Path(".github/test-reports")
     print(f"Reports directory: {reports_dir}")
-    reports = [str(p) for p in reports_dir.glob("*.xml")]
-    print(f"Found {len(reports)} report files in {reports_dir}")
+
+    # Look for XML files in test-report-* subdirectories
+    reports = []
+    for test_report_dir in reports_dir.glob("test-report-*"):
+        if test_report_dir.is_dir():
+            xml_files = list(test_report_dir.glob("*.xml"))
+            reports.extend([str(p) for p in xml_files])
+
+    print(f"Found {len(reports)} report files")
 
     report_contents = {}
     for report_path in reports:
