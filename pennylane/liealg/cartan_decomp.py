@@ -160,7 +160,8 @@ def check_commutation(
         )
 
     if all_tensors:
-        return _check_commutation_matrix(ops1, ops2, vspace)
+        all_coms = _all_coms(ops1, ops2)
+        return _is_subspace(all_coms, vspace)
 
     if any(isinstance(op, Operator) for op in ops1):
         ops1 = [op.pauli_rep for op in ops1]
@@ -204,11 +205,6 @@ def _is_subspace(subspace, vspace):
     rank_both = qml.math.linalg.matrix_rank(qml.math.vstack([vspace, subspace]))
 
     return rank_both <= rank_V
-
-
-def _check_commutation_matrix(a, b, vspace):
-    all_coms = _all_coms(a, b)
-    return _is_subspace(all_coms, vspace)
 
 
 def check_cartan_decomp(
