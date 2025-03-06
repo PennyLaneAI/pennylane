@@ -2,6 +2,7 @@ import requests
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 import json
+import os
 
 
 class PLOSSSettings(BaseSettings):
@@ -19,7 +20,15 @@ class PLOSSSettings(BaseSettings):
 def read_reports() -> dict:
     """Read the reports from the reports directory."""
 
-    reports = [str(p) for p in Path(".github/test-reports").glob("*.xml")]
+    # Look for reports in the absolute path where GitHub Actions writes them
+    github_workspace = os.environ.get("GITHUB_WORKSPACE", "")
+    print(f"GitHub workspace: {github_workspace}")
+    if github_workspace:
+        reports_dir = Path(github_workspace) / ".github" / "test-reports"
+    else:
+        reports_dir = Path(".github/test-reports")
+    print(f"Reports directory: {reports_dir}")
+    reports = [str(p) for p in reports_dir.glob("*.xml")]
     print(f"Found {len(reports)} report files in .github/test-reports/")
 
     report_contents = {}
