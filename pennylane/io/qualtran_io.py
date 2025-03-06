@@ -34,7 +34,7 @@ try:
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     raise ImportError(
             "This feature requires Qualtran. It can be installed with: pip install qualtran."
-        ) from Error
+        )
 
 
 def get_bloq_registers_info(bloq):
