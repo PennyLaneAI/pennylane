@@ -32,7 +32,9 @@ try:
         Soquet,
     )
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    pass
+    raise ImportError(
+            "This feature requires Qualtran. It can be installed with: pip install qualtran."
+        ) from Error
 
 
 def get_bloq_registers_info(bloq):
@@ -46,6 +48,8 @@ def get_bloq_registers_info(bloq):
         dict: A dictionary that has all the named and un-named registers with default wire
         ordering.
 
+    Raises:
+        TypeError: bloq must be an instance of :code:`~.Bloq`.
     **Example**
 
     Given a qualtran bloq:
@@ -73,7 +77,7 @@ def _get_named_registers(registers):
 
 class FromBloq(Operation):
     r"""
-    A shim for using bloqs as a PennyLane :class:`~.Operation`.
+    An adapter for using [qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library) as a PennyLane :class:`~.Operation`.
 
     Args:
         bloq (qualtran.Bloq): the bloq to wrap
