@@ -165,7 +165,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         # General case
         for base_decomposition in self._get_decompositions(base_class):
             rule = GeneralControlledDecomposition(base_decomposition)
-            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
 
         return op_node_idx
 
