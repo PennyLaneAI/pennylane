@@ -98,7 +98,7 @@ class TestMatrix:
 
         vmatrix = VibronicMatrix(states, modes, blocks)
 
-        assert np.isclose(vmatrix.norm(gridpoints), expected)
+        assert np.isclose(vmatrix.norm(gridpoints, sparse=sparse), expected)
 
     params = [
         (blocks2, 2, 2, 2, False),
@@ -126,6 +126,6 @@ class TestMatrix:
     ):
         """Test that .norm is an upper bound on the true norm"""
         vmatrix = VibronicMatrix(states, modes, blocks)
-        upper_bound = vmatrix.norm(gridpoints)
+        upper_bound = vmatrix.norm(gridpoints, sparse=sparse)
         norm = np.max(np.linalg.eigvals(vmatrix.matrix(gridpoints)))
         assert norm <= upper_bound
