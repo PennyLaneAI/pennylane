@@ -100,9 +100,21 @@ def _allclose_dense_sparse(a, b, rtol=1e-05, atol=1e-08):
 
     # If the size of the sparse matrix is large, we try extracting
     # the non-zero elements and comparing them
-    if not np.array_equal(a.nonzero(), b.nonzero()):
+    a_nnz_coords = a.nonzero()
+    b_nnz_coords = b.nonzero()
+
+    # Find positions where coordinates differ, using XOR operation
+    coord_diff_x = set(zip(*a_nnz_coords)) ^ set(zip(*b_nnz_coords))
+    if coord_diff_x:  # Only accept empty XOR results
         return False
-    return np.allclose(a[a != 0], b.data, rtol=rtol, atol=atol)
+
+    a_data = a[b_nnz_coords]
+    b_data = b.data
+
+    # Compare non-zero elements
+    abs_diff = np.abs(a_data - b_data)
+    nz_close = np.all(abs_diff <= atol + rtol * np.abs(b.data))
+    return nz_close
 
 
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):

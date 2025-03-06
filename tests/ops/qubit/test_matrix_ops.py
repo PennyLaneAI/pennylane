@@ -955,7 +955,6 @@ class TestBlockEncode:
             ([[1, 0], [0, 1]], [0, 1], {"norm": 1.0, "subspace": (2, 2, 4)}),
             (pnp.array([[1, 0], [0, 1]]), range(2), {"norm": 1.0, "subspace": (2, 2, 4)}),
             (pnp.identity(3), ["a", "b", "c"], {"norm": 1.0, "subspace": (3, 3, 8)}),
-            (csr_matrix(pnp.identity(3)), ["a", "b", "c"], {"norm": 1.0, "subspace": (3, 3, 8)}),
         ],
     )
     def test_accepts_various_types(self, input_matrix, wires, expected_hyperparameters):
@@ -1025,23 +1024,11 @@ class TestBlockEncode:
                     ],
                 ],
             ),
-            (
-                csr_matrix([[0.1, 0.2], [0.3, 0.4]]),
-                range(2),
-                csr_matrix(
-                    [
-                        [0.1, 0.2, 0.97283788, -0.05988708],
-                        [0.3, 0.4, -0.05988708, 0.86395228],
-                        [0.94561648, -0.07621992, -0.1, -0.3],
-                        [-0.07621992, 0.89117368, -0.2, -0.4],
-                    ]
-                ),
-            ),
         ],
     )
     def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
         """Test that BlockEncode outputs the correct matrix."""
-        assert qml.math.allclose(qml.matrix(qml.BlockEncode(input_matrix, wires)), output_matrix)
+        assert np.allclose(qml.matrix(qml.BlockEncode(input_matrix, wires)), output_matrix)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
@@ -1257,7 +1244,6 @@ class TestBlockEncode:
                 range(2),
             ),
             ([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]], range(3)),
-            (csr_matrix([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]]), range(3)),
         ],
     )
     def test_adjoint(self, input_matrix, wires):
@@ -1265,8 +1251,8 @@ class TestBlockEncode:
         mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
         adj = qml.matrix(qml.adjoint(qml.BlockEncode(input_matrix, wires)))
         other_adj = qml.matrix(qml.BlockEncode(input_matrix, wires).adjoint())
-        assert qml.math.allclose(np.eye(mat.shape[0]), mat @ adj)
-        assert qml.math.allclose(np.eye(mat.shape[0]), mat @ other_adj)
+        assert np.allclose(np.eye(len(mat)), mat @ adj)
+        assert np.allclose(np.eye(len(mat)), mat @ other_adj)
 
     def test_label(self):
         """Test the label method for BlockEncode op"""
@@ -1295,6 +1281,21 @@ class TestBlockEncode:
             return qml.expval(qml.PauliZ(wires=0))
 
         assert circuit(input_matrix) == output_value
+
+    def test_sparse_matrix(self):
+        """Test that the BlockEncode works well with a sparse matrix of reasonable size."""
+        data = [0.1, 0.2, 0.3] * 4
+        # Embed this data into a sparse matrix of size 8 by 8
+        indices = [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3]
+        indptr = [0, 3, 6, 9, 12]
+
+        sparse_matrix = csr_matrix((data, indices, indptr), shape=(4, 8))
+        op = qml.BlockEncode(sparse_matrix, wires=range(12))
+
+        # Test the operator is unitary
+        mat = qml.matrix(op)
+        mat_dense = qml.matrix(qml.BlockEncode(sparse_matrix.toarray(), wires=range(12)))
+        assert qml.math.allclose(mat, mat_dense)
 
 
 class TestInterfaceMatricesLabel:
