@@ -5,23 +5,32 @@ from typing import Dict, Tuple
 import numpy as np
 import pytest
 
-from pennylane.labs.trotter.realspace import Node, RealspaceOperator, RealspaceSum, VibronicMatrix 
+from pennylane.labs.trotter.realspace import (
+    RealspaceCoeffs,
+    RealspaceOperator,
+    RealspaceSum,
+    VibronicMatrix,
+)
 from pennylane.labs.trotter.utils.matrix_ops import op_norm
 
 # pylint: disable=too-many-arguments
 
-vword0 = RealspaceSum(2, [RealspaceOperator(2, tuple(), Node.tensor_node(np.array(0.5)))])
+vword0 = RealspaceSum(
+    2, [RealspaceOperator(2, tuple(), RealspaceCoeffs.tensor_node(np.array(0.5)))]
+)
 blocks0 = {(0, 0): vword0}
 vmat0 = VibronicMatrix(1, 2, blocks0)
 
-vword1 = RealspaceSum(2, [RealspaceOperator(2, ("P",), Node.tensor_node(np.array([1])))])
+vword1 = RealspaceSum(2, [RealspaceOperator(2, ("P",), RealspaceCoeffs.tensor_node(np.array([1])))])
 blocks1 = {(0, 0): vword1}
 vmat1 = VibronicMatrix(1, 1, blocks1)
 
-vword2a = RealspaceSum(2,
-    [RealspaceOperator(2, ("P", "P"), Node.tensor_node(np.array([[0, 1], [2, 3]])))]
+vword2a = RealspaceSum(
+    2, [RealspaceOperator(2, ("P", "P"), RealspaceCoeffs.tensor_node(np.array([[0, 1], [2, 3]])))]
 )
-vword2b = RealspaceSum(2, [RealspaceOperator(2, ("P",), Node.tensor_node(np.array([1, 2])))])
+vword2b = RealspaceSum(
+    2, [RealspaceOperator(2, ("P",), RealspaceCoeffs.tensor_node(np.array([1, 2])))]
+)
 blocks2 = {(0, 0): vword2a, (1, 1): vword2b}
 vmat2 = VibronicMatrix(2, 2, blocks2)
 

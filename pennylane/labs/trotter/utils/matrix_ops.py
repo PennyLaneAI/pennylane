@@ -1,6 +1,7 @@
 """Functions for transforming a VibronicMatrix into a scipy csr matrix"""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Tuple, Union
 
 import numpy as np
