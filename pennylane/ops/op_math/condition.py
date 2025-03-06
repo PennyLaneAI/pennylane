@@ -634,13 +634,13 @@ def cond(
                 else_qscript = qml.tape.make_qscript(false_fn)(*args, **kwargs)
 
                 if else_qscript.measurements:
-                    if isinstance(op, MidMeasureMP):
-                        raise ConditionalTransformError(with_meas_err)
                     raise ConditionalTransformError(with_meas_err)
 
                 inverted_condition = ~condition
 
                 for op in else_qscript.operations:
+                    if isinstance(op, MidMeasureMP):
+                        raise ConditionalTransformError(with_meas_err)
                     Conditional(inverted_condition, op)
 
     else:
