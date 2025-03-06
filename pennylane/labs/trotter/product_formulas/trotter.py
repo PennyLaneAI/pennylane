@@ -16,7 +16,7 @@ class AdditiveIdentity:
         return other
 
 
-def trotter(fragments: Sequence[Fragment], delta: float, order: int = 2) -> Fragment:
+def trotter_error(fragments: Sequence[Fragment], delta: float, order: int = 2) -> Fragment:
     """Compute effective Hamiltonian from Trotter"""
 
     if order == 2:

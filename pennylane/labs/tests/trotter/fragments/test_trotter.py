@@ -3,7 +3,7 @@ import numpy as np
 
 from pennylane.labs.trotter import nested_commutator
 from pennylane.labs.trotter.fragments import vibronic_fragments
-from pennylane.labs.trotter.product_formulas import trotter
+from pennylane.labs.trotter.product_formulas import trotter_error
 from pennylane.labs.trotter.realspace import VibronicMatrix
 
 def _coeffs(states: int, modes: int, order: int):
@@ -48,7 +48,7 @@ def test_epsilon(modes):
         2 * nested_commutator([fragments[2], fragments[1], fragments[2]])
     ]
 
-    actual = trotter(fragments, delta, order=2)
+    actual = trotter_error(fragments, delta, order=2)
     expected = scalar * sum(terms, VibronicMatrix(states, modes))
 
     assert actual == expected

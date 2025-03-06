@@ -254,7 +254,7 @@ class RealspaceSum(Fragment):
                 term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), op.ops))
                 compiled, local_vars = op.coeffs.compile(to_numpy=True)
                 coeff_sum = eval(compiled, {}, local_vars)
-                norm += coeff_sum * term_op_norm
+                norm += abs(coeff_sum) * term_op_norm
 
             return norm
 
@@ -267,7 +267,7 @@ class RealspaceSum(Fragment):
                 for i, j in enumerate(index):
                     local_vars[f"idx{i}"] = j
 
-                coeff_sum += eval(compiled, {}, local_vars)
+                coeff_sum += abs(eval(compiled, {}, local_vars))
 
             norm += coeff_sum * term_op_norm
 

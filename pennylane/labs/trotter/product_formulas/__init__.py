@@ -1,1 +1,1 @@
-from .trotter import trotter
+from .trotter import trotter_error
