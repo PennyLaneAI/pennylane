@@ -94,7 +94,6 @@ def cartan_decomp(
     True
     """
     # simple implementation assuming all elements in g are already either in k and m
-    # TODO: Figure out more general way to do this when the above is not the case
     m = []
     k = []
 
