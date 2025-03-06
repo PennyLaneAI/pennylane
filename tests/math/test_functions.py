@@ -296,6 +296,19 @@ class TestAllcloseSparse:
         assert not fn.allclose(dense, sparse)
         assert not fn.allclose(sparse, dense)
 
+    def test_sparse_sparse_large_matrix(self):
+        """Test comparing large dense and sparse matrices"""
+        n = 200
+        dense = np.eye(n)
+        sparse0 = sp.sparse.csr_matrix(dense)
+        sparse = sp.sparse.eye(n)
+
+        assert fn.allclose(sparse0, sparse)
+
+        dense[-1, 0] = np.finfo(float).eps
+        sparse0 = sp.sparse.csr_matrix(dense)
+
+        assert not fn.allclose(sparse0, sparse)
     def test_dense_sparse_different_nonzero(self):
         """Test comparing matrices with different nonzero patterns"""
         dense = np.array([[1, 0], [0, 1]])
