@@ -17,7 +17,12 @@
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition.resources import CompressedResourceOp, Resources, resource_rep
+from pennylane.decomposition.resources import (
+    CompressedResourceOp,
+    Resources,
+    controlled_resource_rep,
+    resource_rep,
+)
 
 
 class TestResources:
@@ -184,6 +189,10 @@ class TestCompressedResourceOp:
         assert repr(op) == "MultiRZ"
 
 
+class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+    resource_param_keys = {"foo", "bar"}
+
+
 class TestResourceRep:
     """Tests the resource_rep utility function."""
 
@@ -196,9 +205,6 @@ class TestResourceRep:
     def test_params_mismatch(self):
         """Tests that an error is raised when parameters are missing."""
 
-        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-            resource_param_keys = {"foo", "bar"}
-
         with pytest.raises(TypeError, match="Missing resource parameters"):
             resource_rep(DummyOp, foo=2)
 
@@ -208,8 +214,98 @@ class TestResourceRep:
     def test_undefined_resource_params(self):
         """Tests that an error is raised if the resource_param_keys are not defined."""
 
-        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class EmptyDummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             pass
 
         with pytest.raises(NotImplementedError, match="resource_param_keys undefined"):
-            resource_rep(DummyOp)
+            resource_rep(EmptyDummyOp)
+
+    def test_resource_rep(self):
+        """Tests creating a resource rep."""
+
+        assert resource_rep(DummyOp, foo=2, bar=1) == CompressedResourceOp(
+            DummyOp, {"foo": 2, "bar": 1}
+        )
+
+
+class TestControlledResourceRep:
+    """Tests the controlled_resource_rep function."""
+
+    def test_controlled_resource_rep(self):
+        """Tests creating the resource rep of a general controlled operation."""
+
+        rep = controlled_resource_rep(DummyOp, {"foo": 2, "bar": 1}, 2, 1, 1)
+        assert rep == CompressedResourceOp(
+            qml.ops.Controlled,
+            {
+                "base_class": DummyOp,
+                "base_params": {"foo": 2, "bar": 1},
+                "num_control_wires": 2,
+                "num_zero_control_values": 1,
+                "num_work_wires": 1,
+            },
+        )
+
+    def test_controlled_resource_rep_flatten(self):
+        """Tests that nested controlled ops are flattened."""
+
+        rep = controlled_resource_rep(
+            qml.ops.Controlled,
+            {
+                "base_class": qml.CRX,
+                "base_params": {},
+                "num_control_wires": 2,
+                "num_zero_control_values": 1,
+                "num_work_wires": 1,
+            },
+            1,
+            1,
+            1,
+        )
+        assert rep == CompressedResourceOp(
+            qml.ops.Controlled,
+            {
+                "base_class": qml.RX,
+                "base_params": {},
+                "num_control_wires": 3,
+                "num_zero_control_values": 2,
+                "num_work_wires": 2,
+            },
+        )
+
+    def test_controlled_resource_op_base_param_mismatch(self):
+        """Tests that an error is raised when base op and base params mismatch."""
+
+        with pytest.raises(TypeError, match="Missing resource parameters"):
+            controlled_resource_rep(DummyOp, {}, 1, 1, 1)
+
+    def test_controlled_resource_op_flatten_x(self):
+        """Tests that nested X-based controlled ops are flattened."""
+
+        rep = controlled_resource_rep(
+            qml.ops.Controlled,
+            {
+                "base_class": qml.MultiControlledX,
+                "base_params": {
+                    "num_control_wires": 2,
+                    "num_zero_control_values": 1,
+                    "num_work_wires": 1,
+                },
+                "num_control_wires": 1,
+                "num_zero_control_values": 1,
+                "num_work_wires": 1,
+            },
+            1,
+            1,
+            1,
+        )
+        assert rep == CompressedResourceOp(
+            qml.ops.Controlled,
+            {
+                "base_class": qml.X,
+                "base_params": {},
+                "num_control_wires": 4,
+                "num_zero_control_values": 3,
+                "num_work_wires": 3,
+            },
+        )
