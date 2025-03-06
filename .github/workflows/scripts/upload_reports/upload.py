@@ -60,7 +60,7 @@ def upload_reports(report_contents: dict):
     settings = PLOSSSettings()
 
     payload = json.dumps(report_contents)
-    headers = {"Authorization": f"Bearer {settings.api_key}"}
+    headers = {"x-api-key": settings.api_key}
 
     try:
         print(f"Attempting to upload reports to {settings.endpoint_url}")
