@@ -122,7 +122,7 @@ class QubitUnitary(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ("U",)
+    resource_param_keys = ("num_wires",)
 
     grad_method = None
     """Gradient computation method."""
@@ -176,7 +176,7 @@ class QubitUnitary(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"U": self.parameters[0]}
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
