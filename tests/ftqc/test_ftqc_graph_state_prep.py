@@ -14,7 +14,6 @@
 # pylint: disable=no-name-in-module, no-self-use, protected-access
 """Unit tests for the GraphStatePrep module"""
 
-import jax
 import networkx as nx
 import pytest
 
@@ -22,6 +21,10 @@ import pennylane as qml
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 from pennylane.ops.functions import assert_valid
 
+pytestmark = pytest.mark.jax
+
+jax = pytest.importorskip("jax")
+jax.config.update("jax_enable_x64", True)
 
 class TestGraphStatePrep:
     """Test for graph state prep"""
