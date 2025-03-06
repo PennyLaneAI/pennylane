@@ -11,8 +11,7 @@ import scipy as sp
 
 from pennylane.labs.trotter import Fragment
 from pennylane.labs.trotter.realspace import RealspaceSum, HOState, VibronicHO
-from pennylane.labs.trotter.utils import _kron, _zeros, is_pow_2, next_pow_2
-from pennylane.labs.trotter.realspace.ho_state import VibronicHO
+from pennylane.labs.trotter.realspace.matrix import _kron, _zeros
 
 
 class VibronicMatrix(Fragment):
@@ -65,7 +64,7 @@ class VibronicMatrix(Fragment):
         self, gridpoints: int, sparse: bool = False, basis: str = "realspace"
     ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
         """Returns a sparse matrix representing the operator discretized on the given number of gridpoints"""
-        pow2 = next_pow_2(self.states)
+        pow2 = _next_pow_2(self.states)
         dim = pow2 * gridpoints**self.modes
         shape = (pow2, pow2)
         matrix = _zeros((dim, dim), sparse=sparse)
@@ -87,7 +86,7 @@ class VibronicMatrix(Fragment):
     def norm(self, gridpoints: int) -> float:
         """Compute the spectral norm"""
 
-        if not is_pow_2(gridpoints) or gridpoints <= 0:
+        if not _is_pow_2(gridpoints) or gridpoints <= 0:
             raise ValueError(
                 f"Number of gridpoints must be a positive power of 2, got {gridpoints}."
             )
@@ -264,3 +263,12 @@ class VibronicMatrix(Fragment):
             gridpoints=state.gridpoints,
             ho_states=ho_states,
         )
+
+def _is_pow_2(k: int) -> bool:
+    """Test if k is a power of two"""
+    return (k & (k - 1) == 0) or k == 0
+
+
+def _next_pow_2(k: int) -> int:
+    """Return the smallest power of 2 greater than or equal to k"""
+    return 2 ** (k - 1).bit_length()
