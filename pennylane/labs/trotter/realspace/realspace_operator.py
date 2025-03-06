@@ -11,7 +11,12 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter import Fragment
-from pennylane.labs.trotter.realspace.matrix import _zeros, op_norm, string_to_matrix, tensor_with_identity
+from pennylane.labs.trotter.realspace.matrix import (
+    _zeros,
+    op_norm,
+    string_to_matrix,
+    tensor_with_identity,
+)
 
 from .realspace_coefficients import RealspaceCoeffs
 
@@ -41,7 +46,9 @@ class RealspaceOperator:
         for index in indices:
             var_dict = {f"idx{i}": j for i, j in enumerate(index)}
             coeff = eval(compiled, var_dict, local_vars)
-            matrix = coeff * tensor_with_identity(self.modes, gridpoints, index, matrices, sparse=sparse)
+            matrix = coeff * tensor_with_identity(
+                self.modes, gridpoints, index, matrices, sparse=sparse
+            )
             final_matrix = final_matrix + matrix
 
         return final_matrix

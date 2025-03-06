@@ -98,8 +98,13 @@ class VibronicMatrix(Fragment):
 
         top_left, top_right, bottom_left, bottom_right = self._partition_into_quadrants()
 
-        norm1 = max(top_left._norm(gridpoints, sparse=sparse), bottom_right._norm(gridpoints, sparse=sparse))
-        norm2 = math.sqrt(top_right._norm(gridpoints, sparse=sparse) * bottom_left._norm(gridpoints, sparse=sparse))
+        norm1 = max(
+            top_left._norm(gridpoints, sparse=sparse), bottom_right._norm(gridpoints, sparse=sparse)
+        )
+        norm2 = math.sqrt(
+            top_right._norm(gridpoints, sparse=sparse)
+            * bottom_left._norm(gridpoints, sparse=sparse)
+        )
 
         return norm1 + norm2
 
@@ -190,9 +195,7 @@ class VibronicMatrix(Fragment):
                 f"Cannot multiply VibronicMatrix on {self.states} states with VibronicMatrix on {other.states} states."
             )
 
-        product_matrix = VibronicMatrix(
-            self.states, self.modes
-        )
+        product_matrix = VibronicMatrix(self.states, self.modes)
 
         for i, j in product(range(self.states), repeat=2):
             block_products = [self.block(i, k) @ other.block(k, j) for k in range(self.states)]
@@ -235,6 +238,7 @@ class VibronicMatrix(Fragment):
 
     def apply():
         raise NotImplementedError
+
 
 def _is_pow_2(k: int) -> bool:
     """Test if k is a power of two"""
