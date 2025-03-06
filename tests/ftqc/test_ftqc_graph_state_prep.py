@@ -21,7 +21,6 @@ import pytest
 import pennylane as qml
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 from pennylane.ops.functions import assert_valid
-from pennylane.transforms.decompose import decompose
 
 
 class TestGraphStatePrep:
