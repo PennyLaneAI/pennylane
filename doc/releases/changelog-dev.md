@@ -377,6 +377,7 @@
 * ``pennylane.labs.khaneja_glaser_involution`` is removed.
   ``pennylane.labs.check_commutation`` is moved to ``qml.liealg.check_commutation``.
   ``pennylane.labs.check_cartan_decomp`` is moved to ``qml.liealg.check_cartan_decomp``.
+  All involution functions are moved to ``qml.liealg``.
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
 
 <h3>Breaking changes 💔</h3>
