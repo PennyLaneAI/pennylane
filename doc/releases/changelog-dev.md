@@ -271,7 +271,9 @@
       operations = new_ops + rxs
       new_tape = tape.copy(operations=operations)
       return [new_tape], lambda res: res[0]
-
+```
+  A requirement for tape transforms to be compatible with program capture is to further decorate QNodes with the experimental `qml.capture.expand_plxpr_transforms` decorator.
+```python
   @qml.capture.expand_plxpr_transforms
   @shift_rx_to_end
   @qml.qnode(qml.device("default.qubit", wires=1))
