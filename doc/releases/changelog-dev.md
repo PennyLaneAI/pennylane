@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
+  [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
+
 * Added a class `qml.capture.transforms.MergeRotationsInterpreter` that merges rotation operators
   following the same API as `qml.transforms.optimization.merge_rotations` when experimental program capture is enabled.
   [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
@@ -345,6 +348,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
+  this quantity is extremely expensive, and the definition is ambiguous for non-commuting observables.
+  [(#7047)](https://github.com/PennyLaneAI/pennylane/pull/7047)
+
 * `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
   to better reflect what it actually does.
   [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
@@ -423,6 +430,9 @@
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
+
+* Change some `scipy` imports from submodules to whole module to reduce memory footprint of importing pennylane. 
+  [(#7040)](https://github.com/PennyLaneAI/pennylane/pull/7040)
 
 * Add `NotImplementedError`s for `grad` and `jacobian` in `CollectOpsandMeas`.
   [(#7041)](https://github.com/PennyLaneAI/pennylane/pull/7041)
