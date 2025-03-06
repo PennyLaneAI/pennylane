@@ -236,8 +236,8 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
 
         flat_args = jax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
-            *abstract_shapes,
             *consts,
+            *abstract_shapes,
             *flat_args,
             jaxpr=jaxpr,
             lazy=lazy,

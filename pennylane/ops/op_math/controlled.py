@@ -244,13 +244,12 @@ def _get_ctrl_qfunc_prim():
     ctrl_prim.prim_type = "higher_order"
 
     @ctrl_prim.def_impl
-    def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
-        consts = args[:n_consts]
+    def _(*args, n_control, jaxpr, control_values, work_wires):
         control_wires = args[-n_control:]
-        args = args[n_consts:-n_control]
+        args = args[:-n_control]
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, consts, *args)
+            jax.core.eval_jaxpr(jaxpr, [], *args)
         ops, _ = qml.queuing.process_queue(q)
 
         for op in ops:
@@ -277,18 +276,25 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
         jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(
             *args
         )
+        consts = jaxpr.consts
+        jaxpr = jax.core.Jaxpr(
+            constvars=(),
+            invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
+            outvars=jaxpr.jaxpr.outvars,
+            eqns=jaxpr.jaxpr.eqns,
+            effects=jaxpr.jaxpr.effects,
+        )
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
         ctrl_prim.bind(
-            *jaxpr.consts,
+            *consts,
             *abstract_shapes,
             *flat_args,
             *control_wires,
-            jaxpr=jaxpr.jaxpr,
+            jaxpr=jaxpr,
             n_control=len(control_wires),
             control_values=control_values,
             work_wires=work_wires,
-            n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc

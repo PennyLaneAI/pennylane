@@ -469,21 +469,27 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy):
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(ctrl_transform_prim)
-def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires):
     """Interpret a ctrl transform primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:-n_control]
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+    args = invals[:-n_control]
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *args)
+    consts = jaxpr.consts
+    jaxpr = jax.core.Jaxpr(
+        constvars=(),
+        invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
+        outvars=jaxpr.jaxpr.outvars,
+        eqns=jaxpr.jaxpr.eqns,
+        effects=jaxpr.jaxpr.effects,
+    )
 
     return ctrl_transform_prim.bind(
-        *jaxpr.consts,
+        *consts,
         *args,
         *invals[-n_control:],
         n_control=n_control,
-        jaxpr=jaxpr.jaxpr,
+        jaxpr=jaxpr,
         control_values=control_values,
         work_wires=work_wires,
-        n_consts=len(jaxpr.consts),
     )
 
 
@@ -606,7 +612,6 @@ def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_ja
         effects=qfunc_jaxpr.jaxpr.effects,
     )
 
-    print(qfunc_jaxpr.consts)
     return qnode_prim.bind(
         *qfunc_jaxpr.consts,
         *invals,
