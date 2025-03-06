@@ -14,11 +14,11 @@
 # pylint: disable=no-name-in-module, no-self-use, protected-access
 """Unit tests for the GraphStatePrep module"""
 
+import jax
+import networkx as nx
 import pytest
 
 import pennylane as qml
-import jax
-import networkx as nx
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 from pennylane.ops.functions import assert_valid
 from pennylane.transforms.decompose import decompose
@@ -33,14 +33,14 @@ class TestGraphStatePrep:
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph("test", lattice.graph)
         dev = qml.device("default.qubit")
+
         @jax.jit
         @qml.qnode(dev)
         def circuit(q):
-            GraphStatePrep(qubit_graph=q)
+            GraphStatePrep(graph=q)
             return qml.probs()
 
         circuit(q)
-
 
     def test_circuit_accept_graph_state_prep(self):
         """Test if a quantum function accepts GraphStatePrep."""
@@ -50,27 +50,27 @@ class TestGraphStatePrep:
 
         @qml.qnode(dev)
         def circuit(q):
-            GraphStatePrep(qubit_graph=q)
+            GraphStatePrep(graph=q)
             return qml.probs()
 
         circuit(q)
-        assert_valid(GraphStatePrep(qubit_graph=q), skip_deepcopy=True, skip_pickle=True)
-    
+        assert_valid(GraphStatePrep(graph=q), skip_deepcopy=True, skip_pickle=True)
+
     def test_circuit_accept_graph_state_prep_with_nx_wires(self):
         """Test if a quantum function accepts GraphStatePrep."""
         dev = qml.device("default.qubit")
-        wires = [0,1,2,3]
-        edges= [(0,1),(1,2),(2,3)]
+        wires = [0, 1, 2, 3]
+        edges = [(0, 1), (1, 2), (2, 3)]
         lattice = nx.Graph()
         lattice.add_nodes_from(wires)
         lattice.add_edges_from(edges)
 
         @qml.qnode(dev)
-        def circuit(wires, lattice):
-            GraphStatePrep(wires=wires, lattice=lattice)
+        def circuit(lattice):
+            GraphStatePrep(graph=lattice)
             return qml.probs()
 
-        circuit(wires, lattice)
+        circuit(lattice)
 
     @pytest.mark.parametrize(
         "dims, shape, expected",
@@ -101,7 +101,7 @@ class TestGraphStatePrep:
         """Test the decomposition method of the GraphStatePrep class."""
         lattice = generate_lattice([2, 2, 2], "cubic")
         q = QubitGraph("test", lattice.graph)
-        op = GraphStatePrep(qubit_graph=q, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
+        op = GraphStatePrep(graph=q, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
         queue = op.decomposition()
         assert len(queue) == 20  # 8 ops for |0> -> |+> and 12 ops to entangle nearest qubits
         for op in queue[:8]:
@@ -110,7 +110,7 @@ class TestGraphStatePrep:
         for op in queue[8:]:
             assert op.name == entangle_ops.name
             assert all(isinstance(w, QubitGraph) for w in op.wires)
-    
+
     @pytest.mark.parametrize(
         "qubit_ops, entangle_ops",
         [
@@ -120,16 +120,15 @@ class TestGraphStatePrep:
     )
     def test_decompose_wires(self, qubit_ops, entangle_ops):
         """Test the decomposition method of the GraphStatePrep class."""
-        wires = [0,1,2,3]
-        edges= [(0,1),(1,2),(2,3)]
+        wires = [0, 1, 2, 3]
+        edges = [(0, 1), (1, 2), (2, 3)]
         lattice = nx.Graph()
         lattice.add_nodes_from(wires)
         lattice.add_edges_from(edges)
-        op = GraphStatePrep(wires=wires, lattice=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
+        op = GraphStatePrep(graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
         queue = op.decomposition()
         assert len(queue) == 7  # 4 ops for |0> -> |+> and 3 ops to entangle nearest qubits
         for op in queue[:4]:
             assert op.name == qubit_ops(0).name
         for op in queue[4:]:
             assert op.name == entangle_ops.name
-

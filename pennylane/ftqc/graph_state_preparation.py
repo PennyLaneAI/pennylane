@@ -14,11 +14,14 @@
 
 r"""This module contains the GraphStatePrep template."""
 
+from typing import Union
+
+import networkx as nx
+
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
-import networkx as nx
 from .lattice import Lattice
 from .qubit_graph import QubitGraph
 
@@ -69,23 +72,21 @@ class GraphStatePrep(Operation):
 
     def __init__(
         self,
-        wires: Wires = None,
-        lattice: nx.Graph = None,
-        qubit_graph: QubitGraph = None,
+        graph: Union[nx.Graph, QubitGraph],
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
+        wires: Wires = None,
     ):
-        self.hyperparameters["qubit_graph"] = qubit_graph
+        self.hyperparameters["graph"] = graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
 
-        if wires is not None and lattice is not None:
-            self.hyperparameters["wires"] = wires
-            self.hyperparameters["lattice"] = lattice
-            self.hyperparameters["qubit_graph"] = None
-
-        super().__init__(wires= wires if wires is not None else [q for q in qubit_graph.graph])
-
+        if isinstance(graph, QubitGraph):
+            super().__init__(wires=wires if wires is not None else [q for q in graph.graph])
+        else:
+            for q in graph:
+                print(q)
+            super().__init__(wires=wires if wires is not None else [q for q in graph])
 
     def label(
         self, decimals: int = None, base_label: str = None, cache: dict = None
@@ -115,15 +116,14 @@ class GraphStatePrep(Operation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(**self.hyperparameters)
+        return self.compute_decomposition(**self.hyperparameters, wires=None)
 
     @staticmethod
     def compute_decomposition(
-        qubit_graph: QubitGraph,
+        graph: Union[nx.Graph, QubitGraph],
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
-        wires = None,
-        lattice = None,
+        wires=None,
     ):
         r"""Representation of the operator as a product of other operators (static method).
         .. note::
@@ -137,26 +137,27 @@ class GraphStatePrep(Operation):
             qubit_graph (QubitGraph): QubitGraph object mapping qubit to wires.
             qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
             entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
-            wires : Wires the decomposition applies on. Default as None. 
+            wires : Wires the decomposition applies on. Default as None.
 
         Returns:
             list[Operator]: decomposition of the operator
         """
 
         op_list = []
-        if qubit_graph is not None:
+
+        # Add entanglement_ops for each pair of nearest qubits in the graph
+        if isinstance(graph, QubitGraph):
             # Add qubit_ops for each qubit in the graph
-            for qubit in qubit_graph.graph:
-                op_list.append(qubit_ops(wires=qubit_graph[qubit]))
+            for qubit in graph.graph:
+                op_list.append(qubit_ops(wires=graph[qubit]))
 
-            # Add entanglement_ops for each pair of nearest qubits in the graph
-            for qubit0, qubit1 in qubit_graph.graph.edges:
-                op_list.append(entanglement_ops(wires=[qubit_graph[qubit0], qubit_graph[qubit1]]))
+            for qubit0, qubit1 in graph.graph.edges:
+                op_list.append(entanglement_ops(wires=[graph[qubit0], graph[qubit1]]))
         else:
-            for wire in wires:
-                op_list.append(qubit_ops(wires=wire))
-            
-            for wire0, wire1 in lattice.edges:
-                op_list.append(entanglement_ops(wires=[wire0, wire1]))
+            # Add qubit_ops for each qubit in the graph
+            for qubit in graph:
+                op_list.append(qubit_ops(wires=qubit))
 
+            for qubit0, qubit1 in graph.edges:
+                op_list.append(entanglement_ops(wires=[qubit0, qubit1]))
         return op_list
