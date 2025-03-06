@@ -946,3 +946,95 @@ class TestResourceSuperposition:
     def test_tracking_name(self):
         """Test that the tracking name is correct."""
         assert re.ResourceSuperposition.tracking_name() == f"Superposition"
+
+
+class TestResourceMottonenStatePreparation:
+    """Test the ResourceMottonenStatePreparation class"""
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resources(self, num_wires):
+        expected = {}
+        rz = re.CompressedResourceOp(re.ResourceRZ, {})
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+
+        r_count = 2 ** (num_wires + 2) - 5
+        cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
+
+        if r_count:
+            expected[rz] = r_count
+
+        if cnot_count:
+            expected[cnot] = cnot_count
+        assert re.ResourceMottonenStatePreparation.resources(num_wires) == expected
+
+    @pytest.mark.parametrize(
+        "state_vector, wires",
+        [
+            (
+                np.array(
+                    [
+                        0.070014 + 0.0j,
+                        0.0 + 0.14002801j,
+                        0.21004201 + 0.0j,
+                        0.0 + 0.28005602j,
+                        0.35007002 + 0.0j,
+                        0.0 + 0.42008403j,
+                        0.49009803 + 0.0j,
+                        0.0 + 0.56011203j,
+                    ]
+                ),
+                range(3),
+            ),
+        ],
+    )
+    def test_resource_params(self, state_vector, wires):
+        """Test that the resource params are correct"""
+        op = re.ResourceMottonenStatePreparation(state_vector=state_vector, wires=wires)
+
+        assert op.resource_params == {"num_wires": len(wires)}
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resource_rep(self, num_wires):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = re.CompressedResourceOp(
+            re.ResourceSuperposition,
+            {"num_wires": num_wires},
+        )
+        assert expected == re.ResourceMottonenStatePreparation.resource_rep(num_wires)
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resources_from_rep(self, num_wires):
+        """Test that computing the resources from a compressed representation works"""
+        rep = re.ResourceMottonenStatePreparation.resource_rep(num_wires)
+        actual = rep.op_type.resources(**rep.params)
+
+        expected = {}
+        rz = re.CompressedResourceOp(re.ResourceRZ, {})
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+
+        r_count = 2 ** (num_wires + 2) - 5
+        cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
+
+        if r_count:
+            expected[rz] = r_count
+
+        if cnot_count:
+            expected[cnot] = cnot_count
+
+        assert actual == expected
+
+    def test_tracking_name(self, num_wires):
+        """Test that the tracking name is correct."""
+        assert (
+            re.ResourceMottonenStatePreparation.tracking_name() == f"MottonenStatePrep({num_wires})"
+        )
