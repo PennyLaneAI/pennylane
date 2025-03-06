@@ -264,6 +264,7 @@ class TestAllcloseSparse:
 
         # assert _allclose_dense_sparse(dense, sparse)
         assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
 
     def test_dense_sparse_zero_nnz(self):
         """Test comparing dense matrix with empty sparse matrix"""
@@ -272,6 +273,7 @@ class TestAllcloseSparse:
 
         # assert _allclose_dense_sparse(dense, sparse)
         assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
 
     def test_dense_sparse_different_shapes(self):
         """Test comparing matrices with different shapes"""
@@ -279,6 +281,7 @@ class TestAllcloseSparse:
         sparse = sp.sparse.csr_matrix(np.array([[1, 2]]))
 
         assert not fn.allclose(dense, sparse)
+        assert not fn.allclose(sparse, dense)
 
     def test_dense_sparse_large_matrix(self):
         """Test comparing large dense and sparse matrices"""
@@ -287,6 +290,11 @@ class TestAllcloseSparse:
         sparse = sp.sparse.eye(n)
 
         assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
+        dense[-1, 0] = np.finfo(float).eps
+        assert not fn.allclose(dense, sparse)
+        assert not fn.allclose(sparse, dense)
 
     def test_dense_sparse_different_nonzero(self):
         """Test comparing matrices with different nonzero patterns"""
@@ -294,6 +302,7 @@ class TestAllcloseSparse:
         sparse = sp.sparse.csr_matrix(np.array([[1, 1], [0, 1]]))
 
         assert not fn.allclose(dense, sparse)
+        assert not fn.allclose(sparse, dense)
 
     @pytest.mark.parametrize("rtol,atol", [(1e-7, 1e-8), (1e-5, 1e-6)])
     def test_dense_sparse_tolerances(self, rtol, atol):
