@@ -85,8 +85,8 @@ class FromBloq(Operation):
 
     from qualtran.bloqs.basic_gates import CNOT
 
-    >>> qualtran_toffoli = qml.FromBloq(CNOT(), [0, 1])
-    >>> qualtran_toffoli.matrix()
+    >>> qualtran_cnot = qml.FromBloq(CNOT(), [0, 1])
+    >>> qualtran_cnot.matrix()
     array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
        [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
        [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
