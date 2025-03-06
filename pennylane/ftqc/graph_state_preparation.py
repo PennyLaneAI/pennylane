@@ -81,9 +81,17 @@ class GraphStatePrep(Operation):
         self.hyperparameters["entanglement_ops"] = entanglement_ops
 
         if isinstance(graph, QubitGraph):
+            if wires is not None and set(wires)!=set(graph.graph):
+                raise ValueError("Please ensure wires objects match labels in QubitGraph")
+            self.hyperparameters["wires"] = wires if wires is not None else set(graph.graph)
             super().__init__(wires=wires if wires is not None else set(graph.graph))
         else:
-            super().__init__(wires=wires if wires is not None else set(graph))
+            if wires is None:
+                raise ValueError("Please ensure wires is specified.")
+            if wires is not None and set(wires)!=set(graph):
+                raise ValueError("Please ensure wires objects match labels in graph")
+            self.hyperparameters["wires"] = wires
+        super().__init__(wires=self.hyperparameters["wires"])
 
     def label(
         self, decimals: int = None, base_label: str = None, cache: dict = None
@@ -113,14 +121,14 @@ class GraphStatePrep(Operation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(**self.hyperparameters, wires=None)
+        return self.compute_decomposition(**self.hyperparameters)
 
     @staticmethod
     def compute_decomposition(
+        wires: Wires,
         graph: Union[nx.Graph, QubitGraph],
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
-        wires=None,
     ): # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a product of other operators (static method).
         .. note::
@@ -131,10 +139,10 @@ class GraphStatePrep(Operation):
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
+            wires : Wires the decomposition applies on.
             graph (Union[nx.Graph, QubitGraph]): QubitGraph object mapping qubit to wires.
             qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
             entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
-            wires : Wires the decomposition applies on. Default as None.
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -145,15 +153,16 @@ class GraphStatePrep(Operation):
         # Add entanglement_ops for each pair of nearest qubits in the graph
         if isinstance(graph, QubitGraph):
             # Add qubit_ops for each qubit in the graph
-            for qubit in graph.graph:
-                op_list.append(qubit_ops(wires=graph[qubit]))
+            for wire in wires:
+                op_list.append(qubit_ops(wires=graph[wire]))
 
             for qubit0, qubit1 in graph.graph.edges:
                 op_list.append(entanglement_ops(wires=[graph[qubit0], graph[qubit1]]))
         else:
             # Add qubit_ops for each qubit in the graph
-            for qubit in graph:
-                op_list.append(qubit_ops(wires=qubit))
+            for wire in wires:
+                op_list.append(qubit_ops(wires=wire))
+
 
             for qubit0, qubit1 in graph.edges:
                 op_list.append(entanglement_ops(wires=[qubit0, qubit1]))

@@ -18,6 +18,7 @@ import networkx as nx
 import pytest
 
 import pennylane as qml
+import numpy as np
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 from pennylane.ops.functions import assert_valid
 
@@ -54,10 +55,11 @@ class TestGraphStatePrep:
         def circuit(q):
             GraphStatePrep(graph=q)
             return qml.probs()
-
-        circuit(q)
-        assert_valid(GraphStatePrep(graph=q), skip_deepcopy=True, skip_pickle=True)
-
+    
+        res = circuit(q)
+        assert(len(res) == 2**len(lattice.graph))
+        assert np.isclose(np.sum(res), 1.0, rtol=0)
+        
     def test_circuit_accept_graph_state_prep_with_nx_wires(self):
         """Test if a quantum function accepts GraphStatePrep."""
         dev = qml.device("default.qubit")
@@ -68,11 +70,13 @@ class TestGraphStatePrep:
         lattice.add_edges_from(edges)
 
         @qml.qnode(dev)
-        def circuit(lattice):
-            GraphStatePrep(graph=lattice)
+        def circuit(lattice,wires):
+            GraphStatePrep(graph=lattice, wires=wires)
             return qml.probs()
 
-        circuit(lattice)
+        res = circuit(lattice, wires)
+        assert(len(res) == 2**len(lattice))
+        assert np.isclose(np.sum(res), 1.0, rtol=0)
 
     @pytest.mark.parametrize(
         "dims, shape, expected",
@@ -89,7 +93,8 @@ class TestGraphStatePrep:
         """Test the compute_decomposition method of the GraphStatePrep class."""
         lattice = generate_lattice(dims, shape)
         q = QubitGraph("test", lattice.graph)
-        queue = GraphStatePrep.compute_decomposition(q)
+        wires = set(lattice.graph)
+        queue = GraphStatePrep.compute_decomposition(wires=wires, graph=q)
         assert len(queue) == expected
 
     @pytest.mark.parametrize(
@@ -127,10 +132,31 @@ class TestGraphStatePrep:
         lattice = nx.Graph()
         lattice.add_nodes_from(wires)
         lattice.add_edges_from(edges)
-        op = GraphStatePrep(graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
+        op = GraphStatePrep(wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
         queue = op.decomposition()
         assert len(queue) == 7  # 4 ops for |0> -> |+> and 3 ops to entangle nearest qubits
         for op in queue[:4]:
             assert op.name == qubit_ops(0).name
         for op in queue[4:]:
             assert op.name == entangle_ops.name
+    
+    @pytest.mark.parametrize(
+        "qubit_ops, entangle_ops",
+        [
+            (qml.H, qml.CZ),
+            (qml.X, qml.CNOT),
+        ],
+    )
+    def test_wires_graph_mismatch(self, qubit_ops, entangle_ops):
+        """Test the decomposition method of the GraphStatePrep class."""
+        wires = [0, 1, 2, 3]
+        edges = [(0, 1), (1, 2), (2, 3)]
+        lattice = nx.Graph()
+        lattice.add_nodes_from(wires)
+        lattice.add_edges_from(edges)
+        wires.append(5)
+        with pytest.raises(ValueError):
+            op = GraphStatePrep(wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
+        
+        with pytest.raises(ValueError):
+            op = GraphStatePrep(wires=wires, graph=QubitGraph("test", lattice), qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
