@@ -677,7 +677,17 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         collector = CollectOpsandMeas()
-        collector.eval(inner_jaxpr, [], x)
+        if postselect is None:
+            collector.eval(inner_jaxpr, [], jax.numpy.arange(4), x)
+        else:
+            collector.eval(
+                inner_jaxpr,
+                [],
+                qml.math.array([postselect]),
+                qml.math.array([int(not postselect)]),
+                jax.numpy.arange(4),
+                x,
+            )
 
         ops = collector.state["ops"]
         expected_ops = [
@@ -729,7 +739,10 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
 
         collector = CollectOpsandMeas()
-        collector.eval(qfunc_jaxpr, jaxpr.consts, x)
+        if postselect is None:
+            collector.eval(qfunc_jaxpr, [], x)
+        else:
+            collector.eval(qfunc_jaxpr, [], qml.math.array([postselect]), x)
 
         ops = collector.state["ops"]
         expected_ops = [qml.RX(x, 0), qml.CNOT([0, 9]), qml.CRX(x, [9, 0])]

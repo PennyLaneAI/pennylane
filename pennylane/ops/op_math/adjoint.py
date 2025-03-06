@@ -199,11 +199,9 @@ def _get_adjoint_qfunc_prim():
     adjoint_prim.prim_type = "higher_order"
 
     @adjoint_prim.def_impl
-    def _(*args, jaxpr, lazy, n_consts):
-        consts = args[:n_consts]
-        args = args[n_consts:]
+    def _(*args, jaxpr, lazy):
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, consts, *args)
+            jax.core.eval_jaxpr(jaxpr, [], *args)
         ops, _ = qml.queuing.process_queue(q)
         for op in reversed(ops):
             adjoint(op, lazy=lazy)
@@ -227,14 +225,22 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     def new_qfunc(*args, **kwargs):
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
+        consts = jaxpr.consts
+        jaxpr = jax.core.Jaxpr(
+            constvars=(),
+            invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
+            outvars=jaxpr.jaxpr.outvars,
+            eqns=jaxpr.jaxpr.eqns,
+            effects=jaxpr.jaxpr.effects,
+        )
+
         flat_args = jax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
-            *jaxpr.consts,
             *abstract_shapes,
+            *consts,
             *flat_args,
-            jaxpr=jaxpr.jaxpr,
+            jaxpr=jaxpr,
             lazy=lazy,
-            n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc

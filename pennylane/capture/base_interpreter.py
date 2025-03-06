@@ -453,15 +453,18 @@ def _(self, *dyn_shape, dimension, dtype, shape):
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
-def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
+def handle_adjoint_transform(self, *invals, jaxpr, lazy):
     """Interpret an adjoint transform primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-
-    return adjoint_transform_prim.bind(
-        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals)
+    consts = jaxpr.consts
+    jaxpr = jax.core.Jaxpr(
+        constvars=(),
+        invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
+        outvars=jaxpr.jaxpr.outvars,
+        eqns=jaxpr.jaxpr.eqns,
+        effects=jaxpr.jaxpr.effects,
     )
+    return adjoint_transform_prim.bind(*consts, *invals, jaxpr=jaxpr, lazy=lazy)
 
 
 # pylint: disable=too-many-arguments
@@ -603,6 +606,7 @@ def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_ja
         effects=qfunc_jaxpr.jaxpr.effects,
     )
 
+    print(qfunc_jaxpr.consts)
     return qnode_prim.bind(
         *qfunc_jaxpr.consts,
         *invals,

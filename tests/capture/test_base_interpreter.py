@@ -402,7 +402,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
         assert jaxpr2.consts == [scalar]
-        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
 
     def test_ctrl_transform(self):
         """Test the higher order ctrl transform."""
