@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
-from .lattice import Lattice
 from .qubit_graph import QubitGraph
 
 
@@ -82,9 +81,9 @@ class GraphStatePrep(Operation):
         self.hyperparameters["entanglement_ops"] = entanglement_ops
 
         if isinstance(graph, QubitGraph):
-            super().__init__(wires=wires if wires is not None else [q for q in graph.graph])
+            super().__init__(wires=wires if wires is not None else set(graph.graph))
         else:
-            super().__init__(wires=wires if wires is not None else [q for q in graph])
+            super().__init__(wires=wires if wires is not None else set(graph))
 
     def label(
         self, decimals: int = None, base_label: str = None, cache: dict = None
@@ -122,7 +121,7 @@ class GraphStatePrep(Operation):
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
         wires=None,
-    ):
+    ): # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a product of other operators (static method).
         .. note::
 
