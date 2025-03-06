@@ -377,17 +377,22 @@ class TestResourceMultiplier:
         assert re.ResourceMultiplier.resources(mod, num_work_wires, num_x_wires) == gate_types
 
     @pytest.mark.parametrize(
-        "base, control",
-        [(re.ResourceHadamard(3), [0, 1, 2]), (re.ResourceRX(0.25, 2), [0, 1])],
+        "k, mod, work_wires, x_wires",
+        [(4, 7, [3, 4, 5, 6, 7], [0, 1, 2]), (5, 8, [3, 4, 5, 6, 7], [0, 1, 2])],
     )
-    def test_resource_params(self, base, control):
+    def test_resource_params(self, k, mod, work_wires, x_wires):
         """Test that the resource params are correct"""
-        op = re.ResourceControlledSequence(base=base, control=control)
+        op = re.ResourceMultiplier(
+            k=k,
+            x_wires=x_wires,
+            mod=mod,
+            work_wires=work_wires,
+        )
 
         assert op.resource_params == {
-            "base_class": type(base),
-            "base_params": base.resource_params,
-            "num_ctrl_wires": len(control),
+            "mod": mod,
+            "num_work_wires": len(work_wires),
+            "num_x_wires": len(x_wires),
         }
 
     @pytest.mark.parametrize(
