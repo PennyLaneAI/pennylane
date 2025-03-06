@@ -26,23 +26,23 @@ class RealspaceOperator:
         self.coeffs = coeffs
 
     def matrix(
-        self, gridpoints: int, modes: int, basis: str = "realspace", sparse: bool = False
+        self, gridpoints: int, basis: str = "realspace", sparse: bool = False
     ) -> Union[np.ndarray, sp.sparse.csr_array]:
         """Return a matrix representation of the operator"""
 
         matrices = [string_to_matrix(op, gridpoints, basis=basis, sparse=sparse) for op in self.ops]
-        final_matrix = _zeros(shape=(gridpoints**modes, gridpoints**modes), sparse=sparse)
+        final_matrix = _zeros(shape=(gridpoints**self.modes, gridpoints**self.modes), sparse=sparse)
 
         if sparse:
             indices = self.coeffs.nonzero()
         else:
-            indices = product(range(modes), repeat=len(self.ops))
+            indices = product(range(self.modes), repeat=len(self.ops))
 
         compiled, local_vars = self.coeffs.compile()
         for index in indices:
             var_dict = {f"idx{i}": j for i, j in enumerate(index)}
             coeff = eval(compiled, var_dict, local_vars)
-            matrix = coeff * tensor_with_identity(modes, gridpoints, index, matrices, sparse=sparse)
+            matrix = coeff * tensor_with_identity(self.modes, gridpoints, index, matrices, sparse=sparse)
             final_matrix = final_matrix + matrix
 
         return final_matrix
@@ -236,16 +236,16 @@ class RealspaceSum(Fragment):
         """Return a RealspaceSum representing 0"""
         return RealspaceSum(modes, [RealspaceOperator.zero_term(modes)])
 
-    def matrix(self, gridpoints: int, modes: int, basis: str = "realspace", sparse: bool = False):
+    def matrix(self, gridpoints: int, basis: str = "realspace", sparse: bool = False):
         """Return a matrix representation of the RealspaceSum"""
 
-        final_matrix = _zeros(shape=(gridpoints**modes, gridpoints**modes), sparse=sparse)
+        final_matrix = _zeros(shape=(gridpoints**self.modes, gridpoints**self.modes), sparse=sparse)
         for op in self.ops:
-            final_matrix = final_matrix + op.matrix(gridpoints, modes, basis=basis, sparse=sparse)
+            final_matrix = final_matrix + op.matrix(gridpoints, basis=basis, sparse=sparse)
 
         return final_matrix
 
-    def norm(self, gridpoints: int, modes: int, sparse: bool = False) -> float:
+    def norm(self, gridpoints: int, sparse: bool = False) -> float:
         # pylint: disable=eval-used
 
         norm = 0
@@ -263,7 +263,7 @@ class RealspaceSum(Fragment):
             compiled, local_vars = op.coeffs.compile()
 
             coeff_sum = 0
-            for index in product(range(modes), repeat=len(op.ops)):
+            for index in product(range(self.modes), repeat=len(op.ops)):
                 for i, j in enumerate(index):
                     local_vars[f"idx{i}"] = j
 

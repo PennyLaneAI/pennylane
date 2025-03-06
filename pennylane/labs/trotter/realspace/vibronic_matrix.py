@@ -78,7 +78,7 @@ class VibronicMatrix(Fragment):
                 indicator = np.zeros(shape=shape)
                 indicator[index] = 1
 
-            block = rs_sum.matrix(gridpoints, self.modes, basis=basis, sparse=sparse)
+            block = rs_sum.matrix(gridpoints, basis=basis, sparse=sparse)
             matrix = matrix + _kron(indicator, block)
 
         return matrix
@@ -96,7 +96,7 @@ class VibronicMatrix(Fragment):
     def _norm(self, gridpoints: int) -> float:
         # pylint: disable=protected-access
         if self.states == 1:
-            return self.block(0, 0).norm(gridpoints, self.modes, sparse=self.sparse)
+            return self.block(0, 0).norm(gridpoints, sparse=self.sparse)
 
         top_left, top_right, bottom_left, bottom_right = self._partition_into_quadrants()
 

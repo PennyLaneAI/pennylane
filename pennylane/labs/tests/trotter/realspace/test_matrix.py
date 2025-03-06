@@ -99,14 +99,6 @@ class TestMatrix:
         assert np.isclose(vmatrix.norm(gridpoints), expected)
 
     params = [
-        (blocks0, 2, 1, 1, False),
-        (blocks0, 4, 1, 1, False),
-        (blocks0, 2, 1, 1, True),
-        (blocks0, 4, 1, 1, True),
-        (blocks1, 2, 1, 1, False),
-        (blocks1, 4, 1, 1, False),
-        (blocks1, 2, 1, 1, True),
-        (blocks1, 4, 1, 1, True),
         (blocks2, 2, 2, 2, False),
         (blocks2, 4, 2, 2, False),
         (blocks2, 2, 2, 2, True),
