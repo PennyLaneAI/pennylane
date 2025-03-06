@@ -123,15 +123,10 @@ def cond_meas(
 
             _validate_measurements(true_meas, false_meas)
 
-            for op in true_meas.diagonalizing_gates():
-                Conditional(condition, op)
+            Conditional(condition, true_meas)
+            Conditional(~condition, false_meas)
 
-            for op in false_meas.diagonalizing_gates():
-                Conditional(~condition, op)
-
-            return qml.measure(
-                true_meas.wires, reset=true_meas.reset, postselect=true_meas.postselect
-            )
+            return MeasurementValue([true_meas, false_meas], processing_fn=lambda v1, v2: v1 or v2)
 
     else:
         raise ValueError("Only measurement functions can be applied conditionally by `cond_meas`.")

@@ -595,10 +595,16 @@ def diagonalize_mcms(tape):
     new_operations = []
     mps_mapping = {}
 
-    ops = _consolidate_conditional_measurements(tape.operations)
+    curr_idx = 0
 
-    for op in ops:
+    for i, op in enumerate(tape.operations):
+
+        if i != curr_idx:
+            continue
+
         if isinstance(op, ParametricMidMeasureMP):
+
+            print(f"I found an arbitrary basis MCM, {op}, outside a conditional, and I'm diagonalizing it")
 
             # add diagonalizing gates to tape
             diag_gates = op.diagonalizing_gates()
@@ -611,38 +617,61 @@ def diagonalize_mcms(tape):
 
             # track mapping from original to computational basis MCMs
             mps_mapping[op] = new_mp
+            curr_idx += 1
+
+            print(f"now my ops are {new_operations}")
 
         elif isinstance(op, qml.ops.Conditional):
+
+            print(f"I found a conditional, {op}")
 
             # from MCM mapping, map any MCMs in the condition if needed
             processing_fn = op.meas_val.processing_fn
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
             expr = MeasurementValue(mps, processing_fn=processing_fn)
 
-            if isinstance(op.base, ParametricMidMeasureMP):
-                # add conditional diagonalizing gates + conditional MCM to the tape
+            print(f"It has meas_vals {op.meas_val.measurements} that will map to {mps}")
+
+            if isinstance(op.base, MidMeasureMP):
+                print("oh look, this one is a measurement!")
+                true_cond, false_cond = (op, tape.operations[i + 1] if i < len(tape.operations) else None)
+                curr_idx += 1
+
+                print(f"now we are diagonalizing {true_cond} and {false_cond} and making a single measurement")
+                # add conditional diagonalizing gates + computational basis MCM to the tape
                 with qml.QueuingManager.stop_recording():
-                    diag_gates = [
-                        qml.ops.Conditional(expr=expr, then_op=gate)
-                        for gate in op.diagonalizing_gates()
-                    ]
+                    for op in [true_cond, false_cond]:
+                        diag_gates = [
+                            qml.ops.Conditional(expr=expr, then_op=gate)
+                            for gate in op.diagonalizing_gates()
+                        ]
+
+                        new_operations.extend(diag_gates)
+
                     new_mp = MidMeasureMP(
                         op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
                     )
-                    new_cond = qml.ops.Conditional(expr=expr, then_op=new_mp)
-
-                new_operations.extend(diag_gates)
-                new_operations.append(new_cond)
 
                 # track mapping from original to computational basis MCMs
-                mps_mapping[op.base] = new_mp
+                new_operations.append(new_mp)
+                print(f"we've added the diagonalizing gates and the measurement to the ops, now its {new_operations}")
+                mps_mapping[true_cond.base] = new_mp
+                mps_mapping[false_cond.base] = new_mp
+                curr_idx += 1
+                print(f"we've added them to the mps_mapping, so now its {mps_mapping}")
             else:
+                print(f"updating the measurement values on the conditional {op}")
                 with qml.QueuingManager.stop_recording():
                     new_cond = qml.ops.Conditional(expr=expr, then_op=op.base)
                 new_operations.append(new_cond)
+                print(f"now my ops are {new_operations}")
+                print(f"my new conditional has measurements {new_cond.meas_val.measurements}")
+                curr_idx += 1
 
         else:
             new_operations.append(op)
+            print(f"{op} is a completely normal op, I just leave it alone")
+            curr_idx += 1
 
     new_tape = tape.copy(operations=new_operations)
 
