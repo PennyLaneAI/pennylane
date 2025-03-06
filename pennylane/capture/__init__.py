@@ -182,6 +182,7 @@ AbstractMeasurement: type
 qnode_prim: "jax.core.Primitive"
 PlxprInterpreter: type  # pylint: disable=redefined-outer-name
 expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
+eval: Callable
 
 
 class CaptureError(Exception):
@@ -210,6 +211,11 @@ def __getattr__(key):
 
         return PlxprInterpreter
 
+    if key == "eval":
+        from .base_interpreter import eval
+
+        return eval
+
     if key == "expand_plxpr_transforms":
         from .expand_transforms import expand_plxpr_transforms
 
@@ -222,6 +228,7 @@ __all__ = (
     "disable",
     "enable",
     "enabled",
+    "eval",
     "CaptureMeta",
     "ABCCaptureMeta",
     "create_operator_primitive",

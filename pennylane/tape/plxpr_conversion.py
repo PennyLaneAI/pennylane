@@ -17,7 +17,7 @@ Defines a function for converting plxpr to a tape.
 from copy import copy
 
 import pennylane as qml
-from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
+from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
@@ -31,7 +31,7 @@ from pennylane.measurements import MeasurementValue, get_mcm_predicates
 from .qscript import QuantumScript
 
 
-class CollectOpsandMeas(PlxprInterpreter):
+class CollectOpsandMeas(FlattenedInterpreter):
     """Collect the dropped operations and measurements in a plxpr. Used by ``convert_to_tape``.
 
     .. code-block:: python
@@ -93,10 +93,6 @@ class CollectOpsandMeas(PlxprInterpreter):
     def interpret_measurement(self, measurement):
         self.state["measurements"].append(measurement)
         return measurement
-
-
-# pylint: disable=protected-access
-CollectOpsandMeas._primitive_registrations.update(FlattenedHigherOrderPrimitives)
 
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)

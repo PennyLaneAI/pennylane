@@ -14,6 +14,7 @@
 """For loop."""
 import functools
 
+from pennylane import capture
 from pennylane.capture import FlatFn, determine_abstracted_axes, enabled
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 
@@ -152,8 +153,6 @@ def _get_for_loop_qfunc_prim():
     """Get the loop_for primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     for_loop_prim = NonInterpPrimitive("for_loop")
@@ -172,7 +171,7 @@ def _get_for_loop_qfunc_prim():
         fn_res = init_state
 
         for i in range(start, stop, step):
-            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
+            fn_res = capture.eval(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
 
         return fn_res
 
@@ -182,6 +181,13 @@ def _get_for_loop_qfunc_prim():
         return args[args_slice]
 
     return for_loop_prim
+
+
+def _add_abstract_shapes_to_start(f, n_abstract_shapes: int):
+    def new_f(*args, **kwargs):
+        return f(*args[n_abstract_shapes:], **kwargs)
+
+    return new_f
 
 
 class ForLoopCallable:  # pylint:disable=too-few-public-methods
@@ -225,7 +231,15 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
         abstracted_axes, abstract_shapes = determine_abstracted_axes((0, *init_state))
 
         flat_fn = FlatFn(self.body_fn)
-        jaxpr_body_fn = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(0, *init_state)
+        if abstracted_axes:
+            body_fn = _add_abstract_shapes_to_start(flat_fn, len(abstract_shapes))
+            abstracted_axes = tuple({} for _ in abstract_shapes) + abstracted_axes
+        else:
+            body_fn = flat_fn
+
+        jaxpr_body_fn = jax.make_jaxpr(body_fn, abstracted_axes=abstracted_axes)(
+            *abstract_shapes, 0, *init_state
+        )
 
         consts_slice = slice(0, len(jaxpr_body_fn.consts))
         abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
