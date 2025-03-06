@@ -95,11 +95,13 @@ class QubitGraph:
         # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
         self._id = id
 
+        graph_copy = None
         if graph is not None:
             self._check_graph_type_supported_and_raise_or_warn(graph)
+            graph_copy = self._copy_graph_structure(graph)
 
         # The graph structure of the qubits underlying (nested within) the current qubit
-        self._graph = graph
+        self._graph = graph_copy
 
         # The parent QubitGraph object under which this QubitGraph is nested
         self._parent = None
@@ -483,7 +485,7 @@ class QubitGraph:
             self._warn_reinitialization()
             return
 
-        self._graph = graph
+        self._graph = self._copy_graph_structure(graph)
         self._initialize_all_nodes_as_qubit_graph()
 
     def init_graph_2d_grid(self, m: int, n: int):
@@ -628,6 +630,31 @@ class QubitGraph:
             q = QubitGraph(id=node)
             q._parent = self  # pylint: disable=protected-access
             self[node] = q
+
+    @staticmethod
+    def _copy_graph_structure(graph: nx.Graph):
+        """Creates a copy of a networkx graph, but only the graph structure (nodes and edges), without
+        copying the node data.
+
+        Args:
+            graph (networkx.Graph): The graph to copy. Must not be None.
+
+        Returns:
+            networkx.Graph: A new graph with the same structure but empty node attributes.
+        """
+        assert graph is not None, "Graph object for copying must not be None"
+
+        if isinstance(graph, nx.Graph):
+            # This allows support for other networkx graph types, which all inherit from nx.Graph
+            graph_type = type(graph)
+            new_graph = graph_type()
+        else:
+            new_graph = nx.Graph()
+
+        new_graph.add_nodes_from(graph.nodes)
+        new_graph.add_edges_from(graph.edges)
+
+        return new_graph
 
     @staticmethod
     def _warn_uninitialized():
