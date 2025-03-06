@@ -164,6 +164,9 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
             return self.l_child == other.l_child
 
+        if self.node_type == NodeType.SUM:
+            return (self.l_child == other.l_child) and (self.r_child == other.r_child)
+
         if self.node_type == NodeType.TENSOR:
             return allclose(self.tensor, other.tensor)
 
