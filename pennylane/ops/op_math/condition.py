@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
-from pennylane.measurements import MeasurementValue, get_mcm_predicates
+from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
@@ -625,6 +625,10 @@ def cond(
                 raise ConditionalTransformError(with_meas_err)
 
             for op in qscript.operations:
+                if isinstance(op, MidMeasureMP):
+                    raise ConditionalTransformError(
+                        "Applying mid-circuit measurements is not supported in `qml.cond`"
+                    )
                 Conditional(condition, op)
 
             if false_fn is not None:
@@ -632,11 +636,16 @@ def cond(
                 else_qscript = qml.tape.make_qscript(false_fn)(*args, **kwargs)
 
                 if else_qscript.measurements:
+
                     raise ConditionalTransformError(with_meas_err)
 
                 inverted_condition = ~condition
 
                 for op in else_qscript.operations:
+                    if isinstance(op, MidMeasureMP):
+                        raise ConditionalTransformError(
+                            "Applying mid-circuit measurements is not supported in `qml.cond`"
+                        )
                     Conditional(inverted_condition, op)
 
     else:
