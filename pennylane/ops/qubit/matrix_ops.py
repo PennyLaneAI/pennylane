@@ -293,10 +293,6 @@ class QubitUnitary(Operation):
     def has_decomposition(self) -> bool:
         return len(self.wires) < 3
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
-
     def adjoint(self) -> "QubitUnitary":
         if self.has_matrix:
             U = self.matrix()

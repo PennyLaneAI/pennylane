@@ -1322,14 +1322,6 @@ class MultiControlledX(ControlledOp):
         )
 
     @property
-    def resource_params(self) -> dict:
-        return {
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-        }
-
-    @property
     def wires(self):
         return self.control_wires + self.target_wires
 
