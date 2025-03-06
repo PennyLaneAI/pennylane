@@ -222,7 +222,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
         mult_resources = ResourceMultiplier._resource_decomp(mod, num_work_wires, num_output_wires)
         gate_types = {}
 
-        for comp_rep in mult_resources.items():
+        for comp_rep, _ in mult_resources.items():
             new_rep = re.ResourceControlled.resource_rep(comp_rep.op_type, comp_rep.params, 1, 0, 0)
 
             # cancel out QFTs from consecutive Multipliers

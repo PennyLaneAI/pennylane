@@ -410,9 +410,7 @@ class TestResourceMultiplier:
                 "num_x_wires": num_x_wires,
             },
         )
-        assert expected == re.ResourceMultiplier.resource_rep(
-            mod, num_work_wires, num_x_wires
-        )
+        assert expected == re.ResourceMultiplier.resource_rep(mod, num_work_wires, num_x_wires)
 
     @pytest.mark.parametrize(
         "mod, num_work_wires, num_x_wires",
@@ -469,7 +467,118 @@ class TestResourceMultiplier:
 
         assert actual == expected
 
-
     def test_tracking_name(self):
         """Test that the tracking name is correct."""
         assert re.ResourceMultiplier.tracking_name() == f"Multiplier"
+
+
+class TestModExp:
+    """Test the ResourceMultiplier class"""
+
+    @pytest.mark.parametrize(
+        "mod, num_output_wires, num_work_wires, num_x_wires",
+        [(7, 5, 5, 3), (8, 5, 5, 3)],
+    )
+    def test_resources(self, mod, num_output_wires, num_work_wires, num_x_wires):
+        mult_resources = re.ResourceMultiplier._resource_decomp(
+            mod, num_work_wires, num_output_wires
+        )
+        gate_types = {}
+
+        for comp_rep, _ in mult_resources.items():
+            new_rep = re.CompressedResourceOp(
+                re.ResourceControlled,
+                {
+                    "base_class": comp_rep.op_type,
+                    "base_params": comp_rep.params,
+                    "num_ctrl_wires": 1,
+                    "num_ctrl_values": 0,
+                    "num_work_wires": 0,
+                },
+            )
+
+            if comp_rep._name in ("QFT", "Adjoint(QFT)"):
+                gate_types[new_rep] = 1
+            else:
+                gate_types[new_rep] = mult_resources[comp_rep] * ((2**num_x_wires) - 1)
+
+        assert (
+            re.ResourceModExp.resources(mod, num_output_wires, num_work_wires, num_x_wires)
+            == gate_types
+        )
+
+    @pytest.mark.parametrize(
+        "k, mod, work_wires, x_wires",
+        [(4, 7, [3, 4, 5, 6, 7], [0, 1, 2]), (5, 8, [3, 4, 5, 6, 7], [0, 1, 2])],
+    )
+    def test_resource_params(self, k, mod, work_wires, x_wires):
+        """Test that the resource params are correct"""
+        op = re.ResourceMultiplier(
+            k=k,
+            x_wires=x_wires,
+            mod=mod,
+            work_wires=work_wires,
+        )
+
+        assert op.resource_params == {
+            "mod": mod,
+            "num_work_wires": len(work_wires),
+            "num_x_wires": len(x_wires),
+        }
+
+    @pytest.mark.parametrize(
+        "mod, num_output_wires, num_work_wires, num_x_wires",
+        [(7, 5, 5, 3), (8, 5, 5, 3)],
+    )
+    def test_resource_rep(self, mod, num_output_wires, num_work_wires, num_x_wires):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = re.CompressedResourceOp(
+            re.ResourceModExp,
+            {
+                "mod": mod,
+                "num_output_wires": num_output_wires,
+                "num_work_wires": num_work_wires,
+                "num_x_wires": num_x_wires,
+            },
+        )
+        assert expected == re.ResourceModExp.resource_rep(
+            mod, num_output_wires, num_work_wires, num_x_wires
+        )
+
+    @pytest.mark.parametrize(
+        "mod, num_output_wires, num_work_wires, num_x_wires",
+        [(7, 5, 5, 3), (8, 5, 5, 3)],
+    )
+    def test_resources_from_rep(self, num_output_wires, mod, num_work_wires, num_x_wires):
+        """Test that computing the resources from a compressed representation works"""
+        mult_resources = re.ResourceMultiplier._resource_decomp(
+            mod, num_work_wires, num_output_wires
+        )
+        expected = {}
+
+        for comp_rep, _ in mult_resources.items():
+            new_rep = re.CompressedResourceOp(
+                re.ResourceControlled,
+                {
+                    "base_class": comp_rep.op_type,
+                    "base_params": comp_rep.params,
+                    "num_ctrl_wires": 1,
+                    "num_ctrl_values": 0,
+                    "num_work_wires": 0,
+                },
+            )
+
+            if comp_rep._name in ("QFT", "Adjoint(QFT)"):
+                expected[new_rep] = 1
+            else:
+                expected[new_rep] = mult_resources[comp_rep] * ((2**num_x_wires) - 1)
+
+        rep = re.ResourceModExp.resource_rep(mod, num_output_wires, num_work_wires, num_x_wires)
+        actual = rep.op_type.resources(**rep.params)
+
+        assert actual == expected
+
+    def test_tracking_name(self):
+        """Test that the tracking name is correct."""
+        assert re.ResourceModExp.tracking_name() == f"ModExp"
