@@ -348,6 +348,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
+  this quantity is extremely expensive, and the definition is ambiguous for non-commuting observables.
+  [(#7047)](https://github.com/PennyLaneAI/pennylane/pull/7047)
+
 * `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
   to better reflect what it actually does.
   [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
