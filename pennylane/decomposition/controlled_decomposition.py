@@ -68,8 +68,8 @@ class GeneralControlledDecomposition(DecompositionRule):
         base_resource_decomp = self._base_decomposition.compute_resources(**base_params)
         controlled_resources = {
             controlled_resource_rep(
-                base_op_type=base_op_rep.op_type,
-                base_op_params=base_op_rep.params,
+                base_class=base_op_rep.op_type,
+                base_params=base_op_rep.params,
                 num_control_wires=num_control_wires,
                 num_zero_control_values=0,
                 num_work_wires=num_work_wires,
@@ -112,7 +112,7 @@ def _controlled_g_phase_resource(*_, num_control_wires, num_zero_control_values,
             resource_rep(qml.PauliX): num_zero_control_values * 2,
             controlled_resource_rep(
                 qml.PhaseShift,
-                base_op_params={},
+                base_params={},
                 num_control_wires=num_control_wires - 1,
                 num_zero_control_values=0,
                 num_work_wires=num_work_wires,
