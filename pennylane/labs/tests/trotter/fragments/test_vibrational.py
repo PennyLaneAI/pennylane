@@ -25,8 +25,8 @@ class TestFragments:
         harmonic, anharmonic = vibrational_fragments(n_modes, omegas, phis, frags="harmonic")
         kinetic, potential = vibrational_fragments(n_modes, omegas, phis, frags="kinetic")
 
-        mat1 = (harmonic + anharmonic).matrix(gridpoints, n_modes)
-        mat2 = (kinetic + potential).matrix(gridpoints, n_modes)
+        mat1 = (harmonic + anharmonic).matrix(gridpoints)
+        mat2 = (kinetic + potential).matrix(gridpoints)
 
         assert np.allclose(mat1, mat2)
 
@@ -280,7 +280,7 @@ class TestExpectation:
         """Test the matrix"""
 
         ham = vibrational_hamiltonian(len(omegas), omegas, phis)
-        actual = ham.matrix(2, len(omegas), basis="harmonic")
+        actual = ham.matrix(2, basis="harmonic")
 
         assert np.allclose(actual, expected)
 
