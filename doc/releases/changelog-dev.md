@@ -430,6 +430,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Change some `scipy` imports from submodules to whole module to reduce memory footprint of importing pennylane. 
+  [(#7040)](https://github.com/PennyLaneAI/pennylane/pull/7040)
+
 * Add `NotImplementedError`s for `grad` and `jacobian` in `CollectOpsandMeas`.
   [(#7041)](https://github.com/PennyLaneAI/pennylane/pull/7041)
 
