@@ -677,7 +677,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         collector = CollectOpsandMeas()
-        collector.eval(inner_jaxpr, jaxpr.consts, x)
+        collector.eval(inner_jaxpr, [], x)
 
         ops = collector.state["ops"]
         expected_ops = [
