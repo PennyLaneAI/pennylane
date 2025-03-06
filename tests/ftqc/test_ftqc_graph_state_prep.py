@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 import jax
+import networkx as nx
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 from pennylane.ops.functions import assert_valid
 from pennylane.transforms.decompose import decompose
@@ -54,6 +55,22 @@ class TestGraphStatePrep:
 
         circuit(q)
         assert_valid(GraphStatePrep(qubit_graph=q), skip_deepcopy=True, skip_pickle=True)
+    
+    def test_circuit_accept_graph_state_prep_with_nx_wires(self):
+        """Test if a quantum function accepts GraphStatePrep."""
+        dev = qml.device("default.qubit")
+        wires = [0,1,2,3]
+        edges= [(0,1),(1,2),(2,3)]
+        lattice = nx.Graph()
+        lattice.add_nodes_from(wires)
+        lattice.add_edges_from(edges)
+
+        @qml.qnode(dev)
+        def circuit(wires, lattice):
+            GraphStatePrep(wires=wires, lattice=lattice)
+            return qml.probs()
+
+        circuit(wires, lattice)
 
     @pytest.mark.parametrize(
         "dims, shape, expected",
@@ -93,4 +110,26 @@ class TestGraphStatePrep:
         for op in queue[8:]:
             assert op.name == entangle_ops.name
             assert all(isinstance(w, QubitGraph) for w in op.wires)
+    
+    @pytest.mark.parametrize(
+        "qubit_ops, entangle_ops",
+        [
+            (qml.H, qml.CZ),
+            (qml.X, qml.CNOT),
+        ],
+    )
+    def test_decompose_wires(self, qubit_ops, entangle_ops):
+        """Test the decomposition method of the GraphStatePrep class."""
+        wires = [0,1,2,3]
+        edges= [(0,1),(1,2),(2,3)]
+        lattice = nx.Graph()
+        lattice.add_nodes_from(wires)
+        lattice.add_edges_from(edges)
+        op = GraphStatePrep(wires=wires, lattice=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
+        queue = op.decomposition()
+        assert len(queue) == 7  # 4 ops for |0> -> |+> and 3 ops to entangle nearest qubits
+        for op in queue[:4]:
+            assert op.name == qubit_ops(0).name
+        for op in queue[4:]:
+            assert op.name == entangle_ops.name
 
