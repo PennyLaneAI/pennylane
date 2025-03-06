@@ -106,14 +106,18 @@ def cartan_decomp(
     return k, m
 
 
-def check_commutation(ops1, ops2, vspace):
+def check_commutation(
+    ops1: List[Union[PauliSentence, TensorLike]],
+    ops2: List[Union[PauliSentence, TensorLike]],
+    vspace: Union[qml.pauli.PauliVSpace, List[Union[PauliSentence, TensorLike]]],
+):
     r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`.
 
     .. warning:: This function is expensive to compute
 
     Args:
-        ops1 (Iterable[PauliSentence]): First set of operators
-        ops2 (Iterable[PauliSentence]): Second set of operators
+        ops1 (List[Union[PauliSentence, TensorLike]]): First set of operators
+        ops2 (List[Union[PauliSentence, TensorLike]]): Second set of operators
         vspace (:class:`~PauliVSpace`): The vector space in form of a :class:`~PauliVSpace` that the operators should map to
 
     Returns:
@@ -138,14 +142,31 @@ def check_commutation(ops1, ops2, vspace):
     True
     """
 
+    ops1_is_tensor = any(isinstance(op, TensorLike) for op in ops1)
+    ops2_is_tensor = any(isinstance(op, TensorLike) for op in ops2)
+    if not isinstance(vspace, qml.pauli.PauliVSpace):
+        vspace_is_tensor = any(isinstance(op, TensorLike) for op in vspace)
+        if any(isinstance(op, Operator) for op in vspace):
+            vspace = qml.pauli.PauliVSpace(vspace, dtype=complex)
+
+    else:
+        vspace_is_tensor = False
+
+    if not all((ops1_is_tensor, ops2_is_tensor, vspace_is_tensor)) and any(
+        (ops1_is_tensor, ops2_is_tensor, vspace_is_tensor)
+    ):
+        raise TypeError(
+            "All inputs ``ops1``, ``ops2`` and ``vspace`` to qml.liealg.check_commutation need to either be iterables of operators or matrices."
+        )
+
+    if all((ops1_is_tensor, ops2_is_tensor, vspace_is_tensor)):
+        return _check_commutation_matrix(ops1, ops2, vspace)
+
     if any(isinstance(op, Operator) for op in ops1):
         ops1 = [op.pauli_rep for op in ops1]
 
     if any(isinstance(op, Operator) for op in ops2):
         ops2 = [op.pauli_rep for op in ops2]
-
-    if not isinstance(vspace, qml.pauli.PauliVSpace):
-        vspace = qml.pauli.PauliVSpace(vspace, dtype=complex)
 
     for o1 in ops1:
         for o2 in ops2:
@@ -158,7 +179,45 @@ def check_commutation(ops1, ops2, vspace):
     return True
 
 
-def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
+def _all_coms(vspace1, vspace2):
+    r"""Compute all commutators [Vspace1, Vspace2]"""
+    chi = len(vspace1[0])
+
+    m0m1 = qml.math.moveaxis(qml.math.tensordot(vspace1, vspace2, axes=[[2], [1]]), 1, 2)
+    m0m1 = qml.math.reshape(m0m1, (-1, chi, chi))
+
+    # Implement einsum "aij,bki->abkj" by tensordot and moveaxis
+    m1m0 = qml.math.moveaxis(qml.math.tensordot(vspace1, vspace2, axes=[[1], [2]]), 1, 3)
+    m1m0 = qml.math.reshape(m1m0, (-1, chi, chi))
+    all_coms = m0m1 - m1m0
+    return all_coms
+
+
+def _is_subspace(subspace, vspace):
+    r"""check if subspace <= vspace"""
+    # Check if rank increases by adding matices from ``subspace``
+    # Use matrices as vectors -> flatten matrix dimensions (chi, chi) to (chi**2,)
+    vspace = qml.math.reshape(vspace, (len(vspace), -1))
+    subspace = qml.math.reshape(subspace, (len(subspace), -1))
+
+    rank_V = qml.math.linalg.matrix_rank(vspace)
+    rank_both = qml.math.linalg.matrix_rank(qml.math.vstack([vspace, subspace]))
+
+    if rank_both > rank_V:
+        return False
+    return True
+
+
+def _check_commutation_matrix(a, b, vspace):
+    all_coms = _all_coms(a, b)
+    return _is_subspace(all_coms, vspace)
+
+
+def check_cartan_decomp(
+    k: List[Union[PauliSentence, TensorLike]],
+    m: List[Union[PauliSentence, TensorLike]],
+    verbose=True,
+):
     r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}.`
 
     Check whether of not the following properties are fulfilled.
@@ -172,8 +231,8 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     .. warning:: This function is expensive to compute
 
     Args:
-        k (List[PauliSentence]): List of operators of the vertical subspace
-        m (List[PauliSentence]): List of operators of the horizontal subspace
+        k (List[Union[PauliSentence, TensorLike]]): List of operators of the vertical subspace
+        m (List[Union[PauliSentence, TensorLike]]): List of operators of the horizontal subspace
         verbose: Whether failures to meet one of the criteria should be printed
 
     Returns:
@@ -211,19 +270,29 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     True
 
     """
-    # TODO: implement proper matrix implementation
-    if any(isinstance(op, TensorLike) for op in k):
-        k = [qml.pauli_decompose(op).pauli_rep for op in k]
-    if any(isinstance(op, TensorLike) for op in m):
-        m = [qml.pauli_decompose(op).pauli_rep for op in m]
+
+    if any(isinstance(op, TensorLike) for op in k) or any(isinstance(op, TensorLike) for op in m):
+        if not all(isinstance(op, TensorLike) for op in k) or not all(
+            isinstance(op, TensorLike) for op in m
+        ):
+            raise TypeError(
+                f"All inputs ``k``, ``m`` to qml.liealg.check_cartan_decomp need to either be iterables of operators or matrices. Received k of types {[type(op) for op in k]} and m of types k of types {[type(op) for op in m]}"
+            )
 
     if any(isinstance(op, Operator) for op in k):
         k = [op.pauli_rep for op in k]
     if any(isinstance(op, Operator) for op in m):
         m = [op.pauli_rep for op in m]
 
-    k_space = qml.pauli.PauliVSpace(k, dtype=complex)
-    m_space = qml.pauli.PauliVSpace(m, dtype=complex)
+    if any(isinstance(op, TensorLike) for op in k):
+        k_space = k
+    else:
+        k_space = qml.pauli.PauliVSpace(k, dtype=complex)
+
+    if any(isinstance(op, TensorLike) for op in m):
+        m_space = m
+    else:
+        m_space = qml.pauli.PauliVSpace(m, dtype=complex)
 
     # Commutation relations for Cartan pair
     if not (check_kk := check_commutation(k, k, k_space)):

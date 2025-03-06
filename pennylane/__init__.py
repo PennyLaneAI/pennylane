@@ -160,6 +160,7 @@ from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
 
+import pennylane.liealg
 from pennylane.liealg import lie_closure, structure_constants, center
 
 # Look for an existing configuration file
