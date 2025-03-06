@@ -24,6 +24,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -436,6 +437,8 @@ class PhaseShift(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -445,6 +448,10 @@ class PhaseShift(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def label(
         self,
