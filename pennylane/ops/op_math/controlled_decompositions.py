@@ -522,7 +522,7 @@ def ctrl_decomp_bisect(
 
 
 def decompose_mcx(
-    control_wires, target_wire, work_wires, work_wire_type: Literal["clean", "ancilla"] = "clean"
+    control_wires, target_wire, work_wires, work_wire_type: Literal["clean", "dirty"] = "clean"
 ):
     """Decomposes the multi-controlled PauliX"""
 
@@ -664,8 +664,8 @@ def _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires):
 def _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wire):
     """
     Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.3 of
-    https://arxiv.org/abs/quant-ph/9503016, which requires a single work wire. This approach
-    requires O(16k) CX gates, where k is the number of control wires.
+    `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_, which requires 
+    a single work wire. This approach requires O(16k) CX gates, where k is the number of control wires.
     """
     tot_wires = len(control_wires) + 2
     partition = int(np.ceil(tot_wires / 2))
@@ -690,10 +690,10 @@ def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
     CCX gates.
 
     Args:
-        wires (Wires): Wires to apply the ladder operations on. wires[0] is assumed to be ancilla.
+        wires (Wires): Wires to apply the ladder operations on. :code:`wires[0]` is assumed to be ancilla.
 
     Returns:
-        tuple[list[Operator], int]: linear-depth ladder circuit and the index of control qubit to
+        tuple[list[Operator], int]: Linear-depth ladder circuit and the index of control qubit to
         apply the final CCX gate.
 
     References:
@@ -744,13 +744,13 @@ def _decompose_mcx_with_one_worker_kg24(
     Sec. 5.1 of [1].
 
     Args:
-        control_wires (Wires): The control wires.
-        target_wire (int): The target wire.
-        work_wires (Wires): The work wires.
-        work_wire_type (string): If "dirty", perform uncomputation after we're done. Default is "clean".
+        control_wires (Wires): the control wires
+        target_wire (int): the target wire
+        work_wires (Wires): the work wires used to decompose the gate
+        work_wire_type (string): If "dirty", perform un-computation. Default is "clean".
 
     Returns:
-        list[Operator] The synthesized quantum circuit.
+        list[Operator]: the synthesized quantum circuit
 
     References:
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
