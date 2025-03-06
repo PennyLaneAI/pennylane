@@ -16,6 +16,7 @@
 and defines the API to access and manipulate these data structures.
 """
 
+import uuid
 import warnings
 from typing import Any, Optional, Union
 
@@ -35,7 +36,6 @@ class QubitGraph:
     logical qubits and physical qubits.
 
     Args:
-        id (Any): An identifier for this QubitGraph object.
         graph (graph-like, optional): The graph structure to use for the QubitGraph's underlying
             qubits. Inputting None (the default), leaves the underlying qubit graph in an
             uninitialized state, in which case one of the graph-initialization methods may be used
@@ -45,6 +45,9 @@ class QubitGraph:
             "graph-like" if it has both a 'nodes' and an 'edges' attribute. Furthermore, QubitGraph
             expects a "flat" (unnested) graph, and any graph-like objects nested within the graph
             structure used as input are ignored.
+        id (Any, optional): An identifier for this QubitGraph object. The identifier is generally an
+            integer, string, or a tuple of integers and strings, but it may be any object. Inputting
+            None (the default), assigns a random universally unique identifier (uuid) to ``id``.
 
     **Examples**
 
@@ -53,7 +56,7 @@ class QubitGraph:
 
         >>> import networkx as nx
         >>> from pennylane.ftqc import QubitGraph
-        >>> q = QubitGraph(0, nx.grid_graph((2,2)))
+        >>> q = QubitGraph(nx.grid_graph((2,2)), id=0)
         >>> q
         QubitGraph<0>
         >>> for child in q.children:
@@ -66,11 +69,17 @@ class QubitGraph:
         Using the QubitGraph object defined above as a starting point, it's possible to nest other
         QubitGraph objects in any of the nodes of its underlying qubit graph:
 
-        >>> q[(0,0)] = QubitGraph((0, 0), nx.grid_graph((2,)))
+        >>> q[(0,0)] = QubitGraph(nx.grid_graph((2,)))
+        >>> q[(0,0)]
+        QubitGraph<0, (0, 0)>
         >>> for child in q[(0,0)].children:
         ...     print(child)
         QubitGraph<0, (0, 0), 0>
         QubitGraph<0, (0, 0), 1>
+
+        Notice that you do not have to provide an ID when constructing the QubitGraph; when a
+        QubitGraph object is assigned to the node of another QubitGraph, its ID takes on the label
+        of the node it was assigned to.
 
     ..  TODO:
 
@@ -82,18 +91,10 @@ class QubitGraph:
         - Implement tensor-like indexing and slicing.
     """
 
-    def __init__(self, id: Any, graph: Optional[nx.Graph] = None):
-        if id is None:
-            raise TypeError("'None' is not a valid QubitGraph ID.")
-
-        # Attempting to construct a QubitGraph object by passing a single graph-like object results
-        # in it being interpreted as the `id`. This is likely not what the user intended, therefore
-        # emit a warning.
-        if self._is_graph_like(id) and graph is None:
-            self._warn_id_is_graph_like(id)
-
+    def __init__(self, graph: Optional[nx.Graph] = None, id: Optional[Any] = None):
         # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
-        self._id = id
+        # Generate a random uuid if the input is None
+        self._id = uuid.uuid4() if id is None else id
 
         graph_copy = None
         if graph is not None:
@@ -153,10 +154,10 @@ class QubitGraph:
 
             >>> graph = nx.Graph()
             >>> graph.add_node(0)
-            >>> q_top = QubitGraph("top", graph)
+            >>> q_top = QubitGraph(graph, id="top")
             >>> print(f"{q_top}; {q_top.nodes}")
             QubitGraph<top>; [0]
-            >>> q_new = QubitGraph("new", graph)
+            >>> q_new = QubitGraph(graph, "new")
             >>> print(f"{q_new}; {q_new.nodes}")
             QubitGraph<new>; [0]
             >>> q_top[0] = q_new
@@ -193,7 +194,7 @@ class QubitGraph:
         Consider the example where we wrap a QubitGraph object in a tuple. With this dummy
         ``__iter__()`` method defined, the resulting tuple contains the top-level QubitGraph object:
 
-            >>> q = QubitGraph(0)
+            >>> q = QubitGraph(id=0)
             >>> q.init_graph_nd_grid((2,))
             >>> tuple(q)
             (QubitGraph<0>,)
@@ -203,7 +204,7 @@ class QubitGraph:
         objects contained in the underlying qubit graph:
 
             >>> # Without QubitGraph.__iter__() defined
-            >>> q = QubitGraph(0)
+            >>> q = QubitGraph(id=0)
             >>> q.init_graph_nd_grid((2,))
             >>> tuple(q)
             (QubitGraph<0, 0>, QubitGraph<0, 1>)
@@ -220,10 +221,10 @@ class QubitGraph:
 
         **Examples**
 
-            >>> QubitGraph(0)
+            >>> QubitGraph(id=0)
             QubitGraph<0>
 
-            >>> q = QubitGraph(0)
+            >>> q = QubitGraph(id=0)
             >>> q.init_graph_nd_grid((2, 2))
             >>> q
             QubitGraph<0>
@@ -235,8 +236,11 @@ class QubitGraph:
             >>> q[(0, 1)]["aux"]
             QubitGraph<0, (0, 1), aux>
         """
+        # Truncate the ID representation if it is a UUID
+        id_repr = self._truncate_id_if_uuid(self._id)
+
         if self.is_root:
-            return f"QubitGraph<{self._id}>"
+            return f"QubitGraph<{id_repr}>"
 
         if self.has_cycle():
             # NOTE: For now, we check if the QubitGraph nesting structure is cyclic and break early,
@@ -244,11 +248,11 @@ class QubitGraph:
             # Eventually, it would be better to explicitly disallow constructing a cyclically nested
             # QubitGraph.
             self._warn_cyclically_nested_graph()
-            return f"QubitGraph<{self._id}; cyclic>"
+            return f"QubitGraph<{id_repr}; cyclic>"
 
         depth_counter = 1
 
-        ids = [self.id]
+        ids = [self._truncate_id_if_uuid(self._id)]
         parent = self.parent
         while parent is not None:
             # To prevent extremely long string representations, we break early once we reach the
@@ -270,7 +274,7 @@ class QubitGraph:
     @property
     def id(self):
         """Gets the QubitGraph ID."""
-        return self._id
+        return str(self._id) if isinstance(self._id, uuid.UUID) else self._id
 
     @property
     def graph(self):
@@ -335,7 +339,7 @@ class QubitGraph:
             >>> g = nx.grid_graph((2,))
             >>> g.nodes
             NodeView((0, 1))
-            >>> q = QubitGraph(0, g)
+            >>> q = QubitGraph(g, id=0)
             >>> q.node_labels
             NodeView((0, 1))
 
@@ -365,7 +369,7 @@ class QubitGraph:
             >>> g = nx.grid_graph((2,))
             >>> g.edges
             EdgeView([(0, 1)])
-            >>> q = QubitGraph(0, g)
+            >>> q = QubitGraph(g, id=0)
             >>> q.edge_labels
             EdgeView([(0, 1)])
 
@@ -392,7 +396,7 @@ class QubitGraph:
 
         **Example**
 
-            >>> q = QubitGraph(0, nx.grid_graph((2,)))
+            >>> q = QubitGraph(nx.grid_graph((2,)), id=0)
             >>> set(q.node_labels)
             {0, 1}
             >>> set(q.children)
@@ -418,7 +422,7 @@ class QubitGraph:
 
         **Example**
 
-            >>> q = QubitGraph(0, nx.grid_graph((2, 2)))
+            >>> q = QubitGraph(nx.grid_graph((2, 2)), id=0)
             >>> set(q[(0,0)].neighbors)
             {QubitGraph<0, (0, 1)>, QubitGraph<0, (1, 0)>}
         """
@@ -471,7 +475,7 @@ class QubitGraph:
             >>> import networkx as nx
             >>> graph = nx.Graph()
             >>> graph.add_edge(0, 1)
-            >>> q = QubitGraph(0)
+            >>> q = QubitGraph(id=0)
             >>> q.init_graph(graph)
             >>> list(q.children)
             [QubitGraph<0, 0>, QubitGraph<0, 1>]
@@ -506,7 +510,7 @@ class QubitGraph:
                   |         |         |
                 (1,0) --- (1,1) --- (1,2)
 
-            >>> q = QubitGraph(0)
+            >>> q = QubitGraph(id=0)
             >>> q.init_graph_2d_grid(2, 3)
             >>> list(q.children)
             [QubitGraph<0, (0, 0)>, QubitGraph<0, (0, 1)>, QubitGraph<0, (0, 2)>,
@@ -545,7 +549,7 @@ class QubitGraph:
                 | /                   | /
                 (0,1,0) ------------- (0,1,1)
 
-            >>> q = QubitGraph(0)
+            >>> q = QubitGraph(id=0)
             >>> q.init_graph_nd_grid((2, 2, 3))
             >>> list(q.children)
             [QubitGraph<0, (0, 0, 0)>, QubitGraph<0, (0, 0, 1)>, QubitGraph<0, (0, 1, 0)>,
@@ -657,6 +661,33 @@ class QubitGraph:
         return new_graph
 
     @staticmethod
+    def _truncate_id_if_uuid(id: Any):
+        """Truncate an ID if it is a UUID, otherwise return the input unmodified.
+
+        Args:
+            id (Any): The ID to truncate.
+
+        Returns:
+            str: The truncated UUID.
+            type(id): If the id is not a UUID, return the unmodified input.
+
+        **Examples**
+
+            >>> id = uuid.uuid4()
+            >>> id
+            UUID('2b03b2f5-5d36-4dfe-997e-01d2b01556c8')
+            >>> QubitGraph._truncate_id_if_uuid(id)
+            '2b03b2f5'
+
+            >>> QubitGraph._truncate_id_if_uuid("abcdefghijkl")
+            'abcdefghijkl'
+        """
+        if isinstance(id, uuid.UUID):
+            return str(id).split("-", maxsplit=1)[0]
+
+        return id
+
+    @staticmethod
     def _warn_uninitialized():
         """Emit a UserWarning when attempting to access an uninitialized graph."""
         warnings.warn("Attempting to access an uninitialized QubitGraph.", UserWarning)
@@ -669,24 +700,6 @@ class QubitGraph:
             "qubits with a new graph structure, you must first call QubitGraph.clear() and then "
             "call the initialization method.",
             UserWarning,
-        )
-
-    @staticmethod
-    def _warn_id_is_graph_like(id: Any):
-        """Emit a UserWarning when attempting to instantiate a QubitGraph by passing a single
-        argument that is a graph-like object to its constructor. This single argument is interpreted
-        as the ``id`` parameter, and the underlying qubit graph is left uninitialized, which is
-        likely not what the user intended.
-
-        Args:
-            id (Any): The graph-like object interpreted as the QubitGraph ID.
-        """
-        warnings.warn(
-            f"Attempting to pass an object of type '{type(id).__name__}' as the QubitGraph ID. "
-            f"Constructing a QubitGraph with a single graph-like object as input results in this "
-            f"object being interpreted as the QubitGraph's ID and leaves the QubitGraph in an "
-            f"uninitialized state. If you wish to use this graph-like object to initialize the "
-            f"QubitGraph, you must also supply an ID parameter."
         )
 
     @staticmethod
