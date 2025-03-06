@@ -39,6 +39,7 @@ Utility functions
     ~pauli_coefficients
     ~batched_pauli_decompose
     ~check_orthonormal
+    ~check_all_commuting
     ~change_basis_ad_rep
     ~validate_kak
     ~run_opt
