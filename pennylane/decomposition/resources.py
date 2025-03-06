@@ -175,7 +175,7 @@ def controlled_resource_rep(
 
     Args:
         base_class: the base operator type
-        base_params (dict): the parameters of the base operator
+        base_params (dict): the resource params of the base operator
         num_control_wires (int): the number of control wires
         num_zero_control_values (int): the number of control values that are 0
         num_work_wires (int): the number of work wires
@@ -203,6 +203,13 @@ def controlled_resource_rep(
         num_zero_control_values += base_params["num_zero_control_values"]
         num_work_wires += base_params["num_work_wires"]
         base_params = {}
+
+    elif base_class is qml.ControlledQubitUnitary:
+        base_class = qml.QubitUnitary
+        num_control_wires += base_params["num_control_wires"]
+        num_zero_control_values += base_params["num_zero_control_values"]
+        num_work_wires += base_params["num_work_wires"]
+        base_params = base_params["base"].resource_params
 
     return CompressedResourceOp(
         qml.ops.Controlled,
