@@ -324,6 +324,8 @@ class Adjoint(SymbolicOp):
 
     """
 
+    resource_param_keys = ("base_class", "base_params")
+
     def _flatten(self):
         return (self.base,), tuple()
 
@@ -364,6 +366,10 @@ class Adjoint(SymbolicOp):
 
     def __repr__(self):
         return f"Adjoint({self.base})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
     @property
     def ndim_params(self):

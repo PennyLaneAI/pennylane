@@ -267,7 +267,7 @@ class TestControlledResourceRep:
             {
                 "base_class": qml.RX,
                 "base_params": {},
-                "num_control_wires": 3,
+                "num_control_wires": 4,
                 "num_zero_control_values": 2,
                 "num_work_wires": 2,
             },
@@ -363,5 +363,65 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
+            },
+        )
+
+
+class TestSymbolicResourceRep:
+    """Tests resource reps of symbolic operators"""
+
+    def test_adjoint_resource_rep(self):
+        """Tests creating the resource rep of the adjoint of an operator."""
+
+        rep = qml.adjoint_resource_rep(DummyOp, {"foo": 2, "bar": 1})
+        assert rep == CompressedResourceOp(
+            qml.ops.Adjoint, {"base_class": DummyOp, "base_params": {"foo": 2, "bar": 1}}
+        )
+
+    def test_resource_rep_dispatch_to_adjoint_resource_rep(self, mocker):
+        """Tests that resource_rep dispatches to adjoint_resource_rep for Adjoint."""
+
+        expected_fn = mocker.patch("pennylane.decomposition.resources.adjoint_resource_rep")
+        _ = resource_rep(
+            qml.ops.Adjoint, **{"base_class": DummyOp, "base_params": {"foo": 2, "bar": 1}}
+        )
+        assert expected_fn.called
+
+    def test_adjoint_resource_rep_base_param_mismatch(self):
+        """Tests that an error is raised when base op and base params mismatch."""
+
+        with pytest.raises(TypeError, match="Missing resource parameters"):
+            qml.adjoint_resource_rep(DummyOp, {})
+
+    def test_adjoint_resource_rep_flattens_inner_nested_controlled_op(self):
+        """Tests that the adjoint of a nested controlled op is flattened."""
+
+        rep = qml.adjoint_resource_rep(
+            qml.ops.Adjoint,
+            {
+                "base_class": qml.ops.Controlled,
+                "base_params": {
+                    "base_class": qml.CRX,
+                    "base_params": {},
+                    "num_control_wires": 2,
+                    "num_zero_control_values": 1,
+                    "num_work_wires": 1,
+                },
+            },
+        )
+        assert rep == CompressedResourceOp(
+            qml.ops.Adjoint,
+            {
+                "base_class": qml.ops.Adjoint,
+                "base_params": {
+                    "base_class": qml.ops.Controlled,
+                    "base_params": {
+                        "base_class": qml.RX,
+                        "base_params": {},
+                        "num_control_wires": 3,
+                        "num_zero_control_values": 1,
+                        "num_work_wires": 1,
+                    },
+                },
             },
         )
