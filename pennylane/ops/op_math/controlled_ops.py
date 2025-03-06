@@ -120,6 +120,8 @@ class ControlledQubitUnitary(ControlledOp):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ("base", "num_control_wires", "num_zero_control_values", "num_work_wires")
+
     grad_method = None
     """Gradient computation method."""
 
@@ -228,6 +230,15 @@ class ControlledQubitUnitary(ControlledOp):
             work_wires=work_wires,
         )
         self._name = "ControlledQubitUnitary"
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "base": self.base,
+            "num_control_wires": len(self.control_wires),
+            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_work_wires": len(self.work_wires),
+        }
 
     def _controlled(self, wire):
         ctrl_wires = wire + self.control_wires
