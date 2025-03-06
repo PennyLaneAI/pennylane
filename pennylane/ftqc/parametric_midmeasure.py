@@ -586,9 +586,73 @@ def diagonalize_mcms(tape):
     0: ──RY(0.79)──┤↗ˣʸ(3.14)├─┤  <Z>
 
     becomes
-
     >>> print(qml.draw(circuit)([np.pi/4, np.pi]))
     ──RY(0.79)──Rϕ(-3.14)──H──┤↗├─┤  <Z>
+
+    Any measurement values for these circuits are then set to track the new measurement in the
+    computational basis:
+
+    .. code-block:: python3
+
+        from pennylane.ftqc import diagonalize_mcms, measure_x
+
+        dev = qml.device("default.qubit")
+
+        @diagonalize_mcms
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x, wires=0)
+            m = measure_x(0)
+            qml.cond(m, qml.X)(1)
+            return qml.expval(qml.Z(1))
+
+    Applying the transform inserts the relevant gates before the measurement to allow
+    measurements to be in the Z basis, so the original circuit
+
+    >>> print(qml.draw(circuit, level=0)(np.pi/4))
+    0: ──RY(0.79)──┤↗ˣ├────┤
+    1: ─────────────║────X─┤  <Z>
+                    ╚════╝
+
+    becomes
+
+    >>> print(qml.draw(circuit)(np.pi/4))
+    0: ──RY(0.79)──H──┤↗├────┤
+    1: ────────────────║───X─┤  <Z>
+                       ╚═══╝
+
+
+    .. details::
+        :title: Conditional measurements
+
+        The transform can also handle diagonalization of conditional measurements created by
+        :func:`qml.ftqc.cond_meas <pennylane.ftqc.cond_meas>`. This is done by replacing the
+        measurements for the true and false condition with conditional diagonalizing gates,
+        and a single measurement in the computational basis:
+
+        .. code-block:: python3
+
+            from pennylane.ftqc import diagonalize_mcms, measure_x
+
+            dev = qml.device("default.qubit")
+
+            @diagonalize_mcms
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RY(x[0], wires=0)
+                qml.RX(x[1], wires=1)
+                m = qml.measure(0)
+                m2 = cond_meas(m, measure_x, measure_y)(1)
+                qml.cond(m2, qml.X)(1)
+                return qml.expval(qml.Z(1))
+
+        This circuit diagonalizes to:
+
+        >>> print(qml.draw(circuit)([np.pi, np.pi/4]))
+        0: ──RY(3.14)──┤↗├───────────────────┤
+        1: ──RX(0.79)───║───H──S†──H──┤↗├──X─┤  <Z>
+                        ╚═══╩══╩═══╝   ║   ║
+                                       ╚═══╝
     """
 
     new_operations = []
