@@ -181,6 +181,9 @@ jobs:
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
+      - name: Create test reports directory
+        run: mkdir -p .github/test-reports
+
       - name: Set PyTest Args
         id: pytest_args
         env:

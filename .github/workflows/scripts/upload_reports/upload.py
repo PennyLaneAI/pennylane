@@ -29,7 +29,7 @@ def read_reports() -> dict:
         reports_dir = Path(".github/test-reports")
     print(f"Reports directory: {reports_dir}")
     reports = [str(p) for p in reports_dir.glob("*.xml")]
-    print(f"Found {len(reports)} report files in .github/test-reports/")
+    print(f"Found {len(reports)} report files in {reports_dir}")
 
     report_contents = {}
     for report_path in reports:
