@@ -114,9 +114,8 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
         if sp.sparse.issparse(a) and sp.sparse.issparse(b):
             return _allclose_sparse(a, b, rtol=rtol, atol=atol)
         if sp.sparse.issparse(a):
-            return _allclose_dense_sparse(
-                b, a, rtol=rtol, atol=atol
-            )  # pylint: disable=arguments-out-of-order
+            # pylint: disable=arguments-out-of-order
+            return _allclose_dense_sparse(b, a, rtol=rtol, atol=atol)
         if sp.sparse.issparse(b):
             return _allclose_dense_sparse(a, b, rtol=rtol, atol=atol)
         res = np.allclose(a, b, rtol=rtol, atol=atol, **kwargs)
