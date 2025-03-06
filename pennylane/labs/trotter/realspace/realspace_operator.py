@@ -277,7 +277,7 @@ class RealspaceSum(Fragment):
         if not isinstance(state, HOState):
             raise TypeError
 
-        mat = self.matrix(state.gridpoints, state.modes, basis="harmonic", sparse=True)
+        mat = self.matrix(state.gridpoints, basis="harmonic", sparse=True)
 
         return HOState.from_scipy(
             state.modes,

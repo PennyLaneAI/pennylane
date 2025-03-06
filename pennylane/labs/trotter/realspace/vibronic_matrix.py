@@ -237,7 +237,6 @@ class VibronicMatrix(Fragment):
 
         return top_left, top_right, bottom_left, bottom_right
 
-<<<<<<< HEAD
     def apply(self, state: VibronicHO) -> VibronicHO:
 
         if self.states != len(state.ho_states):
@@ -264,9 +263,6 @@ class VibronicMatrix(Fragment):
             gridpoints=state.gridpoints,
             ho_states=ho_states,
         )
-=======
-    def apply():
-        raise NotImplementedError
 
 def _is_pow_2(k: int) -> bool:
     """Test if k is a power of two"""
@@ -276,4 +272,3 @@ def _is_pow_2(k: int) -> bool:
 def _next_pow_2(k: int) -> int:
     """Return the smallest power of 2 greater than or equal to k"""
     return 2 ** (k - 1).bit_length()
->>>>>>> 1dceee5d376c4172fbd39b19c61421d1c721d618
