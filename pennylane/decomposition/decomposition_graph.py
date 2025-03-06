@@ -25,6 +25,7 @@ implementation of the basis translator, the Boost Graph library, and RustworkX.
 
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass
 
 import rustworkx as rx
@@ -39,7 +40,7 @@ from .controlled_decomposition import (
     controlled_x_decomp,
 )
 from .decomposition_rule import DecompositionRule, list_decomps
-from .resources import CompressedResourceOp, Resources, base_to_custom_ctrl_op, resource_rep
+from .resources import CompressedResourceOp, Resources, resource_rep
 
 
 class DecompositionError(Exception):
@@ -165,7 +166,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         # General case
         for base_decomposition in self._get_decompositions(base_class):
             rule = GeneralControlledDecomposition(base_decomposition)
-            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
 
         return op_node_idx
 
@@ -293,3 +294,23 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         elif isinstance(target_node, CompressedResourceOp):
             self.p[target_idx] = src_idx
             self.d[target_idx] = self.d[src_idx]
+
+
+@functools.lru_cache()
+def base_to_custom_ctrl_op():
+    """A dictionary mapping base op types to their custom controlled versions."""
+
+    ops_with_custom_ctrl_ops = {
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliZ, 2): qml.CCZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.CZ, 1): qml.CCZ,
+        (qml.SWAP, 1): qml.CSWAP,
+        (qml.Hadamard, 1): qml.CH,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
+    }
+    return ops_with_custom_ctrl_ops
