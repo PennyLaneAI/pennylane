@@ -17,7 +17,7 @@ from typing import List, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.pauli import PauliSentence
+from pennylane.pauli import PauliSentence, PauliVSpace
 from pennylane.typing import TensorLike
 
 
@@ -109,7 +109,7 @@ def cartan_decomp(
 def check_commutation(
     ops1: List[Union[PauliSentence, TensorLike]],
     ops2: List[Union[PauliSentence, TensorLike]],
-    vspace: Union[qml.pauli.PauliVSpace, List[Union[PauliSentence, TensorLike]]],
+    vspace: Union[PauliVSpace, List[Union[PauliSentence, TensorLike]]],
 ):
     r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`.
 
@@ -118,7 +118,7 @@ def check_commutation(
     Args:
         ops1 (List[Union[PauliSentence, TensorLike]]): First set of operators
         ops2 (List[Union[PauliSentence, TensorLike]]): Second set of operators
-        vspace (:class:`~PauliVSpace`): The vector space in form of a :class:`~PauliVSpace` that the operators should map to
+        vspace (Union[PauliVSpace, List[Union[PauliSentence, TensorLike]]]): The vector space in form of a :class:`~PauliVSpace` that the operators should map to
 
     Returns:
         bool: Whether or not :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
@@ -232,7 +232,7 @@ def check_cartan_decomp(
 
     Args:
         k (List[Union[PauliSentence, TensorLike]]): List of operators of the vertical subspace
-        m (List[Union[PauliSentence, TensorLike]]): List of operators of the horizontal subspace
+        m (List[Union[PauliSentence, TensorLike]]): List of operators of the horizontal subspace.
         verbose: Whether failures to meet one of the criteria should be printed
 
     Returns:
