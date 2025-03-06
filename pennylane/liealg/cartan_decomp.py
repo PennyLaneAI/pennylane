@@ -99,9 +99,9 @@ def cartan_decomp(
     k = []
 
     for op in g:
-        if involution(op):  # odd parity theta(k) = k
+        if involution(op):  # theta(k) = k
             k.append(op)
-        else:  # even parity theta(m) = -m
+        else:  # theta(m) = -m
             m.append(op)
 
     return k, m
