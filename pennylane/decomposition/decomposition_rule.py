@@ -193,6 +193,9 @@ class DecompositionRule:  # pylint: disable=too-few-public-methods
         else:
             self._compute_resources = resources
 
+    def __call__(self, *args, **kwargs):
+        return self.impl(*args, **kwargs)
+
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
         if self._compute_resources is None:

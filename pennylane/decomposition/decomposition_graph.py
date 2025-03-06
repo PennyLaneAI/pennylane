@@ -25,11 +25,20 @@ implementation of the basis translator, the Boost Graph library, and RustworkX.
 
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass
 
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
+import pennylane as qml
+
+from .controlled_decomposition import (
+    CustomControlledDecomposition,
+    GeneralControlledDecomposition,
+    controlled_global_phase_decomp,
+    controlled_x_decomp,
+)
 from .decomposition_rule import DecompositionRule, list_decomps
 from .resources import CompressedResourceOp, Resources, resource_rep
 
@@ -72,10 +81,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._target_gate_set = target_gate_set
         self._original_ops_indices: set[int] = set()
         self._target_gate_indices: set[int] = set()
-        self._graph = rx.PyDiGraph()
         self._op_node_indices: dict[CompressedResourceOp, int] = {}
         self._fixed_decomps = fixed_decomps or {}
         self._alt_decomps = alt_decomps or {}
+        self._graph = rx.PyDiGraph()
         self._construct_graph()
         self._visitor = None
 
@@ -107,17 +116,63 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         op_node_idx = self._graph.add_node(op_node)
         self._op_node_indices[op_node] = op_node_idx
+
         if op_node.op_type.__name__ in self._target_gate_set:
             self._target_gate_indices.add(op_node_idx)
             return op_node_idx
 
+        if op_node.op_type is qml.ops.Controlled or op_node.op_type is qml.ops.ControlledOp:
+            # This branch only applies to general controlled operators
+            return self._add_controlled_decomp_node(op_node, op_node_idx)
+
         for decomposition in self._get_decompositions(op_node.op_type):
-            d_node_idx = self._recursively_add_decomposition_node(decomposition, op_node.params)
+            resource_decomp = decomposition.compute_resources(**op_node.params)
+            d_node_idx = self._recursively_add_decomposition_node(decomposition, resource_decomp)
             self._graph.add_edge(d_node_idx, op_node_idx, 0)
 
         return op_node_idx
 
-    def _recursively_add_decomposition_node(self, rule: DecompositionRule, params: dict) -> int:
+    def _add_special_decomp_rule_to_op(
+        self, rule: DecompositionRule, op_node: CompressedResourceOp, op_node_idx: int
+    ) -> int:
+        """Adds a special decomposition rule to the graph."""
+        resource_decomp = rule.compute_resources(**op_node.params)
+        d_node_idx = self._recursively_add_decomposition_node(rule, resource_decomp)
+        self._graph.add_edge(d_node_idx, op_node_idx, 0)
+        return op_node_idx
+
+    def _add_controlled_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
+        """Adds a controlled decomposition node to the graph."""
+
+        base_class = op_node.params["base_class"]
+        num_control_wires = op_node.params["num_control_wires"]
+
+        # Handle controlled global phase
+        if base_class is qml.GlobalPhase:
+            rule = controlled_global_phase_decomp
+            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+
+        # Handle controlled-X gates
+        if base_class is qml.X:
+            rule = controlled_x_decomp
+            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+
+        # Handle custom controlled ops
+        if (base_class, num_control_wires) in base_to_custom_ctrl_op():
+            custom_op_type = base_to_custom_ctrl_op()[(base_class, num_control_wires)]
+            rule = CustomControlledDecomposition(custom_op_type)
+            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+
+        # General case
+        for base_decomposition in self._get_decompositions(base_class):
+            rule = GeneralControlledDecomposition(base_decomposition)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+
+        return op_node_idx
+
+    def _recursively_add_decomposition_node(
+        self, rule: DecompositionRule, resource_decomp: Resources
+    ) -> int:
         """Recursively adds a decomposition node to the graph.
 
         A decomposition node is defined by a decomposition rule and a first-order resource estimate
@@ -125,11 +180,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         """
 
-        resource_decomp = rule.compute_resources(**params)
         d_node = _DecompositionNode(rule, resource_decomp)
         d_node_idx = self._graph.add_node(d_node)
-        all_ops = [op for op, count in resource_decomp.gate_counts.items() if count > 0]
-        for op in all_ops:
+        for op in resource_decomp.gate_counts:
             op_node_idx = self._recursively_add_op_node(op)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
         return d_node_idx
@@ -241,3 +294,23 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         elif isinstance(target_node, CompressedResourceOp):
             self.p[target_idx] = src_idx
             self.d[target_idx] = self.d[src_idx]
+
+
+@functools.lru_cache()
+def base_to_custom_ctrl_op():
+    """A dictionary mapping base op types to their custom controlled versions."""
+
+    ops_with_custom_ctrl_ops = {
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliZ, 2): qml.CCZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.CZ, 1): qml.CCZ,
+        (qml.SWAP, 1): qml.CSWAP,
+        (qml.Hadamard, 1): qml.CH,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
+    }
+    return ops_with_custom_ctrl_ops
