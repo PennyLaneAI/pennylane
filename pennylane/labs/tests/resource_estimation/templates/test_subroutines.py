@@ -17,6 +17,7 @@ Test the ResourceQFT class
 import pytest
 import math
 
+import numpy as np
 import pennylane.labs.resource_estimation as re
 import pennylane as qml
 
@@ -737,6 +738,168 @@ class TestResourceQROM:
         )
         assert expected == re.ResourceQROM.resource_rep(
             num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean
+        )
+
+    @pytest.mark.parametrize(
+        "num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean",
+        [(4, 2, 2, 3, 3, True), (4, 5, 2, 3, 3, False), (4, 5, 0, 3, 3, False)],
+    )
+    def test_resources_from_rep(
+        self,
+        num_bitstrings,
+        num_bit_flips,
+        num_control_wires,
+        num_work_wires,
+        size_bitstring,
+        clean,
+    ):
+        """Test that computing the resources from a compressed representation works"""
+        expected = {}
+        rep = re.ResourceQROM.resource_rep(
+            num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean
+        )
+        actual = rep.op_type.resources(**rep.params)
+
+        x = re.CompressedResourceOp(re.ResourceX, {})
+
+        if num_control_wires == 0:
+            expected[x] = num_bit_flips
+            assert actual == expected
+            return
+
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+        hadamard = re.CompressedResourceOp(re.ResourceHadamard, {})
+
+        num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
+        num_parallel_computations = min(num_parallel_computations, num_bitstrings)
+
+        num_swap_wires = math.floor(math.log2(num_parallel_computations))
+        num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
+        assert num_swap_wires + num_select_wires <= num_control_wires
+
+        swap_clean_prefactor = 1
+        select_clean_prefactor = 1
+
+        if clean:
+            expected[hadamard] = 2 * size_bitstring
+            swap_clean_prefactor = 4
+            select_clean_prefactor = 2
+
+        # SELECT cost:
+        expected[cnot] = num_bit_flips  # each unitary in the select is just a CNOT
+
+        multi_x = re.CompressedResourceOp(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": num_select_wires,
+                "num_ctrl_values": 0,
+                "num_work_wires": 0,
+            },
+        )
+
+        num_total_ctrl_possibilities = 2**num_select_wires
+        expected[multi_x] = select_clean_prefactor * (
+            2 * num_total_ctrl_possibilities  # two applications targetting the aux qubit
+        )
+        num_zero_controls = (2 * num_total_ctrl_possibilities * num_select_wires) // 2
+        expected[x] = select_clean_prefactor * (
+            num_zero_controls * 2  # conjugate 0 controls on the multi-qubit x gates from above
+        )
+        # SWAP cost:
+        ctrl_swap = re.CompressedResourceOp(re.ResourceCSWAP, {})
+        expected[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
+
+        assert actual == expected
+
+    def test_tracking_name(self):
+        """Test that the tracking name is correct."""
+        assert re.ResourceQROM.tracking_name() == f"QROM"
+
+
+class TestResourceSuperposition:
+    """Test the ResourceSuperposition class"""
+
+    @pytest.mark.parametrize(
+        "num_stateprep_wires, num_basis_states, size_basis_state",
+        [(4, 2, 2), (4, 5, 2), (4, 5, 0)],
+    )
+    def test_resources(self, num_stateprep_wires, num_basis_states, size_basis_state):
+        expected = {}
+        msp = re.CompressedResourceOp(
+            re.ResourceMottonenStatePreparation, {"num_wires": num_stateprep_wires}
+        )
+        expected[msp] = 1
+
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+        num_zero_ctrls = size_basis_state // 2
+        multi_x = re.CompressedResourceOp(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": size_basis_state,
+                "num_ctrl_values": num_zero_ctrls,
+                "num_work_wires": 0,
+            },
+        )
+
+        basis_size = 2**size_basis_state
+        prob_matching_basis_states = num_basis_states / basis_size
+        num_permutes = round(num_basis_states * (1 - prob_matching_basis_states))
+
+        if num_permutes:
+            expected[cnot] = num_permutes * (
+                size_basis_state // 2
+            )  # average number of bits to flip
+            expected[multi_x] = 2 * num_permutes  # for compute and uncompute
+
+        assert (
+            re.ResourceSuperposition.resources(
+                num_stateprep_wires, num_basis_states, size_basis_state
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "coeffs, bases, wires, work_wire",
+        [
+            (
+                np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
+                np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
+                [0, 1, 2],
+                [3],
+            ),
+        ],
+    )
+    def test_resource_params(self, coeffs, bases, wires, work_wire):
+        """Test that the resource params are correct"""
+        op = re.ResourceSuperposition(coeffs, bases, wires, work_wire)
+
+        num_basis_states = len(bases)
+        size_basis_state = len(bases[0])  # assuming they are all the same size
+        num_stateprep_wires = math.ceil(math.log2(len(coeffs)))
+
+        assert op.resource_params == {
+            "num_stateprep_wires": num_stateprep_wires,
+            "num_basis_states": num_basis_states,
+            "size_basis_state": size_basis_state,
+        }
+
+    @pytest.mark.parametrize(
+        "num_stateprep_wires, num_basis_states, size_basis_state",
+        [(4, 2, 2), (4, 5, 2), (4, 5, 0)],
+    )
+    def test_resource_rep(self, num_stateprep_wires, num_basis_states, size_basis_state):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = re.CompressedResourceOp(
+            re.ResourceSuperposition,
+            {
+                "num_stateprep_wires": num_stateprep_wires,
+                "num_basis_states": num_basis_states,
+                "size_basis_state": size_basis_state,
+            },
+        )
+        assert expected == re.ResourceSuperposition.resource_rep(
+            num_stateprep_wires, num_basis_states, size_basis_state
         )
 
     @pytest.mark.parametrize(
