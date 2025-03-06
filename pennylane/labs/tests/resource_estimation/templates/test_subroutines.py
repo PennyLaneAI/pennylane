@@ -590,7 +590,7 @@ class TestResourceQROM:
 
     @pytest.mark.parametrize(
         "num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean",
-        [(4, 2, 2, 3, 3, True), (4, 5, 2, 3, 3, False)],
+        [(4, 2, 2, 3, 3, True), (4, 5, 2, 3, 3, False), (4, 5, 0, 3, 3, False)],
     )
     def test_resources(
         self,
@@ -710,58 +710,106 @@ class TestResourceQROM:
         }
 
     @pytest.mark.parametrize(
-        "mod, num_output_wires, num_work_wires, num_x_wires",
-        [(7, 5, 5, 3), (8, 5, 5, 3)],
+        "num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean",
+        [(4, 2, 2, 3, 3, True), (4, 5, 2, 3, 3, False), (4, 5, 0, 3, 3, False)],
     )
-    def test_resource_rep(self, mod, num_output_wires, num_work_wires, num_x_wires):
+    def test_resource_rep(
+        self,
+        num_bitstrings,
+        num_bit_flips,
+        num_control_wires,
+        num_work_wires,
+        size_bitstring,
+        clean,
+    ):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = re.CompressedResourceOp(
-            re.ResourceModExp,
+            re.ResourceQROM,
             {
-                "mod": mod,
-                "num_output_wires": num_output_wires,
+                "num_bitstrings": num_bitstrings,
+                "num_bit_flips": num_bit_flips,
+                "num_control_wires": num_control_wires,
                 "num_work_wires": num_work_wires,
-                "num_x_wires": num_x_wires,
+                "size_bitstring": size_bitstring,
+                "clean": clean,
             },
         )
-        assert expected == re.ResourceModExp.resource_rep(
-            mod, num_output_wires, num_work_wires, num_x_wires
+        assert expected == re.ResourceQROM.resource_rep(
+            num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean
         )
 
     @pytest.mark.parametrize(
-        "mod, num_output_wires, num_work_wires, num_x_wires",
-        [(7, 5, 5, 3), (8, 5, 5, 3)],
+        "num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean",
+        [(4, 2, 2, 3, 3, True), (4, 5, 2, 3, 3, False), (4, 5, 0, 3, 3, False)],
     )
-    def test_resources_from_rep(self, num_output_wires, mod, num_work_wires, num_x_wires):
+    def test_resources_from_rep(
+        self,
+        num_bitstrings,
+        num_bit_flips,
+        num_control_wires,
+        num_work_wires,
+        size_bitstring,
+        clean,
+    ):
         """Test that computing the resources from a compressed representation works"""
-        mult_resources = re.ResourceMultiplier._resource_decomp(
-            mod, num_work_wires, num_output_wires
-        )
         expected = {}
-
-        for comp_rep, _ in mult_resources.items():
-            new_rep = re.CompressedResourceOp(
-                re.ResourceControlled,
-                {
-                    "base_class": comp_rep.op_type,
-                    "base_params": comp_rep.params,
-                    "num_ctrl_wires": 1,
-                    "num_ctrl_values": 0,
-                    "num_work_wires": 0,
-                },
-            )
-
-            if comp_rep._name in ("QFT", "Adjoint(QFT)"):
-                expected[new_rep] = 1
-            else:
-                expected[new_rep] = mult_resources[comp_rep] * ((2**num_x_wires) - 1)
-
-        rep = re.ResourceModExp.resource_rep(mod, num_output_wires, num_work_wires, num_x_wires)
+        rep = re.ResourceQROM.resource_rep(
+            num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean
+        )
         actual = rep.op_type.resources(**rep.params)
+
+        x = re.CompressedResourceOp(re.ResourceX, {})
+
+        if num_control_wires == 0:
+            expected[x] = num_bit_flips
+            assert actual == expected
+            return
+
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+        hadamard = re.CompressedResourceOp(re.ResourceHadamard, {})
+
+        num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
+        num_parallel_computations = min(num_parallel_computations, num_bitstrings)
+
+        num_swap_wires = math.floor(math.log2(num_parallel_computations))
+        num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
+        assert num_swap_wires + num_select_wires <= num_control_wires
+
+        swap_clean_prefactor = 1
+        select_clean_prefactor = 1
+
+        if clean:
+            expected[hadamard] = 2 * size_bitstring
+            swap_clean_prefactor = 4
+            select_clean_prefactor = 2
+
+        # SELECT cost:
+        expected[cnot] = num_bit_flips  # each unitary in the select is just a CNOT
+
+        multi_x = re.CompressedResourceOp(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": num_select_wires,
+                "num_ctrl_values": 0,
+                "num_work_wires": 0,
+            },
+        )
+
+        num_total_ctrl_possibilities = 2**num_select_wires
+        expected[multi_x] = select_clean_prefactor * (
+            2 * num_total_ctrl_possibilities  # two applications targetting the aux qubit
+        )
+        num_zero_controls = (2 * num_total_ctrl_possibilities * num_select_wires) // 2
+        expected[x] = select_clean_prefactor * (
+            num_zero_controls * 2  # conjugate 0 controls on the multi-qubit x gates from above
+        )
+        # SWAP cost:
+        ctrl_swap = re.CompressedResourceOp(re.ResourceCSWAP, {})
+        expected[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
 
         assert actual == expected
 
     def test_tracking_name(self):
         """Test that the tracking name is correct."""
-        assert re.ResourceModExp.tracking_name() == f"ModExp"
+        assert re.ResourceQROM.tracking_name() == f"QROM"
