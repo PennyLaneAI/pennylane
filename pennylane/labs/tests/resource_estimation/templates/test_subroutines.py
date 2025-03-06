@@ -472,8 +472,8 @@ class TestResourceMultiplier:
         assert re.ResourceMultiplier.tracking_name() == f"Multiplier"
 
 
-class TestModExp:
-    """Test the ResourceMultiplier class"""
+class TestResourceModExp:
+    """Test the ResourceModExp class"""
 
     @pytest.mark.parametrize(
         "mod, num_output_wires, num_work_wires, num_x_wires",
