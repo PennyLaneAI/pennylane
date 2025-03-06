@@ -52,3 +52,26 @@ def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
     head, *tail = fragments
 
     return commutator(head, nested_commutator(tail))
+
+class State(ABC):
+    """Abstract class specifying which methods a State class should implement"""
+
+    @abstractmethod
+    def __add__(self, other: State) -> State:
+        raise NotImplementedError
+
+    def __sub__(self, other: State) -> State:
+        return self + (-1) * other
+
+    @abstractmethod
+    def __mul__(self, scalar: float) -> State:
+        raise NotImplementedError
+
+    @abstractmethod
+    @classmethod
+    def zero_state(cls) -> State:
+        raise NotImplementedError
+
+    @abstractmethod
+    def dot(self, other: State):
+        raise NotImplementedError
