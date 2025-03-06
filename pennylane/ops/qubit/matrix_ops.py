@@ -218,7 +218,7 @@ class QubitUnitary(Operation):
             with 2 stored elements in Compressed Sparse Row format>
         """
         if sp.sparse.issparse(U):
-            return U.tocsr().asformat(format)
+            return U.asformat(format)
         raise qml.operation.SparseMatrixUndefinedError(
             "U is a dense matrix. Use matrix method instead"
         )
