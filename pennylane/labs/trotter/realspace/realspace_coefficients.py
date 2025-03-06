@@ -213,7 +213,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             l_indices = indices[: len(self.l_shape)]
             r_indices = indices[len(self.l_shape) :]
 
-            return f"({self.l_child._str(l_indices)}) @ ({self.r_child._str(r_indices)})"
+            return f"({self.l_child._str(l_indices)}) * ({self.r_child._str(r_indices)})"
 
         if self.node_type == NodeType.SUM:
             return f"({self.l_child._str(indices)}) + ({self.r_child._str(indices)})"
