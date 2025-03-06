@@ -382,7 +382,7 @@ class TestTapeTransformFallback:
         meas = collector.state["measurements"]
         assert meas == [qml.expval(qml.Z(1)), qml.state(), qml.probs(wires=0)]
 
-    @pytest.mark.xfail(reason="dynamic shape support to be added to same PR. get help")
+    @pytest.mark.xfail(reason="dynamic shapes not supported [sc-85868]")
     def test_tape_transform_dynamic_shapes(
         self, enable_disable_dynamic_shapes
     ):  # pylint: disable=unused-argument
@@ -441,9 +441,7 @@ class TestTapeTransformFallback:
         meas = collector.state["measurements"]
         assert meas == [qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)]
 
-    @pytest.mark.xfail(
-        reason="While loops are currently unsupported. Not sure if they ever will be"
-    )
+    @pytest.mark.xfail(reason="While loops are unsupported [sc-85869]")
     def test_tape_transform_while_loop(self):
         """Test that transforming jaxpr with while_loops unrolls the loop and applies the
         transform correctly."""
