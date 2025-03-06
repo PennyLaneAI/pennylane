@@ -11,9 +11,32 @@ from pennylane.labs.trotter.realspace import (
     RealspaceSum,
     VibronicMatrix,
 )
-from pennylane.labs.trotter.utils.matrix_ops import op_norm
+from pennylane.labs.trotter.realspace.matrix import op_norm
 
 # pylint: disable=too-many-arguments
+
+def _coeffs(states: int, modes: int, order: int):
+    """Produce random coefficients for input"""
+
+    phis = []
+    symmetric_phis = []
+    for i in range(order + 1):
+        shape = (states, states) + (modes,) * i
+        phi = np.random.random(size=shape)
+        phis.append(phi)
+        symmetric_phis.append(np.zeros(shape))
+
+    for phi in phis:
+        for i in range(states):
+            for j in range(states):
+                phi[i, j] = (phi[i, j] + phi[i, j].T) / 2
+
+    for phi, symmetric_phi in zip(phis, symmetric_phis):
+        for i in range(states):
+            for j in range(states):
+                symmetric_phi[i, j] = (phi[i, j] + phi[j, i]) / 2
+
+    return np.random.random(size=(modes,)), symmetric_phis
 
 vword0 = RealspaceSum(
     2, [RealspaceOperator(2, tuple(), RealspaceCoeffs.tensor_node(np.array(0.5)))]
