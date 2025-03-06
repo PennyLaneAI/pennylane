@@ -960,7 +960,7 @@ class TestBlockEncode:
     def test_accepts_various_types(self, input_matrix, wires, expected_hyperparameters):
         """Test that BlockEncode outputs expected attributes for various input matrix types."""
         op = qml.BlockEncode(input_matrix, wires)
-        assert np.allclose(op.parameters[0], input_matrix)
+        assert np.allclose(op.parameters, input_matrix)
         assert op.hyperparameters["norm"] == expected_hyperparameters["norm"]
         assert op.hyperparameters["subspace"] == expected_hyperparameters["subspace"]
 
