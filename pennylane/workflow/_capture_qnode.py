@@ -191,33 +191,25 @@ qnode_prim.prim_type = "higher_order"
 # pylint: disable=too-many-arguments, unused-argument
 @debug_logger
 @qnode_prim.def_impl
-def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
+def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, batch_dims=None):
     if shots != device.shots:
         raise NotImplementedError(
             "Overriding shots is not yet supported with the program capture execution."
         )
-
-    consts = args[:n_consts]
-    non_const_args = args[n_consts:]
-
-    partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
-    )
+    partial_eval = partial(device.eval_jaxpr, qfunc_jaxpr, [], execution_config=execution_config)
     if batch_dims is None:
-        return partial_eval(*non_const_args)
-    return jax.vmap(partial_eval, batch_dims[n_consts:])(*non_const_args)
+        return partial_eval(*args)
+    return jax.vmap(partial_eval, batch_dims)(*args)
 
 
 # pylint: disable=unused-argument
 @debug_logger
 @qnode_prim.def_abstract_eval
-def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
+def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, batch_dims=None):
 
     mps = qfunc_jaxpr.outvars
 
-    batch_shape = (
-        _get_batch_shape(args[n_consts:], batch_dims[n_consts:]) if batch_dims is not None else ()
-    )
+    batch_shape = _get_batch_shape(args, batch_dims) if batch_dims is not None else ()
 
     return _get_shapes_for(
         *mps, shots=shots, num_device_wires=len(device.wires), batch_shape=batch_shape
@@ -234,7 +226,6 @@ def _qnode_batching_rule(
     device,
     execution_config,
     qfunc_jaxpr,
-    n_consts,
 ):
     """
     Batching rule for the ``qnode`` primitive.
@@ -243,25 +234,10 @@ def _qnode_batching_rule(
     """
 
     for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
-
-        if _is_scalar_tensor(arg):
-            continue
-
-        # Regardless of their shape, jax.vmap automatically inserts `None` as the batch dimension for constants.
-        # However, if the constant is not a standard JAX type, the batch dimension is not inserted at all.
-        # How to handle this case is still an open question. For now, we raise a warning and give the user full flexibility.
-        if idx < n_consts:
-            warn(
-                f"Constant argument at index {idx} is not scalar. "
-                "This may lead to unintended behavior or wrong results if the argument is provided "
-                "using parameter broadcasting to a quantum operation that supports batching.",
-                UserWarning,
-            )
-
         # To resolve this ambiguity, we might add more properties to the AbstractOperator
         # class to indicate which operators support batching and check them here.
         # As above, at this stage we raise a warning and give the user full flexibility.
-        elif arg.size > 1 and batch_dim is None:
+        if not _is_scalar_tensor(arg) and arg.size > 1 and batch_dim is None:
             warn(
                 f"Argument at index {idx} has size > 1 but its batch dimension is None. "
                 "This may lead to unintended behavior or wrong results if the argument is provided "
@@ -276,7 +252,6 @@ def _qnode_batching_rule(
         device=device,
         execution_config=execution_config,
         qfunc_jaxpr=qfunc_jaxpr,
-        n_consts=n_consts,
         batch_dims=batch_dims,
     )
 
@@ -403,6 +378,41 @@ def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
     return hash(serialized)
 
 
+def _get_qfunc_jaxpr(qnode, args, kwargs, abstracted_axes):
+    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
+    # pylint: disable=protected-access
+    qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
+    flat_fn = FlatFn(qfunc)
+
+    try:
+
+        qfunc_jaxpr = jax.make_jaxpr(
+            flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
+        )(*args)
+    except (
+        jax.errors.TracerArrayConversionError,
+        jax.errors.TracerIntegerConversionError,
+        jax.errors.TracerBoolConversionError,
+    ) as exc:
+        raise CaptureError(
+            "Autograph must be used when Python control flow is dependent on a dynamic "
+            "variable (a function input). Please ensure autograph=True or use native control "
+            "flow functions like for_loop, while_loop, etc."
+        ) from exc
+
+    consts = qfunc_jaxpr.consts
+
+    qfunc_jaxpr = jax.core.Jaxpr(
+        constvars=(),
+        invars=qfunc_jaxpr.jaxpr.constvars + qfunc_jaxpr.jaxpr.invars,
+        outvars=qfunc_jaxpr.jaxpr.outvars,
+        eqns=qfunc_jaxpr.jaxpr.eqns,
+        effects=qfunc_jaxpr.jaxpr.effects,
+    )
+    assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
+    return qfunc_jaxpr, flat_fn.out_tree, consts
+
+
 def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
@@ -488,57 +498,31 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     flat_static_args = jax.tree_util.tree_leaves(static_args)
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_dynamic_args)
     cache_key = _get_jaxpr_cache_key(flat_dynamic_args, flat_static_args, kwargs, abstracted_axes)
-    using_cached_plxpr = False
 
     # pylint: disable=protected-access
     if cache_key in qnode.capture_cache:
-        qfunc_jaxpr, out_tree = qnode.capture_cache[cache_key]
-        using_cached_plxpr = True
+        qfunc_jaxpr, out_tree, consts = qnode.capture_cache[cache_key]
     else:
-        qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-        # pylint: disable=protected-access
-        qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
-        flat_fn = FlatFn(qfunc)
+        if abstracted_axes:
+            # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
+            # as the original dynamic arguments
+            abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
+        qfunc_jaxpr, out_tree, consts = _get_qfunc_jaxpr(qnode, args, kwargs, abstracted_axes)
+        qnode.capture_cache[cache_key] = (qfunc_jaxpr, out_tree, consts)
 
-        try:
-            if abstracted_axes:
-                # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
-                # as the original dynamic arguments
-                abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
-            qfunc_jaxpr = jax.make_jaxpr(
-                flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
-            )(*args)
-        except (
-            jax.errors.TracerArrayConversionError,
-            jax.errors.TracerIntegerConversionError,
-            jax.errors.TracerBoolConversionError,
-        ) as exc:
-            raise CaptureError(
-                "Autograph must be used when Python control flow is dependent on a dynamic "
-                "variable (a function input). Please ensure autograph=True or use native control "
-                "flow functions like for_loop, while_loop, etc."
-            ) from exc
-
-    config = construct_execution_config(
-        qnode, resolve=False
-    )()  # no need for args and kwargs as not resolving
+    # no need for args and kwargs as not resolving
+    config = construct_execution_config(qnode, resolve=False)()
     config = qnode.device.setup_execution_config(config)
 
     res = qnode_prim.bind(
-        *qfunc_jaxpr.consts,
         *abstract_shapes,
+        *consts,
         *flat_dynamic_args,
         shots=shots,
         qnode=qnode,
         device=qnode.device,
         execution_config=config,
-        qfunc_jaxpr=qfunc_jaxpr.jaxpr,
-        n_consts=len(qfunc_jaxpr.consts),
+        qfunc_jaxpr=qfunc_jaxpr,
     )
-
-    if not using_cached_plxpr:
-        assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
-        out_tree = flat_fn.out_tree
-        qnode.capture_cache[cache_key] = (qfunc_jaxpr, out_tree)
 
     return jax.tree_util.tree_unflatten(out_tree, res)
