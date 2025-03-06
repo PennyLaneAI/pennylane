@@ -24,7 +24,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qml
-from pennylane.decomposition import add_decomposition, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -593,7 +593,7 @@ def _phaseshift_rz_globph(phi, wires, **__):
     qml.GlobalPhase(-phi / 2)
 
 
-add_decomposition(PhaseShift, _phaseshift_rz_globph)
+add_decomps(PhaseShift, _phaseshift_rz_globph)
 
 
 class Rot(Operation):

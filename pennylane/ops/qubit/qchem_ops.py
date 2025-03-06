@@ -23,6 +23,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -172,6 +173,12 @@ class SingleExcitation(Operation):
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
         return qml.Hamiltonian([0.25, -0.25], [qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2)])
@@ -279,6 +286,41 @@ class SingleExcitation(Operation):
         cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
+
+
+def _single_excit_resources():
+    return {
+        qml.adjoint(qml.T): 2,
+        qml.adjoint(qml.S): 2,
+        qml.Hadamard: 4,
+        qml.S: 2,
+        qml.CNOT: 2,
+        qml.RZ: 1,
+        qml.RY: 1,
+    }
+
+
+@register_resources(_single_excit_resources)
+def _single_excit(phi, wires, **__):
+    qml.adjoint(qml.T)(wires=wires[0]),
+    qml.Hadamard(wires=wires[0]),
+    qml.S(wires=wires[0]),
+    qml.adjoint(qml.T)(wires=wires[1]),
+    qml.adjoint(qml.S)(wires=wires[1]),
+    qml.Hadamard(wires=wires[1]),
+    qml.CNOT(wires=[wires[1], wires[0]]),
+    qml.RZ(-phi / 2, wires=wires[0]),
+    qml.RY(phi / 2, wires=wires[1]),
+    qml.CNOT(wires=[wires[1], wires[0]]),
+    qml.adjoint(qml.S)(wires=wires[0]),
+    qml.Hadamard(wires=wires[0]),
+    qml.T(wires=wires[0]),
+    qml.Hadamard(wires=wires[1]),
+    qml.S(wires=wires[1]),
+    qml.T(wires=wires[1]),
+
+
+add_decomps(SingleExcitation, _single_excit)
 
 
 class SingleExcitationMinus(Operation):

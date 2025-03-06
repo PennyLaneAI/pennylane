@@ -989,7 +989,7 @@ def _s_phaseshift(wires, **__):
     qml.PhaseShift(np.pi / 2, wires=wires)
 
 
-add_decomposition(S, _s_phaseshift)
+add_decomps(S, _s_phaseshift)
 
 
 class T(Operation):
@@ -1137,7 +1137,7 @@ def _t_phaseshift(wires, **__):
     qml.PhaseShift(np.pi / 4, wires=wires)
 
 
-add_decomposition(T, _t_phaseshift)
+add_decomps(T, _t_phaseshift)
 
 
 class SX(Operation):
