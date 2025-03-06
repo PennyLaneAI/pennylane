@@ -14,7 +14,21 @@ jobs:
       security-events: write
     
     steps:
-      - name: Perform PyCQA/bandit scan
-        uses: PyCQA/bandit-action@v1
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          configfile: pyproject.toml
+          python-version: '3.10'
+      
+      - name: Install PyCQA/bandit
+        run: pip install 'bandit[sarif,toml]'
+        
+      - name: Perform bandit scan
+        run: bandit -c pyproject.toml -r . -f sarif -o results.sarif || true
+      
+      - name: Upload bandit scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
