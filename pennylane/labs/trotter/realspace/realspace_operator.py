@@ -14,13 +14,13 @@ from pennylane.labs.trotter import Fragment
 from pennylane.labs.trotter.realspace.ho_state import HOState
 from pennylane.labs.trotter.utils import _zeros, op_norm, string_to_matrix, tensor_with_identity
 
-from .tree import Node
+from .realspace_coefficients import RealspaceCoeffs
 
 
 class RealspaceOperator:
     """The RealspaceOperator class"""
 
-    def __init__(self, modes: int, ops: Tuple[str], coeffs: Node) -> RealspaceOperator:
+    def __init__(self, modes: int, ops: Tuple[str], coeffs: RealspaceCoeffs) -> RealspaceOperator:
         self.modes = modes
         self.ops = ops
         self.coeffs = coeffs
@@ -62,7 +62,9 @@ class RealspaceOperator:
                 f"Cannot add RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
             )
 
-        return RealspaceOperator(self.modes, self.ops, Node.sum_node(self.coeffs, other.coeffs))
+        return RealspaceOperator(
+            self.modes, self.ops, RealspaceCoeffs.sum_node(self.coeffs, other.coeffs)
+        )
 
     def __sub__(self, other: RealspaceOperator) -> RealspaceOperator:
         if self.is_zero:
@@ -80,14 +82,18 @@ class RealspaceOperator:
             )
 
         return RealspaceOperator(
-            self.modes, self.ops, Node.sum_node(self.coeffs, Node.scalar_node(-1, other.coeffs))
+            self.modes,
+            self.ops,
+            RealspaceCoeffs.sum_node(self.coeffs, RealspaceCoeffs.scalar_node(-1, other.coeffs)),
         )
 
     def __mul__(self, scalar: float) -> RealspaceOperator:
         if np.isclose(scalar, 0):
             return RealspaceOperator.zero_term(self.modes)
 
-        return RealspaceOperator(self.modes, self.ops, Node.scalar_node(scalar, self.coeffs))
+        return RealspaceOperator(
+            self.modes, self.ops, RealspaceCoeffs.scalar_node(scalar, self.coeffs)
+        )
 
     __rmul__ = __mul__
 
@@ -95,7 +101,7 @@ class RealspaceOperator:
         if np.isclose(scalar, 0):
             return RealspaceOperator.zero_term(self.modes)
 
-        self.coeffs = Node.scalar_node(scalar, self.coeffs)
+        self.coeffs = RealspaceCoeffs.scalar_node(scalar, self.coeffs)
         return self
 
     def __matmul__(self, other: RealspaceOperator) -> RealspaceOperator:
@@ -108,7 +114,7 @@ class RealspaceOperator:
             )
 
         return RealspaceOperator(
-            self.modes, self.ops + other.ops, Node.outer_node(self.coeffs, other.coeffs)
+            self.modes, self.ops + other.ops, RealspaceCoeffs.outer_node(self.coeffs, other.coeffs)
         )
 
     def __repr__(self) -> str:
@@ -128,7 +134,7 @@ class RealspaceOperator:
     @classmethod
     def zero_term(cls, modes) -> RealspaceOperator:
         """Returns a RealspaceOperator representing 0"""
-        return RealspaceOperator(modes, tuple(), Node.tensor_node(np.array(0)))
+        return RealspaceOperator(modes, tuple(), RealspaceCoeffs.tensor_node(np.array(0)))
 
 
 class RealspaceSum(Fragment):
