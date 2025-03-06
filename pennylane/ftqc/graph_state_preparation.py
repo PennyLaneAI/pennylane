@@ -34,6 +34,7 @@ class GraphStatePrep(Operation):
         qubit_graph (QubitGraph): QubitGraph object mapping qubit to wires.
         qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
         entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
+        wires: Wires the graph state preparation to apply on. Default as None.
 
     **Example:**
         The graph state preparation layer can be customized by the user.
@@ -67,26 +68,16 @@ class GraphStatePrep(Operation):
 
     def __init__(
         self,
-        wires: Wires = None,
-        lattice: Lattice = None,
         qubit_graph: QubitGraph = None,
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
+        wires = None
     ):
-        if wires is not None and lattice is not None:
-            if set(wires) != set(lattice.nodes):
-                raise ValueError("Please ensure that labels in the lattice are the same with wires")
-            self.hyperparameters["wires"] = wires
-            self.hyperparameters["lattice"] = lattice
-            super().__init__(wires=wires)
-        elif qubit_graph is not None and [wires, lattice] == [None]*2:
-            self.hyperparameters["qubit_graph"] = qubit_graph
-            super().__init__(wires=[q for q in qubit_graph.graph])
-        else:
-            raise ValueError("Please specify either the wires and lattice arg or the qubit_graph arg")
-    
+        self.hyperparameters["qubit_graph"] = qubit_graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
+
+        super().__init__(wires= wires if wires is not None else [q for q in qubit_graph.graph])
 
     def label(
         self, decimals: int = None, base_label: str = None, cache: dict = None
@@ -116,13 +107,14 @@ class GraphStatePrep(Operation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(**self.hyperparameters)
+        return self.compute_decomposition(**self.hyperparameters, wires = None)
 
     @staticmethod
     def compute_decomposition(
         qubit_graph: QubitGraph,
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
+        wires = None
     ):
         r"""Representation of the operator as a product of other operators (static method).
         .. note::
@@ -136,6 +128,7 @@ class GraphStatePrep(Operation):
             qubit_graph (QubitGraph): QubitGraph object mapping qubit to wires.
             qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
             entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
+            wires : Wires the decomposition applies on. Default as None. 
 
         Returns:
             list[Operator]: decomposition of the operator
