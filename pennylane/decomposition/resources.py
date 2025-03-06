@@ -161,6 +161,8 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
     _validate_resource_rep(op_type, params)
     if op_type is qml.ops.Controlled or op_type is qml.ops.ControlledOp:
         return controlled_resource_rep(**params)
+    if issubclass(op_type, qml.ops.Adjoint):
+        return adjoint_resource_rep(**params)
     return CompressedResourceOp(op_type, params)
 
 
@@ -194,8 +196,8 @@ def controlled_resource_rep(
         num_work_wires += base_resource_rep.params["num_work_wires"]
 
     elif base_class in custom_ctrl_op_to_base():
-        base_class = custom_ctrl_op_to_base()[base_class]
         num_control_wires += base_class.num_wires - 1
+        base_class = custom_ctrl_op_to_base()[base_class]
 
     elif base_class is qml.MultiControlledX:
         base_class = qml.X
@@ -220,6 +222,21 @@ def controlled_resource_rep(
             "num_zero_control_values": num_zero_control_values,
             "num_work_wires": num_work_wires,
         },
+    )
+
+
+def adjoint_resource_rep(base_class, base_params):
+    """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
+
+    Args:
+        base_class: the base operator type
+        base_params (dict): the resource params of the base operator
+
+    """
+    base_resource_rep = resource_rep(base_class, **base_params)  # flattens any nested structures
+    return CompressedResourceOp(
+        qml.ops.Adjoint,
+        {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params},
     )
 
 
