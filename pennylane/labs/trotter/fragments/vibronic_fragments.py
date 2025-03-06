@@ -6,7 +6,7 @@ from typing import List, Sequence
 
 import numpy as np
 
-from pennylane.labs.trotter.realspace import Node, RealspaceOperator, RealspaceSum, VibronicMatrix
+from pennylane.labs.trotter.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum, VibronicMatrix
 from pennylane.labs.trotter.utils import next_pow_2
 
 
@@ -39,7 +39,7 @@ def _momentum_fragment(states: int, modes: int, omegas: np.ndarray) -> VibronicM
     term = RealspaceOperator(
         modes,
         ("P", "P"),
-        Node.tensor_node(np.diag(omegas) / 2, label=("omegas", np.diag(omegas) / 2)),
+        RealspaceCoeffs.tensor_node(np.diag(omegas) / 2, label=("omegas", np.diag(omegas) / 2)),
     )
     word = RealspaceSum(modes, (term,))
     blocks = {(i, i): word for i in range(states)}
@@ -49,19 +49,19 @@ def _momentum_fragment(states: int, modes: int, omegas: np.ndarray) -> VibronicM
 #pylint: disable=too-many-arguments,too-many-positional-arguments
 def _realspace_sum(i: int, j: int, states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
     if i > states - 1 or j > states - 1:
-        return RealspaceSum.zero()
+        return RealspaceSum.zero(modes)
 
     realspace_ops = []
     for k, phi in enumerate(phis):
         op = ("Q",) * k
         realspace_op = RealspaceOperator(
-            modes, op, Node.tensor_node(phi[i, j], label=(f"phis[{k}][{i}, {j}]", phis))
+            modes, op, RealspaceCoeffs.tensor_node(phi[i, j], label=(f"phis[{k}][{i}, {j}]", phis))
         )
         realspace_ops.append(realspace_op)
 
     if i == j:
         op = ("Q", "Q")
-        coeffs = Node.tensor_node(
+        coeffs = RealspaceCoeffs.tensor_node(
             np.diag(omegas) / 2, label=("omegas", np.diag(omegas) / 2)
         )
         realspace_ops.append(RealspaceOperator(modes, op, coeffs))

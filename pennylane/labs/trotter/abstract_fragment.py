@@ -67,11 +67,13 @@ class State(ABC):
     def __mul__(self, scalar: float) -> State:
         raise NotImplementedError
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def zero_state(cls) -> State:
+        """Return a representation of the zero state"""
         raise NotImplementedError
 
     @abstractmethod
     def dot(self, other: State):
+        """Return the dot product self and other"""
         raise NotImplementedError
