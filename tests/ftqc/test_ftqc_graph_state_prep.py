@@ -15,17 +15,17 @@
 """Unit tests for the GraphStatePrep module"""
 
 import networkx as nx
+import numpy as np
 import pytest
 
 import pennylane as qml
-import numpy as np
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
-from pennylane.ops.functions import assert_valid
 
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 jax.config.update("jax_enable_x64", True)
+
 
 class TestGraphStatePrep:
     """Test for graph state prep"""
@@ -55,11 +55,11 @@ class TestGraphStatePrep:
         def circuit(q):
             GraphStatePrep(graph=q)
             return qml.probs()
-    
+
         res = circuit(q)
-        assert(len(res) == 2**len(lattice.graph))
+        assert len(res) == 2 ** len(lattice.graph)
         assert np.isclose(np.sum(res), 1.0, rtol=0)
-        
+
     def test_circuit_accept_graph_state_prep_with_nx_wires(self):
         """Test if a quantum function accepts GraphStatePrep."""
         dev = qml.device("default.qubit")
@@ -70,12 +70,12 @@ class TestGraphStatePrep:
         lattice.add_edges_from(edges)
 
         @qml.qnode(dev)
-        def circuit(lattice,wires):
+        def circuit(lattice, wires):
             GraphStatePrep(graph=lattice, wires=wires)
             return qml.probs()
 
         res = circuit(lattice, wires)
-        assert(len(res) == 2**len(lattice))
+        assert len(res) == 2 ** len(lattice)
         assert np.isclose(np.sum(res), 1.0, rtol=0)
 
     @pytest.mark.parametrize(
@@ -132,14 +132,16 @@ class TestGraphStatePrep:
         lattice = nx.Graph()
         lattice.add_nodes_from(wires)
         lattice.add_edges_from(edges)
-        op = GraphStatePrep(wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
+        op = GraphStatePrep(
+            wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops
+        )
         queue = op.decomposition()
         assert len(queue) == 7  # 4 ops for |0> -> |+> and 3 ops to entangle nearest qubits
         for op in queue[:4]:
             assert op.name == qubit_ops(0).name
         for op in queue[4:]:
             assert op.name == entangle_ops.name
-    
+
     @pytest.mark.parametrize(
         "qubit_ops, entangle_ops",
         [
@@ -156,7 +158,14 @@ class TestGraphStatePrep:
         lattice.add_edges_from(edges)
         wires.append(5)
         with pytest.raises(ValueError):
-            op = GraphStatePrep(wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
-        
+            GraphStatePrep(
+                wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops
+            )
+
         with pytest.raises(ValueError):
-            op = GraphStatePrep(wires=wires, graph=QubitGraph("test", lattice), qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
+            GraphStatePrep(
+                wires=wires,
+                graph=QubitGraph("test", lattice),
+                qubit_ops=qubit_ops,
+                entanglement_ops=entangle_ops,
+            )
