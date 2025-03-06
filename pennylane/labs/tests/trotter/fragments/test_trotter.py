@@ -1,10 +1,11 @@
-import pytest
 import numpy as np
+import pytest
 
 from pennylane.labs.trotter import nested_commutator
 from pennylane.labs.trotter.fragments import vibronic_fragments
 from pennylane.labs.trotter.product_formulas import trotter_error
 from pennylane.labs.trotter.realspace import VibronicMatrix
+
 
 def _coeffs(states: int, modes: int, order: int):
     """Produce random coefficients for input"""
@@ -29,6 +30,7 @@ def _coeffs(states: int, modes: int, order: int):
 
     return np.random.random(size=(modes,)), symmetric_phis
 
+
 @pytest.mark.parametrize("modes", range(5))
 def test_epsilon(modes):
     """Test that epsilon is correct for 2 states"""
@@ -45,7 +47,7 @@ def test_epsilon(modes):
         2 * nested_commutator([fragments[1], fragments[0], fragments[2]]),
         2 * nested_commutator([fragments[2], fragments[0], fragments[2]]),
         nested_commutator([fragments[1], fragments[1], fragments[2]]),
-        2 * nested_commutator([fragments[2], fragments[1], fragments[2]])
+        2 * nested_commutator([fragments[2], fragments[1], fragments[2]]),
     ]
 
     actual = trotter_error(fragments, delta, order=2)

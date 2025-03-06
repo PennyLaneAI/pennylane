@@ -15,6 +15,7 @@ from pennylane.labs.trotter.realspace.matrix import op_norm
 
 # pylint: disable=too-many-arguments
 
+
 def _coeffs(states: int, modes: int, order: int):
     """Produce random coefficients for input"""
 
@@ -37,6 +38,7 @@ def _coeffs(states: int, modes: int, order: int):
                 symmetric_phi[i, j] = (phi[i, j] + phi[j, i]) / 2
 
     return np.random.random(size=(modes,)), symmetric_phis
+
 
 vword0 = RealspaceSum(
     2, [RealspaceOperator(2, tuple(), RealspaceCoeffs.tensor_node(np.array(0.5)))]

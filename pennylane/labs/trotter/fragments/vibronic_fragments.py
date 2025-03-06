@@ -6,11 +6,18 @@ from typing import List, Sequence
 
 import numpy as np
 
-from pennylane.labs.trotter.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum, VibronicMatrix
+from pennylane.labs.trotter.realspace import (
+    RealspaceCoeffs,
+    RealspaceOperator,
+    RealspaceSum,
+    VibronicMatrix,
+)
 from pennylane.labs.trotter.realspace.vibronic_matrix import _next_pow_2
 
 
-def vibronic_hamiltonian(states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> VibronicMatrix:
+def vibronic_hamiltonian(
+    states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]
+) -> VibronicMatrix:
     """Return a VibronicMatrix representation of a vibronic Hamiltonian"""
     _validate_input(states, modes, omegas, phis)
 
@@ -20,7 +27,10 @@ def vibronic_hamiltonian(states: int, modes: int, omegas: np.ndarray, phis: Sequ
 
     return ham
 
-def vibronic_fragments(states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> List[VibronicMatrix]:
+
+def vibronic_fragments(
+    states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]
+) -> List[VibronicMatrix]:
     """Return a list of VibronicMatrix fragments that sum to the vibronic Hamiltonian"""
     _validate_input(states, modes, omegas, phis)
 
@@ -29,10 +39,16 @@ def vibronic_fragments(states: int, modes: int, omegas: np.ndarray, phis: Sequen
 
     return frags
 
-def _position_fragment(i: int, states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> VibronicMatrix:
+
+def _position_fragment(
+    i: int, states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]
+) -> VibronicMatrix:
     pow2 = _next_pow_2(states)
-    blocks = {(j, i ^ j): _realspace_sum(j, i ^ j, states, modes, omegas, phis) for j in range(pow2)}
+    blocks = {
+        (j, i ^ j): _realspace_sum(j, i ^ j, states, modes, omegas, phis) for j in range(pow2)
+    }
     return VibronicMatrix(pow2, modes, blocks)
+
 
 def _momentum_fragment(states: int, modes: int, omegas: np.ndarray) -> VibronicMatrix:
     pow2 = _next_pow_2(states)
@@ -46,8 +62,11 @@ def _momentum_fragment(states: int, modes: int, omegas: np.ndarray) -> VibronicM
 
     return VibronicMatrix(pow2, modes, blocks)
 
-#pylint: disable=too-many-arguments,too-many-positional-arguments
-def _realspace_sum(i: int, j: int, states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def _realspace_sum(
+    i: int, j: int, states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]
+) -> RealspaceSum:
     if i > states - 1 or j > states - 1:
         return RealspaceSum.zero(modes)
 
@@ -68,7 +87,10 @@ def _realspace_sum(i: int, j: int, states: int, modes: int, omegas: np.ndarray, 
 
     return RealspaceSum(modes, realspace_ops)
 
-def _validate_input(states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> None:
+
+def _validate_input(
+    states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]
+) -> None:
     for i, phi in enumerate(phis):
         shape = (states, states) + (modes,) * i
 

@@ -3,7 +3,6 @@
 import numpy as np
 
 from pennylane.labs.tests.trotter.realspace.spin_vibronic_ham import get_coeffs as ten_mode
-
 from pennylane.labs.trotter.fragments import vibronic_fragments
 from pennylane.labs.trotter.product_formulas import trotter_error
 

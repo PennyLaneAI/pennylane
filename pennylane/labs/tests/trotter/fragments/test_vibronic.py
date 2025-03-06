@@ -15,6 +15,7 @@ omegas = np.array([freq])
 ham = vibronic_hamiltonian(1, 1, omegas, [])
 states = [VibronicHO(1, 1, 10, [HOState.from_dict(1, 10, {(i,): 1})]) for i in range(n_states)]
 
+
 @pytest.mark.parametrize("n_states, freq, ham, states", [(n_states, freq, ham, states)])
 def test_expectation_1_mode(n_states, freq, ham, states):
     """Test the expectation computation against known values"""
@@ -27,6 +28,7 @@ def test_expectation_1_mode(n_states, freq, ham, states):
             actual[i, j] = state1.dot(ham.apply(state2))
 
     assert np.allclose(actual, expected)
+
 
 @pytest.mark.parametrize("n_states, freq, ham, states", [(n_states, freq, ham, states)])
 def test_linear_combination_1_mode(n_states, freq, ham, states):
@@ -57,6 +59,7 @@ def test_linear_combination_1_mode(n_states, freq, ham, states):
 
     assert np.allclose(actual, expected)
 
+
 n_states = 3
 omegas = np.array([1, 2.3])
 ham = vibronic_hamiltonian(1, 2, omegas, [])
@@ -67,17 +70,16 @@ states = [
 
 excitations = list(product(range(n_states), repeat=2))
 
-@pytest.mark.parametrize(
-    "omegas, ham, states, excitations", [(omegas, ham, states, excitations)]
-)
+
+@pytest.mark.parametrize("omegas, ham, states, excitations", [(omegas, ham, states, excitations)])
 def test_harmonic(omegas, ham, states, excitations):
     """Test the expectation value of a harmonic"""
 
     expected = np.zeros((len(states), len(states)), dtype=np.complex128)
     for i in range(len(states)):
-        expected[i, i] = (0.5 + excitations[i][0]) * omegas[0] + (
-            0.5 + excitations[i][1]
-        ) * omegas[1]
+        expected[i, i] = (0.5 + excitations[i][0]) * omegas[0] + (0.5 + excitations[i][1]) * omegas[
+            1
+        ]
 
     actual = np.zeros((len(states), len(states)), dtype=np.complex128)
     for i, state1 in enumerate(states):
@@ -86,9 +88,8 @@ def test_harmonic(omegas, ham, states, excitations):
 
     assert np.allclose(actual, expected)
 
-@pytest.mark.parametrize(
-    "omegas, ham, states, excitations", [(omegas, ham, states, excitations)]
-)
+
+@pytest.mark.parametrize("omegas, ham, states, excitations", [(omegas, ham, states, excitations)])
 def test_linear_combination_harmonic(omegas, ham, states, excitations):
     """Test the expectation value of a linear combintaion of harmonics"""
 
@@ -109,9 +110,9 @@ def test_linear_combination_harmonic(omegas, ham, states, excitations):
 
     expected = np.zeros((len(states), len(states)), dtype=np.complex128)
     for i in range(len(states)):
-        expected[i, i] = (0.5 + excitations[i][0]) * omegas[0] + (
-            0.5 + excitations[i][1]
-        ) * omegas[1]
+        expected[i, i] = (0.5 + excitations[i][0]) * omegas[0] + (0.5 + excitations[i][1]) * omegas[
+            1
+        ]
 
     expected = rot.T @ expected @ rot
 

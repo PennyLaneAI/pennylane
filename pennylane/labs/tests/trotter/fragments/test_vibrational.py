@@ -7,8 +7,8 @@ import pytest
 import scipy as sp
 from scipy.sparse import csr_array
 
-from pennylane.labs.trotter.realspace import HOState
 from pennylane.labs.trotter.fragments import vibrational_fragments, vibrational_hamiltonian
+from pennylane.labs.trotter.realspace import HOState
 
 
 class TestFragments:
