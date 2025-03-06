@@ -16,3 +16,5 @@ jobs:
     steps:
       - name: Perform PyCQA/bandit scan
         uses: PyCQA/bandit-action@v1
+        with:
+          configfile: pyproject.toml
