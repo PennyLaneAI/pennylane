@@ -883,4 +883,4 @@ class TestDynamicShapes:
         assert qml.math.allclose(res_true, 4)
 
         [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
-        assert qml.math.allclose(res_false, 10)  # 0 + 1 + 2+ 3+ 4
+        assert qml.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4

@@ -112,7 +112,7 @@ class TestCaptureWhileLoop:
 
         jaxpr = jax.make_jaxpr(w)()
         [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        assert qml.math.allclose(r, 9)
+        assert qml.math.allclose(r, 9) # value that stops iteration
 
 
 class TestCaptureCircuitsWhileLoop:

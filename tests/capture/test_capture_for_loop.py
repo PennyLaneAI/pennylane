@@ -266,7 +266,7 @@ class TestCaptureForLoop:
 
         jaxpr = jax.make_jaxpr(w)()
         [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        assert qml.math.allclose(r, 3)  # 0 + 1 + 2
+        assert qml.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
 
 
 class TestCaptureCircuitsForLoop:
