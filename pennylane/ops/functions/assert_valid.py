@@ -206,14 +206,13 @@ def _check_generator(op):
         )()
 
 
-def _check_copy(op, skip_deepcopy=False):
+def _check_copy(op):
     """Check that copies and deep copies give identical objects."""
     copied_op = copy.copy(op)
     assert qml.equal(copied_op, op), "copied op must be equal with qml.equal"
     assert copied_op == op, "copied op must be equivalent to original operation"
     assert copied_op is not op, "copied op must be a separate instance from original operaiton"
-    if not skip_deepcopy:
-        assert qml.equal(copy.deepcopy(op), op), "deep copied op must also be equal"
+    assert qml.equal(copy.deepcopy(op), op), "deep copied op must also be equal"
 
 
 # pylint: disable=import-outside-toplevel, protected-access
