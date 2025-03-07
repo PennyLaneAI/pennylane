@@ -19,7 +19,7 @@ import functools
 
 try:
     import jax
-except:
+except ModuleNotFoundError:
     ...
 import pennylane as qml
 
