@@ -300,7 +300,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             consts_slices=consts_slices,
             args_slice=slice(end_const_ind, None),
         )
-        assert flat_true_fn.out_tree is not None
+        assert flat_true_fn.out_tree is not None, "out_tree of flat_true_fn should exist"
         results = results[-flat_true_fn.out_tree.num_leaves :]
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
