@@ -384,9 +384,9 @@
 * The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
   [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
 
-* `qml.capture.eval_jaxpr` is a variant of `jax.core.eval_jaxpr` that can handle the creation
+* A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
   of arrays with dynamic shapes.
-  [(#7052)
+  [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
