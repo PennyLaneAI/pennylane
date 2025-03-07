@@ -18,6 +18,7 @@ Generates parametrizations of operators to test in test_assert_valid.py.
 """
 from inspect import getmembers, isclass
 
+import networkx as nx
 import numpy as np
 import pytest
 
@@ -26,7 +27,6 @@ from pennylane.operation import Channel, Observable, Operation, Operator
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
-import networkx as nx
 
 
 def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
