@@ -24,6 +24,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -442,11 +443,17 @@ class PhaseShift(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    resource_param_keys = ()
+
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def label(
         self,
@@ -542,7 +549,7 @@ class PhaseShift(Operation):
         .. seealso:: :meth:`~.PhaseShift.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Any, Wires): wires that the operator acts on
 
         Returns:
@@ -576,6 +583,19 @@ class PhaseShift(Operation):
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
         return [self.data[0], 0.0, 0.0]
+
+
+def _phaseshift_rz_globph_resources():
+    return {qml.RZ: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_phaseshift_rz_globph_resources)
+def _phaseshift_rz_globph(phi, wires, **__):
+    RZ(phi, wires=wires)
+    qml.GlobalPhase(-phi / 2)
+
+
+add_decomps(PhaseShift, _phaseshift_rz_globph)
 
 
 class Rot(Operation):
@@ -804,11 +824,17 @@ class U1(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    resource_param_keys = ()
+
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -856,7 +882,7 @@ class U1(Operation):
         .. seealso:: :meth:`~.U1.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Any, Wires): Wire that the operator acts on.
 
         Returns:
@@ -883,6 +909,18 @@ class U1(Operation):
             return qml.Identity(wires=self.wires)
 
         return U1(phi, wires=self.wires)
+
+
+def _u1_phaseshift_resources():
+    return {PhaseShift: 1}
+
+
+@register_resources(_u1_phaseshift_resources)
+def _u1_phaseshift(phi, wires, **__):
+    PhaseShift(phi, wires=wires)
+
+
+add_decomps(U1, _u1_phaseshift)
 
 
 class U2(Operation):
@@ -932,10 +970,16 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
+    resource_param_keys = ()
+
     def __init__(
         self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: Optional[str] = None
     ):
         super().__init__(phi, delta, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(
@@ -987,8 +1031,8 @@ class U2(Operation):
         .. seealso:: :meth:`~.U2.decomposition`.
 
         Args:
-            phi (float): azimuthal angle :math:`\phi`
-            delta (float): quantum phase :math:`\delta`
+            phi (TensorLike): azimuthal angle :math:`\phi`
+            delta (TensorLike): quantum phase :math:`\delta`
             wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
@@ -1029,6 +1073,21 @@ class U2(Operation):
             return RX(3 * np.pi / 2, wires=wires)
 
         return U2(phi, delta, wires=wires)
+
+
+def _u2_phaseshift_rot_resources():
+    return {PhaseShift: 2, Rot: 1}
+
+
+@register_resources(_u2_phaseshift_rot_resources)
+def _u2_phaseshift_rot(phi, delta, wires, **__):
+    pi_half = qml.math.ones_like(delta) * (np.pi / 2)
+    Rot(delta, pi_half, -delta, wires=wires)
+    PhaseShift(delta, wires=wires)
+    PhaseShift(phi, wires=wires)
+
+
+add_decomps(U2, _u2_phaseshift_rot)
 
 
 class U3(Operation):
@@ -1079,6 +1138,8 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
+    resource_param_keys = ()
+
     # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
@@ -1089,6 +1150,10 @@ class U3(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(
@@ -1155,9 +1220,9 @@ class U3(Operation):
         .. seealso:: :meth:`~.U3.decomposition`.
 
         Args:
-            theta (float): polar angle :math:`\theta`
-            phi (float): azimuthal angle :math:`\phi`
-            delta (float): quantum phase :math:`\delta`
+            theta (TensorLike): polar angle :math:`\theta`
+            phi (TensorLike): azimuthal angle :math:`\phi`
+            delta (TensorLike): quantum phase :math:`\delta`
             wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
@@ -1211,3 +1276,17 @@ class U3(Operation):
             return RY(p0, wires=wires)
 
         return U3(p0, p1, p2, wires=wires)
+
+
+def _u3_phaseshift_rot_resources():
+    return {PhaseShift: 2, Rot: 1}
+
+
+@register_resources(_u3_phaseshift_rot_resources)
+def _u3_phaseshift_rot(theta, phi, delta, wires, **__):
+    Rot(delta, theta, -delta, wires=wires)
+    PhaseShift(delta, wires=wires)
+    PhaseShift(phi, wires=wires)
+
+
+add_decomps(U3, _u3_phaseshift_rot)
