@@ -14,7 +14,7 @@
 
 r"""This module contains the GraphStatePrep template."""
 
-from typing import Union
+from typing import Optional, Union
 
 import networkx as nx
 
@@ -28,15 +28,20 @@ from .qubit_graph import QubitGraph
 class GraphStatePrep(Operation):
     r"""
     Encode a graph state with the specified lattice structure, operations on each qubit, entanglement operations for nearest qubits and qubit graph.
-    The initial graph is :math:`|0\rangle^{V}`, given each qubit in the graph is in the :math:`|0\rangle` state and is not entangled with each other.
-    The target graph state :math:`| \psi \rangle = \prod\limits_{\{a, b\} \in E} U_{ab}|+\rangle^{V}` is prepared as below:
-    1. Each qubit is prepared as :math:`|+\rangle^{V}` state by applying the `qubit_ops` (`Hadamard` gate) operation.
-    2. Entangle every nearest qubit pair in the graph with `entanglement_ops` (`CZ` gate) operation.
+    The initial graph is :math:`|0\rangle^{\otimes V}`, given each qubit in the graph is in the :math:`|0\rangle` state and is not entangled with each other.
+    The target graph state is:
+    :math:`| \psi \rangle = \prod\limits_{\{a, b\} \in E} U_{ab}|+\rangle^{\otimes V}`
+
+    The target graph state can be prepared as below:
+
+    1. Each qubit is prepared as :math:`|+\rangle^{\otimes V}` state by applying the ``qubit_ops`` (``Hadamard`` gate) operation.
+
+    2. Entangle every nearest qubit pair in the graph with ``entanglement_ops`` (``CZ`` gate) operation.
 
     Args:
         graph (Union[QubitGraph, nx.Graph]): QubitGraph or nx.Graph object mapping qubit to wires.
-        qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
-        entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
+        qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :func:`~.pennylane.H`.
+        entanglement_ops (Operation): Operator to entangle nearest qubits. Default to :func:`~.pennylane.CZ`.
         wires: Wires the graph state preparation to apply on. Default as None.
 
     **Example:**
@@ -55,7 +60,7 @@ class GraphStatePrep(Operation):
                 return qml.probs()
 
             lattice = generate_lattice([2, 2], "square")
-            q = QubitGraph("square", lattice.graph)
+            q = QubitGraph(lattice.graph, id="square")
 
             qubit_ops = qml.Y
             entangle_ops = qml.CNOT
@@ -63,10 +68,10 @@ class GraphStatePrep(Operation):
         The resulting circuit after applying the ``GraphStatePrep`` template is:
 
         >>> print(qml.draw(circuit, level="device")(q, qubit_ops, entangle_ops))
-        QubitGraph<square, (0, 0)>: ──Y─╭●─╭●───────┤  Probs
-        QubitGraph<square, (0, 1)>: ──Y─│──╰X─╭●────┤  Probs
-        QubitGraph<square, (1, 0)>: ──Y─╰X────│──╭●─┤  Probs
-        QubitGraph<square, (1, 1)>: ──Y───────╰X─╰X─┤  Probs
+        QubitGraph<id=(0, 1), loc=[square]>: ──Y────╭X─╭●────┤  Probs
+        QubitGraph<id=(1, 0), loc=[square]>: ──Y─╭X─│──│──╭●─┤  Probs
+        QubitGraph<id=(1, 1), loc=[square]>: ──Y─│──│──╰X─╰X─┤  Probs
+        QubitGraph<id=(0, 0), loc=[square]>: ──Y─╰●─╰●───────┤  Probs
     """
 
     def __init__(
@@ -74,20 +79,20 @@ class GraphStatePrep(Operation):
         graph: Union[nx.Graph, QubitGraph],
         qubit_ops: Operation = qml.H,
         entanglement_ops: Operation = qml.CZ,
-        wires: Wires = None,
+        wires: Optional[Wires] = None,
     ):
         self.hyperparameters["graph"] = graph
         self.hyperparameters["qubit_ops"] = qubit_ops
         self.hyperparameters["entanglement_ops"] = entanglement_ops
 
         if isinstance(graph, QubitGraph):
-            if wires is not None and set(wires) != set(graph.graph):
+            if wires is not None and set(wires) != set(graph.node_labels):
                 raise ValueError("Please ensure wires objects match labels in QubitGraph")
             super().__init__(wires=wires if wires is not None else set(graph.graph))
         else:
             if wires is None:
                 raise ValueError("Please ensure wires is specified.")
-            if wires is not None and set(wires) != set(graph):
+            if wires is not None and set(wires) != set(graph.nodes):
                 raise ValueError("Please ensure wires objects match labels in graph")
             super().__init__(wires=wires)
 
@@ -129,6 +134,7 @@ class GraphStatePrep(Operation):
         entanglement_ops: Operation = qml.CZ,
     ):  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a product of other operators (static method).
+
         .. note::
 
             Operations making up the decomposition should be queued within the
@@ -139,8 +145,8 @@ class GraphStatePrep(Operation):
         Args:
             wires : Wires the decomposition applies on.
             graph (Union[nx.Graph, QubitGraph]): QubitGraph object mapping qubit to wires.
-            qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default as ``qml.H``.
-            entanglement_ops (Operation): Operator to entangle nearest qubits. Default as ``qml.CZ``.
+            qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :func:`~.pennylane.H`.
+            entanglement_ops (Operation): Operator to entangle nearest qubits. Default to :func:`~.pennylane.CZ`.
 
         Returns:
             list[Operator]: decomposition of the operator
