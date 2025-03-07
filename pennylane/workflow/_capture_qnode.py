@@ -496,9 +496,18 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         using_cached_plxpr = True
     else:
         qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-        # pylint: disable=protected-access
-        qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
-        flat_fn = FlatFn(qfunc)
+
+        # We wrap qfunc when running autograph because autograph will _always_ run on the
+        # entry point (in this case, qfunc), even if it is a PennyLane function. This can
+        # happen when the user function has been transformed, in which case qfunc will be a
+        # wrapper function around the original user function.
+        # pylint: disable=protected-access,unnecessary-lambda
+        qfunc2 = (
+            qml.capture.run_autograph(lambda *inner_args: qfunc(*inner_args))
+            if qnode._autograph
+            else qfunc
+        )
+        flat_fn = FlatFn(qfunc2)
 
         try:
             if abstracted_axes:

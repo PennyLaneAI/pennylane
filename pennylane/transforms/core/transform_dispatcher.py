@@ -24,6 +24,18 @@ from copy import copy
 import pennylane as qml
 from pennylane.typing import ResultBatch
 
+# This is needed to avoid autograph conversion.
+# Autograph uses the __module__ field to decide what to transform and what not
+# to transform. If __module__ is something pennylane related, it won't transform
+# it by default. There are some other ones.
+# However, by using functools.wraps and functools.update_wrapper, __module__ is
+# copied over from the wrapped function to the wrapper. This means that if a user
+# provides a function from their module, here, we wrap some pennylane
+# functions here and copy over the __module__ field, then autograph
+# will attempt to transform it. To avoid this, we just remove
+# the __module__ string from the original functools.WRAPPER_ASSIGNMENTS.
+WRAPPER_ASSIGNMENTS = list(filter(lambda x: x != "__module__", functools.WRAPPER_ASSIGNMENTS))
+
 
 class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
@@ -190,9 +202,11 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             return transformed_tapes, processing_fn
 
         if isinstance(obj, qml.QNode):
-            qnode = self._qnode_transform(obj, targs, tkwargs)
             if qml.capture.enabled():
-                return self._qfunc_transform(qnode, targs, tkwargs)
+                obj = self.default_qnode_transform(obj, targs, tkwargs)
+                return self._qfunc_transform(obj, targs, tkwargs)
+
+            return self._qnode_transform(obj, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)
@@ -320,13 +334,12 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
 
-        @functools.wraps(qfunc)
+        # See top of file for context on why we set manually `assigned`
+        @functools.wraps(qfunc, assigned=WRAPPER_ASSIGNMENTS)
         def qfunc_transformed(*args, **kwargs):
             if qml.capture.enabled():
                 import jax  # pylint: disable=import-outside-toplevel
 
-                # raise ValueError
-                print("capture enabled branch")
                 flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
                 jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
 
@@ -354,14 +367,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 qfunc_output = qfunc(*args, **kwargs)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            print(type(tape))
-            print(tape.circuit)
             with qml.QueuingManager.stop_recording():
                 transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
-            print(type(transformed_tapes))
-            print(self._transform)
-            print(transformed_tapes)
-            print(len(transformed_tapes))
 
             if len(transformed_tapes) != 1:
                 raise TransformError(
