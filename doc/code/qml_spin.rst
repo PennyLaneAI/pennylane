@@ -7,20 +7,40 @@ Overview
 This module contains functions and classes for creating and manipulating Hamiltonians for
 spin models.
 
-Conversion functions
-^^^^^^^^^^^^^^^^^^^^
+Hamiltonian functions
+^^^^^^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.io
+.. currentmodule:: pennylane.spin
 
 .. autosummary::
     :toctree: api
 
-    ~from_pyquil
-    ~from_qasm
-    ~from_qiskit
-    ~from_qiskit_noise
-    ~from_qiskit_op
-    ~from_quil
-    ~from_quil_file
-    ~get_bloq_registers_info
-    ~FromBloq
+    ~emery
+    ~fermi_hubbard
+    ~haldane
+    ~heisenberg
+    ~kitaev
+    ~transverse_ising
+
+
+Hamiltonian custom functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.spin
+
+.. autosummary::
+    :toctree: api
+
+    ~spin_hamiltonian
+
+
+Lattice classes and functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.spin
+
+.. autosummary::
+    :toctree: api
+
+    ~Lattice
+    ~generate_lattice
