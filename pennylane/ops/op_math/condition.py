@@ -241,6 +241,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
                 jaxpr_branches.append(None)
                 consts_slices.append(slice(0, 0))
             else:
+                print(abstracted_axes)
                 jaxpr = jax.make_jaxpr(
                     functools.partial(fn, **kwargs), abstracted_axes=abstracted_axes
                 )(*args)
