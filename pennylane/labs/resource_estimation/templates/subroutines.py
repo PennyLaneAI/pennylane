@@ -637,3 +637,81 @@ class ResourceQROM(qml.QROM, ResourceOperator):
             "clean": clean,
         }
         return CompressedResourceOp(cls, params)
+    
+class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperator):
+    """Resource class for the AmplitudeAmplification template."""
+
+    @staticmethod
+    def _resource_decomp(
+        U_op,
+        U_params,
+        O_op,
+        O_params,
+        iters,
+        num_work_wires,
+        num_ref_wires,
+        fixed_point,
+        **kwargs,
+    ) -> Dict[CompressedResourceOp, int]:
+        r"""The resources for Amplitude Amplifcation are according to the decomposition found
+        in qml.AmplitudeAmplification.
+        """
+        gate_types = {}
+        ctrl = re.ResourceControlled.resource_rep(base_class=O_op, base_params=O_params, num_ctrl_wires=num_work_wires)
+        phase_shift = re.ResourcePhaseShift.resource_rep()
+        hadamard = re.ResourceHadamard.resource_rep()
+        reflection = re.ResourceReflection.resource_rep(base_class=U_op, base_params=U_params, num_ref_wires=num_ref_wires)
+
+        if not fixed_point:
+            oracles = re.CompressedResourceOp(O_op, params=O_params)
+            gate_types[oracles] = iters
+            gate_types[reflection] = iters
+
+            return gate_types
+        
+        iters = iters // 2
+        
+        gate_types[ctrl] = iters * 2
+        gate_types[phase_shift] = iters
+        gate_types[hadamard] = iters * 4
+        gate_types[reflection] = iters
+
+        return gate_types
+
+    @property
+    def resource_params(self) -> Dict:
+        U_op = self.hyperparameters["U"]
+        O_op = self.hyperparameters["U"]
+        U_params = U_op.resource_params
+        O_params = O_op.resource_params
+        num_work_wires = len(self.hyperparameters["work_wires"])
+        iters = self.hyperparameters["iters"]
+        fixed_point = self.hyperparameters["fixed_point"]
+        num_ref_wires = len(self.hyperparameters["reflection_wires"])
+
+        return {
+            "U_op": type(U_op),
+            "U_params": U_params,
+            "O_op": type(O_op),
+            "O_params": O_params,
+            "iters": iters,
+            "num_work_wires": num_work_wires,
+            "num_ref_wires": num_ref_wires,
+            "fixed_point": fixed_point
+        }
+
+    @classmethod
+    def resource_rep(
+        cls, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
+    ) -> CompressedResourceOp:
+        params = {
+            "U_op": U_op,
+            "U_params": U_params,
+            "O_op": O_op,
+            "O_params": O_params,
+            "iters": iters,
+            "num_work_wires": num_work_wires,
+            "num_ref_wires": num_ref_wires,
+            "fixed_point": fixed_point
+        }
+        return CompressedResourceOp(cls, params)
