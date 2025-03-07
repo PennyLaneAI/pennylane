@@ -28,13 +28,14 @@ from .qubit_graph import QubitGraph
 class GraphStatePrep(Operation):
     r"""
     Encode a graph state with the specified lattice structure, operations on each qubit, entanglement operations for nearest qubits and qubit graph.
-    The initial graph is :math:`|0\rangle^{\otimes V}`, given each qubit ($V$) in the graph is in the :math:`|0\rangle` state and is not entangled with any other qubit.
+    The initial graph is :math:`|0\rangle^{\otimes V}`, given each qubit (:math:`V`) in the graph is in the :math:`|0\rangle` state and is not entangled with any other qubit.
     The target graph state :math:`| \psi \rangle` is:
     :math:`| \psi \rangle = \prod\limits_{\{a, b\} \in E} U_{ab}|+\rangle^{\otimes V}`
-    where :math: `U_{ab}` is a phase gate applied to all vertices $a$, $b$ that are adjacent in the graph state and $E$ are edges in the graph as illustrated in eq. (24)
-    in `arxiv:quant-ph/0602096 <https://arxiv.org/pdf/quant-ph/0602096>_`.
+    where :math:`U_{ab}` is a phase gate applied to all vertices :math:`a`, :math:`b` that are adjacent in the graph state and :math:`E` are edges in the graph as illustrated in eq. (24)
+    in `arxiv:quant-ph/0602096 <https://arxiv.org/pdf/quant-ph/0602096>`_.
 
     The target graph state can be prepared as below:
+
         1. Each qubit is prepared as :math:`|+\rangle^{\otimes V}` state by applying the ``qubit_ops`` (``Hadamard`` gate) operation.
         2. Entangle every nearest qubit pair in the graph with ``entanglement_ops`` (``CZ`` gate) operation.
 
@@ -42,7 +43,7 @@ class GraphStatePrep(Operation):
         graph (Union[QubitGraph, nx.Graph]): QubitGraph or nx.Graph object mapping qubit to wires.
         qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
         entanglement_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
-        wires: Wires the graph state preparation to apply on. Default as None.
+        wires (Optional[Wires]): Wires the graph state preparation to apply on. Default to None.
 
     **Example:**
         The graph state preparation layer can be customized by the user.
@@ -99,7 +100,7 @@ class GraphStatePrep(Operation):
     def label(
         self, decimals: int = None, base_label: str = None, cache: dict = None
     ):  # pylint: disable=unused-argument
-        r"""How the graph state preparation is represented in diagrams and drawings.
+        r"""Defines how the graph state preparation is represented in diagrams and drawings.
 
         Args:
             decimals: If ``None``, no parameters are included. Else, how to round
