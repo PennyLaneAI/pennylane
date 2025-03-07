@@ -18,7 +18,7 @@ the necessary information about a lattice.
 """
 import itertools
 
-from scipy.spatial import KDTree
+import scipy as sp
 
 from pennylane import math
 
@@ -241,7 +241,7 @@ class Lattice:
         based on the neighbour_order. This function uses KDTree to identify neighbours, which
         follows depth-first search traversal."""
 
-        tree = KDTree(self.lattice_points)
+        tree = sp.spatial.KDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)
         unique_pairs = set()
         edges = {}

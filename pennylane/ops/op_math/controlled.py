@@ -462,6 +462,14 @@ class Controlled(SymbolicOp):
 
     """
 
+    resource_param_keys = (
+        "base_class",
+        "base_params",
+        "num_control_wires",
+        "num_zero_control_values",
+        "num_work_wires",
+    )
+
     def _flatten(self):
         return (self.base,), (self.control_wires, tuple(self.control_values), self.work_wires)
 
@@ -632,6 +640,18 @@ class Controlled(SymbolicOp):
             control_values=self.control_values,
             work_wires=new_work_wires,
         )
+
+    # Properties for resource estimation ###############
+
+    @property
+    def resource_params(self):
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params,
+            "num_control_wires": len(self.control_wires),
+            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_work_wires": len(self.work_wires),
+        }
 
     # Methods ##########################################
 
