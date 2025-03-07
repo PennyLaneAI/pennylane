@@ -1,6 +1,15 @@
 qml.io
 ======
 
+Overview
+--------
+
+This module contains functions and classes for translating quantum objects from various frameworks
+into circuits and operators.
+
 .. currentmodule:: pennylane.io
 
-.. automodule:: pennylane.io
+.. automodapi:: pennylane.io
+    :no-heading:
+    :no-main-docstr:
+    :no-inherited-members:
