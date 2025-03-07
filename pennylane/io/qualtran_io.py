@@ -31,7 +31,7 @@ try:
         Side,
         Soquet,
     )
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 
@@ -174,13 +174,16 @@ class FromBloq(Operation):
                 if len(soq_to_wires.values()) > 0:
                     soq_to_wires_len = list(soq_to_wires.values())[-1]
                     if not isinstance(soq_to_wires_len, int):
-                        soq_to_wires_len = list(soq_to_wires.values())[-1][-1] + 1
+                        soq_to_wires_len = list(soq_to_wires.values())[-1][-1]
+                    soq_to_wires_len += 1
 
                 for pred in pred_cxns:
                     soq = pred.right
                     soq_to_wires[soq] = soq_to_wires[pred.left]
+                    if isinstance(soq_to_wires[soq], list) and len(soq_to_wires[soq]) == 1:
+                        soq_to_wires[soq] = soq_to_wires[soq][0]
                     in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
-
+                    
                 for succ in succ_cxns:
                     soq = succ.left
                     if soq.reg.side == Side.RIGHT:
@@ -199,8 +202,7 @@ class FromBloq(Operation):
                             )
                         soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
 
-                total_wires = [w for ws in in_quregs.values() for w in list(ws.flatten())]
-
+                total_wires = [w for ws in in_quregs.values() for w in list(ws.ravel())]
                 mapped_wires = [wires[idx] for idx in total_wires]
                 op = binst.bloq.as_pl_op(mapped_wires)
 
