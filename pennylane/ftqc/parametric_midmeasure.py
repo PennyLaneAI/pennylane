@@ -691,25 +691,31 @@ def diagonalize_mcms(tape):
                 # which ensures both and true_fn and false_fn are included, so here we assume the
                 # expected format (i.e. conditional mcms are found pairwise with opposite conditions)
                 true_cond, false_cond = (op, tape.operations[i + 1])
+                expr_false = MeasurementValue(mps, processing_fn=false_cond.meas_val.processing_fn)
                 # we process both the true_cond and the false_cond together, so we skip an index in the ops
                 curr_idx += 1
 
                 # add conditional diagonalizing gates + computational basis MCM to the tape
                 with qml.QueuingManager.stop_recording():
-                    for op in [true_cond, false_cond]:
-                        diag_gates = [
-                            qml.ops.Conditional(expr=expr, then_op=gate)
-                            for gate in op.diagonalizing_gates()
-                        ]
+                    diag_gates_true = [
+                        qml.ops.Conditional(expr=expr, then_op=gate)
+                        for gate in true_cond.diagonalizing_gates()
+                    ]
 
-                        new_operations.extend(diag_gates)
+                    diag_gates_false = [
+                        qml.ops.Conditional(expr=expr_false, then_op=gate)
+                        for gate in false_cond.diagonalizing_gates()
+                    ]
 
                     new_mp = MidMeasureMP(
                         op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
                     )
 
-                # track mapping from original to computational basis MCMs
+                new_operations.extend(diag_gates_true)
+                new_operations.extend(diag_gates_false)
                 new_operations.append(new_mp)
+
+                # track mapping from original to computational basis MCMs
                 mps_mapping[true_cond.base] = new_mp
                 mps_mapping[false_cond.base] = new_mp
             else:
