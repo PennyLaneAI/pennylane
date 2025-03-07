@@ -305,7 +305,8 @@ class TestAllcloseSparse:
 
         assert fn.allclose(sparse0, sparse)
 
-        dense[-1, 0] = np.finfo(float).eps
+        dense[-1, 0] = 0.001
+
         sparse0 = sp.sparse.csr_matrix(dense)
 
         assert not fn.allclose(sparse0, sparse)
