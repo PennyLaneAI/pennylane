@@ -710,11 +710,11 @@ class TmpPauliRot(PauliRot):
     # Deactivate the matrix property of qml.PauliRot in order to force decomposition
     has_matrix = False
 
-    resource_param_keys = ()
+    resource_param_keys = ("pauli_word",)
 
     @property
     def resource_params(self) -> dict:
-        return {}
+        return {"pauli_word": self.hyperparameters["pauli_word"]}
 
     @staticmethod
     def compute_decomposition(
@@ -752,13 +752,13 @@ class TmpPauliRot(PauliRot):
         return f"TmpPauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
 
 
-def _tmp_paulirot_decomp_resources():
-    return {PauliRot: 1}
+def _tmp_paulirot_decomp_resources(pauli_word: str):
+    return {qml.resource_rep(PauliRot, pauli_word=pauli_word): 1}
 
 
 @register_resources(_tmp_paulirot_decomp_resources)
 def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
-    PauliRot(theta, pauli_word, wires=wires)
+    PauliRot(theta, pauli_word=pauli_word, wires=wires)
 
 
 add_decomps(TmpPauliRot, _tmp_paulirot_decomp)
