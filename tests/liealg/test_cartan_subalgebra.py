@@ -92,6 +92,16 @@ def test_cartan_subalgebra_adjvec_output():
     assert np.allclose(new_adj_re, new_adj)
 
 
+def test_cartan_subalgebra_verbose(capsys):
+    """Test verbose outputs during cartan_subalgebra computation"""
+    k = [1.0 * Z(0), 1.0 * Z(1)]
+    m = [1.0 * X(0) @ X(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
+    _ = qml.liealg.cartan_subalgebra(k, m, verbose=True)
+    captured = capsys.readouterr()
+    assert "iteration 1: Found 1 independent Abelian operators." in captured.out
+    assert "iteration 2: Found 2 independent Abelian operators." in captured.out
+
+
 class TestChangeBasisAdRep:
     """Tests for ``change_basis_ad_rep`` to change the adjoint representation into a new basis."""
 
