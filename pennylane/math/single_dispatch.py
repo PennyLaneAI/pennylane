@@ -147,7 +147,7 @@ def _sparse_matrix_power_bruteforce(A, n):
         raise ValueError("This function only supports non-negative integer exponents.")
 
     if n == 0:
-        return sp.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
+        return sp.sparse.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
 
     result = A.copy()
     for _ in range(n - 1):
