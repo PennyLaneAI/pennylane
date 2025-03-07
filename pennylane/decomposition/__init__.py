@@ -14,7 +14,13 @@
 
 """The decomposition module."""
 
-from .resources import Resources, CompressedResourceOp, resource_rep, controlled_resource_rep
+from .resources import (
+    Resources,
+    CompressedResourceOp,
+    resource_rep,
+    controlled_resource_rep,
+    adjoint_resource_rep,
+)
 from .decomposition_rule import (
     register_resources,
     DecompositionRule,
