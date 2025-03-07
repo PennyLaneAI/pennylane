@@ -730,8 +730,8 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         num_wires,
         **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
-        r"""The resources for Amplitude Amplifcation are according to the decomposition found
-        in qml.AmplitudeAmplification.
+        r"""The resources for BasisState are according to the decomposition found
+        in qml.BasisState, specifcally the one that assumes the state is concrete.
         """
         gate_types = {}
 
