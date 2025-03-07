@@ -80,16 +80,26 @@
   True
   ```
 
-  `qml.liealg.cartan_subalgebra` computes a horizontal Cartan subalgebra of `m`
+  `qml.liealg.cartan_subalgebra` computes a horizontal Cartan subalgebra `a` of `m`.
 
-  `qml.liealg.check_commutation(A, B, C)` checks if all commutators between `A` and `B`
+  ```pycon
+  >>> newg, k, mtilde, a, new_adj = qml.liealg.cartan_subalgebra(k, m)
+  ```
+
+  The new `g` is now ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`, and we can confirm that indeed all elements in `a` are commuting via `qml.liealg.check_all_commuting`.
+
+  ```pycon
+  >>> qml.liealg.check_all_commuting(a)
+  True
+  ```
+
+  The following functions have also been added:
+  * `qml.liealg.check_commutation(A, B, C)` checks if all commutators between `A` and `B`
   map to a subspace of `C`, i.e. `[A, B] \subset C`.
 
-  `qml.liealg.check_cartan_decomp` checks the commutation relations that define a `cartan_decomp`, i.e. `[k, m] \subset m`, `[k, k] \subset k` and `[m, m] \subset k`.
+  * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allows transforming operators within a Lie algebra to their adjoint vector representations and back.
 
-  `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allows transforming operators within a Lie algebra to their adjoint vector representations and back.
-
-  `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation of the underlyding Lie algebra's components, without re-comuting the structure constants.
+  * `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation of the underlyding Lie algebra's components, without re-comuting the structure constants.
 
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
