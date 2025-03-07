@@ -338,9 +338,27 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         @functools.wraps(qfunc, assigned=WRAPPER_ASSIGNMENTS)
         def qfunc_transformed(*args, **kwargs):
             if qml.capture.enabled():
-                import jax  # pylint: disable=import-outside-toplevel
+                # pylint: disable=import-outside-toplevel
+                import jax
+                from malt import control_status_ctx
 
-                flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
+                # We don't want to run autograph on the wrapper function, but if autograph was
+                # being used, we still want to run autograph on the user function, so we check
+                # if autograph is currently being run, and transform the wrapped function if so.
+                # We wrap the user function again before running autograph to cover cases where
+                # multiple transforms are used. In that scenario, the wrapped function will also
+                # be a qfunc_transform wrapper, which we don't want to autograph. We do, however,
+                # want to autograph the wrapped function. Even though the qfunc_transform wrapper's
+                # __module__ is "pennylane", it would be autographed without wrapping it again
+                # since autograph always transforms the entry point, even if it is in a module that
+                # is supposed to be ignored.
+                # pylint: disable=unnecessary-lambda
+                qfunc2 = (
+                    qml.capture.run_autograph(lambda *inner_args: qfunc(*inner_args))
+                    if control_status_ctx().status.name == "ENABLED"
+                    else qfunc
+                )
+                flat_qfunc = qml.capture.flatfn.FlatFn(qfunc2)
                 jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
 
                 n_args = len(args)
