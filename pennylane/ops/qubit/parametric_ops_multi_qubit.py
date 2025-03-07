@@ -1664,8 +1664,14 @@ class CPhaseShift00(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 0]), wires=self.wires)
 
+    resource_param_keys = ()
+
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def label(
         self,
@@ -1811,6 +1817,26 @@ class CPhaseShift00(Operation):
         return self.wires[0:1]
 
 
+def _cphaseshift00_resources():
+    return {PauliX: 4, PhaseShift: 3, qml.CNOT: 2}
+
+
+@register_resources(_cphaseshift00_resources)
+def _cphaseshift00(phi, wires, **__):
+    PauliX(wires[0])
+    PauliX(wires[1])
+    PhaseShift(phi / 2, wires=[wires[0]])
+    PhaseShift(phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PhaseShift(-phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PauliX(wires[1])
+    PauliX(wires[0])
+
+
+add_decomps(CPhaseShift00, _cphaseshift00)
+
+
 class CPhaseShift01(Operation):
     r"""
     A qubit controlled phase shift.
@@ -1856,8 +1882,14 @@ class CPhaseShift01(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 1]), wires=self.wires)
 
+    resource_param_keys = ()
+
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def label(
         self,
@@ -1996,6 +2028,24 @@ class CPhaseShift01(Operation):
         return self.wires[0:1]
 
 
+def _cphaseshift01_resources():
+    return {PauliX: 2, PhaseShift: 3, qml.CNOT: 2}
+
+
+@register_resources(_cphaseshift01_resources)
+def _cphaseshift01(phi, wires, **__):
+    PauliX(wires[0])
+    PhaseShift(phi / 2, wires=[wires[0]])
+    PhaseShift(phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PhaseShift(-phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PauliX(wires[0])
+
+
+add_decomps(CPhaseShift01, _cphaseshift01)
+
+
 class CPhaseShift10(Operation):
     r"""
     A qubit controlled phase shift.
@@ -2040,8 +2090,14 @@ class CPhaseShift10(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1, 0]), wires=self.wires)
 
+    resource_param_keys = ()
+
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def label(
         self,
@@ -2173,3 +2229,21 @@ class CPhaseShift10(Operation):
     @property
     def control_wires(self) -> Wires:
         return self.wires[0:1]
+
+
+def _cphaseshift10_resources():
+    return {PauliX: 2, PhaseShift: 3, qml.CNOT: 2}
+
+
+@register_resources(_cphaseshift10_resources)
+def _cphaseshift10(phi, wires, **__):
+    PauliX(wires[1])
+    PhaseShift(phi / 2, wires=[wires[0]])
+    PhaseShift(phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PhaseShift(-phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PauliX(wires[1])
+
+
+add_decomps(CPhaseShift10, _cphaseshift10)

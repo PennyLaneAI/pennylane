@@ -302,22 +302,22 @@ def _single_excit_resources():
 
 @register_resources(_single_excit_resources)
 def _single_excit(phi, wires, **__):
-    qml.adjoint(qml.T)(wires=wires[0]),
-    qml.Hadamard(wires=wires[0]),
-    qml.S(wires=wires[0]),
-    qml.adjoint(qml.T)(wires=wires[1]),
-    qml.adjoint(qml.S)(wires=wires[1]),
-    qml.Hadamard(wires=wires[1]),
-    qml.CNOT(wires=[wires[1], wires[0]]),
-    qml.RZ(-phi / 2, wires=wires[0]),
-    qml.RY(phi / 2, wires=wires[1]),
-    qml.CNOT(wires=[wires[1], wires[0]]),
-    qml.adjoint(qml.S)(wires=wires[0]),
-    qml.Hadamard(wires=wires[0]),
-    qml.T(wires=wires[0]),
-    qml.Hadamard(wires=wires[1]),
-    qml.S(wires=wires[1]),
-    qml.T(wires=wires[1]),
+    qml.adjoint(qml.T)(wires=wires[0])
+    qml.Hadamard(wires=wires[0])
+    qml.S(wires=wires[0])
+    qml.adjoint(qml.T)(wires=wires[1])
+    qml.adjoint(qml.S)(wires=wires[1])
+    qml.Hadamard(wires=wires[1])
+    qml.CNOT(wires=[wires[1], wires[0]])
+    qml.RZ(-phi / 2, wires=wires[0])
+    qml.RY(phi / 2, wires=wires[1])
+    qml.CNOT(wires=[wires[1], wires[0]])
+    qml.adjoint(qml.S)(wires=wires[0])
+    qml.Hadamard(wires=wires[0])
+    qml.T(wires=wires[0])
+    qml.Hadamard(wires=wires[1])
+    qml.S(wires=wires[1])
+    qml.T(wires=wires[1])
 
 
 add_decomps(SingleExcitation, _single_excit)

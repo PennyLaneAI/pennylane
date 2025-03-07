@@ -816,11 +816,17 @@ class U1(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    resource_param_keys = ()
+
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -897,6 +903,18 @@ class U1(Operation):
         return U1(phi, wires=self.wires)
 
 
+def _u1_phaseshift_resources():
+    return {PhaseShift: 1}
+
+
+@register_resources(_u1_phaseshift_resources)
+def _u1_phaseshift(phi, wires, **__):
+    PhaseShift(phi, wires=wires)
+
+
+add_decomps(U1, _u1_phaseshift)
+
+
 class U2(Operation):
     r"""
     U2 gate.
@@ -944,10 +962,16 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
+    resource_param_keys = ()
+
     def __init__(
         self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: Optional[str] = None
     ):
         super().__init__(phi, delta, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(
@@ -1043,6 +1067,21 @@ class U2(Operation):
         return U2(phi, delta, wires=wires)
 
 
+def _u2_phaseshift_rot_resources():
+    return {PhaseShift: 2, Rot: 1}
+
+
+@register_resources(_u2_phaseshift_rot_resources)
+def _u2_phaseshift_rot(phi, delta, wires, **__):
+    pi_half = qml.math.ones_like(delta) * (np.pi / 2)
+    Rot(delta, pi_half, -delta, wires=wires)
+    PhaseShift(delta, wires=wires)
+    PhaseShift(phi, wires=wires)
+
+
+add_decomps(U2, _u2_phaseshift_rot)
+
+
 class U3(Operation):
     r"""
     Arbitrary single qubit unitary.
@@ -1091,6 +1130,8 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
+    resource_param_keys = ()
+
     # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
@@ -1101,6 +1142,10 @@ class U3(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(
@@ -1223,3 +1268,17 @@ class U3(Operation):
             return RY(p0, wires=wires)
 
         return U3(p0, p1, p2, wires=wires)
+
+
+def _u3_phaseshift_rot_resources():
+    return {PhaseShift: 2, Rot: 1}
+
+
+@register_resources(_u3_phaseshift_rot_resources)
+def _u3_phaseshift_rot(theta, phi, delta, wires, **__):
+    Rot(delta, theta, -delta, wires=wires)
+    PhaseShift(delta, wires=wires)
+    PhaseShift(phi, wires=wires)
+
+
+add_decomps(U3, _u3_phaseshift_rot)
