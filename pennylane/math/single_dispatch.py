@@ -128,10 +128,38 @@ def _permutation_parity(perm):
     return parity
 
 
+def _sparse_matrix_power_bruteforce(A, n):
+    """
+    Compute the power of a sparse matrix using brute-force matrix multiplication.
+    Supports only non-negative integer exponents.
+
+    Parameters:
+    A : scipy.sparse matrix
+        The sparse matrix to be exponentiated.
+    n : int
+        The exponent (must be non-negative).
+
+    Returns:
+    scipy.sparse matrix
+        The matrix A raised to the power n.
+    """
+    if n < 0:
+        raise ValueError("This function only supports non-negative integer exponents.")
+
+    if n == 0:
+        return sp.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
+
+    result = A.copy()
+    for _ in range(n - 1):
+        result = result @ A  # Native matmul operation
+
+    return result
+
+
 ar.register_function("scipy", "linalg.det", _det_sparse)
 ar.register_function("scipy", "linalg.inv", sp.sparse.linalg.inv)
 ar.register_function("scipy", "linalg.expm", sp.sparse.linalg.expm)
-ar.register_function("scipy", "linalg.matrix_power", sp.sparse.linalg.matrix_power)
+ar.register_function("scipy", "linalg.matrix_power", _sparse_matrix_power_bruteforce)
 ar.register_function("scipy", "linalg.norm", sp.sparse.linalg.norm)
 ar.register_function("scipy", "linalg.spsolve", sp.sparse.linalg.spsolve)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
