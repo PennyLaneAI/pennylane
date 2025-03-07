@@ -248,7 +248,7 @@ def _get_ctrl_qfunc_prim():
         args = args[n_consts:-n_control]
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.capture.eval(jaxpr, consts, *args)
+            qml.capture.eval_jaxpr(jaxpr, consts, *args)
         ops, _ = qml.queuing.process_queue(q)
 
         for op in ops:

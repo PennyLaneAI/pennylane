@@ -225,6 +225,22 @@ class TestAdjointQfunc:
         qml.assert_equal(op1, tape[0])
         qml.assert_equal(op2, tape[1])
 
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_dynamic_shape_matches_arg(self):
+        """Test that a dynamically shaped array can have a shape that matches another arg."""
+
+        def f(i, x):
+            return qml.RX(x, i)
+
+        def workflow(i):
+            return qml.adjoint(f)(i, jax.numpy.arange(i))
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        op1 = qml.adjoint(qml.RX(jax.numpy.arange(4), wires=4))
+        qml.assert_equal(op1, tape[0])
+        assert len(tape) == 1
+
 
 class TestCtrlQfunc:
     """Tests for the ctrl primitive."""
@@ -412,6 +428,22 @@ class TestCtrlQfunc:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
         expected = qml.ctrl(qml.RX(jax.numpy.arange(2), 0), (2, 3))
         qml.assert_equal(tape[0], expected)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_dynamic_shape_matches_arg(self):
+        """Test that a dynamically shaped array can have a shape that matches another arg."""
+
+        def f(i, x):
+            return qml.RX(x, i)
+
+        def workflow(i):
+            return qml.ctrl(f, i + 1)(i, jax.numpy.arange(i))
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        op1 = qml.ctrl(qml.RX(jax.numpy.arange(4), wires=4), 5)
+        qml.assert_equal(op1, tape[0])
+        assert len(tape) == 1
 
     def test_pytree_input(self):
         """Test that ctrl can accept pytree inputs."""

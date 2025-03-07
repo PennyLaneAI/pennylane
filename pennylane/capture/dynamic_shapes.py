@@ -69,7 +69,7 @@ def _get_shape_for_array(x, abstract_shapes: list) -> dict:
     return abstract_axes
 
 
-def determine_abstracted_axes(args):
+def determine_abstracted_axes(args, only_new_dynamic_shapes=True):
     """Computed the abstracted axes and extracting the abstract shapes from the arguments.
 
     Args:
@@ -111,5 +111,9 @@ def determine_abstracted_axes(args):
 
     if not abstract_shapes:
         return None, ()
+
     abstracted_axes = jax.tree_util.tree_unflatten(structure, abstracted_axes)
+    if only_new_dynamic_shapes:
+        new_abstract_shapes = [s for s in abstract_shapes if all(s is not a for a in args)]
+        return abstracted_axes, new_abstract_shapes
     return abstracted_axes, abstract_shapes
