@@ -27,6 +27,8 @@ from .subroutines import (
     ResourceModExp,
     ResourceMultiplier,
     ResourcePhaseAdder,
+    ResourceAmplitudeAmplification,
+    ResourceBasisState,
 )
 
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize

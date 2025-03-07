@@ -659,7 +659,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         """
         gate_types = {}
         ctrl = re.ResourceControlled.resource_rep(
-            base_class=O_op, base_params=O_params, num_ctrl_wires=num_work_wires
+            base_class=O_op, base_params=O_params, num_ctrl_wires=num_work_wires, num_ctrl_values=0, num_work_wires=0
         )
         phase_shift = re.ResourcePhaseShift.resource_rep()
         hadamard = re.ResourceHadamard.resource_rep()

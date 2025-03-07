@@ -240,4 +240,6 @@ from .templates import (
     resource_trotterize,
     ResourceMottonenStatePreparation,
     ResourceSuperposition,
+    ResourceAmplitudeAmplification,
+    ResourceBasisState
 )

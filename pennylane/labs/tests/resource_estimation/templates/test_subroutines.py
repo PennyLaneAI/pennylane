@@ -1072,7 +1072,114 @@ class TestResourceStatePrep:
     )
     def test_resource_params(self, state, wires):
         """Test that the resource params are correct"""
-        op = re.ResourceStatePrep(state == state, wires=wires, normalize=True)
+        op = re.ResourceStatePrep(state=state, wires=wires, normalize=True)
+
+        assert op.resource_params == {"num_wires": len(wires)}
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resource_rep(self, num_wires):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = re.CompressedResourceOp(
+            re.ResourceStatePrep,
+            {"num_wires": num_wires},
+        )
+        assert expected == re.ResourceStatePrep.resource_rep(num_wires)
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resources_from_rep(self, num_wires):
+        """Test that computing the resources from a compressed representation works"""
+        rep = re.ResourceStatePrep.resource_rep(num_wires)
+        actual = rep.op_type.resources(**rep.params)
+
+        expected = {
+            re.CompressedResourceOp(
+                re.ResourceMottonenStatePreparation, {"num_wires": num_wires}
+            ): 1
+        }
+
+        assert actual == expected
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_tracking_name(self, num_wires):
+        """Test that the tracking name is correct."""
+        assert re.ResourceStatePrep.tracking_name(num_wires) == f"StatePrep({num_wires})"
+
+
+class TestResourceAmplitudeAmplification:
+    """Test the ResourceAmplitudeAmplification class"""
+
+    @pytest.mark.parametrize(
+        "U_op, U_params, O_op,O_params,iters, num_work_wires,num_ref_wires,fixed_point",
+        [(re.ResourceHadamard, {}, re.ResourceRX, {}, 5, 3, 3, True)],
+    )
+    def test_resources(
+        self, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
+    ):
+        expected = {}
+        reflection = re.ResourceReflection.resource_rep(
+            base_class=U_op, base_params=U_params, num_ref_wires=num_ref_wires
+        )
+
+        if not fixed_point:
+            oracles = re.CompressedResourceOp(O_op, params=O_params)
+            expected[oracles] = iters
+            expected[reflection] = iters
+
+            assert (
+                re.ResourceAmplitudeAmplification.resources(
+                    U_op,
+                    U_params,
+                    O_op,
+                    O_params,
+                    iters,
+                    num_work_wires,
+                    num_ref_wires,
+                    fixed_point,
+                )
+                == expected
+            )
+
+        iters = iters // 2
+        ctrl = re.ResourceControlled.resource_rep(
+            base_class=O_op, base_params=O_params, num_ctrl_wires=num_work_wires, num_ctrl_values=0, num_work_wires=0
+        )
+        phase_shift = re.ResourcePhaseShift.resource_rep()
+        hadamard = re.ResourceHadamard.resource_rep()
+
+        expected[ctrl] = iters * 2
+        expected[phase_shift] = iters
+        expected[hadamard] = iters * 4
+        expected[reflection] = iters
+
+        assert (
+            re.ResourceAmplitudeAmplification.resources(
+                U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "state, wires",
+        [
+            (
+                np.array([1 / 2, 1 / 2, 1 / 2, 1 / 2]),
+                range(2),
+            ),
+        ],
+    )
+    def test_resource_params(self, state, wires):
+        """Test that the resource params are correct"""
+        op = re.ResourceStatePrep(state=state, wires=wires, normalize=True)
 
         assert op.resource_params == {"num_wires": len(wires)}
 
