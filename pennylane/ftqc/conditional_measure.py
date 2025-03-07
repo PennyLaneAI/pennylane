@@ -28,15 +28,8 @@ def cond_meas(
     true_fn: Callable,
     false_fn: Callable,
 ):
-    """Quantum-compatible if-else conditional --- condition mid-circuit qubit measurements
-    on parameters such as the results of mid-circuit qubit measurements.
-
-    .. note::
-
-        With the Python interpreter, support for :func:`~.cond`
-        is device-dependent. If a device doesn't
-        support mid-circuit measurements natively, then the QNode will
-        apply the :func:`defer_measurements` transform.
+    """Conditions mid-circuit qubit measurements on parameters such as the results of
+    other mid-circuit qubit measurements.
 
     .. note::
 
@@ -52,33 +45,34 @@ def cond_meas(
             apply if ``condition`` is ``False``
 
     Returns:
-        function: A new function that applies the conditional equivalent of ``true_fn``. The returned
-        function takes the same input arguments as ``true_fn``.
+        function: A new function that applies the conditional measurements. The returned
+        function takes the same input arguments as ``true_fn`` and ``false_fn``.
 
     **Example**
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=3)
+        import pennylane as qml
+        from pennylane.ftqc import cond_meas, diagonalize_mcms, measure_x, measure_y
 
-        @qml.qnode(dev)
+        dev = qml.device("default.qubit", wires=3, shots=1000)
+
+        @diagonalize_mcms
+        @qml.qnode(dev, mcm_method="one-shot")
         def qnode(x, y):
-            qml.Hadamard(0)
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
+            qml.RY(x, 0)
+            qml.Hadamard(1)
+
+            m0 = qml.measure(0)
+            m2 = cond_meas(m0, measure_x, measure_y)(1)
 
             qml.Hadamard(2)
-            qml.RY(-np.pi/2, wires=[2])
-            m_1 = qml.measure(2)
-            qml.cond(m_1 == 0, qml.RX)(y, wires=1)
-            return qml.expval(qml.Z(1))
+            qml.cond(m2 == 0, qml.RY)(y, wires=2)
+            return qml.expval(qml.X(2))
 
-    .. code-block :: pycon
 
-        >>> first_par = np.array(0.3)
-        >>> sec_par = np.array(1.23)
-        >>> qnode(first_par, sec_par)
-        tensor(0.32677361, requires_grad=True)
+        >>> qnode(np.pi/3, np.pi/2)
+        0.3806
 
     .. note::
 
