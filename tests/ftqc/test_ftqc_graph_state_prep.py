@@ -29,7 +29,7 @@ class TestGraphStatePrep:
     def test_jaxjit_circuit_graph_state_prep(self):
         """Test if Jax JIT works with GraphStatePrep"""
         lattice = generate_lattice([2, 2], "square")
-        q = QubitGraph("test", lattice.graph)
+        q = QubitGraph(lattice.graph)
         dev = qml.device("default.qubit")
 
         @jax.jit
@@ -43,7 +43,7 @@ class TestGraphStatePrep:
     def test_circuit_accept_graph_state_prep(self):
         """Test if a quantum function accepts GraphStatePrep."""
         lattice = generate_lattice([2, 2], "square")
-        q = QubitGraph("test", lattice.graph)
+        q = QubitGraph(lattice.graph)
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -87,7 +87,7 @@ class TestGraphStatePrep:
     def test_compute_decompose(self, dims, shape, expected):
         """Test the compute_decomposition method of the GraphStatePrep class."""
         lattice = generate_lattice(dims, shape)
-        q = QubitGraph("test", lattice.graph)
+        q = QubitGraph(lattice.graph)
         wires = set(lattice.graph)
         queue = GraphStatePrep.compute_decomposition(wires=wires, graph=q)
         assert len(queue) == expected
@@ -102,7 +102,7 @@ class TestGraphStatePrep:
     def test_decompose(self, qubit_ops, entangle_ops):
         """Test the decomposition method of the GraphStatePrep class."""
         lattice = generate_lattice([2, 2, 2], "cubic")
-        q = QubitGraph("test", lattice.graph)
+        q = QubitGraph(lattice.graph)
         op = GraphStatePrep(graph=q, qubit_ops=qubit_ops, entanglement_ops=entangle_ops)
         queue = op.decomposition()
         assert len(queue) == 20  # 8 ops for |0> -> |+> and 12 ops to entangle nearest qubits
@@ -160,7 +160,7 @@ class TestGraphStatePrep:
         with pytest.raises(ValueError):
             GraphStatePrep(
                 wires=wires,
-                graph=QubitGraph("test", lattice),
+                graph=QubitGraph(lattice),
                 qubit_ops=qubit_ops,
                 entanglement_ops=entangle_ops,
             )
