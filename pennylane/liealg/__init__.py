@@ -17,8 +17,8 @@ Overview
 
 This module contains Lie algebra functionality.
 
-Functions
-^^^^^^^^^
+Lie algebra functionality
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. currentmodule:: pennylane.liealg
 
@@ -29,8 +29,21 @@ Functions
     ~structure_constants
     ~center
     ~cartan_decomp
+    ~cartan_subalgebra
+
+Functions
+^^^^^^^^^
+
+.. currentmodule:: pennylane.liealg
+
+.. autosummary::
+    :toctree: api
+
     ~check_cartan_decomp
     ~check_commutation
+    ~adjvec_to_op
+    ~op_to_adjvec
+    ~change_basis_ad_rep
 
 Involutions
 ~~~~~~~~~~~
