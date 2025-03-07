@@ -375,7 +375,7 @@ class QubitGraph:
         NodeView((0, 1))
 
         To access the underlying QubitGraph *objects*, rather than their labels, use the
-        :meth:`~QubitGraph.children` attribute.
+        :attr:`~QubitGraph.children` attribute.
 
         Returns:
             networkx.NodeView: A view of the set of nodes, with native support for operations such
@@ -420,7 +420,7 @@ class QubitGraph:
         """Gets an iterator over the set of children QubitGraph objects.
 
         To access the node labels of the underlying qubit graph, rather than the QubitGraph objects
-        themselves, use the :meth:`~QubitGraph.node_labels` attribute.
+        themselves, use the :attr:`~QubitGraph.node_labels` attribute.
 
         Yields:
             QubitGraph: The next QubitGraph object in the set of children QubitGraphs.
