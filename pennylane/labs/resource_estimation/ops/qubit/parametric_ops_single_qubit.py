@@ -23,7 +23,19 @@ import pennylane.labs.resource_estimation as re
 
 
 def _rotation_resources(epsilon=10e-3):
-    """An estimate on the number of T gates needed to implement a Pauli rotation. The estimate is taken from https://arxiv.org/abs/1404.5320."""
+    r"""An estimate on the number of T gates needed to implement a Pauli rotation.
+
+    The expected T-count is taken from (the 'Simulation Results' section) `Eﬃcient 
+    Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
+    The cost is given as: 
+
+        .. math:: T_{count} = \ceil(1.149 * log2(\frac{1}{\epsilon}) + 9.2)
+    
+    Args:
+        epsilon (float): the acceptable error threshold for the approximation
+    
+    The estimate is taken from https://arxiv.org/abs/1404.5320.
+    """
     gate_types = {}
 
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
@@ -34,19 +46,35 @@ def _rotation_resources(epsilon=10e-3):
 
 
 class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
-    r"""
-    Resource class for the PhaseShift gate.
+    r"""Resource class for the PhaseShift gate.
 
-    The resources are defined from the following identity:
+    Resources:
+        The phase shift gate is equivalent to a Z-rotation upto some global phase,
+        as defined from the following identity:
 
-    .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
-                1 & 0 \\
-                0 & e^{i\phi}
-            \end{bmatrix}.
+        .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                    1 & 0 \\
+                    0 & e^{i\phi}
+                \end{bmatrix}.
+
+    .. seealso:: :class:`~.PhaseShift`
+
     """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The 
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The phase shift gate is equivalent to a Z-rotation upto some global phase,
+            as defined from the following identity:
+
+            .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                        1 & 0 \\
+                        0 & e^{i\phi}
+                    \end{bmatrix}.
+        """
         gate_types = {}
         rz = re.ResourceRZ.resource_rep()
         global_phase = re.ResourceGlobalPhase.resource_rep()
@@ -57,24 +85,61 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            The resources of this operation don't depend on any additional parameters.
+        
+        Returns:
+            dict: empty dictionary
+        """
         return {}
 
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation."""
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+
+        Resources:
+            The adjoint of a phase shift operator just changes the sign of the phase, thus 
+            the resources of the adjoint operation results in the original operation.
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+                values are the counts.
+        """
         return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        r"""
-        The resources for a multi-controlled phase shift gate are generated using
-        the identity defined in (lemma 7.11) from https://arxiv.org/pdf/quant-ph/9503016.
-        """
+        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+        Resources:
+            For a single control wire, the cost is a single instance of 
+            :code:`~.ResourceControlledPhaseShift`. Two additional :code:`~.ResourceX` gates are used
+            to flip the control qubit if it is zero-controlled.
+            
+            In the case where multiple controlled wires are provided, we can collapse the control 
+            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end). 
+            In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
+            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+                values are the counts.
+        """    
         if num_ctrl_wires == 1:
             gate_types = {re.ResourceControlledPhaseShift.resource_rep(): 1}
 
@@ -93,21 +158,45 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources for an operator raised to a power.
+
+        Args:
+            z (int): the power that the operator is being raised to
+
+        Resources:
+            Taking arbitrary powers of a phase shift produces a sum of shifts. 
+            The resources simplify to just one total phase shift operator.
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+                values are the counts.
+        """
         if z == 0:
             return {}
         return {cls.resource_rep(): 1}
 
 
 class ResourceRX(qml.RX, re.ResourceOperator):
-    """Resource class for the RX gate.
+    r"""Resource class for the PhaseShift gate.
 
     Resources:
         The resources are estimated by approximating the gate with a series of T gates.
         The estimate is taken from https://arxiv.org/abs/1404.5320.
+
+    .. seealso:: :class:`~.RX`
+
     """
 
     @staticmethod
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The 
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The resources are estimated by approximating the gate with a series of T gates.
+            The estimate is taken from https://arxiv.org/abs/1404.5320.
+
+        """
         return _rotation_resources(epsilon=config["error_rx"])
 
     @property
