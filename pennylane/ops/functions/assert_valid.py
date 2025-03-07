@@ -342,7 +342,6 @@ def _check_wires(op, skip_wire_mapping):
 
 def assert_valid(
     op: qml.operation.Operator,
-    skip_deepcopy=False,
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_differentiation=False,
