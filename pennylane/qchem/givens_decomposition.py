@@ -54,7 +54,7 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     interface = interface_a
 
     aprod = qml.math.nan_to_num(abs_b * abs_a)
-    hypot = qml.math.hypot(abs_a, abs_b)
+    hypot = qml.math.hypot(abs_a, abs_b) + 1e-15  # avoid division by zero
 
     cosine = qml.math.where(abs_b < tol, 0.0, abs_b / hypot)
     cosine = qml.math.where(abs_a < tol, 1.0, cosine)

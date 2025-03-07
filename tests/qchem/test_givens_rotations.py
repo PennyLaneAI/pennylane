@@ -37,6 +37,7 @@ from pennylane.qchem.givens_decomposition import (
         (1.0, 0.0),
         (0.0, 1.0),
         (1.2, 2.3j),
+        (0.0, 0.0),
     ],
 )
 def test_givens_matrix(a, b, left):
@@ -48,7 +49,7 @@ def test_givens_matrix(a, b, left):
     rotated_vector = grot_mat @ np.array([a, b]).T
     result_element = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
     rvec = np.array([0.0, result_element]).T if left else np.array([result_element, 0.0]).T
-    assert np.allclose(rotated_vector, rvec)
+    assert np.allclose([a, b], 0.0) or np.allclose(rotated_vector, rvec)
 
     res1 = np.round(grot_mat @ grot_mat.conj().T, 5)
     res2 = np.round(grot_mat.conj().T @ grot_mat, 5)
