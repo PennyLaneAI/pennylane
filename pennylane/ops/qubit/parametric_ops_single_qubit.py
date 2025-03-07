@@ -24,7 +24,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qml
-from pennylane.decomposition import add_decomposition, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -163,7 +163,7 @@ def _rx_to_rot(phi, wires: WiresLike, **__):
     qml.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
 
-add_decomposition(RX, _rx_to_rot)
+add_decomps(RX, _rx_to_rot)
 
 
 class RY(Operation):
@@ -284,7 +284,7 @@ def _ry_to_rot(phi, wires: WiresLike, **__):
     qml.Rot(0, phi, 0, wires=wires)
 
 
-add_decomposition(RY, _ry_to_rot)
+add_decomps(RY, _ry_to_rot)
 
 
 class RZ(Operation):
@@ -442,7 +442,7 @@ def _rz_to_rot(phi, wires: WiresLike, **__):
     qml.Rot(0, 0, phi, wires=wires)
 
 
-add_decomposition(RZ, _rz_to_rot)
+add_decomps(RZ, _rz_to_rot)
 
 
 class PhaseShift(Operation):
@@ -631,7 +631,7 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 2)
 
 
-add_decomposition(PhaseShift, _phaseshift_to_rz_gp)
+add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 
 
 class Rot(Operation):
@@ -836,7 +836,7 @@ def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike, **__):
     RZ(omega, wires=wires)
 
 
-add_decomposition(Rot, _rot_to_rz_ry_rz)
+add_decomps(Rot, _rot_to_rz_ry_rz)
 
 
 class U1(Operation):
