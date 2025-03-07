@@ -62,11 +62,8 @@ class TestGraphStatePrep:
     def test_circuit_accept_graph_state_prep_with_nx_wires(self):
         """Test if a quantum function accepts GraphStatePrep."""
         dev = qml.device("default.qubit")
-        wires = [0, 1, 2, 3]
-        edges = [(0, 1), (1, 2), (2, 3)]
-        lattice = nx.Graph()
-        lattice.add_nodes_from(wires)
-        lattice.add_edges_from(edges)
+        lattice = nx.grid_graph((4,))
+        wires = list(lattice.nodes)
 
         @qml.qnode(dev)
         def circuit(lattice, wires):
@@ -126,11 +123,9 @@ class TestGraphStatePrep:
     )
     def test_decompose_wires(self, qubit_ops, entangle_ops):
         """Test the decomposition method of the GraphStatePrep class."""
-        wires = [0, 1, 2, 3]
-        edges = [(0, 1), (1, 2), (2, 3)]
-        lattice = nx.Graph()
-        lattice.add_nodes_from(wires)
-        lattice.add_edges_from(edges)
+        lattice = nx.grid_graph((4,))
+        wires = list(lattice.nodes)
+
         op = GraphStatePrep(
             wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops
         )
@@ -149,7 +144,7 @@ class TestGraphStatePrep:
         ],
     )
     def test_wires_graph_mismatch(self, qubit_ops, entangle_ops):
-        """Test the decomposition method of the GraphStatePrep class."""
+        """Test for wire-graph label mismatches."""
         wires = [0, 1, 2, 3]
         edges = [(0, 1), (1, 2), (2, 3)]
         lattice = nx.Graph()
