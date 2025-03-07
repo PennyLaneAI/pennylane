@@ -613,6 +613,9 @@
   processing the tape.
   [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)
 
+* `qml.qchem.givens_decomposition` no longer raises a `RuntimeWarning` when the input is a zero matrix.
+  [#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
