@@ -21,7 +21,20 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.liealg import AI, AII, AIII, BD, BDI, CI, CII, DIII, A, C
+from pennylane.liealg import (
+    AI,
+    AII,
+    AIII,
+    BD,
+    BDI,
+    CI,
+    CII,
+    DIII,
+    A,
+    C,
+    concurrence_involution,
+    even_odd_involution,
+)
 from pennylane.liealg.involutions import Ipq, J, Kpq
 
 
@@ -125,6 +138,8 @@ class TestInvolutionExceptions:
             DIII,
             A,
             C,
+            concurrence_involution,
+            even_odd_involution,
         ],
     )
     def test_NotImplemented(self, inv_func):

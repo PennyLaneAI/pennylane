@@ -587,7 +587,7 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
 
 @singledispatch
 def _even_odd_involution(op):  # pylint:disable=unused-argument, missing-function-docstring
-    return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
+    raise NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
 
 
 @_even_odd_involution.register(PauliSentence)
@@ -663,7 +663,7 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bo
 
 @singledispatch
 def _concurrence_involution(op):
-    return NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
+    raise NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
 
 
 @_concurrence_involution.register(PauliSentence)
