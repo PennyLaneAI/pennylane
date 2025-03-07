@@ -182,7 +182,7 @@ AbstractMeasurement: type
 qnode_prim: "jax.core.Primitive"
 PlxprInterpreter: type  # pylint: disable=redefined-outer-name
 expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
-eval: Callable
+eval_jaxpr: Callable
 
 
 class CaptureError(Exception):
