@@ -1243,6 +1243,12 @@ class FermionicSWAP(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
         return qml.Hamiltonian(
