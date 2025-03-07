@@ -536,8 +536,6 @@
   Also use a different way of testing to see if something was compiled.
   [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
 
-* Adds a `qml.capture.eval_jaxpr` function that 
-
 <h3>Documentation 📝</h3>
 
 * The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
