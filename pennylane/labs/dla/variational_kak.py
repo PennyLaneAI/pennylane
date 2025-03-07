@@ -21,10 +21,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import pennylane as qml
+from pennylane.liealg import adjvec_to_op, op_to_adjvec
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
-
-from .cartan_subalgebra import adjvec_to_op, op_to_adjvec
 
 has_jax = True
 try:
@@ -122,14 +121,16 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         import jax
 
         from pennylane import X, Z
-        from pennylane.labs.dla import (
+        from pennylane.liealg import (
             cartan_decomp,
             cartan_subalgebra,
             check_cartan_decomp,
             concurrence_involution,
+            adjvec_to_op,
+        )
+        from pennylane.labs.dla import (
             validate_kak,
             variational_kak_adj,
-            adjvec_to_op,
         )
 
         n = 3

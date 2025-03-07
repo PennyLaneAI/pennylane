@@ -21,7 +21,6 @@ Experimental dynamical Lie algebra (DLA) functionality
     :toctree: api
 
     ~recursive_cartan_decomp
-    ~cartan_subalgebra
     ~variational_kak_adj
 
 
@@ -48,12 +47,10 @@ from .recursive_cartan_decomp import (
     recursive_cartan_decomp,
 )
 from .dense_util import (
-    check_all_commuting,
     check_orthonormal,
     pauli_coefficients,
     batched_pauli_decompose,
     orthonormalize,
 )
 
-from .cartan_subalgebra import cartan_subalgebra
 from .variational_kak import validate_kak, variational_kak_adj, run_opt
