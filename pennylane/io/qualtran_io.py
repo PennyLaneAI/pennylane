@@ -221,7 +221,8 @@ class FromBloq(Operation):
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    def compute_matrix(*params, **hyperparams):  # pylint: disable=no-method-argument
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
         bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
         return matrix
