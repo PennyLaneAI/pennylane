@@ -51,6 +51,9 @@
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
+* Added a new infrastructure for gate-set targeted decompositions.
+  [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
+
 <h3>Improvements 🛠</h3>
 
 * Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
@@ -623,6 +626,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
+Astral Cai,
 Henry Chang,
 Yushao Chen,
 Isaac De Vlugt,
