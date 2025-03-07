@@ -183,13 +183,6 @@ def _get_for_loop_qfunc_prim():
     return for_loop_prim
 
 
-def _add_abstract_shapes_to_start(f, n_abstract_shapes: int):
-    def new_f(*args, **kwargs):
-        return f(*args[n_abstract_shapes:], **kwargs)
-
-    return new_f
-
-
 class ForLoopCallable:  # pylint:disable=too-few-public-methods
     """Base class to represent a for loop. This class
     when called with an initial state will execute the while
@@ -231,13 +224,8 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
         abstracted_axes, abstract_shapes = determine_abstracted_axes((0, *init_state))
 
         flat_fn = FlatFn(self.body_fn)
-        if abstracted_axes:
-            body_fn = _add_abstract_shapes_to_start(flat_fn, len(abstract_shapes))
-            abstracted_axes = tuple({} for _ in abstract_shapes) + abstracted_axes
-        else:
-            body_fn = flat_fn
 
-        jaxpr_body_fn = jax.make_jaxpr(body_fn, abstracted_axes=abstracted_axes)(
+        jaxpr_body_fn = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(
             *abstract_shapes, 0, *init_state
         )
 
