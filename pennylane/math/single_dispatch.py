@@ -143,17 +143,24 @@ def _sparse_matrix_power_bruteforce(A, n):
     scipy.sparse matrix
         The matrix A raised to the power n.
     """
-    if n < 0:
-        raise ValueError("This function only supports non-negative integer exponents.")
+    try:
+        # pylint: disable=import-outside-toplevel
+        from scipy.sparse.linalg import matrix_power
 
-    if n == 0:
-        return sp.sparse.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
+        # pragma: no cover
+        return matrix_power(A, n)
+    except ImportError as e:  # For scipy 1.11.4 which lacks sparse.linalg.matrix_power
+        if n < 0:
+            raise ValueError("This function only supports non-negative integer exponents.") from e
 
-    result = A.copy()
-    for _ in range(n - 1):
-        result = result @ A  # Native matmul operation
+        if n == 0:
+            return sp.sparse.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
 
-    return result
+        result = A.copy()
+        for _ in range(n - 1):
+            result = result @ A  # Native matmul operation
+
+        return result
 
 
 ar.register_function("scipy", "linalg.det", _det_sparse)
