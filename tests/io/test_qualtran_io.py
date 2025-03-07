@@ -163,6 +163,7 @@ class TestFromBloq:
             qml.FromBloq(textbook_qpe_small, wires=list(range(4)))
             return qml.state()
 
+        # Expected value computed via tensor_contract()
         assert np.allclose(
             circuit(),
             np.array(
