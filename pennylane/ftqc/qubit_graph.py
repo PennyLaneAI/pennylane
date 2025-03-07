@@ -140,9 +140,9 @@ class QubitGraph:
         You may not want to initialize a graph of underlying qubits when representing physical
         qubits at the hardware layer, for example.
 
-        An uninitialized QubitGraph can always be initialized later using one of its graph-
-        initialization methods. The most general of these is :meth:`~QubitGraph.init_graph`, which
-        accepts an arbitrary networkx Graph as input:
+        An uninitialized QubitGraph can always be initialized later using one of its
+        graph-initialization methods. The most general of these is :meth:`~QubitGraph.init_graph`,
+        which accepts an arbitrary networkx Graph as input:
 
         >>> graph = nx.grid_graph((2,))
         >>> q.init_graph(graph)
@@ -182,7 +182,7 @@ class QubitGraph:
         is root? False, is leaf? True
 
         The :attr:`~QubitGraph.parent` and :attr:`~QubitGraph.children` attributes are also
-        available to access the parent of a given QubitGraph and is set of children, respectively:
+        available to access the parent of a given QubitGraph and its set of children, respectively:
 
         >>> q[0].parent is q
         True
