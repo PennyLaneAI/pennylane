@@ -56,6 +56,8 @@ class TestGraphStatePrep:
         res = circuit(q)
         assert len(res) == 2 ** len(lattice.graph)
         assert np.isclose(np.sum(res), 1.0, rtol=0)
+        assert repr(GraphStatePrep(graph=q)) == "GraphStatePrep(Hadamard, CZ)"
+        assert GraphStatePrep(graph=q).label() == "GraphStatePrep(Hadamard, CZ)"
 
     def test_circuit_accept_graph_state_prep_with_nx_wires(self):
         """Test if a quantum function accepts GraphStatePrep."""
@@ -157,6 +159,11 @@ class TestGraphStatePrep:
         with pytest.raises(ValueError):
             GraphStatePrep(
                 wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops
+            )
+
+        with pytest.raises(ValueError):
+            GraphStatePrep(
+                wires=None, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entangle_ops
             )
 
         with pytest.raises(ValueError):
