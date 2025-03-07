@@ -1033,6 +1033,12 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
         LinAlgError: If matrix inversion fails
         ValueError: If NaN values or overflow are encountered during computation
     """
+    if mat.shape == (1, 1):
+        value = mat[0, 0]
+        returned_value = np.sqrt(value)
+        returned_mat = mat.copy()
+        returned_mat[0, 0] = returned_value
+        return returned_mat
     try:
         mat = csc_matrix(mat)
         Y = mat
