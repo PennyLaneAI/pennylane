@@ -1649,7 +1649,9 @@ class CRX(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires: WiresLike):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1658,7 +1660,7 @@ class CRX(ControlledOp):
         .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (Tensorlike): rotation angle :math:`\phi`
             wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
@@ -1684,6 +1686,24 @@ class CRX(ControlledOp):
             qml.CNOT(wires=wires),
             qml.RZ(-pi_half, wires=wires[1]),
         ]
+
+
+def _crx_resources():
+    return {qml.RZ: 2, qml.RY: 2, qml.CNOT: 2}
+
+
+@register_resources(_crx_resources)
+def _crx(phi, wires, **__):
+    pi_half = qml.math.ones_like(phi) * (np.pi / 2)
+    qml.RZ(pi_half, wires=wires[1])
+    qml.RY(phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RY(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RZ(-pi_half, wires=wires[1])
+
+
+add_decomps(CRX, _crx)
 
 
 class CRY(ControlledOp):
@@ -1811,7 +1831,9 @@ class CRY(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1820,7 +1842,7 @@ class CRY(ControlledOp):
         .. seealso:: :meth:`~.CRY.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -1841,6 +1863,21 @@ class CRY(ControlledOp):
             qml.RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
+
+
+def _cry_resources():
+    return {qml.RY: 2, qml.CNOT: 2}
+
+
+@register_resources(_cry_resources)
+def _cry(phi, wires, **__):
+    qml.RY(phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RY(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+
+
+add_decomps(CRY, _cry)
 
 
 class CRZ(ControlledOp):
@@ -2009,7 +2046,9 @@ class CRZ(ControlledOp):
         return self.compute_eigvals(*self.parameters)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2018,7 +2057,7 @@ class CRZ(ControlledOp):
         .. seealso:: :meth:`~.CRZ.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (Tensorlike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:

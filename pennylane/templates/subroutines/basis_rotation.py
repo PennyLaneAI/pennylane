@@ -16,10 +16,8 @@ This module contains the template for performing basis transformation defined by
 """
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, Operation
 from pennylane.qchem.givens_decomposition import givens_decomposition
-from pennylane.wires import Wires, WiresLike
 
 
 # pylint: disable-msg=too-many-arguments
