@@ -75,11 +75,11 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    resource_param_keys = ()
+    resource_param_keys = ("state", "wires")
 
     @property
     def resource_params(self) -> dict:
-        return {}
+        return {"state": self.parameters[0], "wires": self.wires}
 
     def __init__(self, state, wires: WiresLike, id=None):
 
@@ -185,8 +185,10 @@ class BasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources():
-    return {}
+def _basis_state_decomp_resources(state, wires):
+    if not qml.math.is_abstract(state):
+        return {qml.X: len([wire for wire, basis in zip(wires, state, strict=True) if basis == 1])}
+    return {qml.PhaseShift: 2 * len(wires), qml.RX: len(wires)}
 
 
 @register_resources(_basis_state_decomp_resources)
