@@ -853,6 +853,12 @@ class DoubleExcitationPlus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def generator(self) -> "qml.SparseHamiltonian":
         G = -1 * np.eye(16, dtype=np.complex64)
         G[3, 3] = G[12, 12] = 0
@@ -939,6 +945,12 @@ class DoubleExcitationMinus(Operation):
 
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
+
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def generator(self) -> "qml.SparseHamiltonian":
         G = np.eye(16, dtype=np.complex64)
