@@ -222,7 +222,7 @@ class SingleExcitation(Operation):
         .. seealso:: :meth:`~.SingleExcitation.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -290,8 +290,8 @@ class SingleExcitation(Operation):
 
 def _single_excit_resources():
     return {
-        qml.adjoint(qml.T): 2,
-        qml.adjoint(qml.S): 2,
+        qml.adjoint_resource_rep(qml.T, {}): 2,
+        qml.adjoint_resource_rep(qml.S, {}): 2,
         qml.Hadamard: 4,
         qml.S: 2,
         qml.CNOT: 2,

@@ -878,7 +878,9 @@ class CCZ(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires: WiresLike,
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -932,7 +934,7 @@ class CCZ(ControlledOp):
 
 
 def _ccz_resources():
-    return {qml.CNOT: 6, qml.adjoint(qml.T): 3, qml.T: 4, qml.Hadamard: 2}
+    return {qml.CNOT: 6, qml.adjoint_resource_rep(qml.T, {}): 3, qml.T: 4, qml.Hadamard: 2}
 
 
 @register_resources(_ccz_resources)
@@ -1190,7 +1192,9 @@ class Toffoli(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires: WiresLike,
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1261,7 +1265,7 @@ def _check_and_convert_control_values(control_values, control_wires):
 
 
 def _toffoli_resources():
-    return {qml.Hadamard: 2, qml.CNOT: 6, qml.T: 4, qml.adjoint(qml.T): 3}
+    return {qml.Hadamard: 2, qml.CNOT: 6, qml.T: 4, qml.adjoint_resource_rep(qml.T, {}): 3}
 
 
 @register_resources(_toffoli_resources)
@@ -1651,7 +1655,7 @@ class CRX(ControlledOp):
     @staticmethod
     def compute_decomposition(
         phi: TensorLike, wires: WiresLike
-    ):  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1833,7 +1837,7 @@ class CRY(ControlledOp):
     @staticmethod
     def compute_decomposition(
         phi: TensorLike, wires: WiresLike
-    ):  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2048,7 +2052,7 @@ class CRZ(ControlledOp):
     @staticmethod
     def compute_decomposition(
         phi: TensorLike, wires: WiresLike
-    ):  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2249,7 +2253,7 @@ class CRot(ControlledOp):
     @staticmethod
     def compute_decomposition(
         phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
-    ):  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2258,9 +2262,9 @@ class CRot(ControlledOp):
         .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
-            theta (float): rotation angle :math:`\theta`
-            omega (float): rotation angle :math:`\omega`
+            phi (TensorLike): rotation angle :math:`\phi`
+            theta (TensorLike): rotation angle :math:`\theta`
+            omega (TensorLike): rotation angle :math:`\omega`
             wires (Iterable, Wires): the wires the operation acts on
 
         Returns:

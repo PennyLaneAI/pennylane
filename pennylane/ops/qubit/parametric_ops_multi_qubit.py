@@ -1983,7 +1983,7 @@ class CPhaseShift01(Operation):
         .. seealso:: :meth:`~.CPhaseShift01.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (Tensorlike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -2191,7 +2191,7 @@ class CPhaseShift10(Operation):
         .. seealso:: :meth:`~.CPhaseShift10.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:

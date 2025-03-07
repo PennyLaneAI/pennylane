@@ -549,7 +549,7 @@ class PhaseShift(Operation):
         .. seealso:: :meth:`~.PhaseShift.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Any, Wires): wires that the operator acts on
 
         Returns:
@@ -882,7 +882,7 @@ class U1(Operation):
         .. seealso:: :meth:`~.U1.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Any, Wires): Wire that the operator acts on.
 
         Returns:
@@ -1031,8 +1031,8 @@ class U2(Operation):
         .. seealso:: :meth:`~.U2.decomposition`.
 
         Args:
-            phi (float): azimuthal angle :math:`\phi`
-            delta (float): quantum phase :math:`\delta`
+            phi (TensorLike): azimuthal angle :math:`\phi`
+            delta (TensorLike): quantum phase :math:`\delta`
             wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
@@ -1220,9 +1220,9 @@ class U3(Operation):
         .. seealso:: :meth:`~.U3.decomposition`.
 
         Args:
-            theta (float): polar angle :math:`\theta`
-            phi (float): azimuthal angle :math:`\phi`
-            delta (float): quantum phase :math:`\delta`
+            theta (TensorLike): polar angle :math:`\theta`
+            phi (TensorLike): azimuthal angle :math:`\phi`
+            delta (TensorLike): quantum phase :math:`\delta`
             wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
