@@ -854,9 +854,9 @@ def _get_cond_qfunc_prim():
             if jaxpr is None:
                 continue
             if isinstance(pred, qml.measurements.MeasurementValue):
-                with qml.queuing.AnnotatedQueue() as q:
-                    out = qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
 
+                with qml.queuing.AnnotatedQueue() as q:
+                    out = qml.capture.eval_jaxpr(jaxpr, consts, *args)
                 if len(out) != 0:
                     raise ConditionalTransformError(
                         "Only quantum functions without return values can be applied "
@@ -865,7 +865,7 @@ def _get_cond_qfunc_prim():
                 for wrapped_op in q:
                     Conditional(pred, wrapped_op.obj)
             elif pred:
-                return qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
+                return qml.capture.eval_jaxpr(jaxpr, consts, *args)
 
         return ()
 
