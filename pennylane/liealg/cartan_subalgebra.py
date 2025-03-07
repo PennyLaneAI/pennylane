@@ -218,7 +218,7 @@ def cartan_subalgebra(
         g = qml.math.vstack([k, m])
 
     if adj is None:
-        adj = qml.structure_constants(g)
+        adj = qml.structure_constants(g, matrix=isinstance(g[0], TensorLike))
 
     g_copy = copy.deepcopy(g)
     np_m = op_to_adjvec(m, g, is_orthogonal=is_orthogonal)
@@ -474,7 +474,7 @@ def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
 
     We choose a basis of a Lie algebra, compute its adjoint representation.
 
-    >>> from pennylane.liealg import change_basis_ad_rep
+    >>> from pennylane.labs.dla import change_basis_ad_rep
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> adj = qml.structure_constants(basis)
 
@@ -509,7 +509,7 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
     **Example**
 
-    >>> from pennylane.liealg import check_all_commuting
+    >>> from pennylane.labs.dla import check_all_commuting
     >>> from pennylane import X
     >>> ops = [X(i) for i in range(10)]
     >>> check_all_commuting(ops)

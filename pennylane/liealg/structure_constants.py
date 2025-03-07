@@ -136,7 +136,7 @@ def structure_constants(
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> from pennylane.liealg import structure_constants_matrix
+    >>> from pennylane.labs.dla import structure_constants_matrix
     >>> adj = structure_constants_matrix(g)
     >>> adj.shape
     (12, 12, 12)
@@ -257,7 +257,7 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> from pennylane.liealg import structure_constants_matrix
+    >>> from pennylane.labs.dla import structure_constants_matrix
     >>> adj = structure_constants_matrix(g)
     >>> adj.shape
     (12, 12, 12)

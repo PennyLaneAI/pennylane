@@ -19,7 +19,7 @@ import pytest
 from scipy.linalg import sqrtm
 
 import pennylane as qml
-from pennylane import X, Z
+from pennylane import X, Y, Z
 from pennylane.liealg import (
     adjvec_to_op,
     cartan_decomp,
@@ -34,7 +34,7 @@ from pennylane.pauli import PauliSentence
 
 @pytest.mark.parametrize("n, len_g, len_h, len_mtilde", [(2, 6, 2, 2), (3, 15, 2, 6)])
 @pytest.mark.parametrize("provide_adj", [True, False])
-def test_Ising(n, len_g, len_h, len_mtilde, provide_adj):
+def test_cartan_subalgebra_Ising(n, len_g, len_h, len_mtilde, provide_adj):
     """Test Cartan subalgebra of 2 qubit Ising model"""
     gens = [X(w) @ X(w + 1) for w in range(n - 1)] + [Z(w) for w in range(n)]
     gens = [op.pauli_rep for op in gens]
@@ -55,6 +55,37 @@ def test_Ising(n, len_g, len_h, len_mtilde, provide_adj):
     assert len(h) == len_h
     assert len(mtilde) == len_mtilde
     assert len(h) + len(mtilde) == len(m)
+
+    new_adj_re = qml.structure_constants(newg)
+
+    assert np.allclose(new_adj_re, new_adj)
+
+
+def test_cartan_subalgebra_matrix_input():
+    """Test cartan_subalgebra with matrix inputs"""
+    k = [1.0 * Z(0), 1.0 * Z(1)]
+    m = [1.0 * X(0) @ X(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
+    k = [qml.matrix(op, wire_order=range(2)) for op in k]
+    m = [qml.matrix(op, wire_order=range(2)) for op in m]
+
+    newg, k, mtilde, h, new_adj = cartan_subalgebra(k, m, start_idx=0)
+    assert len(h) + len(mtilde) == len(m)
+
+    new_adj_re = qml.structure_constants(newg, matrix=True)
+
+    assert np.allclose(new_adj_re, new_adj)
+
+
+def test_cartan_subalgebra_adjvec_output():
+    """Test cartan_subalgebra with adjvec outputs"""
+    k = [1.0 * Z(0), 1.0 * Z(1)]
+    m = [1.0 * X(0) @ X(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
+
+    np_newg, _, np_mtilde, np_h, new_adj = qml.liealg.cartan_subalgebra(
+        k, m, return_adjvec=True, start_idx=0
+    )
+    assert len(np_h) + len(np_mtilde) == len(m)
+    newg = adjvec_to_op(np_newg, k + m)
 
     new_adj_re = qml.structure_constants(newg)
 
