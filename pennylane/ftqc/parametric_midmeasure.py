@@ -682,23 +682,23 @@ def diagonalize_mcms(tape):
         elif isinstance(op, qml.ops.Conditional):
 
             # from MCM mapping, map any MCMs in the condition if needed
-            processing_fn = op.meas_val.processing_fn
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
-            expr = MeasurementValue(mps, processing_fn=processing_fn)
 
             if isinstance(op.base, MidMeasureMP):
                 # the only user-facing API for creating Conditionals with MCMs is meas_cond,
                 # which ensures both and true_fn and false_fn are included, so here we assume the
                 # expected format (i.e. conditional mcms are found pairwise with opposite conditions)
                 true_cond, false_cond = (op, tape.operations[i + 1])
-                expr_false = MeasurementValue(mps, processing_fn=false_cond.meas_val.processing_fn)
                 # we process both the true_cond and the false_cond together, so we skip an index in the ops
                 curr_idx += 1
 
                 # add conditional diagonalizing gates + computational basis MCM to the tape
+                expr_true = MeasurementValue(mps, processing_fn=true_cond.meas_val.processing_fn)
+                expr_false = MeasurementValue(mps, processing_fn=false_cond.meas_val.processing_fn)
+
                 with qml.QueuingManager.stop_recording():
                     diag_gates_true = [
-                        qml.ops.Conditional(expr=expr, then_op=gate)
+                        qml.ops.Conditional(expr=expr_true, then_op=gate)
                         for gate in true_cond.diagonalizing_gates()
                     ]
 
@@ -719,6 +719,9 @@ def diagonalize_mcms(tape):
                 mps_mapping[true_cond.base] = new_mp
                 mps_mapping[false_cond.base] = new_mp
             else:
+                processing_fn = op.meas_val.processing_fn
+                expr = MeasurementValue(mps, processing_fn=processing_fn)
+
                 with qml.QueuingManager.stop_recording():
                     new_cond = qml.ops.Conditional(expr=expr, then_op=op.base)
                 new_operations.append(new_cond)
