@@ -25,6 +25,7 @@ from pennylane.capture.primitives import (
     grad_prim,
     jacobian_prim,
     measure_prim,
+    qnode_prim,
 )
 from pennylane.measurements import MeasurementValue, get_mcm_predicates
 
@@ -186,6 +187,21 @@ def _(self, *invals, jaxpr, n_consts, **params):
 @CollectOpsandMeas.register_primitive(jacobian_prim)
 def _(self, *invals, jaxpr, n_consts, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
+
+
+@CollectOpsandMeas.register_primitive(qnode_prim)
+def _(
+    self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts
+):  # pylint: disable=too-many-arguments,unused-argument
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+
+    child = CollectOpsandMeas()
+    out = child.eval(qfunc_jaxpr, consts, *args)
+    assert child.state
+    self.state["ops"].extend(child.state["ops"])
+    self.state["measurements"].extend(child.state["measurements"])
+    return out
 
 
 def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
