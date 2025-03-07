@@ -18,12 +18,10 @@ Generates parametrizations of operators to test in test_assert_valid.py.
 """
 from inspect import getmembers, isclass
 
-import networkx as nx
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import ftqc
 from pennylane.operation import Channel, Observable, Operation, Operator
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
@@ -87,10 +85,6 @@ _INSTANCES_TO_TEST = [
             flip=True,
         ),
         {"skip_pickle": True},
-    ),
-    (
-        ftqc.GraphStatePrep(qml.ftqc.QubitGraph(graph=nx.grid_graph([2])), wires=[0, 1]),
-        {"skip_deepcopy": True, "skip_pickle": True},
     ),
 ]
 """Valid operator instances that could not be auto-generated."""
@@ -182,7 +176,6 @@ def get_all_classes(c):
 _CLASSES_TO_TEST = (
     set(get_all_classes(Operator))
     - {i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
-    - {i[1] for i in getmembers(qml.ftqc) if isclass(i[1]) and issubclass(i[1], Operator)}
     - {type(op) for (op, _) in _INSTANCES_TO_TEST}
     - {type(op) for (op, _) in _INSTANCES_TO_FAIL}
 )
