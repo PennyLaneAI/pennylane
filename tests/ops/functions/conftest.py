@@ -126,7 +126,7 @@ _INSTANCES_TO_FAIL = [
     ),
     (
         qml.ftqc.GraphStatePrep(qml.ftqc.QubitGraph(graph=nx.grid_graph([2])), wires=[0, 1]),
-        TypeError,
+        AssertionError,  # deep copied op must also be equal
     ),
 ]
 """
