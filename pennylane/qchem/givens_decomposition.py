@@ -24,7 +24,7 @@ except ModuleNotFoundError:  # pragma: no cover
 import pennylane as qml
 
 
-def __givens_matrix(a, b, left=True, tol=1e-8):
+def _givens_matrix_core(a, b, left=True, tol=1e-8):
     r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
@@ -91,11 +91,11 @@ def __givens_matrix(a, b, left=True, tol=1e-8):
 
 
 @functools.lru_cache
-def __givens_matrix_jax():
+def _givens_matrix_jax():
 
     @jax.jit
     def givens_matrix_jax(a, b, left=True, tol=1e-8):
-        return __givens_matrix(a, b, left=left, tol=tol)
+        return _givens_matrix_core(a, b, left=left, tol=tol)
 
     return givens_matrix_jax
 
@@ -103,8 +103,8 @@ def __givens_matrix_jax():
 def _givens_matrix(a, b, left=True, tol=1e-8):
     interface = qml.math.get_interface(a)
     if interface != "jax":
-        return __givens_matrix(a, b, left=left, tol=tol)
-    return __givens_matrix_jax()(a, b, left=left, tol=tol)
+        return _givens_matrix_core(a, b, left=left, tol=tol)
+    return _givens_matrix_jax()(a, b, left=left, tol=tol)
 
 
 def _set_unitary_matrix(unitary_matrix, index, value, like=None):
