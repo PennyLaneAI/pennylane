@@ -134,8 +134,9 @@ class Hermitian(Observable):
         Hermitian._validate_input(A)
         return A
 
+    # pylint: disable=arguments-differ
     @staticmethod
-    def compute_sparse_matrix(A, format="csr") -> csr_matrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(A, format="csr") -> csr_matrix:
         return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
 
     @property
@@ -363,10 +364,9 @@ class SparseHamiltonian(Observable):
         """
         return H.toarray()
 
+    # pylint: disable=arguments-differ
     @staticmethod
-    def compute_sparse_matrix(
-        H: spmatrix, format="csr"
-    ) -> spmatrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
