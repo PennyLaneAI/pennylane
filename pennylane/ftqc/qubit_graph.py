@@ -84,34 +84,101 @@ class QubitGraph:
     .. details::
         :title: How to Read the QubitGraph String Representation
 
-    The examples above showed that any QubitGraph in the hierarchical structure can be displayed
-    with information on its ID and its location in the hierarchy. For example, the string
-    representation
+        The examples above showed that any QubitGraph in the hierarchical structure can be displayed
+        with information on its ID and its location in the hierarchy. For example, the string
+        representation
 
-    ::
+        ::
 
-        QubitGraph<id=1, loc=[(0, 0), 0]>
+            QubitGraph<id=1, loc=[(0, 0), 0]>
 
-    indicates that this QubitGraph has an ID of ``1``, and it is nested within a parent node
-    labelled ``(0, 0)``, which is nested within a parent node labelled ``0``, which is a root
-    node. If a QubitGraph is itself a root node (meaning it is not nested within a parent
-    QubitGraph), its location is displayed as an empty list, for example:
+        indicates that this QubitGraph has an ID of ``1``, and it is nested within a parent node
+        labelled ``(0, 0)``, which is nested within a parent node labelled ``0``, which is a root
+        node. If a QubitGraph is itself a root node (meaning it is not nested within a parent
+        QubitGraph), its location is displayed as an empty list, for example:
 
-    ::
+        ::
 
+            QubitGraph<id=0, loc=[]>
+
+        If no ID parameter was given upon construction of the QubitGraph, you will notice that a
+        random UUID has been assigned to it:
+
+        >>> q = QubitGraph()
+        >>> q
+        QubitGraph<id=7491161c, loc=[]>
+
+        This ID is truncated for brevity; the full ID is a 32-digit hexadecimal number:
+
+        >>> q.id
+        '7491161c-ca7e-42cc-af3e-8ca6250a370e'
+
+    .. details::
+        :title: Initializing a QubitGraph
+
+        The examples above showed how to initialize the graph structure of a QubitGraph by passing
+        in a networkx Graph. It is also possible to construct a QubitGraph object with no graph
+        structure:
+
+        >>> q = QubitGraph(id=0)
+        >>> q
         QubitGraph<id=0, loc=[]>
 
-    If no ID parameter was given upon construction of the QubitGraph, you will notice that a
-    random UUID has been assigned to it:
+        In this case, the QubitGraph is still valid for use, but it is in an *uninitialized* state.
+        You can check the initialization state of a QubitGraph with its
+        :attr:`~QubitGraph.is_initialized` attribute:
 
-    >>> q = QubitGraph()
-    >>> q
-    QubitGraph<id=7491161c, loc=[]>
+        >>> q.is_initialized
+        False
 
-    This ID is truncated for brevity; the full ID is 32-digit hexadecimal number:
+        You may not want to initialize a graph of underlying qubits when representing physical
+        qubits at the hardware layer, for example.
 
-    >>> q.id
-    '7491161c-ca7e-42cc-af3e-8ca6250a370e'
+        An uninitialized QubitGraph can always be initialized later using one of its graph-
+        initialization methods. The most general of these is :meth:`~QubitGraph.init_graph`, which
+        accepts an arbitrary networkx Graph as input:
+
+        >>> graph = nx.grid_graph((2,))
+        >>> q.init_graph(graph)
+        >>> q.is_initialized
+        True
+
+        Other graph-initialization methods that automatically construct common graph structures are
+        also available. For example, :meth:`~QubitGraph.init_graph_nd_grid` initializes a
+        QubitGraph's underlying qubits as an n-dimensional Cartesian grid:
+
+        >>> q_3d_grid = QubitGraph(id=0)
+        >>> q_3d_grid.init_graph_nd_grid((3, 4, 5))
+
+    .. details::
+        :title: Traversing the Hierarchical Graph Structure
+
+        The graph hierarchy is structured as a tree data type, with "root" nodes representing the
+        highest-level qubits (for example, the logical qubits in a quantum circuit), down to "leaf"
+        nodes representing the lowest-level qubits (for example, the physical qubits at the hardware
+        level). The :attr:`~QubitGraph.is_root` and :attr:`~QubitGraph.is_leaf` attributes are
+        available to quickly determine if a QubitGraph is a root or leaf node, respectively.
+        Consider the following example with a three-layer nesting structure:
+
+        >>> single_node_graph = nx.grid_graph((1,))
+        >>> q = QubitGraph(single_node_graph, id=0)
+        >>> q[0].init_graph(single_node_graph)
+        >>> print(f"is root? {q.is_root}, is leaf? {q.is_leaf}")
+        is root? True, is leaf? False
+        >>> print(f"is root? {q[0].is_root}, is leaf? {q[0].is_leaf}")
+        is root? False, is leaf? False
+        >>> print(f"is root? {q[0][0].is_root}, is leaf? {q[0][0].is_leaf}")
+        is root? False, is leaf? True
+
+        The :attr:`~QubitGraph.parent` and :attr:`~QubitGraph.children` attributes are also
+        available to access the parent of a given QubitGraph and is set of children, respectively:
+
+        >>> q[0].parent is q
+        True
+        >>> q[0][0].parent is q[0]
+        True
+        >>> list(q[0].children)
+        [QubitGraph<id=0, loc=[0, 0]>]
 
     ..  TODO:
 
