@@ -83,7 +83,7 @@ def cond_meas(
     .. note::
 
         If the first argument of ``cond_meas`` is a measurement value (e.g., ``m_0``
-        in ``qml.cond(m_0, qml.RY)``), then ``m_0 == 1`` is considered
+        in ``qml.cond(m_0, measure_x, measure_y)``), then ``m_0 == 1`` is considered
         internally.
 
     .. warning::
@@ -95,7 +95,7 @@ def cond_meas(
         incorrect behaviour.
     """
 
-    if compiler.active_compiler() or qml.capture.enabled():
+    if compiler.active_compiler():
         raise NotImplementedError("The `cond_meas` function is not compatible with `qjit`")
 
     if qml.capture.enabled():
@@ -126,7 +126,12 @@ def cond_meas(
             Conditional(condition, true_meas)
             Conditional(~condition, false_meas)
 
-            return MeasurementValue([true_meas, false_meas], processing_fn=lambda v1, v2: v1 or v2)
+            return MeasurementValue(
+                [true_meas, false_meas],
+                processing_fn=lambda v1, v2: qml.math.logical_or(  # pylint: disable=unnecessary-lambda
+                    v1, v2
+                ),
+            )
 
     else:
         raise ValueError("Only measurement functions can be applied conditionally by `cond_meas`.")
