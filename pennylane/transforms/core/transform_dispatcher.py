@@ -203,7 +203,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if isinstance(obj, qml.QNode):
             if qml.capture.enabled():
-                obj = self.default_qnode_transform(obj, targs, tkwargs)
+                # obj = self.default_qnode_transform(obj, targs, tkwargs)
                 return self._qfunc_transform(obj, targs, tkwargs)
 
             return self._qnode_transform(obj, targs, tkwargs)
@@ -327,6 +327,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 plxpr_transform=self._plxpr_transform,
                 is_informative=self._is_informative,
                 final_transform=self._final_transform,
+                primitive=self._primitive,
             )
         )
         return qnode
@@ -521,6 +522,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
         is_informative=False,
         final_transform=False,
         use_argnum=False,
+        primitive=None,
     ):  # pylint:disable=redefined-outer-name,too-many-arguments,too-many-positional-arguments
         self._transform = transform
         self._args = args or []
@@ -530,6 +532,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
         self._is_informative = is_informative
         self._final_transform = is_informative or final_transform
         self._use_argnum = use_argnum
+        self._primitive = primitive
 
     def __repr__(self):
         return f"<{self._transform.__name__}({self._args}, {self._kwargs})>"
@@ -544,6 +547,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
                 self._plxpr_transform,
                 self._is_informative,
                 self.final_transform,
+                self.primitive,
             )
         )
 
@@ -594,6 +598,11 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
         """``True`` if the transform needs to be executed"""
         return self._final_transform
 
+    @property
+    def primitive(self):
+        """Transform's primitive"""
+        return self._primitive
+
 
 def _create_transform_primitive(name):
     try:
@@ -610,7 +619,9 @@ def _create_transform_primitive(name):
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
-        raise NotImplementedError
+        args = all_args[args_slice]
+        consts = all_args[consts_slice]
+        return qml.capture.PlxprInterpreter().eval(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
     def _(*_, inner_jaxpr, **__):

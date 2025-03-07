@@ -533,17 +533,50 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     )()  # no need for args and kwargs as not resolving
     config = qnode.device.setup_execution_config(config)
 
-    res = qnode_prim.bind(
-        *qfunc_jaxpr.consts,
-        *abstract_shapes,
-        *flat_dynamic_args,
-        shots=shots,
-        qnode=qnode,
-        device=qnode.device,
-        execution_config=config,
-        qfunc_jaxpr=qfunc_jaxpr.jaxpr,
-        n_consts=len(qfunc_jaxpr.consts),
-    )
+    def bind_qnode(*inner_args):
+        res = qnode_prim.bind(
+            *qfunc_jaxpr.consts,
+            *inner_args,
+            shots=shots,
+            qnode=qnode,
+            device=qnode.device,
+            execution_config=config,
+            qfunc_jaxpr=qfunc_jaxpr.jaxpr,
+            n_consts=len(qfunc_jaxpr.consts),
+        )
+        return res
+
+    qnode_jaxpr = jax.make_jaxpr(bind_qnode)(*abstract_shapes, *flat_dynamic_args)
+    jaxpr = qnode_jaxpr.jaxpr
+    consts = qnode_jaxpr.consts
+
+    program = qnode.transform_program
+    for i, container in enumerate(program):
+        _, targs, tkwargs, _, plxpr_transform, _, _, primitive = container
+
+        def bind_transform(*inner_args):
+            n_args = len(inner_args)
+            n_consts = len(consts)
+            args_slice = slice(0, n_args)
+            consts_slice = slice(n_args, n_args + n_consts)
+            targs_slice = slice(n_args + n_consts, None)
+            return primitive.bind(
+                *inner_args,
+                *consts,
+                *targs,
+                inner_jaxpr=jaxpr,
+                args_slice=args_slice,
+                consts_slice=consts_slice,
+                targs_slice=targs_slice,
+                tkwargs=tkwargs,
+            )
+
+        new_jaxpr = jax.make_jaxpr(bind_transform)(*abstract_shapes, *flat_dynamic_args)
+        jaxpr = new_jaxpr.jaxpr
+        consts = new_jaxpr.consts
+        res = qml.capture.PlxprInterpreter().eval(
+            jaxpr, consts, *abstract_shapes, *flat_dynamic_args
+        )
 
     if not using_cached_plxpr:
         assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
