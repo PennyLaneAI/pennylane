@@ -99,21 +99,20 @@ class TestCaptureWhileLoop:
         assert jax.numpy.allclose(output, expected)
 
     # pylint: disable=unused-argument
-    def test_while_loop_initial_axis_matches_other_arg(self, enable_disable_dynamic_shapes):
-        """Test that if the dynamic axis initially matches another variable, it doesn't have to stay matching that variable."""
+    def test_while_loop_dynamic_array_creation(self, enable_disable_dynamic_shapes):
+        """Test that while loop can handle creating dynamic arrays."""
 
-        @qml.while_loop(lambda i, x: i < 5)
-        def f(i, x):
-            return i + 1, 2 * x
+        @qml.while_loop(lambda s: s < 9)
+        def f(s):
+            a = jax.numpy.ones(s + 1, dtype=int)
+            return jax.numpy.sum(a)
 
-        def workflow(i):
-            return f(i, jax.numpy.arange(i))
+        def w():
+            return f(3)
 
-        jaxpr = jax.make_jaxpr(workflow)(3)
-
-        res1, res2 = qml.capture.eval(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(res1, 5)  # stopping condition for i
-        assert qml.math.allclose(res2, jax.numpy.arange(2) * 8)
+        jaxpr = jax.make_jaxpr(w)()
+        [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert qml.math.allclose(r, 9)  # value that stops iteration
 
 
 class TestCaptureCircuitsWhileLoop:

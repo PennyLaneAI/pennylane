@@ -703,6 +703,7 @@ def _get_cond_qfunc_prim():
             if jaxpr is None:
                 continue
             if isinstance(pred, qml.measurements.MeasurementValue):
+
                 with qml.queuing.AnnotatedQueue() as q:
                     out = qml.capture.eval_jaxpr(jaxpr, consts, *args)
 

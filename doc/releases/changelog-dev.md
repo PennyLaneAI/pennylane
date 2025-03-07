@@ -249,6 +249,55 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
+  [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
+
+  As an example, here is a custom tape transform, working with capture enabled, that shifts every `qml.RX` gate to the end of the circuit:
+
+  ```python
+  qml.capture.enable()
+
+  @qml.transform
+  def shift_rx_to_end(tape):
+      """Transform that moves all RX gates to the end of the operations list."""
+      new_ops, rxs = [], []
+
+      for op in tape.operations:
+          if isinstance(op, qml.RX):
+              rxs.append(op)
+          else:
+                new_ops.append(op)
+
+      operations = new_ops + rxs
+      new_tape = tape.copy(operations=operations)
+      return [new_tape], lambda res: res[0]
+  ```
+  A requirement for tape transforms to be compatible with program capture is to further decorate QNodes with the experimental
+  `qml.capture.expand_plxpr_transforms` decorator.
+
+  ```python
+  @qml.capture.expand_plxpr_transforms
+  @shift_rx_to_end
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit():
+      qml.RX(0.1, wires=0)
+      qml.H(wires=0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H──RX(0.10)─┤  State
+  ```
+
+  There are some exceptions to getting tape transforms to work with capture enabled:
+  * Transforms that return multiple tapes cannot be converted.
+  * Transforms that return non-trivial post-processing functions cannot be converted.
+  * Transforms will fail to execute if the transformed quantum function or QNode contains:
+    * `qml.cond` with dynamic parameters as predicates.
+    * `qml.for_loop` with dynamic parameters for ``start``, ``stop``, or ``step``.
+    * `qml.while_loop`.
+
 * `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives
   when using program capture to jaxpr.
   [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
@@ -334,6 +383,10 @@
 
 * The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
   [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
+
+* A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
+  of arrays with dynamic shapes.
+  [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -430,6 +483,9 @@
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add support to `CollectOpsandMeas` for handling `qnode` primitives.
+  [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
 
 * Change some `scipy` imports from submodules to whole module to reduce memory footprint of importing pennylane. 
   [(#7040)](https://github.com/PennyLaneAI/pennylane/pull/7040)
