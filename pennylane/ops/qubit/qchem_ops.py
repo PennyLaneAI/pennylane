@@ -597,7 +597,7 @@ def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
     qml.CNOT(wires=[wires[0], wires[1]])
 
 
-add_decomps(SingleExcitationMinus, _single_excitation_plus_decomp)
+add_decomps(SingleExcitationPlus, _single_excitation_plus_decomp)
 
 
 class DoubleExcitation(Operation):
