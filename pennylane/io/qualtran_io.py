@@ -160,10 +160,9 @@ class FromBloq(Operation):
                 # so if we need to add more wires, we know what index to start at
                 soq_to_wires_len = 0
                 if len(soq_to_wires.values()) > 0:
-                    try:
+                    soq_to_wires_len = list(soq_to_wires.values())[-1]
+                    if not isinstance(soq_to_wires_len, int):
                         soq_to_wires_len = list(soq_to_wires.values())[-1][-1] + 1
-                    except (IndexError, TypeError):
-                        soq_to_wires_len = list(soq_to_wires.values())[-1] + 1
 
                 for pred in pred_cxns:
                     soq = pred.right
