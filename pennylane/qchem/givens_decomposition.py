@@ -19,7 +19,7 @@ import functools
 
 try:
     import jax
-except ModuleNotFoundError: # pragma: no cover
+except ModuleNotFoundError:  # pragma: no cover
     ...
 import pennylane as qml
 
