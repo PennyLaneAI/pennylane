@@ -128,6 +128,17 @@ def _permutation_parity(perm):
     return parity
 
 
+def sparse_matrix_power(A, n):
+    """Dispatch to the appropriate sparse matrix power function."""
+    try:
+        # pylint: disable=import-outside-toplevel
+        from scipy.sparse.linalg import matrix_power
+
+        return matrix_power(A, n)
+    except ImportError:  # pragma: no cover
+        return _sparse_matrix_power_bruteforce(A, n)
+
+
 def _sparse_matrix_power_bruteforce(A, n):
     """
     Compute the power of a sparse matrix using brute-force matrix multiplication.
@@ -143,30 +154,24 @@ def _sparse_matrix_power_bruteforce(A, n):
     scipy.sparse matrix
         The matrix A raised to the power n.
     """
-    try:
-        # pylint: disable=import-outside-toplevel
-        from scipy.sparse.linalg import matrix_power
 
-        # pragma: no cover
-        return matrix_power(A, n)
-    except ImportError as e:  # For scipy 1.11.4 which lacks sparse.linalg.matrix_power
-        if n < 0:
-            raise ValueError("This function only supports non-negative integer exponents.") from e
+    if n < 0:
+        raise ValueError("This function only supports non-negative integer exponents.")
 
-        if n == 0:
-            return sp.sparse.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
+    if n == 0:
+        return sp.sparse.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
 
-        result = A.copy()
-        for _ in range(n - 1):
-            result = result @ A  # Native matmul operation
+    result = A.copy()
+    for _ in range(n - 1):
+        result = result @ A  # Native matmul operation
 
-        return result
+    return result
 
 
 ar.register_function("scipy", "linalg.det", _det_sparse)
 ar.register_function("scipy", "linalg.inv", sp.sparse.linalg.inv)
 ar.register_function("scipy", "linalg.expm", sp.sparse.linalg.expm)
-ar.register_function("scipy", "linalg.matrix_power", _sparse_matrix_power_bruteforce)
+ar.register_function("scipy", "linalg.matrix_power", sparse_matrix_power)
 ar.register_function("scipy", "linalg.norm", sp.sparse.linalg.norm)
 ar.register_function("scipy", "linalg.spsolve", sp.sparse.linalg.spsolve)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
