@@ -1076,6 +1076,33 @@ class TestScipySparse:
         """Test that the matrix power method dispatched"""
         fn.linalg.matrix_power(matrix, 2)
 
+    def test_matrix_power(self):
+        """Test our customized matrix power function"""
+        A = sci.sparse.csr_matrix([[2, 0], [0, 2]])
+
+        # Test n = 0 (identity matrix)
+        result = fn.linalg.matrix_power(A, 0)
+        expected = sci.sparse.eye(2, dtype=A.dtype, format=A.format)
+        np.allclose(result.toarray(), expected.toarray())
+
+        # Test n = 1 (should be the same matrix)
+        result = fn.linalg.matrix_power(A, 1)
+        np.allclose(result.toarray(), A.toarray())
+
+        # Test n = 2 (square of matrix)
+        result = fn.linalg.matrix_power(A, 2)
+        expected = A @ A
+        np.allclose(result.toarray(), expected.toarray())
+
+        # Test n = 3 (cube of matrix)
+        result = fn.linalg.matrix_power(A, 3)
+        expected = A @ A @ A
+        np.allclose(result.toarray(), expected.toarray())
+
+        # Test negative exponent (should raise an error)
+        with pytest.raises(ValueError):
+            fn.linalg.matrix_power(A, -1)
+
 
 # pylint: disable=too-few-public-methods
 class TestInterfaceEnum:
