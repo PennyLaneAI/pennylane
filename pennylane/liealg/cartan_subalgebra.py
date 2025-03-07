@@ -543,4 +543,4 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
         return_True = True
 
-    return return_True if return_True is None else NotImplemented
+    return NotImplemented if not return_True else return_True
