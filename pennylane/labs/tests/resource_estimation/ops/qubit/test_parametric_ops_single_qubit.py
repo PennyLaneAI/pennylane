@@ -211,6 +211,7 @@ class TestPauliRotation:
         )
         assert op2.resources(**op2.resource_params) == expected_resources
 
+    # pylint: disable=unused-argument, import-outside-toplevel
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
     def test_sparse_matrix_format(self, resource_class, epsilon):
