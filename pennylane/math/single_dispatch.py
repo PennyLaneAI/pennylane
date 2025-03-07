@@ -130,7 +130,7 @@ def _permutation_parity(perm):
 
 def sparse_matrix_power(A, n):
     """Dispatch to the appropriate sparse matrix power function."""
-    try:
+    try:  # pragma: no cover
         # pylint: disable=import-outside-toplevel
         from scipy.sparse.linalg import matrix_power
 

@@ -1084,21 +1084,25 @@ class TestScipySparse:
         # Test n = 0 (identity matrix)
         result = _sparse_matrix_power_bruteforce(A, 0)
         expected = sci.sparse.eye(2, dtype=A.dtype, format=A.format)
-        np.allclose(result.toarray(), expected.toarray())
+        assert np.allclose(result.toarray(), expected.toarray())
 
         # Test n = 1 (should be the same matrix)
         result = _sparse_matrix_power_bruteforce(A, 1)
-        np.allclose(result.toarray(), A.toarray())
+        assert np.allclose(result.toarray(), A.toarray())
 
         # Test n = 2 (square of matrix)
         result = _sparse_matrix_power_bruteforce(A, 2)
         expected = A @ A
-        np.allclose(result.toarray(), expected.toarray())
+        assert np.allclose(result.toarray(), expected.toarray())
 
         # Test n = 3 (cube of matrix)
         result = _sparse_matrix_power_bruteforce(A, 3)
         expected = A @ A @ A
-        np.allclose(result.toarray(), expected.toarray())
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Simple benchmark with the dispatcher
+        result0 = fn.linalg.matrix_power(A, 3)
+        assert np.allclose(result0.toarray(), expected.toarray())
 
         # Test negative exponent (should raise an error)
         with pytest.raises(ValueError):
