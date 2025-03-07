@@ -54,7 +54,6 @@ def get_bloq_registers_info(bloq):
     Given a qualtran bloq:
 
     >>> from qualtran.bloqs.basic_gates import Swap
-
     >>> qml.get_bloq_registers_info(Swap(3))
     {'x': Wires([0, 1, 2]), 'y': Wires([3, 4, 5])}
     """
