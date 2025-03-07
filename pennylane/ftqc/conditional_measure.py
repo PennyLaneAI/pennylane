@@ -18,7 +18,6 @@ from functools import wraps
 from typing import Callable
 
 import pennylane as qml
-from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops.op_math.condition import CondCallable, Conditional
 
@@ -94,18 +93,14 @@ def cond_meas(
         While such statements may not result in errors, they may result in
         incorrect behaviour.
     """
-
-    if compiler.active_compiler():
-        raise NotImplementedError("The `cond_meas` function is not compatible with `qjit`")
-
     if qml.capture.enabled():
-        raise NotImplementedError("The `cond_meas` function is not program capture")
+        raise NotImplementedError("The `cond_meas` function is not compatible with program capture")
 
     if not isinstance(condition, MeasurementValue):
         # The condition is not a mid-circuit measurement - we can simplify immediately
         return CondCallable(condition, true_fn, false_fn)
 
-    if callable(true_fn):
+    if callable(true_fn) and callable(false_fn):
 
         # We assume this callable is a measurement function that returns a MeasurementValue
         # containing a single mid-circuit measurement. If this isn't the case, getting the
@@ -146,8 +141,7 @@ def _validate_measurements(true_meas, false_meas):
 
     if not (isinstance(true_meas, MidMeasureMP) and isinstance(false_meas, MidMeasureMP)):
         raise ValueError(
-            "Only measurement functions that create a mid-circuit measurement"
-            " and return a measurement value can be used in `cond_meas`"
+            "Only measurement functions that return a measurement value can be used in `cond_meas`"
         )
 
     if not (
