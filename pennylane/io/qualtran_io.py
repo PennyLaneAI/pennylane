@@ -53,7 +53,7 @@ def get_bloq_registers_info(bloq):
 
     Given a qualtran bloq:
 
-    from qualtran.bloqs.basic_gates import Swap
+    >>> from qualtran.bloqs.basic_gates import Swap
 
     >>> qml.get_bloq_registers_info(Swap(3))
     {'x': Wires([0, 1, 2]), 'y': Wires([3, 4, 5])}
@@ -77,7 +77,8 @@ def _get_named_registers(registers):
 
 class FromBloq(Operation):
     r"""
-    An adapter for using [qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library) as a PennyLane :class:`~.Operation`.
+    An adapter for using `Qualtran bloqs <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    as a PennyLane :class:`~.Operation`.
 
     Args:
         bloq (qualtran.Bloq): the bloq to wrap
@@ -90,7 +91,7 @@ class FromBloq(Operation):
 
     Given a qualtran bloq:
 
-    from qualtran.bloqs.basic_gates import CNOT
+    >>> from qualtran.bloqs.basic_gates import CNOT
 
     >>> qualtran_cnot = qml.FromBloq(CNOT(), [0, 1])
     >>> qualtran_cnot.matrix()
@@ -221,7 +222,7 @@ class FromBloq(Operation):
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    def compute_matrix(*params, **hyperparams): # pylint: disable=no-method-argument
+    def compute_matrix(*params, **hyperparams):  # pylint: disable=no-method-argument
         bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
         return matrix
