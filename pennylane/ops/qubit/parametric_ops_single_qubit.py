@@ -152,6 +152,18 @@ class RX(Operation):
         return [pi_half, self.data[0], -pi_half]
 
 
+def _rx_to_rot_resources():
+    return {qml.Rot: 1}
+
+
+@register_resources(_rx_to_rot_resources)
+def _rx_to_rot(phi, wires: WiresLike, **__):
+    qml.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
+
+
+add_decomposition(RX, _rx_to_rot)
+
+
 class RY(Operation):
     r"""
     The single qubit Y rotation
@@ -259,6 +271,18 @@ class RY(Operation):
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # RY(\theta) = RZ(0) RY(\theta) RZ(0)
         return [0.0, self.data[0], 0.0]
+
+
+def _ry_to_rot_resources():
+    return {qml.Rot: 1}
+
+
+@register_resources(_ry_to_rot_resources)
+def _ry_to_rot(phi, wires: WiresLike, **__):
+    qml.Rot(0, phi, 0, wires=wires)
+
+
+add_decomposition(RY, _ry_to_rot)
 
 
 class RZ(Operation):
@@ -405,6 +429,18 @@ class RZ(Operation):
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
         return [self.data[0], 0.0, 0.0]
+
+
+def _rz_to_rot_resources():
+    return {qml.Rot: 1}
+
+
+@register_resources(_rz_to_rot_resources)
+def _rz_to_rot(phi, wires: WiresLike, **__):
+    qml.Rot(0, 0, phi, wires=wires)
+
+
+add_decomposition(RZ, _rz_to_rot)
 
 
 class PhaseShift(Operation):
@@ -639,6 +675,8 @@ class Rot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
+    resource_param_keys = ()
+
     # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
@@ -649,6 +687,10 @@ class Rot(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(
@@ -777,6 +819,20 @@ class Rot(Operation):
             return Hadamard(wires=self.wires)
 
         return Rot(p0, p1, p2, wires=self.wires)
+
+
+def _rot_to_rz_ry_rz_resources():
+    return {qml.RZ: 2, qml.RY: 1}
+
+
+@register_resources(_rot_to_rz_ry_rz_resources)
+def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike, **__):
+    RZ(phi, wires=wires)
+    RY(theta, wires=wires)
+    RZ(omega, wires=wires)
+
+
+add_decomposition(Rot, _rot_to_rz_ry_rz)
 
 
 class U1(Operation):
