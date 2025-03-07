@@ -23,6 +23,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -322,6 +323,12 @@ class SingleExcitationMinus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
         return qml.Hamiltonian(
@@ -414,6 +421,26 @@ class SingleExcitationMinus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G₋", cache=cache)
 
 
+def _single_excitation_minus_decomp_resources():
+    return {qml.X: 4, qml.ControlledPhaseShift: 2, qml.CNOT: 2, qml.CRY: 1}
+
+
+@register_resources(_single_excitation_minus_decomp_resources)
+def _single_excitation_minus_decomp(phi, wires: WiresLike, **__):
+    qml.X(wires[0])
+    qml.X(wires[1])
+    qml.ControlledPhaseShift(-phi / 2, wires=[wires[1], wires[0]])
+    qml.X(wires[0])
+    qml.X(wires[1])
+    qml.ControlledPhaseShift(-phi / 2, wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CRY(phi, wires=[wires[1], wires[0]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+
+
+add_decomps(SingleExcitationMinus, _single_excitation_minus_decomp)
+
+
 class SingleExcitationPlus(Operation):
     r"""
     Single excitation rotation with positive phase-shift outside the rotation subspace.
@@ -454,6 +481,12 @@ class SingleExcitationPlus(Operation):
 
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
+
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
@@ -545,6 +578,26 @@ class SingleExcitationPlus(Operation):
         cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G₊", cache=cache)
+
+
+def _single_excitation_plus_decomp_resources():
+    return {qml.X: 4, qml.ControlledPhaseShift: 2, qml.CNOT: 2, qml.CRY: 1}
+
+
+@register_resources(_single_excitation_plus_decomp_resources)
+def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
+    qml.X(wires[0])
+    qml.X(wires[1])
+    qml.ControlledPhaseShift(phi / 2, wires=[wires[1], wires[0]])
+    qml.X(wires[0])
+    qml.X(wires[1])
+    qml.ControlledPhaseShift(phi / 2, wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CRY(phi, wires=[wires[1], wires[0]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+
+
+add_decomps(SingleExcitationMinus, _single_excitation_plus_decomp)
 
 
 class DoubleExcitation(Operation):
