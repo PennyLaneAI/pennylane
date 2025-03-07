@@ -90,8 +90,8 @@ def determine_abstracted_axes(args, only_new_dynamic_shapes: bool = True):
 
     Args:
         args (tuple): the arguments for a higher order primitive
-        only_new_dynamic_shapes=True (bool): Whether or not to include add dynamic axes if they
-            match an argument already encountered.
+        only_new_dynamic_shapes=True (bool): Whether or not to include the axis in ``abstract_shapes`` if it
+            matches an argument already encountered.
 
     Returns:
         tuple, tuple: the corresponding abstracted axes and dynamic shapes
