@@ -466,7 +466,7 @@ def _paulix_to_ps_rx_ps(wires: WiresLike, **__):
     qml.PhaseShift(np.pi / 2, wires=wires)
 
 
-add_decomposition(X, _paulix_to_ps_rx_ps)
+add_decomposition(PauliX, _paulix_to_ps_rx_ps)
 
 
 class PauliY(Observable, Operation):
@@ -684,7 +684,7 @@ def _pauliy_to_ps_ry_ps(wires: WiresLike, **__):
     qml.PhaseShift(np.pi / 2, wires=wires)
 
 
-add_decomposition(Y, _pauliy_to_ps_ry_ps)
+add_decomposition(PauliY, _pauliy_to_ps_ry_ps)
 
 
 class PauliZ(Observable, Operation):
@@ -902,7 +902,7 @@ def _pauliz_to_ps_rz_ps(wires: WiresLike, **__):
     qml.PhaseShift(np.pi, wires=wires)
 
 
-add_decomposition(Z, _pauliz_to_ps_rz_ps)
+add_decomposition(PauliZ, _pauliz_to_ps_rz_ps)
 
 
 class S(Operation):
