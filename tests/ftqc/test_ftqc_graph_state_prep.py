@@ -21,11 +21,6 @@ import pytest
 import pennylane as qml
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 
-pytestmark = pytest.mark.jax
-
-jax = pytest.importorskip("jax")
-jax.config.update("jax_enable_x64", True)
-
 
 class TestGraphStatePrep:
     """Test for graph state prep"""
