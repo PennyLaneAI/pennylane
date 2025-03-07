@@ -26,6 +26,7 @@ from pennylane.operation import Channel, Observable, Operation, Operator
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
+import networkx as nx
 
 
 def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
@@ -122,6 +123,10 @@ _INSTANCES_TO_FAIL = [
     (
         qml.resource.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
         TypeError,  # op.eigvals is a list (overwritten in the init)
+    ),
+    (
+        qml.ftqc.GraphStatePrep(qml.ftqc.QubitGraph(graph=nx.grid_graph([2])), wires=[0, 1]),
+        TypeError,
     ),
 ]
 """
