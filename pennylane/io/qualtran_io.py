@@ -112,15 +112,15 @@ class FromBloq(Operation):
         gamma_x = 0.1
         dt = 0.01
         indices = (0, 1, 0)
-        coeffs = (0.5 * gamma_x, j_zz, 0.5 * gamma_x)  
+        coeffs = (0.5 * gamma_x, j_zz, 0.5 * gamma_x)
         zz_bloq = IsingZZUnitary(nsites=nsites, angle=2 * dt * j_zz)
         x_bloq = IsingXUnitary(nsites=nsites, angle=0.5 * 2 * dt * gamma_x)
         trott_unitary = TrotterizedUnitary(
             bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
-        )  
+        )
         textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
 
-        dev = qml.device("default.qubit")  
+        dev = qml.device("default.qubit")
         @qml.qnode(dev)
         def circuit():
             qml.FromBloq(textbook_qpe, wires=list(range(8)))
@@ -183,7 +183,7 @@ class FromBloq(Operation):
                     if isinstance(soq_to_wires[soq], list) and len(soq_to_wires[soq]) == 1:
                         soq_to_wires[soq] = soq_to_wires[soq][0]
                     in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
-                    
+
                 for succ in succ_cxns:
                     soq = succ.left
                     if soq.reg.side == Side.RIGHT:

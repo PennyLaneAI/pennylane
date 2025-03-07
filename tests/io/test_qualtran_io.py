@@ -151,6 +151,42 @@ class TestFromBloq:
             qml.SWAP(wires=[2, 5]),
         ]
 
+        from qualtran.bloqs.basic_gates import ZPowGate
+        from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+
+        textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.FromBloq(textbook_qpe_small, wires=list(range(4)))
+            return qml.state()
+
+        assert np.allclose(
+            circuit(),
+            np.array(
+                [
+                    1.00000000e00 + 0.00000000e00j,
+                    1.62588398e-17 + 2.20072077e-17j,
+                    5.90395006e-18 - 5.90395006e-18j,
+                    1.96261557e-17 - 1.14967359e-17j,
+                    5.90395006e-18 + 0.00000000e00j,
+                    1.14967359e-17 + 5.74836793e-18j,
+                    5.90395006e-18 + 5.90395006e-18j,
+                    -5.74836793e-18 + 2.53745237e-17j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                ]
+            ),
+        )
+
     def test_get_bloq_registers_info(self):
         """Tests that get_bloq_registers_info returns the expected dictionary with the correct
         registers and wires."""
