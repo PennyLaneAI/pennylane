@@ -295,7 +295,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
 
     **Example**
 
-    >>> from pennylane.labs.dla import adjvec_to_op
+    >>> from pennylane.liealg import adjvec_to_op
     >>> c = np.array([[0.5, 0.3, 0.7]])
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> adjvec_to_op(c, basis)
@@ -405,7 +405,7 @@ def op_to_adjvec(
 
     The basis can be numerical or operators.
 
-    >>> from pennylane.labs.dla import op_to_adjvec
+    >>> from pennylane.liealg import op_to_adjvec
     >>> op = qml.X(0) + 0.5 * qml.Y(0)
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> op_to_adjvec([op], basis)
@@ -474,7 +474,7 @@ def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
 
     We choose a basis of a Lie algebra, compute its adjoint representation.
 
-    >>> from pennylane.labs.dla import change_basis_ad_rep
+    >>> from pennylane.liealg import change_basis_ad_rep
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> adj = qml.structure_constants(basis)
 
@@ -509,7 +509,7 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
     **Example**
 
-    >>> from pennylane.labs.dla import check_all_commuting
+    >>> from pennylane.liealg import check_all_commuting
     >>> from pennylane import X
     >>> ops = [X(i) for i in range(10)]
     >>> check_all_commuting(ops)
