@@ -480,6 +480,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Replace `matrix_power` dispatch for `scipy` interface with a inplace implementation.
+
 * Add support to `CollectOpsandMeas` for handling `qnode` primitives.
   [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
 
