@@ -47,7 +47,7 @@ def test_Ising(n, len_g, len_h, len_mtilde):
 
     adj = qml.structure_constants(g)
 
-    newg, k, mtilde, h, new_adj = cartan_subalgebra(g, k, m, adj, start_idx=0)
+    newg, k, mtilde, h, new_adj = cartan_subalgebra(k, m, adj, start_idx=0)
     assert len(h) == len_h
     assert len(mtilde) == len_mtilde
     assert len(h) + len(mtilde) == len(m)

@@ -71,7 +71,7 @@ def _orthogonal_complement_basis(a, m, tol):
 
 
 def cartan_subalgebra(
-    k, m, ad=None, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
+    k, m, adj=None, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
 ):
     r"""
     Compute a Cartan subalgebra (CSA) :math:`\mathfrak{a} \subseteq \mathfrak{m}`.
@@ -84,7 +84,7 @@ def cartan_subalgebra(
     Args:
         k (List[Union[PauliSentence, np.ndarray]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         m (List[Union[PauliSentence, np.ndarray]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
-        ad (Array): The :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`.
+        adj (Array): The :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`.
             When ``None`` is provided, it internally uses :func:`~structure_constants` to compute the adjoint representation (default).
         start_idx (bool): Indicates from which element in ``m`` the CSA computation starts.
         tol (float): Numerical tolerance for linear independence check
@@ -221,6 +221,9 @@ def cartan_subalgebra(
     else:
         g = qml.math.vstack([k, m])
 
+    if adj is None:
+        adj = qml.structure_constants(g)
+
     g_copy = copy.deepcopy(g)
     np_m = op_to_adjvec(m, g, is_orthogonal=is_orthogonal)
     np_a = op_to_adjvec([m[start_idx]], g, is_orthogonal=is_orthogonal)
@@ -233,7 +236,7 @@ def cartan_subalgebra(
         for h_i in np_a:
 
             # obtain adjoint rep of candidate h_i
-            adjoint_of_h_i = np.tensordot(ad, h_i, axes=[[1], [0]])
+            adjoint_of_h_i = np.tensordot(adj, h_i, axes=[[1], [0]])
             # compute kernel of adjoint
             new_kernel = null_space(adjoint_of_h_i, rcond=tol)
 
@@ -264,7 +267,7 @@ def cartan_subalgebra(
     # Instead of recomputing the adjoint representation, take the basis transformation
     # oldg -> newg and transform the adjoint representation accordingly
     basis_change = np.tensordot(np_newg, np.linalg.pinv(np_oldg), axes=[[1], [0]])
-    new_adj = change_basis_ad_rep(ad, basis_change)
+    new_adj = change_basis_ad_rep(adj, basis_change)
 
     if return_adjvec:
         return np_newg, np_k, np_mtilde, np_a, new_adj
