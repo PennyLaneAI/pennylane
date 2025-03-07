@@ -37,17 +37,23 @@ class QubitGraph:
 
     Args:
         graph (graph-like, optional): The graph structure to use for the QubitGraph's underlying
-            qubits. Inputting None (the default), leaves the underlying qubit graph in an
-            uninitialized state, in which case one of the graph-initialization methods may be used
-            to define the structure of the underlying qubit graph. QubitGraph expects an undirected
-            graph as input, specifically an instance of the ``networkx.Graph`` class, although other
-            networkx graphs and graph-like types are also permitted. An object is considered
-            "graph-like" if it has both a 'nodes' and an 'edges' attribute. Furthermore, QubitGraph
-            expects a "flat" (unnested) graph, and any graph-like objects nested within the graph
-            structure used as input are ignored.
+            qubits. The graph must be "flat" (unnested). An object is considered "graph-like" if it
+            has both a 'nodes' and an 'edges' attribute. Defaults to None, which leaves the
+            QubitGraph in an uninitialized state.
         id (Any, optional): An identifier for this QubitGraph object. The identifier is generally an
             integer, string, or a tuple of integers and strings, but it may be any object. Inputting
             None (the default), assigns a random universally unique identifier (uuid) to ``id``.
+
+    .. note::
+        The input graph defines the structure of the underlying qubit graph only; only the set of
+        nodes and the set of edges defining the connectivity between nodes are used to construct the
+        underlying qubit graph. Any data contained within the input graph's nodes, including nested
+        graphs, are ignored.
+
+    .. note::
+        QubitGraph expects an undirected graph as input, specifically an instance of the
+        ``networkx.Graph`` class, although other networkx graphs and graph-like types are also
+        permitted.
 
     **Examples**
 
@@ -142,6 +148,11 @@ class QubitGraph:
         >>> q.init_graph(graph)
         >>> q.is_initialized
         True
+
+        The :meth:`~QubitGraph.init_graph` method behaves in the same way as passing the graph input
+        directly to the QubitGraph constructor, and the same requirements and caveats listed above
+        apply here as well (the input must be graph-like and any data annotated on the nodes are
+        ignored).
 
         Other graph-initialization methods that automatically construct common graph structures are
         also available. For example, :meth:`~QubitGraph.init_graph_nd_grid` initializes a
