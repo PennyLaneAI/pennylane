@@ -1289,12 +1289,13 @@ class TestBlockEncode:
         indices = [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3]
         indptr = [0, 3, 6, 9, 12]
 
+        num_wires = 5
         sparse_matrix = csr_matrix((data, indices, indptr), shape=(4, 8))
-        op = qml.BlockEncode(sparse_matrix, wires=range(12))
+        op = qml.BlockEncode(sparse_matrix, wires=range(num_wires))
 
         # Test the operator is unitary
         mat = qml.matrix(op)
-        mat_dense = qml.matrix(qml.BlockEncode(sparse_matrix.toarray(), wires=range(12)))
+        mat_dense = qml.matrix(qml.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
         assert qml.math.allclose(mat, mat_dense)
 
 
