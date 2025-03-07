@@ -24,88 +24,24 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
-def _sum_by_prefix(vector, prefix):
-    r"""Calculates the sum of elements in a vector whose index, when represented in binary, starts with a given prefix.
-
-    Args:
-        vector (TensorLike): A 1D vector of numerical values.
-        prefix (str): A string representing the binary prefix to match.
-
-    Returns:
-        (float) The sum of the elements in the vector whose index binary representation starts with the given prefix.
-
-
-    Example:
-        >>> vector = [1, 3, 5, 2, 1, 3, 2, 2]
-        >>> prefix = "10"
-        >>> _sum_by_prefix(vector, prefix)
-        1 + 3 = 4  # Elements at indices 4 and 5 (binary 100 and 101) are summed.
-
-        >>> prefix = "01"
-        >>> _sum_by_prefix(vector, prefix)
-        5 + 2 = 7 # Elements at indices 2 and 3 (binary 010 and 011) are summed.
-
-        >>> prefix = "1"
-        >>> _sum_by_prefix(vector, prefix)
-        1 + 3 + 2 + 2 = 8 # Elements at indices 4, 5, 6, and 7 (binary 100, 101, 110 and 111) are summed.
-    """
-
-    n = len(vector).bit_length() - 1
-    sum_result = 0
-    for i, value in enumerate(vector):
-        bitstring = qml.math.binary_repr(i, n)
-        if bitstring.startswith(prefix):
-            sum_result += value
-    return sum_result
-
-
-def _get_basis_state_list(n_wires, add_zero=False):
-    r"""Generates a list of binary strings representing basis states.
-
-    Args:
-        n_wires (int): The number of wires in the system.
-        add_zero (bool, optional): Whether to append a '0' to each binary string. Defaults to False.
-
-    Returns:
-        list[str]: A list of binary strings representing the basis states.
-        Each string has length `n_wires` (or `n_wires + 1` if `add_zero` is True).
-
-    Example:
-        >>> _get_basis_state_list(2)
-        ['00', '01', '10', '11']
-
-        >>> _get_basis_state_list(3, add_zero=True)
-        ['0000', '0010', '0100', '0110', '1000', '1010', '1100', '1110']
-    """
-
-    if add_zero:
-        return ["".join(map(str, bits)) + "0" for bits in itertools.product([0, 1], repeat=n_wires)]
-    return ["".join(map(str, bits)) for bits in itertools.product([0, 1], repeat=n_wires)]
-
-
-def _func_to_binary(n_precision, x, func):
+def _x_to_binary(n_precision, x):
     r"""Converts a value within the range [0, 1) to its binary representation with a specified precision.
-
-    This function applies a given transformation function (`func`) to the input value `x` and then converts
-    the result to a binary string. The transformation function should map values from the interval [0, 1) to
-    the interval [0, 1).
 
     Args:
         n_precision (int): The number of bits to use for the binary representation.
         x (float): The value to convert to binary. Must be in the range [0, 1).
-        func (callable): A function that transforms the input value.
 
     Returns:
-        str: The binary representation of the transformed value, with the specified precision.
+        str: The binary representation of the value, with the specified precision.
 
     Example:
-        >>> _func_to_binary(3, 0.25, lambda x: np.sqrt(x))
+        >>> _x_to_binary(3, 0.5)
         '100'
 
-        Expected value as `\sqrt{0.25} = 0.5`, and it's binary representation is `0.100`.
+        Expected value as the binary representation of `0.5` is `0.100`.
     """
 
-    binary_rep = bin(int(2 ** (n_precision + 1) + 2 ** (n_precision) * func(x)))
+    binary_rep = bin(int(2 ** (n_precision + 1) + 2 ** (n_precision) * x))
     if binary_rep[-n_precision - 1] == "1":
         return "1" * n_precision
 
@@ -259,22 +195,24 @@ class QROMStatePreparation(Operation):
 
         decomp_ops = []
         num_iterations = int(qml.math.log2(len(probs)))
+
         for i in range(num_iterations):
 
-            # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
-            prefixes = _get_basis_state_list(n_wires=i)
-            probs_denominator = [_sum_by_prefix(probs, prefix=p) for p in prefixes]
+            probs_aux = probs.reshape(1, -1)
 
-            prefixes_with_zero = _get_basis_state_list(n_wires=i, add_zero=True)
-            probs_numerator = [_sum_by_prefix(probs, prefix=p) for p in prefixes_with_zero]
+            # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
+            for itx in range(i + 1):
+                probs_denominator = probs_aux.sum(axis=1)
+                probs_aux = probs_aux.reshape(int(2 ** (itx + 1)), -1)
+                probs_numerator = probs_aux.sum(axis=1)[::2]
 
             eps = 1e-8  # Small constant to avoid division by zero
 
             # Compute the binary representations of the angles θi
             func = lambda x: 2 * qml.math.arccos(qml.math.sqrt(x)) / np.pi
             thetas_binary = [
-                _func_to_binary(
-                    len(precision_wires), probs_numerator[j] / (probs_denominator[j] + eps), func
+                _x_to_binary(
+                    len(precision_wires), func(probs_numerator[j] / (probs_denominator[j] + eps))
                 )
                 for j in range(len(probs_numerator))
             ]
@@ -308,7 +246,7 @@ class QROMStatePreparation(Operation):
         if not qml.math.allclose(phases, 0.0):
             # Compute the binary representations of the phases
             func = lambda x: (x) / (2 * np.pi)
-            thetas_binary = [_func_to_binary(len(precision_wires), phase, func) for phase in phases]
+            thetas_binary = [_x_to_binary(len(precision_wires), func(phase)) for phase in phases]
 
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(

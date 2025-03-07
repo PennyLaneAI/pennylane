@@ -21,36 +21,14 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.state_preparations.qrom_state_prep import (
-    _func_to_binary,
-    _get_basis_state_list,
-    _sum_by_prefix,
-)
-
-
-def test_sum_by_prefix():
-    """Test _sum_by_prefix private function"""
-
-    vector = [1, 3, 5, 2, 1, 3, 2, 2]
-    prefix = "10"
-    assert np.isclose(_sum_by_prefix(vector, prefix), 4)
+from pennylane.templates.state_preparations.qrom_state_prep import _x_to_binary
 
 
 def test__func_to_binary():
     """Test _func_to_binary private function"""
 
-    output = _func_to_binary(3, 0.25, np.sqrt)
+    output = _x_to_binary(3, 0.5)
     assert output == "100"
-
-
-def test_get_basis_state_list():
-    """Test _get_basis_state_list private function"""
-
-    output = _get_basis_state_list(3, add_zero=True)
-    expected = ["0000", "0010", "0100", "0110", "1000", "1010", "1100", "1110"]
-
-    for basis1, basis2 in zip(output, expected):
-        assert basis1 == basis2
 
 
 class TestQROMStatePreparation:
