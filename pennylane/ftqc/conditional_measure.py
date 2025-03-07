@@ -28,7 +28,7 @@ def cond_meas(
     true_fn: Callable,
     false_fn: Callable,
 ):
-    """Conditions mid-circuit qubit measurements on parameters such as the results of
+    """Conditions the basis of mid-circuit qubit measurements on parameters such as the results of
     other mid-circuit qubit measurements.
 
     .. note::
@@ -40,9 +40,15 @@ def cond_meas(
         condition (Union[.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
            measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
-            apply if ``condition`` is ``True``
+            apply if ``condition`` is ``True``. The callable must create a single mid-circuit measurement.
         false_fn (callable): The quantum function or PennyLane operation to
-            apply if ``condition`` is ``False``
+            apply if ``condition`` is ``False``. The callable must create a single mid-circuit measurement.
+
+    .. note::
+        The mid-circuit measurements applied the two branches must both be applied to the same
+        wire, and they must have the same settings for `reset` and `postselection`. The two
+        branches can differ only in regard to the measurement basis of the applied measurement.
+
 
     Returns:
         function: A new function that applies the conditional measurements. The returned
