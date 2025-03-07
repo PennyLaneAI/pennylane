@@ -256,7 +256,7 @@ class Pow(ScalarSymbolicOp):
     def compute_sparse_matrix(*params, base=None, z=0, format="csr"):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-            return base_matrix**z
+            return (base_matrix**z).asformat(format)
         raise SparseMatrixUndefinedError
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
