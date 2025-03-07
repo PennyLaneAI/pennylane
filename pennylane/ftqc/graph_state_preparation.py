@@ -28,20 +28,20 @@ from .qubit_graph import QubitGraph
 class GraphStatePrep(Operation):
     r"""
     Encode a graph state with the specified lattice structure, operations on each qubit, entanglement operations for nearest qubits and qubit graph.
-    The initial graph is :math:`|0\rangle^{\otimes V}`, given each qubit in the graph is in the :math:`|0\rangle` state and is not entangled with each other.
-    The target graph state is:
+    The initial graph is :math:`|0\rangle^{\otimes V}`, given each qubit ($V$) in the graph is in the :math:`|0\rangle` state and is not entangled with any other qubit.
+    The target graph state :math:`| \psi \rangle` is:
     :math:`| \psi \rangle = \prod\limits_{\{a, b\} \in E} U_{ab}|+\rangle^{\otimes V}`
+    where :math: `U_{ab}` is a phase gate applied to all vertices $a$, $b$ that are adjacent in the graph state and $E$ are edges in the graph as illustrated in eq. (24)
+    in `arxiv:quant-ph/0602096 <https://arxiv.org/pdf/quant-ph/0602096>_`.
 
     The target graph state can be prepared as below:
-
-    1. Each qubit is prepared as :math:`|+\rangle^{\otimes V}` state by applying the ``qubit_ops`` (``Hadamard`` gate) operation.
-
-    2. Entangle every nearest qubit pair in the graph with ``entanglement_ops`` (``CZ`` gate) operation.
+        1. Each qubit is prepared as :math:`|+\rangle^{\otimes V}` state by applying the ``qubit_ops`` (``Hadamard`` gate) operation.
+        2. Entangle every nearest qubit pair in the graph with ``entanglement_ops`` (``CZ`` gate) operation.
 
     Args:
         graph (Union[QubitGraph, nx.Graph]): QubitGraph or nx.Graph object mapping qubit to wires.
-        qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :func:`~.pennylane.H`.
-        entanglement_ops (Operation): Operator to entangle nearest qubits. Default to :func:`~.pennylane.CZ`.
+        qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
+        entanglement_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
         wires: Wires the graph state preparation to apply on. Default as None.
 
     **Example:**
@@ -145,8 +145,8 @@ class GraphStatePrep(Operation):
         Args:
             wires : Wires the decomposition applies on.
             graph (Union[nx.Graph, QubitGraph]): QubitGraph object mapping qubit to wires.
-            qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :func:`~.pennylane.H`.
-            entanglement_ops (Operation): Operator to entangle nearest qubits. Default to :func:`~.pennylane.CZ`.
+            qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
+            entanglement_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
 
         Returns:
             list[Operator]: decomposition of the operator
