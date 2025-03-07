@@ -254,7 +254,7 @@ def test_allclose(t1, t2):
     assert res == expected
 
 
-class TestAllcloseSparse:
+class TestAllCloseSparse:
     """Test that the sparse-matrix specialized allclose functions works well"""
 
     def test_dense_sparse_small_matrix(self):
@@ -262,7 +262,6 @@ class TestAllcloseSparse:
         dense = np.array([[1, 0, 2], [0, 3, 0]])
         sparse = sp.sparse.csr_matrix(dense)
 
-        # assert _allclose_dense_sparse(dense, sparse)
         assert fn.allclose(dense, sparse)
         assert fn.allclose(sparse, dense)
 
@@ -271,7 +270,6 @@ class TestAllcloseSparse:
         dense = np.zeros((2, 3))
         sparse = sp.sparse.csr_matrix(dense)
 
-        # assert _allclose_dense_sparse(dense, sparse)
         assert fn.allclose(dense, sparse)
         assert fn.allclose(sparse, dense)
 
