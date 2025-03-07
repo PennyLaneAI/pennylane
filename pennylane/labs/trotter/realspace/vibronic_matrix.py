@@ -10,7 +10,7 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter import Fragment
-from pennylane.labs.trotter.realspace import RealspaceSum
+from pennylane.labs.trotter.realspace import HOState, RealspaceSum, VibronicHO
 from pennylane.labs.trotter.realspace.matrix import _kron, _zeros
 
 
@@ -236,8 +236,32 @@ class VibronicMatrix(Fragment):
 
         return top_left, top_right, bottom_left, bottom_right
 
-    def apply():
-        raise NotImplementedError
+    def apply(self, state: VibronicHO) -> VibronicHO:
+
+        if self.states != len(state.ho_states):
+            raise ValueError(
+                f"Cannot apply VibronicMatrix on {self.states} states to VibronicHO on {len(state.ho_states)} states."
+            )
+
+        if self.modes != state.modes:
+            raise ValueError(
+                f"Cannot apply VibronicMatrix on {self.modes} modes to VibronicHO on {state.modes} modes."
+            )
+
+        ho_states = []
+        for i in range(self.states):
+            ho = sum(
+                (self.block(i, j).apply(ho_state) for j, ho_state in enumerate(state.ho_states)),
+                HOState.zero_state(state.modes, state.gridpoints),
+            )
+            ho_states.append(ho)
+
+        return VibronicHO(
+            states=state.states,
+            modes=state.modes,
+            gridpoints=state.gridpoints,
+            ho_states=ho_states,
+        )
 
 
 def _is_pow_2(k: int) -> bool:
