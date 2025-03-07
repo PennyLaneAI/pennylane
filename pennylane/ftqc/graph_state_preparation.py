@@ -83,15 +83,13 @@ class GraphStatePrep(Operation):
         if isinstance(graph, QubitGraph):
             if wires is not None and set(wires) != set(graph.graph):
                 raise ValueError("Please ensure wires objects match labels in QubitGraph")
-            self.hyperparameters["wires"] = wires if wires is not None else set(graph.graph)
             super().__init__(wires=wires if wires is not None else set(graph.graph))
         else:
             if wires is None:
                 raise ValueError("Please ensure wires is specified.")
             if wires is not None and set(wires) != set(graph):
                 raise ValueError("Please ensure wires objects match labels in graph")
-            self.hyperparameters["wires"] = wires
-        super().__init__(wires=self.hyperparameters["wires"])
+            super().__init__(wires=wires)
 
     def label(
         self, decimals: int = None, base_label: str = None, cache: dict = None
@@ -121,7 +119,7 @@ class GraphStatePrep(Operation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(**self.hyperparameters)
+        return self.compute_decomposition(wires=self.wires, **self.hyperparameters)
 
     @staticmethod
     def compute_decomposition(
