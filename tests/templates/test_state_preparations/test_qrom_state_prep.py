@@ -39,7 +39,6 @@ class TestQROMStatePreparation:
         state = np.random.rand(2**4)
         state /= np.linalg.norm(state)
 
-        state = state / np.linalg.norm(state)
         wires = qml.registers({"work_wires": 3, "precision_wires": 3, "embedding_wires": 4})
 
         op = qml.QROMStatePreparation(

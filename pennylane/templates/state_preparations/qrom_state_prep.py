@@ -15,8 +15,6 @@ r"""
 Contains the QROMStatePreparation template.
 """
 
-import itertools
-
 import numpy as np
 
 import pennylane as qml
@@ -28,13 +26,14 @@ def _x_to_binary(n_precision, x):
     r"""Converts a value within the range [0, 1) to its binary representation with a specified precision.
 
     Args:
-        n_precision (int): The number of bits to use for the binary representation.
+        n_precision (int): the number of bits to use for the binary representation
         x (float): The value to convert to binary. Must be in the range [0, 1).
 
     Returns:
         str: The binary representation of the value, with the specified precision.
 
-    Example:
+    **Example**
+   
         >>> _x_to_binary(3, 0.5)
         '100'
 
@@ -54,8 +53,8 @@ class QROMStatePreparation(Operation):
     This operation decomposes the state preparation into a sequence of QROM operations and controlled rotations.
 
     Args:
-        state_vector (TensorLike): The state vector to prepare.
-        wires (Sequence[int]): The wires on which to prepare the state.
+        state_vector (TensorLike): the state vector to prepare
+        wires (Sequence[int]): the wires on which to prepare the state
         precision_wires (Sequence[int]): The wires used for storing the binary representations of the
             amplitudes and phases.
         work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
@@ -209,7 +208,7 @@ class QROMStatePreparation(Operation):
             eps = 1e-8  # Small constant to avoid division by zero
 
             # Compute the binary representations of the angles θi
-            func = lambda x: 2 * qml.math.arccos(qml.math.sqrt(x)) / np.pi
+            def func(x): return 2 * qml.math.arccos(qml.math.sqrt(x)) / np.pi
             thetas_binary = [
                 _x_to_binary(
                     len(precision_wires), func(probs_numerator[j] / (probs_denominator[j] + eps))
@@ -245,7 +244,7 @@ class QROMStatePreparation(Operation):
 
         if not qml.math.allclose(phases, 0.0):
             # Compute the binary representations of the phases
-            func = lambda x: (x) / (2 * np.pi)
+            def func(x): return x / (2 * np.pi)
             thetas_binary = [_x_to_binary(len(precision_wires), func(phase)) for phase in phases]
 
             # Apply the QROM operation to encode the thetas binary representation
