@@ -71,7 +71,7 @@ def _orthogonal_complement_basis(a, m, tol):
 
 
 def cartan_subalgebra(
-    g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
+    k, m, ad=None, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
 ):
     r"""
     Compute a Cartan subalgebra (CSA) :math:`\mathfrak{a} \subseteq \mathfrak{m}`.
@@ -82,10 +82,10 @@ def cartan_subalgebra(
     .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
 
     Args:
-        g (List[Union[PauliSentence, np.ndarray]]): Lie algebra :math:`\mathfrak{g}`, which is assumed to be ordered as :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         k (List[Union[PauliSentence, np.ndarray]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         m (List[Union[PauliSentence, np.ndarray]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
-        ad (Array): The :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}` (see :func:`~structure_constants`)
+        ad (Array): The :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`.
+            When ``None`` is provided, it internally uses :func:`~structure_constants` to compute the adjoint representation (default).
         start_idx (bool): Indicates from which element in ``m`` the CSA computation starts.
         tol (float): Numerical tolerance for linear independence check
         verbose (bool): Whether or not to output progress during computation
@@ -216,6 +216,10 @@ def cartan_subalgebra(
 
         Last but not least, the adjoint representation ``new_adj`` is updated to represent the new basis and its ordering of ``g``.
     """
+    if isinstance(k, (list, tuple)) and isinstance(m, (list, tuple)):
+        g = k + m
+    else:
+        g = qml.math.vstack([k, m])
 
     g_copy = copy.deepcopy(g)
     np_m = op_to_adjvec(m, g, is_orthogonal=is_orthogonal)

@@ -46,7 +46,7 @@
 
 * Created a new `qml.liealg` module for Lie algebra functionality.
 
-  `qml.liealg.cartan_decomp` allows to perform Cartan decompositions using _involution_ functions that return a boolean value.
+  `qml.liealg.cartan_decomp` allows to perform Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
   A variety of typically encountered involution functions are included in the module, in particular the following:
 
   ```
@@ -64,13 +64,36 @@
   CII
   ```
 
+  ```pycon
+  >>> g = qml.lie_closure([X(0) @ X(1), Y(0), Y(1)])
+  >>> k, m = qml.liealg.cartan_decomp(g, qml.liealg.even_odd_involution)
+  >>> g, k, m
+  ([X(0) @ X(1), Y(0), Y(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)],
+   [Y(0), Y(1)],
+   [X(0) @ X(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)])
+  ```
+
+  The vertical subspace `k` and `m` fulfil the commutation relations `[k, m] \subset m`, `[k, k] \subset k` and `[m, m] \subset k` that make them a proper Cartan decomposition. These can be checked using the function `qml.liealg.check_cartan_decomp`.
+
+  ```pycon
+  >>> qml.liealg.check_cartan_decomp(k, m) # check Cartan commutation relations
+  True
+  ```
+
+  `qml.liealg.cartan_subalgebra` computes a horizontal Cartan subalgebra of `m`
+
   `qml.liealg.check_commutation(A, B, C)` checks if all commutators between `A` and `B`
   map to a subspace of `C`, i.e. `[A, B] \subset C`.
 
   `qml.liealg.check_cartan_decomp` checks the commutation relations that define a `cartan_decomp`, i.e. `[k, m] \subset m`, `[k, k] \subset k` and `[m, m] \subset k`.
 
+  `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allows transforming operators within a Lie algebra to their adjoint vector representations and back.
+
+  `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation of the underlyding Lie algebra's components, without re-comuting the structure constants.
+
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
@@ -427,7 +450,12 @@
   `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation`.
   `pennylane.labs.check_cartan_decomp` is moved to `qml.liealg.check_cartan_decomp`.
   All involution functions are moved to `qml.liealg`.
+  `pennylane.labs.adjvec_to_op` is moved to `qml.liealg.adjvec_to_op`.
+  `pennylane.labs.op_to_adjvec` is moved to `qml.liealg.op_to_adjvec`.
+  `pennylane.labs.change_basis_ad_rep` is moved to `qml.liealg.change_basis_ad_rep`.
+  `pennylane.labs.cartan_subalgebra` is moved to `qml.liealg.cartan_subalgebra`.
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
 <h3>Breaking changes 💔</h3>
 
