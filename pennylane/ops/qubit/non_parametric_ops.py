@@ -1478,6 +1478,12 @@ class ECR(Operation):
 
     batch_size = None
 
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -1591,6 +1597,23 @@ class ECR(Operation):
         return super().pow(z % 2)
 
 
+def _ecr_decomp_resources():
+    return {Z: 1, qml.CNOT: 1, SX: 1, qml.RX: 2, qml.RY: 1}
+
+
+@register_resources(_ecr_decomp_resources)
+def _ecr_decomp(wires, **__):
+    Z(wires=[wires[0]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    SX(wires=[wires[1]])
+    qml.RX(np.pi / 2, wires=[wires[0]])
+    qml.RY(np.pi / 2, wires=[wires[0]])
+    qml.RX(np.pi / 2, wires=[wires[0]])
+
+
+add_decomps(ECR, _ecr_decomp)
+
+
 class ISWAP(Operation):
     r"""ISWAP(wires)
     The i-swap operator
@@ -1616,6 +1639,11 @@ class ISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @property
     def pauli_rep(self):
@@ -1721,6 +1749,23 @@ class ISWAP(Operation):
         return super().pow(z_mod2)
 
 
+def _iswap_decomp_resources():
+    return {qml.S: 2, qml.Hadamard: 2, qml.CNOT: 2}
+
+
+@register_resources(_iswap_decomp_resources)
+def _iswap_decomp(wires, **__):
+    S(wires=wires[0])
+    S(wires=wires[1])
+    Hadamard(wires=wires[0])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[1], wires[0]])
+    Hadamard(wires=wires[1])
+
+
+add_decomps(ISWAP, _iswap_decomp)
+
+
 class SISWAP(Operation):
     r"""SISWAP(wires)
     The square root of i-swap operator. Can also be accessed as ``qml.SQISW``
@@ -1746,6 +1791,11 @@ class SISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @property
     def pauli_rep(self):
@@ -1870,5 +1920,27 @@ class SISWAP(Operation):
         z_mod4 = z % 4
         return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
 
+
+def _siswap_decomp_resources():
+    return {SX: 6, qml.RZ: 4, qml.CNOT: 2}
+
+
+@register_resources(_siswap_decomp_resources)
+def _siswap_decomp(wires, **__):
+    SX(wires=wires[0])
+    qml.RZ(np.pi / 2, wires=wires[0])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    SX(wires=wires[0])
+    qml.RZ(7 * np.pi / 4, wires=wires[0])
+    SX(wires=wires[0])
+    qml.RZ(np.pi / 2, wires=wires[0])
+    SX(wires=wires[1])
+    qml.RZ(7 * np.pi / 4, wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    SX(wires=wires[0])
+    SX(wires=wires[1])
+
+
+add_decomps(SISWAP, _siswap_decomp)
 
 SQISW = SISWAP
