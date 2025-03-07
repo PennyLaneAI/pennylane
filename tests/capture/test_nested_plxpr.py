@@ -25,6 +25,7 @@ jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 class TestAdjointQfunc:
@@ -197,6 +198,24 @@ class TestAdjointQfunc:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
         expected = qml.adjoint(qml.RX(jax.numpy.arange(2), 0))
         qml.assert_equal(tape[0], expected)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_execution_of_dynamic_array_creation(self):
+        """Test that the inner function can create a dynamic array."""
+
+        def f(i):
+            x = jax.numpy.arange(i)
+            qml.RX(x, i)
+
+        def w(i):
+            qml.adjoint(f)(i)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 3)
+
+        expected = qml.adjoint(qml.RX(jax.numpy.arange(3), 3))
+        qml.assert_equal(expected, collector.state["ops"][0])
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_complicated_dynamic_shape_input(self):
@@ -430,20 +449,22 @@ class TestCtrlQfunc:
         qml.assert_equal(tape[0], expected)
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
-    def test_dynamic_shape_matches_arg(self):
-        """Test that a dynamically shaped array can have a shape that matches another arg."""
+    def test_execution_of_dynamic_array_creation(self):
+        """Test that the inner function can create a dynamic array."""
 
-        def f(i, x):
-            return qml.RX(x, i)
+        def f(i):
+            x = jax.numpy.arange(i)
+            qml.RX(x, i)
 
-        def workflow(i):
-            return qml.ctrl(f, i + 1)(i, jax.numpy.arange(i))
+        def w(i):
+            qml.ctrl(f, 4)(i)
 
-        jaxpr = jax.make_jaxpr(workflow)(3)
-        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
-        op1 = qml.ctrl(qml.RX(jax.numpy.arange(4), wires=4), 5)
-        qml.assert_equal(op1, tape[0])
-        assert len(tape) == 1
+        jaxpr = jax.make_jaxpr(w)(2)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 3)
+
+        expected = qml.ctrl(qml.RX(jax.numpy.arange(3), 3), 4)
+        qml.assert_equal(expected, collector.state["ops"][0])
 
     def test_pytree_input(self):
         """Test that ctrl can accept pytree inputs."""

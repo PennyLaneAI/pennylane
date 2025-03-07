@@ -254,21 +254,19 @@ class TestCaptureForLoop:
         assert jax.numpy.allclose(output, expected)
 
     # pylint: disable=unused-argument
-    def test_dynamic_shape_input_match_arg(self, enable_disable_dynamic_shapes):
-        """Test that the while loop can be initialized a dynamic shape that matches a different arg."""
+    def test_dynamic_array_creation(self, enable_disable_dynamic_shapes):
+        """Test that for_loops can create dynamicly shaped arrays."""
 
-        @qml.for_loop(4)
-        def f(j, i, x):
-            return j, 2 * x
+        def f(i, x):
+            y = jax.numpy.arange(i)
+            return jax.numpy.sum(y)
 
-        def workflow(i):
-            return f(i, jax.numpy.arange(i))
+        def w():
+            return qml.for_loop(4)(f)(0)
 
-        jaxpr = jax.make_jaxpr(workflow)(3)
-
-        res1, res2 = qml.capture.eval(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(res1, 3)  # make j
-        assert qml.math.allclose(res2, jax.numpy.arange(2) * 2**4)
+        jaxpr = jax.make_jaxpr(w)()
+        [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert qml.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
 
 
 class TestCaptureCircuitsForLoop:
