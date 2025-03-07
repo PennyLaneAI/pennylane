@@ -85,11 +85,13 @@ def _get_shape_for_array(
     return abstract_axes
 
 
-def determine_abstracted_axes(args, only_new_dynamic_shapes=True):
+def determine_abstracted_axes(args, only_new_dynamic_shapes: bool = True):
     """Computed the abstracted axes and extracting the abstract shapes from the arguments.
 
     Args:
         args (tuple): the arguments for a higher order primitive
+        only_new_dynamic_shapes=True (bool): Whether or not to include add dynamic axes if they
+            match an argument already encountered.
 
     Returns:
         tuple, tuple: the corresponding abstracted axes and dynamic shapes
@@ -111,6 +113,52 @@ def determine_abstracted_axes(args, only_new_dynamic_shapes=True):
             abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes((x,))
             jaxpr = jax.make_jaxpr(jax.numpy.sum, abstracted_axes=abstracted_axes)(x)
             return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
+
+
+    For cases like:
+
+    >>> def f(i, x):
+    ...    return x
+    >>> def workflow(i):
+    ...     args = (i, jax.numpy.ones((i, )))
+    ...     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+    ...     print("abstracted_axes: ", abstracted_axes)
+    ...     print("abstract_shapes: ", abstract_shapes)
+    ...     print("jaxpr: ", jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args))
+    >>> _ = jax.make_jaxpr(workflow)(2)
+    abstracted_axes:  ({}, {0: 'a0'})
+    abstract_shapes:  []
+    jaxpr:  { lambda ; a:i32[] b:f32[a]. let  in (b,) }
+
+    We allow Jax to identify that the shape of ``b`` matches our first argument, ``a``. This is
+    demonstrated by the fact that we do not have any additional ``abstract_shapes``, as it is already
+    present in the call signature.  The abstracted axis is also `"a0"` instead of `"a"`.  The zero at the
+    end indicates that the corresponding abstract axis was already in the argument loop.
+
+    If we do not want to keep the dynamic shape index coupled to the separate argument, such as in ``for_loop``
+    and ``while_loop``, we can set ``only_new_dynamic_shapes=False``. Note that this is a bit complicated at the moment,
+    but we can hopefully improve the implementation in the future.
+
+    >>> def add_abstract_shapes_to_start(f, n_abstract_shapes: int):
+    ...     def new_f(*args, **kwargs):
+    ...         return f(*args[n_abstract_shapes:], **kwargs)
+    ...     return new_f
+    >>> def f(i, x):
+    ...    return x
+    >>> def workflow(i):
+    ...     args = (i, jax.numpy.ones((i, )))
+    ...     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args, only_new_dynamic_shapes=False)
+    ...     new_f = add_abstract_shapes_to_start(f, len(abstract_shapes))
+    ...     abstracted_axes = tuple({} for r in abstract_shapes) + abstracted_axes
+    ...     print("abstracted_axes: ", abstracted_axes)
+    ...     print("abstract_shapes: ", abstract_shapes)
+    ...     print("jaxpr: ", jax.make_jaxpr(new_f, abstracted_axes=abstracted_axes)(*abstract_shapes, *args))
+    >>> _ = jax.make_jaxpr(workflow)(2)
+    abstracted_axes:  ({}, {}, {0: 'a'})
+    abstract_shapes:  [Traced<ShapedArray(int32[], weak_type=True)>with<DynamicJaxprTrace(level=1/0)>]
+    jaxpr:  { lambda ; a:i32[] b:i32[] c:f32[a]. let  in (c,) }
+
+    Here, we
 
     """
     if not has_jax:  # pragma: no cover

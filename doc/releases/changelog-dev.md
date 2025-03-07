@@ -375,6 +375,7 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
+
 * The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
 
@@ -387,6 +388,10 @@
 * A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
   of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
+
+* `for_loor`, `while_loop`, `cond`, `adjoint`, `ctrl`, and the QNode can handle accepting dynamically
+  shaped arrays with the abstract shape matches another argument.
+  [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
