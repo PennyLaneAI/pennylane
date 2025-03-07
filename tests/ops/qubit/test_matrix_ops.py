@@ -1298,6 +1298,20 @@ class TestBlockEncode:
                 "indptr": [0, 3],
                 "shape": (1, 3),
             },
+            {
+                # A small 2x2 square example
+                "data": [1.0, 2.0],
+                "indices": [0, 1],
+                "indptr": [0, 2, 2],
+                "shape": (2, 2),
+            },
+            {
+                # Another 3x3 square example
+                "data": [0.5, 1.1, 1.2, 0.3],
+                "indices": [0, 2, 1, 2],
+                "indptr": [0, 2, 3, 4],
+                "shape": (3, 3),
+            },
         ],
     )
     @pytest.mark.parametrize("format", ["coo", "csr", "csc", "bsr"])
