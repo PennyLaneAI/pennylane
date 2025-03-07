@@ -44,8 +44,33 @@
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
   [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
 
-* Created a new ``qml.liealg`` module for Lie algebra functionality.
+* Created a new `qml.liealg` module for Lie algebra functionality.
+
+  `qml.liealg.cartan_decomp` allows to perform Cartan decompositions using _involution_ functions that return a boolean value.
+  A variety of typically encountered involution functions are included in the module, in particular the following:
+
+  ```
+  even_odd_involution
+  concurrence_involution
+  A
+  AI
+  AII
+  AIII
+  BD
+  BDI
+  DIII
+  C
+  CI
+  CII
+  ```
+
+  `qml.liealg.check_commutation(A, B, C)` checks if all commutators between `A` and `B`
+  map to a subspace of `C`, i.e. `[A, B] \subset C`.
+
+  `qml.liealg.check_cartan_decomp` checks the commutation relations that define a `cartan_decomp`, i.e. `[k, m] \subset m`, `[k, k] \subset k` and `[m, m] \subset k`.
+
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+  [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
 
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
@@ -397,6 +422,12 @@
 
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
+
+* `pennylane.labs.khaneja_glaser_involution` is removed.
+  `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation`.
+  `pennylane.labs.check_cartan_decomp` is moved to `qml.liealg.check_cartan_decomp`.
+  All involution functions are moved to `qml.liealg`.
+  [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
 
 <h3>Breaking changes 💔</h3>
 
