@@ -255,6 +255,13 @@ class ControlledQubitUnitary(ControlledOp):
             work_wires=self.work_wires,
         )
 
+    def adjoint(self) -> "ControlledQubitUnitary":
+        if self.base.has_matrix:
+            U = qml.math.moveaxis(qml.math.conj(self.base.matrix()), -2, -1)
+            return ControlledQubitUnitary(U, wires=self.wires)
+        U = self.sparse_matrix().conjugate().transpose()
+        return ControlledQubitUnitary(U, wires=self.wires)
+
     @property
     def has_decomposition(self):
         if not super().has_decomposition:
@@ -326,6 +333,9 @@ class CH(ControlledOp):
 
     def __repr__(self):
         return f"CH(wires={self.wires.tolist()})"
+
+    def adjoint(self):
+        return CH(self.wires)
 
     @property
     def resource_params(self) -> dict:
@@ -452,6 +462,9 @@ class CY(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    def adjoint(self):
+        return CY(self.wires)
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -567,6 +580,9 @@ class CZ(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    def adjoint(self):
+        return CZ(self.wires)
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -663,6 +679,9 @@ class CSWAP(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return CSWAP(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -797,6 +816,9 @@ class CCZ(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return CCZ(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -943,6 +965,9 @@ class CNOT(ControlledOp):
         base = type.__call__(qml.X, wires=wires[1:])
         super().__init__(base, wires[:1], id=id)
 
+    def adjoint(self):
+        return CNOT(self.wires)
+
     @property
     def has_decomposition(self):
         return False
@@ -1083,6 +1108,9 @@ class Toffoli(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return Toffoli(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -1333,6 +1361,11 @@ class MultiControlledX(ControlledOp):
             "num_work_wires": len(self.work_wires),
         }
 
+    def adjoint(self):
+        return MultiControlledX(
+            wires=self.wires, control_values=self.control_values, work_wires=self.work_wires
+        )
+
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
     def compute_matrix(control_wires: WiresLike, control_values=None, **kwargs):
@@ -1509,6 +1542,9 @@ class CRX(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    def adjoint(self):
+        return CRX(-self.data[0], wires=self.wires)
+
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1671,6 +1707,9 @@ class CRY(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    def adjoint(self):
+        return CRY(-self.data[0], wires=self.wires)
+
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1832,6 +1871,9 @@ class CRZ(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return CRZ(-self.data[0], wires=self.wires)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -2033,6 +2075,10 @@ class CRot(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    def adjoint(self):
+        phi, theta, omega = self.parameters
+        return CRot(-omega, -theta, -phi, wires=self.wires)
+
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -2205,6 +2251,9 @@ class ControlledPhaseShift(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ

@@ -25,7 +25,6 @@ implementation of the basis translator, the Boost Graph library, and RustworkX.
 
 from __future__ import annotations
 
-import functools
 from dataclasses import dataclass
 
 import rustworkx as rx
@@ -36,11 +35,19 @@ import pennylane as qml
 from .controlled_decomposition import (
     CustomControlledDecomposition,
     GeneralControlledDecomposition,
+    base_to_custom_ctrl_op,
     controlled_global_phase_decomp,
     controlled_x_decomp,
 )
 from .decomposition_rule import DecompositionRule, list_decomps
 from .resources import CompressedResourceOp, Resources, resource_rep
+from .symbolic_decomposition import (
+    AdjointDecomp,
+    adjoint_adjoint_decomp,
+    adjoint_controlled_decomp,
+    has_adjoint_decomp,
+    has_adjoint_ops,
+)
 
 
 class DecompositionError(Exception):
@@ -125,6 +132,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             # This branch only applies to general controlled operators
             return self._add_controlled_decomp_node(op_node, op_node_idx)
 
+        if issubclass(op_node.op_type, qml.ops.Adjoint):
+            return self._add_adjoint_decomp_node(op_node, op_node_idx)
+
         for decomposition in self._get_decompositions(op_node.op_type):
             resource_decomp = decomposition.compute_resources(**op_node.params)
             d_node_idx = self._recursively_add_decomposition_node(decomposition, resource_decomp)
@@ -139,6 +149,32 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         resource_decomp = rule.compute_resources(**op_node.params)
         d_node_idx = self._recursively_add_decomposition_node(rule, resource_decomp)
         self._graph.add_edge(d_node_idx, op_node_idx, 0)
+        return op_node_idx
+
+    def _add_adjoint_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
+        """Adds an adjoint decomposition node."""
+
+        base_class, base_params = op_node.params["base_class"], op_node.params["base_params"]
+
+        if issubclass(base_class, qml.ops.Adjoint):
+            rule = adjoint_adjoint_decomp
+            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+
+        if base_class in has_adjoint_ops():
+            rule = has_adjoint_decomp
+            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+
+        if (
+            issubclass(base_class, qml.ops.Controlled)
+            and base_params["base_class"] in has_adjoint_ops()
+        ):
+            rule = adjoint_controlled_decomp
+            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+
+        for base_decomposition in self._get_decompositions(base_class):
+            rule = AdjointDecomp(base_decomposition)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+
         return op_node_idx
 
     def _add_controlled_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
@@ -294,23 +330,3 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         elif isinstance(target_node, CompressedResourceOp):
             self.p[target_idx] = src_idx
             self.d[target_idx] = self.d[src_idx]
-
-
-@functools.lru_cache()
-def base_to_custom_ctrl_op():
-    """A dictionary mapping base op types to their custom controlled versions."""
-
-    ops_with_custom_ctrl_ops = {
-        (qml.PauliZ, 1): qml.CZ,
-        (qml.PauliZ, 2): qml.CCZ,
-        (qml.PauliY, 1): qml.CY,
-        (qml.CZ, 1): qml.CCZ,
-        (qml.SWAP, 1): qml.CSWAP,
-        (qml.Hadamard, 1): qml.CH,
-        (qml.RX, 1): qml.CRX,
-        (qml.RY, 1): qml.CRY,
-        (qml.RZ, 1): qml.CRZ,
-        (qml.Rot, 1): qml.CRot,
-        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
-    }
-    return ops_with_custom_ctrl_ops
