@@ -105,15 +105,29 @@ class FromBloq(Operation):
 
     .. code-block::
 
-        dev = qml.device("default.qubit")
+        from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+        from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
+        from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
 
+        nsites = 5
+        j_zz = 2
+        gamma_x = 0.1
+        dt = 0.01
+        indices = (0, 1, 0)
+        coeffs = (0.5 * gamma_x, j_zz, 0.5 * gamma_x)  
+        zz_bloq = IsingZZUnitary(nsites=nsites, angle=2 * dt * j_zz)
+        x_bloq = IsingXUnitary(nsites=nsites, angle=0.5 * 2 * dt * gamma_x)
+        trott_unitary = TrotterizedUnitary(
+            bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
+        )  
+        textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
+
+        dev = qml.device("default.qubit")  
         @qml.qnode(dev)
         def circuit():
-            qml.FromBloq(XGate(), [0])
-            return qml.expval(qml.Z(wires=[0]))
-
-    >>> circuit()
-    -1.0
+            qml.FromBloq(textbook_qpe, wires=list(range(8)))
+            return qml.state()
+            
     """
 
     def __init__(self, bloq, wires: WiresLike):
