@@ -33,7 +33,8 @@ from pennylane.pauli import PauliSentence
 
 
 @pytest.mark.parametrize("n, len_g, len_h, len_mtilde", [(2, 6, 2, 2), (3, 15, 2, 6)])
-def test_Ising(n, len_g, len_h, len_mtilde):
+@pytest.mark.parametrize("provide_adj", [True, False])
+def test_Ising(n, len_g, len_h, len_mtilde, provide_adj):
     """Test Cartan subalgebra of 2 qubit Ising model"""
     gens = [X(w) @ X(w + 1) for w in range(n - 1)] + [Z(w) for w in range(n)]
     gens = [op.pauli_rep for op in gens]
@@ -45,7 +46,10 @@ def test_Ising(n, len_g, len_h, len_mtilde):
     g = k + m
     assert len(g) == len_g
 
-    adj = qml.structure_constants(g)
+    if provide_adj:
+        adj = qml.structure_constants(g)
+    else:
+        adj = None
 
     newg, k, mtilde, h, new_adj = cartan_subalgebra(k, m, adj, start_idx=0)
     assert len(h) == len_h
