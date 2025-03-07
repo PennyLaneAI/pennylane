@@ -32,9 +32,7 @@ try:
         Soquet,
     )
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    raise ImportError(
-        "This feature requires Qualtran. It can be installed with: pip install qualtran."
-    )
+    pass
 
 
 def get_bloq_registers_info(bloq):
@@ -127,7 +125,7 @@ class FromBloq(Operation):
         def circuit():
             qml.FromBloq(textbook_qpe, wires=list(range(8)))
             return qml.state()
-            
+
     """
 
     def __init__(self, bloq, wires: WiresLike):
