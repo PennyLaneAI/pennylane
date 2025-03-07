@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ def _x_to_binary(n_precision, x):
         str: The binary representation of the value, with the specified precision.
 
     **Example**
-   
+
         >>> _x_to_binary(3, 0.5)
         '100'
 
@@ -76,12 +76,15 @@ class QROMStatePreparation(Operation):
 
         print(circuit())
 
+    .. seealso:: :class:`~.QROM`
+
     .. details::
         :title: Usage Details
 
         This operation implements the state preparation method described
-        in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_. It uses a QROM to store
-        the binary representations of the amplitudes and phases of the target state, and then uses
+        in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_. It uses
+        a `QROM <https://docs.pennylane.ai/en/stable/code/api/pennylane.QROM.html>`_
+        to store the binary representations of the amplitudes and phases of the target state, and then uses
         controlled rotations to apply these values to the target qubits.
 
         The input `state_vector` must have a length that is a power of 2. The number of ``wires``
@@ -160,7 +163,7 @@ class QROMStatePreparation(Operation):
             self.state_vector, new_wires, new_precision_wires, new_work_wires
         )
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):  # pylint: disable=arguments-differ, too-many-arguments
         filtered_hyperparameters = {
             key: value for key, value in self.hyperparameters.items() if key != "input_wires"
         }
@@ -208,10 +211,13 @@ class QROMStatePreparation(Operation):
             eps = 1e-8  # Small constant to avoid division by zero
 
             # Compute the binary representations of the angles θi
-            def func(x): return 2 * qml.math.arccos(qml.math.sqrt(x)) / np.pi
+            def normalize_angle(x):
+                return 2 * qml.math.arccos(qml.math.sqrt(x)) / np.pi
+
             thetas_binary = [
                 _x_to_binary(
-                    len(precision_wires), func(probs_numerator[j] / (probs_denominator[j] + eps))
+                    len(precision_wires),
+                    normalize_angle(probs_numerator[j] / (probs_denominator[j] + eps)),
                 )
                 for j in range(len(probs_numerator))
             ]
@@ -244,8 +250,12 @@ class QROMStatePreparation(Operation):
 
         if not qml.math.allclose(phases, 0.0):
             # Compute the binary representations of the phases
-            def func(x): return x / (2 * np.pi)
-            thetas_binary = [_x_to_binary(len(precision_wires), func(phase)) for phase in phases]
+            def binary_angle(x):
+                return x / (2 * np.pi)
+
+            thetas_binary = [
+                _x_to_binary(len(precision_wires), binary_angle(phase)) for phase in phases
+            ]
 
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(

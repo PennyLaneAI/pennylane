@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -209,7 +209,6 @@ class QROM(Operation):
             # number of operators we store per column (power of 2)
             depth = len(swap_wires) // len(target_wires)
             depth = int(2 ** np.floor(np.log2(depth)))
-            depth = min(depth, len(bitstrings))
 
             ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
             ops_identity = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
