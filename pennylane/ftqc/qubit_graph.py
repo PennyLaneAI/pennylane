@@ -69,7 +69,7 @@ class QubitGraph:
     Using the QubitGraph object defined above as a starting point, it's possible to nest other
     QubitGraph objects in any of the nodes of its underlying qubit graph:
 
-    >>> q[(0,0)] = QubitGraph(nx.grid_graph((2,)))
+    >>> q[(0,0)].init_graph(nx.grid_graph((2,)))
     >>> q[(0,0)]
     QubitGraph<id=(0, 0), loc=[0]>
     >>> for child in q[(0,0)].children:
@@ -81,7 +81,8 @@ class QubitGraph:
     QubitGraph object is assigned to the node of another QubitGraph, its ID takes on the label
     of the node it was assigned to.
 
-    **How to Read the QubitGraph String Representation**
+    .. details::
+        :title: How to Read the QubitGraph String Representation
 
     The examples above showed that any QubitGraph in the hierarchical structure can be displayed
     with information on its ID and its location in the hierarchy. For example, the string
