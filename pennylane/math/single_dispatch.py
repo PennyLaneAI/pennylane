@@ -133,6 +133,7 @@ def sparse_matrix_power(A, n):
     try:  # pragma: no cover
         # pylint: disable=import-outside-toplevel
         from scipy.sparse.linalg import matrix_power
+        # added in scipy 1.12.0
 
         return matrix_power(A, n)
     except ImportError:  # pragma: no cover
