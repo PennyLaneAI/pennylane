@@ -1282,15 +1282,33 @@ class TestBlockEncode:
 
         assert circuit(input_matrix) == output_value
 
-    def test_sparse_matrix(self):
-        """Test that the BlockEncode works well with a sparse matrix of reasonable size."""
-        data = [0.1, 0.2, 0.3] * 4
-        # Embed this data into a sparse matrix of size 8 by 8
-        indices = [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3]
-        indptr = [0, 3, 6, 9, 12]
+    @pytest.mark.parametrize(
+        "matrix_data",
+        [
+            {
+                "data": [0.1, 0.2, 0.3] * 4,
+                "indices": [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3],
+                "indptr": [0, 3, 6, 9, 12],
+                "shape": (4, 8),
+            },
+            {
+                # A smaller example
+                "data": [1.0, 2.0, 3.0],
+                "indices": [0, 1, 2],
+                "indptr": [0, 3],
+                "shape": (1, 3),
+            },
+        ],
+    )
+    def test_sparse_matrix(self, matrix_data):
+        """Test that the BlockEncode works well with various sparse matrices."""
+        data = matrix_data["data"]
+        indices = matrix_data["indices"]
+        indptr = matrix_data["indptr"]
+        shape = matrix_data["shape"]
 
         num_wires = 5
-        sparse_matrix = csr_matrix((data, indices, indptr), shape=(4, 8))
+        sparse_matrix = csr_matrix((data, indices, indptr), shape=shape)
         op = qml.BlockEncode(sparse_matrix, wires=range(num_wires))
 
         # Test the operator is unitary
