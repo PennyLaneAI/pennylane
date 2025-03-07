@@ -1300,7 +1300,8 @@ class TestBlockEncode:
             },
         ],
     )
-    def test_sparse_matrix(self, matrix_data):
+    @pytest.mark.parametrize("format", ["coo", "csr", "csc", "bsr"])
+    def test_sparse_matrix(self, matrix_data, format):
         """Test that the BlockEncode works well with various sparse matrices."""
         data = matrix_data["data"]
         indices = matrix_data["indices"]
@@ -1308,7 +1309,7 @@ class TestBlockEncode:
         shape = matrix_data["shape"]
 
         num_wires = 5
-        sparse_matrix = csr_matrix((data, indices, indptr), shape=shape)
+        sparse_matrix = csr_matrix((data, indices, indptr), shape=shape).asformat(format)
         op = qml.BlockEncode(sparse_matrix, wires=range(num_wires))
 
         # Test the operator is unitary
