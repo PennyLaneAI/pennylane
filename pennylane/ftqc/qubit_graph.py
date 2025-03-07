@@ -360,7 +360,7 @@ class QubitGraph:
 
     @property
     def node_labels(self):
-        """Gets the set of nodes labels in the underlying qubit graph.
+        """Gets the set of node labels in the underlying qubit graph.
 
         If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
 
@@ -374,8 +374,8 @@ class QubitGraph:
         >>> q.node_labels
         NodeView((0, 1))
 
-        To access the underlying QubitGraph *objects*, rather than their labels, use
-        ``QubitGraph.children``.
+        To access the underlying QubitGraph *objects*, rather than their labels, use the
+        :meth:`~QubitGraph.children` attribute.
 
         Returns:
             networkx.NodeView: A view of the set of nodes, with native support for operations such
@@ -420,7 +420,7 @@ class QubitGraph:
         """Gets an iterator over the set of children QubitGraph objects.
 
         To access the node labels of the underlying qubit graph, rather than the QubitGraph objects
-        themselves, use ``QubitGraph.node_labels``.
+        themselves, use the :meth:`~QubitGraph.node_labels` attribute.
 
         Yields:
             QubitGraph: The next QubitGraph object in the set of children QubitGraphs.
@@ -528,7 +528,8 @@ class QubitGraph:
         QubitGraphs.
 
         Args:
-            m, n (int): The number of rows, m, and columns, n, in the grid.
+            m (int): The number of rows in the grid.
+            n (int): The number of columns in the grid.
 
         **Example**
 
@@ -538,7 +539,7 @@ class QubitGraph:
         ::
 
             (0,0) --- (0,1) --- (0,2)
-                |         |         |
+              |         |         |
             (1,0) --- (1,1) --- (1,2)
 
         >>> q = QubitGraph(id=0)
@@ -569,10 +570,10 @@ class QubitGraph:
 
         ::
 
-                    (2,0,0) ------------- (2,0,1)
-                    /|                    /|
-                (1,0,0) ------------- (1,0,1)
-                /|  |                 /|  |
+                  (2,0,0) ------------- (2,0,1)
+                 /|                    /|
+               (1,0,0) ------------- (1,0,1)
+              /|  |                 /|  |
             (0,0,0) ------------- (0,0,1)
             |  |  |               |  |  |
             |  |  (2,1,0) --------|--|- (2,1,1)
