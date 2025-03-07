@@ -41,6 +41,7 @@ Functions
 
     ~check_cartan_decomp
     ~check_commutation
+    ~check_all_commuting
     ~adjvec_to_op
     ~op_to_adjvec
     ~change_basis_ad_rep
@@ -113,4 +114,10 @@ from .involutions import (
     CI,
     CII,
 )
-from .cartan_subalgebra import cartan_subalgebra, adjvec_to_op, op_to_adjvec, change_basis_ad_rep
+from .cartan_subalgebra import (
+    cartan_subalgebra,
+    adjvec_to_op,
+    op_to_adjvec,
+    change_basis_ad_rep,
+    check_all_commuting,
+)

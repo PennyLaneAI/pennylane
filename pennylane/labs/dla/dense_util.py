@@ -15,7 +15,7 @@
 # pylint: disable=too-many-return-statements, missing-function-docstring, possibly-used-before-assignment
 from functools import reduce
 from itertools import combinations
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, Optional, Union
 
 import numpy as np
 from scipy.linalg import sqrtm
@@ -233,55 +233,6 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
     if single_H:
         return H_ops[0]
     return H_ops
-
-
-def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
-    r"""Helper function to check if all operators in ``ops`` commute.
-
-    .. warning:: This function is expensive to compute
-
-    Args:
-        ops (List[Union[PauliSentence, np.ndarray, Operator]]): List of operators to check for mutual commutation
-
-    Returns:
-        bool: Whether or not all operators commute with each other
-
-    **Example**
-
-    >>> from pennylane.labs.dla import check_all_commuting
-    >>> from pennylane import X
-    >>> ops = [X(i) for i in range(10)]
-    >>> check_all_commuting(ops)
-    True
-
-    Operators on different wires (trivially) commute with each other.
-    """
-    if all(isinstance(op, PauliSentence) for op in ops):
-        for oi, oj in combinations(ops, 2):
-            com = oj.commutator(oi)
-            com.simplify()
-            if len(com) != 0:
-                return False
-
-        return True
-
-    if all(isinstance(op, Operator) for op in ops):
-        for oi, oj in combinations(ops, 2):
-            com = qml.simplify(qml.commutator(oj, oi))
-            if not qml.equal(com, 0 * qml.Identity()):
-                return False
-
-        return True
-
-    if all(isinstance(op, np.ndarray) for op in ops):
-        for oi, oj in combinations(ops, 2):
-            com = oj @ oi - oi @ oj
-            if not np.allclose(com, np.zeros_like(com)):
-                return False
-
-        return True
-
-    return NotImplemented
 
 
 def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) -> np.ndarray:
