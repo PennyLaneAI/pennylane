@@ -158,7 +158,8 @@ def determine_abstracted_axes(args, only_new_dynamic_shapes: bool = True):
     abstract_shapes:  [Traced<ShapedArray(int32[], weak_type=True)>with<DynamicJaxprTrace(level=1/0)>]
     jaxpr:  { lambda ; a:i32[] b:i32[] c:f32[a]. let  in (c,) }
 
-    Here, we
+    Here, we have forced the found abstract shapes to be new arguments at the start of the function. These
+    added arguments will take priority over the original argument.
 
     """
     if not has_jax:  # pragma: no cover
