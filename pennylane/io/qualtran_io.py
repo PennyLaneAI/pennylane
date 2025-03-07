@@ -33,8 +33,8 @@ try:
     )
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     raise ImportError(
-            "This feature requires Qualtran. It can be installed with: pip install qualtran."
-        )
+        "This feature requires Qualtran. It can be installed with: pip install qualtran."
+    )
 
 
 def get_bloq_registers_info(bloq):
@@ -50,6 +50,7 @@ def get_bloq_registers_info(bloq):
 
     Raises:
         TypeError: bloq must be an instance of :code:`~.Bloq`.
+
     **Example**
 
     Given a qualtran bloq:
@@ -84,6 +85,9 @@ class FromBloq(Operation):
         bloq (qualtran.Bloq): the bloq to wrap
         wires (WiresLike): the wires to act on
 
+    Raises:
+        TypeError: bloq must be an instance of :code:`~.Bloq`.
+
     **Example**
 
     Given a qualtran bloq:
@@ -113,18 +117,22 @@ class FromBloq(Operation):
     """
 
     def __init__(self, bloq, wires: WiresLike):
-        assert isinstance(bloq, Bloq)
+        if not isinstance(bloq, Bloq):
+            raise TypeError(f"bloq must be an instance of {Bloq}.")
         self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
 
     def __repr__(self):
         return f'FromBloq({self.hyperparameters["bloq"]}, wires={self.wires})'
 
+    @staticmethod
     def compute_decomposition(
-        self, wires, **kwargs
+        *params,
+        wires=None,
+        **hyperparameters,
     ):  # pylint: disable=arguments-differ, unused-argument
         ops = []
-        bloq = self._hyperparameters["bloq"]
+        bloq = hyperparameters["bloq"]
 
         try:
             # Bloqs need to be decomposed in order to access the connections
@@ -194,15 +202,13 @@ class FromBloq(Operation):
 
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
-    def has_matrix(self) -> bool:  # pylint: disable=protected-access
+    def has_matrix(self) -> bool:
         r"""Return if the bloq has a valid matrix representation."""
-        bloq = self._hyperparameters["bloq"]
+        bloq = self.hyperparameters["bloq"]
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    def compute_matrix(
-        *params, **kwargs
-    ):  # pylint: disable=unused-argument, no-self-argument, no-method-argument, protected-access
-        bloq = params[0]._hyperparameters["bloq"]
+    def compute_matrix(*params, **hyperparams):
+        bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
         return matrix

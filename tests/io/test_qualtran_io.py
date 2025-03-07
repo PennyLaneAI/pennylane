@@ -37,7 +37,7 @@ class TestFromBloq:
         from qualtran.bloqs.basic_gates import XGate
 
         assert qml.FromBloq(XGate(), 1).__repr__() == "FromBloq(XGate, wires=Wires([1]))"
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError, match="bloq must be an instance of"):
             qml.FromBloq("123", 1)
 
     def test_composite_bloq_advanced(self):
@@ -160,7 +160,7 @@ class TestFromBloq:
 
         from pennylane.wires import Wires
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError, match="bloq must be an instance of"):
             qml.get_bloq_registers_info("123")
 
         bb = BloqBuilder()

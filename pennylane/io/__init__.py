@@ -1,5 +1,5 @@
 """
-This module contains functions to load circuits from other frameworks as
+This module contains functions to load circuits and objects from other frameworks as
 PennyLane templates.
 """
 
