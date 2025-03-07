@@ -1052,6 +1052,12 @@ class OrbitalRotation(Operation):
     parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def generator(self) -> "qml.Hamiltonian":
         w0, w1, w2, w3 = self.wires
         return qml.Hamiltonian(
@@ -1171,6 +1177,21 @@ class OrbitalRotation(Operation):
     def adjoint(self) -> "OrbitalRotation":
         (phi,) = self.parameters
         return OrbitalRotation(-phi, wires=self.wires)
+
+
+def _orbital_rotation_decomposition_resources():
+    return {qml.FermionicSWAP: 2, qml.SingleExcitation: 2}
+
+
+@register_resources(_orbital_rotation_decomposition_resources)
+def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
+    qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
+    qml.SingleExcitation(phi, wires=[wires[0], wires[1]])
+    qml.SingleExcitation(phi, wires=[wires[2], wires[3]])
+    qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
+
+
+add_decomps(OrbitalRotation, _orbital_rotation_decomp)
 
 
 class FermionicSWAP(Operation):
