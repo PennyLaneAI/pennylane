@@ -190,8 +190,6 @@ def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     adjoint_prim = NonInterpPrimitive("adjoint_transform")
@@ -202,10 +200,9 @@ def _get_adjoint_qfunc_prim():
     def _(*args, jaxpr, lazy, n_consts):
         consts = args[:n_consts]
         args = args[n_consts:]
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, consts, *args)
-        ops, _ = qml.queuing.process_queue(q)
-        for op in reversed(ops):
+        collector = qml.tape.plxpr_conversion.CollectOpsandMeas()
+        collector.eval(jaxpr, consts, *args)
+        for op in reversed(collector.state["ops"]):
             adjoint(op, lazy=lazy)
         return []
 

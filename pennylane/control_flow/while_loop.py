@@ -142,8 +142,8 @@ def _get_while_loop_qfunc_prim():
         abstract_shapes = args[abstract_shapes_slice]
         # If cond_fn(*init_state) is False, return the initial state
         fn_res = init_state
-        while capture.eval(jaxpr_cond_fn, jaxpr_consts_cond, *abstract_shapes, *fn_res)[0]:
-            fn_res = capture.eval(jaxpr_body_fn, jaxpr_consts_body, *abstract_shapes, *fn_res)
+        while capture.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *abstract_shapes, *fn_res)[0]:
+            fn_res = capture.eval_jaxpr(jaxpr_body_fn, jaxpr_consts_body, *abstract_shapes, *fn_res)
 
         return fn_res
 
@@ -187,13 +187,8 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         abstracted_axes, abstract_shapes = determine_abstracted_axes(init_state)
 
         flat_body_fn = FlatFn(self.body_fn)
-
-        jaxpr_body_fn = jax.make_jaxpr(flat_body_fn, abstracted_axes=abstracted_axes)(
-            *abstract_shapes, *init_state
-        )
-        jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn, abstracted_axes=abstracted_axes)(
-            *abstract_shapes, *init_state
-        )
+        jaxpr_body_fn = jax.make_jaxpr(flat_body_fn, abstracted_axes=abstracted_axes)(*init_state)
+        jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn, abstracted_axes=abstracted_axes)(*init_state)
 
         body_consts = slice(0, len(jaxpr_body_fn.consts))
         cond_consts = slice(body_consts.stop, body_consts.stop + len(jaxpr_cond_fn.consts))

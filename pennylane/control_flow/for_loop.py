@@ -171,7 +171,7 @@ def _get_for_loop_qfunc_prim():
         fn_res = init_state
 
         for i in range(start, stop, step):
-            fn_res = capture.eval(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
+            fn_res = capture.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
 
         return fn_res
 
@@ -224,10 +224,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
         abstracted_axes, abstract_shapes = determine_abstracted_axes((0, *init_state))
 
         flat_fn = FlatFn(self.body_fn)
-
-        jaxpr_body_fn = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(
-            *abstract_shapes, 0, *init_state
-        )
+        jaxpr_body_fn = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(0, *init_state)
 
         consts_slice = slice(0, len(jaxpr_body_fn.consts))
         abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))

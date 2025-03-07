@@ -247,11 +247,10 @@ def _get_ctrl_qfunc_prim():
         control_wires = args[-n_control:]
         args = args[n_consts:-n_control]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.capture.eval(jaxpr, consts, *args)
-        ops, _ = qml.queuing.process_queue(q)
+        collector = qml.tape.plxpr_conversion.CollectOpsandMeas()
+        collector.eval(jaxpr, consts, *args)
 
-        for op in ops:
+        for op in collector.state["ops"]:
             ctrl(op, control_wires, control_values, work_wires)
         return []
 

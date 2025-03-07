@@ -702,7 +702,7 @@ def flattened_for(
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
 
 
-def eval(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
     """A version of ``jax.core.eval_jaxpr`` that can handle creating arrays with dynamic shapes.
 
     Args:
@@ -720,7 +720,7 @@ def eval(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
     >>> def f(i):
     ...     return jnp.arange(i)
     >>> jaxpr = jax.make_jaxpr(f)(3)
-    >>> qml.capture.eval(jaxpr.jaxpr, jaxpr.consts, 2)
+    >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     [Array([0, 1], dtype=int32)]
     >>>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     XlaRuntimeError: error: 'mhlo.dynamic_iota' op can't be translated to XLA HLO

@@ -211,10 +211,10 @@ def __getattr__(key):
 
         return PlxprInterpreter
 
-    if key == "eval":
-        from .base_interpreter import eval
+    if key == "eval_jaxpr":
+        from .base_interpreter import eval_jaxpr
 
-        return eval
+        return eval_jaxpr
 
     if key == "expand_plxpr_transforms":
         from .expand_transforms import expand_plxpr_transforms
@@ -228,7 +228,7 @@ __all__ = (
     "disable",
     "enable",
     "enabled",
-    "eval",
+    "eval_jaxpr",
     "CaptureMeta",
     "ABCCaptureMeta",
     "create_operator_primitive",
