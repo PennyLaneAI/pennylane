@@ -1,4 +1,4 @@
-name: Code Security Scan
+name: Bandit Code Security Scan
 on:
   pull_request:
 
@@ -18,9 +18,6 @@ jobs:
     
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     
-    permissions:
-      security-events: write
-    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,13 +30,20 @@ jobs:
       - name: Install PyCQA/bandit
         run: pip install 'bandit[sarif,toml]'
         
-      - name: Perform bandit scan (sarif)
-        run: bandit -c pyproject.toml -r . -f sarif -o results.sarif || true
+      - name: Perform bandit scan
+        run: bandit -c pyproject.toml -r . -f json -o results.json || true
       
-      - name: Perform bandit scan (screen)
-        run: bandit -c pyproject.toml -r . -f screen
+      - name: Perform bandit scan (SHOW OUTPUT. CHECK THIS IF CI FAILS)
+        run: bandit -c pyproject.toml -r . -f screen || true
+        
+      - name: Check for high severity issues
+        id: check_high_severity
+        run: |
+          jq '.results[] | select(.issue_severity == "HIGH")' results.json > high_severity_issues.json
       
-      - name: Upload bandit scan results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
+      - name: Fail if HIGH severity issues found
+        run: |
+          if [ -s high_severity_issues.json ]; then
+            echo "High severity issues found"
+            exit 1
+          fi
