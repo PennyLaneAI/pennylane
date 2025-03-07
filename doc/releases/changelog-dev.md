@@ -52,29 +52,17 @@
   For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
 
   ```python
+  from qualtran.bloqs.basic_gates import ZPowGate
   from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
-  from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
-  from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
+  import pennylane as qml
 
-  nsites = 5
-  j_zz = 2
-  gamma_x = 0.1
-  dt = 0.01
-  indices = (0, 1, 0)
-  coeffs = (0.5 * gamma_x, j_zz, 0.5 * gamma_x)  
-  zz_bloq = IsingZZUnitary(nsites=nsites, angle=2 * dt * j_zz)
-  x_bloq = IsingXUnitary(nsites=nsites, angle=0.5 * 2 * dt * gamma_x)
-  trott_unitary = TrotterizedUnitary(
-      bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
-  )  
-  textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
-
+  textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))  
   dev = qml.device("default.qubit")  
   @qml.qnode(dev)
   def circuit():
-      qml.FromBloq(textbook_qpe, wires=list(range(8)))
+      qml.FromBloq(textbook_qpe_small, wires=list(range(4)))
       return qml.state()
-  
+
   circuit()
   ```
   [(#6921)](https://github.com/PennyLaneAI/pennylane/pull/6921)
