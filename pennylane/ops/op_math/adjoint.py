@@ -198,9 +198,11 @@ def _get_adjoint_qfunc_prim():
 
     @adjoint_prim.def_impl
     def _(*args, jaxpr, lazy, n_consts):
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
         consts = args[:n_consts]
         args = args[n_consts:]
-        collector = qml.tape.plxpr_conversion.CollectOpsandMeas()
+        collector = CollectOpsandMeas()
         collector.eval(jaxpr, consts, *args)
         for op in reversed(collector.state["ops"]):
             adjoint(op, lazy=lazy)
