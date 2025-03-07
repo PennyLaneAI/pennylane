@@ -309,6 +309,7 @@ class TestAllcloseSparse:
         sparse0 = sp.sparse.csr_matrix(dense)
 
         assert not fn.allclose(sparse0, sparse)
+
     def test_dense_sparse_different_nonzero(self):
         """Test comparing matrices with different nonzero patterns"""
         dense = np.array([[1, 0], [0, 1]])

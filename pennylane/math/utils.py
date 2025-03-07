@@ -72,7 +72,12 @@ def _allclose_sparse(a, b, rtol=1e-05, atol=1e-08):
         return True
 
     diff = abs(a - b)
-    return diff.max() <= atol + rtol * abs(b).max()
+
+    # Handle cases where the matrix might be empty
+    max_diff = diff.data.max() if diff.nnz > 0 else 0
+    max_b = abs(b).data.max() if b.nnz > 0 else 0
+
+    return max_diff <= atol + rtol * max_b
 
 
 def _allclose_dense_sparse(a, b, rtol=1e-05, atol=1e-08):
