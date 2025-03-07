@@ -1,0 +1,49 @@
+name: Bandit Code Security Scan
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  determine_runner:
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+
+  bandit:
+    needs:
+      - determine_runner
+    
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install PyCQA/bandit
+        run: pip install 'bandit[sarif,toml]'
+        
+      - name: Perform bandit scan
+        run: bandit -c pyproject.toml -r . -f json -o results.json || true
+      
+      - name: Perform bandit scan (SHOW OUTPUT. CHECK THIS IF CI FAILS)
+        run: bandit -c pyproject.toml -r . -f screen || true
+        
+      - name: Check for high severity issues
+        id: check_high_severity
+        run: |
+          jq '.results[] | select(.issue_severity == "HIGH")' results.json > high_severity_issues.json
+      
+      - name: Fail if HIGH severity issues found
+        run: |
+          if [ -s high_severity_issues.json ]; then
+            echo "High severity issues found"
+            exit 1
+          fi
