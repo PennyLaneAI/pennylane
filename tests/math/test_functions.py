@@ -290,6 +290,8 @@ class TestAllCloseSparse:
         assert fn.allclose(dense, sparse)
         assert fn.allclose(sparse, dense)
 
+        # When size is large enough, a very small perturbation
+        # will override the tolerance.
         dense[-1, 0] = np.finfo(float).eps
         assert not fn.allclose(dense, sparse)
         assert not fn.allclose(sparse, dense)

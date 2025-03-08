@@ -118,6 +118,46 @@ def _allclose_dense_sparse(a, b, rtol=1e-05, atol=1e-08):
     return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
 
 
+def _allclose_sparse_dense(a, b, rtol=1e-05, atol=1e-08):
+    """Compare a sparse and dense matrix for approximate equality.
+
+    Args:
+        a: sparse matrix
+        b: dense matrix
+        rtol (float): relative tolerance
+        atol (float): absolute tolerance
+
+    Returns:
+        bool: True if matrices are approximately equal.
+    """
+    # If the sparse matrix has no non-zeros, check that b is approximately all zeros
+    if a.nnz == 0:
+        return np.allclose(b, 0, rtol=rtol, atol=atol)
+
+    if a.shape != b.shape:
+        return False
+
+    # Size threshold for when to convert the sparse matrix to dense
+    SIZE_THRESHOLD = 10000
+    if np.prod(a.shape) < SIZE_THRESHOLD:
+        return np.allclose(a.toarray(), b, rtol=rtol, atol=atol)
+
+    # For large matrices, compare only nonzero elements
+    a_nnz_coords = a.nonzero()
+    b_nnz_coords = b.nonzero()
+
+    # Find positions where coordinates differ, using XOR operation
+    coord_diff_x = set(zip(*a_nnz_coords)) ^ set(zip(*b_nnz_coords))
+    if coord_diff_x:  # Any difference in nonzero positions => not allclose
+        return False
+
+    # Compare the actual data values in those positions
+    a_data = a.data
+    b_data = b[a_nnz_coords]
+
+    return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
+
+
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
@@ -128,7 +168,7 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
             return _allclose_sparse(a, b, rtol=rtol, atol=atol)
         if sp.sparse.issparse(a):
             # pylint: disable=arguments-out-of-order
-            return _allclose_dense_sparse(b, a, rtol=rtol, atol=atol)
+            return _allclose_sparse_dense(a, b, rtol=rtol, atol=atol)
         if sp.sparse.issparse(b):
             return _allclose_dense_sparse(a, b, rtol=rtol, atol=atol)
         res = np.allclose(a, b, rtol=rtol, atol=atol, **kwargs)
