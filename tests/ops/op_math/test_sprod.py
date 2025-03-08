@@ -609,6 +609,25 @@ class TestSparseMatrix:
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
         assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
+    @pytest.mark.parametrize("scalar", scalars)
+    @pytest.mark.parametrize("op", sparse_ops)
+    def test_sparse_matrix_format(self, scalar, op):
+        """Test that the sparse matrix accepts the format parameter."""
+        from scipy.sparse import coo_matrix, csc_matrix, lil_matrix
+
+        sprod_op = SProd(scalar, op)
+        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
+        expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
+
+        assert isinstance(sprod_op.sparse_matrix(), csr_matrix)
+        sprod_op_csc = sprod_op.sparse_matrix(format="csc")
+        sprod_op_lil = sprod_op.sparse_matrix(format="lil")
+        sprod_op_coo = sprod_op.sparse_matrix(format="coo")
+        assert isinstance(sprod_op_csc, csc_matrix)
+        assert isinstance(sprod_op_lil, lil_matrix)
+        assert isinstance(sprod_op_coo, coo_matrix)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op", sparse_ops)

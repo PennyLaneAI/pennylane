@@ -211,6 +211,19 @@ class TestPauliRotation:
         )
         assert op2.resources(**op2.resource_params) == expected_resources
 
+    # pylint: disable=unused-argument, import-outside-toplevel
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
+    def test_sparse_matrix_format(self, resource_class, epsilon):
+        """Test that the sparse matrix accepts the format parameter."""
+        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+
+        op = resource_class(1.24, wires=0)
+        assert isinstance(op.sparse_matrix(), csr_matrix)
+        assert isinstance(op.sparse_matrix(format="csc"), csc_matrix)
+        assert isinstance(op.sparse_matrix(format="lil"), lil_matrix)
+        assert isinstance(op.sparse_matrix(format="coo"), coo_matrix)
+
 
 class TestRot:
     """Test ResourceRot"""

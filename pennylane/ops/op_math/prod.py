@@ -305,9 +305,9 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     @handle_recursion_error
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)
@@ -316,10 +316,12 @@ class Prod(CompositeOp):
 
             wire_order = wire_order or self.wires
 
-            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order).asformat(
+                format
+            )
         mats = (op.sparse_matrix() for op in self)
         full_mat = reduce(sparse_kron, mats)
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order).asformat(format)
 
     @property
     @handle_recursion_error
