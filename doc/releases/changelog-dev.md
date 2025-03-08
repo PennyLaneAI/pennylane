@@ -53,6 +53,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.BlockEncode` now accepts sparse input and outputs sparse matrices.
+  [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
+
 * Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
   handle sparse matrices.
   [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)

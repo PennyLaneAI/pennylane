@@ -873,6 +873,9 @@ def norm(tensor, like=None, **kwargs):
     ):
         norm = _flat_autograd_norm
 
+    elif like == "scipy":
+        from scipy.sparse.linalg import norm
+
     else:
         from scipy.linalg import norm
 
