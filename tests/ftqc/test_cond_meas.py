@@ -176,6 +176,7 @@ class TestValidation:
             m = qml.measure(0)
             cond_meas(m, partial(measure_y, wires=0), partial(measure_x, wires=1))()
 
+    @pytest.mark.jax
     def test_program_capture_raises_error(self):
         """Test that a clear error is raised when executing with program capture"""
         try:
