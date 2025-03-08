@@ -133,6 +133,7 @@ def sparse_matrix_power(A, n):
     try:  # pragma: no cover
         # pylint: disable=import-outside-toplevel
         from scipy.sparse.linalg import matrix_power
+
         # added in scipy 1.12.0
 
         return matrix_power(A, n)
@@ -162,8 +163,13 @@ def _sparse_matrix_power_bruteforce(A, n):
     if n == 0:
         return sp.sparse.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
 
+    try:
+        matmul_range = range(n - 1)
+    except Exception as e:
+        raise ValueError("exponent must be an integer") from e
+
     result = A.copy()
-    for _ in range(n - 1):
+    for _ in matmul_range:
         result = result @ A  # Native matmul operation
 
     return result

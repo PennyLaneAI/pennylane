@@ -1108,6 +1108,10 @@ class TestScipySparse:
         with pytest.raises(ValueError):
             _sparse_matrix_power_bruteforce(A, -1)
 
+        # Test non-integer exponent (should raise an error)
+        with pytest.raises(ValueError, match="exponent must be an integer"):
+            _sparse_matrix_power_bruteforce(A, 1.5)
+
 
 # pylint: disable=too-few-public-methods
 class TestInterfaceEnum:
