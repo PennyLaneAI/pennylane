@@ -613,7 +613,7 @@ class TestSparseMatrix:
     @pytest.mark.parametrize("op", sparse_ops)
     def test_sparse_matrix_format(self, scalar, op):
         """Test that the sparse matrix accepts the format parameter."""
-        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+        from scipy.sparse import coo_matrix, csc_matrix, lil_matrix
 
         sprod_op = SProd(scalar, op)
         expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)

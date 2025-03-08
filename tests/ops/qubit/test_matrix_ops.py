@@ -20,7 +20,7 @@ from functools import reduce
 import numpy as np
 import pytest
 from gate_data import H, I, S, T, X, Z
-from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -57,7 +57,6 @@ class TestQubitUnitaryCSR:
         assert np.allclose(op.toarray(), U.toarray())
 
         """Test that the sparse matrix accepts the format parameter."""
-        from scipy.sparse import coo_matrix, csc_matrix, lil_matrix
 
         op_csc = qml.QubitUnitary.compute_sparse_matrix(U, format="csc")
         op_lil = qml.QubitUnitary.compute_sparse_matrix(U, format="lil")
