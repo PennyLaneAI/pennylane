@@ -56,8 +56,7 @@ class TestQubitUnitaryCSR:
         assert isinstance(op, csr_matrix)
         assert np.allclose(op.toarray(), U.toarray())
 
-        """Test that the sparse matrix accepts the format parameter."""
-
+        # Test that the sparse matrix accepts the format parameter.
         op_csc = qml.QubitUnitary.compute_sparse_matrix(U, format="csc")
         op_lil = qml.QubitUnitary.compute_sparse_matrix(U, format="lil")
         op_coo = qml.QubitUnitary.compute_sparse_matrix(U, format="coo")
