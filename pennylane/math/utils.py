@@ -115,7 +115,7 @@ def _allclose_dense_sparse(a, b, rtol=1e-05, atol=1e-08):
 
     a_data = a[b_nnz_coords]
     b_data = b.data
-    return np.allclose(a_data, b_data)
+    return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
 
 
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
