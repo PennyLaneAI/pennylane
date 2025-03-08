@@ -134,7 +134,7 @@ class Hermitian(Observable):
         Hermitian._validate_input(A)
         return A
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, unused-argument
     @staticmethod
     def compute_sparse_matrix(A, format="csr") -> csr_matrix:
         return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
@@ -364,7 +364,7 @@ class SparseHamiltonian(Observable):
         """
         return H.toarray()
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, unused-argument
     @staticmethod
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
