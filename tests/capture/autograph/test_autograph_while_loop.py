@@ -87,8 +87,6 @@ class TestWhileLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_whileloop_qnode(self, autograph):
         """Test while-loop used with a qnode"""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=4), autograph=autograph)
         def f(p):

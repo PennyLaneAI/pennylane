@@ -22,6 +22,7 @@ by PennyLane.
 """
 import copy
 import inspect
+import warnings
 
 from malt.core import converter
 from malt.impl.api import PyToPy
@@ -29,7 +30,7 @@ from malt.impl.api import PyToPy
 import pennylane as qml
 
 from . import ag_primitives
-from .ag_primitives import AutoGraphError
+from .ag_primitives import AutoGraphError, AutoGraphWarning
 
 
 class PennyLaneTransformer(PyToPy):
@@ -60,7 +61,20 @@ class PennyLaneTransformer(PyToPy):
         else:
             raise AutoGraphError(f"Unsupported object for transformation: {type(fn)}")
 
-        new_fn, module, source_map = self.transform_function(fn, user_context)
+        # Check if the function has already been converted.
+        if hasattr(fn, "ag_unconverted"):
+            warnings.warn(
+                f"AutoGraph will not transform the function {fn} as it has already been transformed.",
+                AutoGraphWarning,
+            )
+            new_fn, module, source_map = (
+                fn,
+                getattr(fn, "ag_module", None),
+                getattr(fn, "ag_source_map", None),
+            )
+        else:
+            new_fn, module, source_map = self.transform_function(fn, user_context)
+
         new_obj = new_fn
 
         if isinstance(obj, qml.QNode):

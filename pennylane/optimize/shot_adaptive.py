@@ -16,7 +16,7 @@
 from copy import copy
 
 import numpy as np
-from scipy.stats import multinomial
+import scipy as sp
 
 import pennylane as qml
 
@@ -232,7 +232,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         # construct the multinomial distribution, and sample
         # from it to determine how many shots to apply per term
-        si = multinomial(n=shots, p=prob_shots)
+        si = sp.stats.multinomial(n=shots, p=prob_shots)
         shots_per_term = si.rvs()[0]
 
         grads = []

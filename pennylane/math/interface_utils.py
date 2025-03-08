@@ -139,17 +139,10 @@ def get_interface(*values):
             UserWarning,
         )
 
-    if "tensorflow" in interfaces:
-        return "tensorflow"
-
-    if "torch" in interfaces:
-        return "torch"
-
-    if "jax" in interfaces:
-        return "jax"
-
-    if "autograd" in interfaces:
-        return "autograd"
+    priority_queue = ("tensorflow", "torch", "jax", "autograd", "scipy")
+    for target_interface in priority_queue:
+        if target_interface in interfaces:
+            return target_interface
 
     return "numpy"
 

@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift_cv
-from pennylane.gradients.gradient_transform import choose_trainable_params
+from pennylane.gradients.gradient_transform import choose_trainable_param_indices
 from pennylane.gradients.parameter_shift_cv import (
     _find_gradient_methods_cv,
     _grad_method_cv,
@@ -51,7 +51,7 @@ class TestGradAnalysis:
         assert _grad_method_cv(tape, 3) == "A"
         assert _grad_method_cv(tape, 4) == "A"
 
-        trainable_params = choose_trainable_params(tape, None)
+        trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods_cv(tape, trainable_params)
 
         assert diff_methods[0] is None
@@ -73,7 +73,7 @@ class TestGradAnalysis:
         assert _grad_method_cv(tape, 0) == "A"
         assert _grad_method_cv(tape, 1) == "0"
 
-        trainable_params = choose_trainable_params(tape, None)
+        trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods_cv(tape, trainable_params)
 
         assert diff_methods[0] == "A"

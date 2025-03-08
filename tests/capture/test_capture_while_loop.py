@@ -98,6 +98,22 @@ class TestCaptureWhileLoop:
         expected = jax.numpy.array([0, 4, 8])
         assert jax.numpy.allclose(output, expected)
 
+    # pylint: disable=unused-argument
+    def test_while_loop_dynamic_array_creation(self, enable_disable_dynamic_shapes):
+        """Test that while loop can handle creating dynamic arrays."""
+
+        @qml.while_loop(lambda s: s < 9)
+        def f(s):
+            a = jax.numpy.ones(s + 1, dtype=int)
+            return jax.numpy.sum(a)
+
+        def w():
+            return f(3)
+
+        jaxpr = jax.make_jaxpr(w)()
+        [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert qml.math.allclose(r, 9)  # value that stops iteration
+
 
 class TestCaptureCircuitsWhileLoop:
     """Tests for capturing for while loops into jaxpr in the context of quantum circuits."""

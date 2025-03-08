@@ -33,7 +33,7 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_no_variance,
-    choose_trainable_params,
+    choose_trainable_param_indices,
     find_and_validate_gradient_methods,
     reorder_grads,
 )
@@ -617,8 +617,8 @@ def stoch_pulse_grad(
     if use_broadcasting and tape.batch_size is not None:
         raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
 
-    trainable_params = choose_trainable_params(tape, argnum)
-    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params_indices)
 
     if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)

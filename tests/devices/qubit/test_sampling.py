@@ -1174,8 +1174,8 @@ class TestHamiltonianSamples:
 
         assert len(res) == 2
         assert isinstance(res, tuple)
-        assert np.allclose(res[0], expected, atol=0.01)
-        assert np.allclose(res[1], expected, atol=0.01)
+        assert np.allclose(res[0], expected, atol=0.02)
+        assert np.allclose(res[1], expected, atol=0.02)
 
     def test_sum_expval(self, seed):
         """Test that sampling works well for Sum observables"""

@@ -36,6 +36,7 @@ quantum-classical programs.
     ~create_measurement_mcm_primitive
     ~determine_abstracted_axes
     ~expand_plxpr_transforms
+    ~eval_jaxpr
     ~run_autograph
     ~make_plxpr
     ~PlxprInterpreter
@@ -182,6 +183,7 @@ AbstractMeasurement: type
 qnode_prim: "jax.core.Primitive"
 PlxprInterpreter: type  # pylint: disable=redefined-outer-name
 expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
+eval_jaxpr: Callable
 
 
 class CaptureError(Exception):
@@ -210,6 +212,11 @@ def __getattr__(key):
 
         return PlxprInterpreter
 
+    if key == "eval_jaxpr":
+        from .base_interpreter import eval_jaxpr
+
+        return eval_jaxpr
+
     if key == "expand_plxpr_transforms":
         from .expand_transforms import expand_plxpr_transforms
 
@@ -222,6 +229,7 @@ __all__ = (
     "disable",
     "enable",
     "enabled",
+    "eval_jaxpr",
     "CaptureMeta",
     "ABCCaptureMeta",
     "create_operator_primitive",

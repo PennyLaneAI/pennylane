@@ -742,6 +742,7 @@ class TestMatrix:
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(sparse_mat.toarray(), op.matrix())
+        assert op.has_sparse_matrix
 
     @pytest.mark.parametrize("control_values", ([0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]))
     def test_sparse_matrix_only_matrix_defined(self, control_values):
@@ -754,6 +755,7 @@ class TestMatrix:
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(op.sparse_matrix().toarray(), op.matrix())
+        assert op.has_sparse_matrix
 
     def test_sparse_matrix_wire_order(self):
         """Check if the user requests specific wire order, sparse_matrix() returns the same as matrix()."""
@@ -772,6 +774,7 @@ class TestMatrix:
 
         base = TempOperator(1)
         op = Controlled(base, 2)
+        assert not op.has_sparse_matrix
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()

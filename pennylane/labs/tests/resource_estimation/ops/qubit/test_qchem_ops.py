@@ -38,7 +38,7 @@ class TestSingleExcitation:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceSingleExcitation(0.5, wires=[0, 1])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -80,7 +80,7 @@ class TestSingleExcitationMinus:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceSingleExcitationMinus(0.5, wires=[0, 1])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -118,7 +118,7 @@ class TestSingleExcitationPlus:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceSingleExcitationPlus(0.5, wires=[0, 1])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -155,7 +155,7 @@ class TestDoubleExcitation:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceDoubleExcitation(0.5, wires=[0, 1, 2, 3])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -192,7 +192,7 @@ class TestDoubleExcitationMinus:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceDoubleExcitationMinus(0.5, wires=[0, 1, 2, 3])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -230,7 +230,7 @@ class TestDoubleExcitationPlus:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceDoubleExcitationPlus(0.5, wires=[0, 1, 3, 4])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -266,7 +266,7 @@ class TestOrbitalRotation:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceOrbitalRotation(0.5, wires=[0, 1, 3, 4])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
@@ -303,7 +303,7 @@ class TestFermionicSWAP:
     def test_resource_params(self):
         """Test that the resource params are correct."""
         op = re.ResourceFermionicSWAP(0.5, wires=[0, 1])
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""

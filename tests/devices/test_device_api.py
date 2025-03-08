@@ -145,6 +145,7 @@ class TestSetupExecutionConfig:
         config = dev.setup_execution_config(initial_config)
         assert config.gradient_method == "device"
 
+    # pylint: disable=too-many-positional-arguments
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file, mcm_method, shots, expected_transform, expected_error",
@@ -770,7 +771,9 @@ def test_device_with_ambiguous_preprocess():
                 return TransformProgram(), ExecutionConfig()
 
             def setup_execution_config(
-                self, config: Optional[ExecutionConfig] = None, tape: Optional[QuantumScript] = None
+                self,
+                config: Optional[ExecutionConfig] = None,
+                circuit: Optional[QuantumScript] = None,
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 
@@ -860,8 +863,8 @@ class TestProvidingDerivatives:
 
 
 @pytest.mark.jax
-def test_eval_jaxpr_not_implemented():
-    """Test that the eval_jaxpr method is not implemented by default."""
+def test_capture_methods_not_implemented():
+    """Test that the eval_jaxpr and jaxpr_jvp methods are not implemented by default."""
 
     import jax
 
@@ -876,4 +879,7 @@ def test_eval_jaxpr_not_implemented():
 
     jaxpr = jax.make_jaxpr(f)(2)
     with pytest.raises(NotImplementedError):
-        NormalDevice().eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        NormalDevice().eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, execution_config=None)
+
+    with pytest.raises(NotImplementedError):
+        NormalDevice().jaxpr_jvp(jaxpr.jaxpr, (3,), (0,), execution_config=None)

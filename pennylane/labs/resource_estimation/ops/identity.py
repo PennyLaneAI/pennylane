@@ -27,6 +27,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
     def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {}
 
+    @property
     def resource_params(self) -> dict:
         return {}
 
@@ -56,6 +57,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {}
 
+    @property
     def resource_params(self) -> dict:
         return {}
 

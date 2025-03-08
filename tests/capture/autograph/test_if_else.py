@@ -136,8 +136,6 @@ class TestConditionals:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_qubit_manipulation_cond(self, autograph):
         """Test conditional with quantum operation."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def circuit(x):
@@ -291,8 +289,6 @@ class TestConditionals:
     def test_multiple_return_different_measurements(self, autograph):
         """Test that different measurements be used in the return in different branches, as
         they are all represented by the AbstractMeasurement class."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f(switch: bool):

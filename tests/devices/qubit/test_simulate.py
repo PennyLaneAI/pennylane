@@ -72,6 +72,34 @@ def test_custom_operation():
 
 
 # pylint: disable=too-few-public-methods
+class TestSparsePipeline:
+    """System tests for the sparse pipelines."""
+
+    ground_state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
+    cat_state = np.array([1, 0, 0, 0, 0, 0, 0, 1]) / np.sqrt(2)
+
+    @pytest.mark.parametrize(
+        "state",
+        [
+            ground_state,
+            cat_state,
+        ],
+    )
+    def test_sparse_op(self, state):
+        """Test that a sparse QubitUnitary operation works on default.qubit with expval measurement."""
+        mat = sp.sparse.csr_matrix([[0, 1], [1, 0]])
+        op = qml.QubitUnitary(mat, wires=[0])
+        qs = qml.tape.QuantumScript(
+            ops=[qml.StatePrep(state, wires=range(8), pad_with=0), op],
+            measurements=[qml.expval(qml.Z(0))],
+        )
+
+        result = simulate(qs)
+
+        assert qml.math.allclose(result, -1)
+
+
+# pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 

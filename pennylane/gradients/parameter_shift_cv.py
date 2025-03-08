@@ -26,7 +26,7 @@ from pennylane import transform
 from pennylane.gradients.gradient_transform import (
     _contract_qjac_with_cjac,
     _validate_gradient_methods,
-    choose_trainable_params,
+    choose_trainable_param_indices,
 )
 from pennylane.measurements import (
     ExpectationMP,
@@ -708,8 +708,8 @@ def param_shift_cv(
 
     method = "analytic" if fallback_fn is None else "best"
 
-    trainable_params = choose_trainable_params(tape, argnum)
-    method_map = _gradient_analysis_and_validation_cv(tape, method, trainable_params)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    method_map = _gradient_analysis_and_validation_cv(tape, method, trainable_params_indices)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)

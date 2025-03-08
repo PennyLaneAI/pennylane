@@ -102,7 +102,7 @@ class SimpleCustomOp(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(wires):
+    def compute_qfunc_decomposition(wires):
         qml.Hadamard(wires=wires)
         qml.Hadamard(wires=wires)
 
@@ -125,7 +125,7 @@ class SimpleCustomOpReturn(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(wires):
+    def compute_qfunc_decomposition(wires):
         return qml.Hadamard(wires=wires)
 
 
@@ -158,7 +158,7 @@ class CustomOpConstHyperparams(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters):
+    def compute_qfunc_decomposition(*args, **hyperparameters):
 
         phi = args[0]
         wires = args[1:]
@@ -194,7 +194,7 @@ class CustomOpMultiWire(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(*args, **hyperparameters):
+    def compute_qfunc_decomposition(*args, **hyperparameters):
 
         phi = args[0]
         wires = args[1:]
@@ -222,7 +222,7 @@ class CustomOpCond(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(phi, wires):
+    def compute_qfunc_decomposition(phi, wires):
 
         def true_fn(phi, wires):
             qml.RX(phi, wires=wires)
@@ -247,7 +247,7 @@ class CustomOpCondNoFalseBranch(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(phi, wires):
+    def compute_qfunc_decomposition(phi, wires):
 
         def true_fn(phi, wires):
             qml.RX(phi, wires=wires)
@@ -269,7 +269,7 @@ class CustomOpForLoop(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(phi, wires):
+    def compute_qfunc_decomposition(phi, wires):
 
         @qml.for_loop(0, 3, 1)
         def loop_rx(i, phi):
@@ -294,7 +294,7 @@ class CustomOpWhileLoop(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(phi, wires):
+    def compute_qfunc_decomposition(phi, wires):
 
         def while_f(i):
             return i < 3
@@ -321,7 +321,7 @@ class CustomOpNestedCond(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(phi, wires):
+    def compute_qfunc_decomposition(phi, wires):
 
         def true_fn(phi, wires):
 
@@ -365,7 +365,7 @@ class CustomOpAutograph(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(phi, wires):
+    def compute_qfunc_decomposition(phi, wires):
 
         if phi > 0.5:
             qml.RX(phi, wires=wires)
@@ -392,7 +392,7 @@ class CustomOpNestedOp(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(phi, wires):
+    def compute_qfunc_decomposition(phi, wires):
         qml.RX(phi, wires=wires)
         SimpleCustomOp(wires=wires)
 
@@ -415,7 +415,7 @@ class CustomOpNestedOpControlFlow(Operation):
         return np.array([[1, 0], [0, 1]])
 
     @staticmethod
-    def compute_plxpr_decomposition(phi, wires):
+    def compute_qfunc_decomposition(phi, wires):
 
         qml.Rot(0.1, 0.2, 0.3, wires=wires)
         CustomOpNestedOp(phi, wires)
@@ -471,7 +471,7 @@ class TestDynamicDecomposeInterpreter:
         """Test that an error is raised if an operator does not have a plxpr decomposition."""
 
         with pytest.raises(qml.operation.DecompositionUndefinedError):
-            qml.RX(0.1, 0).compute_plxpr_decomposition()
+            qml.RX(0.1, 0).compute_qfunc_decomposition()
 
     def test_no_plxpr_decomposition(self):
         """Test that a function with a custom operation that does not have a plxpr decomposition is not decomposed."""

@@ -22,7 +22,6 @@ import numpy as np
 import scipy as sp
 from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
-from scipy.sparse.linalg import splu
 
 from .interface_utils import get_deep_interface
 from .utils import is_abstract
@@ -57,6 +56,7 @@ def _builtins_shape(x):
 
 ar.register_function("builtins", "ndim", _builtins_ndim)
 ar.register_function("builtins", "shape", _builtins_shape)
+ar.register_function("builtins", "coerce", lambda x: x)
 ar.register_function("builtins", "logical_mod", lambda x, y: x % y)
 ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
@@ -64,8 +64,9 @@ ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
-
+ar.register_function("scipy", "coerce", lambda x: x)
 ar.register_function("scipy", "shape", np.shape)
+ar.register_function("scipy", "dot", np.dot)
 ar.register_function("scipy", "conj", np.conj)
 ar.register_function("scipy", "transpose", np.transpose)
 ar.register_function("scipy", "ndim", np.ndim)
@@ -101,7 +102,7 @@ def _generic_sparse_det(A):
     assert hasattr(A, "tocsc"), TypeError(f"Expected SciPy sparse, got {type(A)}")
 
     A_csc = A.tocsc()
-    lu = splu(A_csc)
+    lu = sp.sparse.linalg.splu(A_csc)
     U_diag = lu.U.diagonal()
     det_A = np.prod(U_diag)
     parity = _permutation_parity(lu.perm_r)
@@ -123,14 +124,26 @@ def _permutation_parity(perm):
                 cycle_length += 1
 
             if cycle_length:
-
                 parity *= (-1) ** (cycle_length - 1)
     return parity
 
 
 ar.register_function("scipy", "linalg.det", _det_sparse)
+ar.register_function("scipy", "linalg.inv", sp.sparse.linalg.inv)
+ar.register_function("scipy", "linalg.expm", sp.sparse.linalg.expm)
+ar.register_function("scipy", "linalg.matrix_power", sp.sparse.linalg.matrix_power)
+ar.register_function("scipy", "linalg.norm", sp.sparse.linalg.norm)
+ar.register_function("scipy", "linalg.spsolve", sp.sparse.linalg.spsolve)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
+ar.register_function("scipy", "linalg.eigsh", sp.sparse.linalg.eigsh)
+ar.register_function("scipy", "linalg.svds", sp.sparse.linalg.svds)
+
+
 ar.register_function("scipy", "trace", lambda x: x.trace())
+ar.register_function("scipy", "reshape", lambda x, new_shape: x.reshape(new_shape))
+ar.register_function("scipy", "real", lambda x: x.real)
+ar.register_function("scipy", "imag", lambda x: x.imag)
+ar.register_function("scipy", "size", lambda x: np.prod(x.shape))
 
 # -------------------------------- NumPy --------------------------------- #
 

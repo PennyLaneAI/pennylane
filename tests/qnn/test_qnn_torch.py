@@ -960,7 +960,6 @@ def test_specs():
     assert info["resources"] == expected_resources
 
     assert info["num_observables"] == 2
-    assert info["num_diagonalizing_gates"] == 0
     assert info["num_device_wires"] == 3
     assert info["num_tape_wires"] == 2
     assert info["num_trainable_params"] == 2

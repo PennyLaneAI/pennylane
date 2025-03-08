@@ -955,9 +955,6 @@ class TestNewVQE:
         dc = jax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
-    @pytest.mark.xfail(
-        reason="diagonalizing gates defined but not used, should not be included in specs"
-    )
     def test_specs(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
@@ -972,11 +969,6 @@ class TestNewVQE:
         res = qml.specs(circuit)()
 
         assert res["num_observables"] == 1
-
-        # currently this returns 1 instead, because diagonalizing gates exist for H,
-        # but they aren't used in executing this qnode
-        # to be revisited in [sc-59117]
-        assert res["num_diagonalizing_gates"] == 0
 
 
 class TestInterfaces:

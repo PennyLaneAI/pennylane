@@ -130,7 +130,7 @@ class TestBroadcastExpand:
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
         expvals = [qml.expval(ob) for ob in obs]
-        shots = [20000, 20001]
+        shots = [30000, 30001]
         tape = qml.tape.QuantumScript(ops, expvals, shots=shots)
         assert tape.batch_size == size
 

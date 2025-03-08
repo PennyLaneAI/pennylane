@@ -55,6 +55,17 @@ class TestMergeRotations:
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
+    def test_rot_gate_cancel(self):
+        """Test that two rotation gates get merged to the identity operator (cancel)."""
+
+        def qfunc():
+            qml.Rot(-1, 0, 1, wires=0)
+            qml.Rot(-1, 0, 1, wires=0)
+
+        transformed_qfunc = merge_rotations(qfunc)
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        assert not ops
+
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
         [

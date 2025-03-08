@@ -1017,10 +1017,64 @@ interface_test_data = [
 @pytest.mark.parametrize("t,interface", interface_test_data)
 def test_get_interface(t, interface):
     """Test that the interface of a tensor-like object
-
     is correctly returned."""
     res = fn.get_interface(t)
     assert res == interface
+
+
+class TestScipySparse:
+    """Test the scipy.sparse objects get correctly dispatched"""
+
+    matrix = [sci.sparse.csr_matrix([[0, 1], [1, 0]])]
+
+    matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
+
+    dispatched_linalg_methods = [
+        fn.linalg.det,
+        fn.linalg.expm,
+        fn.linalg.inv,
+        fn.linalg.norm,
+    ]
+
+    dispatched_linalg_methods_factorization = [
+        fn.linalg.eigs,
+        fn.linalg.eigsh,
+        fn.linalg.svds,
+    ]
+
+    dispatched_linalg_methods_linear_solver = [
+        fn.linalg.spsolve,
+    ]
+
+    @pytest.mark.parametrize("matrix", matrix)
+    def test_get_interface_scipy(self, matrix):
+        """Test that the interface of a scipy sparse matrix is correctly returned."""
+
+        assert fn.get_interface(matrix) == "scipy"
+        assert fn.get_interface(matrix, matrix) == "scipy"
+
+    @pytest.mark.parametrize("matrix", matrix)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods)
+    def test_dispatched_linalg_methods_single(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_factorization)
+    def test_dispatched_linalg_methods_factorization(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, 1)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_linear_solver)
+    def test_dispatched_linalg_methods_linear_solver(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, sci.sparse.eye(matrix.shape[0]))
+
+    @pytest.mark.parametrize("matrix", matrix + matrix_4)
+    def test_dispatched_linalg_methods_matrix_power(self, matrix):
+        """Test that the matrix power method dispatched"""
+        fn.linalg.matrix_power(matrix, 2)
 
 
 # pylint: disable=too-few-public-methods
@@ -2366,7 +2420,22 @@ def test_gather(tensor):
 
 
 class TestCoercion:
-    """Test that TensorFlow and PyTorch correctly coerce types"""
+    """Test that qml.math.coerce works for all supported interfaces."""
+
+    @pytest.mark.parametrize("coercion_interface", ["jax", "autograd", "scipy"])
+    def test_trivial_coercions(self, coercion_interface):
+        """Test coercion is trivial for JAX, Autograd, and Scipy."""
+        tensors = [
+            jnp.array([0.2]),
+            onp.array([1, 2, 3]),
+            tf.constant(1 + 3j, dtype=tf.complex64),
+            torch.tensor(1 + 3j, dtype=torch.complex64),
+            np.array([1, 2, 3]),
+        ]
+        expected_interfaces = ["jax", "numpy", "tensorflow", "torch", "autograd"]
+        res = qml.math.coerce(tensors, like=coercion_interface)
+        for tensor, interface in zip(res, expected_interfaces, strict=True):
+            assert fn.get_interface(tensor) == interface
 
     def test_tensorflow_coercion(self):
         """Test tensorflow coercion"""

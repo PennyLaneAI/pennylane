@@ -117,8 +117,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_array(self, autograph):
         """Test for loop over JAX array."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f(params):
@@ -138,8 +136,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_array_unpack(self, autograph):
         """Test for loop over a 2D JAX array unpacking the inner dimension."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f(params):
@@ -159,8 +155,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_numeric_list(self, autograph):
         """Test for loop over a Python list that is convertible to an array."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f():
@@ -179,8 +173,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_numeric_list_of_list(self, autograph):
         """Test for loop over a nested Python list that is convertible to an array."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f():
@@ -203,8 +195,6 @@ class TestForLoops:
     def test_for_in_object_list(self, autograph):
         """Test for loop over a Python list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f():
@@ -222,8 +212,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_static_range(self, autograph):
         """Test for loop over a Python range with static bounds."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
         def f():
@@ -240,8 +228,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_static_range_indexing_array(self, autograph):
         """Test for loop over a Python range with static bounds that is used to index an array."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f():
@@ -259,8 +245,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_dynamic_range(self, autograph):
         """Test for loop over a Python range with dynamic bounds."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
         def f(n: int):
@@ -277,8 +261,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_dynamic_range_indexing_array(self, autograph):
         """Test for loop over a Python range with dynamic bounds that is used to index an array."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f(n: int):
@@ -296,8 +278,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_enumerate_array(self, autograph):
         """Test for loop over a Python enumeration on an array."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
         def f(params):
@@ -316,8 +296,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_enumerate_array_no_unpack(self, autograph):
         """Test for loop over a Python enumeration with delayed unpacking."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
         def f(params):
@@ -336,8 +314,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_enumerate_nested_unpack(self, autograph):
         """Test for loop over a Python enumeration with nested unpacking."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
         def f(params):
@@ -359,8 +335,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_enumerate_start(self, autograph):
         """Test for loop over a Python enumeration with offset indices."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=5), autograph=autograph)
         def f(params):
@@ -379,8 +353,6 @@ class TestForLoops:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_for_in_enumerate_numeric_list(self, autograph):
         """Test for loop over a Python enumeration on a list that is convertible to an array."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
         def f():
@@ -417,8 +389,6 @@ class TestForLoops:
     def test_for_in_enumerate_object_list(self, autograph):
         """Test for loop over a Python enumeration on a list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
         def f():
@@ -440,8 +410,6 @@ class TestForLoops:
     def test_for_in_other_iterable_object(self, autograph):
         """Test for loop over arbitrary iterable Python objects.
         The behaviour should fall back to standard Python."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f():
@@ -606,8 +574,6 @@ class TestErrors:
     def test_for_in_object_list(self, autograph):
         """Check the error raised when a for loop iterates over a Python list that
         is *not* convertible to an array."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f():
@@ -624,8 +590,6 @@ class TestErrors:
         """Test an informative error is raised when using a for loop with a static range
         to index through an array-compatible Python list. This can be fixed by wrapping the
         list in a jax array, so the error raised here is actionable."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f():
@@ -645,8 +609,6 @@ class TestErrors:
         """Test an informative error is raised when using a for loop with a dynamic range
         to index through an array-compatible Python list. This can be fixed by wrapping the
         list in a jax array, so the error raised here is actionable."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f(n: int):
@@ -666,8 +628,6 @@ class TestErrors:
         """Test that an error is raised for a for loop over a Python range with dynamic bounds
         that is used to index an array-incompatible Python list. This use-case is never possible,
         even with AutoGraph, because the list can't be wrapped in a jax array."""
-        if autograph:
-            pytest.xfail(reason="Autograph cannot be applied twice in a row. See sc-83366")
 
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f(n: int):
