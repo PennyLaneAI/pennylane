@@ -526,25 +526,23 @@ def decompose_mcx(
 ):
     """Decomposes the multi-controlled PauliX"""
 
-    if len(control_wires) == 1:
+    n_ctrl_wires, n_work_wires = len(control_wires), len(work_wires)
+    if n_ctrl_wires == 1:
         return [qml.CNOT(wires=control_wires + Wires(target_wire))]
-    if len(control_wires) == 2:
+    if n_ctrl_wires == 2:
         return qml.Toffoli.compute_decomposition(wires=control_wires + Wires(target_wire))
 
-    if len(work_wires) >= len(control_wires) - 2:
+    if n_work_wires >= n_ctrl_wires - 2 and (work_wire_type == "clean"):
         # Lemma 7.2 of `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_
         return _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
-    if len(work_wires) >= 2:
+    if n_work_wires >= 2:
         return _decompose_mcx_with_two_workers(
             control_wires, target_wire, work_wires[0:2], work_wire_type
         )
-    if len(work_wires) == 1:
+    if n_work_wires == 1:
         return _decompose_mcx_with_one_worker_kg24(
             control_wires, target_wire, work_wires[0], work_wire_type
         )
-    if len(work_wires) >= 1:
-        # Lemma 7.3
-        return _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wires[0])
 
     # Lemma 7.5
     with qml.QueuingManager.stop_recording():
