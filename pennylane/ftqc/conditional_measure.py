@@ -1,4 +1,4 @@
-# Copyright 2022 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ def cond_meas(
             apply if ``condition`` is ``False``. The callable must create a single mid-circuit measurement.
 
     .. note::
-        The mid-circuit measurements applied the two branches must both be applied to the same
+        The mid-circuit measurements applied on the two branches must both be applied to the same
         wire, and they must have the same settings for `reset` and `postselection`. The two
         branches can differ only in regard to the measurement basis of the applied measurement.
 
@@ -137,7 +137,7 @@ def cond_meas(
 def _validate_measurements(true_meas, false_meas):
     """Takes a pair of variables that are expected to be mid-circuit measurements
     (representing a true and false functions for the conditional) and confirms that
-    they have the expected type ,and 'match' except for the measurement basis"""
+    they have the expected type, and 'match' except for the measurement basis"""
 
     if not (isinstance(true_meas, MidMeasureMP) and isinstance(false_meas, MidMeasureMP)):
         raise ValueError(

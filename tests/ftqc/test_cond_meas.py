@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -74,7 +74,6 @@ class TestCondMeas:
         fn = m2.processing_fn
         assert bool(fn(1, 1)) is True
         assert bool(fn(0, 0)) is False
-        assert bool(fn(1, 1)) is True
         assert fn(1, 1) == fn(1, 0) == fn(0, 1)
 
     def test_cond_meas_with_partial(self):
