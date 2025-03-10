@@ -24,6 +24,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 import pennylane as qml
 from pennylane import math as fn
 from pennylane import numpy as np
+from pennylane.math.single_dispatch import _sparse_matrix_power_bruteforce
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -1022,12 +1023,94 @@ def test_get_interface(t, interface):
     assert res == interface
 
 
-def test_get_interface_scipy():
-    """Test that the interface of a scipy sparse matrix is correctly returned."""
-    matrix = sci.sparse.csr_matrix([[0, 1], [1, 0]])
+class TestScipySparse:
+    """Test the scipy.sparse objects get correctly dispatched"""
 
-    assert fn.get_interface(matrix) == "scipy"
-    assert fn.get_interface(matrix, matrix) == "scipy"
+    matrix = [sci.sparse.csr_matrix([[0, 1], [1, 0]])]
+
+    matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
+
+    dispatched_linalg_methods = [
+        fn.linalg.det,
+        fn.linalg.expm,
+        fn.linalg.inv,
+        fn.linalg.norm,
+    ]
+
+    dispatched_linalg_methods_factorization = [
+        fn.linalg.eigs,
+        fn.linalg.eigsh,
+        fn.linalg.svds,
+    ]
+
+    dispatched_linalg_methods_linear_solver = [
+        fn.linalg.spsolve,
+    ]
+
+    @pytest.mark.parametrize("matrix", matrix)
+    def test_get_interface_scipy(self, matrix):
+        """Test that the interface of a scipy sparse matrix is correctly returned."""
+
+        assert fn.get_interface(matrix) == "scipy"
+        assert fn.get_interface(matrix, matrix) == "scipy"
+
+    @pytest.mark.parametrize("matrix", matrix)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods)
+    def test_dispatched_linalg_methods_single(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_factorization)
+    def test_dispatched_linalg_methods_factorization(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, 1)
+
+    @pytest.mark.parametrize("matrix", matrix_4)
+    @pytest.mark.parametrize("method", dispatched_linalg_methods_linear_solver)
+    def test_dispatched_linalg_methods_linear_solver(self, method, matrix):
+        """Test that the dispatched single function works"""
+        method(matrix, sci.sparse.eye(matrix.shape[0]))
+
+    @pytest.mark.parametrize("matrix", matrix + matrix_4)
+    def test_dispatched_linalg_methods_matrix_power(self, matrix):
+        """Test that the matrix power method dispatched"""
+        _sparse_matrix_power_bruteforce(matrix, 2)
+
+    def test_matrix_power(self):
+        """Test our customized matrix power function"""
+        A = sci.sparse.csr_matrix([[2, 0], [0, 2]])
+
+        # Test n = 0 (identity matrix)
+        result = _sparse_matrix_power_bruteforce(A, 0)
+        expected = sci.sparse.eye(2, dtype=A.dtype, format=A.format)
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Test n = 1 (should be the same matrix)
+        result = _sparse_matrix_power_bruteforce(A, 1)
+        assert np.allclose(result.toarray(), A.toarray())
+
+        # Test n = 2 (square of matrix)
+        result = _sparse_matrix_power_bruteforce(A, 2)
+        expected = A @ A
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Test n = 3 (cube of matrix)
+        result = _sparse_matrix_power_bruteforce(A, 3)
+        expected = A @ A @ A
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Simple benchmark with the dispatcher
+        result0 = fn.linalg.matrix_power(A, 3)
+        assert np.allclose(result0.toarray(), expected.toarray())
+
+        # Test negative exponent (should raise an error)
+        with pytest.raises(ValueError):
+            _sparse_matrix_power_bruteforce(A, -1)
+
+        # Test non-integer exponent (should raise an error)
+        with pytest.raises(ValueError, match="exponent must be an integer"):
+            _sparse_matrix_power_bruteforce(A, 1.5)
 
 
 # pylint: disable=too-few-public-methods
