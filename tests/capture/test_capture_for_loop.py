@@ -253,6 +253,21 @@ class TestCaptureForLoop:
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
 
+    # pylint: disable=unused-argument
+    def test_dynamic_array_creation(self, enable_disable_dynamic_shapes):
+        """Test that for_loops can create dynamicly shaped arrays."""
+
+        def f(i, x):
+            y = jax.numpy.arange(i)
+            return jax.numpy.sum(y)
+
+        def w():
+            return qml.for_loop(4)(f)(0)
+
+        jaxpr = jax.make_jaxpr(w)()
+        [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert qml.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
+
 
 class TestCaptureCircuitsForLoop:
     """Tests for capturing for loops into jaxpr in the context of quantum circuits."""
