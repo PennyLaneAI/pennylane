@@ -24,95 +24,115 @@ from pennylane.operation import Operation
 decompositions = defaultdict(list)
 
 
-class Hadamard(Operation):
+class CustomHadamard(Operation):
     r"""Hadamard(wires)
     The Hadamard operator"""
 
     resource_param_keys = ()
 
-    @property
-    def name(self) -> str:
-        return "Hadamard"
+    name = "Hadamard"
 
     @property
     def resource_params(self) -> dict:
         return {}
 
 
-class RX(Operation):
+class CustomRX(Operation):
     r"""
     The single qubit X rotation
     """
 
     resource_param_keys = ()
 
+    name = "RX"
+
     @property
     def resource_params(self) -> dict:
         return {}
 
 
-class RY(Operation):
+class CustomRY(Operation):
     r"""
     The single qubit Y rotation
     """
 
     resource_param_keys = ()
 
+    name = "RY"
+
     @property
     def resource_params(self) -> dict:
         return {}
 
 
-class RZ(Operation):
+class CustomRZ(Operation):
     r"""
     The single qubit Z rotation
     """
 
     resource_param_keys = ()
 
+    name = "RZ"
+
     @property
     def resource_params(self) -> dict:
         return {}
 
 
-class Rot(Operation):
+class CustomRot(Operation):
     r"""
     The single qubit arbitrary rotation
     """
 
     resource_param_keys = ()
 
+    name = "Rot"
+
     @property
     def resource_params(self) -> dict:
         return {}
 
 
-class GlobalPhase(Operation):
+class CustomGlobalPhase(Operation):
     r"""Multiplies all components of the state by :math:`e^{-i \phi}`."""
 
     resource_param_keys = ()
 
+    name = "GlobalPhase"
+
     @property
     def resource_params(self) -> dict:
         return {}
 
 
-@qml.register_resources({RZ: 2, RX: 1, GlobalPhase: 1})
+class CustomPhaseShift(Operation):
+    """Phase shift gate."""
+
+    resource_param_keys = ()
+
+    name = "PhaseShift"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+
+@qml.register_resources({CustomRZ: 2, CustomRX: 1, CustomGlobalPhase: 1})
 def _hadamard_to_rz_rx(*_, **__):
     raise NotImplementedError
 
 
-@qml.register_resources({RZ: 1, RY: 1, GlobalPhase: 1})
+@qml.register_resources({CustomRZ: 1, CustomRY: 1, CustomGlobalPhase: 1})
 def _hadamard_to_rz_ry(*_, **__):
     raise NotImplementedError
 
 
-decompositions[Hadamard] = [_hadamard_to_rz_rx, _hadamard_to_rz_ry]
+decompositions[CustomHadamard] = [_hadamard_to_rz_rx, _hadamard_to_rz_ry]
 
 
-@qml.register_resources({RX: 1, RZ: 2})
+@qml.register_resources({CustomRX: 1, CustomRZ: 2})
 def _ry_to_rx_rz(*_, **__):
     raise NotImplementedError
 
 
-decompositions[RY] = [_ry_to_rx_rz]
+decompositions[CustomRY] = [_ry_to_rx_rz]

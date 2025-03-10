@@ -107,7 +107,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         op_node_idx = self._graph.add_node(op_node)
         self._op_node_indices[op_node] = op_node_idx
-        if op_node.op_type.__name__ in self._target_gate_set:
+        if op_node.op_type.name in self._target_gate_set:
             self._target_gate_indices.add(op_node_idx)
             return op_node_idx
 
