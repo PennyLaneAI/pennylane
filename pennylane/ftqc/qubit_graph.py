@@ -52,7 +52,7 @@ class QubitGraph:
 
     .. note::
         QubitGraph expects an undirected graph as input, specifically an instance of the
-        ``networkx.Graph`` class, although other networkx graphs and graph-like types are also
+        ``networkx.Graph`` class, although other NetworkX graphs and graph-like types are also
         permitted.
 
     **Examples**
@@ -123,7 +123,7 @@ class QubitGraph:
         :title: Initializing a QubitGraph
 
         The examples above showed how to initialize the graph structure of a QubitGraph by passing
-        in a networkx Graph. It is also possible to construct a QubitGraph object with no graph
+        in a NetworkX graph. It is also possible to construct a QubitGraph object with no graph
         structure:
 
         >>> q = QubitGraph(id=0)
@@ -142,7 +142,7 @@ class QubitGraph:
 
         An uninitialized QubitGraph can always be initialized later using one of its
         graph-initialization methods. The most general of these is :meth:`~QubitGraph.init_graph`,
-        which accepts an arbitrary networkx Graph as input:
+        which accepts an arbitrary NetworkX graph as input:
 
         >>> graph = nx.grid_graph((2,))
         >>> q.init_graph(graph)
@@ -444,7 +444,7 @@ class QubitGraph:
         If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
 
         Accessing ``QubitGraph.node_labels`` is equivalent to accessing the ``nodes`` attribute of
-        the networkx graph:
+        the NetworkX graph:
 
         >>> g = nx.grid_graph((2,))
         >>> g.nodes
@@ -458,7 +458,7 @@ class QubitGraph:
 
         Returns:
             networkx.NodeView: A view of the set of nodes, with native support for operations such
-            as ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the networkx
+            as ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the NetworkX
             documentation for more information.
         """
         if not self.is_initialized:
@@ -474,7 +474,7 @@ class QubitGraph:
         If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
 
         Accessing ``QubitGraph.edges_labels`` is equivalent to accessing the ``edges`` attribute of
-        the networkx graph:
+        the NetworkX graph:
 
         >>> g = nx.grid_graph((2,))
         >>> g.edges
@@ -485,7 +485,7 @@ class QubitGraph:
 
         Returns:
             networkx.EdgeView: The set of edges, with native support for operations such as
-            ``len(g.edges)``, ``e in g.edges``, ``g.edges & h.edges``, etc. See the networkx
+            ``len(g.edges)``, ``e in g.edges``, ``g.edges & h.edges``, etc. See the NetworkX
             documentation for more information.
         """
         if not self.is_initialized:
@@ -579,7 +579,7 @@ class QubitGraph:
 
         **Example**
 
-        This example creates a networkx graph with two nodes, labelled 0 and 1, and one edge
+        This example creates a NetworkX graph with two nodes, labelled 0 and 1, and one edge
         between them, and uses this graph to initialize the graph structure of a QubitGraph:
 
         >>> import networkx as nx
@@ -751,7 +751,7 @@ class QubitGraph:
 
     @staticmethod
     def _copy_graph_structure(graph: nx.Graph):
-        """Creates a copy of a networkx graph, but only the graph structure (nodes and edges), without
+        """Creates a copy of a NetworkX graph, but only the graph structure (nodes and edges), without
         copying the node data.
 
         Args:
@@ -851,12 +851,12 @@ class QubitGraph:
         The input is considered "graph-like" according to the definition in the
         ``QubitGraph._is_graph_like()`` method.
 
-        Currently, QubitGraph only supports networkx graphs; specifically, graph objects that are
+        Currently, QubitGraph only supports NetworkX graphs; specifically, graph objects that are
         instances of the `networkx.Graph
         <https://networkx.org/documentation/stable/reference/classes/graph.html>` class, or
         subclasses thereof.
 
-        Note that other networkx graph types, including ``DiGraph``, ``MultiGraph`` and
+        Note that other NetworkX graph types, including ``DiGraph``, ``MultiGraph`` and
         ``MultiDiGraph`` are all subclasses of the ``Graph`` class and are therefore permitted,
         although their usage is discouraged since they store additional information that is not used
         by QubitGraph.
