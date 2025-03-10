@@ -348,8 +348,6 @@ def _gram_ps(basis: Iterable[PauliSentence]):
 
 def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bool = True):
     """Pauli sentence branch of ``op_to_adjvec``."""
-    if not all(isinstance(op, PauliSentence) for op in ops):
-        ops = [op.pauli_rep for op in ops]
 
     res = []
     if is_orthogonal:

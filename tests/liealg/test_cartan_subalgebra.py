@@ -248,6 +248,13 @@ dense_test_cases = [
 class TestAdjvecToOp:
     """Test adjvec_to_op."""
 
+    def test_NotImplementedError(self):
+        """Test that NotImplementedError is raised"""
+        with pytest.raises(
+            NotImplementedError, match="At least one operator in the specified basis"
+        ):
+            _ = adjvec_to_op([(1, 1)], [1, 1])
+
     @pytest.mark.parametrize("adj_vecs, basis, expected, is_ortho", ps_test_cases)
     def test_with_ps(self, adj_vecs, basis, expected, is_ortho):
         """Test ``adjvec_to_op`` with a basis of ``PauliSentence`` operators."""
