@@ -1328,6 +1328,7 @@ class TestBlockEncode:
 
         # Test the operator is unitary
         mat = qml.matrix(op)
+        assert np.allclose(np.eye(mat.shape[0]), (mat @ mat.T.conj()).toarray())
         mat_dense = qml.matrix(qml.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
         assert qml.math.allclose(mat, mat_dense)
 
