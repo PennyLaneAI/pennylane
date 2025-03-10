@@ -33,9 +33,9 @@ class TestGraphStatePrep:
         q = QubitGraph(lattice.graph)
         dev = qml.device("default.qubit")
 
-        #jax = pytest.importorskip("jax")
+        # jax = pytest.importorskip("jax")
 
-        #@jax.jit
+        # @jax.jit
         @qml.qnode(dev)
         def circuit(q):
             GraphStatePrep(graph=q)
