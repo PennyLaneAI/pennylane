@@ -36,13 +36,13 @@ class GraphStatePrep(Operation):
 
     The target graph state can be prepared as below:
 
-        1. Each qubit is prepared as :math:`|+\rangle^{\otimes V}` state by applying the ``qubit_ops`` (``Hadamard`` gate) operation.
-        2. Entangle every nearest qubit pair in the graph with ``entanglement_ops`` (``CZ`` gate) operation.
+        1. Each qubit is prepared as :math:`|+\rangle^{\otimes V}` state by applying the ``one_qubit_ops`` (``Hadamard`` gate) operation.
+        2. Entangle every nearest qubit pair in the graph with ``two_qubit_ops`` (``CZ`` gate) operation.
 
     Args:
         graph (Union[QubitGraph, nx.Graph]): QubitGraph or nx.Graph object mapping qubit to wires.
-        qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`. #TODO: To define more complex starting states not relying on a single ops.
-        entanglement_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
+        one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`. #TODO: To define more complex starting states not relying on a single ops.
+        two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
         wires (Optional[Wires]): Wires the graph state preparation to apply on. Default to None.
 
     **Example:**
@@ -56,19 +56,19 @@ class GraphStatePrep(Operation):
             dev = qml.device('default.qubit')
 
             @qml.qnode(dev)
-            def circuit(q, qubit_ops, entanglement_ops):
-                GraphStatePrep(qubit_graph=q, qubit_ops=qubit_ops, entanglement_ops=entanglement_ops)
+            def circuit(q, one_qubit_ops, two_qubit_ops):
+                GraphStatePrep(qubit_graph=q, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops)
                 return qml.probs()
 
             lattice = generate_lattice([2, 2], "square")
             q = QubitGraph(lattice.graph, id="square")
 
-            qubit_ops = qml.Y
-            entanglement_ops = qml.CNOT
+            one_qubit_ops = qml.Y
+            two_qubit_ops = qml.CNOT
 
         The resulting circuit after applying the ``GraphStatePrep`` template is:
 
-        >>> print(qml.draw(circuit, level="device")(q, qubit_ops, entanglement_ops))
+        >>> print(qml.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops))
         QubitGraph<id=(0, 1), loc=[square]>: ──Y────╭X─╭●────┤  Probs
         QubitGraph<id=(1, 0), loc=[square]>: ──Y─╭X─│──│──╭●─┤  Probs
         QubitGraph<id=(1, 1), loc=[square]>: ──Y─│──│──╰X─╰X─┤  Probs
@@ -78,13 +78,13 @@ class GraphStatePrep(Operation):
     def __init__(
         self,
         graph: Union[nx.Graph, QubitGraph],
-        qubit_ops: Operation = qml.H,
-        entanglement_ops: Operation = qml.CZ,
+        one_qubit_ops: Operation = qml.H,
+        two_qubit_ops: Operation = qml.CZ,
         wires: Optional[Wires] = None,
     ):
         self.hyperparameters["graph"] = graph
-        self.hyperparameters["qubit_ops"] = qubit_ops
-        self.hyperparameters["entanglement_ops"] = entanglement_ops
+        self.hyperparameters["one_qubit_ops"] = one_qubit_ops
+        self.hyperparameters["two_qubit_ops"] = two_qubit_ops
 
         if isinstance(graph, QubitGraph):
             if wires is not None and set(wires) != set(graph.node_labels):
@@ -116,11 +116,11 @@ class GraphStatePrep(Operation):
         Returns:
             str: label to use in drawings
         """
-        return f"GraphStatePrep({self.hyperparameters['qubit_ops'](wires=0).name}, {self.hyperparameters['entanglement_ops'].name})"
+        return f"GraphStatePrep({self.hyperparameters['one_qubit_ops'](wires=0).name}, {self.hyperparameters['two_qubit_ops'].name})"
 
     def __repr__(self):
         """Method defining the string representation of this class."""
-        return f"GraphStatePrep({self.hyperparameters['qubit_ops'](wires=0).name}, {self.hyperparameters['entanglement_ops'].name})"
+        return f"GraphStatePrep({self.hyperparameters['one_qubit_ops'](wires=0).name}, {self.hyperparameters['two_qubit_ops'].name})"
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
@@ -134,8 +134,8 @@ class GraphStatePrep(Operation):
     def compute_decomposition(
         wires: Wires,
         graph: Union[nx.Graph, QubitGraph],
-        qubit_ops: Operation = qml.H,
-        entanglement_ops: Operation = qml.CZ,
+        one_qubit_ops: Operation = qml.H,
+        two_qubit_ops: Operation = qml.CZ,
     ):  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -149,8 +149,8 @@ class GraphStatePrep(Operation):
         Args:
             wires (Wires): Wires the decomposition applies on.
             graph (Union[nx.Graph, QubitGraph]): QubitGraph or nx.Graph object mapping qubit to wires.
-            qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
-            entanglement_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
+            one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
+            two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -158,19 +158,19 @@ class GraphStatePrep(Operation):
 
         op_list = []
 
-        # Add entanglement_ops for each pair of nearest qubits in the graph
+        # Add two_qubit_ops for each pair of nearest qubits in the graph
         if isinstance(graph, QubitGraph):
-            # Add qubit_ops for each qubit in the graph
+            # Add one_qubit_ops for each qubit in the graph
             for wire in wires:
-                op_list.append(qubit_ops(wires=graph[wire]))
+                op_list.append(one_qubit_ops(wires=graph[wire]))
 
             for qubit0, qubit1 in graph.graph.edges:
-                op_list.append(entanglement_ops(wires=[graph[qubit0], graph[qubit1]]))
+                op_list.append(two_qubit_ops(wires=[graph[qubit0], graph[qubit1]]))
         else:
-            # Add qubit_ops for each qubit in the graph
+            # Add one_qubit_ops for each qubit in the graph
             for wire in wires:
-                op_list.append(qubit_ops(wires=wire))
+                op_list.append(one_qubit_ops(wires=wire))
 
             for qubit0, qubit1 in graph.edges:
-                op_list.append(entanglement_ops(wires=[qubit0, qubit1]))
+                op_list.append(two_qubit_ops(wires=[qubit0, qubit1]))
         return op_list

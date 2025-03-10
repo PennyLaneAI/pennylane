@@ -94,56 +94,56 @@ class TestGraphStatePrep:
         assert len(queue) == expected
 
     @pytest.mark.parametrize(
-        "qubit_ops, entanglement_ops",
+        "one_qubit_ops, two_qubit_ops",
         [
             (qml.H, qml.CZ),
             (qml.X, qml.CNOT),
         ],
     )
-    def test_decompose(self, qubit_ops, entanglement_ops):
+    def test_decompose(self, one_qubit_ops, two_qubit_ops):
         """Test the decomposition method of the GraphStatePrep class."""
         lattice = generate_lattice([2, 2, 2], "cubic")
         q = QubitGraph(lattice.graph)
-        op = GraphStatePrep(graph=q, qubit_ops=qubit_ops, entanglement_ops=entanglement_ops)
+        op = GraphStatePrep(graph=q, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops)
         queue = op.decomposition()
         assert len(queue) == 20  # 8 ops for |0> -> |+> and 12 ops to entangle nearest qubits
         for op in queue[:8]:
-            assert op.name == qubit_ops(0).name
+            assert op.name == one_qubit_ops(0).name
             assert isinstance(op.wires[0], QubitGraph)
         for op in queue[8:]:
-            assert op.name == entanglement_ops.name
+            assert op.name == two_qubit_ops.name
             assert all(isinstance(w, QubitGraph) for w in op.wires)
 
     @pytest.mark.parametrize(
-        "qubit_ops, entanglement_ops",
+        "one_qubit_ops, two_qubit_ops",
         [
             (qml.H, qml.CZ),
             (qml.X, qml.CNOT),
         ],
     )
-    def test_decompose_wires(self, qubit_ops, entanglement_ops):
+    def test_decompose_wires(self, one_qubit_ops, two_qubit_ops):
         """Test the decomposition method of the GraphStatePrep class."""
         lattice = nx.grid_graph((4,))
         wires = list(lattice.nodes)
 
         op = GraphStatePrep(
-            wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entanglement_ops
+            wires=wires, graph=lattice, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops
         )
         queue = op.decomposition()
         assert len(queue) == 7  # 4 ops for |0> -> |+> and 3 ops to entangle nearest qubits
         for op in queue[:4]:
-            assert op.name == qubit_ops(0).name
+            assert op.name == one_qubit_ops(0).name
         for op in queue[4:]:
-            assert op.name == entanglement_ops.name
+            assert op.name == two_qubit_ops.name
 
     @pytest.mark.parametrize(
-        "qubit_ops, entanglement_ops",
+        "one_qubit_ops, two_qubit_ops",
         [
             (qml.H, qml.CZ),
             (qml.X, qml.CNOT),
         ],
     )
-    def test_wires_graph_mismatch(self, qubit_ops, entanglement_ops):
+    def test_wires_graph_mismatch(self, one_qubit_ops, two_qubit_ops):
         """Test for wire-graph label mismatches."""
         wires = [0, 1, 2, 3]
         edges = [(0, 1), (1, 2), (2, 3)]
@@ -153,18 +153,18 @@ class TestGraphStatePrep:
         wires.append(5)
         with pytest.raises(ValueError):
             GraphStatePrep(
-                wires=wires, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entanglement_ops
+                wires=wires, graph=lattice, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops
             )
 
         with pytest.raises(ValueError):
             GraphStatePrep(
-                wires=None, graph=lattice, qubit_ops=qubit_ops, entanglement_ops=entanglement_ops
+                wires=None, graph=lattice, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops
             )
 
         with pytest.raises(ValueError):
             GraphStatePrep(
                 wires=wires,
                 graph=QubitGraph(lattice),
-                qubit_ops=qubit_ops,
-                entanglement_ops=entanglement_ops,
+                one_qubit_ops=one_qubit_ops,
+                two_qubit_ops=two_qubit_ops,
             )
