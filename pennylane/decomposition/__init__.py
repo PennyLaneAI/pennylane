@@ -14,6 +14,7 @@
 
 """The decomposition module."""
 
+from .decomposition_graph import DecompositionGraph
 from .resources import (
     Resources,
     CompressedResourceOp,
