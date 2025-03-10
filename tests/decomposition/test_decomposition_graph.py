@@ -14,7 +14,7 @@
 
 """Unit tests for the decomposition graph."""
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,no-name-in-module
 
 from unittest.mock import patch
 
@@ -41,6 +41,7 @@ from pennylane.decomposition.decomposition_graph import DecompositionError
 )
 class TestDecompositionGraph:
 
+    @pytest.mark.unit
     def test_get_decomp_rule(self, _):
         """Tests the internal method that gets the decomposition rules for an operator."""
 
@@ -81,6 +82,7 @@ class TestDecompositionGraph:
             + decompositions[CustomHadamard]
         )
 
+    @pytest.mark.unit
     def test_graph_construction(self, _):
         """Tests constructing a graph from a single Hadamard."""
 
@@ -94,6 +96,7 @@ class TestDecompositionGraph:
         assert len(graph2._graph.nodes()) == 7
         assert len(graph2._graph.edges()) == 8
 
+    @pytest.mark.unit
     def test_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions."""
 
@@ -111,6 +114,7 @@ class TestDecompositionGraph:
         assert graph.resource_estimates(op) == expected_resource
         assert graph.decomposition(op).compute_resources() == expected_resource
 
+    @pytest.mark.unit
     def test_decomposition_not_found(self, _):
         """Tests that the correct error is raised if a decomposition isn't found."""
 
