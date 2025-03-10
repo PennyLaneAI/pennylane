@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
+from pennylane.ops.functions import assert_valid
 
 
 class TestGraphStatePrep:
@@ -90,6 +91,7 @@ class TestGraphStatePrep:
         res = circuit(q)
         assert len(res) == 2 ** len(lattice.graph)
         assert np.isclose(np.sum(res), 1.0, rtol=0)
+        assert_valid(GraphStatePrep(graph=q), skip_deepcopy=True, skip_pickle=True)
         assert repr(GraphStatePrep(graph=q)) == "GraphStatePrep(Hadamard, CZ)"
         assert GraphStatePrep(graph=q).label() == "GraphStatePrep(Hadamard, CZ)"
 
