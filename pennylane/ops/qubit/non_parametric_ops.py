@@ -274,8 +274,6 @@ class PauliX(Observable, Operation):
 
     basis = "X"
 
-    resource_param_keys = ()
-
     batch_size = None
 
     resource_param_keys = ()
