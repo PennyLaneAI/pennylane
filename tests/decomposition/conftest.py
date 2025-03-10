@@ -117,6 +117,70 @@ class CustomPhaseShift(Operation):
         return {}
 
 
+class CustomCNOT(Operation):
+    """The CNOT gate."""
+
+    resource_param_keys = ()
+
+    name = "CNOT"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+
+class CustomCZ(Operation):
+    """The CZ gate."""
+
+    resource_param_keys = ()
+
+    name = "CZ"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+
+class CustomMultiRZ(Operation):
+    """The MultiRZ gate."""
+
+    resource_param_keys = ("num_wires",)
+
+    name = "MultiRZ"
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
+
+@qml.register_resources({CustomHadamard: 2, CustomCNOT: 1})
+def _cz_to_cnot(*_, **__):
+    raise NotImplementedError
+
+
+decompositions[CustomCZ] = [_cz_to_cnot]
+
+
+@qml.register_resources({CustomHadamard: 2, CustomCZ: 1})
+def _cnot_to_cz_h(*_, **__):
+    raise NotImplementedError
+
+
+decompositions[CustomCNOT] = [_cnot_to_cz_h]
+
+
+def _multi_rz_decomposition_resources(num_wires):
+    return {CustomRZ: 1, CustomCNOT: 2 * (num_wires - 1)}
+
+
+@qml.register_resources(_multi_rz_decomposition_resources)
+def _multi_rz_decomposition(*_, **__):
+    raise NotImplementedError
+
+
+decompositions[CustomMultiRZ] = [_multi_rz_decomposition]
+
+
 @qml.register_resources({CustomRZ: 2, CustomRX: 1, CustomGlobalPhase: 1})
 def _hadamard_to_rz_rx(*_, **__):
     raise NotImplementedError

@@ -21,8 +21,10 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from conftest import (
+    CustomCZ,
     CustomGlobalPhase,
     CustomHadamard,
+    CustomMultiRZ,
     CustomPhaseShift,
     CustomRX,
     CustomRY,
@@ -126,3 +128,61 @@ class TestDecompositionGraph:
         graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RY", "GlobalPhase"})
         with pytest.raises(DecompositionError, match="Decomposition not found for {'Hadamard'}"):
             graph.solve()
+
+    @pytest.mark.unit
+    def test_decomposition_with_resource_params(self, _):
+        """Tests operators with non-empty resource params."""
+
+        class CustomOp(qml.operation.Operation):
+            """A custom operation."""
+
+            resource_param_keys = ("num_wires",)
+
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        def _custom_resource(num_wires):
+            return {
+                qml.resource_rep(CustomMultiRZ, num_wires=num_wires): 1,
+                qml.resource_rep(CustomMultiRZ, num_wires=num_wires - 1): 2,
+            }
+
+        @qml.register_resources(_custom_resource)
+        def _custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        decompositions[CustomOp] = [_custom_decomp]
+
+        op = CustomOp(wires=[0, 1, 2, 3])
+        graph = DecompositionGraph(
+            operations=[op], target_gate_set={"RX", "RZ", "CZ", "GlobalPhase"}
+        )
+        assert len(graph._graph.nodes()) == 17
+        assert len(graph._graph.edges()) == 23
+
+        graph.solve()
+        assert graph.resource_estimates(op) == Resources(
+            num_gates=129,
+            gate_counts={
+                qml.resource_rep(CustomCZ): 14,
+                qml.resource_rep(CustomRZ): 59,
+                qml.resource_rep(CustomRX): 28,
+                qml.resource_rep(CustomGlobalPhase): 28,
+            },
+        )
+        assert graph.decomposition(op).compute_resources(**op.resource_params) == Resources(
+            num_gates=3,
+            gate_counts={
+                qml.resource_rep(CustomMultiRZ, num_wires=4): 1,
+                qml.resource_rep(CustomMultiRZ, num_wires=3): 2,
+            },
+        )
+        assert graph.decomposition(CustomHadamard(wires=[0])).compute_resources() == Resources(
+            num_gates=4,
+            gate_counts={
+                qml.resource_rep(CustomRZ): 2,
+                qml.resource_rep(CustomRX): 1,
+                qml.resource_rep(CustomGlobalPhase): 1,
+            },
+        )
