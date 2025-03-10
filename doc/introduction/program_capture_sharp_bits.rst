@@ -39,8 +39,6 @@ an overview of said constraints.
     #. Our short name for PennyLane code that is captured as jaxpr is *plxpr* (PennyLane-jaxpr).
     Program-capture and plxpr can be considered synonymous and interchangeable. 
 
-.. _device_compatibility:
-
 Device compatibility 
 --------------------
 
@@ -154,6 +152,7 @@ Section title
 blah blah blah
 
 .. code-block:: python
+    
     # nice code block!!!!!!!!!
 
 >>> print("hello plxpr")
