@@ -1224,6 +1224,12 @@ class SX(Operation):
 
     basis = "X"
 
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -1329,6 +1335,21 @@ class SX(Operation):
     def single_qubit_rot_angles(self) -> list[TensorLike]:
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
+
+
+def _sx_to_rz_ry_rz_ps_resources():
+    return {qml.PhaseShift: 1, qml.RZ: 2, qml.RY: 1}
+
+
+@register_resources(_sx_to_rz_ry_rz_ps_resources)
+def _sx_to_rz_ry_rz_ps(wires: WiresLike, **__):
+    qml.RZ(np.pi / 2, wires=wires)
+    qml.RY(np.pi / 2, wires=wires)
+    qml.RZ(-np.pi, wires=wires)
+    qml.PhaseShift(np.pi / 2, wires=wires)
+
+
+add_decomps(SX, _sx_to_rz_ry_rz_ps)
 
 
 class SWAP(Operation):
