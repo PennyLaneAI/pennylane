@@ -214,7 +214,7 @@ For more details on :func:`~.pennylane.compile` and the available compilation tr
 Gate decompositions
 -------------------
 
-When compiling a circuit it is often beneficial to decompose the circuit into a 
+When compiling a circuit, it is often beneficial to decompose the circuit into a 
 set of basis gates. To do this, we can use the :func:`~.pennylane.transforms.decompose` 
 function, which enables decomposition of circuits into a set of gates defined either 
 by their name, type, or by a set of rules they must follow.
@@ -369,9 +369,9 @@ For example, suppose we would like to implement the following QNode:
 1: ──RX(0.50)─╰X─╭●─│──┤     
 2: ──RX(0.60)────╰X─╰●─┤     
 
-Now, let's swap out PennyLane's default decomposition of the ``CNOT`` gate into ``CZ``
-and ``Hadamard``.
-We define the custom decompositions like so, and pass them to a device:
+Now, let's swap out PennyLane's default decomposition of the ``CNOT`` gate into 
+``CZ`` and ``Hadamard``. We define the custom decompositions like so, and pass them 
+to a device:
 
 .. code-block:: python
 
@@ -387,10 +387,11 @@ We define the custom decompositions like so, and pass them to a device:
     decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
     decomp_qnode = qml.QNode(circuit, decomp_dev)
 
-Note that custom decomposition functions should accept keyword arguments even when it is not used.
+Note that custom decomposition functions should accept keyword arguments even when 
+it is not used.
 
-Now when we draw or run a QNode on this device, the gates will be expanded
-according to our specifications:
+Now when we draw or run a QNode on this device, the gates will be expanded according 
+to our specifications:
 
 >>> print(qml.draw(decomp_qnode, level="device")(weights))
 0: ──RX(0.40)────╭●──H───────╭Z──H─┤  <Z>
