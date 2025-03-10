@@ -380,8 +380,8 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[14:20] == "qutrit":
         pytest.xfail(reason="qutrit ops fail matrix validation")
-    
-    if class_to_validate.__module__[10:13] == "ftqc":
+
+    if class_to_validate.__module__[10:14] == "ftqc":
         pytest.skip(reason="skip tests for ftqc ops")
 
     # If you defined a new Operator and this call to `create_op_instance` failed, it might
