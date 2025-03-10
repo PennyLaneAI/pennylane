@@ -1409,7 +1409,13 @@ class FermionicSWAP(Operation):
 
 
 def _fermionic_swap_decomp_resources():
-    return {qml.Hadamard: 4, qml.resource_rep(qml.MultiRZ, num_wires=2): 2, qml.RX: 4, qml.RZ: 2, qml.ops.op_math.Exp: 1}
+    return {
+        qml.Hadamard: 4,
+        qml.resource_rep(qml.MultiRZ, num_wires=2): 2,
+        qml.RX: 4,
+        qml.RZ: 2,
+        qml.ops.op_math.Exp: 1,
+    }
 
 
 @register_resources(_fermionic_swap_decomp_resources)
@@ -1427,7 +1433,7 @@ def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
     qml.RZ(phi / 2, wires=wires[0])
     qml.RZ(phi / 2, wires=wires[1])
     # for correcting global phase
-    qml.exp(qml.Identity(wires=[wires[0], wires[1]]), 0.5j * phi)
+    qml.GlobalPhase(-0.5 * phi, wires=[wires[0], wires[1]])
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)
