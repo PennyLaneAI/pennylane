@@ -253,7 +253,14 @@ class TestAdjvecToOp:
         with pytest.raises(
             NotImplementedError, match="At least one operator in the specified basis"
         ):
-            _ = adjvec_to_op([(1, 1)], [1, 1])
+            _ = adjvec_to_op(
+                [
+                    [
+                        0.0,
+                    ]
+                ],
+                [qml.pauli.PauliWord({0: "X"})],
+            )
 
     @pytest.mark.parametrize("adj_vecs, basis, expected, is_ortho", ps_test_cases)
     def test_with_ps(self, adj_vecs, basis, expected, is_ortho):
