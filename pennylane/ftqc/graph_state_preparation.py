@@ -97,18 +97,8 @@ class GraphStatePrep(Operation):
                 raise ValueError("Please ensure wires objects match labels in graph")
             super().__init__(wires=wires)
 
-    def label(
-        self, *, **
-    ):  # pylint: disable=unused-argument
+    def label(self) -> str:  # pylint: disable=unused-argument
         r"""Defines how the graph state preparation is represented in diagrams and drawings.
-
-        Args:
-            decimals: If ``None``, no parameters are included. Else, how to round
-                the parameters. Required to match general call signature. Not used.
-            base_label: overwrite the non-parameter component of the label.
-                Required to match general call signature. Not used.
-            cache: dictionary that carries information between label calls in the
-                same drawing. Required to match general call signature. Not used.
 
         Returns:
             str: label to use in drawings
