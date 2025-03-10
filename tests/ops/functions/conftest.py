@@ -18,7 +18,6 @@ Generates parametrizations of operators to test in test_assert_valid.py.
 """
 from inspect import getmembers, isclass
 
-import networkx as nx
 import numpy as np
 import pytest
 
@@ -123,10 +122,6 @@ _INSTANCES_TO_FAIL = [
     (
         qml.resource.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
         TypeError,  # op.eigvals is a list (overwritten in the init)
-    ),
-    (
-        qml.ftqc.GraphStatePrep(qml.ftqc.QubitGraph(graph=nx.grid_graph([2])), wires=[0, 1]),
-        AssertionError,  # deep copied op must also be equal
     ),
 ]
 """
