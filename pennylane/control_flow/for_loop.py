@@ -14,6 +14,7 @@
 """For loop."""
 import functools
 
+from pennylane import capture
 from pennylane.capture import FlatFn, determine_abstracted_axes, enabled
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 
@@ -152,8 +153,6 @@ def _get_for_loop_qfunc_prim():
     """Get the loop_for primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     for_loop_prim = NonInterpPrimitive("for_loop")
@@ -172,7 +171,7 @@ def _get_for_loop_qfunc_prim():
         fn_res = init_state
 
         for i in range(start, stop, step):
-            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
+            fn_res = capture.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
 
         return fn_res
 
