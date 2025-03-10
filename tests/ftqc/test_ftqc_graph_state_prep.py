@@ -85,11 +85,46 @@ class TestGraphStatePrep:
         assert repr(GraphStatePrep(graph=q)) == "GraphStatePrep(Hadamard, CZ)"
         assert GraphStatePrep(graph=q).label() == "GraphStatePrep(Hadamard, CZ)"
 
-    def test_circuit_accept_graph_state_prep_with_nx_wires(self):
+    @pytest.mark.parametrize(
+        "dims, shape, wires",
+        [
+            ([5], "chain", [0, 1, 2, 3, 4]),
+            pytest.param(
+                [5], "chain", None, marks=pytest.mark.xfail(reason="Wires must be specified.")
+            ),
+            pytest.param(
+                [2, 2],
+                "square",
+                [(0, 0), (0, 1), (1, 0), (1, 1)],
+                marks=pytest.mark.xfail(reason="Wires must be unique."),
+            ),
+            pytest.param(
+                [2, 2],
+                "rectangle",
+                [(0, 0), (0, 1), (1, 0), (1, 1)],
+                marks=pytest.mark.xfail(reason="Wires must be unique."),
+            ),
+            pytest.param(
+                [2, 2, 2],
+                "cubic",
+                [
+                    (0, 0, 0),
+                    (0, 0, 1),
+                    (0, 1, 0),
+                    (0, 1, 1),
+                    (1, 0, 0),
+                    (1, 0, 1),
+                    (1, 1, 0),
+                    (1, 1, 1),
+                ],
+                marks=pytest.mark.xfail(reason="Wires must be unique."),
+            ),
+        ],
+    )
+    def test_circuit_accept_graph_state_prep_with_nx_wires(self, dims, shape, wires):
         """Test if a quantum function accepts GraphStatePrep."""
         dev = qml.device("default.qubit")
-        lattice = nx.grid_graph((4,))
-        wires = list(lattice.nodes)
+        lattice = generate_lattice(dims, shape).graph
 
         @qml.qnode(dev)
         def circuit(lattice, wires):
