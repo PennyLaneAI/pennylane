@@ -2499,6 +2499,7 @@ def _cphase_rz_resource():
 
 @register_resources(_cphase_rz_resource)
 def _cphase_to_rz_cnot(phi, wires, **__):
+    qml.RZ(phi / 2, wires=wires[0])
     qml.CNOT(wires=wires)
     qml.RZ(-phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
