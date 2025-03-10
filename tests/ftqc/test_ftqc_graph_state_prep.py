@@ -28,11 +28,11 @@ class TestGraphStatePrep:
     @pytest.mark.xfail(reason="Jax JIT requires wires to be integers.")
     def test_jaxjit_circuit_graph_state_prep(self):
         """Test if Jax JIT works with GraphStatePrep"""
+        jax = pytest.importorskip("jax")
+
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph(lattice.graph)
         dev = qml.device("default.qubit")
-
-        jax = pytest.importorskip("jax")
 
         @jax.jit
         @qml.qnode(dev)

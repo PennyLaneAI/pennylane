@@ -42,8 +42,8 @@ class GraphStatePrep(Operation):
 
         1. Each qubit is prepared as :math:`|+\rangle^{\otimes V}` state by applying the
         ``one_qubit_ops`` (:class:`~.pennylane.H` gate) operation.
-        
-        2. Entangle every nearest qubit pair in the graph with ``two_qubit_ops`` 
+
+        2. Entangle every nearest qubit pair in the graph with ``two_qubit_ops``
         (:class:`~.pennylane.CZ` gate) operation.
 
     Args:
