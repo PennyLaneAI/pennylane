@@ -28,12 +28,15 @@ to be aware of while we strive towards that ideal**. In this document, we provid
 an overview of said constraints.
 
 .. note::
-    #. Our short name for PennyLane code that is captured as jaxpr is *plxpr* (PennyLane-jaxpr).
-    Program-capture and plxpr can be considered synonymous and interchangeable. 
-
     #. From here onwards, ``qml.capture.enable`` is assumed to be present within 
     the scope of code examples, unless otherwise stated. This ensures that program-capture
     is enabled.
+
+    #. Using program-capture requires that JAX be installed. Please consult the 
+    JAX documentation for `installation instructions <https://docs.jax.dev/en/latest/installation.html>`__.
+    
+    #. Our short name for PennyLane code that is captured as jaxpr is *plxpr* (PennyLane-jaxpr).
+    Program-capture and plxpr can be considered synonymous and interchangeable. 
 
 .. _device_compatibility:
 
