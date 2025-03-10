@@ -128,6 +128,46 @@ def adjoint_controlled_decomp(*_, base):
     )
 
 
+def _adjoint_pow_resource(base_class, base_params):
+    """Resources of the adjoint of the power of a gate."""
+    return {resource_rep(base_class, **base_params): 1}
+
+
+@register_resources(_adjoint_pow_resource)
+def adjoint_pow_decomp(*_, base):
+    """Decompose the adjoint of the power of a gate."""
+    qml.pow(base.base.adjoint(), z=base.z)
+
+
+def _pow_resource(base_class, base_params, z):
+    """Resources of the power of a gate."""
+    if not isinstance(z, int) or z < 0:
+        raise NotImplementedError("Non-integer or negative powers are not supported yet.")
+    return {resource_rep(base_class, **base_params): z}
+
+
+@register_resources(_pow_resource)
+def pow_decomp(*_, base, z):
+    """Decompose the power of a gate."""
+    assert isinstance(z, int) and z >= 0
+    for _ in range(z):
+        qml.pytrees.unflatten(*qml.pytrees.flatten(base))
+
+
+def _pow_pow_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    """Resources of the power of the power of a gate."""
+    base_z = base_params["z"]
+    base_class = base_params["base_class"]
+    base_params = base_params["base_params"]
+    return {resource_rep(base_class, **base_params): z * base_z}
+
+
+@register_resources(_pow_pow_resource)
+def pow_pow_decomp(*_, base, z):
+    """Decompose the power of the power of a gate."""
+    qml.pow(base.base, z=z * base.z)
+
+
 @functools.lru_cache()
 def has_adjoint_ops():
     """A set of operators whose adjoint is an instance of its own type."""
