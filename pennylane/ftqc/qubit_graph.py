@@ -37,17 +37,23 @@ class QubitGraph:
 
     Args:
         graph (graph-like, optional): The graph structure to use for the QubitGraph's underlying
-            qubits. Inputting None (the default), leaves the underlying qubit graph in an
-            uninitialized state, in which case one of the graph-initialization methods may be used
-            to define the structure of the underlying qubit graph. QubitGraph expects an undirected
-            graph as input, specifically an instance of the ``networkx.Graph`` class, although other
-            networkx graphs and graph-like types are also permitted. An object is considered
-            "graph-like" if it has both a 'nodes' and an 'edges' attribute. Furthermore, QubitGraph
-            expects a "flat" (unnested) graph, and any graph-like objects nested within the graph
-            structure used as input are ignored.
+            qubits. The graph must be "flat" (unnested). An object is considered "graph-like" if it
+            has both a 'nodes' and an 'edges' attribute. Defaults to None, which leaves the
+            QubitGraph in an uninitialized state.
         id (Any, optional): An identifier for this QubitGraph object. The identifier is generally an
             integer, string, or a tuple of integers and strings, but it may be any object. Inputting
             None (the default), assigns a random universally unique identifier (uuid) to ``id``.
+
+    .. note::
+        The input graph defines the structure of the underlying qubit graph only; only the set of
+        nodes and the set of edges defining the connectivity between nodes are used to construct the
+        underlying qubit graph. Any data contained within the input graph's nodes, including nested
+        graphs, are ignored.
+
+    .. note::
+        QubitGraph expects an undirected graph as input, specifically an instance of the
+        ``networkx.Graph`` class, although other NetworkX graphs and graph-like types are also
+        permitted.
 
     **Examples**
 
@@ -69,7 +75,7 @@ class QubitGraph:
     Using the QubitGraph object defined above as a starting point, it's possible to nest other
     QubitGraph objects in any of the nodes of its underlying qubit graph:
 
-    >>> q[(0,0)] = QubitGraph(nx.grid_graph((2,)))
+    >>> q[(0,0)].init_graph(nx.grid_graph((2,)))
     >>> q[(0,0)]
     QubitGraph<id=(0, 0), loc=[0]>
     >>> for child in q[(0,0)].children:
@@ -81,36 +87,109 @@ class QubitGraph:
     QubitGraph object is assigned to the node of another QubitGraph, its ID takes on the label
     of the node it was assigned to.
 
-    **How to Read the QubitGraph String Representation**
+    .. details::
+        :title: How to Read the QubitGraph String Representation
 
-    The examples above showed that any QubitGraph in the hierarchical structure can be displayed
-    with information on its ID and its location in the hierarchy. For example, the string
-    representation
+        The examples above showed that any QubitGraph in the hierarchical structure can be displayed
+        with information on its ID and its location in the hierarchy. For example, the string
+        representation
 
-    ::
+        ::
 
-        QubitGraph<id=1, loc=[(0, 0), 0]>
+            QubitGraph<id=1, loc=[(0, 0), 0]>
 
-    indicates that this QubitGraph has an ID of ``1``, and it is nested within a parent node
-    labelled ``(0, 0)``, which is nested within a parent node labelled ``0``, which is a root
-    node. If a QubitGraph is itself a root node (meaning it is not nested within a parent
-    QubitGraph), its location is displayed as an empty list, for example:
+        indicates that this QubitGraph has an ID of ``1``, and it is nested within a parent node
+        labelled ``(0, 0)``, which is nested within a parent node labelled ``0``, which is a root
+        node. If a QubitGraph is itself a root node (meaning it is not nested within a parent
+        QubitGraph), its location is displayed as an empty list, for example:
 
-    ::
+        ::
 
+            QubitGraph<id=0, loc=[]>
+
+        If no ID parameter was given upon construction of the QubitGraph, you will notice that a
+        random UUID has been assigned to it:
+
+        >>> q = QubitGraph()
+        >>> q
+        QubitGraph<id=7491161c, loc=[]>
+
+        This ID is truncated for brevity; the full ID is a 32-digit hexadecimal number:
+
+        >>> q.id
+        '7491161c-ca7e-42cc-af3e-8ca6250a370e'
+
+    .. details::
+        :title: Initializing a QubitGraph
+
+        The examples above showed how to initialize the graph structure of a QubitGraph by passing
+        in a NetworkX graph. It is also possible to construct a QubitGraph object with no graph
+        structure:
+
+        >>> q = QubitGraph(id=0)
+        >>> q
         QubitGraph<id=0, loc=[]>
 
-    If no ID parameter was given upon construction of the QubitGraph, you will notice that a
-    random UUID has been assigned to it:
+        In this case, the QubitGraph is still valid for use, but it is in an *uninitialized* state.
+        You can check the initialization state of a QubitGraph with its
+        :attr:`~QubitGraph.is_initialized` attribute:
 
-    >>> q = QubitGraph()
-    >>> q
-    QubitGraph<id=7491161c, loc=[]>
+        >>> q.is_initialized
+        False
 
-    This ID is truncated for brevity; the full ID is 32-digit hexadecimal number:
+        You may not want to initialize a graph of underlying qubits when representing physical
+        qubits at the hardware layer, for example.
 
-    >>> q.id
-    '7491161c-ca7e-42cc-af3e-8ca6250a370e'
+        An uninitialized QubitGraph can always be initialized later using one of its
+        graph-initialization methods. The most general of these is :meth:`~QubitGraph.init_graph`,
+        which accepts an arbitrary NetworkX graph as input:
+
+        >>> graph = nx.grid_graph((2,))
+        >>> q.init_graph(graph)
+        >>> q.is_initialized
+        True
+
+        The :meth:`~QubitGraph.init_graph` method behaves in the same way as passing the graph input
+        directly to the QubitGraph constructor, and the same requirements and caveats listed above
+        apply here as well (the input must be graph-like and any data annotated on the nodes are
+        ignored).
+
+        Other graph-initialization methods that automatically construct common graph structures are
+        also available. For example, :meth:`~QubitGraph.init_graph_nd_grid` initializes a
+        QubitGraph's underlying qubits as an n-dimensional Cartesian grid:
+
+        >>> q_3d_grid = QubitGraph(id=0)
+        >>> q_3d_grid.init_graph_nd_grid((3, 4, 5))
+
+    .. details::
+        :title: Traversing the Hierarchical Graph Structure
+
+        The graph hierarchy is structured as a tree data type, with "root" nodes representing the
+        highest-level qubits (for example, the logical qubits in a quantum circuit), down to "leaf"
+        nodes representing the lowest-level qubits (for example, the physical qubits at the hardware
+        level). The :attr:`~QubitGraph.is_root` and :attr:`~QubitGraph.is_leaf` attributes are
+        available to quickly determine if a QubitGraph is a root or leaf node, respectively.
+        Consider the following example with a three-layer nesting structure:
+
+        >>> single_node_graph = nx.grid_graph((1,))
+        >>> q = QubitGraph(single_node_graph, id=0)
+        >>> q[0].init_graph(single_node_graph)
+        >>> print(f"is root? {q.is_root}, is leaf? {q.is_leaf}")
+        is root? True, is leaf? False
+        >>> print(f"is root? {q[0].is_root}, is leaf? {q[0].is_leaf}")
+        is root? False, is leaf? False
+        >>> print(f"is root? {q[0][0].is_root}, is leaf? {q[0][0].is_leaf}")
+        is root? False, is leaf? True
+
+        The :attr:`~QubitGraph.parent` and :attr:`~QubitGraph.children` attributes are also
+        available to access the parent of a given QubitGraph and its set of children, respectively:
+
+        >>> q[0].parent is q
+        True
+        >>> q[0][0].parent is q[0]
+        True
+        >>> list(q[0].children)
+        [QubitGraph<id=0, loc=[0, 0]>]
 
     ..  TODO:
 
@@ -360,12 +439,12 @@ class QubitGraph:
 
     @property
     def node_labels(self):
-        """Gets the set of nodes labels in the underlying qubit graph.
+        """Gets the set of node labels in the underlying qubit graph.
 
         If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
 
         Accessing ``QubitGraph.node_labels`` is equivalent to accessing the ``nodes`` attribute of
-        the networkx graph:
+        the NetworkX graph:
 
         >>> g = nx.grid_graph((2,))
         >>> g.nodes
@@ -374,12 +453,12 @@ class QubitGraph:
         >>> q.node_labels
         NodeView((0, 1))
 
-        To access the underlying QubitGraph *objects*, rather than their labels, use
-        ``QubitGraph.children``.
+        To access the underlying QubitGraph *objects*, rather than their labels, use the
+        :attr:`~QubitGraph.children` attribute.
 
         Returns:
             networkx.NodeView: A view of the set of nodes, with native support for operations such
-            as ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the networkx
+            as ``len(g.nodes)``, ``n in g.nodes``, ``g.nodes & h.nodes``, etc. See the NetworkX
             documentation for more information.
         """
         if not self.is_initialized:
@@ -395,7 +474,7 @@ class QubitGraph:
         If the underlying qubit graph has not been initialized, emit a UserWarning and return None.
 
         Accessing ``QubitGraph.edges_labels`` is equivalent to accessing the ``edges`` attribute of
-        the networkx graph:
+        the NetworkX graph:
 
         >>> g = nx.grid_graph((2,))
         >>> g.edges
@@ -406,7 +485,7 @@ class QubitGraph:
 
         Returns:
             networkx.EdgeView: The set of edges, with native support for operations such as
-            ``len(g.edges)``, ``e in g.edges``, ``g.edges & h.edges``, etc. See the networkx
+            ``len(g.edges)``, ``e in g.edges``, ``g.edges & h.edges``, etc. See the NetworkX
             documentation for more information.
         """
         if not self.is_initialized:
@@ -420,7 +499,7 @@ class QubitGraph:
         """Gets an iterator over the set of children QubitGraph objects.
 
         To access the node labels of the underlying qubit graph, rather than the QubitGraph objects
-        themselves, use ``QubitGraph.node_labels``.
+        themselves, use the :attr:`~QubitGraph.node_labels` attribute.
 
         Yields:
             QubitGraph: The next QubitGraph object in the set of children QubitGraphs.
@@ -500,7 +579,7 @@ class QubitGraph:
 
         **Example**
 
-        This example creates a networkx graph with two nodes, labelled 0 and 1, and one edge
+        This example creates a NetworkX graph with two nodes, labelled 0 and 1, and one edge
         between them, and uses this graph to initialize the graph structure of a QubitGraph:
 
         >>> import networkx as nx
@@ -528,7 +607,8 @@ class QubitGraph:
         QubitGraphs.
 
         Args:
-            m, n (int): The number of rows, m, and columns, n, in the grid.
+            m (int): The number of rows in the grid.
+            n (int): The number of columns in the grid.
 
         **Example**
 
@@ -538,7 +618,7 @@ class QubitGraph:
         ::
 
             (0,0) --- (0,1) --- (0,2)
-                |         |         |
+              |         |         |
             (1,0) --- (1,1) --- (1,2)
 
         >>> q = QubitGraph(id=0)
@@ -569,10 +649,10 @@ class QubitGraph:
 
         ::
 
-                    (2,0,0) ------------- (2,0,1)
-                    /|                    /|
-                (1,0,0) ------------- (1,0,1)
-                /|  |                 /|  |
+                  (2,0,0) ------------- (2,0,1)
+                 /|                    /|
+               (1,0,0) ------------- (1,0,1)
+              /|  |                 /|  |
             (0,0,0) ------------- (0,0,1)
             |  |  |               |  |  |
             |  |  (2,1,0) --------|--|- (2,1,1)
@@ -671,7 +751,7 @@ class QubitGraph:
 
     @staticmethod
     def _copy_graph_structure(graph: nx.Graph):
-        """Creates a copy of a networkx graph, but only the graph structure (nodes and edges), without
+        """Creates a copy of a NetworkX graph, but only the graph structure (nodes and edges), without
         copying the node data.
 
         Args:
@@ -771,12 +851,12 @@ class QubitGraph:
         The input is considered "graph-like" according to the definition in the
         ``QubitGraph._is_graph_like()`` method.
 
-        Currently, QubitGraph only supports networkx graphs; specifically, graph objects that are
+        Currently, QubitGraph only supports NetworkX graphs; specifically, graph objects that are
         instances of the `networkx.Graph
         <https://networkx.org/documentation/stable/reference/classes/graph.html>` class, or
         subclasses thereof.
 
-        Note that other networkx graph types, including ``DiGraph``, ``MultiGraph`` and
+        Note that other NetworkX graph types, including ``DiGraph``, ``MultiGraph`` and
         ``MultiDiGraph`` are all subclasses of the ``Graph`` class and are therefore permitted,
         although their usage is discouraged since they store additional information that is not used
         by QubitGraph.
