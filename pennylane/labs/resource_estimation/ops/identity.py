@@ -22,9 +22,9 @@ import pennylane.labs.resource_estimation as re
 
 class ResourceIdentity(qml.Identity, re.ResourceOperator):
     r"""Resource class for the Identity gate.
-    
+
     Resources:
-        The Identity gate is treated as a free gate and thus it cannot be decomposed 
+        The Identity gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty dictionary.
 
     .. seealso:: :class:`~.Identity`
@@ -33,14 +33,14 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The Identity gate is treated as a free gate and thus it cannot be decomposed 
+            The Identity gate is treated as a free gate and thus it cannot be decomposed
             further. Requesting the resources of this gate returns an empty dictionary.
-        
-        Returns: 
+
+        Returns:
             dict: empty dictionary
         """
         return {}
@@ -51,7 +51,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -72,7 +72,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -93,7 +93,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
             the original (un-controlled) operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -106,11 +106,11 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            The Identity gate acts trivially when raised to a power. The resources of this 
+            The Identity gate acts trivially when raised to a power. The resources of this
             operation are the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -118,24 +118,25 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
 
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
-    
+
     Resources:
-        The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed 
+        The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty dictionary.
 
     .. seealso:: :class:`~.GlobalPhase`
 
     """
+
     @staticmethod
     def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed 
+            The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
             further. Requesting the resources of this gate returns an empty dictionary.
-        
-        Returns: 
+
+        Returns:
             dict: empty dictionary
         """
         return {}
@@ -146,7 +147,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -163,11 +164,11 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of a global phase operator changes the sign of the phase, thus 
+            The adjoint of a global phase operator changes the sign of the phase, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {re.ResourceGlobalPhase.resource_rep(): 1}
@@ -184,7 +185,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            The resources are generated from the fact that a global phase controlled on a 
+            The resources are generated from the fact that a global phase controlled on a
             single qubit is equivalent to a local phase shift on that control qubit.
 
             This idea can be generalized to a multi-qubit global phase by introducing one
@@ -192,7 +193,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             case, we sandwich the phase shift operation with two multi-controlled X gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if num_ctrl_wires == 1:
@@ -220,11 +221,11 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a global phase produces a sum of global phases. 
+            Taking arbitrary powers of a global phase produces a sum of global phases.
             The resources simplify to just one total global phase operator.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {re.ResourceGlobalPhase.resource_rep(): 1}

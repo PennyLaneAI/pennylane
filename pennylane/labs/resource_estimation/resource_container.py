@@ -261,7 +261,7 @@ def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
 def substitute(
     initial_resources: Resources, gate_name: str, replacement_resources: Resources, in_place=False
 ) -> Resources:
-    """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of 
+    """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of
     another :class:`~.resource.Resources` object.
 
     Args:

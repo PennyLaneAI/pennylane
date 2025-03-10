@@ -22,9 +22,9 @@ import pennylane.labs.resource_estimation as re
 
 class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     r"""Resource class for the Hadamard gate.
-    
+
     Resources:
-        The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed 
+        The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
 
     .. seealso:: :class:`~.Hadamard`
@@ -33,11 +33,11 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed 
+            The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed
             further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
         """
         raise re.ResourcesNotDefined
@@ -48,7 +48,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -69,7 +69,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -86,19 +86,19 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCH`. 
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if 
+            For a single control wire, the cost is a single instance of :code:`~.ResourceCH`.
+            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
-            
-            In the case where multiple controlled wires are provided, we can collapse the control 
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end). 
+
+            In the case where multiple controlled wires are provided, we can collapse the control
+            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_. 
+            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """        
+        """
         if num_ctrl_wires == 1:
             gate_types = {re.ResourceCH.resource_rep(): 1}
 
@@ -127,7 +127,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z % 2 == 0:
@@ -137,7 +137,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
 class ResourceS(qml.S, re.ResourceOperator):
     r"""Resource class for the S-gate.
-    
+
     Resources:
         The S-gate decomposes into two T-gates.
 
@@ -147,7 +147,7 @@ class ResourceS(qml.S, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
@@ -165,7 +165,7 @@ class ResourceS(qml.S, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -186,7 +186,7 @@ class ResourceS(qml.S, re.ResourceOperator):
             The resources are defined as three instances of the S-gate.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 3}
@@ -201,20 +201,20 @@ class ResourceS(qml.S, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            The S-gate is equivalent to the PhaseShift gate for some fixed phase. Given a single 
-            control wire, the cost is therefore a single instance of 
+            The S-gate is equivalent to the PhaseShift gate for some fixed phase. Given a single
+            control wire, the cost is therefore a single instance of
             :code:`~.ResourceControlledPhaseShift`. Two additional :code:`~.ResourceX` gates are
             used to flip the control qubit if it is zero-controlled.
-            
-            In the case where multiple controlled wires are provided, we can collapse the control 
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end). 
+
+            In the case where multiple controlled wires are provided, we can collapse the control
+            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_. 
+            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """  
+        """
         if num_ctrl_wires == 1:
             gate_types = {re.ResourceControlledPhaseShift.resource_rep(): 1}
 
@@ -244,7 +244,7 @@ class ResourceS(qml.S, re.ResourceOperator):
             :math:`z \mod 4` instances of the S-gate.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if (mod_4 := z % 4) == 0:
@@ -338,7 +338,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -359,7 +359,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -376,17 +376,17 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCSWAP`. 
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if 
+            For a single control wire, the cost is a single instance of :code:`~.ResourceCSWAP`.
+            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
-            
+
             In the case where multiple controlled wires are provided, the resources are given by
             two :code:`~.ResourceCNOT` gates and one :code:`~.ResourceMultiControlledX` gate. This
             is because of the symmetric resource decomposition of the SWAP gate. By controlling on
-            the middle CNOT gate, we obtain the required controlled operation. 
+            the middle CNOT gate, we obtain the required controlled operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if num_ctrl_wires == 1:
@@ -417,7 +417,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z % 2 == 0:
@@ -427,9 +427,9 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
 class ResourceT(qml.T, re.ResourceOperator):
     r"""Resource class for the T-gate.
-    
+
     Resources:
-        The T-gate is treated as a terminal gate and thus it cannot be decomposed 
+        The T-gate is treated as a terminal gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
 
     .. seealso:: :class:`~.T`
@@ -438,11 +438,11 @@ class ResourceT(qml.T, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The T-gate is treated as a terminal gate and thus it cannot be decomposed 
+            The T-gate is treated as a terminal gate and thus it cannot be decomposed
             further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
         """
         raise re.ResourcesNotDefined
@@ -453,7 +453,7 @@ class ResourceT(qml.T, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -474,7 +474,7 @@ class ResourceT(qml.T, re.ResourceOperator):
             The resources are defined as seven instances of the T-gate.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
 
@@ -490,20 +490,20 @@ class ResourceT(qml.T, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            The T-gate is equivalent to the PhaseShift gate for some fixed phase. Given a single 
-            control wire, the cost is therefore a single instance of 
+            The T-gate is equivalent to the PhaseShift gate for some fixed phase. Given a single
+            control wire, the cost is therefore a single instance of
             :code:`~.ResourceControlledPhaseShift`. Two additional :code:`~.ResourceX` gates are
             used to flip the control qubit if it is zero-controlled.
-            
-            In the case where multiple controlled wires are provided, we can collapse the control 
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end). 
+
+            In the case where multiple controlled wires are provided, we can collapse the control
+            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_. 
+            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """  
+        """
         if num_ctrl_wires == 1:
             gate_types = {re.ResourceControlledPhaseShift.resource_rep(): 1}
 
@@ -533,7 +533,7 @@ class ResourceT(qml.T, re.ResourceOperator):
             :math:`z \mod 8` instances of the T-gate.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if (mod_8 := z % 8) == 0:
@@ -594,7 +594,7 @@ class ResourceX(qml.X, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -615,7 +615,7 @@ class ResourceX(qml.X, re.ResourceOperator):
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -631,16 +631,16 @@ class ResourceX(qml.X, re.ResourceOperator):
 
         Resources:
             For one or two control wires, the cost is one of :code:`~.ResourceCNOT`
-            or :code:`~.ResourceToffoli` respectively. Two additional :code:`~.ResourceX` gates 
+            or :code:`~.ResourceToffoli` respectively. Two additional :code:`~.ResourceX` gates
             per control qubit are used to flip the control qubits if they are zero-controlled.
-            
-            In the case where multiple controlled wires are provided, the cost is one general 
-            :code:`~.ResourceMultiControlledX` gate. 
+
+            In the case where multiple controlled wires are provided, the cost is one general
+            :code:`~.ResourceMultiControlledX` gate.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """ 
+        """
         if num_ctrl_wires > 2:
             return {
                 re.ResourceMultiControlledX.resource_rep(
@@ -672,7 +672,7 @@ class ResourceX(qml.X, re.ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z % 2 == 0:
@@ -737,7 +737,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -758,7 +758,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -775,17 +775,17 @@ class ResourceY(qml.Y, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCY`. 
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if 
+            For a single control wire, the cost is a single instance of :code:`~.ResourceCY`.
+            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
-            
-            In the case where multiple controlled wires are provided, we can collapse the control 
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end). 
+
+            In the case where multiple controlled wires are provided, we can collapse the control
+            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_. 
+            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if num_ctrl_wires == 1:
@@ -816,7 +816,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z % 2 == 0:
@@ -826,9 +826,9 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
 class ResourceZ(qml.Z, re.ResourceOperator):
     r"""Resource class for the Z-gate.
-    
+
     Resources:
-        The Z-gate can be decomposed according to the following identities: 
+        The Z-gate can be decomposed according to the following identities:
 
         .. math:: \hat{Z} = \hat{S}^{2},
 
@@ -840,11 +840,11 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The Z-gate can be decomposed according to the following identities: 
+            The Z-gate can be decomposed according to the following identities:
 
             .. math:: \hat{Z} = \hat{S}^{2},
 
@@ -863,7 +863,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -884,7 +884,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -902,18 +902,18 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
         Resources:
             For one or two control wires, the cost is one of :code:`~.ResourceCZ`
-            or :code:`~.ResourceCCZ` respectively. Two additional :code:`~.ResourceX` gates 
+            or :code:`~.ResourceCCZ` respectively. Two additional :code:`~.ResourceX` gates
             per control qubit are used to flip the control qubits if they are zero-controlled.
-            
-            In the case where multiple controlled wires are provided, we can collapse the control 
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end). 
+
+            In the case where multiple controlled wires are provided, we can collapse the control
+            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
             as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """ 
+        """
         if num_ctrl_wires > 2:
             cz = re.ResourceCZ.resource_rep()
             mcx = re.ResourceMultiControlledX.resource_rep(
@@ -947,7 +947,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
             to odd powers it produces itself.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z % 2 == 0:

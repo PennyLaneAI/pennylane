@@ -78,12 +78,12 @@ class ResourceOperator(ABC):
     @staticmethod
     @abstractmethod
     def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts."""
 
     @classmethod
     def resources(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts."""
         return cls._resource_decomp(*args, **kwargs)
 
@@ -116,14 +116,14 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         raise ResourcesNotDefined
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires:int, num_ctrl_values:int, num_work_wires:int, *args, **kwargs
+        cls, num_ctrl_wires: int, num_ctrl_values: int, num_work_wires: int, *args, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -136,10 +136,10 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        
+
         raise ResourcesNotDefined
 
     @classmethod
@@ -153,7 +153,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         raise ResourcesNotDefined
@@ -172,7 +172,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         raise ResourcesNotDefined

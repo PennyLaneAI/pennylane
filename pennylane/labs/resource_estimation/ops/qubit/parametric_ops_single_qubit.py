@@ -25,18 +25,18 @@ import pennylane.labs.resource_estimation as re
 def _rotation_resources(epsilon=10e-3):
     r"""An estimate on the number of T gates needed to implement a Pauli rotation.
 
-    The expected T-count is taken from (the 'Simulation Results' section) `Eﬃcient 
+    The expected T-count is taken from (the 'Simulation Results' section) `Eﬃcient
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
-    The cost is given as: 
+    The cost is given as:
 
         .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
-    
+
     Args:
         epsilon (float): the acceptable error threshold for the approximation
-    
-    Returns: 
+
+    Returns:
         dict: the T-gate counts
-    
+
     """
     gate_types = {}
 
@@ -91,7 +91,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -108,11 +108,11 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of a phase shift operator just changes the sign of the phase, thus 
+            The adjoint of a phase shift operator just changes the sign of the phase, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -129,19 +129,19 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of 
+            For a single control wire, the cost is a single instance of
             :code:`~.ResourceControlledPhaseShift`. Two additional :code:`~.ResourceX` gates are used
             to flip the control qubit if it is zero-controlled.
-            
-            In the case where multiple controlled wires are provided, we can collapse the control 
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end). 
+
+            In the case where multiple controlled wires are provided, we can collapse the control
+            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
             as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """    
+        """
         if num_ctrl_wires == 1:
             gate_types = {re.ResourceControlledPhaseShift.resource_rep(): 1}
 
@@ -166,11 +166,11 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a phase shift produces a sum of shifts. 
+            Taking arbitrary powers of a phase shift produces a sum of shifts.
             The resources simplify to just one total phase shift operator.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z == 0:
@@ -183,9 +183,9 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
-        resources are approximating the gate with a series of T gates. The expected T-count is taken 
-        from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success 
-        Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as: 
+        resources are approximating the gate with a series of T gates. The expected T-count is taken
+        from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+        Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
         .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
 
@@ -195,17 +195,17 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
-            resources are approximating the gate with a series of T gates. The expected T-count is taken 
-            from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success 
-            Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as: 
+            resources are approximating the gate with a series of T gates. The expected T-count is taken
+            from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+            Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
             .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
-        
+
         Args:
             config (dict): a dictionary containing the error threshold
         """
@@ -217,7 +217,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -238,7 +238,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -255,23 +255,23 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCRX`. 
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if 
+            For a single control wire, the cost is a single instance of :code:`~.ResourceCRX`.
+            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
-            
-            In the case where multiple controlled wires are provided, the resources are taken from 
-            (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary 
+
+            In the case where multiple controlled wires are provided, the resources are taken from
+            (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
-            we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated by :code:`Hadamard` 
-            gates. The expression for controlled-RZ gates is used as defined in the reference above. 
-            By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a 
+            we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated by :code:`Hadamard`
+            gates. The expression for controlled-RZ gates is used as defined in the reference above.
+            By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a
             controlled-version of that identity.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if num_ctrl_wires == 1:
@@ -306,11 +306,11 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a single qubit rotation produces a sum of rotations. 
+            Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z == 0:
@@ -323,9 +323,9 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
-        resources are approximating the gate with a series of T gates. The expected T-count is taken 
-        from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success 
-        Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as: 
+        resources are approximating the gate with a series of T gates. The expected T-count is taken
+        from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+        Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
         .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
 
@@ -335,17 +335,17 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
-            resources are approximating the gate with a series of T gates. The expected T-count is taken 
-            from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success 
-            Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as: 
+            resources are approximating the gate with a series of T gates. The expected T-count is taken
+            from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+            Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
             .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
-        
+
         Args:
             config (dict): a dictionary containing the error threshold
         """
@@ -357,7 +357,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -378,7 +378,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -395,23 +395,23 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCRY`. 
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if 
+            For a single control wire, the cost is a single instance of :code:`~.ResourceCRY`.
+            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
-            
-            In the case where multiple controlled wires are provided, the resources are taken 
+
+            In the case where multiple controlled wires are provided, the resources are taken
             from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-            unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the 
+            unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the
             following identity:
 
             .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
 
-            By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a 
-            controlled-version of this identity. Thus we are able to constructively or destructively 
+            By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a
+            controlled-version of this identity. Thus we are able to constructively or destructively
             interfere the gates based on the value of the control qubits.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if num_ctrl_wires == 1:
@@ -439,11 +439,11 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a single qubit rotation produces a sum of rotations. 
+            Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z == 0:
@@ -456,29 +456,29 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
-        resources are approximating the gate with a series of T gates. The expected T-count is taken 
-        from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success 
-        Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as: 
+        resources are approximating the gate with a series of T gates. The expected T-count is taken
+        from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+        Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
         .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
 
     .. seealso:: :class:`~.RZ`
-    
+
     """
 
     @staticmethod
     def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
-            resources are approximating the gate with a series of T gates. The expected T-count is taken 
-            from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success 
-            Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as: 
+            resources are approximating the gate with a series of T gates. The expected T-count is taken
+            from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+            Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
             .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
-        
+
         Args:
             config (dict): a dictionary containing the error threshold
         """
@@ -490,7 +490,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -511,7 +511,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -528,22 +528,22 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCRY`. 
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if 
+            For a single control wire, the cost is a single instance of :code:`~.ResourceCRY`.
+            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
-            
-            In the case where multiple controlled wires are provided, the resources are obtained 
-            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary 
+
+            In the case where multiple controlled wires are provided, the resources are obtained
+            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
 
             .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
 
-            By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a 
-            controlled-version of this identity. Thus we are able to constructively or destructively 
+            By replacing the :code:`X` gates with multi-controlled :code:`X` gates, we obtain a
+            controlled-version of this identity. Thus we are able to constructively or destructively
             interfere the gates based on the value of the control qubits.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if num_ctrl_wires == 1:
@@ -571,11 +571,11 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a single qubit rotation produces a sum of rotations. 
+            Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z == 0:
@@ -592,19 +592,19 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
         .. math:: \hat{R}(\omega, \theta, \phi) = \hat{RZ}(\omega) \cdot \hat{RY}(\theta) \cdot \hat{RZ}(\phi).
 
     .. seealso:: :class:`~.Rot`
-    
+
     """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
             The resources are obtained according to the definition of the :code:`Rot` gate:
 
             .. math:: \hat{R}(\omega, \theta, \phi) = \hat{RZ}(\omega) \cdot \hat{RY}(\theta) \cdot \hat{RZ}(\phi).
-        
+
         """
         ry = ResourceRY.resource_rep()
         rz = ResourceRZ.resource_rep()
@@ -618,7 +618,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -639,7 +639,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             thus the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -719,11 +719,11 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a general single qubit rotation produces a sum of rotations. 
+            Taking arbitrary powers of a general single qubit rotation produces a sum of rotations.
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if z == 0:

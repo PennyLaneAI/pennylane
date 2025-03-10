@@ -27,8 +27,8 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
         The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
         quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
-        Specifically, the resources are given by one :code:`~.ResourceRZ` gate and a cascade of 
-        :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
+        Specifically, the resources are given by one :code:`~.ResourceRZ` gate and a cascade of
+        :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
         the gate acts on.
 
     .. seealso:: :class:`~.MultiRZ`
@@ -37,7 +37,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Args:
@@ -47,8 +47,8 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
             The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
             quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
-            Specifically, the resources are given by one :code:`~.ResourceRZ` gate and a cascade of 
-            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
+            Specifically, the resources are given by one :code:`~.ResourceRZ` gate and a cascade of
+            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
             the gate acts on.
         """
         cnot = re.ResourceCNOT.resource_rep()
@@ -66,7 +66,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
         Resource parameters:
             num_wires (int): the number of qubits the operation acts upon
-        
+
         Returns:
             dict: dictionary containing the resource parameters
         """
@@ -93,11 +93,11 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Resources:
-            The adjoint of this operator just changes the sign of the phase, thus 
+            The adjoint of this operator just changes the sign of the phase, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(num_wires=num_wires): 1}
@@ -119,19 +119,19 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
         Resources:
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}` 
-            then the controlled operation :math:`C\hat{A}` can be expressed as: 
+            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+            then the controlled operation :math:`C\hat{A}` can be expressed as:
 
             .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
 
-            Specifically, the resources are one multi-controlled RZ-gate and a cascade of 
-            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
+            Specifically, the resources are one multi-controlled RZ-gate and a cascade of
+            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
             the gate acts on.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """    
+        """
         if num_ctrl_values == 0:
             cnot = re.ResourceCNOT.resource_rep()
             ctrl_rz = re.ResourceControlled.resource_rep(
@@ -159,11 +159,11 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
             num_wires (int): the number of qubits the base operation acts upon
 
         Resources:
-            Taking arbitrary powers of a general rotation produces a sum of rotations. 
+            Taking arbitrary powers of a general rotation produces a sum of rotations.
             The resources simplify to just one total multi-RZ rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(num_wires=num_wires): 1}
@@ -274,7 +274,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
         Resource parameters:
             pauli_string (str): a string describing the pauli operators that define the rotation
-        
+
         Returns:
             dict: dictionary containing the resource parameters
         """
@@ -303,11 +303,11 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
             pauli_string (str): a string describing the pauli operators that define the rotation
 
         Resources:
-            The adjoint of this operator just changes the sign of the phase, thus 
+            The adjoint of this operator just changes the sign of the phase, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(pauli_string=pauli_string): 1}
@@ -330,25 +330,25 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
         Resources:
             When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
-            the cost is the associated controlled single qubit rotation gate: (:code:`~.ResourceCRX`, 
+            the cost is the associated controlled single qubit rotation gate: (:code:`~.ResourceCRX`,
             :code:`~.ResourceCRY`, :code:`~.ResourceCRZ`, controlled-:code:`~.ResourceGlobalPhase`).
-        
+
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}` 
-            then the controlled operation :math:`C\hat{A}` can be expressed as: 
+            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+            then the controlled operation :math:`C\hat{A}` can be expressed as:
 
             .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
 
-            Specifically, the resources are one multi-controlled RZ-gate and a cascade of 
-            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
-            the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by 
-            a pair of :code:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word 
+            Specifically, the resources are one multi-controlled RZ-gate and a cascade of
+            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
+            the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
+            a pair of :code:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word
             we conjugate by a pair of :code:`~.ResourceHadamard` and a pair of :code:`~.ResourceS` gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """ 
+        """
         base_gate_types = cls.resources(pauli_string)
 
         pivotal_gates = (
@@ -382,11 +382,11 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
             pauli_string (str): a string describing the pauli operators that define the rotation
 
         Resources:
-            Taking arbitrary powers of a general rotation produces a sum of rotations. 
+            Taking arbitrary powers of a general rotation produces a sum of rotations.
             The resources simplify to just one total pauli rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(pauli_string=pauli_string): 1}
@@ -456,7 +456,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -473,11 +473,11 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus 
+            The adjoint of this operator just changes the sign of the phase angle, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -497,18 +497,18 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
         Resources:
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}` 
-            then the controlled operation :math:`C\hat{A}` can be expressed as: 
+            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+            then the controlled operation :math:`C\hat{A}` can be expressed as:
 
             .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
 
-            Specifically, the resources are one multi-controlled RX-gate and a pair of 
+            Specifically, the resources are one multi-controlled RX-gate and a pair of
             :code:`~.ResourceCNOT` gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """ 
+        """
         if num_ctrl_values == 0:
             cnot = re.ResourceCNOT.resource_rep()
             ctrl_rx = re.ResourceControlled.resource_rep(
@@ -534,11 +534,11 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a rotation produces a sum of rotations. 
+            Taking arbitrary powers of a rotation produces a sum of rotations.
             The resources simplify to just one total Ising rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -609,7 +609,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -626,11 +626,11 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus 
+            The adjoint of this operator just changes the sign of the phase angle, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -650,18 +650,18 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
         Resources:
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}` 
-            then the controlled operation :math:`C\hat{A}` can be expressed as: 
+            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+            then the controlled operation :math:`C\hat{A}` can be expressed as:
 
             .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
 
-            Specifically, the resources are one multi-controlled RY-gate and a pair of 
+            Specifically, the resources are one multi-controlled RY-gate and a pair of
             :code:`~.ResourceCY` gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """ 
+        """
         if num_ctrl_values == 0:
             cy = re.ops.ResourceCY.resource_rep()
             ctrl_ry = re.ResourceControlled.resource_rep(
@@ -687,11 +687,11 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a rotation produces a sum of rotations. 
+            Taking arbitrary powers of a rotation produces a sum of rotations.
             The resources simplify to just one total Ising rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -765,7 +765,7 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -782,11 +782,11 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus 
+            The adjoint of this operator just changes the sign of the phase angle, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -806,8 +806,8 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
         Resources:
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}` 
-            then the controlled operation :math:`C\hat{A}` can be expressed as: 
+            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+            then the controlled operation :math:`C\hat{A}` can be expressed as:
 
             .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
 
@@ -815,9 +815,9 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
             a pair of :code:`~.ResourceCY` gates and a pair of :code:`~.ResourceHadamard` gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """ 
+        """
         if num_ctrl_values == 0:
             h = re.ResourceHadamard.resource_rep()
             cy = re.ResourceCY.resource_rep()
@@ -853,11 +853,11 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a rotation produces a sum of rotations. 
+            Taking arbitrary powers of a rotation produces a sum of rotations.
             The resources simplify to just one total Ising rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -927,7 +927,7 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -944,11 +944,11 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus 
+            The adjoint of this operator just changes the sign of the phase angle, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -968,18 +968,18 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
         Resources:
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}` 
-            then the controlled operation :math:`C\hat{A}` can be expressed as: 
+            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+            then the controlled operation :math:`C\hat{A}` can be expressed as:
 
             .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
 
-            Specifically, the resources are one multi-controlled RZ-gate and a pair of 
+            Specifically, the resources are one multi-controlled RZ-gate and a pair of
             :code:`~.ResourceCNOT` gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """ 
+        """
         if num_ctrl_values == 0:
             cnot = re.ResourceCNOT.resource_rep()
             ctrl_rz = re.ResourceControlled.resource_rep(
@@ -1005,11 +1005,11 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
             z (int): the power that the operator is being raised to
 
         Resources:
-            Taking arbitrary powers of a rotation produces a sum of rotations. 
+            Taking arbitrary powers of a rotation produces a sum of rotations.
             The resources simplify to just one total Ising rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -1079,7 +1079,7 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
         Resource parameters:
             The resources of this operation don't depend on any additional parameters.
-        
+
         Returns:
             dict: empty dictionary
         """
@@ -1096,11 +1096,11 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus 
+            The adjoint of this operator just changes the sign of the phase angle, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         return {cls.resource_rep(): 1}
@@ -1120,8 +1120,8 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
         Resources:
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}` 
-            then the controlled operation :math:`C\hat{A}` can be expressed as: 
+            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+            then the controlled operation :math:`C\hat{A}` can be expressed as:
 
             .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
 
@@ -1129,9 +1129,9 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
             SWAP gate and a pair of :code:`~.ResourceCNOT` gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
-        """ 
+        """
         if num_ctrl_values == 0:
             cnot = re.ResourceCNOT.resource_rep()
             ctrl_swap = re.ResourceControlled.resource_rep(
