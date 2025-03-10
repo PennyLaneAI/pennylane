@@ -2493,20 +2493,19 @@ class ControlledPhaseShift(ControlledOp):
         ]
 
 
-def _cphase_rz_resource():
-    return {qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1}
+def _cphaseshift_resource():
+    return {qml.PhaseShift: 3, qml.CNOT: 2}
 
 
-@register_resources(_cphase_rz_resource)
-def _cphase_to_rz_cnot(phi, wires, **__):
-    qml.RZ(phi / 2, wires=wires[0])
+@register_resources(_cphaseshift_resource)
+def _cphaseshift(phi, wires, **__):
+    qml.PhaseShift(phi / 2, wires=wires[0])
     qml.CNOT(wires=wires)
-    qml.RZ(-phi / 2, wires=wires[1])
+    qml.PhaseShift(-phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
-    qml.RZ(phi / 2, wires=wires[1])
-    qml.GlobalPhase(-phi / 4)
+    qml.PhaseShift(phi / 2, wires=wires[1])
 
 
-add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot)
+add_decomps(ControlledPhaseShift, _cphaseshift)
 
 CPhase = ControlledPhaseShift

@@ -655,6 +655,12 @@ class DoubleExcitation(Operation):
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
+    resource_param_keys = ()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def generator(self) -> "qml.Hamiltonian":
         w0, w1, w2, w3 = self.wires
         return qml.Hamiltonian(
@@ -796,6 +802,45 @@ class DoubleExcitation(Operation):
         cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G²", cache=cache)
+
+
+def _doublexcit_resource():
+    return {qml.CNOT: 14, qml.Hadamard: 6, qml.RY: 8}
+
+
+@register_resources(_doublexcit_resource)
+def _doublexcit(phi, wires, **__):
+    qml.CNOT(wires=[wires[2], wires[3]])
+    qml.CNOT(wires=[wires[0], wires[2]])
+    qml.Hadamard(wires=wires[3])
+    qml.Hadamard(wires=wires[0])
+    qml.CNOT(wires=[wires[2], wires[3]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.RY(phi / 8, wires=wires[1])
+    qml.RY(-phi / 8, wires=wires[0])
+    qml.CNOT(wires=[wires[0], wires[3]])
+    qml.Hadamard(wires=wires[3])
+    qml.CNOT(wires=[wires[3], wires[1]])
+    qml.RY(phi / 8, wires=wires[1])
+    qml.RY(-phi / 8, wires=wires[0])
+    qml.CNOT(wires=[wires[2], wires[1]])
+    qml.CNOT(wires=[wires[2], wires[0]])
+    qml.RY(-phi / 8, wires=wires[1])
+    qml.RY(phi / 8, wires=wires[0])
+    qml.CNOT(wires=[wires[3], wires[1]])
+    qml.Hadamard(wires=wires[3])
+    qml.CNOT(wires=[wires[0], wires[3]])
+    qml.RY(-phi / 8, wires=wires[1])
+    qml.RY(phi / 8, wires=wires[0])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[2], wires[0]])
+    qml.Hadamard(wires=wires[0])
+    qml.Hadamard(wires=wires[3])
+    qml.CNOT(wires=[wires[0], wires[2]])
+    qml.CNOT(wires=[wires[2], wires[3]])
+
+
+add_decomps(DoubleExcitation, _doublexcit)
 
 
 class DoubleExcitationPlus(Operation):
