@@ -432,9 +432,6 @@ def op_to_adjvec(
 
     # dense branch
     if all(isinstance(op, TensorLike) for op in basis):
-        if not all(isinstance(op, TensorLike) for op in ops):
-            _n = int(np.round(np.log2(basis[0].shape[-1])))
-            ops = np.array([qml.matrix(op, wire_order=range(_n)) for op in ops])
 
         basis = np.array(basis)
         res = trace_inner_product(np.array(ops), basis).real
