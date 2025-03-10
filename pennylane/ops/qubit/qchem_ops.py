@@ -297,6 +297,7 @@ def _single_excit_resources():
         qml.CNOT: 2,
         qml.RZ: 1,
         qml.RY: 1,
+        qml.T: 2,
     }
 
 
