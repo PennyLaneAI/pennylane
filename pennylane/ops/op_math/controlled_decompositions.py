@@ -711,16 +711,15 @@ def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
 
     # down-ladder
     if n % 2 == 0:
-        x, y, t = n - 3, n - 5, n - 6
+        ctrl_1, ctrl_2, target = n - 3, n - 5, n - 6
     else:
-        x, y, t = n - 1, n - 4, n - 5
+        ctrl_1, ctrl_2, target = n - 1, n - 4, n - 5
 
-    if t >= 0:
-        print(x, y, t)
-        gates.append(qml.Toffoli(wires=[wires[x], wires[y], wires[t]]))
-        gates.append(qml.PauliX(wires=wires[t]))
+    if target >= 0:
+        gates.append(qml.Toffoli(wires=[wires[ctrl_1], wires[ctrl_2], wires[target]]))
+        gates.append(qml.PauliX(wires=wires[target]))
 
-    for i in range(t, 1, -2):
+    for i in range(target, 1, -2):
         gates.append(qml.Toffoli(wires=[wires[i], wires[i - 1], wires[i - 2]]))
         gates.append(qml.PauliX(wires=wires[i - 2]))
 
