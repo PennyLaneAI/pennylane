@@ -102,8 +102,10 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]]).asformat(
+            format=format
+        )
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -304,8 +306,8 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[0, 1], [1, 0]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -502,8 +504,8 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[0, -1j], [1j, 0]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -704,8 +706,8 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[1, 0], [0, -1]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1279,7 +1281,7 @@ class SWAP(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
         r"""Sparse Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1307,7 +1309,7 @@ class SWAP(Operation):
         #  [0 1 0 0]
         #  [0 0 0 1]]
         data, indices, indptr = [1, 1, 1, 1], [0, 2, 1, 3], [0, 1, 2, 3, 4]
-        return sparse.csr_matrix((data, indices, indptr))
+        return sparse.csr_matrix((data, indices, indptr)).asformat(format=format)
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
