@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionGraph
+from conftest import Hadamard, decompositions
 
 
 @pytest.mark.unit
@@ -62,7 +63,21 @@ def test_get_decomp_rule():
 
 
 @patch(
-    "pennylane.decomposition.decomposition_graph.list_decomps", return_value=[]
-)  # We're going to define all decomposition rules locally in the test suite.
+    "pennylane.decomposition.decomposition_graph.list_decomps",
+    side_effect=lambda x: decompositions[x],
+)
 class TestGraphConstruction:  # pylint: disable=too-few-public-methods
     """Unit tests for constructing the graph."""
+
+    def test_single_op_construction(self, _):
+        """Tests constructing a graph from a single Hadamard."""
+
+        op = Hadamard(wires=[0])
+        graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RZ", "GlobalPhase"})
+        assert len(graph._graph.nodes()) == 8
+        assert len(graph._graph.edges()) == 11
+
+        # Check that graph construction stops at gates in the target gate set.
+        graph2 = DecompositionGraph(operations=[op], target_gate_set={"RY", "RZ", "GlobalPhase"})
+        assert len(graph2._graph.nodes()) == 7
+        assert len(graph2._graph.edges()) == 8
