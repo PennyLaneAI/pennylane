@@ -118,7 +118,7 @@ class GraphStatePrep(Operation):
         Returns:
             str: label to use in drawings
         """
-        return self.__repr__()
+        return repr(self)
 
     def __repr__(self):
         """Method defining the string representation of this class."""
