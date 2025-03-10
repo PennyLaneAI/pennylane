@@ -659,7 +659,11 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         """
         gate_types = {}
         ctrl = re.ResourceControlled.resource_rep(
-            base_class=O_op, base_params=O_params, num_ctrl_wires=num_work_wires, num_ctrl_values=0, num_work_wires=0
+            base_class=O_op,
+            base_params=O_params,
+            num_ctrl_wires=num_work_wires,
+            num_ctrl_values=0,
+            num_work_wires=0,
         )
         phase_shift = re.ResourcePhaseShift.resource_rep()
         hadamard = re.ResourceHadamard.resource_rep()
@@ -686,10 +690,9 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     @property
     def resource_params(self) -> Dict:
         U_op = self.hyperparameters["U"]
-        O_op = self.hyperparameters["U"]
-        U_params = U_op.resource_params
-        O_params = O_op.resource_params
-        num_work_wires = len(self.hyperparameters["work_wires"])
+        O_op = self.hyperparameters["O"]
+        U_params = U_op.resource_params if hasattr(U_op, "resource_params") else {}
+        O_params = O_op.resource_params if hasattr(O_op, "resource_params") else {}
         iters = self.hyperparameters["iters"]
         fixed_point = self.hyperparameters["fixed_point"]
         num_ref_wires = len(self.hyperparameters["reflection_wires"])
@@ -700,7 +703,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             "O_op": type(O_op),
             "O_params": O_params,
             "iters": iters,
-            "num_work_wires": num_work_wires,
+            "num_work_wires": 1,
             "num_ref_wires": num_ref_wires,
             "fixed_point": fixed_point,
         }
@@ -731,7 +734,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
         r"""The resources for BasisState are according to the decomposition found
-        in qml.BasisState, specifcally the one that assumes the state is concrete.
+        in qml.BasisState.
         """
         gate_types = {}
 
@@ -751,3 +754,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
     def resource_rep(cls, wires) -> CompressedResourceOp:
         params = {"num_wires": wires}
         return CompressedResourceOp(cls, params)
+    
+    @classmethod
+    def tracking_name(cls, num_wires) -> str:
+        return f"BasisState({num_wires})"

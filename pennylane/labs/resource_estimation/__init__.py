@@ -241,5 +241,5 @@ from .templates import (
     ResourceMottonenStatePreparation,
     ResourceSuperposition,
     ResourceAmplitudeAmplification,
-    ResourceBasisState
+    ResourceBasisState,
 )
