@@ -27,23 +27,37 @@ from .qubit_graph import QubitGraph
 
 class GraphStatePrep(Operation):
     r"""
-    Encode a graph state with single-qubit operations applied on each qubit, and entangling operations applied on nearest-neighbor qubits defined by the graph connectivity.
-    The initial graph is :math:`|0\rangle^{\otimes V}`, given each qubit or graph vertex node (:math:`V`) in the graph is in the :math:`|0\rangle` state and is not entangled with any other qubit.
+    Encode a graph state with single-qubit operations applied on each qubit, and entangling
+    operations applied on nearest-neighbor qubits defined by the graph connectivity.
+    The initial graph is :math:`|0\rangle^{\otimes V}`, given each qubit or graph vertex node
+    (:math:`V`) in the graph is in the :math:`|0\rangle` state and is not entangled with any
+    other qubit.
     The target graph state :math:`| \psi \rangle` is:
     :math:`| \psi \rangle = \prod\limits_{\{a, b\} \in E} U_{ab}|+\rangle^{\otimes V}`
-    where :math:`U_{ab}` is a phase gate applied to the vertices :math:`a`, :math:`b` of a edge :math:`E` in the graph as illustrated in eq. (24)
+    where :math:`U_{ab}` is a phase gate applied to the vertices :math:`a`, :math:`b` of a edge
+    :math:`E` in the graph as illustrated in eq. (24)
     in `arxiv:quant-ph/0602096 <https://arxiv.org/pdf/quant-ph/0602096>`_.
 
     The target graph state can be prepared as below:
 
-        1. Each qubit is prepared as :math:`|+\rangle^{\otimes V}` state by applying the ``one_qubit_ops`` (``Hadamard`` gate) operation.
-        2. Entangle every nearest qubit pair in the graph with ``two_qubit_ops`` (``CZ`` gate) operation.
+        1. Each qubit is prepared as :math:`|+\rangle^{\otimes V}` state by applying the
+        ``one_qubit_ops`` (:class:`~.pennylane.H` gate) operation.
+        
+        2. Entangle every nearest qubit pair in the graph with ``two_qubit_ops`` 
+        (:class:`~.pennylane.CZ` gate) operation.
 
     Args:
-        graph (Union[QubitGraph, nx.Graph]): QubitGraph or nx.Graph object mapping qubit to wires.
-        one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`. #TODO: To define more complex starting states not relying on a single ops.
+        graph (Union[QubitGraph, networkx.Graph]): QubitGraph or networkx.Graph object mapping qubit to wires.
+        one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
         two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
-        wires (Optional[Wires]): Wires the graph state preparation to apply on. Default to None. #TODO: Ensure wires works with multiple dimensional nx.Graph() object after the wires indexing scheme is added to the ``ftqc`` module.
+        wires (Optional[Wires]): Wires the graph state preparation to apply on. Default to None.
+
+    .. todo::
+
+        1. To define more complex starting states not relying on a single ops (``one_qubit_ops``
+            and ``two_qubit_ops``).
+        2. Ensure ``wires`` works with multiple dimensional ``nx.Graph()`` object after the wires
+           indexing scheme is added to the ``ftqc`` module.
 
     **Example:**
         The graph state preparation layer can be customized by the user.
@@ -73,6 +87,7 @@ class GraphStatePrep(Operation):
         QubitGraph<id=(1, 0), loc=[square]>: ──Y─╭X─│──│──╭●─┤  Probs
         QubitGraph<id=(1, 1), loc=[square]>: ──Y─│──│──╰X─╰X─┤  Probs
         QubitGraph<id=(0, 0), loc=[square]>: ──Y─╰●─╰●───────┤  Probs
+
     """
 
     def __init__(
