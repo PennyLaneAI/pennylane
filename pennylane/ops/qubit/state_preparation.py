@@ -194,7 +194,7 @@ def _basis_state_decomp_resources(state, wires):
 @register_resources(_basis_state_decomp_resources)
 def _basis_state_decomp(state, wires, **__):
     if not qml.math.is_abstract(state):
-        for wire, basis in zip(wires, state):
+        for wire, basis in zip(wires, state, strict=True):
             if basis == 1:
                 qml.X(wire)
     else:
