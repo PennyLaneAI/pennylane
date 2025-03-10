@@ -148,10 +148,10 @@ class TestControlledSequence:
         )
 
     @pytest.mark.parametrize(
-        "base_class, base_params, num_ctrl_wires",
-        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
+        "base_class, base_params, num_ctrl_wires, num_cseq",
+        [(re.ResourceHadamard, {}, 1, 1), (re.ResourceRX, {}, 3, 7)],
     )
-    def test_resources_from_rep(self, base_class, base_params, num_ctrl_wires):
+    def test_resources_from_rep(self, base_class, base_params, num_ctrl_wires, num_cseq):
         """Test that computing the resources from a compressed representation works"""
 
         resource_controlled_sequence = re.CompressedResourceOp(
@@ -165,7 +165,7 @@ class TestControlledSequence:
             },
         )
 
-        expected = {resource_controlled_sequence: 2**num_ctrl_wires - 1}
+        expected = {resource_controlled_sequence: num_cseq}
 
         rep = re.ResourceControlledSequence.resource_rep(base_class, base_params, num_ctrl_wires)
         actual = rep.op_type.resources(**rep.params)
