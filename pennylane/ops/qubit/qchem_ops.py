@@ -1409,7 +1409,7 @@ class FermionicSWAP(Operation):
 
 
 def _fermionic_swap_decomp_resources():
-    return {qml.Hadamard: 4, qml.MultiRZ: 2, qml.RX: 4, qml.RZ: 2, qml.ops.op_math.Exp: 1}
+    return {qml.Hadamard: 4, qml.resource_rep(qml.MultiRZ, num_wires=2): 2, qml.RX: 4, qml.RZ: 2, qml.ops.op_math.Exp: 1}
 
 
 @register_resources(_fermionic_swap_decomp_resources)
