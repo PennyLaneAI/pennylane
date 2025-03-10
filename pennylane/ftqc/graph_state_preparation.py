@@ -27,7 +27,7 @@ from .qubit_graph import QubitGraph
 
 class GraphStatePrep(Operation):
     r"""
-    Encode a graph state with operations on each qubit, entangling operations for nearest qubits and qubit graph.
+    Encode a graph state with single-qubit operations applied on each qubit, and entangling operations applied on nearest-neighbor qubits defined by the graph connectivity.
     The initial graph is :math:`|0\rangle^{\otimes V}`, given each qubit or graph vertex node (:math:`V`) in the graph is in the :math:`|0\rangle` state and is not entangled with any other qubit.
     The target graph state :math:`| \psi \rangle` is:
     :math:`| \psi \rangle = \prod\limits_{\{a, b\} \in E} U_{ab}|+\rangle^{\otimes V}`
