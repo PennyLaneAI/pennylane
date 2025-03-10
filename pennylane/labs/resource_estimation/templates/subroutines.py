@@ -754,7 +754,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
     def resource_rep(cls, wires) -> CompressedResourceOp:
         params = {"num_wires": wires}
         return CompressedResourceOp(cls, params)
-    
+
     @classmethod
     def tracking_name(cls, num_wires) -> str:
         return f"BasisState({num_wires})"

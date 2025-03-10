@@ -1292,19 +1292,20 @@ class TestResourceAmplitudeAmplification:
             == f"AmplitudeAmplification"
         )
 
+
 class TestResourceBasisState:
     """Test the ResourceBasisState class"""
 
     @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
+        "num_wires, num_rx, num_phase_shift",
+        [(4, 4, 8), (5, 5, 10), (6, 6, 12)],
     )
-    def test_resources(self, num_wires):
+    def test_resources(self, num_wires, num_rx, num_phase_shift):
         expected = {}
         rx = re.CompressedResourceOp(re.ResourceRX, {})
         phase_shift = re.CompressedResourceOp(re.ResourcePhaseShift, {})
-        expected[rx] = num_wires
-        expected[phase_shift] = num_wires * 2
+        expected[rx] = num_rx
+        expected[phase_shift] = num_phase_shift
 
         assert re.ResourceBasisState.resources(num_wires) == expected
 
@@ -1337,18 +1338,18 @@ class TestResourceBasisState:
         assert expected == re.ResourceBasisState.resource_rep(num_wires)
 
     @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
+        "num_wires, num_rx, num_phase_shift",
+        [(4, 4, 8), (5, 5, 10), (6, 6, 12)],
     )
-    def test_resources_from_rep(self, num_wires):
+    def test_resources_from_rep(self, num_wires, num_rx, num_phase_shift):
         """Test that computing the resources from a compressed representation works"""
         rep = re.ResourceBasisState.resource_rep(num_wires)
         actual = rep.op_type.resources(**rep.params)
         expected = {}
         rx = re.CompressedResourceOp(re.ResourceRX, {})
         phase_shift = re.CompressedResourceOp(re.ResourcePhaseShift, {})
-        expected[rx] = num_wires
-        expected[phase_shift] = num_wires * 2
+        expected[rx] = num_rx
+        expected[phase_shift] = num_phase_shift
 
         assert actual == expected
 
