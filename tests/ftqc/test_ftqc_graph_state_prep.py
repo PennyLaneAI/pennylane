@@ -25,7 +25,6 @@ from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 class TestGraphStatePrep:
     """Test for graph state prep"""
 
-    @pytest.mark.jax
     @pytest.mark.xfail(reason="Jax JIT requires wires to be integers.")
     def test_jaxjit_circuit_graph_state_prep(self):
         """Test if Jax JIT works with GraphStatePrep"""
@@ -33,6 +32,9 @@ class TestGraphStatePrep:
         q = QubitGraph(lattice.graph)
         dev = qml.device("default.qubit")
 
+        jax = pytest.importorskip("jax")
+
+        @jax.jit
         @qml.qnode(dev)
         def circuit(q):
             GraphStatePrep(graph=q)
