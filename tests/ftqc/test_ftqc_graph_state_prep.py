@@ -42,15 +42,41 @@ class TestGraphStatePrep:
 
         circuit(q)
 
-    def test_circuit_accept_graph_state_prep(self):
+    @pytest.mark.parametrize(
+        "dims, shape, wires",
+        [
+            ([5], "chain", None),
+            ([2, 2], "square", None),
+            ([2, 3], "rectangle", None),
+            ([2, 2, 2], "cubic", None),
+            ([5], "chain", [0, 1, 2, 3, 4]),
+            ([2, 2], "square", [(0, 0), (0, 1), (1, 0), (1, 1)]),
+            ([2, 2], "rectangle", [(0, 0), (0, 1), (1, 0), (1, 1)]),
+            (
+                [2, 2, 2],
+                "cubic",
+                [
+                    (0, 0, 0),
+                    (0, 0, 1),
+                    (0, 1, 0),
+                    (0, 1, 1),
+                    (1, 0, 0),
+                    (1, 0, 1),
+                    (1, 1, 0),
+                    (1, 1, 1),
+                ],
+            ),
+        ],
+    )
+    def test_circuit_accept_graph_state_prep(self, dims, shape, wires):
         """Test if a quantum function accepts GraphStatePrep."""
-        lattice = generate_lattice([2, 2], "square")
+        lattice = generate_lattice(dims, shape)
         q = QubitGraph(lattice.graph)
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circuit(q):
-            GraphStatePrep(graph=q)
+            GraphStatePrep(graph=q, wires=wires)
             return qml.probs()
 
         res = circuit(q)
