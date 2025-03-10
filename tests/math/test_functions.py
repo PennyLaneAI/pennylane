@@ -3012,92 +3012,55 @@ def test_unstack_tensorflow():
     assert qml.math.allclose(r2, tf.Variable(0.2))
 
 
-# The following part is for recording some legacy code that might be useful for future reference.
-# Specifically, qml.math.scatter is what we want to test against.
-def _apply_state_vector(total_wires, state, device_wires, interface="numpy", tolerance=1e-10):
-    """Initialize the internal state in a specified pure state.
-
-    Args:
-        total_wires (Wires): Total wires in the system
-        state (array[complex]): normalized input state of length
-            ``2**len(device_wires)``
-        device_wires (Wires): wires that get initialized in the state
-        interface (str): Interface to use for array operations. Defaults to "numpy".
-        tolerance (float): Tolerance for checking if state is normalized. Defaults to 1e-10.
-
-    Returns:
-        array[complex]: The density matrix for the full system after applying the state
-    """
-    num_total_wires = len(total_wires)
-
-    state = qml.math.asarray(state, like=interface)
-    n_state_vector = state.shape[0]
-
-    if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
-        raise ValueError("State vector must be of length 2**wires.")  # pragma: no cover
-
-    if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-        raise ValueError("Sum of amplitudes-squared does not equal one.")  # pragma: no cover
-
-    if len(device_wires) == num_total_wires and sorted(device_wires.labels) == list(
-        device_wires.labels
-    ):
-        # Initialize the entire wires with the state
-        rho = qml.math.outer(state, qml.math.conj(state))
-        _state = qml.math.reshape(rho, [2] * 2 * num_total_wires)
-
-    else:
-        # generate basis states on subset of qubits via the cartesian product
-        basis_states = qml.math.asarray(
-            list(itertools.product([0, 1], repeat=len(device_wires))), dtype=int
-        )
-
-        # get basis states to alter on full set of qubits
-        unravelled_indices = qml.math.zeros((2 ** len(device_wires), num_total_wires), dtype=int)
-        unravelled_indices[:, device_wires] = basis_states
-
-        # get indices for which the state is changed to input state vector elements
-        ravelled_indices = qml.math.ravel_multi_index(unravelled_indices.T, [2] * num_total_wires)
-
-        state = qml.math.scatter(ravelled_indices, state, [2**num_total_wires])
-        rho = qml.math.outer(state, qml.math.conj(state))
-        rho = qml.math.reshape(rho, [2] * 2 * num_total_wires)
-        _state = qml.math.asarray(rho, like=interface)
-    return _state
-
-
-# pylint: disable=protected-access, too-few-public-methods
 class TestScatter:
-    """
-    Tests that covered parts of legacy method of the DefaultMixed device.
-    """
+    """Tests for qml.math.scatter functionality"""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch", "autograd"])
-    @pytest.mark.parametrize(
-        "total_wires", [qml.wires.Wires([0]), qml.wires.Wires([0, 1]), qml.wires.Wires([0, 2, 1])]
-    )
-    def test_apply_state_vector(self, total_wires, interface):
-        """Initialize the internal state in a specified pure state."""
-        if interface == "autograd":
-            pytest.skip(
-                "Autograd interface not supported for this test. No autograd scatter support."
-            )
-        num_total_wires = len(total_wires)
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_basic(self, interface):
+        """Test basic scatter operation - placing values at specific indices in a zero array"""
+        indices = [0, 2, 4]
+        updates = [1.0, 2.0, 3.0]
+        shape = [6]
 
-        device_wires = qml.wires.Wires([0])
-        num_wires = len(device_wires)
-        tolerance = 1e-10
-        state_np = np.zeros(shape=(2**num_wires,), dtype=np.complex128)
-        state_np[0] = 1.0
-        _state = _apply_state_vector(
-            total_wires=total_wires,
-            state=state_np,
-            device_wires=device_wires,
-            interface=interface,
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([1.0, 0.0, 2.0, 0.0, 3.0, 0.0], like=interface)
+
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_complex(self, interface):
+        """Test scatter with complex values"""
+        indices = [1, 3]
+        updates = [1.0 + 1.0j, 2.0 - 1.0j]
+        shape = [4]
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray(
+            [0.0 + 0.0j, 1.0 + 1.0j, 0.0 + 0.0j, 2.0 - 1.0j], like=interface
         )
 
-        rho_expected_numpy = np.zeros([2] * 2 * num_total_wires, dtype=np.complex128)
-        rho_expected_numpy[tuple([0] * 2 * num_total_wires)] = 1.0
-        rho_expected = qml.math.asarray(rho_expected_numpy, like=interface)
-        assert qml.math.allclose(_state, rho_expected, atol=tolerance)
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_multidimensional(self, interface):
+        """Test scatter with multidimensional target shape"""
+        indices = [0, 2]
+        updates = [[1.0, 2.0], [3.0, 4.0]]
+        shape = [3, 2]  # 3x2 target array
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([[1.0, 2.0], [0.0, 0.0], [3.0, 4.0]], like=interface)
+
+        assert qml.math.allclose(result, expected)
