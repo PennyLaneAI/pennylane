@@ -97,7 +97,7 @@ class GraphStatePrep(Operation):
                 raise ValueError("Please ensure wires objects match labels in graph")
             super().__init__(wires=wires)
 
-    def label(self) -> str:  # pylint: disable=unused-argument
+    def label(self) -> str: # pylint: disable=arguments-differ
         r"""Defines how the graph state preparation is represented in diagrams and drawings.
 
         Returns:
