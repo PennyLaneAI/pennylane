@@ -23,7 +23,7 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
-from pennylane.capture import enabled
+from pennylane.capture import determine_abstracted_axes, enabled
 from pennylane.capture.capture_diff import _get_grad_prim, _get_jacobian_prim
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
@@ -72,9 +72,18 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
         # Create fully flattened function (flat inputs & outputs)
         flat_fn = FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
         flat_args = sum(flat_args, start=[])
-        jaxpr = jax.make_jaxpr(flat_fn)(*flat_args)
-        prim_kwargs = {"argnum": flat_argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
-        out_flat = diff_prim.bind(*jaxpr.consts, *flat_args, **prim_kwargs, method=method, h=h)
+        abstracted_axes, abstract_shapes = determine_abstracted_axes(tuple(flat_args))
+        jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
+        num_abstract_shapes = len(abstract_shapes)
+        shifted_argnum = [a + num_abstract_shapes for a in flat_argnum]
+        prim_kwargs = {
+            "argnum": shifted_argnum,
+            "jaxpr": jaxpr.jaxpr,
+            "n_consts": len(jaxpr.consts),
+        }
+        out_flat = diff_prim.bind(
+            *jaxpr.consts, *abstract_shapes, *flat_args, **prim_kwargs, method=method, h=h
+        )
         # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
         out_flat = tree_leaves(out_flat)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
