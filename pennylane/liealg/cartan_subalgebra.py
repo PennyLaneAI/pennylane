@@ -17,7 +17,6 @@ import copy
 from itertools import combinations, combinations_with_replacement
 from typing import Iterable, List, Union
 
-import numpy as np
 from scipy.linalg import null_space, sqrtm
 
 import pennylane as qml
@@ -29,43 +28,43 @@ from pennylane.typing import TensorLike
 
 def _gram_schmidt(X):
     """Orthogonalize basis of column vectors in X"""
-    Q, _ = np.linalg.qr(X.T, mode="reduced")
+    Q, _ = qml.math.linalg.qr(X.T, mode="reduced")
     return Q.T
 
 
 def _is_independent(v, A, tol=1e-14):
     """Check whether ``v`` is independent of the columns of A."""
-    v /= np.linalg.norm(v)
+    v /= qml.math.linalg.norm(v)
     v = v - A @ qml.math.linalg.solve(A.conj().T @ A, A.conj().T) @ v
-    return np.linalg.norm(v) > tol
+    return qml.math.linalg.norm(v) > tol
 
 
 def _orthogonal_complement_basis(a, m, tol):
     """find mtilde = m - a"""
     # Step 1: Find the span of a
-    a = np.array(a)
-    m = np.array(m)
+    a = qml.math.array(a)
+    m = qml.math.array(m)
 
     # Compute the orthonormal basis of a using QR decomposition
 
     Q = _gram_schmidt(a)
 
     # Step 2: Project each vector in m onto the orthogonal complement of span(a)
-    projections = m - np.dot(np.dot(m, Q.T), Q)
-    assert np.allclose(
-        np.tensordot(a, projections, axes=[[1], [1]]), 0.0
-    ), f"{np.tensordot(a, projections, axes=[[1], [1]])}"
+    projections = m - qml.math.dot(qml.math.dot(m, Q.T), Q)
+    assert qml.math.allclose(
+        qml.math.tensordot(a, projections, axes=[[1], [1]]), 0.0
+    ), f"{qml.math.tensordot(a, projections, axes=[[1], [1]])}"
 
     # Step 3: Find a basis for the non-zero projections
     # We'll use SVD to find the basis
-    U, S, _ = np.linalg.svd(projections.T)
+    U, S, _ = qml.math.linalg.svd(projections.T)
 
     # Choose columns of U corresponding to non-zero singular values
-    rank = np.sum(S > tol)
+    rank = qml.math.sum(S > tol)
     basis = U[:, :rank]
-    assert np.allclose(
-        np.tensordot(a, basis, axes=[[1], [0]]), 0.0
-    ), f"{np.tensordot(a, basis, axes=[[1], [0]])}"
+    assert qml.math.allclose(
+        qml.math.tensordot(a, basis, axes=[[1], [0]]), 0.0
+    ), f"{qml.math.tensordot(a, basis, axes=[[1], [0]])}"
 
     return basis.T  # Transpose to get row vectors
 
@@ -82,8 +81,8 @@ def cartan_subalgebra(
     .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
 
     Args:
-        k (List[Union[PauliSentence, np.ndarray]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
-        m (List[Union[PauliSentence, np.ndarray]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
+        k (List[Union[PauliSentence, TensorLike]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
+        m (List[Union[PauliSentence, TensorLike]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         adj (Array): The :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`.
             When ``None`` is provided, it internally uses :func:`~structure_constants` to compute the adjoint representation (default).
         start_idx (bool): Indicates from which element in ``m`` the CSA computation starts.
@@ -95,7 +94,7 @@ def cartan_subalgebra(
             and between ``g``, ``k`` and ``m``.
 
     Returns:
-        Tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray): A tuple of adjoint vector representations
+        Tuple(TensorLike, TensorLike, TensorLike, TensorLike, TensorLike): A tuple of adjoint vector representations
         ``(newg, k, mtilde, a, new_adj)``, corresponding to
         :math:`\mathfrak{g}`, :math:`\mathfrak{k}`, :math:`\tilde{\mathfrak{m}}`, :math:`\mathfrak{a}` and the new adjoint representation.
         The dimensions are ``(|g|, |g|)``, ``(|k|, |g|)``, ``(|mtilde|, |g|)``, ``(|a|, |g|)`` and ``(|g|, |g|, |g|)``, respectively.
@@ -232,7 +231,7 @@ def cartan_subalgebra(
         for h_i in np_a:
 
             # obtain adjoint rep of candidate h_i
-            adjoint_of_h_i = np.tensordot(adj, h_i, axes=[[1], [0]])
+            adjoint_of_h_i = qml.math.tensordot(adj, h_i, axes=[[1], [0]])
             # compute kernel of adjoint
             new_kernel = null_space(adjoint_of_h_i, rcond=tol)
 
@@ -241,8 +240,8 @@ def cartan_subalgebra(
 
         kernel_intersection = _gram_schmidt(kernel_intersection)  # orthogonalize
         for vec in kernel_intersection:
-            if _is_independent(vec, np.array(np_a).T, tol):
-                np_a = np.vstack([np_a, vec])
+            if _is_independent(vec, qml.math.array(np_a).T, tol):
+                np_a = qml.math.vstack([np_a, vec])
                 break
         else:
             # No new vector was added from all the kernels
@@ -254,15 +253,15 @@ def cartan_subalgebra(
     np_k = op_to_adjvec(
         k, g, is_orthogonal=is_orthogonal
     )  # adjoint vectors of k space for re-ordering
-    np_oldg = np.vstack([np_k, np_m])
+    np_oldg = qml.math.vstack([np_k, np_m])
     np_k = _gram_schmidt(np_k)
 
     np_mtilde = _orthogonal_complement_basis(np_a, np_m, tol=tol)  # the "rest" of m without a
-    np_newg = np.vstack([np_k, np_mtilde, np_a])
+    np_newg = qml.math.vstack([np_k, np_mtilde, np_a])
 
     # Instead of recomputing the adjoint representation, take the basis transformation
     # oldg -> newg and transform the adjoint representation accordingly
-    basis_change = np.tensordot(np_newg, np.linalg.pinv(np_oldg), axes=[[1], [0]])
+    basis_change = qml.math.tensordot(np_newg, qml.math.linalg.pinv(np_oldg), axes=[[1], [0]])
     new_adj = change_basis_ad_rep(adj, basis_change)
 
     if return_adjvec:
@@ -285,8 +284,8 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
     .. seealso:: :func:`~op_to_adjvec`
 
     Args:
-        adj_vecs (np.ndarray): collection of vectors with shape ``(batch, len(basis))``
-        basis (List[Union[PauliSentence, Operator, np.ndarray]]): collection of basis operators
+        adj_vecs (TensorLike): collection of vectors with shape ``(batch, len(basis))``
+        basis (List[Union[PauliSentence, Operator, TensorLike]]): collection of basis operators
         is_orthogonal (bool): Whether the ``basis`` consists of orthogonal elements.
 
     Returns:
@@ -307,7 +306,9 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
     if all(isinstance(op, PauliSentence) for op in basis):
         if not is_orthogonal:
             gram = _gram_ps(basis)
-            adj_vecs = np.tensordot(adj_vecs, np.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
+            adj_vecs = qml.math.tensordot(
+                adj_vecs, qml.math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]]
+            )
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
@@ -319,7 +320,9 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
         if not is_orthogonal:
             basis_ps = [op.pauli_rep for op in basis]
             gram = _gram_ps(basis_ps)
-            adj_vecs = np.tensordot(adj_vecs, np.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
+            adj_vecs = qml.math.tensordot(
+                adj_vecs, qml.math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]]
+            )
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
@@ -327,11 +330,13 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
             res.append(op_j)
         return res
 
-    if isinstance(basis, np.ndarray) or all(isinstance(op, np.ndarray) for op in basis):
+    if isinstance(basis, TensorLike) or all(isinstance(op, TensorLike) for op in basis):
         if not is_orthogonal:
             gram = trace_inner_product(basis, basis).real
-            adj_vecs = np.tensordot(adj_vecs, np.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
-        return np.tensordot(adj_vecs, basis, axes=1)
+            adj_vecs = qml.math.tensordot(
+                adj_vecs, qml.math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]]
+            )
+        return qml.math.tensordot(adj_vecs, basis, axes=1)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "
@@ -340,7 +345,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
 
 
 def _gram_ps(basis: Iterable[PauliSentence]):
-    gram = np.zeros((len(basis), len(basis)))
+    gram = qml.math.zeros((len(basis), len(basis)))
     for (i, b_i), (j, b_j) in combinations_with_replacement(enumerate(basis), r=2):
         gram[i, j] = gram[j, i] = (b_i @ b_j).trace()
     return gram
@@ -354,27 +359,27 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
         norms_squared = [(basis_i @ basis_i).trace() for basis_i in basis]
     else:
         # Fake the norm correction if we anyways will apply the inverse Gram matrix later
-        norms_squared = np.ones(len(basis))
+        norms_squared = qml.math.ones(len(basis))
         gram = _gram_ps(basis)
-        inv_gram = np.linalg.pinv(sqrtm(gram))
+        inv_gram = qml.math.linalg.pinv(sqrtm(gram))
 
     for op in ops:
-        rep = np.zeros((len(basis),))
+        rep = qml.math.zeros((len(basis),))
         for i, basis_i in enumerate(basis):
             # v = ∑ (v · e_j / ||e_j||^2) * e_j
             rep[i] = (basis_i @ op).trace() / norms_squared[i]
 
         res.append(rep)
-    res = np.array(res)
+    res = qml.math.array(res)
     if not is_orthogonal:
-        res = np.einsum("ij,kj->ki", inv_gram, res)
+        res = qml.math.einsum("ij,kj->ki", inv_gram, res)
 
     return res
 
 
 def op_to_adjvec(
-    ops: Iterable[Union[PauliSentence, Operator, np.ndarray]],
-    basis: Union[PauliSentence, Operator, np.ndarray],
+    ops: Iterable[Union[PauliSentence, Operator, TensorLike]],
+    basis: Union[PauliSentence, Operator, TensorLike],
     is_orthogonal: bool = True,
 ):
     r"""Decompose a batch of operators onto a given operator basis.
@@ -386,13 +391,13 @@ def op_to_adjvec(
     .. seealso:: :func:`~adjvec_to_op`
 
     Args:
-        ops (Iterable[Union[PauliSentence, Operator, np.ndarray]]): List of operators to decompose
-        basis (Iterable[Union[PauliSentence, Operator, np.ndarray]]): Operator basis
+        ops (Iterable[Union[PauliSentence, Operator, TensorLike]]): List of operators to decompose
+        basis (Iterable[Union[PauliSentence, Operator, TensorLike]]): Operator basis
         is_orthogonal (bool): Whether the basis is orthogonal with respect to the trace inner
             product. Defaults to ``True``, which allows to skip some computations.
 
     Returns:
-        np.ndarray: The batch of coefficient vectors of the operators' ``ops`` expressed in
+        TensorLike: The batch of coefficient vectors of the operators' ``ops`` expressed in
         ``basis``. The shape is ``(len(ops), len(basis)``.
 
     The format of the resulting operators is determined by the ``type`` in ``basis``.
@@ -447,7 +452,7 @@ def op_to_adjvec(
         sqrtm_gram = sqrtm(gram)
         # Imaginary component is an artefact
         assert qml.math.allclose(qml.math.imag(sqrtm_gram), 0.0, atol=1e-16)
-        return qml.math.einsum("ij,kj->ki", np.linalg.pinv(sqrtm_gram.real), res)
+        return qml.math.einsum("ij,kj->ki", qml.math.linalg.pinv(sqrtm_gram.real), res)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "
@@ -455,7 +460,7 @@ def op_to_adjvec(
     )
 
 
-def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
+def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     r"""Apply a ``basis_change`` between bases of operators to the adjoint representation ``adj``.
 
     Assume the adjoint repesentation is given in terms of a basis :math:`\{b_j\}`,
@@ -491,18 +496,18 @@ def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
     np.allclose(new_adj, new_adj_re)
     """
     # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
-    new_adj = np.einsum("mnp,im->inp", adj, np.linalg.pinv(basis_change.T))
-    new_adj = np.einsum("mnp,in->mip", new_adj, basis_change)
-    return np.einsum("mnp,ip->mni", new_adj, basis_change)
+    new_adj = qml.math.einsum("mnp,im->inp", adj, qml.math.linalg.pinv(basis_change.T))
+    new_adj = qml.math.einsum("mnp,in->mip", new_adj, basis_change)
+    return qml.math.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
-def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
+def check_all_commuting(ops: List[Union[PauliSentence, TensorLike, Operator]]):
     r"""Helper function to check if all operators in ``ops`` commute.
 
     .. warning:: This function is expensive to compute
 
     Args:
-        ops (List[Union[PauliSentence, np.ndarray, Operator]]): List of operators to check for mutual commutation
+        ops (List[Union[PauliSentence, TensorLike, Operator]]): List of operators to check for mutual commutation
 
     Returns:
         bool: Whether or not all operators commute with each other
@@ -535,10 +540,10 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
         return_True = True
 
-    if all(isinstance(op, np.ndarray) for op in ops):
+    if all(isinstance(op, TensorLike) for op in ops):
         for oi, oj in combinations(ops, 2):
             com = oj @ oi - oi @ oj
-            if not np.allclose(com, np.zeros_like(com)):
+            if not qml.math.allclose(com, qml.math.zeros_like(com)):
                 return False
 
         return_True = True
