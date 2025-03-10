@@ -849,17 +849,38 @@ class TestPytree:
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
 
 
-# pylint: disable=unused-argument
-def test_cond_abstracted_axes(enable_disable_dynamic_shapes):
-    """Test cond can accept inputs with dynamic shapes."""
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestDynamicShapes:
 
-    def workflow(x, predicate):
-        return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
+    def test_cond_abstracted_axes(self):
+        """Test cond can accept inputs with dynamic shapes."""
 
-    jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
+        def workflow(x, predicate):
+            return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
 
-    output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
-    assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
+        jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
 
-    output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
-    assert qml.math.allclose(output_false[0], 0)  # 0 * 1
+        output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
+        assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
+
+        output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
+        assert qml.math.allclose(output_false[0], 0)  # 0 * 1
+
+    def test_cond_dynamic_array_creation(self):
+        """Test that arrays with dynamic shapes can be created within branches."""
+
+        def true_fn(i):
+            return jax.numpy.sum(jax.numpy.ones(i), dtype=int)
+
+        def false_fn(i):
+            return jax.numpy.sum(jax.numpy.arange(i), dtype=int)
+
+        def f(condition, i):
+            return qml.cond(condition, true_fn, false_fn)(i)
+
+        jaxpr = jax.make_jaxpr(f)(True, 2)
+        [res_true] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 4)
+        assert qml.math.allclose(res_true, 4)
+
+        [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
+        assert qml.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
