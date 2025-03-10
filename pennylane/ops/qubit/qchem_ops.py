@@ -1414,7 +1414,7 @@ def _fermionic_swap_decomp_resources():
         qml.resource_rep(qml.MultiRZ, num_wires=2): 2,
         qml.RX: 4,
         qml.RZ: 2,
-        qml.ops.op_math.Exp: 1,
+        qml.GlobalPhase: 1,
     }
 
 
