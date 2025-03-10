@@ -103,7 +103,7 @@ class GraphStatePrep(Operation):
         Returns:
             str: label to use in drawings
         """
-        return f"GraphStatePrep({self.hyperparameters['one_qubit_ops'](wires=0).name}, {self.hyperparameters['two_qubit_ops'].name})"
+        return self.__repr__
 
     def __repr__(self):
         """Method defining the string representation of this class."""
