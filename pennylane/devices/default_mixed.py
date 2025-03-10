@@ -20,7 +20,6 @@ providing a simple mixed-state simulation ofqubit-based quantum circuits.
 # isort: skip_file
 # pylint: disable=wrong-import-order, ungrouped-imports
 import logging
-import itertools
 
 import numpy as np
 
