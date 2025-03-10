@@ -89,9 +89,10 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
         def wrapper(*inner_args):
             return copy(self).eval(inner_jaxpr, consts, *inner_args)
 
-        jaxpr = jax.make_jaxpr(wrapper)(*args)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        jaxpr = jax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*args)
         jaxpr = plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
-        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
+        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, *args)
 
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
@@ -327,7 +328,12 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             import jax  # pylint: disable=import-outside-toplevel
 
             flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
-            jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+            abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+
+            jaxpr = jax.make_jaxpr(
+                functools.partial(flat_qfunc, **kwargs), abstracted_axes=abstracted_axes
+            )(*args)
+            args = tuple(abstract_shapes) + args
 
             n_args = len(args)
             n_consts = len(jaxpr.consts)

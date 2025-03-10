@@ -97,7 +97,8 @@ def jaxpr_to_jaxpr(
 
     f = partial(interpreter.eval, jaxpr, consts)
 
-    return jax.make_jaxpr(f)(*args)
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+    return jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args), abstract_shapes
 
 
 class PlxprInterpreter:
@@ -394,11 +395,14 @@ class PlxprInterpreter:
 
         @wraps(f)
         def wrapper(*args, **kwargs):
+            abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
             with qml.QueuingManager.stop_recording():
-                jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
+                jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs), abstracted_axes=abstracted_axes)(
+                    *args
+                )
 
             flat_args = jax.tree_util.tree_leaves(args)
-            results = self.eval(jaxpr.jaxpr, jaxpr.consts, *flat_args)
+            results = self.eval(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, *flat_args)
             assert flat_f.out_tree
             # slice out any dynamic shape variables
             results = results[-flat_f.out_tree.num_leaves :]
@@ -457,10 +461,15 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
     """Interpret an adjoint transform primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+    jaxpr, abstract_shapes = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
     return adjoint_transform_prim.bind(
-        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+        *jaxpr.consts,
+        *abstract_shapes,
+        *args,
+        jaxpr=jaxpr.jaxpr,
+        lazy=lazy,
+        n_consts=len(jaxpr.consts),
     )
 
 
@@ -470,10 +479,11 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
     """Interpret a ctrl transform primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:-n_control]
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+    jaxpr, abstract_shapes = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
     return ctrl_transform_prim.bind(
         *jaxpr.consts,
+        *abstract_shapes,
         *args,
         *invals[-n_control:],
         n_control=n_control,
@@ -492,7 +502,7 @@ def handle_for_loop(
     consts = args[consts_slice]
     init_state = args[args_slice]
     abstract_shapes = args[abstract_shapes_slice]
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(
+    new_jaxpr_body_fn, abstract_shapes = jaxpr_to_jaxpr(
         copy(self), jaxpr_body_fn, consts, *abstract_shapes, start, *init_state
     )
 
@@ -529,7 +539,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
             new_jaxprs.append(None)
             new_consts_slices.append(slice(0, 0))
         else:
-            new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+            new_jaxpr, _ = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
             new_jaxprs.append(new_jaxpr.jaxpr)
             new_consts.extend(new_jaxpr.consts)
             new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
@@ -563,10 +573,10 @@ def handle_while_loop(
     init_state = invals[args_slice]
     abstract_shapes = invals[abstract_shapes_slice]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(
+    new_jaxpr_body_fn, _ = jaxpr_to_jaxpr(
         copy(self), jaxpr_body_fn, consts_body, *abstract_shapes, *init_state
     )
-    new_jaxpr_cond_fn = jaxpr_to_jaxpr(
+    new_jaxpr_cond_fn, _ = jaxpr_to_jaxpr(
         copy(self), jaxpr_cond_fn, consts_cond, *abstract_shapes, *init_state
     )
 
@@ -596,10 +606,11 @@ def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_ja
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *args)
+    new_qfunc_jaxpr, abstract_shapes = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *args)
 
     return qnode_prim.bind(
         *new_qfunc_jaxpr.consts,
+        *abstract_shapes,
         *args,
         shots=shots,
         qnode=qnode,
@@ -615,9 +626,14 @@ def handle_grad(self, *invals, jaxpr, n_consts, **params):
     """Handle the grad primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
-    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+    new_jaxpr, abstract_shapes = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
     return grad_prim.bind(
-        *new_jaxpr.consts, *args, jaxpr=new_jaxpr.jaxpr, n_consts=len(new_jaxpr.consts), **params
+        *new_jaxpr.consts,
+        *abstract_shapes,
+        *args,
+        jaxpr=new_jaxpr.jaxpr,
+        n_consts=len(new_jaxpr.consts),
+        **params,
     )
 
 
@@ -626,9 +642,14 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     """Handle the jacobian primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
-    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+    new_jaxpr, abstract_shapes = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
     return jacobian_prim.bind(
-        *new_jaxpr.consts, *args, jaxpr=new_jaxpr.jaxpr, n_consts=len(new_jaxpr.consts), **params
+        *new_jaxpr.consts,
+        *abstract_shapes,
+        *args,
+        jaxpr=new_jaxpr.jaxpr,
+        n_consts=len(new_jaxpr.consts),
+        **params,
     )
 
 
