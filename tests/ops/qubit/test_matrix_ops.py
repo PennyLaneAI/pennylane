@@ -1290,6 +1290,56 @@ class TestBlockEncode:
 
         assert circuit(input_matrix) == output_value
 
+    @pytest.mark.parametrize(
+        "matrix_data",
+        [
+            {
+                "data": [0.1, 0.2, 0.3] * 4,
+                "indices": [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3],
+                "indptr": [0, 3, 6, 9, 12],
+                "shape": (4, 8),
+            },
+            {
+                # A smaller example
+                "data": [1.0, 2.0, 3.0],
+                "indices": [0, 1, 2],
+                "indptr": [0, 3],
+                "shape": (1, 3),
+            },
+            {
+                # A small 2x2 square example
+                "data": [1.0, 2.0],
+                "indices": [0, 1],
+                "indptr": [0, 2, 2],
+                "shape": (2, 2),
+            },
+            {
+                # Another 3x3 square example
+                "data": [0.5, 1.1, 1.2, 0.3],
+                "indices": [0, 2, 1, 2],
+                "indptr": [0, 2, 3, 4],
+                "shape": (3, 3),
+            },
+        ],
+    )
+    @pytest.mark.parametrize("format", ["coo", "csr", "csc", "bsr"])
+    def test_sparse_matrix(self, matrix_data, format):
+        """Test that the BlockEncode works well with various sparse matrices."""
+        data = matrix_data["data"]
+        indices = matrix_data["indices"]
+        indptr = matrix_data["indptr"]
+        shape = matrix_data["shape"]
+
+        num_wires = 5
+        sparse_matrix = csr_matrix((data, indices, indptr), shape=shape).asformat(format)
+        op = qml.BlockEncode(sparse_matrix, wires=range(num_wires))
+
+        # Test the operator is unitary
+        mat = qml.matrix(op)
+        assert np.allclose(np.eye(mat.shape[0]), (mat @ mat.T.conj()).toarray())
+        mat_dense = qml.matrix(qml.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
+        assert qml.math.allclose(mat, mat_dense)
+
 
 class TestInterfaceMatricesLabel:
     """Test different interface matrices with qubit."""
