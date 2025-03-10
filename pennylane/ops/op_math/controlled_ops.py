@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
+from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
 from .controlled import ControlledOp
@@ -508,6 +509,19 @@ class CY(ControlledOp):
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
 
 
+def _cy_resources():
+    return {qml.CRY: 1, qml.S: 1}
+
+
+@register_resources(_cy_resources)
+def _cy(wires, **__):
+    qml.CRY(np.pi, wires=wires)
+    qml.S(wires=wires[0])
+
+
+add_decomps(CY, _cy)
+
+
 class CZ(ControlledOp):
     r"""CZ(wires)
     The controlled-Z operator
@@ -596,6 +610,18 @@ class CZ(ControlledOp):
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=arguments-differ
         return [qml.ControlledPhaseShift(np.pi, wires=wires)]
+
+
+def _cz_resources():
+    return {qml.ControlledPhaseShift: 1}
+
+
+@register_resources(_cz_resources)
+def _cz(wires, **__):
+    qml.ControlledPhaseShift(np.pi, wires=wires)
+
+
+add_decomps(CZ, _cz)
 
 
 class CSWAP(ControlledOp):
@@ -731,6 +757,20 @@ class CSWAP(ControlledOp):
         return decomp_ops
 
 
+def _cswap_resources():
+    return {qml.Toffoli: 3}
+
+
+@register_resources(_cswap_resources)
+def _cswap(wires, **__):
+    qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
+    qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
+    qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
+
+
+add_decomps(CSWAP, _cswap)
+
+
 class CCZ(ControlledOp):
     r"""CCZ(wires)
     CCZ (controlled-controlled-Z) gate.
@@ -838,7 +878,9 @@ class CCZ(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires: WiresLike,
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -889,6 +931,32 @@ class CCZ(ControlledOp):
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.Hadamard(wires=wires[2]),
         ]
+
+
+def _ccz_resources():
+    return {qml.CNOT: 6, qml.adjoint_resource_rep(qml.T, {}): 3, qml.T: 4, qml.Hadamard: 2}
+
+
+@register_resources(_ccz_resources)
+def _ccz(wires, **__):
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    qml.CNOT(wires=[wires[0], wires[2]])
+    qml.T(wires=wires[2])
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    qml.CNOT(wires=[wires[0], wires[2]])
+    qml.T(wires=wires[2])
+    qml.T(wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.Hadamard(wires=wires[2])
+    qml.T(wires=wires[0])
+    qml.adjoint(qml.T(wires=wires[1]))
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.Hadamard(wires=wires[2])
+
+
+add_decomps(CCZ, _ccz)
 
 
 class CNOT(ControlledOp):
@@ -1124,7 +1192,9 @@ class Toffoli(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires: WiresLike,
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1192,6 +1262,32 @@ def _check_and_convert_control_values(control_values, control_wires):
         raise ValueError("Length of control values must equal number of control wires.")
 
     return control_values
+
+
+def _toffoli_resources():
+    return {qml.Hadamard: 2, qml.CNOT: 6, qml.T: 4, qml.adjoint_resource_rep(qml.T, {}): 3}
+
+
+@register_resources(_toffoli_resources)
+def _toffoli(wires, **__):
+    qml.Hadamard(wires=wires[2])
+    CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    CNOT(wires=[wires[0], wires[2]])
+    qml.T(wires=wires[2])
+    CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    CNOT(wires=[wires[0], wires[2]])
+    qml.T(wires=wires[2])
+    qml.T(wires=wires[1])
+    CNOT(wires=[wires[0], wires[1]])
+    qml.Hadamard(wires=wires[2])
+    qml.T(wires=wires[0])
+    qml.adjoint(qml.T(wires=wires[1]))
+    CNOT(wires=[wires[0], wires[1]])
+
+
+add_decomps(Toffoli, _toffoli)
 
 
 class MultiControlledX(ControlledOp):
@@ -1557,7 +1653,9 @@ class CRX(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires: WiresLike):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1566,7 +1664,7 @@ class CRX(ControlledOp):
         .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (Tensorlike): rotation angle :math:`\phi`
             wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
@@ -1592,6 +1690,24 @@ class CRX(ControlledOp):
             qml.CNOT(wires=wires),
             qml.RZ(-pi_half, wires=wires[1]),
         ]
+
+
+def _crx_resources():
+    return {qml.RZ: 2, qml.RY: 2, qml.CNOT: 2}
+
+
+@register_resources(_crx_resources)
+def _crx(phi, wires, **__):
+    pi_half = qml.math.ones_like(phi) * (np.pi / 2)
+    qml.RZ(pi_half, wires=wires[1])
+    qml.RY(phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RY(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RZ(-pi_half, wires=wires[1])
+
+
+add_decomps(CRX, _crx)
 
 
 class CRY(ControlledOp):
@@ -1719,7 +1835,9 @@ class CRY(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1728,7 +1846,7 @@ class CRY(ControlledOp):
         .. seealso:: :meth:`~.CRY.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -1749,6 +1867,21 @@ class CRY(ControlledOp):
             qml.RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
+
+
+def _cry_resources():
+    return {qml.RY: 2, qml.CNOT: 2}
+
+
+@register_resources(_cry_resources)
+def _cry(phi, wires, **__):
+    qml.RY(phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RY(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+
+
+add_decomps(CRY, _cry)
 
 
 class CRZ(ControlledOp):
@@ -1917,7 +2050,9 @@ class CRZ(ControlledOp):
         return self.compute_eigvals(*self.parameters)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1926,7 +2061,7 @@ class CRZ(ControlledOp):
         .. seealso:: :meth:`~.CRZ.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (Tensorlike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -1947,6 +2082,21 @@ class CRZ(ControlledOp):
             qml.PhaseShift(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
+
+
+def _crz_resources():
+    return {qml.PhaseShift: 2, qml.CNOT: 2}
+
+
+@register_resources(_crz_resources)
+def _crz(phi, wires, **__):
+    qml.PhaseShift(phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.PhaseShift(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+
+
+add_decomps(CRZ, _crz)
 
 
 class CRot(ControlledOp):
@@ -2101,7 +2251,9 @@ class CRot(ControlledOp):
         return qml.math.stack([stack_last(row) for row in mat], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, theta, omega, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2110,9 +2262,9 @@ class CRot(ControlledOp):
         .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
-            theta (float): rotation angle :math:`\theta`
-            omega (float): rotation angle :math:`\omega`
+            phi (TensorLike): rotation angle :math:`\phi`
+            theta (TensorLike): rotation angle :math:`\theta`
+            omega (TensorLike): rotation angle :math:`\omega`
             wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
@@ -2139,6 +2291,24 @@ class CRot(ControlledOp):
             qml.RY(theta / 2, wires=wires[1]),
             qml.RZ(omega, wires=wires[1]),
         ]
+
+
+def _crot_resources():
+    return {qml.RZ: 3, qml.CNOT: 2, qml.RY: 2}
+
+
+@register_resources(_crot_resources)
+def _crot(phi, theta, omega, wires, **__):
+    qml.RZ((phi - omega) / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RZ(-(phi + omega) / 2, wires=wires[1])
+    qml.RY(-theta / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RY(theta / 2, wires=wires[1])
+    qml.RZ(omega, wires=wires[1])
+
+
+add_decomps(CRot, _crot)
 
 
 class ControlledPhaseShift(ControlledOp):
