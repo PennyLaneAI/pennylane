@@ -454,18 +454,17 @@ Args:
 """
 
 
-def _paulix_ps_rx_ps_resources():
-    return {qml.PhaseShift: 2, qml.RX: 1}
+def _paulix_to_rx_gp_resources():
+    return {qml.GlobalPhase: 1, qml.RX: 1}
 
 
-@register_resources(_paulix_ps_rx_ps_resources)
-def _paulix_to_ps_rx_ps(wires: WiresLike, **__):
-    qml.PhaseShift(np.pi / 2, wires=wires)
+@register_resources(_paulix_to_rx_gp_resources)
+def _paulix_to_rx_gp(wires: WiresLike, **__):
     qml.RX(np.pi, wires=wires)
-    qml.PhaseShift(np.pi / 2, wires=wires)
+    qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-add_decomps(PauliX, _paulix_to_ps_rx_ps)
+add_decomps(PauliX, _paulix_to_rx_gp)
 
 
 class PauliY(Observable, Operation):
@@ -672,18 +671,17 @@ Args:
 """
 
 
-def _pauliy_ps_ry_ps_resources():
-    return {qml.PhaseShift: 2, qml.RY: 1}
+def _pauliy_to_ry_gp_resources():
+    return {qml.GlobalPhase: 1, qml.RY: 1}
 
 
-@register_resources(_pauliy_ps_ry_ps_resources)
-def _pauliy_to_ps_ry_ps(wires: WiresLike, **__):
-    qml.PhaseShift(np.pi / 2, wires=wires)
+@register_resources(_pauliy_to_ry_gp_resources)
+def _pauliy_to_ry_gp(wires: WiresLike, **__):
     qml.RY(np.pi, wires=wires)
-    qml.PhaseShift(np.pi / 2, wires=wires)
+    qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-add_decomps(PauliY, _pauliy_to_ps_ry_ps)
+add_decomps(PauliY, _pauliy_to_ry_gp)
 
 
 class PauliZ(Observable, Operation):
