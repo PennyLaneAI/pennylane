@@ -98,10 +98,7 @@ class GraphStatePrep(Operation):
             super().__init__(wires=wires)
 
     def label(
-        self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        self, *, **
     ):  # pylint: disable=unused-argument
         r"""Defines how the graph state preparation is represented in diagrams and drawings.
 
