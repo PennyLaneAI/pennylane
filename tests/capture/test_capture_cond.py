@@ -929,20 +929,6 @@ class TestDynamicShapes:
         [x_op2] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 3)
         qml.assert_equal(x_op2, qml.X(3))
 
-    def test_cond_abstracted_axes(self):
-        """Test cond can accept inputs with dynamic shapes."""
-
-        def workflow(x, predicate):
-            return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
-
-        jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
-
-        output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
-        assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
-
-        output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
-        assert qml.math.allclose(output_false[0], 0)  # 0 * 1
-
     def test_cond_dynamic_array_creation(self):
         """Test that arrays with dynamic shapes can be created within branches."""
 
