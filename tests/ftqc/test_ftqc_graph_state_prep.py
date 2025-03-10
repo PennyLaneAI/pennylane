@@ -26,7 +26,7 @@ class TestGraphStatePrep:
     """Test for graph state prep"""
 
     @pytest.mark.xfail(reason="Jax JIT requires wires to be integers.")
-    def test_jaxjit_circuit_graph_state_prep(self):
+    def test_non_jaxjit_circuit_graph_state_prep(self):
         """Test if Jax JIT works with GraphStatePrep"""
         jax = pytest.importorskip("jax")
 
@@ -42,6 +42,23 @@ class TestGraphStatePrep:
 
         circuit(q)
 
+    def test_jaxjit_circuit_graph_state_prep(self):
+        """Test if Jax JIT works with GraphStatePrep"""
+        jax = pytest.importorskip("jax")
+
+        lattice = generate_lattice([2, 2], "square")
+        q = QubitGraph(lattice.graph)
+        dev = qml.device("default.qubit")
+
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit(x):
+            GraphStatePrep(q, wires=[0, 1, 2, 3])
+            qml.RX(x, 3)
+            return qml.probs()
+
+        circuit(1.23)
+
     @pytest.mark.parametrize(
         "dims, shape, wires",
         [
@@ -49,22 +66,13 @@ class TestGraphStatePrep:
             ([2, 2], "square", None),
             ([2, 3], "rectangle", None),
             ([2, 2, 2], "cubic", None),
-            ([5], "chain", [0, 1, 2, 3, 4]),
-            ([2, 2], "square", [(0, 0), (0, 1), (1, 0), (1, 1)]),
-            ([2, 2], "rectangle", [(0, 0), (0, 1), (1, 0), (1, 1)]),
+            ([5], "chain", range(5)),
+            ([2, 2], "square", range(4)),
+            ([2, 2], "rectangle", range(4)),
             (
                 [2, 2, 2],
                 "cubic",
-                [
-                    (0, 0, 0),
-                    (0, 0, 1),
-                    (0, 1, 0),
-                    (0, 1, 1),
-                    (1, 0, 0),
-                    (1, 0, 1),
-                    (1, 1, 0),
-                    (1, 1, 1),
-                ],
+                range(8),
             ),
         ],
     )
@@ -151,7 +159,7 @@ class TestGraphStatePrep:
         lattice = generate_lattice(dims, shape)
         q = QubitGraph(lattice.graph)
         wires = set(lattice.graph)
-        queue = GraphStatePrep.compute_decomposition(wires=wires, graph=q)
+        queue = GraphStatePrep.compute_decomposition(wires=range(len(wires)), graph=q)
         assert len(queue) == expected
 
     @pytest.mark.parametrize(

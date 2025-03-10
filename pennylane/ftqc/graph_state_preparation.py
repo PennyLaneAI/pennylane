@@ -50,7 +50,7 @@ class GraphStatePrep(Operation):
         graph (Union[QubitGraph, networkx.Graph]): QubitGraph or networkx.Graph object mapping qubit to wires.
         one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
         two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
-        wires (Optional[Wires]): Wires the graph state preparation to apply on. Default to None.
+        wires (Optional[Wires]): Wires the decomposition applies on. Wires will be mapped 1:1 to graph nodes. Default to None.
 
     .. todo::
 
@@ -102,14 +102,16 @@ class GraphStatePrep(Operation):
         self.hyperparameters["two_qubit_ops"] = two_qubit_ops
 
         if isinstance(graph, QubitGraph):
-            if wires is not None and set(wires) != set(graph.node_labels):
+            if wires is not None and len(set(wires)) != len(set(graph.node_labels)):
                 raise ValueError("Please ensure wires objects match labels in QubitGraph")
-            super().__init__(wires=wires if wires is not None else set(graph.graph))
+            super().__init__(wires=wires if wires is not None else set(graph.children))
         else:
             if wires is None:
                 raise ValueError("Please ensure wires is specified.")
-            if wires is not None and set(wires) != set(graph.nodes):
-                raise ValueError("Please ensure wires objects match labels in graph")
+            if len(wires) != len(set(graph.nodes)):
+                raise ValueError(
+                    "Please ensure the length of wires objects match that of labels in graph"
+                )
             super().__init__(wires=wires)
 
     def label(self) -> str:  # pylint: disable=arguments-differ
@@ -123,14 +125,6 @@ class GraphStatePrep(Operation):
     def __repr__(self):
         """Method defining the string representation of this class."""
         return f"GraphStatePrep({self.hyperparameters['one_qubit_ops'](wires=0).name}, {self.hyperparameters['two_qubit_ops'].name})"
-
-    def decomposition(self) -> list["Operator"]:
-        r"""Representation of the operator as a product of other operators.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-        return self.compute_decomposition(wires=self.wires, **self.hyperparameters)
 
     @staticmethod
     def compute_decomposition(
@@ -149,7 +143,7 @@ class GraphStatePrep(Operation):
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
-            wires (Wires): Wires the decomposition applies on.
+            wires (Wires): Wires the decomposition applies on. Wires will be mapped 1:1 to graph nodes.
             graph (Union[nx.Graph, QubitGraph]): QubitGraph or nx.Graph object mapping qubit to wires.
             one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
             two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
@@ -160,19 +154,15 @@ class GraphStatePrep(Operation):
 
         op_list = []
 
-        # Add two_qubit_ops for each pair of nearest qubits in the graph
-        if isinstance(graph, QubitGraph):
-            # Add one_qubit_ops for each qubit in the graph
-            for wire in wires:
-                op_list.append(one_qubit_ops(wires=graph[wire]))
+        edges = graph.edge_labels if isinstance(graph, QubitGraph) else graph.edges
+        nodes = graph.node_labels if isinstance(graph, QubitGraph) else graph.nodes
 
-            for qubit0, qubit1 in graph.graph.edges:
-                op_list.append(two_qubit_ops(wires=[graph[qubit0], graph[qubit1]]))
-        else:
-            # Add one_qubit_ops for each qubit in the graph
-            for wire in wires:
-                op_list.append(one_qubit_ops(wires=wire))
+        if set(wires) != set(nodes):
+            wire_map = dict(zip(nodes, wires))
+            edges = [(wire_map[edge[0]], wire_map[edge[1]]) for edge in edges]
 
-            for qubit0, qubit1 in graph.edges:
-                op_list.append(two_qubit_ops(wires=[qubit0, qubit1]))
+        for wire in wires:
+            op_list.append(one_qubit_ops(wires=wire))
+        for edge in edges:
+            op_list.append(two_qubit_ops(wires=edge))
         return op_list
