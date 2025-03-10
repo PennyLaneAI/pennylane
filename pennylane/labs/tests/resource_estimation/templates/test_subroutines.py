@@ -92,10 +92,10 @@ class TestControlledSequence:
     """Test the ResourceControlledSequence class"""
 
     @pytest.mark.parametrize(
-        "base_class, base_params, num_ctrl_wires",
-        [(re.ResourceHadamard, {}, 1), (re.ResourceRX, {}, 3)],
+        "base_class, base_params, num_ctrl_wires, num_cseq",
+        [(re.ResourceHadamard, {}, 1, 1), (re.ResourceRX, {}, 3, 7)],
     )
-    def test_resources(self, base_class, base_params, num_ctrl_wires):
+    def test_resources(self, base_class, base_params, num_ctrl_wires, num_cseq):
         """Test the resources method returns the correct dictionary"""
         resource_controlled_sequence = re.CompressedResourceOp(
             re.ResourceControlled,
@@ -107,7 +107,7 @@ class TestControlledSequence:
                 "num_work_wires": 0,
             },
         )
-        expected = {resource_controlled_sequence: 2**num_ctrl_wires - 1}
+        expected = {resource_controlled_sequence: num_cseq}
 
         assert (
             re.ResourceControlledSequence.resources(base_class, base_params, num_ctrl_wires)
