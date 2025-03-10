@@ -334,6 +334,10 @@
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
 
+* Optimized `diagonalize_measurements` transform by using `frozenset` for immutable and faster lookups,
+  precomputing measurement observables to avoid redundant iterations, and streamlining functions to reduce computational overhead.
+  [(#6742)](https://github.com/PennyLaneAI/pennylane/pull/6742)
+
   * Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
   [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
 
@@ -629,6 +633,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
+Jacob Kitchen,
 Marcus Gisslén,
 Korbinian Kottmann,
 Christina Lee,
