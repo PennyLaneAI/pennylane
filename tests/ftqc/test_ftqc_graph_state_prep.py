@@ -25,8 +25,8 @@ from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice
 class TestGraphStatePrep:
     """Test for graph state prep"""
 
-    @pytest.mark.xfail(reason="Jax JIT requires wires to be integers.")
     @pytest.mark.jax
+    @pytest.mark.xfail(reason="Jax JIT requires wires to be integers.")
     def test_jaxjit_circuit_graph_state_prep(self):
         """Test if Jax JIT works with GraphStatePrep"""
         lattice = generate_lattice([2, 2], "square")
