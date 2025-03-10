@@ -1,3 +1,4 @@
+from argparse import ArgumentParser, Namespace
 import requests
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
@@ -75,6 +76,45 @@ def upload_reports(report_contents: dict):
         print(f"Warning: Failed to upload reports: {str(e)}")
 
 
+def parse_args() -> Namespace:
+    """Parses the arguments provided to this Python script"""
+    parser = ArgumentParser(
+        prog="python upload.py",
+        description="This module uploads the provided reports to the PennyLane OSS Service.",
+    )
+
+    parser.add_argument(
+        "--commit-sha",
+        type=str,
+        required=True,
+        help="The SHA of the commit to upload the reports for.",
+    )
+
+    parser.add_argument(
+        "--branch",
+        type=str,
+        required=True,
+        help="The branch of the commit to upload the reports for.",
+    )
+
+    parser.add_argument(
+        "--workflow-id",
+        type=str,
+        required=True,
+        help="The ID of the workflow to upload the reports for.",
+    )
+
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
     report_contents = read_reports()
+    args = parse_args()
+
+    report_contents["metadata"] = {
+        "commit_sha": args.commit_sha,
+        "branch": args.branch,
+        "workflow_id": args.workflow_id
+    }
+
     upload_reports(report_contents)
