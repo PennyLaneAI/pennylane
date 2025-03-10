@@ -621,11 +621,11 @@ class PhaseShift(Operation):
         return [self.data[0], 0.0, 0.0]
 
 
-def _phaseshift_rz_gp_resources():
+def _phaseshift_to_rz_gp_resources():
     return {qml.RZ: 1, qml.GlobalPhase: 1}
 
 
-@register_resources(_phaseshift_rz_gp_resources)
+@register_resources(_phaseshift_to_rz_gp_resources)
 def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     RZ(phi, wires=wires)
     qml.GlobalPhase(-phi / 2)
