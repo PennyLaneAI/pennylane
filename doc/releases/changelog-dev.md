@@ -538,6 +538,11 @@
 
 <h3>Documentation 📝</h3>
 
+* A page on sharp bits and debugging tips has been added for PennyLane program-capture. 
+  This page is recommended to consult any time errors occur when `qml.capture.enable()` 
+  is present.
+  [(#7062)](https://github.com/PennyLaneAI/pennylane/pull/7062)
+
 * The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
   [(#6949)](https://github.com/PennyLaneAI/pennylane/pull/6949)
 
