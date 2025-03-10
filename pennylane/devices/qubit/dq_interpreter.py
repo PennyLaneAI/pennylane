@@ -19,7 +19,7 @@ import jax
 import numpy as np
 
 from pennylane.capture import pause
-from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
+from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.devices import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, Shots
@@ -35,7 +35,7 @@ from .simulate import _postselection_postprocess  # pylint: disable=protected-ac
 
 
 # pylint: disable=attribute-defined-outside-init, access-member-before-definition,too-many-instance-attributes
-class DefaultQubitInterpreter(PlxprInterpreter):
+class DefaultQubitInterpreter(FlattenedInterpreter):
     """Implements a class for interpreting plxpr using python simulation tools.
 
     Args:
@@ -215,10 +215,6 @@ class DefaultQubitInterpreter(PlxprInterpreter):
             else:
                 output = measure(measurement, self.state, is_state_batched=self.is_state_batched)
         return output
-
-
-# pylint: disable=protected-access
-DefaultQubitInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
 
 
 @DefaultQubitInterpreter.register_primitive(measure_prim)
