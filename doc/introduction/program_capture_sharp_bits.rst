@@ -62,11 +62,14 @@ NotImplementedError: devices must specify wires for integration with plxpr captu
 Valid JAX data types 
 --------------------
 
-Because of the nature of creating and executing plxpr, it is *best practice* for 
-all data types in arguments to quantum functions and QNodes, and positional arguments 
-to gates to be JAX-compatible types: ``jax.numpy`` arrays and standard Python 
-``int``\ s and ``float``\ s. For example, a ``list`` is not a valid JAX type for
-the positional argument in :class:`~.MultiRZ`:
+Because of the nature of creating and executing plxpr, it is **best practice to 
+use JAX-compatible types whenever possible**, in particular for in arguments to 
+quantum functions and QNodes, and positional arguments in PennyLane gate operations.
+JAX-compatible types are ``jax.numpy`` arrays and standard Python ``int``\ s and 
+``float``\ s. 
+
+For example, a ``list`` is not a valid JAX type for the positional argument in 
+:class:`~.MultiRZ`, and will result in an error:
 
 .. code-block:: python
     dev = qml.device('default.qubit', wires=2)
