@@ -543,4 +543,9 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
         return_True = True
 
-    return NotImplemented if not return_True else return_True
+    if not return_True:
+        raise NotImplementedError(
+            "At least one operator in the specified basis is of unsupported type, "
+            "or not all operators are of the same type."
+        )
+    return return_True

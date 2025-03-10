@@ -366,3 +366,35 @@ class TestOpToAdjvec:
         res2 = np.array(op_to_adjvec(m, g))
         assert res1.shape == res2.shape
         assert np.allclose(res1, res2)
+
+
+abelian_group0 = [X(i) for i in range(3)]
+non_abelian_group0 = [X(0), Y(0), Z(0)]
+
+
+def test_check_all_commuting_ops():
+    """Test check_all_commuting with ops as inputs"""
+    assert qml.liealg.check_all_commuting(abelian_group0)
+    assert not qml.liealg.check_all_commuting(non_abelian_group0)
+
+
+def test_check_all_commuting_matrix():
+    """Test check_all_commuting with matrices as inputs"""
+    abelian_group = [qml.matrix(op, wire_order=range(3)) for op in abelian_group0]
+    assert qml.liealg.check_all_commuting(abelian_group)
+    non_abelian_group = [qml.matrix(op, wire_order=range(3)) for op in non_abelian_group0]
+    assert not qml.liealg.check_all_commuting(non_abelian_group)
+
+
+def test_check_all_commuting_ps():
+    """Test check_all_commuting with ps as inputs"""
+    abelian_group = [op.pauli_rep for op in abelian_group0]
+    assert qml.liealg.check_all_commuting(abelian_group)
+    non_abelian_group = [op.pauli_rep for op in non_abelian_group0]
+    assert not qml.liealg.check_all_commuting(non_abelian_group)
+
+
+def test_check_all_commuting_NotImplemented():
+    """Test that check_all_commuting raises NotImplementedError"""
+    with pytest.raises(NotImplementedError, match="At least one operator in the"):
+        _ = qml.liealg.check_all_commuting([qml.pauli.PauliWord({0: "X"})])
