@@ -874,7 +874,7 @@ def norm(tensor, like=None, **kwargs):
         norm = _flat_autograd_norm
 
     else:
-        from scipy.linalg import norm
+        from numpy.linalg import norm
 
     return norm(tensor, **kwargs)
 
