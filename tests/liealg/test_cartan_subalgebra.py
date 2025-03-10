@@ -299,6 +299,15 @@ class TestOpToAdjvec:
     """Test op_to_adjvec. We reuse the test cases from adjvec_to_op and simply re-interpret which
     part is passed to the function, and which represents the expected output."""
 
+    def test_NotImplementedError(self):
+        """Test that NotImplementedError is raised"""
+        from fractions import Fraction
+
+        with pytest.raises(
+            NotImplementedError, match="At least one operator in the specified basis"
+        ):
+            _ = op_to_adjvec([Fraction(2)], [1, 1])
+
     @pytest.mark.parametrize("expected, basis, ops, is_ortho", ps_test_cases)
     def test_with_ps(self, ops, basis, expected, is_ortho):
         """Test ``op_to_adjvec`` with a basis of ``PauliSentence`` operators."""

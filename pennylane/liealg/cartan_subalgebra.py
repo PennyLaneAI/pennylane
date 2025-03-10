@@ -431,18 +431,23 @@ def op_to_adjvec(
         return _op_to_adjvec_ps(ops, basis, is_orthogonal)
 
     # dense branch
-    if all(isinstance(op, TensorLike) for op in basis):
+    if all(isinstance(op, TensorLike) for op in basis) and all(
+        isinstance(op, TensorLike) for op in ops
+    ):
 
-        basis = np.array(basis)
-        res = trace_inner_product(np.array(ops), basis).real
+        basis = qml.math.array(basis)
+        res = trace_inner_product(qml.math.array(ops), basis).real
         if is_orthogonal:
-            norm = np.einsum("bij,bji->b", basis, basis).real / basis[0].shape[0]
+            norm = (
+                qml.math.real(qml.math.einsum("bij,bji->b", basis, basis))
+                / qml.math.shape(basis[0])[0]
+            )
             return res / norm
-        gram = trace_inner_product(basis, basis).real
+        gram = qml.math.real(trace_inner_product(basis, basis))
         sqrtm_gram = sqrtm(gram)
         # Imaginary component is an artefact
-        assert np.allclose(sqrtm_gram.imag, 0.0, atol=1e-16)
-        return np.einsum("ij,kj->ki", np.linalg.pinv(sqrtm_gram.real), res)
+        assert qml.math.allclose(qml.math.imag(sqrtm_gram), 0.0, atol=1e-16)
+        return qml.math.einsum("ij,kj->ki", np.linalg.pinv(sqrtm_gram.real), res)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "
