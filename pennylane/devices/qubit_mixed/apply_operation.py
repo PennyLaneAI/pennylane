@@ -600,6 +600,7 @@ def apply_symmetric_real_op(
     return state
 
 
+# NOTE: this loop is for a nice doc rendering for `apply_operation`. With a direct multiple single registers over different op class there will be severe rendering issue as discussed in https://github.com/PennyLaneAI/pennylane/pull/6684#pullrequestreview-2565634328
 for op_class in SYMMETRIC_REAL_OPS:
     apply_operation.register(op_class)(apply_symmetric_real_op)
 
