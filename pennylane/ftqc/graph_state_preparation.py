@@ -43,7 +43,7 @@ class GraphStatePrep(Operation):
         graph (Union[QubitGraph, nx.Graph]): QubitGraph or nx.Graph object mapping qubit to wires.
         one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`. #TODO: To define more complex starting states not relying on a single ops.
         two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
-        wires (Optional[Wires]): Wires the graph state preparation to apply on. Default to None.
+        wires (Optional[Wires]): Wires the graph state preparation to apply on. Default to None. #TODO: Ensure wires works with multiple dimensional nx.Graph() object after the wires indexing scheme is added to the ``ftqc`` module.
 
     **Example:**
         The graph state preparation layer can be customized by the user.
@@ -97,7 +97,7 @@ class GraphStatePrep(Operation):
                 raise ValueError("Please ensure wires objects match labels in graph")
             super().__init__(wires=wires)
 
-    def label(self) -> str: # pylint: disable=arguments-differ
+    def label(self) -> str:  # pylint: disable=arguments-differ
         r"""Defines how the graph state preparation is represented in diagrams and drawings.
 
         Returns:
