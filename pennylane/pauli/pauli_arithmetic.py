@@ -835,11 +835,11 @@ class PauliSentence(dict):
             n = len(wire_order) if wire_order is not None else 0
             if format == "dense":
                 return np.zeros((2**n, 2**n))
-            return sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+            return sparse.csr_matrix((2**n, 2**n), dtype="complex128").asformat(format)
 
         if format == "dense":
             return self._to_dense_mat(wire_order)
-        return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
+        return self._to_sparse_mat(wire_order, buffer_size=buffer_size).asformat(format)
 
     def _to_sparse_mat(self, wire_order, buffer_size=None):
         """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
