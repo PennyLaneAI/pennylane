@@ -101,13 +101,17 @@ class TestDecompositionGraph:
         """Tests solving a simple graph for the optimal decompositions."""
 
         op = CustomHadamard(wires=[0])
-        graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RZ", "GlobalPhase"})
+        graph = DecompositionGraph(
+            operations=[op], target_gate_set={"RX", "RY", "RZ", "GlobalPhase"}
+        )
         graph.solve()
+
+        # verify that the better decomposition rule is chosen when both are valid.
         expected_resource = Resources(
-            num_gates=4,
+            num_gates=3,
             gate_counts={
-                qml.resource_rep(CustomRX): 1,
-                qml.resource_rep(CustomRZ): 2,
+                qml.resource_rep(CustomRZ): 1,
+                qml.resource_rep(CustomRY): 1,
                 qml.resource_rep(CustomGlobalPhase): 1,
             },
         )
