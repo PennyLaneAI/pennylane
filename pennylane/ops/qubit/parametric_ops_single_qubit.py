@@ -71,6 +71,8 @@ class RX(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     basis = "X"
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -80,6 +82,10 @@ class RX(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -280,6 +286,8 @@ class RZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -370,6 +378,10 @@ class RZ(Operation):
 
     def adjoint(self) -> "RZ":
         return RZ(-self.data[0], wires=self.wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [RZ(self.data[0] * z, wires=self.wires)]
@@ -600,6 +612,8 @@ class Rot(Operation):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_param_keys = ()
+
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
@@ -613,6 +627,10 @@ class Rot(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(
