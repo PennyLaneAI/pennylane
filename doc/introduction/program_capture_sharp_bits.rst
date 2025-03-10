@@ -115,6 +115,33 @@ Array(0., dtype=float32)
 
 But, again, using JAX-compatible types wherever possible is recommended.
 
+.. _parameter_broadcasting_vmap:
+
+Parameter broadcasting and ``vmap``
+-----------------------------------
+
+Parameter-broadcasting is generally not compatible with program-capture. There are 
+cases that magically work, but one shouldn't extrapolate beyond those particular 
+cases.
+
+Instead, it is best practice to use ``jax.vmap``:
+
+.. code-block:: python
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.Z(0))
+
+>>> x = jnp.array([0.1, 0.2, 0.3])
+>>> vmap_circuit = jax.vmap(circuit)
+>>> vmap_circuit(x)
+Array([0.9950042 , 0.9800666 , 0.95533645], dtype=float32)
+
+More information for using ``jax.vmap`` can be found in the 
+`JAX documentation <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html#jax.vmap>`__.
+
 .. _name_of_section:
 
 Section title 
