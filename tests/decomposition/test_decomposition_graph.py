@@ -26,50 +26,47 @@ from pennylane.decomposition import DecompositionGraph
 from conftest import Hadamard, decompositions
 
 
-@pytest.mark.unit
-def test_get_decomp_rule():
-    """Tests the internal method that gets the decomposition rules for an operator."""
-
-    @qml.register_resources({qml.PhaseShift: 2, qml.RX: 1})
-    def custom_hadamard(wires):
-        qml.PhaseShift(np.pi / 2, wires=wires)
-        qml.RX(np.pi / 2, wires=wires)
-        qml.PhaseShift(np.pi / 2, wires=wires)
-
-    @qml.register_resources({qml.PhaseShift: 1, qml.RY: 1})
-    def custom_hadamard_2(wires):
-        qml.PhaseShift(np.pi / 2, wires=wires)
-        qml.RY(np.pi / 2, wires=wires)
-
-    graph = DecompositionGraph(operations=[qml.H(0)], target_gate_set={"RX", "RY", "RZ"})
-    assert graph._get_decompositions(qml.H) == qml.list_decomps(qml.H)
-
-    graph = DecompositionGraph(
-        operations=[qml.H(0)],
-        target_gate_set={"RX", "RY", "RZ"},
-        fixed_decomps={qml.H: custom_hadamard},
-    )
-    assert graph._get_decompositions(qml.H) == [custom_hadamard]
-
-    graph = DecompositionGraph(
-        operations=[qml.H(0)],
-        target_gate_set={"RX", "RY", "RZ"},
-        alt_decomps={qml.H: [custom_hadamard, custom_hadamard_2]},
-    )
-    assert graph._get_decompositions(qml.H) == [
-        custom_hadamard,
-        custom_hadamard_2,
-    ] + qml.list_decomps(qml.H)
-
-
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
     side_effect=lambda x: decompositions[x],
 )
-class TestGraphConstruction:  # pylint: disable=too-few-public-methods
-    """Unit tests for constructing the graph."""
+class TestDecompositionGraph:
 
-    def test_single_op_construction(self, _):
+    def test_get_decomp_rule(self, _):
+        """Tests the internal method that gets the decomposition rules for an operator."""
+
+        @qml.register_resources({qml.PhaseShift: 2, qml.RX: 1})
+        def custom_hadamard(wires):
+            qml.PhaseShift(np.pi / 2, wires=wires)
+            qml.RX(np.pi / 2, wires=wires)
+            qml.PhaseShift(np.pi / 2, wires=wires)
+
+        @qml.register_resources({qml.PhaseShift: 1, qml.RY: 1})
+        def custom_hadamard_2(wires):
+            qml.PhaseShift(np.pi / 2, wires=wires)
+            qml.RY(np.pi / 2, wires=wires)
+
+        graph = DecompositionGraph(operations=[qml.H(0)], target_gate_set={"RX", "RY", "RZ"})
+        assert graph._get_decompositions(qml.H) == decompositions[qml.H]
+
+        graph = DecompositionGraph(
+            operations=[qml.H(0)],
+            target_gate_set={"RX", "RY", "RZ"},
+            fixed_decomps={qml.H: custom_hadamard},
+        )
+        assert graph._get_decompositions(qml.H) == [custom_hadamard]
+
+        graph = DecompositionGraph(
+            operations=[qml.H(0)],
+            target_gate_set={"RX", "RY", "RZ"},
+            alt_decomps={qml.H: [custom_hadamard, custom_hadamard_2]},
+        )
+        assert graph._get_decompositions(qml.H) == [
+            custom_hadamard,
+            custom_hadamard_2,
+        ] + decompositions[qml.H]
+
+    def test_graph_construction(self, _):
         """Tests constructing a graph from a single Hadamard."""
 
         op = Hadamard(wires=[0])
