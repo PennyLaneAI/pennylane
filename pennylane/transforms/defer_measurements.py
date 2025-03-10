@@ -243,7 +243,9 @@ def _get_plxpr_defer_measurements():
 
             """
             if measurement.mv is not None:
-                kwargs = {"wires": measurement.wires, "eigvals": measurement.eigvals()}
+                kwargs = {"wires": measurement.wires}
+                if isinstance(measurement.mv, MeasurementValue):
+                    kwargs["eigvals"] = measurement.eigvals()
                 if isinstance(measurement, CountsMP):
                     kwargs["all_outcomes"] = measurement.all_outcomes
                 measurement = type(measurement)(**kwargs)
@@ -430,7 +432,7 @@ def _get_plxpr_defer_measurements():
                         n_consts=len(cur_consts),
                     )
 
-        return []
+        return [None] * len(jaxpr_branches[0].outvars)
 
     def defer_measurements_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``defer_measurements`` transform on plxpr."""

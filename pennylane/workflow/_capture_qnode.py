@@ -200,6 +200,12 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
 
+    device_program, execution_config = device.preprocess(execution_config)
+    if device_program:
+        qfunc_jaxpr = device_program(qfunc_jaxpr, consts, *non_const_args)
+        consts = qfunc_jaxpr.consts
+        qfunc_jaxpr = qfunc_jaxpr.jaxpr
+
     partial_eval = partial(
         device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
     )
