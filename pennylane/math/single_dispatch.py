@@ -129,10 +129,57 @@ def _permutation_parity(perm):
     return parity
 
 
+def sparse_matrix_power(A, n):
+    """Dispatch to the appropriate sparse matrix power function."""
+    try:  # pragma: no cover
+        # pylint: disable=import-outside-toplevel
+        from scipy.sparse.linalg import matrix_power
+
+        # added in scipy 1.12.0
+
+        return matrix_power(A, n)
+    except ImportError:  # pragma: no cover
+        return _sparse_matrix_power_bruteforce(A, n)
+
+
+def _sparse_matrix_power_bruteforce(A, n):
+    """
+    Compute the power of a sparse matrix using brute-force matrix multiplication.
+    Supports only non-negative integer exponents.
+
+    Parameters:
+    A : scipy.sparse matrix
+        The sparse matrix to be exponentiated.
+    n : int
+        The exponent (must be non-negative).
+
+    Returns:
+    scipy.sparse matrix
+        The matrix A raised to the power n.
+    """
+
+    if n < 0:
+        raise ValueError("This function only supports non-negative integer exponents.")
+
+    if n == 0:
+        return sp.sparse.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
+
+    try:
+        matmul_range = range(n - 1)
+    except Exception as e:
+        raise ValueError("exponent must be an integer") from e
+
+    result = A.copy()
+    for _ in matmul_range:
+        result = result @ A  # Native matmul operation
+
+    return result
+
+
 ar.register_function("scipy", "linalg.det", _det_sparse)
 ar.register_function("scipy", "linalg.inv", sp.sparse.linalg.inv)
 ar.register_function("scipy", "linalg.expm", sp.sparse.linalg.expm)
-ar.register_function("scipy", "linalg.matrix_power", sp.sparse.linalg.matrix_power)
+ar.register_function("scipy", "linalg.matrix_power", sparse_matrix_power)
 ar.register_function("scipy", "linalg.norm", sp.sparse.linalg.norm)
 ar.register_function("scipy", "linalg.spsolve", sp.sparse.linalg.spsolve)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
