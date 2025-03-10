@@ -14,11 +14,12 @@
 
 """Utility methods and dummy classes for testing the decomposition graph."""
 
+# pylint: disable=too-few-public-methods
+
 from collections import defaultdict
 
 import pennylane as qml
 from pennylane.operation import Operation
-
 
 decompositions = defaultdict(list)
 

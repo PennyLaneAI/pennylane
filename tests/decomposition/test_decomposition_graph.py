@@ -19,11 +19,10 @@
 from unittest.mock import patch
 
 import numpy as np
-import pytest
+from conftest import Hadamard, decompositions
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionGraph
-from conftest import Hadamard, decompositions
 
 
 @patch(
@@ -61,10 +60,14 @@ class TestDecompositionGraph:
             target_gate_set={"RX", "RY", "RZ"},
             alt_decomps={qml.H: [custom_hadamard, custom_hadamard_2]},
         )
-        assert graph._get_decompositions(qml.H) == [
-            custom_hadamard,
-            custom_hadamard_2,
-        ] + decompositions[qml.H]
+        assert (
+            graph._get_decompositions(qml.H)
+            == [
+                custom_hadamard,
+                custom_hadamard_2,
+            ]
+            + decompositions[qml.H]
+        )
 
     def test_graph_construction(self, _):
         """Tests constructing a graph from a single Hadamard."""
