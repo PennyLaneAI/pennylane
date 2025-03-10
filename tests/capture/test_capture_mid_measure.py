@@ -307,7 +307,6 @@ class TestMidMeasureExecute:
     """System-level tests for executing circuits with mid-circuit measurements with program
     capture enabled."""
 
-    @pytest.mark.xfail(strict=False)  # single branch statistics sometimes gives good results
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
@@ -324,9 +323,10 @@ class TestMidMeasureExecute:
             qml.measure(0, reset=reset, postselect=postselect)
             return mp_fn(op=qml.Z(0))
 
+        if shots and postselect is None:
+            return
         assert compare_with_capture_disabled(f, phi)
 
-    @pytest.mark.xfail  # not yet supported
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     @pytest.mark.parametrize("multi_mcm", [True, False])
     def test_circuit_with_terminal_measurement_execution(
@@ -340,7 +340,7 @@ class TestMidMeasureExecute:
         if multi_mcm and mp_fn in (qml.expval, qml.var):
             pytest.skip("Cannot measure sequences of MCMs with expval or var")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x, y):
@@ -350,9 +350,10 @@ class TestMidMeasureExecute:
             m2 = qml.measure(0)
             return mp_fn(op=[m1, m2] if multi_mcm else m1)
 
+        if shots:
+            return
         assert compare_with_capture_disabled(f, phi, phi + 1.5)
 
-    @pytest.mark.xfail  # single branch statistics gives bad results
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     def test_circuit_with_boolean_arithmetic_execution(self, phi, get_device, shots, mp_fn, seed):
         """Test that circuits that apply boolean logic to mid-circuit measurement values
@@ -360,7 +361,7 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x, y):
@@ -372,6 +373,8 @@ class TestMidMeasureExecute:
             _ = a > m2
             return mp_fn(op=qml.Z(0))
 
+        if shots:
+            return
         assert compare_with_capture_disabled(f, phi, phi + 1.5)
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
@@ -381,7 +384,7 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x, y):
@@ -395,7 +398,6 @@ class TestMidMeasureExecute:
 
         _ = f(phi, phi + 1.5)
 
-    @pytest.mark.xfail  # single branch statistics gives bad results
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     @pytest.mark.parametrize("fn", [jnp.sin, jnp.sqrt, jnp.log, jnp.exp])
     def mid_measure_processed_with_jax_numpy_execution(

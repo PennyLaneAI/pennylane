@@ -138,6 +138,7 @@ def test_simple_qnode():
         interface="jax",
         grad_on_execution=False,
         device_options={"max_workers": None, "rng": dev._rng, "prng_key": None},
+        mcm_config=qml.devices.MCMConfig(mcm_method="deferred", postselect_mode=None),
     )
     assert eqn0.params["execution_config"] == expected_config
 
@@ -279,6 +280,7 @@ def test_capture_qnode_kwargs():
         cache=True,
         cachesize=10,
         max_diff=2,
+        mcm_method="single-branch-statistics",
     )
     def circuit():
         return qml.expval(qml.Z(0))
@@ -292,7 +294,9 @@ def test_capture_qnode_kwargs():
         grad_on_execution=False,
         derivative_order=2,
         use_device_jacobian_product=False,
-        mcm_config=qml.devices.MCMConfig(mcm_method=None, postselect_mode=None),
+        mcm_config=qml.devices.MCMConfig(
+            mcm_method="single-branch-statistics", postselect_mode=None
+        ),
         interface=qml.math.Interface.JAX,
         device_options={"max_workers": None, "rng": dev._rng, "prng_key": None},
     )
@@ -1222,7 +1226,7 @@ class TestQNodeAutographIntegration:
     @pytest.mark.parametrize("autograph", [True, False])
     def test_pennylane_conditional_statements(self, autograph):
         """Test that a native Pennylane conditional statements can be used with the QNode."""
-        dev = qml.device("default.qubit", wires=[0, 1])
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         @qml.qnode(dev, autograph=autograph)
         def circuit():
@@ -1232,7 +1236,7 @@ class TestQNodeAutographIntegration:
 
             return qml.state()
 
-        assert qml.math.allclose(circuit(), [0, 0, 0, 1])
+        assert qml.math.allclose(circuit(), [0, 0, 0, 0, 0, 0, 0, 1])
 
 
 class TestStaticArgnums:
@@ -1353,21 +1357,22 @@ class TestQNodeCaptureCaching:
         spy = mocker.spy(jax, "make_jaxpr")
         self.check_execution_results(circuit, jnp.array(1.5))
         spy.assert_called()
+        call_count = spy.call_count
 
         # Cache hit because arguments are of same type/shape
         spy.reset_mock()
         self.check_execution_results(circuit, 100.1)
-        spy.assert_not_called()
+        assert spy.call_count == call_count - 1
 
         # Cache miss because arguments are not of same type/shape
         spy.reset_mock()
         self.check_execution_results(circuit, jnp.array(2))
-        spy.assert_called()
+        assert spy.call_count == call_count
 
         # Cache hit because arguments are of same type/shape
         spy.reset_mock()
         self.check_execution_results(circuit, 10)
-        spy.assert_not_called()
+        assert spy.call_count == call_count - 1
 
     def test_caching_kwargs(self, mocker):
         """Test that caching works correctly when the QNode has kwargs."""
@@ -1383,21 +1388,22 @@ class TestQNodeCaptureCaching:
         spy = mocker.spy(jax, "make_jaxpr")
         self.check_execution_results(circuit, 1.0, y=1)
         spy.assert_called()
+        call_count = spy.call_count
 
         # Cache hit because same arg shape/type and same kwarg
         spy.reset_mock()
         self.check_execution_results(circuit, 2.0, y=1)
-        spy.assert_not_called()
+        assert spy.call_count == call_count - 1
 
         # Cache miss because same arg shape/type but different kwarg
         spy.reset_mock()
         self.check_execution_results(circuit, 1.0, y=2)
-        spy.assert_called()
+        assert spy.call_count == call_count
 
         # Cache hit because same arg shape/type and same kwarg
         spy.reset_mock()
         self.check_execution_results(circuit, 2.0, y=2)
-        spy.assert_not_called()
+        assert spy.call_count == call_count - 1
 
     def test_caching_pytree(self, mocker):
         """Test that caching works correctly for pytree inputs."""
@@ -1413,21 +1419,22 @@ class TestQNodeCaptureCaching:
         spy = mocker.spy(jax, "make_jaxpr")
         self.check_execution_results(circuit, (1.5, 2.5))
         spy.assert_called()
+        call_count = spy.call_count
 
         # Cache hit because same arg shape/types
         spy.reset_mock()
         self.check_execution_results(circuit, (jnp.array(5.1), 3.5))
-        spy.assert_not_called()
+        assert spy.call_count == call_count - 1
 
         # Cache miss because different arg shape/types
         spy.reset_mock()
         self.check_execution_results(circuit, (jnp.array(5.1), 3))
-        spy.assert_called()
+        assert spy.call_count == call_count
 
         # Cache hit because same arg shape/types
         spy.reset_mock()
         self.check_execution_results(circuit, (3.5, jnp.array(2)))
-        spy.assert_not_called()
+        assert spy.call_count == call_count - 1
 
     def test_caching_static_argnums(self, mocker):
         """Test that caching works correctly when a QNode has static arguments."""
@@ -1443,21 +1450,22 @@ class TestQNodeCaptureCaching:
         spy = mocker.spy(jax, "make_jaxpr")
         self.check_execution_results(circuit, 1.0, 2.0)
         spy.assert_called()
+        call_count = spy.call_count
 
         # Cache hit because same arg shape/type and same static arg
         spy.reset_mock()
         self.check_execution_results(circuit, 1.1, 2.0)
-        spy.assert_not_called()
+        assert spy.call_count == call_count - 1
 
         # Cache miss because same arg shape/type but different static arg
         spy.reset_mock()
         self.check_execution_results(circuit, 1.1, 2.1)
-        spy.assert_called()
+        assert spy.call_count == call_count
 
         # Cache hit because same arg shape/type and same static arg
         spy.reset_mock()
         self.check_execution_results(circuit, 1.0, 2.1)
-        spy.assert_not_called()
+        assert spy.call_count == call_count - 1
 
     def test_caching_static_argnums_pytree(self, mocker):
         """Test that caching works correctly when a QNode has static arguments
@@ -1476,16 +1484,17 @@ class TestQNodeCaptureCaching:
         spy = mocker.spy(jax, "make_jaxpr")
         self.check_execution_results(circuit, (1.5, 2.5), (3.5, 4.5))
         spy.assert_called()
+        call_count = spy.call_count
 
         # Cache hit because same arg shape/type and same static args
         spy.reset_mock()
         self.check_execution_results(circuit, (4.5, 5.5), (3.5, 4.5))
-        spy.assert_not_called()
+        assert spy.call_count == call_count - 1
 
-        # Cache hit because same arg shape/type and same static args
+        # Cache miss because same arg shape/type but different static args
         spy.reset_mock()
         self.check_execution_results(circuit, (4.5, 5.5), (3.1, 5.5))
-        spy.assert_called()
+        assert spy.call_count == call_count
 
     # pylint: disable=unused-argument
     def test_caching_dynamic_shapes(self, mocker, enable_disable_dynamic_shapes):

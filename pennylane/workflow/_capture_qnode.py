@@ -200,15 +200,27 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
 
-    device_program, execution_config = device.preprocess(execution_config)
+    device_program, config = device.preprocess(execution_config)
     if device_program:
-        qfunc_jaxpr = device_program(qfunc_jaxpr, consts, *non_const_args)
+        if batch_dims:
+            temp_all_args = []
+            for a, d in zip(args, batch_dims, strict=True):
+                if d is not None:
+                    slices = [slice(None)] * qml.math.ndim(a)
+                    slices[d] = 0
+                    temp_all_args.append(a[tuple(slices)])
+                else:
+                    temp_all_args.append(a)
+            temp_consts = temp_all_args[:n_consts]
+            temp_args = temp_all_args[n_consts:]
+        else:
+            temp_consts = consts
+            temp_args = non_const_args
+        qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
         consts = qfunc_jaxpr.consts
         qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
-    partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
-    )
+    partial_eval = partial(device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=config)
     if batch_dims is None:
         return partial_eval(*non_const_args)
     return jax.vmap(partial_eval, batch_dims[n_consts:])(*non_const_args)
