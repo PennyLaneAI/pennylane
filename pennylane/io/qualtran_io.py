@@ -69,7 +69,7 @@ def get_bloq_registers_info(bloq):
 def _get_named_registers(registers):
     """Returns a `qml.registers` object associated with the named registers in the bloq"""
 
-    temp_register_dict = {reg.name: reg.bitsize for reg in registers}
+    temp_register_dict = {reg.name: reg.total_bits() for reg in registers}
 
     return qml.registers(temp_register_dict)
 
@@ -151,7 +151,7 @@ class FromBloq(Operation):
             cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
             temp_registers = _get_named_registers(cbloq.signature.lefts())
             soq_to_wires = {
-                Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])
+                Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])[idx[0]] if len(idx) == 1 else list(temp_registers[reg.name])
                 for reg in cbloq.signature.lefts()
                 for idx in reg.all_idxs()
             }
@@ -203,6 +203,7 @@ class FromBloq(Operation):
                         soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
 
                 total_wires = [w for ws in in_quregs.values() for w in list(ws.ravel())]
+                print(total_wires)
                 mapped_wires = [wires[idx] for idx in total_wires]
                 op = binst.bloq.as_pl_op(mapped_wires)
 
@@ -221,8 +222,7 @@ class FromBloq(Operation):
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix(*params, **hyperparams):  # pylint: disable=no-method-argument
         bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
         return matrix
