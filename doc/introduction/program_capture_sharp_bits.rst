@@ -28,6 +28,7 @@ to be aware of while we strive towards that ideal**. In this document, we provid
 an overview of said constraints.
 
 .. note::
+
     #. From here onwards, ``qml.capture.enable`` is assumed to be present within 
     the scope of code examples, unless otherwise stated. This ensures that program-capture
     is enabled.
@@ -49,6 +50,7 @@ contrast to when program-capture is disabled, where automatic qubit management t
 place internally.
 
 .. code-block:: python
+
     @qml.qnode(qml.device('default.qubit'))
     def circuit():
         qml.Hadamard(0)
@@ -63,10 +65,9 @@ Valid JAX data types
 --------------------
 
 Because of the nature of creating and executing plxpr, it is **best practice to 
-use JAX-compatible types whenever possible**, in particular for in arguments to 
-quantum functions and QNodes, and positional arguments in PennyLane gate operations.
-JAX-compatible types are ``jax.numpy`` arrays and standard Python ``int``\ s and 
-``float``\ s. 
+use JAX-compatible types whenever possible**, in particular for arguments to quantum 
+functions and QNodes, and positional arguments in PennyLane gate operations. JAX-compatible 
+types are ``jax.numpy`` arrays and standard Python ``int``\ s and ``float``\ s. 
 
 For example, a ``list`` is not a valid JAX type for the positional argument in 
 :class:`~.MultiRZ`, and will result in an error:
@@ -86,6 +87,7 @@ Providing a ``list`` as input to a quantum function or QNode is accepted in case
 where the ``list`` is being indexed into, thereby retrieving a valid JAX type:
 
 .. code-block:: python
+
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev)
@@ -100,6 +102,7 @@ Array(0., dtype=float32)
 JAX-incompatible types, like Python ``range``\ s, are acceptable as keyword arguments:
 
 .. code-block:: python
+    
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev)
@@ -127,6 +130,7 @@ cases.
 Instead, it is best practice to use ``jax.vmap``:
 
 .. code-block:: python
+
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev)
