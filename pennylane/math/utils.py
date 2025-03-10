@@ -82,14 +82,14 @@ def _allclose_sparse(a, b, rtol=1e-05, atol=1e-08):
 
 def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
     """Helper function for comparing dense and sparse matrices with correct tolerance reference.
-    
+
     Args:
         a: first matrix (dense or sparse)
         b: second matrix (sparse or dense)
         rtol: relative tolerance
         atol: absolute tolerance
         b_is_sparse: True if b is sparse matrix, False if a is sparse matrix
-        
+
     Returns:
         bool: True if matrices are approximately equal
     """
@@ -111,11 +111,11 @@ def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
 
     dense_coords = dense.nonzero()
     sparse_coords = sparse.nonzero()
-    
+
     coord_diff = set(zip(*dense_coords)) ^ set(zip(*sparse_coords))
     if coord_diff:
         return False
-    
+
     # Maintain asymmetric comparison with correct reference
     if b_is_sparse:
         a_data = dense[dense_coords]
@@ -124,84 +124,6 @@ def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
         a_data = sparse.data
         b_data = dense[sparse_coords]
     return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
-
-
-# def _allclose_dense_sparse(a, b, rtol=1e-05, atol=1e-08):
-#     """Compare a dense and sparse matrix for approximate equality.
-
-#     Args:
-#         a: dense matrix
-#         b: sparse matrix
-#         rtol (float): relative tolerance
-#         atol (float): absolute tolerance
-
-#     Returns:
-#         bool: True if matrices are approximately equal
-#     """
-#     if b.nnz == 0:
-#         return np.allclose(a, 0, rtol=rtol, atol=atol)
-
-#     if a.shape != b.shape:
-#         return False
-
-#     # Size threshold for when to convert the sparse matrix to dense
-#     SIZE_THRESHOLD = 10000
-#     if np.prod(a.shape) < SIZE_THRESHOLD:
-#         return np.allclose(a, b.toarray(), rtol=rtol, atol=atol)
-
-#     # If the size of the sparse matrix is large, we try extracting
-#     # the non-zero elements and comparing them
-#     a_nnz_coords = a.nonzero()
-#     b_nnz_coords = b.nonzero()
-
-#     # Find positions where coordinates differ, using XOR operation
-#     coord_diff_x = set(zip(*a_nnz_coords)) ^ set(zip(*b_nnz_coords))
-#     if coord_diff_x:  # Only accept empty XOR results
-#         return False
-
-#     a_data = a[b_nnz_coords]
-#     b_data = b.data
-#     return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
-
-
-# def _allclose_sparse_dense(a, b, rtol=1e-05, atol=1e-08):
-#     """Compare a sparse and dense matrix for approximate equality.
-
-#     Args:
-#         a: sparse matrix
-#         b: dense matrix
-#         rtol (float): relative tolerance
-#         atol (float): absolute tolerance
-
-#     Returns:
-#         bool: True if matrices are approximately equal.
-#     """
-#     # If the sparse matrix has no non-zeros, check that b is approximately all zeros
-#     if a.nnz == 0:
-#         return np.allclose(b, 0, rtol=rtol, atol=atol)
-
-#     if a.shape != b.shape:
-#         return False
-
-#     # Size threshold for when to convert the sparse matrix to dense
-#     SIZE_THRESHOLD = 10000
-#     if np.prod(a.shape) < SIZE_THRESHOLD:
-#         return np.allclose(a.toarray(), b, rtol=rtol, atol=atol)
-
-#     # For large matrices, compare only nonzero elements
-#     a_nnz_coords = a.nonzero()
-#     b_nnz_coords = b.nonzero()
-
-#     # Find positions where coordinates differ, using XOR operation
-#     coord_diff_x = set(zip(*a_nnz_coords)) ^ set(zip(*b_nnz_coords))
-#     if coord_diff_x:  # Any difference in nonzero positions => not allclose
-#         return False
-
-#     # Compare the actual data values in those positions
-#     a_data = a.data
-#     b_data = b[a_nnz_coords]
-
-#     return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
 
 
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
