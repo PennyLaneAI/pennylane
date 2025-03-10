@@ -892,16 +892,16 @@ Args:
 """
 
 
-def _pauliz_ps_rz_ps_resources():
+def _pauliz_to_ps_resources():
     return {qml.PhaseShift: 1}
 
 
-@register_resources(_pauliz_ps_rz_ps_resources)
-def _pauliz_to_ps_rz_ps(wires: WiresLike, **__):
+@register_resources(_pauliz_to_ps_resources)
+def _pauliz_to_ps(wires: WiresLike, **__):
     qml.PhaseShift(np.pi, wires=wires)
 
 
-add_decomps(PauliZ, _pauliz_to_ps_rz_ps)
+add_decomps(PauliZ, _pauliz_to_ps)
 
 
 class S(Operation):
