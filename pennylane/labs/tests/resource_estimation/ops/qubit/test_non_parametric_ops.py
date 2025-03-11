@@ -70,8 +70,9 @@ class TestHadamard:
             [1, 1],
             ["w1"],
             {
-                re.ResourceCH.resource_rep(): 1,
-                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
+                re.ResourceRY.resource_rep(): 2,
+                re.ResourceHadamard.resource_rep(): 2,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 1,
             },
         ),
         (
@@ -79,8 +80,9 @@ class TestHadamard:
             [1, 0, 0],
             ["w1", "w2"],
             {
-                re.ResourceCH.resource_rep(): 1,
-                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
+                re.ResourceRY.resource_rep(): 2,
+                re.ResourceHadamard.resource_rep(): 2,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 1,
             },
         ),
     )
@@ -639,8 +641,9 @@ class TestY:
             [1, 1],
             ["w1"],
             {
-                re.ResourceCY.resource_rep(): 1,
-                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 2,
+                re.ResourceS.resource_rep(): 1,
+                re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 0, 1): 1,
             },
         ),
         (
@@ -648,8 +651,9 @@ class TestY:
             [0, 0],
             ["w1"],
             {
-                re.ResourceCY.resource_rep(): 1,
-                re.ResourceMultiControlledX.resource_rep(2, 2, 1): 2,
+                re.ResourceS.resource_rep(): 1,
+                re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
+                re.ResourceMultiControlledX.resource_rep(2, 2, 1): 1,
             },
         ),
         (
@@ -657,8 +661,9 @@ class TestY:
             [1, 0, 0],
             ["w1", "w2"],
             {
-                re.ResourceCY.resource_rep(): 1,
-                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
+                re.ResourceS.resource_rep(): 1,
+                re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 1,
             },
         ),
     )
@@ -773,8 +778,8 @@ class TestZ:
             [1, 0, 0],
             ["w1", "w2"],
             {
-                re.ResourceCZ.resource_rep(): 1,
-                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 2,
+                re.ResourceHadamard.resource_rep(): 2,
+                re.ResourceMultiControlledX.resource_rep(3, 2, 2): 1,
             },
         ),
     )

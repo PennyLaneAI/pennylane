@@ -90,10 +90,20 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
             Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
-            In the case where multiple controlled wires are provided, we can collapse the control
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
-            In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
+            In the case where multiple controlled wires are provided, the resources are derived from 
+            the following identities (as presented in this `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
+
+            .. math::
+
+                \begin{align}
+                    \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \cdot \hat{Z}  \cdot \hat{R}_{y}(\frac{-\pi}{4}), \\
+                    \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
+                \end{align}
+
+            Specifically, the resources are given by two :class:`~.ResourceRY` gates, two 
+            :class:`~.ResourceHadamard` gates and a :class:`~.ResourceX` gate. By replacing the 
+            :class:`~.ResourceX` gate with :class:`~.ResourceMultiControlledX` gate, we obtain a
+            controlled-version of this identity.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -107,13 +117,20 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
             return gate_types
 
-        ch = re.ResourceCH.resource_rep()
+        gate_types = {}
+
+        ry = re.ResourceRY.resource_rep()
+        h = re.ResourceHadamard.resource_rep()
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
         )
-        return {ch: 1, mcx: 2}
+
+        gate_types[h] = 2
+        gate_types[ry] = 2
+        gate_types[mcx] = 1
+        return gate_types
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -779,10 +796,14 @@ class ResourceY(qml.Y, re.ResourceOperator):
             Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
-            In the case where multiple controlled wires are provided, we can collapse the control
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
-            In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
+            In the case where multiple controlled wires are provided, the resources are derived from
+            the following identity:
+
+                .. math:: \hat{Y} = \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}.
+
+            Specifically, the resources are given by a :class:`~.ResourceX` gate conjugated with
+            a pair of :class:`~.ResourceS` gates. By replacing the :class:`~.ResourceX` gate with a
+            :class:`~.ResourceMultiControlledX` gate, we obtain a controlled-version of this identity.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -796,13 +817,20 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
             return gate_types
 
-        cy = re.ResourceCY.resource_rep()
+        gate_types = {}
+
+        s = re.ResourceS.resource_rep()
+        s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
         )
-        return {cy: 1, mcx: 2}
+
+        gate_types[s] = 1
+        gate_types[s_dagg] = 1
+        gate_types[mcx] = 1
+        return gate_types
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -905,23 +933,28 @@ class ResourceZ(qml.Z, re.ResourceOperator):
             or :code:`~.ResourceCCZ` respectively. Two additional :code:`~.ResourceX` gates
             per control qubit are used to flip the control qubits if they are zero-controlled.
 
-            In the case where multiple controlled wires are provided, we can collapse the control
-            wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
-            In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
+            In the case where multiple controlled wires are provided, the resources are derived from
+            the following identity:
+
+            .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
+
+            Specifically, the resources are given by a :class:`~.ResourceX` gate conjugated with
+            a pair of :class:`~.ResourceHadamard` gates. By replacing the :class:`~.ResourceX` gate
+            with a :class:`~.ResourceMultiControlledX` gate, we obtain a controlled-version of this
+            identity.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if num_ctrl_wires > 2:
-            cz = re.ResourceCZ.resource_rep()
+            h = re.ResourceHadamard.resource_rep()
             mcx = re.ResourceMultiControlledX.resource_rep(
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
                 num_work_wires=num_work_wires,
             )
-            return {cz: 1, mcx: 2}
+            return {h: 2, mcx: 1}
 
         gate_types = {}
         if num_ctrl_wires == 1:

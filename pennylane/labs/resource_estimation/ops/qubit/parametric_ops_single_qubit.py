@@ -198,6 +198,9 @@ class ResourceRX(qml.RX, re.ResourceOperator):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
+        Args:
+            config (dict): a dictionary containing the error threshold
+
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
             resources are approximating the gate with a series of T gates. The expected T-count is taken
@@ -206,8 +209,6 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
             .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
 
-        Args:
-            config (dict): a dictionary containing the error threshold
         """
         return _rotation_resources(epsilon=config["error_rx"])
 
