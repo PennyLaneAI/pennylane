@@ -117,7 +117,7 @@ def cartan_subalgebra(
 
     We can confirm that these all commute with each other, as the CSA is Abelian (= all operators commute).
 
-    >>> qml.liealg.check_all_commuting(a)
+    >>> qml.liealg.check_abelian(a)
     True
 
     We can opt-in to return what we call adjoint vectors of dimension :math:`|\mathfrak{g}|`, where each component corresponds to an entry in (the ordered) ``g``.
@@ -206,8 +206,8 @@ def cartan_subalgebra(
 
         In that case we chose a Cartan subalgebra from which we can readily see that it is commuting, but we also provide a small helper function to check that.
 
-        >>> from pennylane.liealg import check_all_commuting
-        >>> assert check_all_commuting(h_op)
+        >>> from pennylane.liealg import check_abelian
+        >>> assert check_abelian(h_op)
 
         Last but not least, the adjoint representation ``new_adj`` is updated to represent the new basis and its ordering of ``g``.
     """
@@ -504,7 +504,7 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     return qml.math.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
-def check_all_commuting(ops: List[Union[PauliSentence, TensorLike, Operator]]):
+def check_abelian(ops: List[Union[PauliSentence, TensorLike, Operator]]):
     r"""Helper function to check if all operators in ``ops`` commute.
 
     .. warning:: This function is expensive to compute
@@ -517,10 +517,10 @@ def check_all_commuting(ops: List[Union[PauliSentence, TensorLike, Operator]]):
 
     **Example**
 
-    >>> from pennylane.labs.dla import check_all_commuting
+    >>> from pennylane.labs.dla import check_abelian
     >>> from pennylane import X
     >>> ops = [X(i) for i in range(10)]
-    >>> check_all_commuting(ops)
+    >>> check_abelian(ops)
     True
 
     Operators on different wires (trivially) commute with each other.

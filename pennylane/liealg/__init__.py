@@ -41,7 +41,7 @@ Functions
 
     ~check_cartan_decomp
     ~check_commutation_relation
-    ~check_all_commuting
+    ~check_abelian
     ~adjvec_to_op
     ~op_to_adjvec
     ~change_basis_ad_rep
@@ -119,5 +119,5 @@ from .cartan_subalgebra import (
     adjvec_to_op,
     op_to_adjvec,
     change_basis_ad_rep,
-    check_all_commuting,
+    check_abelian,
 )

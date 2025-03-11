@@ -77,7 +77,7 @@ class TestCartanSubalgebra:
         new_adj_re = qml.structure_constants(newg, matrix=True)
 
         assert np.allclose(new_adj_re, new_adj)
-        assert qml.liealg.check_all_commuting(h)
+        assert qml.liealg.check_abelian(h)
 
     def test_cartan_subalgebra_adjvec_output(self):
         """Test cartan_subalgebra with adjvec outputs"""
@@ -94,7 +94,7 @@ class TestCartanSubalgebra:
 
         assert np.allclose(new_adj_re, new_adj)
         h = adjvec_to_op(np_h, k + m)
-        assert qml.liealg.check_all_commuting(h)
+        assert qml.liealg.check_abelian(h)
 
     def test_cartan_subalgebra_verbose(self, capsys):
         """Test verbose outputs during cartan_subalgebra computation"""
@@ -394,29 +394,29 @@ abelian_group0 = [X(i) for i in range(3)]
 non_abelian_group0 = [X(0), Y(0), Z(0)]
 
 
-def test_check_all_commuting_ops():
-    """Test check_all_commuting with ops as inputs"""
-    assert qml.liealg.check_all_commuting(abelian_group0)
-    assert not qml.liealg.check_all_commuting(non_abelian_group0)
+def test_check_abelian_ops():
+    """Test check_abelian with ops as inputs"""
+    assert qml.liealg.check_abelian(abelian_group0)
+    assert not qml.liealg.check_abelian(non_abelian_group0)
 
 
-def test_check_all_commuting_matrix():
-    """Test check_all_commuting with matrices as inputs"""
+def test_check_abelian_matrix():
+    """Test check_abelian with matrices as inputs"""
     abelian_group = [qml.matrix(op, wire_order=range(3)) for op in abelian_group0]
-    assert qml.liealg.check_all_commuting(abelian_group)
+    assert qml.liealg.check_abelian(abelian_group)
     non_abelian_group = [qml.matrix(op, wire_order=range(3)) for op in non_abelian_group0]
-    assert not qml.liealg.check_all_commuting(non_abelian_group)
+    assert not qml.liealg.check_abelian(non_abelian_group)
 
 
-def test_check_all_commuting_ps():
-    """Test check_all_commuting with ps as inputs"""
+def test_check_abelian_ps():
+    """Test check_abelian with ps as inputs"""
     abelian_group = [op.pauli_rep for op in abelian_group0]
-    assert qml.liealg.check_all_commuting(abelian_group)
+    assert qml.liealg.check_abelian(abelian_group)
     non_abelian_group = [op.pauli_rep for op in non_abelian_group0]
-    assert not qml.liealg.check_all_commuting(non_abelian_group)
+    assert not qml.liealg.check_abelian(non_abelian_group)
 
 
-def test_check_all_commuting_NotImplemented():
-    """Test that check_all_commuting raises NotImplementedError"""
+def test_check_abelian_NotImplemented():
+    """Test that check_abelian raises NotImplementedError"""
     with pytest.raises(NotImplementedError, match="At least one operator in the"):
-        _ = qml.liealg.check_all_commuting([qml.pauli.PauliWord({0: "X"})])
+        _ = qml.liealg.check_abelian([qml.pauli.PauliWord({0: "X"})])
