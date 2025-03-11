@@ -1204,7 +1204,7 @@ def _enforce_positivity(mat):
 class TestDenmanBeaversIterations:
     """Tests for the Denman-Beavers iteration method for matrix square root"""
 
-    def test_singular_matrix(self, seed):
+    def test_singular_matrix(self):
         """Test that singular matrix raises appropriate error"""
         n = 4
         mat = csr_matrix(np.diag([0.0] + [1.0] * (n - 1)))
@@ -1243,7 +1243,7 @@ class TestDenmanBeaversIterations:
             _denman_beavers_iterations(mat)
 
     @pytest.mark.parametrize("size", [2, 3, 4, 5])
-    def test_valid_positive_definite(self, size):
+    def test_valid_positive_definite(self, size, seed):
         """Test that valid real, positive definite matrices work correctly"""
         # Create a positive definite matrix
         rng = np.random.default_rng(seed)
