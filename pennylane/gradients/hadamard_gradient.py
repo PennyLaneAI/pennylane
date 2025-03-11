@@ -385,19 +385,9 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
     ops_before_trainable_op = tape.operations[:]
     ops_after_trainable_op = [qml.adjoint(op) for op in reversed(tape.operations[idx + 1:])]
 
-    # Get a generator and coefficients
-    sub_coeffs, generators = _get_pauli_generators(trainable_op)
-
     # Create measurement with gate generators
-    # With type pennylane.measurements.expval.ExpectationMP
-    mp = qml.expval(
-        qml.Hamiltonian(
-            coeffs=sub_coeffs,
-            observables=generators,
-            # grouping_type="commuting",
-        )
-    )
-    measurements = [_new_measurement(mp, aux_wire, tape.wires)]
+    mp = qml.expval(trainable_op.generator() @ qml.Y(aux_wire))
+    measurements = [mp]
 
     # Get the observable from tape measurement
     # Assume there's only one observable in the tape ################ processing function aggregation
@@ -421,18 +411,8 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
     ops_before_trainable_op = tape.operations[:]
     ops_after_trainable_op = [qml.adjoint(op) for op in reversed(tape.operations[idx + 1:])]
 
-    sub_coeffs, generators = _get_pauli_generators(trainable_op)
-
     # Create measurement with gate generators
-    measurements = [
-        qml.expval(
-            qml.Hamiltonian(
-                coeffs=sub_coeffs,
-                observables=generators,
-                # grouping_type="commuting",
-            )
-        )
-    ]
+    measurements = [qml.expval(trainable_op.generator())]
 
     # Get the observable from tape measurement
     # Assume there's only one observable in the tape ################ processing function aggregation
