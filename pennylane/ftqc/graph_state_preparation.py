@@ -71,7 +71,7 @@ class GraphStatePrep(Operation):
 
             @qml.qnode(dev)
             def circuit(q, one_qubit_ops, two_qubit_ops):
-                GraphStatePrep(qubit_graph=q, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops)
+                GraphStatePrep(graph=q, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops)
                 return qml.probs()
 
             lattice = generate_lattice([2, 2], "square")
