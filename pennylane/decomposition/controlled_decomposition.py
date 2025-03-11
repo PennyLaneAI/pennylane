@@ -147,11 +147,11 @@ def controlled_global_phase_decomp(*_, control_wires, control_values, work_wires
             qml.PauliX(w)
 
 
-def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_work_wires):
-    if num_control_wires == 1 and num_zero_control_values == 0:
-        return {resource_rep(qml.CNOT): 1}
-    if num_control_wires == 2 and num_zero_control_values == 0:
-        return {resource_rep(qml.Toffoli): 1}
+def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CNOT: 1, qml.PauliX: num_zero_control_values * 2}
+    if num_control_wires == 2:
+        return {qml.Toffoli: 1, qml.PauliX: num_zero_control_values * 2}
     return {
         resource_rep(
             qml.MultiControlledX,
@@ -163,12 +163,22 @@ def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_w
 
 
 @register_resources(_controlled_x_resource)
-def controlled_x_decomp(*_, control_wires, control_values, work_wires, base, **__):
+def controlled_x_decomp(*_, wires, control_wires, control_values, work_wires, **__):
     """The decomposition rule for a controlled PauliX."""
 
-    qml.ctrl(
-        qml.PauliX(base.wires),
-        control=control_wires,
-        control_values=control_values,
-        work_wires=work_wires,
-    )
+    if len(control_wires) > 2:
+        qml.MultiControlledX(wires=wires, control_values=control_values, work_wires=work_wires)
+        return
+
+    for w, val in zip(control_wires, control_values):
+        if not val:
+            qml.PauliX(w)
+
+    if len(control_wires) == 1:
+        qml.CNOT(wires=wires)
+    else:
+        qml.Toffoli(wires=wires)
+
+    for w, val in zip(control_wires, control_values):
+        if not val:
+            qml.PauliX(w)

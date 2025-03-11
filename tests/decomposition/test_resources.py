@@ -21,6 +21,7 @@ from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
     controlled_resource_rep,
+    custom_ctrl_op_to_base,
     resource_rep,
 )
 
@@ -366,6 +367,13 @@ class TestControlledResourceRep:
             },
         )
 
+    def test_custom_controlled_ops(self):
+        """Tests that the resource rep of custom controlled ops remain as the custom version."""
+
+        for op_type in custom_ctrl_op_to_base():
+            rep = resource_rep(op_type)
+            assert rep == CompressedResourceOp(op_type, {})
+
 
 class TestSymbolicResourceRep:
     """Tests resource reps of symbolic operators"""
@@ -425,3 +433,16 @@ class TestSymbolicResourceRep:
                 },
             },
         )
+
+    def test_adjoint_custom_controlled_ops(self):
+        """Tests that the adjoint of custom controlled ops remain as the custom version."""
+
+        for op_type in custom_ctrl_op_to_base():
+            rep = qml.adjoint_resource_rep(base_class=op_type, base_params={})
+            assert rep == CompressedResourceOp(
+                qml.ops.Adjoint,
+                {
+                    "base_class": op_type,
+                    "base_params": {},
+                },
+            )

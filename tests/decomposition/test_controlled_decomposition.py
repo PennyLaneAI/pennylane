@@ -15,7 +15,10 @@
 """Tests the decomposition rules defined for controlled operations."""
 
 import pennylane as qml
-from pennylane.decomposition.controlled_decomposition import controlled_global_phase_decomp
+from pennylane.decomposition.controlled_decomposition import (
+    controlled_global_phase_decomp,
+    controlled_x_decomp,
+)
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
 
 
@@ -88,6 +91,99 @@ class TestControlledDecompositionRules:
                         "num_control_wires": 2,
                         "num_zero_control_values": 0,
                         "num_work_wires": 0,
+                    },
+                ): 1,
+            },
+        )
+
+
+class TestControlledX:
+    """Tests decompositions of different versions of controlled X gates."""
+
+    def test_single_controlled_x(self):
+        """Tests that a single-controlled X decomposes to a CNOT."""
+
+        op = qml.ops.Controlled(qml.X(0), control_wires=[1])
+        with qml.queuing.AnnotatedQueue() as q:
+            controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.CNOT(wires=[1, 0])]
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
+            num_gates=1, gate_counts={CompressedResourceOp(qml.CNOT): 1}
+        )
+
+        op = qml.ops.Controlled(qml.X(0), control_wires=[1], control_values=[0])
+        with qml.queuing.AnnotatedQueue() as q:
+            controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.PauliX(1), qml.CNOT(wires=[1, 0]), qml.PauliX(1)]
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
+            num_gates=3,
+            gate_counts={CompressedResourceOp(qml.CNOT): 1, CompressedResourceOp(qml.PauliX): 2},
+        )
+
+    def test_double_controlled_x(self):
+        """Tests that a double-controlled X decomposes to a Toffoli gate."""
+
+        op = qml.ops.Controlled(qml.X(0), control_wires=[1, 2])
+        with qml.queuing.AnnotatedQueue() as q:
+            controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.Toffoli(wires=[1, 2, 0])]
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
+            num_gates=1, gate_counts={CompressedResourceOp(qml.Toffoli): 1}
+        )
+
+        op = qml.ops.Controlled(qml.X(0), control_wires=[1, 2], control_values=[0, 1])
+        with qml.queuing.AnnotatedQueue() as q:
+            controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.PauliX(1), qml.Toffoli(wires=[1, 2, 0]), qml.PauliX(1)]
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
+            num_gates=3,
+            gate_counts={CompressedResourceOp(qml.Toffoli): 1, CompressedResourceOp(qml.PauliX): 2},
+        )
+
+    def test_multi_controlled_x(self):
+        """Tests that a multi-controlled X decomposes to a MultiControlledX gate."""
+
+        op = qml.ops.Controlled(qml.X(0), control_wires=[1, 2, 3], work_wires=[4])
+        with qml.queuing.AnnotatedQueue() as q:
+            controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.MultiControlledX(wires=[1, 2, 3, 0], work_wires=[4])]
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
+            num_gates=1,
+            gate_counts={
+                CompressedResourceOp(
+                    qml.MultiControlledX,
+                    {
+                        "num_control_wires": 3,
+                        "num_zero_control_values": 0,
+                        "num_work_wires": 1,
+                    },
+                ): 1
+            },
+        )
+
+        op = qml.ops.Controlled(
+            qml.X(0), control_wires=[1, 2, 3], control_values=[0, 1, 0], work_wires=[4]
+        )
+        with qml.queuing.AnnotatedQueue() as q:
+            controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [
+            qml.MultiControlledX(wires=[1, 2, 3, 0], control_values=[0, 1, 0], work_wires=[4])
+        ]
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
+            num_gates=1,
+            gate_counts={
+                CompressedResourceOp(
+                    qml.MultiControlledX,
+                    {
+                        "num_control_wires": 3,
+                        "num_zero_control_values": 2,
+                        "num_work_wires": 1,
                     },
                 ): 1,
             },
