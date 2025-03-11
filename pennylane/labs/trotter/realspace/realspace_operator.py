@@ -268,7 +268,7 @@ class RealspaceSum(Fragment):
             indices = (
                 op.coeffs.nonzero() if sparse else product(range(self.modes), repeat=len(op.ops))
             )
-            coeff_sum = sum(op.coeffs.compute(index) for index in indices)
+            coeff_sum = sum(abs(op.coeffs.compute(index)) for index in indices)
 
             norm += coeff_sum * term_op_norm
 
