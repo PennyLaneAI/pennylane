@@ -94,7 +94,7 @@
   ```
 
   The following functions have also been added:
-  * `qml.liealg.check_commutation(A, B, C)` checks if all commutators between `A` and `B`
+  * `qml.liealg.check_commutation_relation(A, B, C)` checks if all commutators between `A` and `B`
   map to a subspace of `C`, i.e. `[A, B] ⊆ C`.
 
   * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to their adjoint vector representations and back.
@@ -464,7 +464,7 @@
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
 * `pennylane.labs.khaneja_glaser_involution` is removed.
-  `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation`.
+  `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation_relation`.
   `pennylane.labs.check_cartan_decomp` is moved to `qml.liealg.check_cartan_decomp`.
   All involution functions are moved to `qml.liealg`.
   `pennylane.labs.adjvec_to_op` is moved to `qml.liealg.adjvec_to_op`.

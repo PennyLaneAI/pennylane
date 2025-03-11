@@ -40,7 +40,7 @@ Functions
     :toctree: api
 
     ~check_cartan_decomp
-    ~check_commutation
+    ~check_commutation_relation
     ~check_all_commuting
     ~adjvec_to_op
     ~op_to_adjvec
@@ -99,7 +99,7 @@ Relevant demos to check out:
 from .structure_constants import structure_constants
 from .center import center
 from .lie_closure import lie_closure
-from .cartan_decomp import cartan_decomp, check_cartan_decomp, check_commutation
+from .cartan_decomp import cartan_decomp, check_cartan_decomp, check_commutation_relation
 from .involutions import (
     even_odd_involution,
     concurrence_involution,
