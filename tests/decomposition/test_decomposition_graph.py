@@ -90,12 +90,16 @@ class TestDecompositionGraph:
 
         op = CustomHadamard(wires=[0])
         graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RZ", "GlobalPhase"})
+        # 5 ops and 3 decompositions (2 for Hadamard and 1 for RY)
         assert len(graph._graph.nodes()) == 8
+        # 8 edges from ops to decompositions and 3 from decompositions to ops
         assert len(graph._graph.edges()) == 11
 
         # Check that graph construction stops at gates in the target gate set.
         graph2 = DecompositionGraph(operations=[op], target_gate_set={"RY", "RZ", "GlobalPhase"})
+        # 5 ops and 2 decompositions (RY is in the target gate set now)
         assert len(graph2._graph.nodes()) == 7
+        # 6 edges from ops to decompositions and 2 from decompositions to ops
         assert len(graph2._graph.edges()) == 8
 
     @pytest.mark.unit
@@ -158,7 +162,10 @@ class TestDecompositionGraph:
         graph = DecompositionGraph(
             operations=[op], target_gate_set={"RX", "RZ", "CZ", "GlobalPhase"}
         )
+        # 10 ops and 7 decompositions (1 for the custom op, 1 for each of the two MultiRZs,
+        # 1 for CNOT, 2 for Hadamard, and 1 for RY)
         assert len(graph._graph.nodes()) == 17
+        # 16 edges from ops to decompositions and 7 from decompositions to ops
         assert len(graph._graph.edges()) == 23
 
         graph.solve()
