@@ -9,12 +9,14 @@ Volume 59,
 Pages 45-48,
 """
 
-from math import ceil, log2, pow
-
 import numpy as np
+
+# pylint: disable=too-many-statements
 
 
 def get_coeffs():
+    """Get the frequences and Taylor coefficients of the spin-vibronic Hamiltonian"""
+
     Psis = ["S1", "S2", "S3", "S4", "T1", "T2"]
     Psis = {k: i for i, k in enumerate(Psis)}
     Qs = ["1", "2", "3", "7", "11", "16", "21", "22", "23", "24"]
@@ -23,7 +25,7 @@ def get_coeffs():
     n_states = len(Psis)
     n_modes = len(Qs)
 
-    n_blocks = n_states  # int(pow(2, ceil(log2(n_states))))
+    n_blocks = n_states
 
     # frequencies (eV)
     omegas = np.array(
@@ -184,70 +186,11 @@ def get_coeffs():
     gammas[Psis["T1"], Qs["24"]] = -0.00060
     gammas[Psis["T2"], Qs["23"]] = -0.00134
 
-    """
-    epsilons[Psis["S1"], Qs["11"]] = 0.00064
-    epsilons[Psis["S2"], Qs["11"]] = 0.00073
-    epsilons[Psis["S3"], Qs["11"]] = 0.00040
-    epsilons[Psis["S4"], Qs["11"]] = 0.00070
-    epsilons[Psis["S1"], Qs["1"]] = 0.00881
-    epsilons[Psis["S2"], Qs["1"]] = 0.00921
-    epsilons[Psis["S3"], Qs["1"]] = 0.00975
-    epsilons[Psis["S4"], Qs["1"]] = 0.00751
-    epsilons[Psis["S1"], Qs["2"]] = 0.00410
-    epsilons[Psis["S2"], Qs["2"]] = 0.00456
-    epsilons[Psis["S3"], Qs["2"]] = 0.00442
-    epsilons[Psis["S4"], Qs["2"]] = 0.00425
-    epsilons[Psis["S1"], Qs["3"]] = 0.01386
-    epsilons[Psis["S2"], Qs["3"]] = 0.05103
-    epsilons[Psis["S3"], Qs["3"]] = 0.01450
-    epsilons[Psis["S4"], Qs["3"]] = 0.01517
-    epsilons[Psis["S1"], Qs["7"]] = 0.00227
-    epsilons[Psis["S2"], Qs["7"]] = 0.00208
-    epsilons[Psis["S3"], Qs["7"]] = 0.00218
-    epsilons[Psis["S4"], Qs["7"]] = 0.00237
-    epsilons[Psis["S1"], Qs["16"]] = 0.00095
-    epsilons[Psis["S2"], Qs["16"]] = 0.00087
-    epsilons[Psis["S3"], Qs["16"]] = 0.00072
-    epsilons[Psis["S4"], Qs["16"]] = 0.00067
-    epsilons[Psis["S1"], Qs["21"]] = 0.00024
-    epsilons[Psis["S2"], Qs["21"]] = 0.00016
-    epsilons[Psis["S3"], Qs["21"]] = 0.00021
-    epsilons[Psis["S4"], Qs["21"]] = 0.00010
-    epsilons[Psis["S1"], Qs["23"]] = 0.00051
-    epsilons[Psis["S2"], Qs["23"]] = 0.00055
-    epsilons[Psis["S3"], Qs["23"]] = 0.00030
-    epsilons[Psis["S4"], Qs["23"]] = 0.00009
-    epsilons[Psis["S1"], Qs["24"]] = 0.00016
-    epsilons[Psis["S2"], Qs["24"]] = -0.00007
-    epsilons[Psis["S3"], Qs["24"]] = 0.00002
-    epsilons[Psis["S4"], Qs["24"]] = -0.00035
-    epsilons[Psis["T1"], Qs["11"]] = 0.00074
-    epsilons[Psis["T2"], Qs["11"]] = 0.00064
-    epsilons[Psis["T1"], Qs["1"]] = 0.00938
-    epsilons[Psis["T2"], Qs["1"]] = 0.00918
-    epsilons[Psis["T1"], Qs["2"]] = 0.00423
-    epsilons[Psis["T2"], Qs["2"]] = 0.00396
-    epsilons[Psis["T1"], Qs["3"]] = 0.01492
-    epsilons[Psis["T2"], Qs["3"]] = 0.01362
-    epsilons[Psis["T1"], Qs["7"]] = 0.00241
-    epsilons[Psis["T2"], Qs["7"]] = 0.00197
-    epsilons[Psis["T1"], Qs["16"]] = 0.00076
-    epsilons[Psis["T2"], Qs["16"]] = 0.00032
-    epsilons[Psis["T1"], Qs["21"]] = -0.00007
-    epsilons[Psis["T2"], Qs["21"]] = -0.00008
-    epsilons[Psis["T1"], Qs["22"]] = 0.00004
-    epsilons[Psis["T2"], Qs["22"]] = -0.00002
-    epsilons[Psis["T1"], Qs["23"]] = 0.00036
-    epsilons[Psis["T2"], Qs["23"]] = 0.00034
-    epsilons[Psis["T1"], Qs["24"]] = 0.00015
-    epsilons[Psis["T2"], Qs["24"]] = 0.00003
-    """
-
     betas = np.zeros((n_blocks, n_blocks, n_modes, n_modes))
 
     for i in range(n_states):
         for j in range(n_modes):
-            betas[i][i][j][j] = gammas[i][j]  # + np.array(omegas)[j] / 2
+            betas[i][i][j][j] = gammas[i][j]
 
     for j in range(n_states):
         alphas[j][j] = kappas[j]
