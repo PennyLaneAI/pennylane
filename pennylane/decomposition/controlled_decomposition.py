@@ -101,7 +101,9 @@ class GeneralControlledDecomposition(DecompositionRule):
         return _impl
 
 
-def _controlled_g_phase_resource(*_, num_control_wires, num_zero_control_values, num_work_wires):
+def _controlled_g_phase_resource(
+    *_, num_control_wires, num_zero_control_values, num_work_wires, **__
+):
     if num_control_wires == 1:
         return {
             resource_rep(qml.PauliX): num_zero_control_values * 2,
