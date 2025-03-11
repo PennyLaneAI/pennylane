@@ -780,7 +780,6 @@ jobs:
 
       - name: Upload Reports
         env:
-          #TODO: Remove _dev suffixes before merging
           PENNYLANE_OSS_SERVER_ENDPOINT_URL: ${{ secrets.pennylane_oss_server_endpoint_url }}
           PENNYLANE_OSS_SERVER_API_KEY: ${{ secrets.pennylane_oss_server_api_key }}
         run: |

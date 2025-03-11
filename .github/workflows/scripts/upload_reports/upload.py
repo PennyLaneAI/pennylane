@@ -59,8 +59,6 @@ def upload_reports(report_contents: dict):
     """Upload a report to the PennyLane OSS Service."""
 
     settings = PLOSSSettings()
-
-    payload = json.dumps(report_contents)
     headers = {"x-api-key": settings.api_key}
 
     try:
@@ -68,7 +66,7 @@ def upload_reports(report_contents: dict):
         response = requests.post(
             settings.endpoint_url,
             headers=headers,
-            json=payload,
+            json=report_contents,
         )
         response.raise_for_status()
         print(f"Successfully uploaded reports. Status code: {response.status_code}")
