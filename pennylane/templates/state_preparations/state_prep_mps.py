@@ -237,7 +237,7 @@ class MPSPrep(Operation):
         mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
             as a product of site matrices. See the usage details section for more information.
 
-        wires (Sequence[int]): wires that the template acts on
+        wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
         work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
             of the MPS tensors is :math:`2^k`, then :math:`k` ``work_wires`` will be needed. If no ``work_wires`` are given,
             this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
@@ -419,7 +419,7 @@ class MPSPrep(Operation):
             mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
                 product of site matrices.
 
-            wires (Sequence[int]): wires that the template acts on
+            wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
             work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
                 of the MPS tensors is `2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
                 this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
