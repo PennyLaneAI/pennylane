@@ -310,7 +310,12 @@ class TestOpToAdjvec:
         with pytest.raises(
             NotImplementedError, match="At least one operator in the specified basis"
         ):
-            _ = op_to_adjvec([Fraction(2)], [1, 1])
+            _ = op_to_adjvec([Fraction(2)], [Fraction(2)])
+
+        with pytest.raises(
+            NotImplementedError, match="At least one operator in the specified basis"
+        ):
+            _ = op_to_adjvec([Fraction(2)], [1.0])
 
     def test_op_and_dense(self):
         """Test that an operator is correctly turned into an adjvec when the basis is provided as tensors"""
