@@ -133,7 +133,7 @@ class TestDecompositionGraph:
     def test_decomposition_with_resource_params(self, _):
         """Tests operators with non-empty resource params."""
 
-        class CustomOp(qml.operation.Operation):
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_param_keys = ("num_wires",)
