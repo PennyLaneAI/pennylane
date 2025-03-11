@@ -117,7 +117,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         op_node_idx = self._graph.add_node(op_node)
         self._op_node_indices[op_node] = op_node_idx
 
-        if op_node.op_type.__name__ in self._target_gate_set:
+        if op_node.op_type.name in self._target_gate_set:
             self._target_gate_indices.add(op_node_idx)
             return op_node_idx
 
@@ -210,7 +210,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._graph.remove_node(start)
         if self._visitor.unsolved_op_indices:
             unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
-            op_names = set(op.op_type.__name__ for op in unsolved_ops)
+            op_names = set(op.op_type.name for op in unsolved_ops)
             raise DecompositionError(
                 f"Decomposition not found for {op_names} to the gate set {self._target_gate_set}"
             )
