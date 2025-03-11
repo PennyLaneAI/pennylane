@@ -28,6 +28,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
@@ -277,22 +278,25 @@ class TestDecomposeInterpreter:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive
 
-    def test_ctrl_higher_order_primitive_not_implemented(self):
-        """Test that evaluating a ctrl higher order primitive raises a NotImplementedError"""
+    def test_ctrl_higher_order_primitive(self):
+        """Test that ctrl higher order primitives are correctly interpreted."""
 
+        @DecomposeInterpreter(gate_set=[qml.RX, qml.RY, qml.RZ])
         def inner_f(x):
-            qml.X(0)
-            qml.RX(x, 0)
+            qml.Rot(x, 1.0, 2.0, 0)
 
         def f(x):
             qml.ctrl(inner_f, control=[1])(x)
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        interpreter = DecomposeInterpreter()
-
-        with pytest.raises(NotImplementedError):
-            interpreter.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert collector.state["ops"] == [
+            qml.CRZ(1.5, [1, 0]),
+            qml.CRY(1.0, [1, 0]),
+            qml.CRZ(2.0, [1, 0]),
+        ]
 
     @pytest.mark.parametrize("lazy", [True, False])
     def test_adjoint_higher_order_primitive(self, lazy):

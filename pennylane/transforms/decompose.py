@@ -68,8 +68,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         # pylint: disable=import-outside-toplevel
         import jax
 
-        from pennylane.capture.primitives import ctrl_transform_prim
-
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -276,11 +274,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 return self.decompose_operation(op)
 
             return self._evaluate_jaxpr_decomposition(op)
-
-    # pylint: disable=unused-variable,missing-function-docstring
-    @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
-    def handle_ctrl_transform(*_, **__):
-        raise NotImplementedError
 
     def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``decompose`` transform on plxpr."""
