@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -176,7 +176,7 @@ def cartan_subalgebra(
 
         Finally, we can compute a Cartan subalgebra :math:`\mathfrak{a}`, a maximal Abelian subalgebra of :math:`\mathfrak{m}`.
 
-        >>> newg, k, mtilde, a, new_adj = cartan_subalgebra(g, k, m, adj, start_idx=3)
+        >>> newg, k, mtilde, a, new_adj = cartan_subalgebra(k, m, adj, start_idx=3)
 
         The new DLA ``newg`` is just the concatenation of ``k``, ``mtilde``, ``a``. Each component is returned in the original input format.
         Here we obtain collections of :math:`8\times 8` matrices (``numpy`` arrays), as this is what we started from.
@@ -187,7 +187,7 @@ def cartan_subalgebra(
         We can also let the function return what we call adjoint representation vectors.
 
         >>> kwargs = {"start_idx": 3, "return_adjvec": True}
-        >>> np_newg, np_k, np_mtilde, np_a, new_adj = cartan_subalgebra(g, k, m, adj, **kwargs)
+        >>> np_newg, np_k, np_mtilde, np_a, new_adj = cartan_subalgebra(k, m, adj, **kwargs)
         >>> np_newg.shape, np_k.shape, np_mtilde.shape, np_a.shape, new_adj.shape
         ((15, 15), (6, 15), (6, 15), (3, 15), (15, 15, 15))
 
@@ -227,6 +227,7 @@ def cartan_subalgebra(
     while True:
         if verbose:
             print(f"iteration {iteration}: Found {len(np_a)} independent Abelian operators.")
+        # todo: avoid re-computing this overlap in every while-loop iteration.
         kernel_intersection = np_m
         for h_i in np_a:
 
