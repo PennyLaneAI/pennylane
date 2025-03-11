@@ -351,6 +351,38 @@ def test_qnode_pytree_output():
     assert list(out.keys()) == ["a", "b"]
 
 
+@pytest.mark.parametrize("dev_name", ["default.qubit", "lightning.qubit"])
+class TestDevicePreprocessing:
+    """Unit tests for preprocessing and executing qnodes with program capture."""
+
+    def test_non_native_ops_execution(self, dev_name):
+        """Test that operators that aren't natively supported by a device can be executed by a qnode."""
+
+    @pytest.mark.parametrize("mcm_method", [None, "deferred"])
+    @pytest.mark.parametrize("shots", [None, 1000])
+    def test_mcms_execution_deferred(self, dev_name):
+        """Test that defer_measurements is reflected in the execution results of a device."""
+        # Parametrized over mcm_method because default (None) method is "deferred"
+        # Shots tests should check shape and ~vaguely~ validate distribution. Use the following test for inspiration:
+        # https://github.com/PennyLaneAI/pennylane-lightning/blob/589392d0dd31737e559048626698911439bc2706/tests/test_eval_jaxpr.py#L782-L783
+        # Use postselection with DQ, not with LQ
+        # Use reset with both devices
+
+    def test_mcm_execution_deferred_fill_shots(self, dev_name):
+        """Test that using a qnode with postselect_mode="fill-shots" gives the expected results."""
+        # Use tests from tests/capture/transforms/test_mcm_execution.py for reference
+
+    def test_mcm_execution_deferred_hw_like(self, dev_name):
+        """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
+        # Use tests from tests/capture/transforms/test_mcm_execution.py for reference
+
+    @pytest.mark.parametrize("shots", [None, 1000])
+    def test_mcms_execution_single_branch_statistics(self, dev_name, shots):
+        """Test that single-branch-statistics works as expected."""
+        # Apply MCM right before terminal measurements. That will make sure that all samples (for finite shot tests)
+        # have the same value.
+
+
 class TestDifferentiation:
 
     def test_error_backprop_unsupported(self):
