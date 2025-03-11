@@ -83,10 +83,10 @@ class GraphStatePrep(Operation):
         The resulting circuit after applying the ``GraphStatePrep`` template is:
 
         >>> print(qml.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops))
-        QubitGraph<id=(0, 1), loc=[square]>: ──Y────╭X─╭●────┤  Probs
-        QubitGraph<id=(1, 0), loc=[square]>: ──Y─╭X─│──│──╭●─┤  Probs
-        QubitGraph<id=(1, 1), loc=[square]>: ──Y─│──│──╰X─╰X─┤  Probs
-        QubitGraph<id=(0, 0), loc=[square]>: ──Y─╰●─╰●───────┤  Probs
+        QubitGraph<id=(0, 0), loc=[square]>: ──Y────╭X─╭●────┤  Probs
+        QubitGraph<id=(0, 1), loc=[square]>: ──Y─╭X─│──│──╭●─┤  Probs
+        QubitGraph<id=(1, 0), loc=[square]>: ──Y─│──│──╰X─╰X─┤  Probs
+        QubitGraph<id=(1, 1), loc=[square]>: ──Y─╰●─╰●───────┤  Probs
 
     """
 
