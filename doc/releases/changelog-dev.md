@@ -73,7 +73,7 @@
    [X(0) @ X(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)])
   ```
 
-  The vertical subspace `k` and `m` fulfil the commutation relations `[k, m] \subset m`, `[k, k] \subset k` and `[m, m] \subset k` that make them a proper Cartan decomposition. These can be checked using the function `qml.liealg.check_cartan_decomp`.
+  The vertical subspace `k` and `m` fulfil the commutation relations `[k, m] ⊆ m`, `[k, k] ⊆ k` and `[m, m] ⊆ k` that make them a proper Cartan decomposition. These can be checked using the function `qml.liealg.check_cartan_decomp`.
 
   ```pycon
   >>> qml.liealg.check_cartan_decomp(k, m) # check Cartan commutation relations
@@ -95,7 +95,7 @@
 
   The following functions have also been added:
   * `qml.liealg.check_commutation(A, B, C)` checks if all commutators between `A` and `B`
-  map to a subspace of `C`, i.e. `[A, B] \subset C`.
+  map to a subspace of `C`, i.e. `[A, B] ⊆ C`.
 
   * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allows transforming operators within a Lie algebra to their adjoint vector representations and back.
 
