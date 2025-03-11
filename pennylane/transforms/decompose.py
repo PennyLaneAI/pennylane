@@ -68,10 +68,32 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         # pylint: disable=import-outside-toplevel
         import jax
 
+        from pennylane.capture.primitives import ctrl_transform_prim
+
     except ImportError:  # pragma: no cover
         return None, None
 
-    # pylint: disable=redefined-outer-name
+    # pylint: disable=redefined-outer-name, too-few-public-methods
+
+    class ControlTransformInterpreter(qml.capture.PlxprInterpreter):
+        """Interpreter for replacing control transforms with individually controlled ops."""
+
+        def __init__(self, control_wires, control_values=None, work_wires=None):
+            self.control_wires = control_wires
+            self.control_values = control_values
+            self.work_wires = work_wires
+            super().__init__()
+
+        def interpret_operation(self, op):
+            """Interpret operation."""
+            with qml.capture.pause():
+                ctrl_op = qml.ctrl(
+                    op,
+                    self.control_wires,
+                    control_values=self.control_values,
+                    work_wires=self.work_wires,
+                )
+            return super().interpret_operation(ctrl_op)
 
     class DecomposeInterpreter(qml.capture.PlxprInterpreter):
         """Plxpr Interpreter for applying the ``decompose`` transform to callables or jaxpr
@@ -274,6 +296,23 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 return self.decompose_operation(op)
 
             return self._evaluate_jaxpr_decomposition(op)
+
+    # pylint: disable=too-many-arguments
+    @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
+    def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+        consts = invals[:n_consts]
+        args = invals[n_consts:-n_control]
+        control_wires = invals[-n_control:]
+
+        unroller = ControlTransformInterpreter(
+            control_wires, control_values=control_values, work_wires=work_wires
+        )
+
+        def wrapper(*inner_args):
+            return unroller.eval(jaxpr, consts, *inner_args)
+
+        jaxpr = jax.make_jaxpr(wrapper)(*args)
+        return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
     def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``decompose`` transform on plxpr."""

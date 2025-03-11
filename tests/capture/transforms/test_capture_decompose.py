@@ -22,6 +22,7 @@ jax = pytest.importorskip("jax")
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
+    ctrl_transform_prim,
     for_loop_prim,
     grad_prim,
     jacobian_prim,
@@ -278,26 +279,6 @@ class TestDecomposeInterpreter:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive
 
-    def test_ctrl_higher_order_primitive(self):
-        """Test that ctrl higher order primitives are correctly interpreted."""
-
-        @DecomposeInterpreter(gate_set=[qml.RX, qml.RY, qml.RZ])
-        def inner_f(x):
-            qml.Rot(x, 1.0, 2.0, 0)
-
-        def f(x):
-            qml.ctrl(inner_f, control=[1])(x)
-
-        args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert collector.state["ops"] == [
-            qml.CRZ(1.5, [1, 0]),
-            qml.CRY(1.0, [1, 0]),
-            qml.CRZ(2.0, [1, 0]),
-        ]
-
     @pytest.mark.parametrize("lazy", [True, False])
     def test_adjoint_higher_order_primitive(self, lazy):
         """Test that adjoint higher order primitives are correctly interpreted."""
@@ -481,6 +462,62 @@ class TestDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[2].primitive == qml.RZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+class TestControlledDecompositions:
+    """Unit tests for decomposing ctrl_transform primitives."""
+
+    def test_ctrl_simple(self):
+        """Test that ctrl higher order primitives are correctly interpreted."""
+
+        @DecomposeInterpreter(gate_set=[qml.RX, qml.RY, qml.RZ])
+        def inner_f(x):
+            qml.Rot(x, 1.0, 2.0, 0)
+
+        def f(x):
+            qml.ctrl(inner_f, control=[1])(x)
+
+        args = (1.5,)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert collector.state["ops"] == [
+            qml.CRZ(1.5, [1, 0]),
+            qml.CRY(1.0, [1, 0]),
+            qml.CRZ(2.0, [1, 0]),
+        ]
+
+    def test_ctrl_no_decomposition(self):
+        """Test that ctrl_transform that does not need to be decomposed gets changed into
+        individually controlled ops"""
+
+        # Not specifying gate set so all ops are considered to be supported
+        @DecomposeInterpreter()
+        def inner_f(x):
+            qml.RX(x, 0)
+            qml.IsingXX(x, [0, 1])
+
+        def f(x):
+            qml.ctrl(inner_f, control=[2, 3])(x)
+
+        args = (1.5,)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert not any(eqn.primitive == ctrl_transform_prim for eqn in jaxpr.eqns)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert collector.state["ops"] == [
+            qml.ctrl(qml.RX(1.5, 0), [2, 3]),
+            qml.ctrl(qml.IsingXX(1.5, [0, 1]), [2, 3]),
+        ]
+
+    def test_ctrl_for_loop(self):
+        """Test that a for_loop inside a ctrl_transform is not unrolled."""
+
+    def test_ctrl_while_loop(self):
+        """Test that a while_loop inside a ctrl_transform is not unrolled."""
+
+    def test_ctrl_cond(self):
+        """Test that a cond inside a ctrl_transform is not unrolled."""
 
 
 def test_decompose_plxpr_to_plxpr():
