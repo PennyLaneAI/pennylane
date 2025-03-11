@@ -510,7 +510,7 @@ class TestMPSPrep:
                 product of site matrices.
             state (Array): target state that the mps is approaching
             num_wires(int): number of wires to encode the state
-            num_work_wires(int): number of auxiliar wires used in the mps decomposition
+            num_work_wires(int): number of auxiliary wires used in the mps decomposition
         """
 
         wires = qml.registers({"work": num_work_wires, "state": num_wires})
