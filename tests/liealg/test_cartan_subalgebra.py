@@ -63,14 +63,15 @@ class TestCartanSubalgebra:
 
         assert np.allclose(new_adj_re, new_adj)
 
-    def test_cartan_subalgebra_matrix_input(self):
+    @pytest.mark.parametrize("start_idx", [0, 2])
+    def test_cartan_subalgebra_matrix_input(self, start_idx):
         """Test cartan_subalgebra with matrix inputs"""
         k = [1.0 * Z(0), 1.0 * Z(1)]
         m = [1.0 * X(0) @ X(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
         k = np.array([qml.matrix(op, wire_order=range(2)) for op in k])
         m = np.array([qml.matrix(op, wire_order=range(2)) for op in m])
 
-        newg, k, mtilde, h, new_adj = cartan_subalgebra(k, m, start_idx=0)
+        newg, k, mtilde, h, new_adj = cartan_subalgebra(k, m, start_idx=start_idx)
         assert len(h) + len(mtilde) == len(m)
 
         new_adj_re = qml.structure_constants(newg, matrix=True)
