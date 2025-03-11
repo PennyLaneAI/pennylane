@@ -22,7 +22,7 @@ from scipy.linalg import null_space, sqrtm
 import pennylane as qml
 from pennylane.liealg.center import _intersect_bases
 from pennylane.operation import Operator
-from pennylane.pauli import PauliSentence, PauliVSpace, trace_inner_product
+from pennylane.pauli import PauliSentence, trace_inner_product
 from pennylane.typing import TensorLike
 
 
@@ -301,8 +301,6 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
     [0.5 * X(0) + 0.3 * Y(0) + 0.7 * Z(0)]
 
     """
-    if isinstance(basis, PauliVSpace):  # TODO: make PauliVSpace iterable
-        basis = basis.basis
 
     assert qml.math.shape(adj_vecs)[1] == len(basis)
 
@@ -428,8 +426,6 @@ def op_to_adjvec(
     >>> op_to_adjvec([op], [op.matrix() for op in basis])
     array([[1. , 0.5, 0. ]])
     """
-    if isinstance(basis, PauliVSpace):  # TODO: make PauliVSpace iterable
-        basis = basis.basis
 
     if all(isinstance(op, Operator) for op in basis):
         ops = [op.pauli_rep for op in ops]
