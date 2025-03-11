@@ -285,7 +285,7 @@ def hadamard_grad(
         transform_name, gradient_method = modes[mode]
     except KeyError as exc:
         raise ValueError(f"Invalid mode: {mode}") from exc
-    
+
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
     assert_no_trainable_tape_batching(tape, transform_name)
@@ -461,7 +461,7 @@ def _get_pauli_terms(op):
     id_pw = qml.pauli.PauliWord({})
     if id_pw in pauli_rep:
         del pauli_rep[qml.pauli.PauliWord({})]
-    
+
     # qml.PauliZ has no defined terms() behavior
     return pauli_rep.operation().terms() if isinstance(pauli_rep.operation(), qml.ops.op_math.Sum) else (1 * pauli_rep.operation()).terms()
 
