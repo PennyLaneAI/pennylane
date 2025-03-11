@@ -279,5 +279,5 @@ class RealspaceSum(Fragment):
 
         return norm
 
-    def apply():
+    def apply(self):
         raise NotImplementedError

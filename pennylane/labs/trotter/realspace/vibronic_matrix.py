@@ -236,7 +236,7 @@ class VibronicMatrix(Fragment):
 
         return top_left, top_right, bottom_left, bottom_right
 
-    def apply():
+    def apply(self):
         raise NotImplementedError
 
 
