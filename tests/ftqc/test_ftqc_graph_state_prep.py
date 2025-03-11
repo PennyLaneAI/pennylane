@@ -26,7 +26,7 @@ from pennylane.ops.functions import assert_valid
 class TestGraphStatePrep:
     """Test for graph state prep"""
 
-    @pytest.mark.xfail(reason="Jax JIT requires wires to be integers.")
+    @pytest.mark.xfail(reason="Jax JIT cannot trace a graph object")
     def test_non_jaxjit_circuit_graph_state_prep(self):
         """Test if Jax JIT works with GraphStatePrep"""
         jax = pytest.importorskip("jax")
