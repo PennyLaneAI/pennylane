@@ -50,7 +50,7 @@ class GraphStatePrep(Operation):
         graph (Union[QubitGraph, networkx.Graph]): QubitGraph or networkx.Graph object mapping qubit to wires.
         one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
         two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
-        wires (Optional[Wires]): Wires the decomposition applies on. Wires will be mapped 1:1 to graph nodes. Default to None.
+        wires (Optional[Wires]): Wires the operator applies on. Wires will be mapped 1:1 to graph nodes. Optional only `graph` is a QubitGraph. If no wires are provided, the ``children`` of the provided ``QubitGraph`` will be used as wires.
 
     .. todo::
 
