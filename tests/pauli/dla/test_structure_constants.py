@@ -91,7 +91,7 @@ class TestAdjointRepr:
         d = len(ortho_dla)
 
         rng = np.random.default_rng(seed)
-        coeffs = rng.random((d, d)) + 0.5
+        coeffs = rng.uniform(0.5, 1.5, size=(d, d))
         dla = [sum(c * op for c, op in zip(_coeffs, ortho_dla)) for _coeffs in coeffs]
         ad_rep = structure_constants(dla, pauli=True, matrix=matrix, is_orthogonal=False)
         for alpha in range(d):
