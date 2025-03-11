@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from enum import Enum
 from itertools import product
 from typing import Any, Iterator, Tuple, Union
@@ -51,16 +50,19 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         self.is_zero = is_zero
         self.label = label
 
-        if node_type == NodeType.SUM:
-            self.shape = l_child.shape
-        if node_type == NodeType.OUTER:
-            self.shape = l_child.shape + r_child.shape
-        if node_type == NodeType.SCALAR:
-            self.shape = l_child.shape
-        if node_type == NodeType.TENSOR:
-            self.shape = tensor.shape
-        if node_type == NodeType.FLOAT:
-            self.shape = ()
+        match node_type:
+            case NodeType.SUM:
+                self.shape = l_child.shape
+            case NodeType.OUTER:
+                self.shape = l_child.shape + r_child.shape
+            case NodeType.SCALAR:
+                self.shape = l_child.shape
+            case NodeType.TENSOR:
+                self.shape = tensor.shape
+            case NodeType.FLOAT:
+                self.shape = ()
+            case _:
+                raise ValueError(f"{node_type} is not a valid NodeType.")
 
     @classmethod
     def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
@@ -175,117 +177,31 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         raise ValueError(f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}.")
 
-    def __repr__(self) -> str:
-        if self.node_type == NodeType.TENSOR:
-            return f"RealspaceCoeffs(TENSOR, {self.tensor})"
-
-        if self.node_type == NodeType.SCALAR:
-            return f"RealspaceCoeffs(SCALAR, {self.scalar}, {self.l_child})"
-
-        if self.node_type == NodeType.OUTER:
-            return f"RealspaceCoeffs(OUTER, {self.l_shape}, {self.r_shape}, {self.l_child}, {self.r_child})"
-
-        if self.node_type == NodeType.SUM:
-            return f"RealspaceCoeffs(SUM, {self.l_child}, {self.r_child})"
-
-        if self.node_type == NodeType.FLOAT:
-            return f"RealspaceCoeffs(FLOAT, {self.value})"
-
-        raise ValueError(f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}.")
-
     def __str__(self) -> str:
         indices = [f"idx{i}" for i in range(len(self.shape))]
 
-        return self._str(indices)
+        return str(self._str(indices))
 
     def _str(self, indices) -> str:
 
-        if self.node_type == NodeType.TENSOR:
-            return f"{self.label}[{','.join(indices)}]"
+        match self.node_type:
+            case NodeType.TENSOR:
+                return f"{self.label}[{','.join(indices)}]"
+            case NodeType.FLOAT:
+                return f"{self.value}"
+            case NodeType.SCALAR:
+                return f"{self.scalar} * ({self.l_child._str(indices)})"
+            case NodeType.OUTER:
+                l_indices = indices[: len(self.l_shape)]
+                r_indices = indices[len(self.l_shape) :]
 
-        if self.node_type == NodeType.FLOAT:
-            return f"{self.value}"
-
-        if self.node_type == NodeType.SCALAR:
-            return f"{self.scalar} * ({self.l_child._str(indices)})"
-
-        if self.node_type == NodeType.OUTER:
-            l_indices = indices[: len(self.l_shape)]
-            r_indices = indices[len(self.l_shape) :]
-
-            return f"({self.l_child._str(l_indices)}) * ({self.r_child._str(r_indices)})"
-
-        if self.node_type == NodeType.SUM:
-            return f"({self.l_child._str(indices)}) + ({self.r_child._str(indices)})"
-
-        raise ValueError(f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}.")
-
-    def compile(self, to_numpy: bool = False):
-        """Compile to a simple arithmetic expression"""
-
-        indices = [f"idx{i}" for i in range(len(self.shape))]
-        local_vars = {}
-        expr, local_vars = self._compile(indices, local_vars)
-
-        if to_numpy:
-            local_vars["np_abs"] = np.abs
-            local_vars["np_sum"] = np.sum
-
-            indices = np.array(list(self.nonzero())).T
-            for i, row in enumerate(indices):
-                local_vars[f"idx{i}"] = row
-
-            str_rep = f"np_sum(np_abs({expr}))"
-        else:
-            str_rep = f"{expr}"
-
-        return compile(str_rep, "", "eval"), local_vars
-
-    def _compile(self, indices: Tuple[int], local_vars: dict) -> (str, dict):
-
-        if self.node_type == NodeType.TENSOR:
-            index_str = ",".join(indices)
-
-            if self.label:
-                var_expr, reference = self.label
-                var_name = re.sub(r"\[.*\]", "", var_expr)
-                local_vars[var_name] = reference
-            else:
-                var_expr = (
-                    "nparray("
-                    + "".join(np.array2string(self.tensor, separator=",").splitlines())
-                    + ")"
+                return f"({self.l_child._str(l_indices)}) * ({self.r_child._str(r_indices)})"
+            case NodeType.SUM:
+                return f"({self.l_child._str(indices)}) + ({self.r_child._str(indices)})"
+            case _:
+                raise ValueError(
+                    f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}."
                 )
-                local_vars["nparray"] = np.array
-
-            return f"{var_expr}[{index_str}]", local_vars
-
-        if self.node_type == NodeType.FLOAT:
-            return f"{self.value}", local_vars
-
-        if self.node_type == NodeType.SCALAR:
-            compiled, local_vars = self.l_child._compile(indices, local_vars)
-
-            return f"{self.scalar} * ({compiled})", local_vars
-
-        if self.node_type == NodeType.SUM:
-            l_compiled, l_vars = self.l_child._compile(indices, local_vars)
-            r_compiled, r_vars = self.r_child._compile(indices, local_vars)
-            local_vars = l_vars | r_vars
-
-            return f"({l_compiled}) + ({r_compiled})", local_vars
-
-        if self.node_type == NodeType.OUTER:
-            l_indices = indices[: len(self.l_shape)]
-            r_indices = indices[len(self.l_shape) :]
-
-            l_compiled, l_vars = self.l_child._compile(l_indices, local_vars)
-            r_compiled, r_vars = self.r_child._compile(r_indices, local_vars)
-            local_vars = l_vars | r_vars
-
-            return f"({l_compiled}) * ({r_compiled})", local_vars
-
-        raise ValueError(f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}.")
 
     def compute(self, index: Tuple[int]) -> float:
         """Compute the coefficient at the given index"""
@@ -293,24 +209,23 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         if not self._validate_index(index):
             raise ValueError(f"Given index {index} is not compatible with shape {self.shape}")
 
-        if self.node_type == NodeType.TENSOR:
-            return self.tensor[index]
-
-        if self.node_type == NodeType.FLOAT:
-            return self.value
-
-        if self.node_type == NodeType.SCALAR:
-            return self.scalar * self.l_child.compute(index)
-
-        if self.node_type == NodeType.SUM:
-            return self.l_child.compute(index) + self.r_child.compute(index)
-
-        if self.node_type == NodeType.OUTER:
-            l_index = index[: len(self.l_shape)]
-            r_index = index[len(self.l_shape) :]
-            return self.l_child.compute(l_index) * self.r_child.compute(r_index)
-
-        raise ValueError(f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}.")
+        match self.node_type:
+            case NodeType.TENSOR:
+                return self.tensor[index]
+            case NodeType.FLOAT:
+                return self.value
+            case NodeType.SCALAR:
+                return self.scalar * self.l_child.compute(index)
+            case NodeType.SUM:
+                return self.l_child.compute(index) + self.r_child.compute(index)
+            case NodeType.OUTER:
+                l_index = index[: len(self.l_shape)]
+                r_index = index[len(self.l_shape) :]
+                return self.l_child.compute(l_index) * self.r_child.compute(r_index)
+            case _:
+                raise ValueError(
+                    f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}."
+                )
 
     def __getitem__(self, index):
         return self.compute(index)
@@ -318,22 +233,21 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     def nonzero(self) -> Iterator[Tuple[int]]:
         """Compute the nonzero indices"""
 
-        if self.node_type == NodeType.TENSOR:
-            return zip(*self.tensor.nonzero())
-
-        if self.node_type == NodeType.FLOAT:
-            return iter(((),)) if self.value else iter(())
-
-        if self.node_type == NodeType.SCALAR:
-            return self.l_child.nonzero() if self.scalar else iter(())
-
-        if self.node_type == NodeType.SUM:
-            return _uniq_chain(self.l_child.nonzero(), self.r_child.nonzero())
-
-        if self.node_type == NodeType.OUTER:
-            return _flatten_product(self.l_child.nonzero(), self.r_child.nonzero())
-
-        raise ValueError(f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}.")
+        match self.node_type:
+            case NodeType.TENSOR:
+                return zip(*self.tensor.nonzero())
+            case NodeType.FLOAT:
+                return iter(((),)) if self.value else iter(())
+            case NodeType.SCALAR:
+                return self.l_child.nonzero() if self.scalar else iter(())
+            case NodeType.SUM:
+                return _uniq_chain(self.l_child.nonzero(), self.r_child.nonzero())
+            case NodeType.OUTER:
+                return _flatten_product(self.l_child.nonzero(), self.r_child.nonzero())
+            case _:
+                raise ValueError(
+                    f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}."
+                )
 
     def _validate_index(self, index: Tuple[int]) -> bool:
         if len(index) != len(self.shape):
