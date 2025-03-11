@@ -109,6 +109,11 @@ def _controlled_g_phase_resource(
             resource_rep(qml.PauliX): num_zero_control_values * 2,
             resource_rep(qml.PhaseShift): 1,
         }
+    elif num_control_wires == 2:
+        return {
+            resource_rep(qml.PauliX): num_zero_control_values * 2,
+            resource_rep(qml.ControlledPhaseShift): 1,
+        }
     else:
         return {
             resource_rep(qml.PauliX): num_zero_control_values * 2,

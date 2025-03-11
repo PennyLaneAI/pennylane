@@ -53,16 +53,7 @@ class TestControlledDecompositionRules:
             num_gates=3,
             gate_counts={
                 CompressedResourceOp(qml.X): 2,
-                CompressedResourceOp(
-                    qml.ops.Controlled,
-                    {
-                        "base_class": qml.PhaseShift,
-                        "base_params": {},
-                        "num_control_wires": 1,
-                        "num_zero_control_values": 0,
-                        "num_work_wires": 0,
-                    },
-                ): 1,
+                CompressedResourceOp(qml.ControlledPhaseShift): 1,
             },
         )
 
