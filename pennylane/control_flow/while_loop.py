@@ -16,7 +16,7 @@ import functools
 from collections.abc import Callable
 from typing import Sequence
 
-import pennylane.capture as capture
+from pennylane import capture
 from pennylane.capture import FlatFn, determine_abstracted_axes, enabled
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.math import is_abstract
@@ -217,9 +217,9 @@ def _get_while_loop_qfunc_prim():
         init_state = args[args_slice]
         abstract_shapes = args[abstract_shapes_slice]
         # If cond_fn(*init_state) is False, return the initial state
-        fn_res = (*abstract_shapes, *init_state)
-        while capture.PlxprInterpreter().eval(jaxpr_cond_fn, jaxpr_consts_cond, *fn_res)[0]:
-            fn_res = capture.PlxprInterpreter().eval(jaxpr_body_fn, jaxpr_consts_body, *fn_res)
+        fn_res = init_state
+        while capture.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *abstract_shapes, *fn_res)[0]:
+            fn_res = capture.eval_jaxpr(jaxpr_body_fn, jaxpr_consts_body, *abstract_shapes, *fn_res)
 
         return fn_res
 

@@ -47,7 +47,7 @@ class TestQFT:
     def test_resource_params(self, wires):
         """Test that the resource params are correct"""
         op = re.ResourceQFT(wires)
-        assert op.resource_params() == {"num_wires": len(wires)}
+        assert op.resource_params == {"num_wires": len(wires)}
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4])
     def test_resource_rep(self, num_wires):

@@ -46,6 +46,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
@@ -78,6 +79,7 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         op = self.hyperparameters["unitary"]
         num_estimation_wires = len(self.hyperparameters["estimation_wires"])
@@ -90,7 +92,7 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
 
         return {
             "base_class": type(op),
-            "base_params": op.resource_params(),
+            "base_params": op.resource_params,
             "num_estimation_wires": num_estimation_wires,
         }
 
@@ -145,6 +147,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
             gate_types[cnot] = cnot_count
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
@@ -174,6 +177,7 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
         gate_types[single_excitation] = se_count
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         unitary_matrix = self.parameters[0]
         return {"dim_N": qml.math.shape(unitary_matrix)[0]}
@@ -211,6 +215,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         ops = self.hyperparameters["ops"]
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -241,6 +246,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         gate_types[prep_dag] = 1
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         ops = self.hyperparameters["ops"]
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -297,6 +303,7 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         base_cmpr_rep = self.hyperparameters["base"].resource_rep_from_op()
         num_ref_wires = len(self.hyperparameters["reflection_wires"])
@@ -330,6 +337,7 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
         gate_types[psp] = 1
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         lcu = self.hyperparameters["hamiltonian"]
         _, ops = lcu.terms()
