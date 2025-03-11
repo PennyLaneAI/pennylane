@@ -312,6 +312,15 @@ class TestOpToAdjvec:
         ):
             _ = op_to_adjvec([Fraction(2)], [1, 1])
 
+    def test_op_and_dense(self):
+        """Test that an operator is correctly turned into an adjvec when the basis is provided as tensors"""
+        H = X(0) + Y(0)
+        basis = [X(0), Y(0), Z(0)]
+        basis = [qml.matrix(op) for op in basis]
+
+        adjvec = qml.liealg.op_to_adjvec([H], basis)
+        assert np.allclose(adjvec, [1, 1, 0])
+
     @pytest.mark.parametrize("vspace", [True, False])
     @pytest.mark.parametrize("expected, basis, ops, is_ortho", ps_test_cases)
     def test_with_ps(self, ops, basis, expected, is_ortho, vspace):

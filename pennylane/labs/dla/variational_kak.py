@@ -248,6 +248,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
+    print([H], g[-dim_m:])
     [vec_H] = op_to_adjvec([H], g[-dim_m:], is_orthogonal=False)
 
     theta0 = opt_kwargs.pop("theta0", None)

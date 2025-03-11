@@ -436,9 +436,10 @@ def op_to_adjvec(
         return _op_to_adjvec_ps(ops, basis, is_orthogonal)
 
     # dense branch
-    if all(isinstance(op, TensorLike) for op in basis) and all(
-        isinstance(op, TensorLike) for op in ops
-    ):
+    if all(isinstance(op, TensorLike) for op in basis):
+        if not all(isinstance(op, TensorLike) for op in ops):
+            _n = int(qml.math.round(qml.math.log2(basis[0].shape[-1])))
+            ops = qml.math.array([qml.matrix(op, wire_order=range(_n)) for op in ops])
 
         basis = qml.math.array(basis)
         res = trace_inner_product(qml.math.array(ops), basis).real
