@@ -193,7 +193,7 @@ class TestGraphStatePrep:
         ],
     )
     def test_decompose_wires(self, one_qubit_ops, two_qubit_ops):
-        """Test the decomposition method of the GraphStatePrep class."""
+        """Test the decomposition method of the GraphStatePrep class when wires are provided."""
         lattice = nx.grid_graph((4,))
         wires = list(lattice.nodes)
 
