@@ -308,6 +308,9 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
+* `qml.pauli.PauliVSpace` is now iterable.
+  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
