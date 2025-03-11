@@ -9,7 +9,7 @@ import jax
 
 
 ```python
-my_func_prim = jax.core.Primitive("my_func")
+my_func_prim = jax.extend.core.Primitive("my_func")
 
 @my_func_prim.def_impl
 def _(x):
@@ -65,7 +65,7 @@ def repeat(func: Callable, n: int) -> Callable:
 We can start by creating the primitive itself:
 
 ```python
-repeat_prim = jax.core.Primitive("repeat")
+repeat_prim = jax.extend.core.Primitive("repeat")
 repeat_prim.multiple_results = True
 ```
 
@@ -318,7 +318,7 @@ class PrimitiveMeta(type):
 
     def __init__(cls, *args, **kwargs):
         # here we set up the primitive
-        primitive = jax.core.Primitive(cls.__name__)
+        primitive = jax.extend.core.Primitive(cls.__name__)
 
         @primitive.def_impl
         def _(*inner_args, **inner_kwargs):
@@ -391,7 +391,7 @@ class PrimitiveMeta2(type):
 
     def __init__(cls, *args, **kwargs):
         # here we set up the primitive
-        primitive = jax.core.Primitive(cls.__name__)
+        primitive = jax.extend.core.Primitive(cls.__name__)
 
         @primitive.def_impl
         def _(*inner_args, **inner_kwargs):
@@ -450,12 +450,12 @@ def fun(x):
 ```
 
 Now suppose we want to turn this into a primitive. We could just promote it to a standard
-`jax.core.Primitive` as
+`jax.extend.core.Primitive` as
 
 ```python
 import jax
 
-fd_prim = jax.core.Primitive("finite_diff")
+fd_prim = jax.extend.core.Primitive("finite_diff")
 fd_prim.multiple_results = True
 fd_prim.def_impl(finite_diff_impl)
 
@@ -487,7 +487,7 @@ for our finite difference method. We also create the usual method that binds the
 primitive to inputs.
 
 ```python
-class NonInterpPrimitive(jax.core.Primitive):
+class NonInterpPrimitive(jax.extend.core.Primitive):
     """A subclass to JAX's Primitive that works like a Python function
     when evaluating JVPTracers."""
 
