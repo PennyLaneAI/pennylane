@@ -15,7 +15,7 @@
 Contains the condition transform.
 """
 from functools import wraps
-from typing import Callable
+from typing import Callable, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementValue, MidMeasureMP
@@ -23,12 +23,13 @@ from pennylane.ops.op_math.condition import CondCallable, Conditional
 
 
 def cond_meas(
-    condition,
+    condition: Union[MeasurementValue, bool],
     true_fn: Callable,
     false_fn: Callable,
 ):
-    """Conditions the basis of mid-circuit qubit measurements on parameters such as the results of
-    other mid-circuit qubit measurements.
+    """Perform a mid-circuit measurement where the basis of the measurement is conditional on the
+    supplied expression. This conditional expression may involve the results of other mid-circuit
+    qubit measurements.
 
     .. note::
 

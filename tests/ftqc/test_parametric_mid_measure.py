@@ -672,11 +672,9 @@ class TestDiagonalizeMCMs:
         assert not isinstance(measurement, ParametricMidMeasureMP)
 
     def test_diagonalizing_mcm_used_as_cond(self):
-        """Test that when calling diagonalize_mcms, references to diagonalized
-        measurements that are stored in conditions on subsequent Conditional
-        operators are updated to track the measurement on the tape following
-        diagonalization, rather than the original object (for conditional
-        with MCM condition and non-MCM op)"""
+        """Test that the measurements in a ``MeasurementValue`` passed to
+        qml.cond are updated when those measurements are replaced by the
+        diagonalize_mcms transform."""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)
@@ -709,11 +707,12 @@ class TestDiagonalizeMCMs:
         assert [fn(1) for fn in processing_fns] == [False, True]
 
     def test_diagonalizing_mcm_used_as_cond_and_op(self):
-        """Test that when calling diagonalize_mcms, references to diagonalized
-        measurements that are stored in conditions on subsequent Conditional
-        operators are updated to track the measurement on the tape following
-        diagonalization, rather than the original object (for conditional
-        with MCM condition and MCM applied op)"""
+        """Test diagonalization behaviour when all arguments of cond_measure
+        require diagonalization. This test confirms that
+            1. the measurements in a ``MeasurementValue`` passed to cond_measurements
+            are updated when those measurements are replaced by the diagonalize_mcms transform.
+            2. the applied MCMs in cond_measurements are diagonalized as expected
+        """
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)

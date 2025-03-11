@@ -197,7 +197,6 @@ class TestWorkflows:
 
         dev = qml.device("default.qubit", shots=shots)
 
-        @diagonalize_mcms
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ():
             qml.RX(np.pi, 0)
@@ -210,9 +209,14 @@ class TestWorkflows:
         if shots:
             # the result is on the order of 1 (-0.7), and an uncertainty ~1.5-2 orders of magnitude
             # smaller than the result is sufficiently accurate for a shots-based measurement
-            assert np.isclose(circ(), -np.sin(2.345), atol=0.03)
+            assert np.isclose(diagonalize_mcms(circ)(), -np.sin(2.345), atol=0.03)
         else:
-            assert np.isclose(circ(), -np.sin(2.345))
+            assert np.isclose(diagonalize_mcms(circ)(), -np.sin(2.345))
+
+        # without the transform, the mid-circuit measurements are all treated as computational
+        # basis measurements, and they are inside Conditional, which doesn't execute correctly,
+        # so we return incorrect results, even with a high atol (± ~20-30% of expected outcome)
+        assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_cascading_conditional_measurements(self, mcm_method, shots):
@@ -221,7 +225,6 @@ class TestWorkflows:
 
         dev = qml.device("default.qubit", shots=shots)
 
-        @diagonalize_mcms
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ(x_rot, y_rot):
             qml.RX(np.pi, 0)
@@ -243,6 +246,12 @@ class TestWorkflows:
         if shots:
             # the result is on the order of 1 (-0.7), and an uncertainty ~1.5-2 orders of magnitude
             # smaller than the result is sufficiently accurate for a shots-based measurement
-            assert np.allclose(circ(x, y), [np.cos(x) * np.cos(y), -1], atol=0.03)
+            assert np.allclose(diagonalize_mcms(circ)(x, y), [np.cos(x) * np.cos(y), -1], atol=0.03)
         else:
-            assert np.allclose(circ(x, y), [np.cos(x) * np.cos(y), -1])
+            assert np.allclose(diagonalize_mcms(circ)(x, y), [np.cos(x) * np.cos(y), -1])
+
+        # this can't be executed without diagonalize_mcms, because without the transform, it
+        # tries to get concrete values for measurements that weren't executed when it hits
+        # the conditional that depends on m2, and can't find it in the measurements dictionary
+        with pytest.raises(KeyError):
+            circ(x, y)
