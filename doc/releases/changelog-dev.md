@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
+  [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
+
 * Added a class `qml.capture.transforms.MergeRotationsInterpreter` that merges rotation operators
   following the same API as `qml.transforms.optimization.merge_rotations` when experimental program capture is enabled.
   [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
@@ -49,6 +52,19 @@
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 <h3>Improvements 🛠</h3>
+
+* The `default.mixed` device now adheres to the newer device API introduced in 
+  [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
+  This means that `default.mixed` now supports not having to specify the number of wires,
+  more predictable behaviour with interfaces, support for `qml.Snapshot`, and more.
+  [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
+
+* `qml.BlockEncode` now accepts sparse input and outputs sparse matrices.
+  [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
+
+* `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format,
+  with the default being `'csr'`
+  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
 
 * Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
   handle sparse matrices.
@@ -248,7 +264,62 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
+* A new class, `qml.ftqc.QubitGraph`, is now available for representing a qubit memory-addressing
+  model for mappings between logical and physical qubits. This representation allows for nesting of
+  lower-level qubits with arbitrary depth to allow easy insertion of arbitrarily many levels of
+  abstractions between logical qubits and physical qubits.
+  [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
+
 <h4>Capturing and representing hybrid programs</h4>
+
+* Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
+  [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
+
+  As an example, here is a custom tape transform, working with capture enabled, that shifts every `qml.RX` gate to the end of the circuit:
+
+  ```python
+  qml.capture.enable()
+
+  @qml.transform
+  def shift_rx_to_end(tape):
+      """Transform that moves all RX gates to the end of the operations list."""
+      new_ops, rxs = [], []
+
+      for op in tape.operations:
+          if isinstance(op, qml.RX):
+              rxs.append(op)
+          else:
+                new_ops.append(op)
+
+      operations = new_ops + rxs
+      new_tape = tape.copy(operations=operations)
+      return [new_tape], lambda res: res[0]
+  ```
+  A requirement for tape transforms to be compatible with program capture is to further decorate QNodes with the experimental
+  `qml.capture.expand_plxpr_transforms` decorator.
+
+  ```python
+  @qml.capture.expand_plxpr_transforms
+  @shift_rx_to_end
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit():
+      qml.RX(0.1, wires=0)
+      qml.H(wires=0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H──RX(0.10)─┤  State
+  ```
+
+  There are some exceptions to getting tape transforms to work with capture enabled:
+  * Transforms that return multiple tapes cannot be converted.
+  * Transforms that return non-trivial post-processing functions cannot be converted.
+  * Transforms will fail to execute if the transformed quantum function or QNode contains:
+    * `qml.cond` with dynamic parameters as predicates.
+    * `qml.for_loop` with dynamic parameters for ``start``, ``stop``, or ``step``.
+    * `qml.while_loop`.
 
 * `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives
   when using program capture to jaxpr.
@@ -336,6 +407,10 @@
 * The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
   [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
 
+* A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
+  of arrays with dynamic shapes.
+  [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
@@ -348,6 +423,10 @@
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
 <h3>Breaking changes 💔</h3>
+
+* `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
+  this quantity is extremely expensive, and the definition is ambiguous for non-commuting observables.
+  [(#7047)](https://github.com/PennyLaneAI/pennylane/pull/7047)
 
 * `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
   to better reflect what it actually does.
@@ -427,6 +506,15 @@
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 <h3>Internal changes ⚙️</h3>
+
+* Replace `matrix_power` dispatch for `scipy` interface with an in-place implementation.
+  [(#7055)](https://github.com/PennyLaneAI/pennylane/pull/7055)
+
+* Add support to `CollectOpsandMeas` for handling `qnode` primitives.
+  [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
+
+* Change some `scipy` imports from submodules to whole module to reduce memory footprint of importing pennylane. 
+  [(#7040)](https://github.com/PennyLaneAI/pennylane/pull/7040)
 
 * Add `NotImplementedError`s for `grad` and `jacobian` in `CollectOpsandMeas`.
   [(#7041)](https://github.com/PennyLaneAI/pennylane/pull/7041)
@@ -561,6 +649,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
+Joey Carter,
 Henry Chang,
 Yushao Chen,
 Isaac De Vlugt,
