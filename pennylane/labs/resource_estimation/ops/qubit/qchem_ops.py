@@ -356,8 +356,8 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
             &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
             &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
         
-        Specifically, the resources are given by one :code:`~.ResourceDoubleExcitation`, one
-        :code:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
+        Specifically, the resources are given by one :class:`~.ResourceDoubleExcitation`, one
+        :class:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
         and two multi-controlled phase shift gates controlled on 3 qubits.
 
     .. seealso:: :class:`~.DoubleExcitationMinus`
@@ -378,8 +378,8 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
                 &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
                 &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
             
-            Specifically, the resources are given by one :code:`~.ResourceDoubleExcitation`, one
-            :code:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
+            Specifically, the resources are given by one :class:`~.ResourceDoubleExcitation`, one
+            :class:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
             and two multi-controlled phase shift gates controlled on 3 qubits.
         """
         phase = re.ResourceGlobalPhase.resource_rep()
@@ -426,8 +426,8 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
             &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
             &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
         
-        Specifically, the resources are given by one :code:`~.ResourceDoubleExcitation`, one
-        :code:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
+        Specifically, the resources are given by one :class:`~.ResourceDoubleExcitation`, one
+        :class:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
         and two multi-controlled phase shift gates controlled on 3 qubits.
 
     .. seealso:: :class:`~.DoubleExcitationPlus`
@@ -448,8 +448,8 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
                 &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
                 &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
             
-            Specifically, the resources are given by one :code:`~.ResourceDoubleExcitation`, one
-            :code:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
+            Specifically, the resources are given by one :class:`~.ResourceDoubleExcitation`, one
+            :class:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
             and two multi-controlled phase shift gates controlled on 3 qubits.
         """
         phase = re.ResourceGlobalPhase.resource_rep()
@@ -494,8 +494,8 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
             &|\Phi_{0}\rangle = \cos(\phi/2)|\Phi_{0}\rangle - \sin(\phi/2)|\Phi_{1}\rangle\\
             &|\Phi_{1}\rangle = \cos(\phi/2)|\Phi_{0}\rangle + \sin(\phi/2)|\Phi_{1}\rangle,
 
-        Specifically, the resources are given by two :code:`~.ResourceSingleExcitation` gates and
-        two :code:`~.ResourceFermionicSWAP` gates.
+        Specifically, the resources are given by two :class:`~.ResourceSingleExcitation` gates and
+        two :class:`~.ResourceFermionicSWAP` gates.
 
     .. seealso:: :class:`~.OrbitalRotation`
         
@@ -513,8 +513,8 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
                 &|\Phi_{0}\rangle = \cos(\phi/2)|\Phi_{0}\rangle - \sin(\phi/2)|\Phi_{1}\rangle\\
                 &|\Phi_{1}\rangle = \cos(\phi/2)|\Phi_{0}\rangle + \sin(\phi/2)|\Phi_{1}\rangle,
 
-            Specifically, the resources are given by two :code:`~.ResourceSingleExcitation` gates and
-            two :code:`~.ResourceFermionicSWAP` gates.
+            Specifically, the resources are given by two :class:`~.ResourceSingleExcitation` gates and
+            two :class:`~.ResourceFermionicSWAP` gates.
         """
         fermionic_swap = re.ResourceFermionicSWAP.resource_rep()
         single_excitation = re.ResourceSingleExcitation.resource_rep()

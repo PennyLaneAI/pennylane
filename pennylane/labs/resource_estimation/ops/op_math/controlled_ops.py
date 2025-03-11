@@ -1244,10 +1244,10 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 
         .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
 
-        By replacing the :code:`X` gates with :code:`CNOT` gates, we obtain a controlled-version of this
-        identity. Thus we are able to constructively or destructively interfere the gates based on the value
-        of the control qubit. Specifically, the resources are given by two :class:`~.ResourceCNOT` gates
-        and two :class:`~.ResourceRY` gates.
+        By replacing the :class:`~.ResourceX` gates with :class:`~.ResourceCNOT` gates, we obtain a
+        controlled-version of this identity. Thus we are able to constructively or destructively
+        interfere the gates based on the value of the control qubit. Specifically, the resources are
+        given by two :class:`~.ResourceCNOT` gates and two :class:`~.ResourceRY` gates.
 
     .. seealso:: :class:`~.CRY`
 

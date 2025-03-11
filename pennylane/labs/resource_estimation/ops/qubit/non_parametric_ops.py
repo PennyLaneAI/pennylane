@@ -86,8 +86,8 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCH`.
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
+            For a single control wire, the cost is a single instance of :class:`~.ResourceCH`.
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are derived from 
@@ -220,12 +220,12 @@ class ResourceS(qml.S, re.ResourceOperator):
         Resources:
             The S-gate is equivalent to the PhaseShift gate for some fixed phase. Given a single
             control wire, the cost is therefore a single instance of
-            :code:`~.ResourceControlledPhaseShift`. Two additional :code:`~.ResourceX` gates are
+            :class:`~.ResourceControlledPhaseShift`. Two additional :class:`~.ResourceX` gates are
             used to flip the control qubit if it is zero-controlled.
 
             In the case where multiple controlled wires are provided, we can collapse the control
             wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
-            In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
+            In this case the cost increases by two additional :class:`~.ResourceMultiControlledX` gates,
             as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
@@ -393,12 +393,12 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCSWAP`.
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
+            For a single control wire, the cost is a single instance of :class:`~.ResourceCSWAP`.
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are given by
-            two :code:`~.ResourceCNOT` gates and one :code:`~.ResourceMultiControlledX` gate. This
+            two :class:`~.ResourceCNOT` gates and one :class:`~.ResourceMultiControlledX` gate. This
             is because of the symmetric resource decomposition of the SWAP gate. By controlling on
             the middle CNOT gate, we obtain the required controlled operation.
 
@@ -509,12 +509,12 @@ class ResourceT(qml.T, re.ResourceOperator):
         Resources:
             The T-gate is equivalent to the PhaseShift gate for some fixed phase. Given a single
             control wire, the cost is therefore a single instance of
-            :code:`~.ResourceControlledPhaseShift`. Two additional :code:`~.ResourceX` gates are
+            :class:`~.ResourceControlledPhaseShift`. Two additional :class:`~.ResourceX` gates are
             used to flip the control qubit if it is zero-controlled.
 
             In the case where multiple controlled wires are provided, we can collapse the control
             wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
-            In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
+            In this case the cost increases by two additional :class:`~.ResourceMultiControlledX` gates,
             as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
@@ -571,8 +571,8 @@ class ResourceX(qml.X, re.ResourceOperator):
                 \hat{Z} &= \hat{S}^{2}.
             \end{align}
 
-        Thus the resources for an X-gate are two :code:`~.ResourceS` gates and 
-        two :code:`~.ResourceHadamard` gates.
+        Thus the resources for an X-gate are two :class:`~.ResourceS` gates and 
+        two :class:`~.ResourceHadamard` gates.
 
     .. seealso:: :class:`~.X`
 
@@ -593,8 +593,8 @@ class ResourceX(qml.X, re.ResourceOperator):
                     \hat{Z} &= \hat{S}^{2}.
                 \end{align}
 
-            Thus the resources for an X-gate are two :code:`~.ResourceS` gates and 
-            two :code:`~.ResourceHadamard` gates.
+            Thus the resources for an X-gate are two :class:`~.ResourceS` gates and 
+            two :class:`~.ResourceHadamard` gates.
         """
         s = re.ResourceS.resource_rep()
         h = re.ResourceHadamard.resource_rep()
@@ -647,12 +647,12 @@ class ResourceX(qml.X, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For one or two control wires, the cost is one of :code:`~.ResourceCNOT`
-            or :code:`~.ResourceToffoli` respectively. Two additional :code:`~.ResourceX` gates
+            For one or two control wires, the cost is one of :class:`~.ResourceCNOT`
+            or :class:`~.ResourceToffoli` respectively. Two additional :class:`~.ResourceX` gates
             per control qubit are used to flip the control qubits if they are zero-controlled.
 
             In the case where multiple controlled wires are provided, the cost is one general
-            :code:`~.ResourceMultiControlledX` gate.
+            :class:`~.ResourceMultiControlledX` gate.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -712,8 +712,8 @@ class ResourceY(qml.Y, re.ResourceOperator):
                 \hat{S}^{\dagger} &= 3 \hat{S}.
             \end{align}
 
-        Thus the resources for a Y-gate are six :code:`~.ResourceS` gates and 
-        two :code:`~.ResourceHadamard` gates.
+        Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and 
+        two :class:`~.ResourceHadamard` gates.
 
     .. seealso:: :class:`~.Y`
 
@@ -736,8 +736,8 @@ class ResourceY(qml.Y, re.ResourceOperator):
                     \hat{S}^{\dagger} &= 3 \hat{S}.
                 \end{align}
 
-            Thus the resources for a Y-gate are six :code:`~.ResourceS` gates and 
-            two :code:`~.ResourceHadamard` gates.
+            Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and 
+            two :class:`~.ResourceHadamard` gates.
         """
         s = re.ResourceS.resource_rep()
         h = re.ResourceHadamard.resource_rep()
@@ -792,8 +792,8 @@ class ResourceY(qml.Y, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCY`.
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
+            For a single control wire, the cost is a single instance of :class:`~.ResourceCY`.
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are derived from
@@ -860,7 +860,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
         .. math:: \hat{Z} = \hat{S}^{2},
 
-        thus the resources for a Z-gate are two :code:`~.ResourceS` gates.
+        thus the resources for a Z-gate are two :class:`~.ResourceS` gates.
 
     .. seealso:: :class:`~.Z`
 
@@ -876,7 +876,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
             .. math:: \hat{Z} = \hat{S}^{2},
 
-            thus the resources for a Z-gate are two :code:`~.ResourceS` gates.
+            thus the resources for a Z-gate are two :class:`~.ResourceS` gates.
         """
         s = re.ResourceS.resource_rep()
 
@@ -929,8 +929,8 @@ class ResourceZ(qml.Z, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For one or two control wires, the cost is one of :code:`~.ResourceCZ`
-            or :code:`~.ResourceCCZ` respectively. Two additional :code:`~.ResourceX` gates
+            For one or two control wires, the cost is one of :class:`~.ResourceCZ`
+            or :class:`~.ResourceCCZ` respectively. Two additional :class:`~.ResourceX` gates
             per control qubit are used to flip the control qubits if they are zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are derived from

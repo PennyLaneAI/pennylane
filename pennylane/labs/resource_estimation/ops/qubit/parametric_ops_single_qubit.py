@@ -130,12 +130,12 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
         Resources:
             For a single control wire, the cost is a single instance of
-            :code:`~.ResourceControlledPhaseShift`. Two additional :code:`~.ResourceX` gates are used
+            :class:`~.ResourceControlledPhaseShift`. Two additional :class:`~.ResourceX` gates are used
             to flip the control qubit if it is zero-controlled.
 
             In the case where multiple controlled wires are provided, we can collapse the control
             wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
-            In this case the cost increases by two additional :code:`~.ResourceMultiControlledX` gates,
+            In this case the cost increases by two additional :class:`~.ResourceMultiControlledX` gates,
             as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
@@ -256,8 +256,8 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCRX`.
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
+            For a single control wire, the cost is a single instance of :class:`~.ResourceCRX`.
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are taken from
@@ -396,8 +396,8 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCRY`.
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
+            For a single control wire, the cost is a single instance of :class:`~.ResourceCRY`.
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are taken
@@ -529,8 +529,8 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCRY`.
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if
+            For a single control wire, the cost is a single instance of :class:`~.ResourceCRY`.
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are obtained
@@ -588,7 +588,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
     r"""Resource class for the Rot-gate.
 
     Resources:
-        The resources are obtained according to the definition of the :code:`Rot` gate:
+        The resources are obtained according to the definition of the :class:`Rot` gate:
 
         .. math:: \hat{R}(\omega, \theta, \phi) = \hat{RZ}(\omega) \cdot \hat{RY}(\theta) \cdot \hat{RZ}(\phi).
 
@@ -602,7 +602,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are obtained according to the definition of the :code:`Rot` gate:
+            The resources are obtained according to the definition of the :class:`Rot` gate:
 
             .. math:: \hat{R}(\omega, \theta, \phi) = \hat{RZ}(\omega) \cdot \hat{RY}(\theta) \cdot \hat{RZ}(\phi).
 
@@ -657,8 +657,8 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :code:`~.ResourceCRot`. 
-            Two additional :code:`~.ResourceX` gates are used to flip the control qubit if 
+            For a single control wire, the cost is a single instance of :class:`~.ResourceCRot`. 
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if 
             it is zero-controlled.
             
             In the case where multiple controlled wires are provided, the resources are derived

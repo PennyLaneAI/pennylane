@@ -27,8 +27,8 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
         The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
         quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
-        Specifically, the resources are given by one :code:`~.ResourceRZ` gate and a cascade of
-        :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
+        Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
+        :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
         the gate acts on.
 
     .. seealso:: :class:`~.MultiRZ`
@@ -47,8 +47,8 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
             The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
             quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
-            Specifically, the resources are given by one :code:`~.ResourceRZ` gate and a cascade of
-            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
+            Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
+            :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
             the gate acts on.
         """
         cnot = re.ResourceCNOT.resource_rep()
@@ -122,10 +122,10 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
             then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
+            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
             Specifically, the resources are one multi-controlled RZ-gate and a cascade of
-            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
+            :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
             the gate acts on.
 
         Returns:
@@ -187,11 +187,11 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
                 \hat{Y} &= \hat{S} \cdot \hat{H} \cdot \hat{Z} \cdot \hat{H} \cdot \hat{S}^{\dagger}.
             \end{align}
 
-        Specifically, the resources are given by one :code:`RZ` gate and a cascade of 
-        :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
+        Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of 
+        :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
         the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by 
-        a pair of :code:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word we 
-        conjugate by a pair of :code:`~.ResourceHadamard` and a pair of :code:`~.ResourceS` gates.
+        a pair of :class:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word we 
+        conjugate by a pair of :class:`~.ResourceHadamard` and a pair of :class:`~.ResourceS` gates.
 
     .. seealso:: :class:`~.PauliRot`
 
@@ -220,11 +220,11 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
                     \hat{Y} &= \hat{S} \cdot \hat{H} \cdot \hat{Z} \cdot \hat{H} \cdot \hat{S}^{\dagger}.
                 \end{align}
 
-            Specifically, the resources are given by one :code:`RZ` gate and a cascade of 
-            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
+            Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of 
+            :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
             the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by 
-            a pair of :code:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word we 
-            conjugate by a pair of :code:`~.ResourceHadamard` and a pair of :code:`~.ResourceS` gates.
+            a pair of :class:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word we 
+            conjugate by a pair of :class:`~.ResourceHadamard` and a pair of :class:`~.ResourceS` gates.
         """
         if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
             gp = re.ResourceGlobalPhase.resource_rep()
@@ -330,20 +330,20 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
         Resources:
             When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
-            the cost is the associated controlled single qubit rotation gate: (:code:`~.ResourceCRX`,
-            :code:`~.ResourceCRY`, :code:`~.ResourceCRZ`, controlled-:code:`~.ResourceGlobalPhase`).
+            the cost is the associated controlled single qubit rotation gate: (:class:`~.ResourceCRX`,
+            :class:`~.ResourceCRY`, :class:`~.ResourceCRZ`, controlled-:class:`~.ResourceGlobalPhase`).
 
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
             then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
+            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
             Specifically, the resources are one multi-controlled RZ-gate and a cascade of
-            :math:`2 * (n - 1)` :code:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
+            :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
             the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
-            a pair of :code:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word
-            we conjugate by a pair of :code:`~.ResourceHadamard` and a pair of :code:`~.ResourceS` gates.
+            a pair of :class:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word
+            we conjugate by a pair of :class:`~.ResourceHadamard` and a pair of :class:`~.ResourceS` gates.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -500,10 +500,10 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
             then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
+            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
             Specifically, the resources are one multi-controlled RX-gate and a pair of
-            :code:`~.ResourceCNOT` gates.
+            :class:`~.ResourceCNOT` gates.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -653,10 +653,10 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
             then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
+            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
             Specifically, the resources are one multi-controlled RY-gate and a pair of
-            :code:`~.ResourceCY` gates.
+            :class:`~.ResourceCY` gates.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -809,10 +809,10 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
             then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
+            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
             Specifically, the resources are one multi-controlled RY-gate, one multi-controlled RX-gate,
-            a pair of :code:`~.ResourceCY` gates and a pair of :code:`~.ResourceHadamard` gates.
+            a pair of :class:`~.ResourceCY` gates and a pair of :class:`~.ResourceHadamard` gates.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -971,10 +971,10 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
             then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
+            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
             Specifically, the resources are one multi-controlled RZ-gate and a pair of
-            :code:`~.ResourceCNOT` gates.
+            :class:`~.ResourceCNOT` gates.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -1123,10 +1123,10 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
             then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: `C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}`
+            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
             Specifically, the resources are one multi-controlled phase shift gate, one multi-controlled
-            SWAP gate and a pair of :code:`~.ResourceCNOT` gates.
+            SWAP gate and a pair of :class:`~.ResourceCNOT` gates.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated

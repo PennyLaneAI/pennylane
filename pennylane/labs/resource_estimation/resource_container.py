@@ -86,7 +86,7 @@ class Resources:
     .. details::
 
         The resources being tracked can be accessed as class attributes.
-        Additionally, the :code:`Resources` instance can be nicely displayed in the console.
+        Additionally, the :class:`~.Resources` instance can be nicely displayed in the console.
 
         **Example**
 
