@@ -18,6 +18,7 @@ This module contains a class for updating and recording information about device
 # pylint: disable=attribute-defined-outside-init
 
 from numbers import Number
+import warnings
 
 
 class Tracker:
@@ -204,20 +205,26 @@ class Tracker:
         {"a": 1, "b": 2}
 
         """
-        self.latest = kwargs
+        try:
+            self.latest = kwargs
+    
+            for key, value in kwargs.items():
+                # update history
+                if key in self.history:
+                    self.history[key].append(value)
+                else:
+                    self.history[key] = [value]
+    
+                # updating totals
+                if value is not None:
+                    # Only total numeric values
+                    if isinstance(value, Number):
+                        self.totals[key] = value + self.totals.get(key, 0)
+                    else:
+                warnings.warn(f"Skipping non-numeric value for key '{key}': {value}", RuntimeWarning)
 
-        for key, value in kwargs.items():
-            # update history
-            if key in self.history:
-                self.history[key].append(value)
-            else:
-                self.history[key] = [value]
-
-            # updating totals
-            if value is not None:
-                # Only total numeric values
-                if isinstance(value, Number):
-                    self.totals[key] = value + self.totals.get(key, 0)
+        except Exception as e:
+            warnings.warn(f"Warning: Failed to update key '{key}' with value {value}: {e}", RuntimeWarning)
 
     def reset(self):
         """Resets stored information."""
