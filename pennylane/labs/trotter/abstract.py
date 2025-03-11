@@ -34,9 +34,10 @@ class Fragment(ABC):
         """Apply to a state on the right"""
         raise NotImplementedError
 
-    def expectation(self, state: State) -> float:
+    def expectation(self, left: State, right: State) -> float:
         """Return the expectation value of a state"""
-        return state.dot(self.apply(state))
+        return left.dot(self.apply(right))
+
 
 def commutator(a: Fragment, b: Fragment) -> Fragment:
     """Return the commutator [a, b]"""

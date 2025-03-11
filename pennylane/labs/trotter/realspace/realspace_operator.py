@@ -285,7 +285,3 @@ class RealspaceSum(Fragment):
             state.gridpoints,
             mat @ state.vector,
         )
-
-    def expectation(self, state_left: HOState, state_right: HOState) -> float:
-        """Compute expectation value"""
-        return state_left.dot(self.apply(state_right))
