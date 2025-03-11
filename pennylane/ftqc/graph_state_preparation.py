@@ -50,7 +50,8 @@ class GraphStatePrep(Operation):
         graph (Union[QubitGraph, networkx.Graph]): QubitGraph or networkx.Graph object mapping qubit to wires.
         one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
         two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
-        wires (Optional[Wires]): Wires the operator applies on. Wires will be mapped 1:1 to graph nodes. Optional only `graph` is a QubitGraph. If no wires are provided, the ``children`` of the provided ``QubitGraph`` will be used as wires.
+        wires (Optional[Wires]): Wires the operator applies on. Wires will be mapped 1:1 to graph nodes. Optional only `graph`
+          is a QubitGraph. If no wires are provided, the ``children`` of the provided ``QubitGraph`` will be used as wires.
 
     .. todo::
 
@@ -70,8 +71,8 @@ class GraphStatePrep(Operation):
             dev = qml.device('default.qubit')
 
             @qml.qnode(dev)
-            def circuit(q, one_qubit_ops, two_qubit_ops):
-                GraphStatePrep(graph=q, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops)
+            def circuit(q, one_qubit_ops, two_qubit_ops, wires = None):
+                GraphStatePrep(graph=q, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops, wires = wires)
                 return qml.probs()
 
             lattice = generate_lattice([2, 2], "square")
@@ -83,10 +84,21 @@ class GraphStatePrep(Operation):
         The resulting circuit after applying the ``GraphStatePrep`` template is:
 
         >>> print(qml.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops))
-        QubitGraph<id=(0, 0), loc=[square]>: ──Y────╭X─╭●────┤  Probs
-        QubitGraph<id=(0, 1), loc=[square]>: ──Y─╭X─│──│──╭●─┤  Probs
-        QubitGraph<id=(1, 0), loc=[square]>: ──Y─│──│──╰X─╰X─┤  Probs
-        QubitGraph<id=(1, 1), loc=[square]>: ──Y─╰●─╰●───────┤  Probs
+        QubitGraph<id=(0, 0), loc=[square]>: ──Y─╭●─╭●───────┤  Probs
+        QubitGraph<id=(0, 1), loc=[square]>: ──Y─│──╰X─╭●────┤  Probs
+        QubitGraph<id=(1, 0), loc=[square]>: ──Y─╰X────│──╭●─┤  Probs
+        QubitGraph<id=(1, 1), loc=[square]>: ──Y───────╰X─╰X─┤  Probs
+
+        .. note::
+            The wires argument is not explicitly passed to the circuit in the example above and
+            the child nodes of the ``QubitGraph`` are used as the wires.
+
+        The circuit wires can also be customized by passing a wires argument to the circuit.
+        >>> print(qml.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops, wires=[0, 1, 2, 3]))
+        0: ──Y─╭●─╭●───────┤  Probs
+        1: ──Y─│──╰X─╭●────┤  Probs
+        2: ──Y─╰X────│──╭●─┤  Probs
+        3: ──Y───────╰X─╰X─┤  Probs
 
     """
 
@@ -103,7 +115,9 @@ class GraphStatePrep(Operation):
 
         if isinstance(graph, QubitGraph):
             if wires is not None and len(set(wires)) != len(set(graph.node_labels)):
-                raise ValueError("Please ensure the length of wires objects match the number of children in QubitGraph")
+                raise ValueError(
+                    "Please ensure the length of wires objects match the number of children in QubitGraph"
+                )
             super().__init__(wires=wires if wires is not None else list(graph.children))
         else:
             if wires is None:
