@@ -262,9 +262,12 @@ class TestAdjvecToOp:
                 [qml.pauli.PauliWord({0: "X"})],
             )
 
+    @pytest.mark.parametrize("vspace", [True, False])
     @pytest.mark.parametrize("adj_vecs, basis, expected, is_ortho", ps_test_cases)
-    def test_with_ps(self, adj_vecs, basis, expected, is_ortho):
+    def test_with_ps(self, adj_vecs, basis, expected, is_ortho, vspace):
         """Test ``adjvec_to_op`` with a basis of ``PauliSentence`` operators."""
+        if vspace:
+            basis = qml.pauli.PauliVSpace(basis)
         out = adjvec_to_op(adj_vecs, basis, is_orthogonal=False)
         for out_op, exp_op in zip(out, expected):
             assert isinstance(out_op, PauliSentence)
@@ -315,9 +318,13 @@ class TestOpToAdjvec:
         ):
             _ = op_to_adjvec([Fraction(2)], [1, 1])
 
+    @pytest.mark.parametrize("vspace", [True, False])
     @pytest.mark.parametrize("expected, basis, ops, is_ortho", ps_test_cases)
-    def test_with_ps(self, ops, basis, expected, is_ortho):
+    def test_with_ps(self, ops, basis, expected, is_ortho, vspace):
         """Test ``op_to_adjvec`` with a basis of ``PauliSentence`` operators."""
+        if vspace:
+            basis = qml.pauli.PauliVSpace(basis)
+
         out = op_to_adjvec(ops, basis, is_orthogonal=False)
         assert out.dtype == np.float64
         assert qml.math.shape(out) == qml.math.shape(expected)
