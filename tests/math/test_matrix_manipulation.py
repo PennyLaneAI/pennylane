@@ -1204,18 +1204,7 @@ def _enforce_positivity(mat):
 class TestDenmanBeaversIterations:
     """Tests for the Denman-Beavers iteration method for matrix square root"""
 
-    @staticmethod
-    def _reverse_det_hermitian(mat):
-        eigvals, eigvecs = np.linalg.eigh(mat)
-        eigvals[0] *= -1
-        return eigvecs @ np.diag(eigvals) @ eigvecs.T.conj()
-
-    @staticmethod
-    def _enforce_positivity(mat):
-        det_mat = np.linalg.det(mat)
-        return mat if det_mat > 0 else _reverse_det_hermitian(mat)
-
-    def test_singular_matrix(self):
+    def test_singular_matrix(self, seed):
         """Test that singular matrix raises appropriate error"""
         n = 4
         mat = csr_matrix(np.diag([0.0] + [1.0] * (n - 1)))
@@ -1257,7 +1246,8 @@ class TestDenmanBeaversIterations:
     def test_valid_positive_definite(self, size):
         """Test that valid real, positive definite matrices work correctly"""
         # Create a positive definite matrix
-        A = np.random.random((size, size))
+        rng = np.random.default_rng(seed)
+        A = rng.random((size, size))
         mat = np.eye(size) - 0.1 * (A @ A.T)
         mat = _enforce_positivity(mat)
         mat = csr_matrix(mat)
