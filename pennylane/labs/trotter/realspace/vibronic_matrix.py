@@ -81,30 +81,29 @@ class VibronicMatrix(Fragment):
 
         return matrix
 
-    def norm(self, gridpoints: int, sparse: bool = False) -> float:
+    def norm(self, params: Dict) -> float:
         """Compute the spectral norm"""
+        try:
+            gridpoints = params["gridpoints"]
+        except KeyError as e:
+            raise KeyError("Need to specify the number of gridpoints") from e
 
         if not _is_pow_2(gridpoints) or gridpoints <= 0:
             raise ValueError(
                 f"Number of gridpoints must be a positive power of 2, got {gridpoints}."
             )
 
-        return self._norm(gridpoints, sparse=sparse)
+        return self._norm(params)
 
-    def _norm(self, gridpoints: int, sparse: bool = False) -> float:
+    def _norm(self, params: Dict) -> float:
         # pylint: disable=protected-access
         if self.states == 1:
-            return self.block(0, 0).norm(gridpoints, sparse=sparse)
+            return self.block(0, 0).norm(params)
 
         top_left, top_right, bottom_left, bottom_right = self._partition_into_quadrants()
 
-        norm1 = max(
-            top_left._norm(gridpoints, sparse=sparse), bottom_right._norm(gridpoints, sparse=sparse)
-        )
-        norm2 = math.sqrt(
-            top_right._norm(gridpoints, sparse=sparse)
-            * bottom_left._norm(gridpoints, sparse=sparse)
-        )
+        norm1 = max(top_left._norm(params), bottom_right._norm(params))
+        norm2 = math.sqrt(top_right._norm(params) * bottom_left._norm(params))
 
         return norm1 + norm2
 
@@ -235,9 +234,6 @@ class VibronicMatrix(Fragment):
                 bottom_right.set_block(x - half, y - half, word)
 
         return top_left, top_right, bottom_left, bottom_right
-
-    def apply(self):
-        raise NotImplementedError
 
 
 def _is_pow_2(k: int) -> bool:

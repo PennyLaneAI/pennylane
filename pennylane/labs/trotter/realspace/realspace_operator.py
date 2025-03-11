@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from itertools import product
-from typing import Sequence, Tuple, Union
+from typing import Dict, Sequence, Tuple, Union
 
 import numpy as np
 import scipy as sp
@@ -251,8 +251,16 @@ class RealspaceSum(Fragment):
 
         return final_matrix
 
-    def norm(self, gridpoints: int, sparse: bool = False) -> float:
-        # pylint: disable=eval-used
+    def norm(self, params: Dict) -> float:
+        try:
+            gridpoints = params["gridpoints"]
+        except KeyError as e:
+            raise KeyError("Need to specify the number of gridpoints") from e
+
+        try:
+            sparse = params["sparse"]
+        except KeyError:
+            sparse = False
 
         norm = 0
         if sparse:
@@ -278,6 +286,3 @@ class RealspaceSum(Fragment):
             norm += coeff_sum * term_op_norm
 
         return norm
-
-    def apply(self):
-        raise NotImplementedError
