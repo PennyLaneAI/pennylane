@@ -42,11 +42,8 @@ class RealspaceOperator:
         else:
             indices = product(range(self.modes), repeat=len(self.ops))
 
-        compiled, local_vars = self.coeffs.compile()
         for index in indices:
-            var_dict = {f"idx{i}": j for i, j in enumerate(index)}
-            coeff = eval(compiled, var_dict, local_vars)
-            matrix = coeff * tensor_with_identity(
+            matrix = self.coeffs[index] * tensor_with_identity(
                 self.modes, gridpoints, index, matrices, sparse=sparse
             )
             final_matrix = final_matrix + matrix
@@ -263,25 +260,14 @@ class RealspaceSum(Fragment):
             sparse = False
 
         norm = 0
-        if sparse:
-            for op in self.ops:
-                term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), op.ops))
-                compiled, local_vars = op.coeffs.compile(to_numpy=True)
-                coeff_sum = eval(compiled, {}, local_vars)
-                norm += coeff_sum * term_op_norm
-
-            return norm
 
         for op in self.ops:
             term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), op.ops))
-            compiled, local_vars = op.coeffs.compile()
 
-            coeff_sum = 0
-            for index in product(range(self.modes), repeat=len(op.ops)):
-                for i, j in enumerate(index):
-                    local_vars[f"idx{i}"] = j
-
-                coeff_sum += eval(compiled, {}, local_vars)
+            indices = (
+                op.coeffs.nonzero() if sparse else product(range(self.modes), repeat=len(op.ops))
+            )
+            coeff_sum = sum(op.coeffs.compute(index) for index in indices)
 
             norm += coeff_sum * term_op_norm
 
