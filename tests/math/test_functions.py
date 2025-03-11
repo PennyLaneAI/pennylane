@@ -3170,3 +3170,57 @@ def test_unstack_tensorflow():
     r1, r2 = qml.math.unstack(x)
     assert qml.math.allclose(r1, tf.Variable(0.1))
     assert qml.math.allclose(r2, tf.Variable(0.2))
+
+
+class TestScatter:
+    """Tests for qml.math.scatter functionality"""
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_basic(self, interface):
+        """Test basic scatter operation - placing values at specific indices in a zero array"""
+        indices = [0, 2, 4]
+        updates = [1.0, 2.0, 3.0]
+        shape = [6]
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([1.0, 0.0, 2.0, 0.0, 3.0, 0.0], like=interface)
+
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_complex(self, interface):
+        """Test scatter with complex values"""
+        indices = [1, 3]
+        updates = [1.0 + 1.0j, 2.0 - 1.0j]
+        shape = [4]
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray(
+            [0.0 + 0.0j, 1.0 + 1.0j, 0.0 + 0.0j, 2.0 - 1.0j], like=interface
+        )
+
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_multidimensional(self, interface):
+        """Test scatter with multidimensional target shape"""
+        indices = [0, 2]
+        updates = [[1.0, 2.0], [3.0, 4.0]]
+        shape = [3, 2]  # 3x2 target array
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([[1.0, 2.0], [0.0, 0.0], [3.0, 4.0]], like=interface)
+
+        assert qml.math.allclose(result, expected)
