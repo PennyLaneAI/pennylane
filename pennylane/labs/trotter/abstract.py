@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Dict, Sequence
 
 
 class Fragment(ABC):
@@ -25,7 +25,7 @@ class Fragment(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def norm(self, *args) -> float:
+    def norm(self, params: Dict) -> float:
         """Compute the norm of the fragment"""
         raise NotImplementedError
 
@@ -34,9 +34,9 @@ class Fragment(ABC):
         """Apply to a state on the right"""
         raise NotImplementedError
 
-    def expectation(self, state: State) -> float:
+    def expectation(self, left: State, right: State) -> float:
         """Return the expectation value of a state"""
-        return state.dot(self.apply(state))
+        return left.dot(self.apply(right))
 
 
 def commutator(a: Fragment, b: Fragment) -> Fragment:

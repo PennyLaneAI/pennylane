@@ -13,6 +13,9 @@ def test_against_10_mode():
 
     frags = vibronic_fragments(6, 10, *ten_mode())
     ep = trotter_error(frags, 1, order=2)
-    actual = ep.norm(4, sparse=True)
+
+    params = {"gridpoints": 4, "sparse": True}
+
+    actual = ep.norm(params)
 
     assert np.isclose(actual, expected)
