@@ -178,21 +178,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         raise ValueError(f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}.")
 
-    def __repr__(self) -> str:
-        match self.node_type:
-            case NodeType.TENSOR:
-                return f"RealspaceCoeffs(TENSOR, {self.tensor})"
-            case NodeType.SCALAR:
-                return f"RealspaceCoeffs(SCALAR, {self.scalar}, {self.l_child})"
-            case NodeType.OUTER:
-                return f"RealspaceCoeffs(OUTER, {self.l_shape}, {self.r_shape}, {self.l_child}, {self.r_child})"
-            case NodeType.SUM:
-                return f"RealspaceCoeffs(SUM, {self.l_child}, {self.r_child})"
-            case NodeType.FLOAT:
-                return f"RealspaceCoeffs(FLOAT, {self.value})"
-            case _:
-                raise ValueError(f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}.")
-
     def __str__(self) -> str:
         indices = [f"idx{i}" for i in range(len(self.shape))]
 
