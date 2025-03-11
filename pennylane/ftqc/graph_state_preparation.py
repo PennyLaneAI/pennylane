@@ -81,7 +81,9 @@ class GraphStatePrep(Operation):
             one_qubit_ops = qml.Y
             two_qubit_ops = qml.CNOT
 
-        The resulting circuit after applying the ``GraphStatePrep`` template is:
+        If the wires argument is not explicitly passed to the circuit, the child nodes of the
+        ``QubitGraph`` are used as the wires. The resulting circuit after applying the
+        ``GraphStatePrep`` template is:
 
         >>> print(qml.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops))
         QubitGraph<id=(0, 0), loc=[square]>: ──Y─╭●─╭●───────┤  Probs
@@ -89,11 +91,8 @@ class GraphStatePrep(Operation):
         QubitGraph<id=(1, 0), loc=[square]>: ──Y─╰X────│──╭●─┤  Probs
         QubitGraph<id=(1, 1), loc=[square]>: ──Y───────╰X─╰X─┤  Probs
 
-        .. note::
-            The wires argument is not explicitly passed to the circuit in the example above and
-            the child nodes of the ``QubitGraph`` are used as the wires.
+        The circuit wires can also be customized by passing a wires argument to the circuit as follows:
 
-        The circuit wires can also be customized by passing a wires argument to the circuit.
         >>> print(qml.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops, wires=[0, 1, 2, 3]))
         0: ──Y─╭●─╭●───────┤  Probs
         1: ──Y─│──╰X─╭●────┤  Probs
