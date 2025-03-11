@@ -24,7 +24,7 @@ from pennylane.ftqc import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
     YMidMeasureMP,
-    cond_meas,
+    cond_measure,
     diagonalize_mcms,
     measure_arbitrary_basis,
     measure_x,
@@ -631,7 +631,7 @@ class TestDiagonalizeMCMs:
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)
             m = qml.measure(0)
-            cond_meas(
+            cond_measure(
                 m == 1,
                 partial(measure_arbitrary_basis, angle=1.2),
                 partial(measure_arbitrary_basis, angle=-1.2),
@@ -709,17 +709,17 @@ class TestDiagonalizeMCMs:
     def test_diagonalizing_mcm_used_as_cond_and_op(self):
         """Test diagonalization behaviour when all arguments of cond_measure
         require diagonalization. This test confirms that
-            1. the measurements in a ``MeasurementValue`` passed to cond_measurements
+            1. the measurements in a ``MeasurementValue`` passed to cond_measure
             are updated when those measurements are replaced by the diagonalize_mcms transform.
-            2. the applied MCMs in cond_measurements are diagonalized as expected
+            2. the applied MCMs in cond_measure are diagonalized as expected
         """
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)
             mp = ParametricMidMeasureMP(0, angle=1.2, plane="YZ")
             mv = MeasurementValue([mp], processing_fn=lambda v: v)
-            # using cond_meas and conditionally applying measurements
-            cond_meas(mv == 0, measure_x, measure_y)(2)
+            # using cond_measure and conditionally applying measurements
+            cond_measure(mv == 0, measure_x, measure_y)(2)
 
         original_tape = qml.tape.QuantumScript.from_queue(q)
         old_mp = original_tape.operations[1]

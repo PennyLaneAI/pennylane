@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the cond_meas function"""
+"""Unit tests for the cond_measure function"""
 
 from functools import partial
 
@@ -23,7 +23,7 @@ from pennylane.ftqc import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
     YMidMeasureMP,
-    cond_meas,
+    cond_measure,
     diagonalize_mcms,
     measure_arbitrary_basis,
     measure_x,
@@ -34,18 +34,20 @@ from pennylane.measurements import MeasurementValue
 
 
 class TestCondMeas:
-    """Test the behaviour of cond_meas for expected inputs"""
+    """Test the behaviour of cond_measure for expected inputs"""
 
     @pytest.mark.parametrize("wire", (2, "c"))
     @pytest.mark.parametrize("reset", (True, False))
     @pytest.mark.parametrize("postselect", (None, 0, 1))
-    def test_cond_meas_with_measurements(self, wire, reset, postselect):
+    def test_cond_measure_with_measurements(self, wire, reset, postselect):
         """Test that passing a MeasurementValue and measurement functions
-        to cond_meas creates the expected measurements and MeasurementValue"""
+        to cond_measure creates the expected measurements and MeasurementValue"""
 
         with qml.queuing.AnnotatedQueue() as q:
             m = qml.measure(0)
-            m2 = cond_meas(m, measure_x, measure_y)(wires=wire, reset=reset, postselect=postselect)
+            m2 = cond_measure(m, measure_x, measure_y)(
+                wires=wire, reset=reset, postselect=postselect
+            )
 
         ops = qml.tape.QuantumScript.from_queue(q).operations
 
@@ -76,13 +78,13 @@ class TestCondMeas:
         assert bool(fn(0, 0)) is False
         assert fn(1, 1) == fn(1, 0) == fn(0, 1)
 
-    def test_cond_meas_with_partial(self):
+    def test_cond_measure_with_partial(self):
         """Test that passing a MeasurementValue and partials of measurement functions
         executes successfully and creates the expected operator types"""
 
         with qml.queuing.AnnotatedQueue() as q:
             m = qml.measure(0)
-            cond_meas(
+            cond_measure(
                 m,
                 partial(measure_arbitrary_basis, angle=1.2, plane="ZX"),
                 partial(measure_arbitrary_basis, angle=2.4, plane="XY"),
@@ -107,7 +109,7 @@ class TestCondMeas:
         simplifies to applying the appropriate measurement"""
 
         with qml.queuing.AnnotatedQueue() as q:
-            m = cond_meas(val, measure_x, measure_y)(0)
+            m = cond_measure(val, measure_x, measure_y)(0)
 
         ops = qml.tape.QuantumScript.from_queue(q).operations
 
@@ -119,7 +121,7 @@ class TestCondMeas:
 
 
 class TestValidation:
-    """Test the errors raised by validation in cond_meas"""
+    """Test the errors raised by validation in cond_measure"""
 
     @pytest.mark.parametrize("inp", [1, "string", qml.PauliZ(0)])
     def test_non_callable_raises_error(self, inp):
@@ -127,11 +129,11 @@ class TestValidation:
 
         with pytest.raises(ValueError, match="Only measurement functions can be applied"):
             m = qml.measure(0)
-            cond_meas(m, inp, measure_x)(0)
+            cond_measure(m, inp, measure_x)(0)
 
         with pytest.raises(ValueError, match="Only measurement functions can be applied"):
             m = qml.measure(0)
-            cond_meas(m, measure_x, inp)(0)
+            cond_measure(m, measure_x, inp)(0)
 
     @pytest.mark.parametrize("inp", [qml.X, XMidMeasureMP])
     def test_incorrect_callable_raises_error(self, inp):
@@ -142,14 +144,14 @@ class TestValidation:
             match="Only measurement functions that return a measurement value can be used",
         ):
             m = qml.measure(0)
-            cond_meas(m, inp, measure_x)(0)
+            cond_measure(m, inp, measure_x)(0)
 
         with pytest.raises(
             ValueError,
             match="Only measurement functions that return a measurement value can be used",
         ):
             m = qml.measure(0)
-            cond_meas(m, measure_x, inp)(0)
+            cond_measure(m, measure_x, inp)(0)
 
     @pytest.mark.parametrize("attribute, inp", [("reset", (True, False)), ("postselect", (0, 1))])
     def test_mismatched_settings_raises_error(self, attribute, inp):
@@ -164,7 +166,7 @@ class TestValidation:
             match="behaviour must be consistent for both branches",
         ):
             m = qml.measure(0)
-            cond_meas(m, partial(measure_y, **input1), partial(measure_x, **input2))(0)
+            cond_measure(m, partial(measure_y, **input1), partial(measure_x, **input2))(0)
 
     def test_mismatched_wires_raises_error(self):
 
@@ -173,7 +175,7 @@ class TestValidation:
             match="behaviour must be consistent for both branches",
         ):
             m = qml.measure(0)
-            cond_meas(m, partial(measure_y, wires=0), partial(measure_x, wires=1))()
+            cond_measure(m, partial(measure_y, wires=0), partial(measure_x, wires=1))()
 
     @pytest.mark.jax
     def test_program_capture_raises_error(self):
@@ -183,7 +185,7 @@ class TestValidation:
 
             with pytest.raises(NotImplementedError, match="not compatible with program capture"):
                 m = qml.measure(0)
-                cond_meas(m, measure_x, measure_y)(0)
+                cond_measure(m, measure_x, measure_y)(0)
         finally:
             qml.capture.disable()
 
@@ -203,7 +205,7 @@ class TestWorkflows:
             m = qml.measure(0)  # always 1
 
             qml.RX(2.345, 1)
-            cond_meas(m == 0, measure_x, measure_y)(1)  # always measure_y
+            cond_measure(m == 0, measure_x, measure_y)(1)  # always measure_y
             return qml.expval(qml.Z(1))
 
         if shots:
@@ -221,7 +223,7 @@ class TestWorkflows:
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_cascading_conditional_measurements(self, mcm_method, shots):
         """Test a workflow that feeds measurement values from conditional measurements forward
-        into subsequent measurements and operations applied in `cond_meas` and `cond`"""
+        into subsequent measurements and operations applied in `cond_measure` and `cond`"""
 
         dev = qml.device("default.qubit", shots=shots)
 
@@ -231,11 +233,11 @@ class TestWorkflows:
             m = qml.measure(0)  # always 1
 
             qml.RX(np.pi / 2, 1)
-            m2 = cond_meas(m == 0, measure_x, measure_y)(1)  # always measure_y, always 1
+            m2 = cond_measure(m == 0, measure_x, measure_y)(1)  # always measure_y, always 1
 
             qml.RY(y_rot, 2)
             qml.RX(x_rot, 2)
-            cond_meas(m2, measure_z, measure_y)(2)
+            cond_measure(m2, measure_z, measure_y)(2)
 
             qml.cond(m2, qml.X)(3)
 

@@ -22,7 +22,7 @@ from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops.op_math.condition import CondCallable, Conditional
 
 
-def cond_meas(
+def cond_measure(
     condition: Union[MeasurementValue, bool],
     true_fn: Callable,
     false_fn: Callable,
