@@ -76,6 +76,7 @@ from .quantum import (
     reduce_statevector,
     relative_entropy,
     sqrt_matrix,
+    sqrt_matrix_sparse,
     vn_entropy,
     vn_entanglement_entropy,
     max_entropy,
@@ -100,6 +101,7 @@ from .interface_utils import (
     get_deep_interface,
     get_interface,
     Interface,
+    InterfaceLike,
 )
 from .grad import grad, jacobian
 
@@ -175,6 +177,7 @@ __all__ = [
     "is_independent",
     "iscomplex",
     "jacobian",
+    "Interface",
     "marginal_prob",
     "max_entropy",
     "min_entropy",

@@ -72,7 +72,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     If tape splitting is carried out, the transform will be conservative about the wires that it includes in each tape.
     So, if all operations preceding a snapshot in a 3-qubit circuit has been applied to only one wire,
-    the tape would only be looking at this wire. This can be overriden by the configuration of the execution device
+    the tape would only be looking at this wire. This can be overridden by the configuration of the execution device
     and its nature.
 
     Regardless of the transform's behaviour, the output is a dictionary where each key is either

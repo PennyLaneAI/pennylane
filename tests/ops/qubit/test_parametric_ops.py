@@ -56,7 +56,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
     qml.QubitUnitary(np.eye(2) * 1j, wires=0),
     qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
-    qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
+    qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[2, 0]),
     qml.SingleExcitation(0.123, wires=[0, 3]),
     qml.SingleExcitationPlus(0.123, wires=[0, 3]),
     qml.SingleExcitationMinus(0.123, wires=[0, 3]),
@@ -129,6 +129,7 @@ NON_PARAMETRIZED_OPERATIONS = [
 ]
 
 ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
+SPARSE_OPERATIONS = [op for op in ALL_OPERATIONS if op.has_sparse_matrix]
 
 
 def dot_broadcasted(a, b):
@@ -137,6 +138,15 @@ def dot_broadcasted(a, b):
 
 def multi_dot_broadcasted(matrices):
     return reduce(dot_broadcasted, matrices)
+
+
+class TestSparseOperators:
+    @pytest.mark.parametrize("op", SPARSE_OPERATIONS)
+    def test_validity(self, op):
+        """Test that the operations are valid."""
+        assert qml.math.allclose(
+            op.sparse_matrix().toarray(), qml.math.asarray(op.matrix(), like="numpy")
+        )
 
 
 class TestOperations:

@@ -26,14 +26,14 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
-    Expectation,
+    ExpectationMP,
     MeasurementProcess,
     MidMeasureMP,
-    Probability,
-    Sample,
+    ProbabilityMP,
+    SampleMP,
     ShadowExpvalMP,
-    State,
-    Variance,
+    StateMP,
+    VarianceMP,
 )
 from pennylane.operation import Observable, Operation, Operator, StatePrepBase
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
@@ -93,7 +93,6 @@ def _local_tape_expand(tape, depth, stop_at):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -103,9 +102,9 @@ class _LegacyMeta(abc.ABCMeta):
     checking the instance of a device against a Legacy device type.
 
     To illustrate, if "dev" is of type LegacyDeviceFacade, and a user is
-    checking "isinstance(dev, qml.devices.DefaultMixed)", the overridden
+    checking "isinstance(dev, qml.devices.DefaultQutrit)", the overridden
     "__instancecheck__" will look behind the facade, and will evaluate instead
-    "isinstance(dev.target_device, qml.devices.DefaultMixed)"
+    "isinstance(dev.target_device, qml.devices.DefaultQutrit)"
     """
 
     def __instancecheck__(cls, instance):
@@ -433,7 +432,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 internally, otherwise convert it into array[float]. Default: False.
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -466,22 +465,22 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             for mp in observables:
                 obs = mp.obs if isinstance(mp, MeasurementProcess) and mp.obs is not None else mp
 
-                if mp.return_type is Expectation:
+                if isinstance(mp, ExpectationMP):
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
 
-                elif mp.return_type is Variance:
+                elif isinstance(mp, VarianceMP):
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
 
-                elif mp.return_type is Sample:
+                elif isinstance(mp, SampleMP):
                     results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
 
-                elif mp.return_type is Probability:
+                elif isinstance(mp, ProbabilityMP):
                     results.append(list(self.probability(wires=obs.wires).values()))
 
-                elif mp.return_type is State:
+                elif isinstance(mp, StateMP):
                     raise qml.QuantumFunctionError("Returning the state is not supported")
 
-                elif mp.return_type is not None:
+                else:
                     raise qml.QuantumFunctionError(
                         f"Unsupported return type specified for observable {obs.name}"
                     )
@@ -501,9 +500,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(mp.return_type is Sample for mp in observables):
+            if all(isinstance(mp, SampleMP) for mp in observables):
                 return self._asarray(results)
-            if any(mp.return_type is Sample for mp in observables):
+            if any(isinstance(mp, SampleMP) for mp in observables):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
@@ -813,7 +812,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 # Some measurements are not observable based.
                 continue
 
-            if mp.obs.name == "LinearCombination" and not self.supports_observable("Hamiltonian"):
+            if mp.obs.name == "LinearCombination" and not (
+                self.supports_observable("Hamiltonian")
+                or self.supports_observable("LinearCombination")
+            ):
                 return False
 
             if mp.obs.name in (

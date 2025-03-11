@@ -29,11 +29,14 @@ quantum-classical programs.
     ~disable
     ~enable
     ~enabled
+    ~pause
     ~create_operator_primitive
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
+    ~determine_abstracted_axes
     ~expand_plxpr_transforms
+    ~eval_jaxpr
     ~run_autograph
     ~make_plxpr
     ~PlxprInterpreter
@@ -160,7 +163,7 @@ If needed, developers can also override the implementation method of the primiti
 """
 from typing import Callable
 
-from .switches import disable, enable, enabled
+from .switches import disable, enable, enabled, pause
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .capture_operators import create_operator_primitive
 from .capture_measurements import (
@@ -170,6 +173,7 @@ from .capture_measurements import (
 )
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr, run_autograph
+from .dynamic_shapes import determine_abstracted_axes
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -179,6 +183,11 @@ AbstractMeasurement: type
 qnode_prim: "jax.core.Primitive"
 PlxprInterpreter: type  # pylint: disable=redefined-outer-name
 expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
+eval_jaxpr: Callable
+
+
+class CaptureError(Exception):
+    """Errors related to PennyLane's Program Capture execution pipeline."""
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name
@@ -194,14 +203,19 @@ def __getattr__(key):
         return _get_abstract_measurement()
 
     if key == "qnode_prim":
-        from ..workflow._capture_qnode import _get_qnode_prim
+        from ..workflow._capture_qnode import qnode_prim
 
-        return _get_qnode_prim()
+        return qnode_prim
 
     if key == "PlxprInterpreter":
         from .base_interpreter import PlxprInterpreter
 
         return PlxprInterpreter
+
+    if key == "eval_jaxpr":
+        from .base_interpreter import eval_jaxpr
+
+        return eval_jaxpr
 
     if key == "expand_plxpr_transforms":
         from .expand_transforms import expand_plxpr_transforms
@@ -215,6 +229,7 @@ __all__ = (
     "disable",
     "enable",
     "enabled",
+    "eval_jaxpr",
     "CaptureMeta",
     "ABCCaptureMeta",
     "create_operator_primitive",

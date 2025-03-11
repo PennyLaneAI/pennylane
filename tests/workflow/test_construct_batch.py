@@ -19,6 +19,7 @@ from functools import partial
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
@@ -72,7 +73,7 @@ class TestTransformProgramGetter:
         @partial(qml.transforms.compile, num_passes=2)
         @partial(qml.transforms.merge_rotations, atol=1e-5)
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=2)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
@@ -157,7 +158,7 @@ class TestTransformProgramGetter:
     def test_get_transform_program_legacy_device_interface(self):
         """Test the contents of the transform program with the legacy device interface."""
 
-        dev = qml.device("default.mixed", wires=5)
+        dev = DefaultQubitLegacy(wires=5)
 
         @qml.transforms.merge_rotations
         @qml.qnode(dev, diff_method="backprop")
@@ -172,7 +173,7 @@ class TestTransformProgramGetter:
 
         m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
         assert program[1].transform == m2.transform.transform
-        assert program[1].kwargs["device"] == dev.target_device
+        assert program[1].kwargs["device"] == dev
 
         # a little hard to check the contents of a expand_fn transform
         # this is the best proxy I can find
@@ -336,7 +337,7 @@ class TestConstructBatch:
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.mixed", wires=2, shots=50))
+        @qml.qnode(DefaultQubitLegacy(wires=2, shots=50))
         def circuit(order):
             qml.Permute(order, wires=(0, 1, 2))
             qml.X(0)
@@ -448,3 +449,20 @@ class TestConstructBatch:
         )
         qml.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
+
+    @pytest.mark.parametrize(
+        "mcm_method, expected_op",
+        [("deferred", qml.CNOT), ("tree-traversal", qml.measurements.MidMeasureMP)],
+    )
+    def test_mcm_method(self, mcm_method, expected_op):
+        """Test that the tape is constructed using the mcm_method specified on the QNode"""
+
+        @qml.qnode(qml.device("default.qubit"), mcm_method=mcm_method)
+        def circuit():
+            qml.measure(0)
+            return qml.expval(qml.Z(0))
+
+        (tape,), _ = qml.workflow.construct_batch(circuit, level="device")()
+
+        assert len(tape.operations) == 1
+        assert isinstance(tape.operations[0], expected_op)

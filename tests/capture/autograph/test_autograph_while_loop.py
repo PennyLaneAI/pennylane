@@ -84,10 +84,11 @@ class TestWhileLoops:
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0]
         assert result == 3
 
-    def test_whileloop_qnode(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_whileloop_qnode(self, autograph):
         """Test while-loop used with a qnode"""
 
-        @qml.qnode(qml.device("default.qubit", wires=4))
+        @qml.qnode(qml.device("default.qubit", wires=4), autograph=autograph)
         def f(p):
             w = int(0)
             while w < 4:

@@ -62,12 +62,20 @@ class Molecule:
 
     **Example**
 
+    Import necessary modules:
+
+    >>> from pennylane import numpy as np
+    >>> from pennylane.qchem import Molecule
+
+    Define molecular symbols and geometry:
+
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, -0.694349],
-    >>>                      [0.0, 0.0,  0.694349]], requires_grad = True)
+    ...                      [0.0, 0.0,  0.694349]], requires_grad = True)
     >>> mol = Molecule(symbols, geometry)
     >>> print(mol.n_electrons)
     2
+
     """
 
     def __init__(

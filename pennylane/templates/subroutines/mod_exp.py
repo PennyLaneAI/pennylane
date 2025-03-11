@@ -50,7 +50,7 @@ class ModExp(Operation):
         mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If
             :math:`mod=2^{\text{len(output_wires)}}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
-            ``len(output_wires) + 2`` auxiliary wires are needed. Defaults to empty set.
+            ``len(output_wires) + 2`` auxiliary wires are needed. Defaults to empty tuple.
 
     **Example**
 

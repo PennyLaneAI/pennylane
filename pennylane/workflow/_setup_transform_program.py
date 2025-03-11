@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function for setting up the inner and outer transform programs for execution of a QNode.
-
-"""
+"""Contains a function for setting up the inner and outer transform programs for execution of a QNode."""
 
 import warnings
 
@@ -117,12 +115,9 @@ def _setup_transform_program(
 
     # changing this set of conditions causes a bunch of tests to break.
     interface_data_supported = (
-        resolved_execution_config.interface is Interface.NUMPY
+        (not resolved_execution_config.convert_to_numpy)
+        or resolved_execution_config.interface is Interface.NUMPY
         or resolved_execution_config.gradient_method == "backprop"
-        or (
-            getattr(device, "short_name", "") == "default.mixed"
-            and resolved_execution_config.gradient_method is None
-        )
     )
     if not interface_data_supported:
         inner_transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)

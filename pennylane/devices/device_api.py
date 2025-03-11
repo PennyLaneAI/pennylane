@@ -655,7 +655,7 @@ class Device(abc.ABC):
             >>> dev.execute([tape])
             (array(1.0),)
 
-            If the script has multiple measurments, then the device should return a tuple of measurements.
+            If the script has multiple measurements, then the device should return a tuple of measurements.
 
             >>> tape = qml.tape.QuantumTape(measurements=[qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
             >>> tape.shape(dev)
@@ -970,20 +970,72 @@ class Device(abc.ABC):
         return type(self).compute_vjp != Device.compute_vjp
 
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args
+        self,
+        jaxpr: "jax.core.Jaxpr",
+        consts: list[TensorLike],
+        *args,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> list[TensorLike]:
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 
         Args:
             jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
             consts (list[TensorLike]): the closure variables ``consts`` corresponding to the jaxpr
-            *args (TensorLike): the variables to use with the jaxpr'.
+            *args (TensorLike): the variables to use with the jaxpr.
+
+        Keyword Args:
+            execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
 
         Returns:
             list[TensorLike]: the result of evaluating the jaxpr with the given parameters.
 
         """
         raise NotImplementedError
+
+    def jaxpr_jvp(
+        self,
+        jaxpr: "jax.core.Jaxpr",
+        args,
+        tangents,
+        execution_config: Optional[ExecutionConfig] = None,
+    ):
+        """An **experimental** method for computing the results and jvp for PLXPR.
+        See the ``capture`` module for more details.
+
+        Args:
+            jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations
+                and measurements
+            args (Sequence[TensorLike]): the ``consts`` followed by the normal   arguments
+            tangents (Sequence[TensorLike]): the tangents corresponding to ``args``.
+                May contain ``jax.interpreters.ad.Zero``.
+
+        Keyword Args:
+            execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
+
+        Returns:
+            Sequence[TensorLike], Sequence[TensorLike]: the results and jacobian vector products
+
+        >>> qml.capture.enable()
+        >>> import jax
+        >>> closure_var = jax.numpy.array(0.5)
+        >>> def f(x):
+        ...     qml.RX(closure_var, 0)
+        ...     qml.RX(x, 1)
+        ...     return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+        >>> jaxpr = jax.make_jaxpr(f)(1.2)
+        >>> args = (closure_var, 1.2)
+        >>> zero = jax.interpreters.ad.Zero(jax.core.ShapedArray((), float))
+        >>> tangents = (zero, 1.0)
+        >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+        >>> dev = qml.device('default.qubit', wires=2)
+        >>> res, jvps = dev.jaxpr_jvp(jaxpr.jaxpr, args, tangents, execution_config=config)
+        >>> res
+        [Array(0.87758255, dtype=float32), Array(0.36235774, dtype=float32)]
+        >>> jvps
+        [Array(0., dtype=float32), Array(-0.932039, dtype=float32)]
+
+        """
+        raise NotImplementedError(f"device {self} does not yet support PLXPR jvps.")
 
 
 def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -> str:

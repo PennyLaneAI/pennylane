@@ -46,6 +46,15 @@ class Interface(Enum):
         }
         return mapping[self]
 
+    def __eq__(self, interface):
+        if isinstance(interface, str):
+            raise TypeError("Cannot compare Interface with str")
+        return super().__eq__(interface)
+
+    def __hash__(self):
+        # pylint: disable=useless-super-delegation
+        return super().__hash__()
+
 
 InterfaceLike = Union[str, Interface, None]
 
@@ -130,17 +139,10 @@ def get_interface(*values):
             UserWarning,
         )
 
-    if "tensorflow" in interfaces:
-        return "tensorflow"
-
-    if "torch" in interfaces:
-        return "torch"
-
-    if "jax" in interfaces:
-        return "jax"
-
-    if "autograd" in interfaces:
-        return "autograd"
+    priority_queue = ("tensorflow", "torch", "jax", "autograd", "scipy")
+    for target_interface in priority_queue:
+        if target_interface in interfaces:
+            return target_interface
 
     return "numpy"
 
@@ -225,7 +227,7 @@ def get_canonical_interface_name(user_input: InterfaceLike) -> Interface:
         Interface: canonical interface
     """
 
-    if user_input in SUPPORTED_INTERFACE_NAMES:
+    if isinstance(user_input, Interface) and user_input in SUPPORTED_INTERFACE_NAMES:
         return user_input
     try:
         return INTERFACE_MAP[user_input]

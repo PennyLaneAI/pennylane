@@ -278,6 +278,20 @@ class TestDeviceSupportedLogic:
         ):
             dev.supports_observable(operation)
 
+    @pytest.mark.parametrize("supported_multi_term_obs", ["Hamiltonian", "LinearCombination"])
+    @pytest.mark.parametrize("obs_type", [qml.ops.LinearCombination, qml.Hamiltonian])
+    def test_all_multi_term_obs_supported_linear_combination(
+        self, mock_device, supported_multi_term_obs, obs_type
+    ):
+        """Test that LinearCombination is supported when the device supports either
+        LinearCombination or Hamiltonian."""
+        dev = mock_device()
+        dev.observables = dev.observables + [supported_multi_term_obs]
+
+        obs = obs_type([1.0, 2.0], [qml.Z(0), qml.Z(0)])
+        circuit = qml.tape.QuantumScript([], [qml.expval(obs)])
+        assert dev._all_multi_term_obs_supported(circuit)  # pylint: disable=protected-access
+
 
 class TestInternalFunctions:  # pylint:disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
@@ -560,52 +574,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         dev = mock_device(wires=wires)
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
             _ = dev.order_wires(subset_wires=subset)
-
-    @pytest.mark.parametrize(
-        "op, decomp",
-        zip(
-            [
-                qml.BasisState([0, 0], wires=[0, 1]),
-                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
-            ],
-            [
-                [],
-                [
-                    qml.RY(1.57079633, wires=[1]),
-                    qml.CNOT(wires=[0, 1]),
-                    qml.RY(1.57079633, wires=[1]),
-                    qml.CNOT(wires=[0, 1]),
-                ],
-            ],
-        ),
-    )
-    def test_default_expand_with_initial_state(self, op, decomp):
-        """Test the default expand function with StatePrepBase operations
-        integrates well."""
-        prep = [op]
-        ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
-
-        dev = qml.device("default.mixed", wires=3)
-        tape = qml.tape.QuantumTape(ops=prep + ops, measurements=[], shots=100)
-        new_tape = dev.default_expand_fn(tape)
-
-        true_decomposition = []
-        # prep op is not decomposed at start of circuit:
-        true_decomposition.append(op)
-        # AngleEmbedding decomp:
-        true_decomposition.append(qml.RZ(0.1, wires=[0]))
-        # prep op decomposed if its mid-circuit:
-        true_decomposition.extend(decomp)
-        # Z:
-        true_decomposition.append(qml.PauliZ(wires=2))
-
-        assert len(new_tape.operations) == len(true_decomposition)
-        for tape_op, true_op in zip(new_tape.operations, true_decomposition):
-            qml.assert_equal(tape_op, true_op)
-
-        assert new_tape.shots is tape.shots
-        assert new_tape.wires == tape.wires
-        assert new_tape.batch_size == tape.batch_size
 
     def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis, recwarn):
         """Test that default_expand_fn works with an invalid op and some measurement."""
@@ -940,7 +908,7 @@ class TestDeviceInit:
         with monkeypatch.context() as m:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(qml.DeviceError, match="plugin requires PennyLane versions"):
-                qml.device("default.mixed", wires=0)
+                qml.device("default.qutrit", wires=0)
 
     def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
         spied = mocker.spy(qml.devices, "__getattr__")
@@ -1008,7 +976,7 @@ class TestDeviceInit:
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
-        dev = qml.device("default.mixed", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        dev = qml.device("default.qutrit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1
@@ -1021,6 +989,20 @@ class TestDeviceInit:
         assert shot_vector[3].copies == 1
 
         assert dev.shots.total_shots == 22
+
+    def test_has_partitioned_shots(self):
+        """Tests _has_partitioned_shots returns correct values"""
+        dev = DefaultQubitLegacy(wires=1, shots=100)
+        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+
+        dev.shots = [10, 20]
+        assert dev._has_partitioned_shots()  # pylint:disable=protected-access
+
+        dev.shots = 10
+        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+
+        dev.shots = None
+        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
 
 
 class TestBatchExecution:

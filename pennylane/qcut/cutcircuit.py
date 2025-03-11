@@ -353,7 +353,7 @@ def cut_circuit(
         :func:`~.qcut_processing_fn`, which processes the results to the original full circuit
         output via a tensor network contraction
 
-        >>> results = qml.execute(tapes, dev, gradient_fn=None)
+        >>> results = qml.execute(tapes, dev, diff_method=None)
         >>> qml.qcut.qcut_processing_fn(
         ...     results,
         ...     communication_graph,

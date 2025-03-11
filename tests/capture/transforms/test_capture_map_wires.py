@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the ``MapWiresInterpreter`` class"""
 
+from functools import partial
+
 # pylint:disable=wrong-import-position, unused-argument
 import numpy as np
 import pytest
@@ -267,7 +269,7 @@ class TestMapWiresInterpreter:
         """Test that a qnode with a while loop is transformed correctly."""
 
         @MapWiresInterpreter(wire_map={0: 1})
-        @qml.qnode(qml.device("default.qubit", wires=4))
+        @qml.qnode(qml.device("default.qubit", wires=4), autograph=False)
         def f(x):
             @qml.while_loop(lambda i: i < 3)
             def g(i):
@@ -353,19 +355,18 @@ class TestMapWiresInterpreter:
 
 def test_map_wires_plxpr_to_plxpr():
     """Test that transforming plxpr works."""
-    wire_map = {0: 5, 1: 6, 2: 7}
 
-    def circuit(x):
+    def circuit():
         qml.X(0)
-        qml.CRX(x, [0, 1])
+        qml.CRX(0, [0, 1])
         qml.CNOT([1, 2])
         return qml.expval(qml.Z(0))
 
-    args = (1.2,)
-    jaxpr = jax.make_jaxpr(circuit)(*args)
-    transformed_jaxpr = map_wires_plxpr_to_plxpr(
-        jaxpr.jaxpr, jaxpr.consts, [], {"wire_map": wire_map}, *args
-    )
+    wire_map = {0: 5, 1: 6, 2: 7}
+    targs = (wire_map,)
+    tkwargs = {}
+    jaxpr = jax.make_jaxpr(circuit)()
+    transformed_jaxpr = map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs)
     assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
 
@@ -390,3 +391,53 @@ def test_map_wires_plxpr_to_plxpr():
     assert_wires(jaxpr.eqns[3], transformed_jaxpr.eqns[3])
 
     assert transformed_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+
+def test_map_wires_plxpr_to_plxpr_queue_warning():
+    """Test that a warning is raised if ``queue=True``."""
+
+    def f():
+        qml.Hadamard(0)
+        return qml.expval(qml.PauliZ(0))
+
+    wire_map = {0: 1}
+    targs = (wire_map,)
+    tkwargs = {"queue": True}
+    jaxpr = jax.make_jaxpr(f)()
+
+    with pytest.warns(UserWarning, match="Cannot set 'queue=True'"):
+        map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs)
+
+
+def test_map_wires_plxpr_to_plxpr_replace_warning():
+    """Test that a warning is raised if ``replace=True``."""
+
+    def f():
+        qml.Hadamard(0)
+        return qml.expval(qml.PauliZ(0))
+
+    wire_map = {0: 1}
+    targs = (wire_map,)
+    tkwargs = {"replace": True}
+    jaxpr = jax.make_jaxpr(f)()
+
+    with pytest.warns(UserWarning, match="Cannot set 'replace=True'"):
+        map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs)
+
+
+def test_map_wire_decorator():
+    """Test that the map wires transforms works when applying the plxpr decorator."""
+
+    @qml.capture.expand_plxpr_transforms
+    @partial(qml.map_wires, wire_map={0: 1})
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit)(0.1)
+    assert len(jaxpr.eqns) == 3
+    assert jaxpr.eqns[0].primitive == qml.RX._primitive
+    assert jaxpr.eqns[0].invars[-1].val == 1
+    assert jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+    assert jaxpr.eqns[1].invars[-1].val == 1
+    assert jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive

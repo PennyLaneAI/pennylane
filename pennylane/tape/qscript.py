@@ -25,7 +25,7 @@ from functools import cached_property
 from typing import Any, Optional, TypeVar, Union
 
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess, ProbabilityMP, StateMP
+from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Observable, Operation, Operator
 from pennylane.pytrees import register_pytree
@@ -72,6 +72,21 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 QS = TypeVar("QS", bound="QuantumScript")
+
+
+class SpecsDict(dict):
+    """A special dictionary for storing the specs of a circuit. Used to customize ``KeyError`` messages."""
+
+    def __getitem__(self, __k):
+        if __k == "num_diagonalizing_gates":
+            raise KeyError(
+                "num_diagonalizing_gates is no longer in specs due to the ambiguity of the definition "
+                "and extreme performance costs."
+            )
+        try:
+            return super().__getitem__(__k)
+        except KeyError as e:
+            raise KeyError(f"key {__k} not available. Options are {set(self.keys())}") from e
 
 
 class QuantumScript:
@@ -141,7 +156,7 @@ class QuantumScript:
     using the :func:`~.pennylane.execute` function:
 
     >>> dev = qml.device('default.qubit', wires=(0,'a'))
-    >>> qml.execute([qscript], dev, gradient_fn=None)
+    >>> qml.execute([qscript], dev, diff_method=None)
     [array([-0.77750694])]
 
     Quantum scripts can also store information about the number and batches of
@@ -183,7 +198,6 @@ class QuantumScript:
         self._trainable_params = trainable_params
         self._graph = None
         self._specs = None
-        self._output_dim = None
         self._batch_size = _UNSET_BATCH_SIZE
 
         self._obs_sharing_wires = None
@@ -321,29 +335,6 @@ class QuantumScript:
         if self._batch_size is _UNSET_BATCH_SIZE:
             self._update_batch_size()
         return self._batch_size
-
-    @property
-    def output_dim(self) -> int:
-        """The (inferred) output dimension of the quantum script.
-
-        .. warning::
-
-            ``QuantumScript.output_dim`` is being deprecated. Instead, considering
-            using method ``shape`` of ``QuantumScript`` or ``MeasurementProcess``
-            to get the same information. See ``qml.gradients.parameter_shift_cv.py::_get_output_dim``
-            for an example.
-
-        """
-        # pylint: disable=import-outside-toplevel
-        import warnings
-
-        warnings.warn(
-            "The 'output_dim' property is deprecated and will be removed in version 0.41",
-            qml.PennyLaneDeprecationWarning,
-        )
-        if self._output_dim is None:
-            self._update_output_dim()  # this will set _batch_size if it isn't already
-        return self._output_dim
 
     @property
     def diagonalizing_gates(self) -> list[Operation]:
@@ -565,28 +556,6 @@ class QuantumScript:
                 candidate = op_batch_size
 
         self._batch_size = candidate
-
-    def _update_output_dim(self):
-        """Update the dimension of the output of the quantum script.
-
-        Sets:
-            self._output_dim (int): Size of the quantum script output (when flattened)
-
-        This method makes use of `self.batch_size`, so that `self._batch_size`
-        needs to be up to date when calling it.
-        Call `_update_batch_size` before `_update_output_dim`
-        """
-        self._output_dim = 0
-        for m in self.measurements:
-            # attempt to infer the output dimension
-            if isinstance(m, ProbabilityMP):
-                # TODO: what if we had a CV device here? Having the base as
-                # 2 would have to be swapped to the cutoff value
-                self._output_dim += 2 ** len(m.wires)
-            elif not isinstance(m, StateMP):
-                self._output_dim += 1
-        if self.batch_size:
-            self._output_dim *= self.batch_size
 
     # ========================================================
     # Parameter handling
@@ -984,9 +953,6 @@ class QuantumScript:
             # obs may change if measurements were updated
             new_qscript._obs_sharing_wires = self._obs_sharing_wires
             new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
-        if not (update.get("measurements") or update.get("operations")):
-            # output_dim may change if either measurements or operations were updated
-            new_qscript._output_dim = self._output_dim
         return new_qscript
 
     def __copy__(self) -> "QuantumScript":
@@ -1151,7 +1117,7 @@ class QuantumScript:
         return self._graph
 
     @property
-    def specs(self) -> dict[str, Any]:
+    def specs(self) -> SpecsDict[str, Any]:
         """Resource information about a quantum circuit.
 
         Returns:
@@ -1183,17 +1149,18 @@ class QuantumScript:
             resources = qml.resource.resource._count_resources(self)
             algo_errors = qml.resource.error._compute_algo_error(self)
 
-            self._specs = {
-                "resources": resources,
-                "errors": algo_errors,
-                "num_observables": len(self.observables),
-                "num_diagonalizing_gates": len(self.diagonalizing_gates),
-                "num_trainable_params": self.num_params,
-            }
+            self._specs = SpecsDict(
+                {
+                    "resources": resources,
+                    "errors": algo_errors,
+                    "num_observables": len(self.observables),
+                    "num_trainable_params": self.num_params,
+                }
+            )
 
         return self._specs
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def draw(
         self,
         wire_order: Optional[Iterable[Hashable]] = None,

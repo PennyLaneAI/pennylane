@@ -24,6 +24,7 @@ to verify and test quantum gradient computations.
 .. autosummary::
     :toctree: api
 
+    capabilities
     default_qubit
     default_gaussian
     default_mixed
@@ -51,6 +52,7 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     ExecutionConfig
     MCMConfig
     Device
+    DefaultMixed
     DefaultQubit
     DefaultTensor
     NullQubit
@@ -132,6 +134,13 @@ Qubit Simulation Tools
 
 .. currentmodule:: pennylane.devices.qubit
 .. automodule:: pennylane.devices.qubit
+
+
+Qubit Mixed-State Simulation Tools
+-----------------------------------
+
+.. currentmodule:: pennylane.devices.qubit_mixed
+.. automodule:: pennylane.devices.qubit_mixed
 
 
 Qutrit Mixed-State Simulation Tools

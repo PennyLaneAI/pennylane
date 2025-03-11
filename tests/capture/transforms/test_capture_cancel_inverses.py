@@ -27,6 +27,7 @@ from pennylane.capture.primitives import (
     for_loop_prim,
     grad_prim,
     jacobian_prim,
+    measure_prim,
     qnode_prim,
     while_loop_prim,
 )
@@ -158,37 +159,6 @@ class TestCancelInversesInterpreter:
         assert jaxpr.eqns[1].primitive == qml.Identity._primitive
         assert jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
-
-    def test_transform_higher_order_primitive(self):
-        """Test that the inner_jaxpr of transform primitives is not transformed."""
-
-        @qml.transform
-        def dummy_transform(tape):
-            """Dummy transform"""
-            return [tape], lambda res: res[0]
-
-        @CancelInversesInterpreter()
-        def f(x):
-            @dummy_transform
-            def g():
-                qml.S(0)
-                qml.adjoint(qml.S(0))
-
-            qml.RX(x, 0)
-            g()
-            qml.RY(x, 0)
-
-        jaxpr = jax.make_jaxpr(f)(1.5)
-        assert len(jaxpr.eqns) == 3
-        assert jaxpr.eqns[0].primitive == qml.RX._primitive
-        assert jaxpr.eqns[1].primitive == dummy_transform._primitive
-        assert jaxpr.eqns[2].primitive == qml.RY._primitive
-
-        inner_jaxpr = jaxpr.eqns[1].params["inner_jaxpr"]
-        assert len(inner_jaxpr.eqns) == 3
-        assert inner_jaxpr.eqns[0].primitive == qml.S._primitive
-        assert inner_jaxpr.eqns[1].primitive == qml.S._primitive
-        assert inner_jaxpr.eqns[2].primitive == qml.ops.Adjoint._primitive
 
     def test_ctrl_higher_order_primitive(self):
         """Test that ctrl higher order primitives are transformed correctly."""
@@ -425,6 +395,45 @@ class TestCancelInversesInterpreter:
         assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    def test_mid_circuit_measurement(self):
+        """Test that mid-circuit measurements are correctly handled."""
+
+        @CancelInversesInterpreter()
+        def circuit():
+            qml.S(0)
+            qml.measure(0)
+            qml.adjoint(qml.S(0))
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 6
+
+        assert jaxpr.eqns[0].primitive == qml.S._primitive
+        assert jaxpr.eqns[1].primitive == measure_prim
+        assert jaxpr.eqns[2].primitive == qml.S._primitive
+        assert jaxpr.eqns[3].primitive == qml.ops.Adjoint._primitive
+        assert jaxpr.eqns[4].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[5].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    def test_mid_circuit_measurement_not_blocked(self):
+        """Test that mid-circuit measurements do not block the cancellation of adjacent inverses."""
+
+        @CancelInversesInterpreter()
+        def circuit():
+            qml.S(0)
+            qml.adjoint(qml.S(0))
+            qml.measure(0)
+            qml.H(1)
+            qml.adjoint(qml.H(1))
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 3
+
+        assert jaxpr.eqns[0].primitive == measure_prim
+        assert jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
 def test_cancel_inverses_plxpr_to_plxpr():

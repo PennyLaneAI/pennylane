@@ -116,3 +116,30 @@ def test_jax_jit_interface():
     expected_mcm_config = MCMConfig(mcm_method="deferred", postselect_mode="fill-shots")
 
     assert resolved_config.mcm_config == expected_mcm_config
+
+
+# pylint: disable=unused-argument
+def test_no_device_vjp_if_not_supported():
+    """Test that an error is raised for device_vjp=True if the device does not support it."""
+
+    class DummyDev(qml.devices.Device):
+
+        def execute(self, circuits, execution_config=qml.devices.ExecutionConfig()):
+            return 0
+
+        def supports_derivatives(self, execution_config=None, circuit=None):
+            return execution_config and execution_config.gradient_method == "vjp_grad"
+
+        def supports_vjp(self, execution_config=None, circuit=None) -> bool:
+            return execution_config and execution_config.gradient_method == "vjp_grad"
+
+    config_vjp_grad = ExecutionConfig(use_device_jacobian_product=True, gradient_method="vjp_grad")
+    tape = qml.tape.QuantumScript()
+    # no error
+    _ = _resolve_execution_config(config_vjp_grad, DummyDev(), (tape,))
+
+    config_parameter_shift = ExecutionConfig(
+        use_device_jacobian_product=True, gradient_method="parameter-shift"
+    )
+    with pytest.raises(qml.QuantumFunctionError, match="device_vjp=True is not supported"):
+        _resolve_execution_config(config_parameter_shift, DummyDev(), (tape,))

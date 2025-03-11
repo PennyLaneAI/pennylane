@@ -68,7 +68,7 @@ class BasisRotation(Operation):
         ...    for idx, eigenval in enumerate(eigen_vals):
         ...        qml.RZ(eigenval, wires=[idx])
         ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
-        >>> circ_unitary = qml.matrix(circuit)()
+        >>> circ_unitary = qml.matrix(circuit, wire_order=wires)()
         >>> np.round(circ_unitary/circ_unitary[0][0], 3)
         tensor([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
                 [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
@@ -107,6 +107,10 @@ class BasisRotation(Operation):
 
         return cls._primitive.bind(*wires, unitary_matrix, check=check, id=id)
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(wires=metadata[0], unitary_matrix=data[0])
+
     def __init__(self, wires, unitary_matrix, check=False, id=None):
         M, N = qml.math.shape(unitary_matrix)
 
@@ -124,19 +128,15 @@ class BasisRotation(Operation):
         if len(wires) < 2:
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
-        self._hyperparameters = {
-            "unitary_matrix": unitary_matrix,
-        }
-
-        super().__init__(wires=wires, id=id)
+        super().__init__(unitary_matrix, wires=wires, id=id)
 
     @property
     def num_params(self):
-        return 0
+        return 1
 
     @staticmethod
     def compute_decomposition(
-        wires, unitary_matrix, check=False
+        unitary_matrix, wires, check=False
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 

@@ -352,9 +352,9 @@ class Sum(CompositeOp):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     @handle_recursion_error
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
         gen = ((op.sparse_matrix(), op.wires) for op in self)
 
@@ -362,7 +362,7 @@ class Sum(CompositeOp):
 
         wire_order = wire_order or self.wires
 
-        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order).asformat(format)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
@@ -539,8 +539,7 @@ class Sum(CompositeOp):
 
         .. seealso:: :attr:`~Sum.ops`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
-            "Sum.coeffs is deprecated and will be removed in future releases. You can access both "
-            "(coeffs, ops) via op.terms(). Also consider op.operands.",
+            "Sum.coeffs is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         coeffs, _ = self.terms()
@@ -555,8 +554,7 @@ class Sum(CompositeOp):
 
         .. seealso:: :attr:`~Sum.coeffs`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
-            "Sum.ops is deprecated and will be removed in future releases. You can access both "
-            "(coeffs, ops) via op.terms(). Also consider op.operands.",
+            "Sum.ops is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         _, ops = self.terms()

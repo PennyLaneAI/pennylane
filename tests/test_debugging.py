@@ -166,15 +166,13 @@ class TestSnapshotGeneral:
             qml.snapshots(circuit)(shots=200)
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
-        if "lightning" in dev.name:
+        if "lightning" in dev.name or "mixed" in dev.name:
             pytest.skip()
 
         @qml.qnode(dev)
         def circuit():
             qml.Snapshot(measurement=qml.state())
             qml.Snapshot()
-            if "mixed" in dev.name:
-                qml.Snapshot(measurement=qml.density_matrix(wires=[0, 1]))
 
             if isinstance(dev, qml.devices.QutritDevice):
                 return qml.expval(qml.GellMann(0, 1))
@@ -401,7 +399,7 @@ class TestSnapshotSupportedQNode:
         )
         assert result["execution_results"] == expected["execution_results"]
 
-        # Make sure shots are overriden correctly
+        # Make sure shots are overridden correctly
         result = qml.snapshots(circuit)(add_bad_snapshot=False, shots=200)
         assert result[0] == {"00": 74, "10": 58, "20": 68}
 
@@ -555,7 +553,7 @@ class TestSnapshotSupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-        # Make sure shots are overriden correctly
+        # Make sure shots are overridden correctly
         result = qml.snapshots(circuit)(shots=200)
         assert result[3] == {"0": 98, "1": 102}
         assert np.allclose(result[5], expected[5])
@@ -612,7 +610,7 @@ class TestSnapshotUnsupportedQNode:
         assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.75
         assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
-        # Make sure shots are overriden correctly
+        # Make sure shots are overridden correctly
         counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
@@ -687,7 +685,7 @@ class TestSnapshotUnsupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-        # Make sure shots are overriden correctly
+        # Make sure shots are overridden correctly
         result = circuit(shots=200)
         assert np.allclose(
             result[0],

@@ -228,7 +228,7 @@ from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import spmatrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
@@ -823,8 +823,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @staticmethod
     def compute_sparse_matrix(
-        *params: TensorLike, **hyperparams: dict[str, Any]
-    ) -> csr_matrix:  # pylint:disable=unused-argument
+        *params: TensorLike, format: str = "csr", **hyperparams: dict[str, Any]
+    ) -> spmatrix:  # pylint:disable=unused-argument
         r"""Representation of the operator as a sparse matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -834,6 +834,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters``
                 attribute
 
@@ -854,7 +855,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             or cls.sparse_matrix != Operator.sparse_matrix
         )
 
-    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -867,16 +868,19 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
 
         Returns:
             scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
         canonical_sparse_matrix = self.compute_sparse_matrix(
-            *self.parameters, **self.hyperparameters
+            *self.parameters, format="csr", **self.hyperparameters
         )
 
-        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
+        return expand_matrix(
+            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
+        ).asformat(format)
 
     @staticmethod
     def compute_eigvals(*params: TensorLike, **hyperparams) -> TensorLike:
@@ -1349,6 +1353,38 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise DecompositionUndefinedError
 
+    @classproperty
+    def has_plxpr_decomposition(cls) -> bool:
+        """Whether or not the Operator returns a defined plxpr decomposition."""
+        return cls.compute_qfunc_decomposition != Operator.compute_qfunc_decomposition
+
+    @staticmethod
+    def compute_qfunc_decomposition(*args, **hyperparameters) -> None:
+        r"""Experimental method to compute the dynamic decomposition of the operator with program capture enabled.
+
+        When the program capture feature is enabled with ``qml.capture.enable()``, the decomposition of the operator
+        is computed with this method if it is defined. Otherwise, the :meth:`~.Operator.compute_decomposition` method is used.
+
+        The exception to this rule is when the operator is returned from the :meth:`~.Operator.compute_decomposition` method
+        of another operator, in which case the decomposition is performed with :meth:`~.Operator.compute_decomposition`
+        (even if this method is defined), and not with this method.
+
+        When ``compute_qfunc_decomposition`` is defined for an operator, the control flow operations within the method
+        (specifying the decomposition of the operator) are recorded in the JAX representation.
+
+        .. note::
+          This method is experimental and subject to change.
+
+        .. seealso:: :meth:`~.Operator.compute_decomposition`.
+
+        Args:
+            *args (list): positional arguments passed to the operator, including trainable parameters and wires
+            **hyperparameters (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        """
+
+        raise DecompositionUndefinedError
+
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
     def has_diagonalizing_gates(cls) -> bool:
@@ -1418,7 +1454,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return cls.generator != Operator.generator
 
-    def generator(self):  # pylint: disable=no-self-use
+    def generator(self) -> "Operator":  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1435,8 +1471,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
 
-        The default value to return is ``None``, indicating that the operation has
-        no defined generator.
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 

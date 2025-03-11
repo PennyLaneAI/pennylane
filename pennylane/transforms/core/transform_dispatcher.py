@@ -29,7 +29,45 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
 
 
-def register_primitive_for_expansion(primitive, plxpr_transform):
+def _create_plxpr_fallback_transform(tape_transform):
+    # pylint: disable=import-outside-toplevel
+    try:
+        import jax
+    except ImportError:
+        return None
+
+    def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
+
+        def wrapper(*inner_args):
+            tape = qml.tape.plxpr_to_tape(jaxpr, consts, *inner_args)
+            with qml.capture.pause():
+                tapes, _ = tape_transform(tape, *targs, **tkwargs)
+
+            if len(tapes) > 1:
+                raise TransformError(
+                    f"Cannot apply {tape_transform.__name__} transform with program "
+                    "capture enabled. Only transforms that return a single QuantumTape "
+                    "and null processing function are usable with program capture."
+                )
+
+            for op in tapes[0].operations:
+                data, struct = jax.tree_util.tree_flatten(op)
+                jax.tree_util.tree_unflatten(struct, data)
+
+            out = []
+            for mp in tapes[0].measurements:
+                data, struct = jax.tree_util.tree_flatten(mp)
+                out.append(jax.tree_util.tree_unflatten(struct, data))
+
+            return tuple(out)
+
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        return jax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*abstract_shapes, *args)
+
+    return plxpr_fallback_transform
+
+
+def _register_primitive_for_expansion(primitive, plxpr_transform):
     """Register a transform such that it can be expanded when applied to a function with
     program capture enabled."""
     # pylint: disable=import-outside-toplevel
@@ -44,21 +82,16 @@ def register_primitive_for_expansion(primitive, plxpr_transform):
     def _(
         self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=too-many-arguments,missing-docstring
-        if plxpr_transform is None:
-            raise NotImplementedError
-
-        inner_args = invals[args_slice]
-        inner_consts = invals[consts_slice]
+        args = invals[args_slice]
+        consts = invals[consts_slice]
         targs = invals[targs_slice]
 
-        def wrapper(*args):
-            return copy(self).eval(inner_jaxpr, inner_consts, *args)
+        def wrapper(*inner_args):
+            return copy(self).eval(inner_jaxpr, consts, *inner_args)
 
-        unravelled_jaxpr = jax.make_jaxpr(wrapper)(*inner_args)
-        final_jaxpr = plxpr_transform(
-            unravelled_jaxpr.jaxpr, unravelled_jaxpr.consts, targs, tkwargs, *inner_args
-        )
-        return copy(self).eval(final_jaxpr.jaxpr, final_jaxpr.consts, *inner_args)
+        jaxpr = jax.make_jaxpr(wrapper)(*args)
+        jaxpr = plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
+        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
@@ -116,9 +149,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         self._use_argnum_in_expand = use_argnum_in_expand
         functools.update_wrapper(self, transform)
 
-        self._plxpr_transform = plxpr_transform
+        self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
         self._primitive = _create_transform_primitive(self._transform.__name__)
-        register_primitive_for_expansion(self._primitive, self._plxpr_transform)
+        _register_primitive_for_expansion(self._primitive, self._plxpr_transform)
 
     def __call__(
         self, *targs, **tkwargs
@@ -540,12 +573,13 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
 def _create_transform_primitive(name):
     try:
         # pylint: disable=import-outside-toplevel
-        import jax
+        from pennylane.capture.custom_primitives import NonInterpPrimitive
     except ImportError:
         return None
 
-    transform_prim = jax.core.Primitive(name + "_transform")
+    transform_prim = NonInterpPrimitive(name + "_transform")
     transform_prim.multiple_results = True
+    transform_prim.prim_type = "transform"
 
     @transform_prim.def_impl
     def _(

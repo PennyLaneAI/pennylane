@@ -13,7 +13,7 @@
 # limitations under the License.
 """Utility functions related to the construction of the taylor form Hamiltonian."""
 import itertools
-import subprocess
+from pathlib import Path
 
 import h5py
 import numpy as np
@@ -516,7 +516,7 @@ def _load_cform_onemode(num_proc, nmodes, quad_order):
         for rank in range(num_proc):
             f = h5py.File("cform_H1data" + f"_{rank}" + ".hdf5", "r+")
             local_ham_cform_onebody = f["H1"][()]
-            chunk = np.array_split(local_ham_cform_onebody, nmode_combos)[mode_combo]  #
+            chunk = np.array_split(local_ham_cform_onebody, nmode_combos)[mode_combo]
             l1 += len(chunk)
             local_chunk[l0:l1] = chunk
             l0 += len(chunk)
@@ -767,17 +767,16 @@ def christiansen_integrals(pes, n_states=16, cubic=False):
     local_ham_cform_onebody = _cform_onemode(pes, n_states)
     comm.Barrier()
 
-    f = h5py.File("cform_H1data" + f"_{rank}" + ".hdf5", "w")
-    f.create_dataset("H1", data=local_ham_cform_onebody)
-    f.close()
+    file_path = Path(f"cform_H1data_{rank}.hdf5")
+    with h5py.File(file_path, "w") as f:
+        f.create_dataset("H1", data=local_ham_cform_onebody)
     comm.Barrier()
 
     ham_cform_onebody = None
     if rank == 0:
         ham_cform_onebody = _load_cform_onemode(size, len(pes.freqs), n_states)
-        process = subprocess.Popen("rm " + "cform_H1data*", stdout=subprocess.PIPE, shell=True)
-        _, _ = process.communicate()
-
+        for path in Path.cwd().glob("cform_H1data*"):
+            path.unlink()
     comm.Barrier()
     ham_cform_onebody = comm.bcast(ham_cform_onebody, root=0)
 
@@ -786,34 +785,32 @@ def christiansen_integrals(pes, n_states=16, cubic=False):
         local_ham_cform_twobody += _cform_twomode_kinetic(pes, n_states)
     comm.Barrier()
 
-    f = h5py.File("cform_H2data" + f"_{rank}" + ".hdf5", "w")
-    f.create_dataset("H2", data=local_ham_cform_twobody)
-    f.close()
+    file_path = Path(f"cform_H2data_{rank}.hdf5")
+    with h5py.File(file_path, "w") as f:
+        f.create_dataset("H2", data=local_ham_cform_twobody)
     comm.Barrier()
 
     ham_cform_twobody = None
     if rank == 0:
         ham_cform_twobody = _load_cform_twomode(size, len(pes.freqs), n_states)
-        process = subprocess.Popen("rm " + "cform_H2data*", stdout=subprocess.PIPE, shell=True)
-        _, _ = process.communicate()
-
+        for path in Path.cwd().glob("cform_H2data*"):
+            path.unlink()
     comm.Barrier()
     ham_cform_twobody = comm.bcast(ham_cform_twobody, root=0)
 
     if cubic:
         local_ham_cform_threebody = _cform_threemode(pes, n_states)
 
-        f = h5py.File("cform_H3data" + f"_{rank}" + ".hdf5", "w")
-        f.create_dataset("H3", data=local_ham_cform_threebody)
-        f.close()
+        file_path = Path(f"cform_H3data_{rank}.hdf5")
+        with h5py.File(file_path, "w") as f:
+            f.create_dataset("H3", data=local_ham_cform_threebody)
         comm.Barrier()
 
         ham_cform_threebody = None
         if rank == 0:
             ham_cform_threebody = _load_cform_threemode(size, len(pes.freqs), n_states)
-            process = subprocess.Popen("rm " + "cform_H3data*", stdout=subprocess.PIPE, shell=True)
-            _, _ = process.communicate()
-
+            for path in Path.cwd().glob("cform_H3data*"):
+                path.unlink()
         comm.Barrier()
         ham_cform_threebody = comm.bcast(ham_cform_threebody, root=0)
 
@@ -838,17 +835,16 @@ def christiansen_integrals_dipole(pes, n_states=16):
     local_dipole_cform_onebody = _cform_onemode_dipole(pes, n_states)
     comm.Barrier()
 
-    f = h5py.File("cform_D1data" + f"_{rank}" + ".hdf5", "w")
-    f.create_dataset("D1", data=local_dipole_cform_onebody)
-    f.close()
+    file_path = Path(f"cform_D1data_{rank}.hdf5")
+    with h5py.File(file_path, "w") as f:
+        f.create_dataset("D1", data=local_dipole_cform_onebody)
     comm.Barrier()
 
     dipole_cform_onebody = None
     if rank == 0:
         dipole_cform_onebody = _load_cform_onemode_dipole(size, len(pes.freqs), n_states)
-        process = subprocess.Popen("rm " + "cform_D1data*", stdout=subprocess.PIPE, shell=True)
-        _, _ = process.communicate()
-
+        for path in Path.cwd().glob("cform_D1data*"):
+            path.unlink()
     comm.Barrier()
     dipole_cform_onebody = comm.bcast(dipole_cform_onebody, root=0)
 
@@ -856,16 +852,16 @@ def christiansen_integrals_dipole(pes, n_states=16):
         local_dipole_cform_twobody = _cform_twomode_dipole(pes, n_states)
         comm.Barrier()
 
-        f = h5py.File("cform_D2data" + f"_{rank}" + ".hdf5", "w")
-        f.create_dataset("D2", data=local_dipole_cform_twobody)
-        f.close()
+        file_path = Path(f"cform_D2data_{rank}.hdf5")
+        with h5py.File(file_path, "w") as f:
+            f.create_dataset("D2", data=local_dipole_cform_twobody)
         comm.Barrier()
 
         dipole_cform_twobody = None
         if rank == 0:
             dipole_cform_twobody = _load_cform_twomode_dipole(size, len(pes.freqs), n_states)
-            process = subprocess.Popen("rm " + "cform_D2data*", stdout=subprocess.PIPE, shell=True)
-            _, _ = process.communicate()
+            for path in Path.cwd().glob("cform_D2data*"):
+                path.unlink()
         comm.Barrier()
         dipole_cform_twobody = comm.bcast(dipole_cform_twobody, root=0)
 
@@ -873,17 +869,17 @@ def christiansen_integrals_dipole(pes, n_states=16):
         local_dipole_cform_threebody = _cform_threemode_dipole(pes, n_states)
         comm.Barrier()
 
-        f = h5py.File("cform_D3data" + f"_{rank}" + ".hdf5", "w")
-        f.create_dataset("D3", data=local_dipole_cform_threebody)
-        f.close()
+        file_path = Path(f"cform_D3data_{rank}.hdf5")
+        with h5py.File(file_path, "w") as f:
+            f.create_dataset("D3", data=local_dipole_cform_threebody)
+        comm.Barrier()
 
         dipole_cform_threebody = None
         if rank == 0:
             dipole_cform_threebody = _load_cform_threemode_dipole(size, len(pes.freqs), n_states)
-            process = subprocess.Popen("rm " + "cform_D3data*", stdout=subprocess.PIPE, shell=True)
-            _, _ = process.communicate()
+            for path in Path.cwd().glob("cform_D3data*"):
+                path.unlink()
         comm.Barrier()
-
         dipole_cform_threebody = comm.bcast(dipole_cform_threebody, root=0)
 
         D_arr = [dipole_cform_onebody, dipole_cform_twobody, dipole_cform_threebody]

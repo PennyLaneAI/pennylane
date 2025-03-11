@@ -20,8 +20,9 @@ import os
 import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
+from functools import lru_cache
 from itertools import chain
-from typing import Optional, Type, Union
+from typing import Optional, Type
 
 import pennylane as qml
 from pennylane import Snapshot, transform
@@ -41,7 +42,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-def _operator_decomposition_gen(
+def _operator_decomposition_gen(  # pylint: disable = too-many-positional-arguments
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
@@ -196,6 +197,11 @@ def mid_circuit_measurements(
     if mcm_method is None:
         mcm_method = "one-shot" if tape.shots else "deferred"
 
+    if _includes_conditional_mcms(tape):
+        raise NotImplementedError(
+            "Conditionally applied mid-circuit measurements are not supported"
+        )
+
     if mcm_method == "one-shot":
         return qml.dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
     if mcm_method == "tree-traversal":
@@ -203,6 +209,20 @@ def mid_circuit_measurements(
     return qml.defer_measurements(
         tape, allow_postselect=isinstance(device, qml.devices.DefaultQubit)
     )
+
+
+def _is_conditional_mcm(operation: qml.operation.Operator) -> bool:
+    """Returns True if the operation is a mid-circuit measurement nested inside a Conditional,
+    and False otherwise."""
+    if isinstance(operation, qml.ops.Conditional):
+        if isinstance(operation.base, qml.measurements.MidMeasureMP):
+            return True
+    return False
+
+
+@lru_cache(maxsize=2)
+def _includes_conditional_mcms(tape: QuantumScript) -> bool:
+    return any(_is_conditional_mcm(op) for op in tape.operations)
 
 
 @transform
@@ -294,7 +314,7 @@ def validate_adjoint_trainable_params(
 
 
 @transform
-def decompose(
+def decompose(  # pylint: disable = too-many-positional-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
@@ -302,7 +322,6 @@ def decompose(
     decomposer: Optional[
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
     ] = None,
-    max_expansion: Union[int, None] = None,
     name: str = "device",
     error: Optional[Type[Exception]] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -315,10 +334,6 @@ def decompose(
             accepted by ``stopping_condition``, an ``Exception`` will be raised (of a type
             specified by the ``error`` keyward argument).
 
-    .. warning::
-
-        The `max_expansion` argument is deprecated and will be removed in v0.41.
-
     Keyword Args:
         stopping_condition_shots (Callable): a function from an operator to a boolean. If
             ``False``, the operator should be decomposed. This replaces ``stopping_condition``
@@ -328,7 +343,6 @@ def decompose(
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .
-        max_expansion (int): The maximum depth of the expansion. Defaults to None.
         name (str): The name of the transform, process or device using decompose. Used in the
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
@@ -383,11 +397,6 @@ def decompose(
     RZ(1.5707963267948966, wires=[1])]
 
     """
-    if max_expansion is not None:
-        warnings.warn(
-            "The max_expansion argument is deprecated and will be removed in v0.41. ",
-            qml.PennyLaneDeprecationWarning,
-        )
 
     if error is None:
         error = qml.DeviceError
@@ -416,7 +425,6 @@ def decompose(
                 op,
                 stopping_condition,
                 decomposer=decomposer,
-                max_expansion=max_expansion,
                 name=name,
                 error=error,
             )
