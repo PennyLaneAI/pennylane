@@ -104,7 +104,7 @@ class GraphStatePrep(Operation):
         if isinstance(graph, QubitGraph):
             if wires is not None and len(set(wires)) != len(set(graph.node_labels)):
                 raise ValueError("Please ensure wires objects match labels in QubitGraph")
-            super().__init__(wires=wires if wires is not None else set(graph.children))
+            super().__init__(wires=wires if wires is not None else list(graph.children))
         else:
             if wires is None:
                 raise ValueError("Please ensure wires is specified.")
