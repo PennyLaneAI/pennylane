@@ -124,12 +124,7 @@ def cond_measure(
             Conditional(condition, true_meas)
             Conditional(~condition, false_meas)
 
-            return MeasurementValue(
-                [true_meas, false_meas],
-                processing_fn=lambda v1, v2: qml.math.logical_or(  # pylint: disable=unnecessary-lambda
-                    v1, v2
-                ),
-            )
+            return MeasurementValue([true_meas, false_meas], processing_fn=lambda v1, v2: v1 or v2)
 
     else:
         raise ValueError(
