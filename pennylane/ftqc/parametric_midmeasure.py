@@ -600,13 +600,13 @@ def diagonalize_mcms(tape):
         :title: Conditional measurements
 
         The transform can also handle diagonalization of conditional measurements created by
-        :func:`qml.ftqc.cond_meas <pennylane.ftqc.cond_meas>`. This is done by replacing the
+        :func:`qml.ftqc.cond_measure <pennylane.ftqc.cond_measure>`. This is done by replacing the
         measurements for the true and false condition with conditional diagonalizing gates,
         and a single measurement in the computational basis:
 
         .. code-block:: python3
 
-            from pennylane.ftqc import diagonalize_mcms, measure_x
+            from pennylane.ftqc import cond_measure, diagonalize_mcms, measure_x
 
             dev = qml.device("default.qubit")
 
@@ -616,17 +616,28 @@ def diagonalize_mcms(tape):
                 qml.RY(x[0], wires=0)
                 qml.RX(x[1], wires=1)
                 m = qml.measure(0)
-                m2 = cond_meas(m, measure_x, measure_y)(1)
+                m2 = cond_measure(m, measure_x, measure_y)(1)
                 qml.cond(m2, qml.X)(1)
                 return qml.expval(qml.Z(1))
 
-        This circuit diagonalizes to:
+        The :func:`cond_measure <pennylane.ftqc.cond_measure>` function adds a conditional X-basis
+        measurement and a conditional Y basis measurement to the circuit, with opposite conditions.
+        When the transform is applied, the diagonalizing gates of the measurements are conditional.
+        The two conditional measurements then become equivalent measurements in the computational basis
+        with opposite conditions, and can be simplified to a single, unconditional measurement in the
+        computational basis.
+
+        This circuit thus diagonalizes to:
 
         >>> print(qml.draw(circuit)([np.pi, np.pi/4]))
         0: ──RY(3.14)──┤↗├───────────────────┤
         1: ──RX(0.79)───║───H──S†──H──┤↗├──X─┤  <Z>
                         ╚═══╩══╩═══╝   ║   ║
                                        ╚═══╝
+
+        where the initial Hadamard gate on wire 1 has the same condition as the original X-basis
+        measurement, and the adjoint S gate and second Hadamard share a condition with the Y-basis
+        measurement.
     """
 
     new_operations = []

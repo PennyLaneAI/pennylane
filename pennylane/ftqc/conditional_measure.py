@@ -59,7 +59,7 @@ def cond_measure(
     .. code-block:: python3
 
         import pennylane as qml
-        from pennylane.ftqc import cond_meas, diagonalize_mcms, measure_x, measure_y
+        from pennylane.ftqc import cond_measure, diagonalize_mcms, measure_x, measure_y
 
         dev = qml.device("default.qubit", wires=3, shots=1000)
 
@@ -70,7 +70,7 @@ def cond_measure(
             qml.Hadamard(1)
 
             m0 = qml.measure(0)
-            m2 = cond_meas(m0, measure_x, measure_y)(1)
+            m2 = cond_measure(m0, measure_x, measure_y)(1)
 
             qml.Hadamard(2)
             qml.cond(m2 == 0, qml.RY)(y, wires=2)
@@ -82,7 +82,7 @@ def cond_measure(
 
     .. note::
 
-        If the first argument of ``cond_meas`` is a measurement value (e.g., ``m_0``
+        If the first argument of ``cond_measure`` is a measurement value (e.g., ``m_0``
         in ``qml.cond(m_0, measure_x, measure_y)``), then ``m_0 == 1`` is considered
         internally.
 
@@ -95,7 +95,9 @@ def cond_measure(
         incorrect behaviour.
     """
     if qml.capture.enabled():
-        raise NotImplementedError("The `cond_meas` function is not compatible with program capture")
+        raise NotImplementedError(
+            "The `cond_measure` function is not compatible with program capture"
+        )
 
     if not isinstance(condition, MeasurementValue):
         # The condition is not a mid-circuit measurement - we can simplify immediately
@@ -130,7 +132,9 @@ def cond_measure(
             )
 
     else:
-        raise ValueError("Only measurement functions can be applied conditionally by `cond_meas`.")
+        raise ValueError(
+            "Only measurement functions can be applied conditionally by `cond_measure`."
+        )
 
     return wrapper
 
@@ -142,7 +146,7 @@ def _validate_measurements(true_meas, false_meas):
 
     if not (isinstance(true_meas, MidMeasureMP) and isinstance(false_meas, MidMeasureMP)):
         raise ValueError(
-            "Only measurement functions that return a measurement value can be used in `cond_meas`"
+            "Only measurement functions that return a measurement value can be used in `cond_measure`"
         )
 
     if not (
@@ -151,7 +155,7 @@ def _validate_measurements(true_meas, false_meas):
         and true_meas.postselect == false_meas.postselect
     ):
         raise ValueError(
-            "When applying a mid-circuit measurement in `cond_meas`, the `wire`, "
+            "When applying a mid-circuit measurement in `cond_measure`, the `wire`, "
             "`postselect` and `reset` behaviour must be consistent for both "
             "branches of the conditional. Only the basis of the measurement (defined "
             "by measurement type or by `plane` and `angle`) can vary."
