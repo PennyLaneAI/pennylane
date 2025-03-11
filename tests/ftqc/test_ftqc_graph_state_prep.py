@@ -91,48 +91,84 @@ class TestGraphStatePrep:
         res = circuit(q)
         assert len(res) == 2 ** len(lattice.graph)
         assert np.isclose(np.sum(res), 1.0, rtol=0)
-        assert_valid(GraphStatePrep(graph=q), skip_deepcopy=True, skip_pickle=True)
-        assert repr(GraphStatePrep(graph=q)) == "GraphStatePrep(Hadamard, CZ)"
-        assert GraphStatePrep(graph=q).label() == "GraphStatePrep(Hadamard, CZ)"
+
+    @pytest.mark.parametrize(
+        "dims, shape, wires",
+        [
+            ([5], "chain", None),
+            ([2, 2], "square", None),
+            ([2, 3], "rectangle", None),
+            ([2, 2, 2], "cubic", None),
+            ([5], "chain", range(5)),
+            ([2, 2], "square", range(4)),
+            ([2, 2], "rectangle", range(4)),
+            (
+                [2, 2, 2],
+                "cubic",
+                range(8),
+            ),
+        ],
+    )
+    def test_graph_state_prep_creation_with_qubit_graph(self, dims, shape, wires):
+        lattice = generate_lattice(dims, shape)
+        q = QubitGraph(lattice.graph)
+        # Test for object construction via QubitGraph
+        assert_valid(GraphStatePrep(graph=q, wires=wires), skip_deepcopy=True, skip_pickle=True)
+        assert repr(GraphStatePrep(graph=q, wires=wires)) == "GraphStatePrep(Hadamard, CZ)"
+        assert GraphStatePrep(graph=q, wires=wires).label() == "GraphStatePrep(Hadamard, CZ)"
+
+    @pytest.mark.parametrize(
+        "dims, shape, wires",
+        [
+            pytest.param(
+                [5],
+                "chain",
+                None,
+                marks=pytest.mark.xfail(reason="Wires must be specified with nx.Graph objects."),
+            ),
+            ([5], "chain", range(5)),
+            ([2, 2], "square", range(4)),
+            ([2, 2], "rectangle", range(4)),
+            (
+                [2, 2, 2],
+                "cubic",
+                range(8),
+            ),
+        ],
+    )
+    def test_graph_state_prep_creation_with_nx_graph(self, dims, shape, wires):
+        lattice = generate_lattice(dims, shape)
+        # Test for object construction via nx graph
+        assert_valid(
+            GraphStatePrep(graph=lattice.graph, wires=wires), skip_deepcopy=True, skip_pickle=True
+        )
+        assert (
+            repr(GraphStatePrep(graph=lattice.graph, wires=wires)) == "GraphStatePrep(Hadamard, CZ)"
+        )
+        assert (
+            GraphStatePrep(graph=lattice.graph, wires=wires).label()
+            == "GraphStatePrep(Hadamard, CZ)"
+        )
 
     @pytest.mark.parametrize(
         "dims, shape, wires",
         [
             ([5], "chain", [0, 1, 2, 3, 4]),
             pytest.param(
-                [5], "chain", None, marks=pytest.mark.xfail(reason="Wires must be specified.")
+                [5],
+                "chain",
+                None,
+                marks=pytest.mark.xfail(
+                    reason="Wires must be specified when building circuit with nx.Graph objects."
+                ),
             ),
-            pytest.param(
-                [2, 2],
-                "square",
-                [(0, 0), (0, 1), (1, 0), (1, 1)],
-                marks=pytest.mark.xfail(reason="Wires must be unique."),
-            ),
-            pytest.param(
-                [2, 2],
-                "rectangle",
-                [(0, 0), (0, 1), (1, 0), (1, 1)],
-                marks=pytest.mark.xfail(reason="Wires must be unique."),
-            ),
-            pytest.param(
-                [2, 2, 2],
-                "cubic",
-                [
-                    (0, 0, 0),
-                    (0, 0, 1),
-                    (0, 1, 0),
-                    (0, 1, 1),
-                    (1, 0, 0),
-                    (1, 0, 1),
-                    (1, 1, 0),
-                    (1, 1, 1),
-                ],
-                marks=pytest.mark.xfail(reason="Wires must be unique."),
-            ),
+            ([2, 2], "square", [0, 1, 2, 3]),
+            ([2, 2], "rectangle", [0, 1, 2, 3]),
+            ([2, 2, 2], "cubic", [0, 1, 2, 3, 4, 5, 6, 7]),
         ],
     )
     def test_circuit_accept_graph_state_prep_with_nx_wires(self, dims, shape, wires):
-        """Test if a quantum function accepts GraphStatePrep."""
+        """Test if GraphStatePrep can be created with nx.Graph and user provided wires."""
         dev = qml.device("default.qubit")
         lattice = generate_lattice(dims, shape).graph
 
@@ -186,26 +222,32 @@ class TestGraphStatePrep:
             assert all(isinstance(w, QubitGraph) for w in op.wires)
 
     @pytest.mark.parametrize(
-        "one_qubit_ops, two_qubit_ops",
+        "dims, shape, wires",
         [
-            (qml.H, qml.CZ),
-            (qml.X, qml.CNOT),
+            ([5], "chain", [0, 1, 2, 3, 4]),
+            ([5], "chain", ["a", 1, 2, "c", 4]),
+            ([2, 2], "square", [0, 1, 2, 3]),
+            ([2, 2], "square", ["d", 1, 2, "f"]),
+            ([2, 3], "rectangle", ["a", "b", "c", "d", "e", "f"]),
+            ([2, 2, 2], "cubic", [0, 1, 2, 3, 4, 5, 6, 7]),
         ],
     )
-    def test_decompose_wires(self, one_qubit_ops, two_qubit_ops):
+    def test_decompose_wires(self, dims, shape, wires):
         """Test the decomposition method of the GraphStatePrep class when wires are provided."""
-        lattice = nx.grid_graph((4,))
-        wires = list(lattice.nodes)
+        lattice = generate_lattice(dims, shape)
+        q = QubitGraph(lattice.graph)
 
-        op = GraphStatePrep(
-            wires=wires, graph=lattice, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops
-        )
+        # GraphStatePrep built from qubit graph
+        op = GraphStatePrep(graph=q, wires=wires)
         queue = op.decomposition()
-        assert len(queue) == 7  # 4 ops for |0> -> |+> and 3 ops to entangle nearest qubits
-        for op in queue[:4]:
-            assert op.name == one_qubit_ops(0).name
-        for op in queue[4:]:
-            assert op.name == two_qubit_ops.name
+        for idx, op in enumerate(queue[: len(wires)]):
+            assert op.wires[0] == wires[idx]
+
+        # GraphStatePrep built from nx graph
+        op = GraphStatePrep(graph=lattice.graph, wires=wires)
+        queue = op.decomposition()
+        for idx, op in enumerate(queue[: len(wires)]):
+            assert op.wires[0] == wires[idx]
 
     @pytest.mark.parametrize(
         "one_qubit_ops, two_qubit_ops",
@@ -222,17 +264,23 @@ class TestGraphStatePrep:
         lattice.add_nodes_from(wires)
         lattice.add_edges_from(edges)
         wires.append(5)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="Please ensure the length of wires objects match that of labels in graph",
+        ):
             GraphStatePrep(
                 wires=wires, graph=lattice, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops
             )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Please ensure wires is specified."):
             GraphStatePrep(
                 wires=None, graph=lattice, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops
             )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="Please ensure the length of wires objects match the number of children in QubitGraph.",
+        ):
             GraphStatePrep(
                 wires=wires,
                 graph=QubitGraph(lattice),
