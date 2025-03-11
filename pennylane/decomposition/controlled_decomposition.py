@@ -13,7 +13,9 @@
 # limitations under the License.
 
 """This module contains special logic of decomposing controlled operations."""
+from __future__ import annotations
 
+import functools
 from typing import Callable
 
 import pennylane as qml
@@ -46,17 +48,48 @@ class CustomControlledDecomposition(DecompositionRule):
     def compute_resources(
         self, base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
     ) -> Resources:
-        return (
-            Resources(
-                num_zero_control_values * 2 + 1,
-                {
-                    resource_rep(self.custom_op_type): 1,
-                    resource_rep(qml.X): num_zero_control_values * 2,
-                },
+        resources = Resources(1, {resource_rep(self.custom_op_type): 1})
+        if num_zero_control_values > 0:
+            resources += Resources(
+                num_zero_control_values * 2,
+                {resource_rep(qml.X): num_zero_control_values * 2},
             )
-            if num_zero_control_values > 0
-            else Resources(1, {resource_rep(self.custom_op_type): 1})
+        return resources
+
+
+def _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires):
+    """Returns the resource rep of a controlled op, dispatches to a custom op if possible."""
+
+    if (base_op_rep.op_type, num_control_wires) in base_to_custom_ctrl_op():
+        return resource_rep(base_to_custom_ctrl_op()[(base_op_rep.op_type, num_control_wires)])
+
+    if base_op_rep.op_type in (qml.X, qml.CNOT, qml.Toffoli, qml.MultiControlledX):
+        # First call controlled_resource_rep to get flatten any nested structures
+        rep = controlled_resource_rep(
+            base_class=base_op_rep.op_type,
+            base_params=base_op_rep.params,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
         )
+        if rep.params["num_control_wires"] == 1:
+            return resource_rep(qml.CNOT)
+        if rep.params["num_control_wires"] == 2:
+            return resource_rep(qml.Toffoli)
+        return resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=rep.params["num_control_wires"],
+            num_zero_control_values=rep.params["num_zero_control_values"],
+            num_work_wires=rep.params["num_work_wires"],
+        )
+
+    return controlled_resource_rep(
+        base_class=base_op_rep.op_type,
+        base_params=base_op_rep.params,
+        num_control_wires=num_control_wires,
+        num_zero_control_values=0,
+        num_work_wires=num_work_wires,
+    )
 
 
 class GeneralControlledDecomposition(DecompositionRule):
@@ -67,24 +100,22 @@ class GeneralControlledDecomposition(DecompositionRule):
         super().__init__(self._get_impl())
 
     def compute_resources(
-        self, base_params, num_control_wires, num_zero_control_values, num_work_wires
+        self, base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
     ) -> Resources:
         base_resource_decomp = self._base_decomposition.compute_resources(**base_params)
-        controlled_resources = {
-            controlled_resource_rep(
-                base_class=base_op_rep.op_type,
-                base_params=base_op_rep.params,
-                num_control_wires=num_control_wires,
-                num_zero_control_values=0,
-                num_work_wires=num_work_wires,
-            ): count
-            for base_op_rep, count in base_resource_decomp.gate_counts.items()
-            if count > 0
-        }
+        controlled_resources = Resources(
+            num_gates=base_resource_decomp.num_gates,
+            gate_counts={
+                _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires): count
+                for base_op_rep, count in base_resource_decomp.gate_counts.items()
+            },
+        )
         if num_zero_control_values > 0:
-            controlled_resources[resource_rep(qml.X)] = num_zero_control_values * 2
-        gate_count = sum(controlled_resources.values())
-        return Resources(gate_count, controlled_resources)
+            controlled_resources += Resources(
+                num_zero_control_values * 2,
+                {resource_rep(qml.X): num_zero_control_values * 2},
+            )
+        return controlled_resources
 
     def _get_impl(self) -> Callable:
         """The default implementation of a controlled decomposition."""
@@ -96,9 +127,8 @@ class GeneralControlledDecomposition(DecompositionRule):
             qml.ctrl(
                 self._base_decomposition.impl,
                 control=control_wires,
-                control_values=control_values,
                 work_wires=work_wires,
-            )(*base.params, wires=base.wires, **base.hyperparameters)
+            )(*base.parameters, wires=base.wires, **base.hyperparameters)
             for w, val in zip(control_wires, control_values):
                 if not val:
                     qml.PauliX(w)
@@ -187,3 +217,23 @@ def controlled_x_decomp(*_, wires, control_wires, control_values, work_wires, **
     for w, val in zip(control_wires, control_values):
         if not val:
             qml.PauliX(w)
+
+
+@functools.lru_cache()
+def base_to_custom_ctrl_op():
+    """A dictionary mapping base op types to their custom controlled versions."""
+
+    ops_with_custom_ctrl_ops = {
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliZ, 2): qml.CCZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.CZ, 1): qml.CCZ,
+        (qml.SWAP, 1): qml.CSWAP,
+        (qml.Hadamard, 1): qml.CH,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
+    }
+    return ops_with_custom_ctrl_ops

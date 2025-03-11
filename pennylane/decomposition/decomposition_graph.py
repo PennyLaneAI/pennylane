@@ -25,7 +25,6 @@ implementation of the basis translator, the Boost Graph library, and RustworkX.
 
 from __future__ import annotations
 
-import functools
 from dataclasses import dataclass
 
 import rustworkx as rx
@@ -36,6 +35,7 @@ import pennylane as qml
 from .controlled_decomposition import (
     CustomControlledDecomposition,
     GeneralControlledDecomposition,
+    base_to_custom_ctrl_op,
     controlled_global_phase_decomp,
     controlled_x_decomp,
 )
@@ -117,7 +117,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         op_node_idx = self._graph.add_node(op_node)
         self._op_node_indices[op_node] = op_node_idx
 
-        if op_node.op_type.name in self._target_gate_set:
+        if op_node.op_type.__name__ in self._target_gate_set:
             self._target_gate_indices.add(op_node_idx)
             return op_node_idx
 
@@ -210,7 +210,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._graph.remove_node(start)
         if self._visitor.unsolved_op_indices:
             unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
-            op_names = set(op.op_type.name for op in unsolved_ops)
+            op_names = set(op.op_type.__name__ for op in unsolved_ops)
             raise DecompositionError(
                 f"Decomposition not found for {op_names} to the gate set {self._target_gate_set}"
             )
@@ -294,23 +294,3 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         elif isinstance(target_node, CompressedResourceOp):
             self.p[target_idx] = src_idx
             self.d[target_idx] = self.d[src_idx]
-
-
-@functools.lru_cache()
-def base_to_custom_ctrl_op():
-    """A dictionary mapping base op types to their custom controlled versions."""
-
-    ops_with_custom_ctrl_ops = {
-        (qml.PauliZ, 1): qml.CZ,
-        (qml.PauliZ, 2): qml.CCZ,
-        (qml.PauliY, 1): qml.CY,
-        (qml.CZ, 1): qml.CCZ,
-        (qml.SWAP, 1): qml.CSWAP,
-        (qml.Hadamard, 1): qml.CH,
-        (qml.RX, 1): qml.CRX,
-        (qml.RY, 1): qml.CRY,
-        (qml.RZ, 1): qml.CRZ,
-        (qml.Rot, 1): qml.CRot,
-        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
-    }
-    return ops_with_custom_ctrl_ops

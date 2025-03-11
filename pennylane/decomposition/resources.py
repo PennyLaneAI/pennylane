@@ -170,8 +170,8 @@ def controlled_resource_rep(
     base_class,
     base_params: dict,
     num_control_wires: int,
-    num_zero_control_values: int,
-    num_work_wires: int,
+    num_zero_control_values: int = 0,
+    num_work_wires: int = 0,
 ):
     """Creates a ``CompressedResourceOp`` representation of a general controlled operator.
 

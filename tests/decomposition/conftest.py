@@ -30,8 +30,6 @@ class CustomHadamard(Operation):
 
     resource_param_keys = ()
 
-    name = "Hadamard"
-
     @property
     def resource_params(self) -> dict:
         return {}
@@ -43,8 +41,6 @@ class CustomRX(Operation):
     """
 
     resource_param_keys = ()
-
-    name = "RX"
 
     @property
     def resource_params(self) -> dict:
@@ -58,8 +54,6 @@ class CustomRY(Operation):
 
     resource_param_keys = ()
 
-    name = "RY"
-
     @property
     def resource_params(self) -> dict:
         return {}
@@ -71,8 +65,6 @@ class CustomRZ(Operation):
     """
 
     resource_param_keys = ()
-
-    name = "RZ"
 
     @property
     def resource_params(self) -> dict:
@@ -86,8 +78,6 @@ class CustomRot(Operation):
 
     resource_param_keys = ()
 
-    name = "Rot"
-
     @property
     def resource_params(self) -> dict:
         return {}
@@ -97,8 +87,6 @@ class CustomGlobalPhase(Operation):
     r"""Multiplies all components of the state by :math:`e^{-i \phi}`."""
 
     resource_param_keys = ()
-
-    name = "GlobalPhase"
 
     @property
     def resource_params(self) -> dict:
@@ -110,8 +98,6 @@ class CustomPhaseShift(Operation):
 
     resource_param_keys = ()
 
-    name = "PhaseShift"
-
     @property
     def resource_params(self) -> dict:
         return {}
@@ -121,8 +107,6 @@ class CustomCNOT(Operation):
     """The CNOT gate."""
 
     resource_param_keys = ()
-
-    name = "CNOT"
 
     @property
     def resource_params(self) -> dict:
@@ -134,8 +118,6 @@ class CustomCZ(Operation):
 
     resource_param_keys = ()
 
-    name = "CZ"
-
     @property
     def resource_params(self) -> dict:
         return {}
@@ -145,8 +127,6 @@ class CustomMultiRZ(Operation):
     """The MultiRZ gate."""
 
     resource_param_keys = ("num_wires",)
-
-    name = "MultiRZ"
 
     @property
     def resource_params(self) -> dict:

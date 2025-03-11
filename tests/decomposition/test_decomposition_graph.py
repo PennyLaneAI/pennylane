@@ -59,20 +59,20 @@ class TestDecompositionGraph:
             CustomRY(np.pi / 2, wires=wires)
 
         graph = DecompositionGraph(
-            operations=[CustomHadamard(0)], target_gate_set={"RX", "RY", "RZ"}
+            operations=[CustomHadamard(0)], target_gate_set={"CustomRX", "CustomRY", "CustomRZ"}
         )
         assert graph._get_decompositions(CustomHadamard) == decompositions[CustomHadamard]
 
         graph = DecompositionGraph(
             operations=[CustomHadamard(0)],
-            target_gate_set={"RX", "RY", "RZ"},
+            target_gate_set={"CustomRX", "CustomRY", "CustomRZ"},
             fixed_decomps={CustomHadamard: custom_hadamard},
         )
         assert graph._get_decompositions(CustomHadamard) == [custom_hadamard]
 
         graph = DecompositionGraph(
             operations=[CustomHadamard(0)],
-            target_gate_set={"RX", "RY", "RZ"},
+            target_gate_set={"CustomRX", "CustomRY", "CustomRZ"},
             alt_decomps={CustomHadamard: [custom_hadamard, custom_hadamard_2]},
         )
         assert (
@@ -89,14 +89,18 @@ class TestDecompositionGraph:
         """Tests constructing a graph from a single Hadamard."""
 
         op = CustomHadamard(wires=[0])
-        graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RZ", "GlobalPhase"})
+        graph = DecompositionGraph(
+            operations=[op], target_gate_set={"CustomRX", "CustomRZ", "CustomGlobalPhase"}
+        )
         # 5 ops and 3 decompositions (2 for Hadamard and 1 for RY)
         assert len(graph._graph.nodes()) == 8
         # 8 edges from ops to decompositions and 3 from decompositions to ops
         assert len(graph._graph.edges()) == 11
 
         # Check that graph construction stops at gates in the target gate set.
-        graph2 = DecompositionGraph(operations=[op], target_gate_set={"RY", "RZ", "GlobalPhase"})
+        graph2 = DecompositionGraph(
+            operations=[op], target_gate_set={"CustomRY", "CustomRZ", "CustomGlobalPhase"}
+        )
         # 5 ops and 2 decompositions (RY is in the target gate set now)
         assert len(graph2._graph.nodes()) == 7
         # 6 edges from ops to decompositions and 2 from decompositions to ops
@@ -108,7 +112,8 @@ class TestDecompositionGraph:
 
         op = CustomHadamard(wires=[0])
         graph = DecompositionGraph(
-            operations=[op], target_gate_set={"RX", "RY", "RZ", "GlobalPhase"}
+            operations=[op],
+            target_gate_set={"CustomRX", "CustomRY", "CustomRZ", "CustomGlobalPhase"},
         )
         graph.solve()
 
@@ -129,8 +134,12 @@ class TestDecompositionGraph:
         """Tests that the correct error is raised if a decomposition isn't found."""
 
         op = CustomHadamard(wires=[0])
-        graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RY", "GlobalPhase"})
-        with pytest.raises(DecompositionError, match="Decomposition not found for {'Hadamard'}"):
+        graph = DecompositionGraph(
+            operations=[op], target_gate_set={"CustomRX", "CustomRY", "CustomGlobalPhase"}
+        )
+        with pytest.raises(
+            DecompositionError, match="Decomposition not found for {'CustomHadamard'}"
+        ):
             graph.solve()
 
     @pytest.mark.unit
@@ -160,7 +169,8 @@ class TestDecompositionGraph:
 
         op = CustomOp(wires=[0, 1, 2, 3])
         graph = DecompositionGraph(
-            operations=[op], target_gate_set={"RX", "RZ", "CZ", "GlobalPhase"}
+            operations=[op],
+            target_gate_set={"CustomRX", "CustomRZ", "CustomCZ", "CustomGlobalPhase"},
         )
         # 10 ops and 7 decompositions (1 for the custom op, 1 for each of the two MultiRZs,
         # 1 for CNOT, 2 for Hadamard, and 1 for RY)
